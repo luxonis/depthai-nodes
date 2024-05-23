@@ -9,7 +9,12 @@ class DnCNN3Parser(dai.node.ThreadedHostNode):
         self.out = dai.Node.Output(self)
 
     def run(self):
-        """ Postprocessing logic for Zero-DCE model. Output is a BGR. HWC, uint8 image."""
+        """ 
+        Postprocessing logic for DnCNN3 model. 
+        
+        Returns:
+            dai.ImgFrame: uint8, GRAYSCALE image.
+        """
         
         while self.isRunning():
 

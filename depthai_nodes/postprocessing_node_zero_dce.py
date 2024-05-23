@@ -10,7 +10,12 @@ class ZeroDCEParser(dai.node.ThreadedHostNode):
         self.out = dai.Node.Output(self)
 
     def run(self):
-        """ Postprocessing logic for Zero-DCE model. Output is a BGR. HWC, uint8 image."""
+        """ 
+        Postprocessing logic for Zero-DCE model. 
+        
+        Returns:
+            dai.ImgFrame: uint8, HWC, BGR image.
+        """
         
         while self.isRunning():
 
