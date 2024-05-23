@@ -13,7 +13,7 @@ class DnCNN3Parser(dai.node.ThreadedHostNode):
         Postprocessing logic for DnCNN3 model. 
         
         Returns:
-            dai.ImgFrame: uint8, GRAYSCALE image.
+            dai.ImgFrame: uint8, GRAYSCALE image representing the denoised image.
         """
         
         while self.isRunning():

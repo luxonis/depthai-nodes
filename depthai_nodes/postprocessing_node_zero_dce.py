@@ -14,7 +14,7 @@ class ZeroDCEParser(dai.node.ThreadedHostNode):
         Postprocessing logic for Zero-DCE model. 
         
         Returns:
-            dai.ImgFrame: uint8, HWC, BGR image.
+            dai.ImgFrame: uint8, HWC, BGR image represeniting the light-enhanced image.
         """
         
         while self.isRunning():
