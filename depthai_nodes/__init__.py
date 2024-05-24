@@ -4,5 +4,6 @@
 from .postprocessing_node_zero_dce import ZeroDCEParser
 from .postprocessing_node_dncnn3 import DnCNN3Parser
 from .postprocessing_node_depth_anything import DepthAnythingParser
+from .postprocessing_node_yunet import YuNetParser
 
 #__all__ = ['PostProcessNode1', 'PostProcessNode2']
