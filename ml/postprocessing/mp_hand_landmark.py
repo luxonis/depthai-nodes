@@ -62,11 +62,11 @@ class MPHandLandmarkParser(dai.node.ThreadedHostNode):
             if hand_score < self.score_threshold:
                 hand_landmarks_msg.landmarks = []
                 hand_landmarks_msg.confidence = hand_score
-                hand_landmarks_msg.handedness = handdedness
+                hand_landmarks_msg.handdedness = handdedness
                 self.out.send(hand_landmarks_msg)
             else:
                 hand_landmarks_msg.confidence = hand_score
-                hand_landmarks_msg.handedness = handdedness
+                hand_landmarks_msg.handdedness = handdedness
                 for i in range(21):
                     pt = dai.Point3f()
                     pt.x = landmarks[i][0]
