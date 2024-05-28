@@ -2,7 +2,7 @@ import depthai as dai
 import numpy as np
 import cv2
 
-from ..custom_messages.img_detections import ImgDetectionsWithKeypoints
+from ..messages import ImgDetectionsWithKeypoints
 
 class SCRFDParser(dai.node.ThreadedHostNode):
     def __init__(
