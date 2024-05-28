@@ -1,1 +1,6 @@
-from .img_detections import ImgDetectionsWithKeypoints
+from .img_detections import ImgDetectionWithKeypoints, ImgDetectionsWithKeypoints
+
+__all__ = [
+    "ImgDetectionWithKeypoints",
+    "ImgDetectionsWithKeypoints",
+]
