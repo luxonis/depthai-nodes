@@ -1,7 +1,7 @@
 import depthai as dai
 import numpy as np
 import cv2
-from .utils.message_creation.depth_segmentation import create_segmentation_msg
+from .utils.message_creation.depth_segmentation import create_depth_segmentation_msg
 
 class SeflieSegParser(dai.node.ThreadedHostNode):
     def __init__(
@@ -45,5 +45,5 @@ class SeflieSegParser(dai.node.ThreadedHostNode):
             overlay_image = np.zeros((segmentation_mask.shape[0], segmentation_mask.shape[1], 1), dtype=np.uint8)
             overlay_image[segmentation_mask] = 1
 
-            imgFrame = create_segmentation_msg(overlay_image)
+            imgFrame = create_depth_segmentation_msg(overlay_image, 'raw8')
             self.out.send(imgFrame)
