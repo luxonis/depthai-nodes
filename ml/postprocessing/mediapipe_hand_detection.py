@@ -5,7 +5,7 @@ import cv2
 from ..messages import ImgDetectionsWithKeypoints
 from .utils.medipipe_utils import generate_handtracker_anchors, decode_bboxes, rect_transformation, detections_to_rect
 
-class MPPalmDetectionParser(dai.node.ThreadedHostNode):
+class MPHandDetectionParser(dai.node.ThreadedHostNode):
     def __init__(
         self,
         score_threshold=0.5,
