@@ -42,7 +42,7 @@ class KeypointsDescriptor:
                 raise TypeError(
                     "Each keypoint must be a tuple of two floats or integers"
                 )
-        instance.__dict__[self.name] = value
+        instance.__dict__[self.name] = [(float(x), float(y)) for x,y in value]
 
 
 class ImgDetectionWithKeypoints(dai.ImgDetection):
