@@ -7,33 +7,23 @@ from ..messages import HandLandmarks
 class MPHandLandmarkParser(dai.node.ThreadedHostNode):
     def __init__(
         self,
-        score_threshold=0.5,
-        handdedness_threshold=0.5,
-        input_size=(224, 224)
+        score_threshold=0.5
     ):
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
 
         self.score_threshold = score_threshold
-        self.input_size = input_size
-        self.handdedness_threshold = handdedness_threshold
 
     def setScoreThreshold(self, threshold):
         self.score_threshold = threshold
 
-    def setHandednessThreshold(self, threshold):
-        self.handdedness_threshold = threshold
-
-    def setInputSize(self, width, height):
-        self.input_size = (width, height)
-
     def run(self):
         """
-        Postprocessing logic for SCRFD model.
+        Postprocessing logic for MediaPipe Hand landmark model.
 
         Returns:
-            ...
+            HandLandmarks containing 21 landmarks, confidence score, and handdedness score (right or left hand).
         """
 
         while self.isRunning():
@@ -59,18 +49,15 @@ class MPHandLandmarkParser(dai.node.ThreadedHostNode):
             handdedness = handdedness[0]
 
             hand_landmarks_msg = HandLandmarks()
-            if hand_score < self.score_threshold:
-                hand_landmarks_msg.landmarks = []
-                hand_landmarks_msg.confidence = hand_score
-                hand_landmarks_msg.handdedness = handdedness
-                self.out.send(hand_landmarks_msg)
-            else:
-                hand_landmarks_msg.confidence = hand_score
-                hand_landmarks_msg.handdedness = handdedness
+            hand_landmarks_msg.handdedness = handdedness
+            hand_landmarks_msg.confidence = hand_score
+            hand_landmarks = []
+            if hand_score >= self.score_threshold:
                 for i in range(21):
                     pt = dai.Point3f()
                     pt.x = landmarks[i][0]
                     pt.y = landmarks[i][1]
                     pt.z = landmarks[i][2]
-                    hand_landmarks_msg.landmarks.append(pt)
-                self.out.send(hand_landmarks_msg)
+                    hand_landmarks.append(pt)
+            hand_landmarks_msg.landmarks = hand_landmarks
+            self.out.send(hand_landmarks_msg)

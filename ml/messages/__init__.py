@@ -1,2 +1,2 @@
 from .img_detections import ImgDetectionsWithKeypoints
-from .landmarks import HandLandmarks
+from .hand_landmarks import HandLandmarks
