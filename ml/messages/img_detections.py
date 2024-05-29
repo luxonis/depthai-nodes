@@ -5,7 +5,7 @@ from typing import List, Tuple, Union
 class ImgDetectionWithKeypoints(dai.ImgDetection):
     def __init__(self):
         dai.ImgDetection.__init__(self)  # TODO: change to super().__init__()?
-        self.keypoints: List[Tuple[float, float]] = []
+        self._keypoints: List[Tuple[float, float]] = []
 
     @property
     def keypoints(self) -> List[Tuple[float, float]]:
