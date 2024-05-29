@@ -2,35 +2,17 @@ import depthai as dai
 from typing import List, Tuple, Union
 
 
-class KeypointsDescriptor:
-    """
-    Descriptor for managing the `keypoints` attribute with type checking.
-
-    This descriptor ensures that the `keypoints` attribute is an empty list or
-    list of tuples, where each tuple contains exactly two elements that are either
-    integers or floats.
-
-    Attributes:
-        name (str): The name of the attribute managed by the descriptor.
-
-    Methods:
-        __get__(instance, owner):
-            Retrieves the value of the `keypoints` attribute.
-        __set__(instance, value):
-            Sets the value of the `keypoints` attribute after validating its type.
-    """
-
+class ImgDetectionWithKeypoints(dai.ImgDetection):
     def __init__(self):
-        self.name = "_keypoints"
+        dai.ImgDetection.__init__(self)  # TODO: change to super().__init__()?
+        self.keypoints: List[Tuple[float, float]] = []
 
-    def __get__(self, instance, owner):
-        if instance is None:
-            return self
-        return instance.__dict__.get(self.name, [])
+    @property
+    def keypoints(self) -> List[Tuple[float, float]]:
+        return self._keypoints
 
-    def __set__(
-        self, instance, value: List[Tuple[Union[int, float], Union[int, float]]]
-    ):
+    @keypoints.setter
+    def keypoints(self, value: List[Tuple[Union[int, float], Union[int, float]]]):
         if not isinstance(value, list):
             raise TypeError("Keypoints must be a list")
         for item in value:
@@ -42,15 +24,7 @@ class KeypointsDescriptor:
                 raise TypeError(
                     "Each keypoint must be a tuple of two floats or integers"
                 )
-        instance.__dict__[self.name] = [(float(x), float(y)) for x,y in value]
-
-
-class ImgDetectionWithKeypoints(dai.ImgDetection):
-    keypoints = KeypointsDescriptor()
-
-    def __init__(self):
-        dai.ImgDetection.__init__(self) # TODO: change to super().__init__()?
-        self.keypoints: List[Tuple[Union[int, float], Union[int, float]]] = []
+        self._keypoints = [(float(x), float(y)) for x, y in value]
 
 
 class DetectionsWithKeypointsDescriptor:
