@@ -27,32 +27,18 @@ class ImgDetectionWithKeypoints(dai.ImgDetection):
         self._keypoints = [(float(x), float(y)) for x, y in value]
 
 
-class DetectionsWithKeypointsDescriptor:
-    """
-    Descriptor for managing the `detections` attribute with type checking.
-
-    This descriptor ensures that the `detections` attribute is a list of
-    ImgDetectionWithKeypoints instances.
-
-    Attributes:
-        name (str): The name of the attribute managed by the descriptor.
-
-    Methods:
-        __get__(instance, owner):
-            Retrieves the value of the `detections` attribute.
-        __set__(instance, value):
-            Sets the value of the `detections` attribute after validating its type.
-    """
+class ImgDetectionsWithKeypoints(dai.Buffer):
 
     def __init__(self):
-        self.name = "_detections"
+        dai.Buffer.__init__(self)  # TODO: change to super().__init__()?
+        self._detections: List[ImgDetectionWithKeypoints] = []
 
-    def __get__(self, instance, owner):
-        if instance is None:
-            return self
-        return instance.__dict__.get(self.name, [])
+    @property
+    def detections(self) -> List[ImgDetectionWithKeypoints]:
+        return self._detections
 
-    def __set__(self, instance, value: List["ImgDetectionWithKeypoints"]):
+    @detections.setter
+    def detections(self, value: List[ImgDetectionWithKeypoints]):
         if not isinstance(value, list):
             raise TypeError("Detections must be a list")
         for item in value:
@@ -60,12 +46,4 @@ class DetectionsWithKeypointsDescriptor:
                 raise TypeError(
                     "Each detection must be an instance of ImgDetectionWithKeypoints"
                 )
-        instance.__dict__[self.name] = value
-
-
-class ImgDetectionsWithKeypoints(dai.Buffer):
-    detections = DetectionsWithKeypointsDescriptor()
-
-    def __init__(self):
-        dai.Buffer.__init__(self) # TODO: change to super().__init__()?
-        self.detections: List[ImgDetectionWithKeypoints] = []
+        self._detections = value
