@@ -1,5 +1,7 @@
 import depthai as dai
-import numpy as np
+
+from .utils import unnormalize_image
+from .utils.message_creation import create_image_msg
 
 
 class DnCNN3Parser(dai.node.ThreadedHostNode):
@@ -9,33 +11,28 @@ class DnCNN3Parser(dai.node.ThreadedHostNode):
         self.out = dai.Node.Output(self)
 
     def run(self):
-        """ 
-        Postprocessing logic for DnCNN3 model. 
-        
-        Returns:
-            dai.ImgFrame: uint8, GRAYSCALE image representing the denoised image.
         """
-        
+        Postprocessing logic for DnCNN3 model.
+
+        Returns:
+            dai.ImgFrame: uint8, GRAYSCALE denoised image.
+        """
+
         while self.isRunning():
 
             try:
-                output : dai.NNData = self.input.get()
+                output: dai.NNData = self.input.get()
             except dai.MessageQueue.QueueException as e:
-                break # Pipeline was stopped
+                break  # Pipeline was stopped
 
-            output = output.getTensor("80") # numpy.ndarray of shape (1, 1, 321, 481)
-            output = output[0][0]
+            output = output.getTensor("80")  # numpy.ndarray of shape (1, 1, 321, 481)
 
-            #un-normalize
-            output = output*255
-            # convert back to uint8
-            output = output.astype(np.uint8)
+            image = output[0][0]
+            image = unnormalize_image(image)
 
-            imgFrame = dai.ImgFrame()
-            imgFrame.setFrame(output)
-            imgFrame.setWidth(output.shape[1])
-            imgFrame.setHeight(output.shape[0])
-            imgFrame.setType(dai.ImgFrame.Type.GRAY8)
+            image_message = create_image_msg(
+                image=image,
+                is_grayscale=True,
+            )
 
-            self.out.send(imgFrame)
-        
+            self.out.send(image_message)
