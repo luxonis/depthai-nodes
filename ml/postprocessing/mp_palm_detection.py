@@ -10,14 +10,12 @@ class MPPalmDetectionParser(dai.node.ThreadedHostNode):
         self,
         score_threshold=0.5,
         nms_threshold=0.5,
-        top_k=100,
-        input_size=(192, 192), # WH
+        top_k=100
     ):
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
 
-        self.input_size = input_size
         self.score_threshold = score_threshold
         self.nms_threshold = nms_threshold
         self.top_k = top_k
@@ -31,15 +29,12 @@ class MPPalmDetectionParser(dai.node.ThreadedHostNode):
     def setTopK(self, top_k):
         self.top_k = top_k
 
-    def setInputSize(self, width, height):
-        self.input_size = (width, height)
-
     def run(self):
         """
-        Postprocessing logic for SCRFD model.
+        Postprocessing logic for MediPipe Hand detection model.
 
         Returns:
-            ...
+            dai.ImgDetections containing bounding boxes of detected hands, label, and confidence score.
         """
 
         while self.isRunning():
