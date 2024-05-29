@@ -3,31 +3,26 @@ import numpy as np
 import cv2
 from .utils.message_creation.depth_segmentation import create_depth_segmentation_msg
 
-class SeflieSegParser(dai.node.ThreadedHostNode):
+class MPSeflieSegParser(dai.node.ThreadedHostNode):
     def __init__(
         self,
         threshold=0.5,
-        input_size=(256, 144),
     ):
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
 
-        self.input_size = input_size
         self.threshold = threshold
 
     def setConfidenceThreshold(self, threshold):
         self.threshold = threshold
 
-    def setInputSize(self, width, height):
-        self.input_size = (width, height)
-
     def run(self):
         """
-        Postprocessing logic for SCRFD model.
+        Postprocessing logic for MediaPipe Selfie Segmentation model.
 
         Returns:
-            ...
+            Segmenation mask with two classes 1 - person, 0 - background.
         """
 
         while self.isRunning():
