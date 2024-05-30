@@ -2,7 +2,7 @@ import depthai as dai
 import numpy as np
 import cv2
 
-from ..messages import HandLandmarks
+from ..messages import HandKeypoints
 
 class MPHandLandmarkParser(dai.node.ThreadedHostNode):
     def __init__(
@@ -48,7 +48,7 @@ class MPHandLandmarkParser(dai.node.ThreadedHostNode):
             handdedness = (handdedness - tensorInfo.qpZp) * tensorInfo.qpScale
             handdedness = handdedness[0]
 
-            hand_landmarks_msg = HandLandmarks()
+            hand_landmarks_msg = HandKeypoints()
             hand_landmarks_msg.handdedness = handdedness
             hand_landmarks_msg.confidence = hand_score
             hand_landmarks = []
