@@ -7,23 +7,28 @@ from ..messages import HandKeypoints
 class MPHandLandmarkParser(dai.node.ThreadedHostNode):
     def __init__(
         self,
-        score_threshold=0.5
+        score_threshold=0.5,
+        scale_factor=224
     ):
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
 
         self.score_threshold = score_threshold
+        self.scale_factor = scale_factor
 
     def setScoreThreshold(self, threshold):
         self.score_threshold = threshold
+
+    def setScaleFactor(self, scale_factor):
+        self.scale_factor = scale_factor
 
     def run(self):
         """
         Postprocessing logic for MediaPipe Hand landmark model.
 
         Returns:
-            HandLandmarks containing 21 landmarks, confidence score, and handdedness score (right or left hand).
+            HandLandmarks containing normalized 21 landmarks, confidence score, and handdedness score (right or left hand).
         """
 
         while self.isRunning():
@@ -44,6 +49,9 @@ class MPHandLandmarkParser(dai.node.ThreadedHostNode):
             handdedness = output.getTensor(f"Identity_2").reshape(-1).astype(np.float32)
             handdedness = (handdedness - tensorInfo.qpZp) * tensorInfo.qpScale
             handdedness = handdedness[0]
+
+            # normalize landmarks
+            landmarks /= self.scale_factor
 
             hand_landmarks_msg = HandKeypoints()
             hand_landmarks_msg.handdedness = handdedness
