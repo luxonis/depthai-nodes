@@ -16,34 +16,11 @@ class HandRegion:
         rect_points : list of the 4 points coordinates of the rotated bounding rectangle, in pixels 
                 expressed in the squared image during processing,
                 expressed in the source rectangular image when returned to the user
-        lm_score: global landmark score
-        norm_landmarks : 3D landmarks coordinates in the rotated bounding rectangle, normalized [0,1]
-        landmarks : 2D landmark coordinates in pixel in the source rectangular image
-        world_landmarks : 3D landmark coordinates in meter
-        handedness: float between 0. and 1., > 0.5 for right hand, < 0.5 for left hand,
-        label: "left" or "right", handedness translated in a string,
-        xyz: real 3D world coordinates of the wrist landmark, or of the palm center (if landmarks are not used),
-        xyz_zone: (left, top, right, bottom), pixel coordinates in the source rectangular image 
-                of the rectangular zone used to estimate the depth
-        gesture: (optional, set in recognize_gesture() when use_gesture==True) string corresponding to recognized gesture ("ONE","TWO","THREE","FOUR","FIVE","FIST","OK","PEACE") 
-                or None if no gesture has been recognized
         """
     def __init__(self, pd_score=None, pd_box=None, pd_kps=None):
         self.pd_score = pd_score # Palm detection score 
         self.pd_box = pd_box # Palm detection box [x, y, w, h] normalized
         self.pd_kps = pd_kps # Palm detection keypoints
-
-    def get_rotated_world_landmarks(self):
-        world_landmarks_rotated = self.world_landmarks.copy()
-        sin_rot = math.sin(self.rotation)
-        cos_rot = math.cos(self.rotation)
-        rot_m = np.array([[cos_rot, sin_rot], [-sin_rot, cos_rot]])
-        world_landmarks_rotated[:,:2] = np.dot(world_landmarks_rotated[:,:2], rot_m)
-        return world_landmarks_rotated
-
-    def print(self):
-        attrs = vars(self)
-        print('\n'.join("%s: %s" % item for item in attrs.items()))
 
 SSDAnchorOptions = namedtuple('SSDAnchorOptions',[
         'num_layers',
@@ -223,19 +200,8 @@ def decode_bboxes(score_thresh, scores, bboxes, anchors, scale=128, best_only=Fa
         det_bboxes2 = bboxes[detection_mask]
         det_anchors = anchors[detection_mask]
 
-    # scale = 128 # x_scale, y_scale, w_scale, h_scale
-    # scale = 192 # x_scale, y_scale, w_scale, h_scale
-
-    # cx, cy, w, h = bboxes[i,:4]
-    # cx = cx * anchor.w / wi + anchor.x_center 
-    # cy = cy * anchor.h / hi + anchor.y_center
-    # lx = lx * anchor.w / wi + anchor.x_center 
-    # ly = ly * anchor.h / hi + anchor.y_center
     det_bboxes = det_bboxes2* np.tile(det_anchors[:,2:4], 9) / scale + np.tile(det_anchors[:,0:2],9)
-    # w = w * anchor.w / wi (in the prvious line, we add anchor.x_center and anchor.y_center to w and h, we need to substract them now)
-    # h = h * anchor.h / hi
     det_bboxes[:,2:4] = det_bboxes[:,2:4] - det_anchors[:,0:2]
-    # box = [cx - w*0.5, cy - h*0.5, w, h]
     det_bboxes[:,0:2] = det_bboxes[:,0:2] - det_bboxes[:,3:4] * 0.5
 
     for i in range(det_bboxes.shape[0]):
@@ -252,8 +218,6 @@ def decode_bboxes(score_thresh, scores, bboxes, anchors, scale=128, best_only=Fa
         # 4 : little finger joint
         # 5 : 
         # 6 : thumb joint
-        # for j, name in enumerate(["0", "1", "2", "3", "4", "5", "6"]):
-        #     kps[name] = det_bboxes[i,4+j*2:6+j*2]
         for kp in range(7):
             kps.append(det_bboxes[i,4+kp*2:6+kp*2])
         regions.append(HandRegion(float(score), box, kps))
@@ -297,7 +261,6 @@ def rect_transformation(regions, w, h):
             region.rect_x_center_a = region.rect_x_center*w + x_shift
             region.rect_y_center_a = region.rect_y_center*h + y_shift
 
-        # square_long: true
         long_side = max(width * w, height * h)
         region.rect_w_a = long_side * scale_x
         region.rect_h_a = long_side * scale_y
@@ -352,39 +315,3 @@ def detections_to_rect(regions):
 
 def normalize_radians(angle):
     return angle - 2 * math.pi * math.floor((angle + math.pi) / (2 * math.pi))
-
-def non_maxima_suppression(bboxes, iou_threshold):
-    if len(bboxes) == 0:
-        return []
-    
-    if bboxes.dtype.kind == 'i':
-        bboxes = bboxes.astype('float')
-
-    pick = []
-
-    x1 = bboxes[:,0]
-    y1 = bboxes[:,1]
-    x2 = bboxes[:,2]
-    y2 = bboxes[:,3]
-
-    area = (x2 - x1 + 1) * (y2 - y1 + 1)
-    idxs = np.argsort(y2)
-
-    while len(idxs) > 0:
-        last = len(idxs) - 1
-        i = idxs[last]
-        pick.append(i)
-
-        xx1 = np.maximum(x1[i], x1[idxs[:last]])
-        yy1 = np.maximum(y1[i], y1[idxs[:last]])
-        xx2 = np.minimum(x2[i], x2[idxs[:last]])
-        yy2 = np.minimum(y2[i], y2[idxs[:last]])
-
-        w = np.maximum(0, xx2 - xx1 + 1)
-        h = np.maximum(0, yy2 - yy1 + 1)
-
-        overlap = (w * h) / area[idxs[:last]]
-
-        idxs = np.delete(idxs, np.concatenate(([last], np.where(overlap > iou_threshold)[0])))
-
-    return bboxes[pick].astype('int')
