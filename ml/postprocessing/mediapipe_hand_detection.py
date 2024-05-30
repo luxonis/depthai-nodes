@@ -2,8 +2,7 @@ import depthai as dai
 import numpy as np
 import cv2
 
-from ..messages import ImgDetectionsWithKeypoints
-from .utils.medipipe_utils import generate_handtracker_anchors, decode_bboxes, rect_transformation, detections_to_rect
+from .utils.medipipe import generate_handtracker_anchors, decode_bboxes, rect_transformation, detections_to_rect
 
 class MPHandDetectionParser(dai.node.ThreadedHostNode):
     def __init__(
@@ -34,7 +33,7 @@ class MPHandDetectionParser(dai.node.ThreadedHostNode):
         Postprocessing logic for MediPipe Hand detection model.
 
         Returns:
-            dai.ImgDetections containing bounding boxes of detected hands, label, and confidence score.
+            dai.ImgDetections containing bounding boxes, labels, and confidence scores of detected hands.
         """
 
         while self.isRunning():
@@ -43,9 +42,6 @@ class MPHandDetectionParser(dai.node.ThreadedHostNode):
                 output: dai.NNData = self.input.get()
             except dai.MessageQueue.QueueException as e:
                 break  # Pipeline was stopped
-
-            print('MP Palm detection node')
-            print(f"Layer names = {output.getAllLayerNames()}")
 
             tensorInfo = output.getTensorInfo("Identity")
             bboxes = output.getTensor(f"Identity").reshape(2016, 18).astype(np.float32)

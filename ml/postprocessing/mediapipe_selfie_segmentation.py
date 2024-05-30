@@ -29,11 +29,8 @@ class MPSeflieSegParser(dai.node.ThreadedHostNode):
 
             try:
                 output: dai.NNData = self.input.get()
-                print(f"output = {output}")
             except dai.MessageQueue.QueueException as e:
                 break  # Pipeline was stopped
-
-            print(f"Layer names = {output.getAllLayerNames()}")
 
             segmentation_mask = output.getTensor("output")
             segmentation_mask = segmentation_mask[0].squeeze() > self.threshold
