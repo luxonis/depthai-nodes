@@ -1,3 +1,22 @@
+"""
+mediapipe.py
+
+Description: This script contains utility functions for decoding the output of the MediaPipe hand tracking model.
+
+This script contains code that is based on or directly taken from a public GitHub repository:
+https://github.com/geaxgx/depthai_hand_tracker
+
+Original code author(s): geaxgx
+
+License: MIT License
+
+MIT License
+-----------
+
+Copyright (c) [2021] [geax]
+
+"""
+
 import math
 import numpy as np
 from collections import namedtuple
