@@ -2,7 +2,7 @@ import depthai as dai
 import numpy as np
 import cv2
 
-from .utils.medipipe import generate_handtracker_anchors, decode_bboxes, rect_transformation, detections_to_rect
+from .utils.detection import generate_anchors_and_decode
 
 class MPHandDetectionParser(dai.node.ThreadedHostNode):
     def __init__(
@@ -50,10 +50,7 @@ class MPHandDetectionParser(dai.node.ThreadedHostNode):
             scores = output.getTensor(f"Identity_1").reshape(2016).astype(np.float32)
             scores = (scores - tensorInfo.qpZp) * tensorInfo.qpScale
 
-            anchors = generate_handtracker_anchors(192, 192)
-            decoded_bboxes = decode_bboxes(0.5, scores, bboxes, anchors, scale=192)
-            detections_to_rect(decoded_bboxes)
-            rect_transformation(decoded_bboxes, 192, 192)
+            decoded_bboxes = generate_anchors_and_decode(bboxes=bboxes, scores=scores, threshold=self.score_threshold, scale=192)
             
             bboxes = []
             scores = []
