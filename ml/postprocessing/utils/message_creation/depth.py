@@ -12,6 +12,12 @@ def create_depth_message(x: np.array) -> dai.ImgFrame:
     Returns:
         dai.ImgFrame: Output depth message in ImgFrame.Type.RAW16.
     """
+
+    if not isinstance(x, np.ndarray):
+        raise ValueError(f"Expected numpy array, got {type(x)}.")
+    if len(x.shape) != 3:
+        raise ValueError(f"Expected 3D input, got {len(x.shape)}D input.")
+    
     imgFrame = dai.ImgFrame()
     imgFrame.setFrame(x)
     imgFrame.setWidth(x.shape[1])
