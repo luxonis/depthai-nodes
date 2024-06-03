@@ -2,6 +2,7 @@ import depthai as dai
 import numpy as np
 import cv2
 
+from .utils.message_creation import create_detection_message
 from .utils.detection import generate_anchors_and_decode
 
 class MPHandDetectionParser(dai.node.ThreadedHostNode):
@@ -69,18 +70,5 @@ class MPHandDetectionParser(dai.node.ThreadedHostNode):
             bboxes = np.array(bboxes)[indices]
             scores = np.array(scores)[indices]
 
-            detections = []
-            for bbox, score in zip(bboxes, scores):
-                detection = dai.ImgDetection()
-                detection.confidence = score
-                detection.label = 0
-                detection.xmin = bbox[0]
-                detection.ymin = bbox[1]
-                detection.xmax = bbox[2]
-                detection.ymax = bbox[3]
-                detections.append(detection)
-
-            detections_msg = dai.ImgDetections()
-            detections_msg.detections = detections
-
+            detections_msg = create_detection_message(bboxes, scores, labels=None)
             self.out.send(detections_msg)

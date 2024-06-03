@@ -2,7 +2,7 @@ import depthai as dai
 import numpy as np
 import cv2
 
-from ..messages import HandKeypoints
+from .utils.message_creation import create_hand_keypoints_message
 
 class MPHandLandmarkParser(dai.node.ThreadedHostNode):
     def __init__(
@@ -53,16 +53,5 @@ class MPHandLandmarkParser(dai.node.ThreadedHostNode):
             # normalize landmarks
             landmarks /= self.scale_factor
 
-            hand_landmarks_msg = HandKeypoints()
-            hand_landmarks_msg.handdedness = handdedness
-            hand_landmarks_msg.confidence = hand_score
-            hand_landmarks = []
-            if hand_score >= self.score_threshold:
-                for i in range(21):
-                    pt = dai.Point3f()
-                    pt.x = landmarks[i][0]
-                    pt.y = landmarks[i][1]
-                    pt.z = landmarks[i][2]
-                    hand_landmarks.append(pt)
-            hand_landmarks_msg.landmarks = hand_landmarks
+            hand_landmarks_msg = create_hand_keypoints_message(landmarks, float(handdedness), float(hand_score), self.score_threshold)
             self.out.send(hand_landmarks_msg)
