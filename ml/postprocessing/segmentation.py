@@ -39,11 +39,9 @@ class SegmentationParser(dai.node.ThreadedHostNode):
 
             segmentation_mask = output.getTensor("output")
             segmentation_mask = segmentation_mask[0]  # num_clases x H x W
-            overlay_image = np.zeros((segmentation_mask.shape[1], segmentation_mask.shape[2], 1), dtype=np.uint8)
-
-            for class_id in range(self.num_classes-1):
-                class_mask = segmentation_mask[class_id] > self.threshold
-                overlay_image[class_mask] = class_id + 1
+            segmentation_mask = np.vstack((np.zeros((1, segmentation_mask.shape[1], segmentation_mask.shape[2]), dtype=np.float32), segmentation_mask))
+            segmentation_mask[segmentation_mask < self.threshold] = 0
+            overlay_image = np.argmax(segmentation_mask, axis=0).reshape(segmentation_mask.shape[1], segmentation_mask.shape[2], 1).astype(np.uint8)
 
             imgFrame = create_segmentation_message(overlay_image)
             self.out.send(imgFrame)
