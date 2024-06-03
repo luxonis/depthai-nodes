@@ -5,16 +5,16 @@ from ....messages import HandKeypoints
 
 def create_hand_keypoints_message(hand_keypoints: np.ndarray, handdedness: float, confidence: float, confidence_threshold: float) -> HandKeypoints:
     """
-    Create a message for the detection. The message contains the bounding boxes, labels, and confidence scores of detected objects.
-    If there are no labels or we only have one class, we can set labels to None and all detections will have label set to 0.
+    Create a message for the hand keypoint detection. The message contains the 3D coordinates of the detected hand keypoints, handdedness, and confidence score.
 
     Args:
-        bboxes (np.ndarray): Detected bounding boxes of shape (N,4) meaning [...,[x_min, y_min, x_max, y_max],...].
-        scores (np.ndarray): Confidence scores of detected objects of shape (N,).
-        labels (List[int], optional): Labels of detected objects of shape (N,). Defaults to None.
+        hand_keypoints (np.ndarray): Detected hand keypoints of shape (N,3) meaning [...,[x, y, z],...].
+        handdedness (float): Handdedness score of the detected hand (left or right).
+        confidence (float): Confidence score of the detected hand.
+        confidence_threshold (float): Confidence threshold for the overall hand.
 
     Returns:
-        dai.ImgDetections: Message containing the bounding boxes, labels, and confidence scores of detected objects.
+        HandKeypoints: Message containing the 3D coordinates of the detected hand keypoints, handdedness, and confidence score.
     """
 
     if not isinstance(hand_keypoints, np.ndarray):
