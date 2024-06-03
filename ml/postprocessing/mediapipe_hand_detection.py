@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 
 from .utils.message_creation import create_detection_message
-from .utils.detection import generate_anchors_and_decode
+from .utils.medipipe import generate_anchors_and_decode
 
 class MPHandDetectionParser(dai.node.ThreadedHostNode):
     def __init__(
