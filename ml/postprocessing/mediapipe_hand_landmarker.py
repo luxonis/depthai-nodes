@@ -46,12 +46,12 @@ class MPHandLandmarkParser(dai.node.ThreadedHostNode):
             hand_score = (hand_score - tensorInfo.qpZp) * tensorInfo.qpScale
             hand_score = hand_score[0]
             tensorInfo = output.getTensorInfo("Identity_2")
-            handdedness = output.getTensor(f"Identity_2").reshape(-1).astype(np.float32)
-            handdedness = (handdedness - tensorInfo.qpZp) * tensorInfo.qpScale
-            handdedness = handdedness[0]
+            handedness = output.getTensor(f"Identity_2").reshape(-1).astype(np.float32)
+            handedness = (handedness - tensorInfo.qpZp) * tensorInfo.qpScale
+            handedness = handedness[0]
 
             # normalize landmarks
             landmarks /= self.scale_factor
 
-            hand_landmarks_msg = create_hand_keypoints_message(landmarks, float(handdedness), float(hand_score), self.score_threshold)
+            hand_landmarks_msg = create_hand_keypoints_message(landmarks, float(handedness), float(hand_score), self.score_threshold)
             self.out.send(hand_landmarks_msg)
