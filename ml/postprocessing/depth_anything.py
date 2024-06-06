@@ -1,6 +1,6 @@
 import depthai as dai
 
-from .utils.message_creation.monocular_depth import create_monocular_depth_msg
+from .utils.message_creation import create_monocular_depth_msg
 
 
 class DepthAnythingParser(dai.node.ThreadedHostNode):
