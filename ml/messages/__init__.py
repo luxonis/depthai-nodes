@@ -1,2 +1,2 @@
 from .img_detections import ImgDetectionsWithKeypoints
-from .hand_keypoints import HandKeypoints
+from .keypoints import HandKeypoints, Keypoints
