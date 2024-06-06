@@ -2,21 +2,19 @@ import depthai as dai
 import numpy as np
 import cv2
 
-from ..custom_messages.img_detections import ImgDetectionsWithKeypoints
+from ..messages import ImgDetectionsWithKeypoints
 
 class SCRFDParser(dai.node.ThreadedHostNode):
     def __init__(
         self,
         score_threshold=0.5,
         nms_threshold=0.5,
-        top_k=100,
-        input_size=(640, 640), # WH
+        top_k=100
     ):
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
 
-        self.input_size = input_size
         self.score_threshold = score_threshold
         self.nms_threshold = nms_threshold
         self.top_k = top_k
@@ -29,9 +27,6 @@ class SCRFDParser(dai.node.ThreadedHostNode):
 
     def setTopK(self, top_k):
         self.top_k = top_k
-
-    def setInputSize(self, width, height):
-        self.input_size = (width, height)
 
     def run(self):
         """

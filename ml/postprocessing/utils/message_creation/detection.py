@@ -1,3 +1,5 @@
+import numpy as np
+from typing import List, Tuple
 import depthai as dai
 
 from ....messages.img_detections import (
@@ -6,41 +8,100 @@ from ....messages.img_detections import (
 )
 
 
-def create_detections_msg(
-    detections: list,
-    include_keypoints: bool = False,
-) -> dai.ImgFrame:
+def create_detection_message(
+    bboxes: np.ndarray,
+    scores: np.ndarray,
+    labels: List[int] = None,
+    keypoints: List[List[Tuple[float, float]]] = None,
+) -> dai.ImgDetections:
     """
-    Create a depthai message for an image array.
+    Create a message for the detection. The message contains the bounding boxes, labels, and confidence scores of detected objects.
+    If there are no labels or we only have one class, we can set labels to None and all detections will have label set to 0.
 
-    @type detections: list
-    @ivar detections: List of detections.
+    Args:
+        bboxes (np.ndarray): Detected bounding boxes of shape (N,4) meaning [...,[x_min, y_min, x_max, y_max],...].
+        scores (np.ndarray): Confidence scores of detected objects of shape (N,).
+        labels (List[int], optional): Labels of detected objects of shape (N,). Defaults to None.
+        keypoints (List[List[Tuple[float, float]]], optional): Keypoints of detected objects of shape (N,2). Defaults to None.
 
-    @type include_keypoints: bool
-    @ivar include_keypoints: If True, the keypoints are included in the message.
+    Returns:
+        dai.ImgDetections OR ImgDetectionsWithKeypoints: Message containing the bounding boxes, labels, confidence scores, and keypoints of detected objects.
     """
 
-    if include_keypoints:
+    # checks for bboxes
+    if not isinstance(bboxes, np.ndarray):
+        raise ValueError(f"bboxes should be numpy array, got {type(bboxes)}.")
+    if len(bboxes.shape) != 2:
+        raise ValueError(
+            f"bboxes should be of shape (N,4) meaning [...,[x_min, y_min, x_max, y_max],...], got {bboxes.shape}."
+        )
+    if bboxes.shape[1] != 4:
+        raise ValueError(
+            f"bboxes 2nd dimension should be of size 4 e.g. [x_min, y_min, x_max, y_max] got {bboxes.shape[1]}."
+        )
+
+    # checks for scores
+    if not isinstance(scores, np.ndarray):
+        raise ValueError(f"scores should be numpy array, got {type(scores)}.")
+    if len(scores.shape) != 1:
+        raise ValueError(f"scores should be of shape (N,) meaning, got {scores.shape}.")
+    if scores.shape[0] != bboxes.shape[0]:
+        raise ValueError(
+            f"scores should have same length as bboxes, got {scores.shape[0]} and {bboxes.shape[0]}."
+        )
+
+    # checks for labels
+    if labels is not None:
+        if not isinstance(labels, List):
+            raise ValueError(f"labels should be list, got {type(labels)}.")
+        for label in labels:
+            if not isinstance(label, int):
+                raise ValueError(
+                    f"labels should be list of integers, got {type(label)}."
+                )
+        if len(labels) != bboxes.shape[0]:
+            raise ValueError(
+                f"labels should have same length as bboxes, got {len(labels)} and {bboxes.shape[0]}."
+            )
+
+    # checks for keypoints
+    if keypoints is not None:
+        if not isinstance(keypoints, List):
+            raise ValueError(f"keypoints should be list, got {type(keypoints)}.")
+        for pointcloud in keypoints:
+            for point in pointcloud:
+                if not isinstance(point, Tuple):
+                    raise ValueError(
+                        f"keypoint pairs should be list of tuples, got {type(point)}."
+                    )
+        if len(keypoints) != bboxes.shape[0]:
+            raise ValueError(
+                f"keypoints should have same length as bboxes, got {len(keypoints)} and {bboxes.shape[0]}."
+            )
+
+    if keypoints is not None:
         img_detection = ImgDetectionWithKeypoints
         img_detections = ImgDetectionsWithKeypoints
     else:
         img_detection = dai.ImgDetection
         img_detections = dai.ImgDetections
 
-    img_detection_list = []
-    for detection in detections:
-        detections_message = img_detection()
-        detections_message.label = detection["label"]
-        detections_message.confidence = detection["score"]
-        detections_message.xmin = detection["bbox"][0]
-        detections_message.ymin = detection["bbox"][1]
-        detections_message.xmax = detection["bbox"][0] + detection["bbox"][2]
-        detections_message.ymax = detection["bbox"][1] + detection["bbox"][3]
-        if include_keypoints:
-            detections_message.keypoints = detection["keypoints"]
-        img_detection_list.append(detections_message)
+    detections = []
+    for i in range(bboxes.shape[0]):
+        detection = img_detection()
+        detection.xmin = bboxes[i][0]
+        detection.ymin = bboxes[i][1]
+        detection.xmax = bboxes[i][2]
+        detection.ymax = bboxes[i][3]
+        detection.confidence = scores[i]
+        if labels is None:
+            detection.label = 0
+        else:
+            detection.label = labels[i]
+        if keypoints is not None:
+            detection.keypoints = keypoints[i]
+        detections.append(detection)
 
-    detections_message = img_detections()
-    detections_message.detections = img_detection_list
-
-    return detections_message
+    detections_msg = img_detections()
+    detections_msg.detections = detections
+    return detections_msg
