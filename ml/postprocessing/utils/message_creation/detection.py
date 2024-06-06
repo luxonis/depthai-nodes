@@ -1,6 +1,4 @@
 import depthai as dai
-import numpy as np
-import cv2
 
 from ....messages.img_detections import (
     ImgDetectionWithKeypoints,
@@ -33,14 +31,14 @@ def create_detections_msg(
     for detection in detections:
         detections_message = img_detection()
         detections_message.label = detection["label"]
-        detections_message.confidence = detection["confidence"]
-        detections_message.xmin = detection["xmin"]
-        detections_message.ymin = detection["ymin"]
-        detections_message.xmax = detection["xmax"]
-        detections_message.ymax = detection["ymax"]
+        detections_message.confidence = detection["score"]
+        detections_message.xmin = detection["bbox"][0]
+        detections_message.ymin = detection["bbox"][1]
+        detections_message.xmax = detection["bbox"][0] + detection["bbox"][2]
+        detections_message.ymax = detection["bbox"][1] + detection["bbox"][3]
         if include_keypoints:
             detections_message.keypoints = detection["keypoints"]
-        img_detection_list.append(img_detection)
+        img_detection_list.append(detections_message)
 
     detections_message = img_detections()
     detections_message.detections = img_detection_list
