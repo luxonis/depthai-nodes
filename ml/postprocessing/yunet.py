@@ -2,7 +2,6 @@ import depthai as dai
 import numpy as np
 import cv2
 
-from ..messages.img_detections import ImgDetectionsWithKeypoints
 from .utils import decode_detections
 from .utils.message_creation import create_detections_msg
 
