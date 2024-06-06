@@ -17,6 +17,8 @@ def create_segmentation_message(x: np.array) -> dai.ImgFrame:
         raise ValueError(f"Expected numpy array, got {type(x)}.")
     if len(x.shape) != 3:
         raise ValueError(f"Expected 3D input, got {len(x.shape)}D input.")
+    if x.shape[2] != 1:
+        raise ValueError(f"Expected 1 channel in the third dimension, got {x.shape[2]} channels.")
     
     imgFrame = dai.ImgFrame()
     imgFrame.setFrame(x)
