@@ -1,6 +1,6 @@
 import depthai as dai
-import numpy as np
-import cv2
+
+from .utils.message_creation.monocular_depth import create_monocular_depth_msg
 
 
 class DepthAnythingParser(dai.node.ThreadedHostNode):
@@ -10,37 +10,26 @@ class DepthAnythingParser(dai.node.ThreadedHostNode):
         self.out = dai.Node.Output(self)
 
     def run(self):
-        """ 
-        Postprocessing logic for Depth Anything model. 
-        
-        Returns:
-            dai.ImgFrame: uint8, HWC image representing the depth colormap.
         """
-        
+        Postprocessing logic for Depth Anything model.
+
+        Returns:
+            dai.ImgFrame: uint16, HW depth map.
+        """
+
         while self.isRunning():
 
             try:
-                output : dai.NNData = self.input.get()
+                output: dai.NNData = self.input.get()
             except dai.MessageQueue.QueueException as e:
-                break # Pipeline was stopped
+                break  # Pipeline was stopped
 
-            output = output.getTensor("depth") # numpy.ndarray of shape (1, 1, 518, 518)
-            output = output[0][0]
+            output = output.getTensor(
+                "depth"
+            )  # numpy.ndarray of shape (1, 1, 518, 518)
 
-            # un-normalize
-            output = (output - output.min()) / (output.max() - output.min()) * 255.0
-            # convert to uint8
-            output = output.astype(np.uint8)
-            # apply colormapping
-            output = cv2.applyColorMap(output, cv2.COLORMAP_INFERNO)
-            # TODO: exclude the following step from postprocessing?
-            # i.e. do we want as output colormap representation of depth?
-
-            imgFrame = dai.ImgFrame()
-            imgFrame.setFrame(output)
-            imgFrame.setWidth(output.shape[1])
-            imgFrame.setHeight(output.shape[0])
-            imgFrame.setType(dai.ImgFrame.Type.BGR888i)
-
-            self.out.send(imgFrame)
-        
+            depth_message = create_monocular_depth_msg(
+                depth_map=output[0, 0],
+                depth_type="relative",
+            )
+            self.out.send(depth_message)
