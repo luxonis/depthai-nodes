@@ -1,7 +1,7 @@
 import depthai as dai
 import numpy as np
 from typing import List
-from ...messages import HandKeypoints
+from ...messages import HandKeypoints, Keypoints
 
 def create_hand_keypoints_message(hand_keypoints: np.ndarray, handedness: float, confidence: float, confidence_threshold: float) -> HandKeypoints:
     """
@@ -42,3 +42,43 @@ def create_hand_keypoints_message(hand_keypoints: np.ndarray, handedness: float,
     hand_keypoints_msg.keypoints = points
 
     return hand_keypoints_msg
+
+def create_animal_keypoints_message(animal_keypoints: np.ndarray, scores: np.ndarray, confidence_threshold: float) -> Keypoints:
+    """
+    Create a message for the animal keypoint detection. The message contains the coordinates of maximum 39 detected animal keypoints.
+
+    Args:
+        animal_keypoints (np.ndarray): Detected animal keypoints of shape (N,2) meaning [...,[x, y],...].
+        scores (np.ndarray): Confidence scores of the detected animal keypoints.
+        confidence_threshold (float): Confidence threshold for the keypoints.
+
+    Returns:
+        Keypoints: Message containing the 3D coordinates of the detected animal keypoints.
+    """
+
+    if not isinstance(animal_keypoints, np.ndarray):
+        raise ValueError(f"animal_keypoints should be numpy array, got {type(animal_keypoints)}.")
+    if len(animal_keypoints.shape) != 2:
+        raise ValueError(f"animal_keypoints should be of shape (N,2) meaning [...,[x, y],...], got {animal_keypoints.shape}.")
+    if animal_keypoints.shape[1] != 2:
+        raise ValueError(f"animal_keypoints 2nd dimension should be of size 2 e.g. [x, y], got {animal_keypoints.shape[1]}.")
+    if not isinstance(scores, np.ndarray):
+        raise ValueError(f"scores should be numpy array, got {type(scores)}.")
+    if len(scores.shape) != 1:
+        raise ValueError(f"scores should be of shape (N,) meaning [...,score,...], got {scores.shape}.")
+    if not isinstance(confidence_threshold, float):
+        raise ValueError(f"confidence_threshold should be float, got {type(confidence_threshold)}.")
+
+    animal_keypoints_msg = Keypoints()
+    points = []
+    for keypoint, score in zip(animal_keypoints, scores):
+        if score >= confidence_threshold:
+            pt = dai.Point3f()
+            pt.x = keypoint[0]
+            pt.y = keypoint[1]
+            pt.z = 0
+            points.append(pt)
+
+    animal_keypoints_msg.keypoints = points
+
+    return animal_keypoints_msg
