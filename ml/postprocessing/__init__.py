@@ -5,6 +5,7 @@ from .mediapipe_hand_detection import MPHandDetectionParser
 from .mediapipe_hand_landmarker import MPHandLandmarkParser
 from .scrfd import SCRFDParser
 from .segmentation import SegmentationParser
+from .superanimal_landmarker import SuperAnimalParser
 
 __all__ = [
     'ImageOutputParser',
@@ -14,4 +15,5 @@ __all__ = [
     'MPHandLandmarkParser',
     'SCRFDParser',
     'SegmentationParser',
+    'SuperAnimalParser',
     ]
