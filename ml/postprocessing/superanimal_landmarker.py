@@ -1,7 +1,7 @@
 import depthai as dai
 import numpy as np
 
-from ..messages.creation_functions import create_animal_keypoints_message
+from ..messages.creation_functions import create_keypoints_message
 from .utils.superanimal import get_pose_prediction
 
 class SuperAnimalParser(dai.node.ThreadedHostNode):
@@ -48,6 +48,6 @@ class SuperAnimalParser(dai.node.ThreadedHostNode):
             scores = keypoints[:, 2]
             keypoints = keypoints[:, :2] / self.scale_factor
 
-            msg = create_animal_keypoints_message(keypoints, scores, self.score_threshold)
+            msg = create_keypoints_message(keypoints, scores, self.score_threshold)
 
             self.out.send(msg)
