@@ -39,8 +39,8 @@ def create_detection_message(
         raise ValueError(
             f"bboxes 2nd dimension should be of size 4 e.g. [x_min, y_min, x_max, y_max] got {bboxes.shape[1]}."
         )
-    x_valid = bboxes[:, 0] < bboxes[:, 1]
-    y_valid = bboxes[:, 2] < bboxes[:, 3]
+    x_valid = bboxes[:, 0] < bboxes[:, 2]
+    y_valid = bboxes[:, 1] < bboxes[:, 3]
     if not (np.all(x_valid) and np.all(y_valid)):
         raise ValueError(
             f"bboxes should be in format [x_min, y_min, x_max, y_max] where xmin < xmax and ymin < ymax."
