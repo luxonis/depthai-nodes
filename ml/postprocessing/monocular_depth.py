@@ -4,10 +4,18 @@ from .utils.message_creation import create_monocular_depth_message
 
 
 class MonocularDepthParser(dai.node.ThreadedHostNode):
-    def __init__(self):
+    def __init__(self, depth_type="relative"):
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
+
+        self.depth_type = depth_type
+
+    def setRelativeDepthType(self):
+        self.depth_type = "relative"
+
+    def setMetricDepthType(self):
+        self.depth_type = "metric"
 
     def run(self):
         """
@@ -34,7 +42,7 @@ class MonocularDepthParser(dai.node.ThreadedHostNode):
             depth_map = output[0]
 
             depth_message = create_monocular_depth_message(
-                depth_map,
-                depth_type="relative",
+                depth_map=depth_map,
+                depth_type=self.depth_type,
             )
             self.out.send(depth_message)
