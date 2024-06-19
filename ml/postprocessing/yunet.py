@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 
 from .utils import decode_detections
-from .utils.message_creation import create_detections_msg
+from .utils.message_creation import create_detection_message
 
 
 class YuNetParser(dai.node.ThreadedHostNode):
@@ -94,7 +94,7 @@ class YuNetParser(dai.node.ThreadedHostNode):
                 detections = np.array(detections)[indices]
 
 
-            detections_message = create_detections_msg(
+            detections_message = create_detection_message(
                 detections=detections,
                 include_keypoints=True,
             )
