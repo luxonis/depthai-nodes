@@ -67,8 +67,6 @@ class YuNetParser(dai.node.ThreadedHostNode):
 
             detections = []
             for stride in strides:
-                cols = int(input_size[0] / stride)  # w/stride
-                rows = int(input_size[1] / stride)  # h/stride
                 cls = output.getTensor(f"cls_{stride}").flatten()
                 cls = np.expand_dims(
                     cls, axis=-1
@@ -81,8 +79,8 @@ class YuNetParser(dai.node.ThreadedHostNode):
                 detections += decode_detections(
                     input_size,
                     stride,
-                    rows,
-                    cols,
+                    #rows,
+                    #cols,
                     self.score_threshold,
                     cls,
                     obj,

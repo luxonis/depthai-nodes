@@ -5,8 +5,6 @@ from typing import List, Dict, Any
 def decode_detections(
     input_size: float,
     stride: int,
-    rows: int,
-    cols: int,
     score_threshold: float,
     cls: np.ndarray,
     obj: np.ndarray,
@@ -36,6 +34,8 @@ def decode_detections(
     """
 
     input_width, input_height = input_size
+    cols = int(input_size[0] / stride)  # w/stride
+    rows = int(input_size[1] / stride)  # h/stride
     num_keypoints = kps.shape[1] // 2
     detections = []
 
