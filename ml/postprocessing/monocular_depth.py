@@ -31,7 +31,7 @@ class MonocularDepthParser(dai.node.ThreadedHostNode):
                 )
             output = output.getTensor(output_layer_names[0])
 
-            depth_map = output[0, 0]
+            depth_map = output[0]
 
             depth_message = create_monocular_depth_message(
                 depth_map,
