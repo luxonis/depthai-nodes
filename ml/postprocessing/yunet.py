@@ -82,17 +82,16 @@ class YuNetParser(dai.node.ThreadedHostNode):
                 )
 
             # non-maximum suppression
-            if len(detections) > 1:
-                detection_boxes = [detection["bbox"] for detection in detections]
-                detection_scores = [detection["score"] for detection in detections]
-                indices = cv2.dnn.NMSBoxes(
-                    detection_boxes,
-                    detection_scores,
-                    self.score_threshold,
-                    self.nms_threshold,
-                    top_k=self.top_k,
-                )
-                detections = np.array(detections)[indices]
+            detection_boxes = [detection["bbox"] for detection in detections]
+            detection_scores = [detection["score"] for detection in detections]
+            indices = cv2.dnn.NMSBoxes(
+                detection_boxes,
+                detection_scores,
+                self.score_threshold,
+                self.nms_threshold,
+                top_k=self.top_k,
+            )
+            detections = np.array(detections)[indices]
 
             bboxes = []
             for detection in detections:
