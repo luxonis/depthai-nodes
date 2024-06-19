@@ -5,7 +5,6 @@ import cv2
 
 def create_image_message(
     image: np.array,
-    is_hwc: bool = True,
     is_bgr: bool = True,
 ) -> dai.ImgFrame:
     """
@@ -14,17 +13,20 @@ def create_image_message(
     @type image: np.array
     @ivar image: Image array in HWC or CHW format.
 
-    @type is_grayscale: bool
-    @ivar is_grayscale: If True, the image is in grayscale format.
-
-    @type is_hwc: bool
-    @ivar is_hwc: If True, the image is in HWC format. If False, the image is in CHW format.
-
     @type is_bgr: bool
     @ivar is_bgr: If True, the image is in BGR format. If False, the image is in RGB format.
     """
 
-    if not is_hwc:
+    if image.shape[0] in [1, 3]:
+        hwc = False
+    elif image.shape[2] in [1, 3]:
+        hwc = True
+    else:
+        raise ValueError(
+            "Unexpected image shape. Expected CHW or HWC, got", image.shape
+        )
+
+    if not hwc:
         image = np.transpose(image, (1, 2, 0))
 
     if image.shape[2] == 1: # grayscale

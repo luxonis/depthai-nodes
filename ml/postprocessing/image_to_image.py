@@ -41,21 +41,11 @@ class ImageOutputParser(dai.node.ThreadedHostNode):
                     f"Unexpected 4-dimensional output, got {len(output.shape)}-dimensional",
                 )
 
-            if output.shape[1] in [1, 3]:
-                is_hwc = False
-            elif output.shape[3] in [1, 3]:
-                is_hwc = True
-            else:
-                raise ValueError(
-                    "Unexpected output shape. Expected NCHW or NHWC, got", output.shape
-                )
-
             image = output[0]
             image = unnormalize_image(image)
 
             image_message = create_image_message(
                 image=image,
-                is_hwc=is_hwc,
                 is_bgr=self.output_is_bgr,
             )
 
