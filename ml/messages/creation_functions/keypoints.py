@@ -1,7 +1,7 @@
 import depthai as dai
 import numpy as np
 from typing import List
-from ....messages import HandKeypoints
+from ...messages import HandKeypoints
 
 def create_hand_keypoints_message(hand_keypoints: np.ndarray, handedness: float, confidence: float, confidence_threshold: float) -> HandKeypoints:
     """

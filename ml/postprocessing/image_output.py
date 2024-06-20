@@ -1,7 +1,7 @@
 import depthai as dai
 
 from .utils import unnormalize_image
-from .utils.message_creation import create_image_message
+from ..messages.creation_functions import create_image_message
 
 
 class ImageOutputParser(dai.node.ThreadedHostNode):

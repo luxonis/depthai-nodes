@@ -2,8 +2,9 @@ import depthai as dai
 import numpy as np
 import cv2
 
-from .utils.message_creation import create_detection_message
-from .utils.medipipe import generate_anchors_and_decode
+from .utils import generate_anchors_and_decode
+from ..messages.creation_functions import create_detection_message
+
 
 class MPHandDetectionParser(dai.node.ThreadedHostNode):
     def __init__(
