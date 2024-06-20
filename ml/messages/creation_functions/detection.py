@@ -2,7 +2,7 @@ import numpy as np
 from typing import List, Tuple
 import depthai as dai
 
-from ....messages.img_detections import (
+from messages.img_detections import (
     ImgDetectionWithKeypoints,
     ImgDetectionsWithKeypoints,
 )
