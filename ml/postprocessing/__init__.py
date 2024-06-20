@@ -1,4 +1,4 @@
-from .image_to_image import ImageOutputParser
+from .image_output import ImageOutputParser
 from .monocular_depth import MonocularDepthParser
 from .yunet import YuNetParser
 from .mediapipe_hand_detection import MPHandDetectionParser
