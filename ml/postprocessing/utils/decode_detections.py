@@ -1,6 +1,5 @@
 import numpy as np
 from typing import List, Dict, Any
-import time
 
 
 def decode_detections(
@@ -39,7 +38,7 @@ def decode_detections(
     rows = int(input_size[1] / stride)  # h/stride
 
     # Compute the indices
-    r, c = np.meshgrid(np.arange(rows), np.arange(cols), indexing='ij')
+    r, c = np.meshgrid(np.arange(rows), np.arange(cols), indexing="ij")
     idx = r * cols + c
 
     # Decode scores
@@ -67,23 +66,35 @@ def decode_detections(
     # Filter detections based on score_threshold
     mask = scores > score_threshold
 
-    # Append detection results
-    detections = []
-    for i in range(rows):
-        for j in range(cols):
-            if mask[i, j]:
-                detection = {
-                    "bbox": [
-                        x1[i, j] / input_width,
-                        y1[i, j] / input_height,
-                        w[i, j] / input_width,
-                        h[i, j] / input_height,
-                    ],
-                    "label": int(labels[i, j]),
-                    "keypoints": [(x,y) for x,y in keypoints[i,j]], #keypoints[i, j].tolist(),
-                    "score": float(scores[i, j]),
-                }
+    # Boolean indexing
+    mask_indices = np.where(mask)
+    x1_filtered = x1[mask_indices] / input_width
+    y1_filtered = y1[mask_indices] / input_height
+    w_filtered = w[mask_indices] / input_width
+    h_filtered = h[mask_indices] / input_height
+    labels_filtered = labels[mask_indices]
+    keypoints_filtered = keypoints[mask_indices]
+    scores_filtered = scores[mask_indices]
 
-                detections.append(detection)
+    # Construct the list of dictionaries
+    detections = [
+        {
+            "bbox": [x1, y1, w, h],
+            "label": int(label),
+            "keypoints": [
+                (x, y) for x, y in keypoints
+            ],  # convert keypoints to list of tuples
+            "score": float(score),
+        }
+        for x1, y1, w, h, label, keypoints, score in zip(
+            x1_filtered,
+            y1_filtered,
+            w_filtered,
+            h_filtered,
+            labels_filtered,
+            keypoints_filtered,
+            scores_filtered,
+        )
+    ]
 
     return detections
