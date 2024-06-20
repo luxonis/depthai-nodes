@@ -5,7 +5,7 @@ import numpy as np
 UINT16_MAX_VALUE = 65535
 
 
-def create_monocular_depth_message(
+def create_depth_message(
     depth_map: np.array, depth_type: Literal["relative", "metric"]
 ) -> dai.ImgFrame:
     """
