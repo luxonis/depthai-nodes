@@ -5,6 +5,8 @@ import depthai as dai
 from ...messages import (
     ImgDetectionWithKeypoints,
     ImgDetectionsWithKeypoints,
+    Line,
+    Lines,
 )
 
 
@@ -113,3 +115,51 @@ def create_detection_message(
     detections_msg = img_detections()
     detections_msg.detections = detections
     return detections_msg
+
+def create_line_detection_message(lines: np.ndarray, scores: np.ndarray):
+    """
+    Create a message for the line detection. The message contains the lines and confidence scores of detected lines.
+
+    Args:
+        lines (np.ndarray): Detected lines of shape (N,4) meaning [...,[x_start, y_start, x_end, y_end],...].
+        scores (np.ndarray): Confidence scores of detected lines of shape (N,).
+
+    Returns:
+        dai.Lines: Message containing the lines and confidence scores of detected lines.
+    """
+
+    # checks for lines
+    if not isinstance(lines, np.ndarray):
+        raise ValueError(f"lines should be numpy array, got {type(lines)}.")
+    if len(lines) != 0:
+        if len(lines.shape) != 2:
+            raise ValueError(
+                f"lines should be of shape (N,4) meaning [...,[x_start, y_start, x_end, y_end],...], got {lines.shape}."
+            )
+        if lines.shape[1] != 4:
+            raise ValueError(
+                f"lines 2nd dimension should be of size 4 e.g. [x_start, y_start, x_end, y_end] got {lines.shape[1]}."
+            )
+
+    # checks for scores
+    if not isinstance(scores, np.ndarray):
+        raise ValueError(f"scores should be numpy array, got {type(scores)}.")
+    if len(scores) != 0:
+        if len(scores.shape) != 1:
+            raise ValueError(f"scores should be of shape (N,) meaning, got {scores.shape}.")
+        if scores.shape[0] != lines.shape[0]:
+            raise ValueError(
+                f"scores should have same length as lines, got {scores.shape[0]} and {lines.shape[0]}."
+            )
+
+    line_detections = []
+    for i, line in enumerate(lines):
+        line_detection = Line()
+        line_detection.start_point = dai.Point2f(line[0], line[1])
+        line_detection.end_point = dai.Point2f(line[2], line[3])
+        line_detection.confidence = float(scores[i])
+        line_detections.append(line_detection)
+
+    lines_msg = Lines()
+    lines_msg.lines = line_detections
+    return lines_msg
