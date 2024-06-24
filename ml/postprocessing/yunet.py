@@ -1,8 +1,11 @@
 import depthai as dai
 import numpy as np
 import cv2
+import math
 
-from ..messages.img_detections import ImgDetectionsWithKeypoints
+from .utils import decode_detections
+from ..messages.creators import create_detection_message
+
 
 class YuNetParser(dai.node.ThreadedHostNode):
     def __init__(
@@ -10,15 +13,11 @@ class YuNetParser(dai.node.ThreadedHostNode):
         score_threshold=0.6,
         nms_threshold=0.3,
         top_k=5000,
-        input_size=(640, 640), # WH
-        strides=[8, 16, 32],
     ):
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
 
-        self.input_size = input_size
-        self.strides = strides
         self.score_threshold = score_threshold
         self.nms_threshold = nms_threshold
         self.top_k = top_k
@@ -32,18 +31,12 @@ class YuNetParser(dai.node.ThreadedHostNode):
     def setTopK(self, top_k):
         self.top_k = top_k
 
-    def setInputSize(self, width, height):
-        self.input_size = (width, height)
-
-    def setStrides(self, strides):
-        self.strides = strides
-
     def run(self):
         """
         Postprocessing logic for YuNet model.
 
         Returns:
-            ...
+            dai.ImgDetectionsWithKeypoints: Detections with keypoints.
         """
 
         while self.isRunning():
@@ -53,79 +46,66 @@ class YuNetParser(dai.node.ThreadedHostNode):
             except dai.MessageQueue.QueueException as e:
                 break  # Pipeline was stopped
 
-            detections = []
-            for stride in self.strides:
-                cols = int(self.input_size[1] / stride)  # w/stride
-                rows = int(self.input_size[0] / stride)  # h/stride
+            # get strides
+            strides = list(
+                set(
+                    [
+                        int(layer_name.split("_")[1])
+                        for layer_name in output.getAllLayerNames()
+                        if layer_name.startswith(("cls", "obj", "bbox", "kps"))
+                    ]
+                )
+            )
 
-                # Extract output blobs
-                cls = output.getTensor(f"cls_{stride}").flatten()
+            # get input_size
+            stride0 = strides[0]
+            _, spatial_positions0, _ = output.getTensor(f"cls_{stride0}").shape
+            input_width = input_height = int(
+                math.sqrt(spatial_positions0) * stride0
+            )  # TODO: We assume a square input size. How to get input size when height and width are not equal?
+            input_size = (input_width, input_height)
+
+            detections = []
+            for stride in strides:
+                cls = output.getTensor(f"cls_{stride}").squeeze(0)
                 obj = output.getTensor(f"obj_{stride}").flatten()
                 bbox = output.getTensor(f"bbox_{stride}").squeeze(0)
                 kps = output.getTensor(f"kps_{stride}").squeeze(0)
-
-                # Iterate over each grid cell
-                for r in range(rows):
-                    for c in range(cols):
-                        idx = r * cols + c
-
-                        # Decode scores
-                        cls_score = np.clip(cls[idx], 0, 1)
-                        obj_score = np.clip(obj[idx], 0, 1)
-                        score = np.sqrt(cls_score * obj_score)
-
-                        # Decode bounding box
-                        cx = (c + bbox[idx, 0]) * stride
-                        cy = (r + bbox[idx, 1]) * stride
-                        w = np.exp(bbox[idx, 2]) * stride
-                        h = np.exp(bbox[idx, 3]) * stride
-                        x1 = cx - w / 2
-                        y1 = cy - h / 2
-
-                        # Decode landmarks
-                        landmarks = []
-                        for n in range(5):  # loop 5 times for 5 keypoints
-                            lx = (kps[idx, 2 * n] + c) * stride
-                            ly = (kps[idx, 2 * n + 1] + r) * stride
-                            landmarks.extend([lx, ly])
-
-                        # Append detection result including landmarks
-                        detection = [x1, y1, w, h] + landmarks + [score]
-                        if score > self.score_threshold:
-                            detections.append(detection)
-
-            # Convert results to numpy array
-            detections = np.array(detections, dtype=np.float32)
-
-            # Perform non-maximum suppression
-            if len(detections) > 1:
-                detection_boxes = detections[:, :4]
-                detection_scores = detections[:, -1]
-                indices = cv2.dnn.NMSBoxes(
-                    list(detection_boxes),
-                    list(detection_scores),
+                detections += decode_detections(
+                    input_size,
+                    stride,
                     self.score_threshold,
-                    self.nms_threshold,
-                    top_k=self.top_k,
+                    cls,
+                    obj,
+                    bbox,
+                    kps,
                 )
-                detections = detections[indices].reshape(-1, 15)
 
-            img_detection_list = []
-            landmarks_list = []
+            # non-maximum suppression
+            detection_boxes = [detection["bbox"] for detection in detections]
+            detection_scores = [detection["score"] for detection in detections]
+            indices = cv2.dnn.NMSBoxes(
+                detection_boxes,
+                detection_scores,
+                self.score_threshold,
+                self.nms_threshold,
+                top_k=self.top_k,
+            )
+            detections = np.array(detections)[indices]
+
+            bboxes = []
             for detection in detections:
-                img_detection = dai.ImgDetection()
-                img_detection.label=0
-                img_detection.confidence=detection[-1]
-                img_detection.xmin=detection[0]
-                img_detection.ymin=detection[1]
-                img_detection.xmax=detection[0] + detection[2]
-                img_detection.ymax=detection[1] + detection[3]
-                img_detection_list.append(img_detection)
-                landmarks_list.append(detection[4:15])
+                xmin, ymin, width, height = detection["bbox"]
+                bboxes.append([xmin, ymin, xmin + width, ymin + height])
+            scores = [detection["score"] for detection in detections]
+            labels = [detection["label"] for detection in detections]
+            keypoints = [detection["keypoints"] for detection in detections]
 
-            #detectionMessage = dai.ImgDetections()
-            detectionMessage = ImgDetectionsWithKeypoints()
-            detectionMessage.detections = img_detection_list
-            detectionMessage.keypoints = landmarks_list
+            detections_message = create_detection_message(
+                np.array(bboxes),
+                np.array(scores),
+                labels,
+                keypoints,
+            )
 
-            self.out.send(detectionMessage)
+            self.out.send(detections_message)

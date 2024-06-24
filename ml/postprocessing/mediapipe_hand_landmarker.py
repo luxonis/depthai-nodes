@@ -1,8 +1,8 @@
 import depthai as dai
 import numpy as np
-import cv2
 
-from .utils.message_creation import create_hand_keypoints_message
+from ..messages.creators import create_hand_keypoints_message
+
 
 class MPHandLandmarkParser(dai.node.ThreadedHostNode):
     def __init__(
