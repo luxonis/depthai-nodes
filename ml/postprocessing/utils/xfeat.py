@@ -5,7 +5,10 @@ from typing import Any, Dict, Tuple, List
 def local_maximum_filter(x: np.ndarray, kernel_size: int) -> np.ndarray:
     # Ensure input is a 4D array (e.g., batch, channels, height, width)
     if len(x.shape) != 4:
-        raise ValueError("Input array must be 4-dimensional")
+        raise ValueError("Input array must be 4-dimensional.")
+
+    if x.shape[0] != 1 and x.shape[1] != 1:
+        raise ValueError("Batch size and number of channels must be 1.")
 
     _, _, height, width = x.shape
 
