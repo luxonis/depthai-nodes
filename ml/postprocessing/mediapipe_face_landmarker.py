@@ -1,7 +1,7 @@
 import depthai as dai
 import numpy as np
 
-from ..messages.creation_functions import create_keypoints_message
+from ..messages.creators import create_keypoints_message
 
 class MPFaceLandmarkerParser(dai.node.ThreadedHostNode):
     def __init__(

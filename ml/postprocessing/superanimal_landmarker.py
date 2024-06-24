@@ -1,7 +1,7 @@
 import depthai as dai
 import numpy as np
 
-from ..messages.creation_functions import create_keypoints_message
+from ..messages.creators import create_keypoints_message
 from .utils.superanimal import get_pose_prediction
 
 class SuperAnimalParser(dai.node.ThreadedHostNode):

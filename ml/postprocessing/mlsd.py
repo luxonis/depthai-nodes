@@ -2,7 +2,7 @@ import depthai as dai
 import numpy as np
 
 from .utils.mlsd import decode_scores_and_points, get_lines
-from ..messages.creation_functions import create_line_detection_message
+from ..messages.creators import create_line_detection_message
 
 class MLSDParser(dai.node.ThreadedHostNode):
     def __init__(
