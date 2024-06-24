@@ -26,7 +26,7 @@ def local_maximum_filter(x: np.ndarray, kernel_size: int) -> np.ndarray:
 
     return local_max
 
-def bl_numpy(im: np.ndarray, grid: np.ndarray, align_corners: bool = False) -> np.ndarray:
+def bilinear_grid_sample(im: np.ndarray, grid: np.ndarray, align_corners: bool = False) -> np.ndarray:
     n, c, h, w = im.shape
     gn, gh, gw, _ = grid.shape
     assert n == gn
@@ -120,69 +120,65 @@ def _nms(
     return pos_array
 
 
-def detect_and_compute(M1: np.ndarray, K1: np.ndarray, resize_rate_w: float, resize_rate_h: float, input_size: Tuple[int, int], top_k: int = 4096) -> List[Dict[str, Any]]:
+def detect_and_compute(feats: np.ndarray, kpts: np.ndarray, resize_rate_w: float, resize_rate_h: float, input_size: Tuple[int, int], top_k: int = 4096) -> List[Dict[str, Any]]:
 
-    B = 1
+    norm = np.linalg.norm(feats, axis=1, keepdims=True)
+    feats = feats / norm
 
-    norm = np.linalg.norm(M1, axis=1, keepdims=True)
-    M1 = M1 / norm
-
-    K1h_np = _get_kpts_heatmap(K1)
-    mkpts_np = _nms(K1h_np, threshold=0.05, kernel_size=5)  # int64
+    kpts_heats = _get_kpts_heatmap(kpts)
+    mkpts = _nms(kpts_heats, threshold=0.05, kernel_size=5)  # int64
 
     # Numpy implementation of normgrid
-    div_array = np.array([input_size[0]-1, input_size[1]-1], dtype=mkpts_np.dtype)
-    grid_np = 2.0 * (mkpts_np / div_array) - 1.0
-    grid_np = np.expand_dims(grid_np, axis=2)
+    div_array = np.array([input_size[0]-1, input_size[1]-1], dtype=mkpts.dtype)
+    grid = 2.0 * (mkpts / div_array) - 1.0
+    grid = np.expand_dims(grid, axis=2)
 
     # Numpy implementation of F.grid_sample
-    map_x = grid_np[..., 0].reshape(-1).astype(np.float32)
-    map_y = grid_np[..., 1].reshape(-1).astype(np.float32)
-    remapped = cv2.remap(K1h_np[0, 0], map_x, map_y, interpolation=cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
-    nearest_result_np = np.expand_dims(remapped, axis=0)
+    map_x = grid[..., 0].reshape(-1).astype(np.float32)
+    map_y = grid[..., 1].reshape(-1).astype(np.float32)
+    remapped = cv2.remap(kpts_heats[0, 0], map_x, map_y, interpolation=cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    nearest_result = np.expand_dims(remapped, axis=0)
 
     # Numpy implementation of F.grid_sample
-    remapped = cv2.remap(K1h_np[0, 0], map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
-    bilinear_result_np = np.expand_dims(remapped, axis=0)
-    scores_np = (nearest_result_np * bilinear_result_np).reshape(1, -1)
+    remapped = cv2.remap(kpts_heats[0, 0], map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    bilinear_result = np.expand_dims(remapped, axis=0)
+    scores = (nearest_result * bilinear_result).reshape(1, -1)
 
-    scores_np = scores_np.astype(np.float32)
-    mkpts_np = mkpts_np.astype(np.int64)
+    scores = scores.astype(np.float32)
+    mkpts = mkpts.astype(np.int64)
 
-    scores_np[np.all(mkpts_np == 0, axis=-1)] = -1
+    scores[np.all(mkpts == 0, axis=-1)] = -1
     
-    idxs = np.argsort(-scores_np)
-    mkpts_x = np.take_along_axis(mkpts_np[..., 0], idxs, axis=-1)[:, :top_k]
-    mkpts_y = np.take_along_axis(mkpts_np[..., 1], idxs, axis=-1)[:, :top_k]
-    mkpts_np = np.stack([mkpts_x, mkpts_y], axis=-1)
-    scores_np = np.take_along_axis(scores_np, idxs, axis=-1)[:, :top_k]
+    idxs = np.argsort(-scores)
+    mkpts_x = np.take_along_axis(mkpts[..., 0], idxs, axis=-1)[:, :top_k]
+    mkpts_y = np.take_along_axis(mkpts[..., 1], idxs, axis=-1)[:, :top_k]
+    mkpts = np.stack([mkpts_x, mkpts_y], axis=-1)
+    scores = np.take_along_axis(scores, idxs, axis=-1)[:, :top_k]
 
-    div_array = np.array([input_size[0]-1, input_size[1]-1], dtype=mkpts_np.dtype)
-    grid_np = 2.0 * (mkpts_np / div_array) - 1.0
-    grid_np = np.expand_dims(grid_np, axis=2)
-    map_x = grid_np[..., 0].reshape(-1).astype(np.float32)
-    map_y = grid_np[..., 1].reshape(-1).astype(np.float32)
-    M1_np = M1
-    mkpts_np = mkpts_np.astype(np.float32)
+    div_array = np.array([input_size[0]-1, input_size[1]-1], dtype=mkpts.dtype)
+    grid = 2.0 * (mkpts / div_array) - 1.0
+    grid = np.expand_dims(grid, axis=2)
+    map_x = grid[..., 0].reshape(-1).astype(np.float32)
+    map_y = grid[..., 1].reshape(-1).astype(np.float32)
+    mkpts = mkpts.astype(np.float32)
 
-    feats_np = bl_numpy(M1_np, grid_np, align_corners=False)
-    feats_np = feats_np.transpose(0, 2, 3, 1).squeeze(-2)
+    feats = bilinear_grid_sample(feats, grid, align_corners=False)
+    feats = feats.transpose(0, 2, 3, 1).squeeze(-2)
 
-    norm = np.linalg.norm(feats_np, axis=-1, keepdims=True)
-    feats_np = feats_np / norm
+    norm = np.linalg.norm(feats, axis=-1, keepdims=True)
+    feats = feats / norm
 
-    mkpts_np = mkpts_np.astype(np.float32)
-    mkpts_np *= np.array([resize_rate_w, resize_rate_h])[None, None, :]
+    mkpts = mkpts.astype(np.float32)
+    mkpts *= np.array([resize_rate_w, resize_rate_h])[None, None, :]
 
-    valid = scores_np > 0
+    valid = scores > 0
     result = []
-    for b in range(B):
-        valid_b = valid[b]
-        result.append({
-            'keypoints': mkpts_np[b][valid_b],
-            'scores': scores_np[b][valid_b],
-            'descriptors': feats_np[b][valid_b]
-        })
+    valid = valid[0]
+    result.append({
+        'keypoints': mkpts[0][valid],
+        'scores': scores[0][valid],
+        'descriptors': feats[0][valid]
+    })
 
     return result
 
