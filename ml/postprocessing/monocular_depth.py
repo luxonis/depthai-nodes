@@ -1,6 +1,6 @@
 import depthai as dai
 
-from ..messages.creation_functions import create_depth_message
+from ..messages.creators import create_depth_message
 
 
 class MonocularDepthParser(dai.node.ThreadedHostNode):

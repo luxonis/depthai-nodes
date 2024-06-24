@@ -4,7 +4,7 @@ import cv2
 import math
 
 from .utils import decode_detections
-from ..messages.creation_functions import create_detection_message
+from ..messages.creators import create_detection_message
 
 
 class YuNetParser(dai.node.ThreadedHostNode):

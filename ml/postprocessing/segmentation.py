@@ -1,7 +1,7 @@
 import depthai as dai
 import numpy as np
 
-from ..messages.creation_functions import create_segmentation_message
+from ..messages.creators import create_segmentation_message
 
 class SegmentationParser(dai.node.ThreadedHostNode):
     def __init__(
