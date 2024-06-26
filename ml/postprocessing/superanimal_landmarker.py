@@ -38,9 +38,7 @@ class SuperAnimalParser(dai.node.ThreadedHostNode):
             except dai.MessageQueue.QueueException as e:
                 break  # Pipeline was stopped
 
-            tensorInfo = output.getTensorInfo("heatmaps")
             heatmaps = output.getTensor(f"heatmaps").astype(np.float32)
-            heatmaps = (heatmaps - tensorInfo.qpZp) * tensorInfo.qpScale
 
             heatmaps_scale_factor = (self.scale_factor / heatmaps.shape[1], self.scale_factor / heatmaps.shape[2])
 

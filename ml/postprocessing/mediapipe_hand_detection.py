@@ -45,12 +45,8 @@ class MPHandDetectionParser(dai.node.ThreadedHostNode):
             except dai.MessageQueue.QueueException as e:
                 break  # Pipeline was stopped
 
-            tensorInfo = output.getTensorInfo("Identity")
             bboxes = output.getTensor(f"Identity").reshape(2016, 18).astype(np.float32)
-            bboxes = (bboxes - tensorInfo.qpZp) * tensorInfo.qpScale
-            tensorInfo = output.getTensorInfo("Identity_1")
             scores = output.getTensor(f"Identity_1").reshape(2016).astype(np.float32)
-            scores = (scores - tensorInfo.qpZp) * tensorInfo.qpScale
 
             decoded_bboxes = generate_anchors_and_decode(bboxes=bboxes, scores=scores, threshold=self.score_threshold, scale=192)
             

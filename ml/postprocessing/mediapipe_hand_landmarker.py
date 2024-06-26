@@ -38,16 +38,10 @@ class MPHandLandmarkParser(dai.node.ThreadedHostNode):
             except dai.MessageQueue.QueueException as e:
                 break  # Pipeline was stopped
 
-            tensorInfo = output.getTensorInfo("Identity")
             landmarks = output.getTensor(f"Identity").reshape(21, 3).astype(np.float32)
-            landmarks = (landmarks - tensorInfo.qpZp) * tensorInfo.qpScale
-            tensorInfo = output.getTensorInfo("Identity_1")
             hand_score = output.getTensor(f"Identity_1").reshape(-1).astype(np.float32)
-            hand_score = (hand_score - tensorInfo.qpZp) * tensorInfo.qpScale
-            hand_score = hand_score[0]
-            tensorInfo = output.getTensorInfo("Identity_2")
             handedness = output.getTensor(f"Identity_2").reshape(-1).astype(np.float32)
-            handedness = (handedness - tensorInfo.qpZp) * tensorInfo.qpScale
+            hand_score = hand_score[0]
             handedness = handedness[0]
 
             # normalize landmarks

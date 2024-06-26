@@ -32,9 +32,7 @@ class MPFaceLandmarkerParser(dai.node.ThreadedHostNode):
             except dai.MessageQueue.QueueException as e:
                 break  # Pipeline was stopped
 
-            tensorInfo = output.getTensorInfo("conv2d_21_1")
             landmarks = output.getTensor("conv2d_21_1").reshape(468, 3).astype(np.float32)
-            landmarks = (landmarks - tensorInfo.qpZp) * tensorInfo.qpScale
 
             landmarks /= self.scale_factor
 

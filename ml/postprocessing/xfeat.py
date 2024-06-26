@@ -44,15 +44,9 @@ class XFeatParser(dai.node.ThreadedHostNode):
                 break  # Pipeline was stopped
 
 
-            tensorInfo = output.getTensorInfo("feats")
             feats = output.getTensor(f"feats").astype(np.float32)
-            feats = (feats - tensorInfo.qpZp) * tensorInfo.qpScale
-            tensorInfo = output.getTensorInfo("heatmaps")
             heatmaps = output.getTensor(f"heatmaps").astype(np.float32)
-            heatmaps = (heatmaps - tensorInfo.qpZp) * tensorInfo.qpScale
-            tensorInfo = output.getTensorInfo("keypoints")
             keypoints = output.getTensor(f"keypoints").astype(np.float32)
-            keypoints = (keypoints - tensorInfo.qpZp) * tensorInfo.qpScale
 
             result = detect_and_compute(feats, keypoints, resize_rate_w, resize_rate_h, self.input_size)[0]
 
