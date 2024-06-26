@@ -6,7 +6,7 @@ from .mediapipe_hand_landmarker import MPHandLandmarkParser
 from .scrfd import SCRFDParser
 from .segmentation import SegmentationParser
 from .superanimal_landmarker import SuperAnimalParser
-from .keypoint import KeypointParser
+from .keypoints import KeypointParser
 from .mlsd import MLSDParser
 from .xfeat import XFeatParser
 
