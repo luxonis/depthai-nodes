@@ -6,8 +6,9 @@ from .mediapipe_hand_landmarker import MPHandLandmarkParser
 from .scrfd import SCRFDParser
 from .segmentation import SegmentationParser
 from .superanimal_landmarker import SuperAnimalParser
-from .mediapipe_face_landmarker import MPFaceLandmarkerParser
+from .keypoint import KeypointParser
 from .mlsd import MLSDParser
+from .xfeat import XFeatParser
 
 __all__ = [
     'ImageOutputParser',
@@ -18,6 +19,7 @@ __all__ = [
     'SCRFDParser',
     'SegmentationParser',
     'SuperAnimalParser',
-    'MPFaceLandmarkerParser',
+    'KeypointParser',
     'MLSDParser',
+    'XFeatParser',
 ]
