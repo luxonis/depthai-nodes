@@ -6,8 +6,8 @@ from ..messages.creators import create_keypoints_message
 class KeypointParser(dai.node.ThreadedHostNode):
     def __init__(
         self,
-        scale_factor=192,
-        num_keypoints=468,
+        scale_factor=1,
+        num_keypoints=None,
     ):
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
@@ -29,6 +29,9 @@ class KeypointParser(dai.node.ThreadedHostNode):
         Returns:
             dai.Keypoints: num_keypoints keypoints (2D or 3D).
         """
+
+        if self.num_keypoints is None:
+            raise ValueError("Number of keypoints must be specified!")
 
         while self.isRunning():
 
