@@ -1,6 +1,6 @@
 import depthai as dai
 import numpy as np
-from typing import List
+from typing import List, Union
 from ...messages import HandKeypoints, Keypoints
 
 def create_hand_keypoints_message(hand_keypoints: np.ndarray, handedness: float, confidence: float, confidence_threshold: float) -> HandKeypoints:
@@ -43,13 +43,13 @@ def create_hand_keypoints_message(hand_keypoints: np.ndarray, handedness: float,
 
     return hand_keypoints_msg
 
-def create_keypoints_message(keypoints: np.ndarray, scores: np.ndarray = None, confidence_threshold: float = None) -> Keypoints:
+def create_keypoints_message(keypoints: Union[np.ndarray, List[List[float]]], scores: Union[np.ndarray, List[float]] = None, confidence_threshold: float = None) -> Keypoints:
     """
     Create a message for the keypoints. The message contains 2D or 3D coordinates of the detected keypoints.
 
     Args:
-        keypoints (np.ndarray): Detected keypoints of shape (N,2 or 3) meaning [...,[x, y],...] or [...,[x, y, z],...].
-        scores (np.ndarray): Confidence scores of the detected keypoints.
+        keypoints (np.ndarray OR List[List[float]]): Detected keypoints of shape (N,2 or 3) meaning [...,[x, y],...] or [...,[x, y, z],...].
+        scores (np.ndarray or List[float]): Confidence scores of the detected keypoints.
         confidence_threshold (float): Confidence threshold for the keypoints.
     
     Returns:
@@ -57,14 +57,29 @@ def create_keypoints_message(keypoints: np.ndarray, scores: np.ndarray = None, c
     """
 
     if not isinstance(keypoints, np.ndarray):
-        raise ValueError(f"keypoints should be numpy array, got {type(keypoints)}.")
+        if not isinstance(keypoints, list):
+            raise ValueError(f"keypoints should be numpy array or list, got {type(keypoints)}.")
+        for keypoint in keypoints:
+            if not isinstance(keypoint, list):
+                raise ValueError(f"keypoints should be list of lists or np.array, got list of {type(keypoint)}.")
+            if len(keypoint) not in [2, 3]:
+                raise ValueError(f"keypoints inner list should be of size 2 or 3 e.g. [x, y] or [x, y, z], got {len(keypoint)}.")
+            for coord in keypoint:
+                if not isinstance(coord, (float)):
+                    raise ValueError(f"keypoints inner list should contain only float, got {type(coord)}.")
+        keypoints = np.array(keypoints)
     if len(keypoints.shape) != 2:
         raise ValueError(f"keypoints should be of shape (N,2 or 3) got {keypoints.shape}.")
     if keypoints.shape[1] not in [2, 3]:
         raise ValueError(f"keypoints 2nd dimension should be of size 2 or 3 e.g. [x, y] or [x, y, z], got {keypoints.shape[1]}.")
     if scores is not None:
         if not isinstance(scores, np.ndarray):
-            raise ValueError(f"scores should be numpy array, got {type(scores)}.")
+            if not isinstance(scores, list):
+                raise ValueError(f"scores should be numpy array or list, got {type(scores)}.")
+            for score in scores:
+                if not isinstance(score, float):
+                    raise ValueError(f"scores should be list of floats or np.array, got list of {type(score)}.")
+            scores = np.array(scores)
         if len(scores.shape) != 1:
             raise ValueError(f"scores should be of shape (N,) meaning [...,score,...], got {scores.shape}.")
         if keypoints.shape[0] != scores.shape[0]:
