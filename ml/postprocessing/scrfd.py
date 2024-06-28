@@ -46,33 +46,15 @@ class SCRFDParser(dai.node.ThreadedHostNode):
             print('SCRFD node')
             print(f"Layer names = {output.getAllLayerNames()}")
 
-            tensorInfo = output.getTensorInfo("score_8")
             score_8 = output.getTensor(f"score_8").flatten().astype(np.float32)
-            score_8 = (score_8 - tensorInfo.qpZp) * tensorInfo.qpScale
-            tensorInfo = output.getTensorInfo("score_16")
             score_16 = output.getTensor(f"score_16").flatten().astype(np.float32)
-            score_16 = (score_16 - tensorInfo.qpZp) * tensorInfo.qpScale
-            tensorInfo = output.getTensorInfo("score_32")
             score_32 = output.getTensor(f"score_32").flatten().astype(np.float32)
-            score_32 = (score_32 - tensorInfo.qpZp) * tensorInfo.qpScale
-            tensorInfo = output.getTensorInfo("bbox_8")
             bbox_8 = output.getTensor(f"bbox_8").reshape(len(score_8), 4).astype(np.float32)
-            bbox_8 = (bbox_8 - tensorInfo.qpZp) * tensorInfo.qpScale
-            tensorInfo = output.getTensorInfo("bbox_16")
             bbox_16 = output.getTensor(f"bbox_16").reshape(len(score_16), 4).astype(np.float32)
-            bbox_16 = (bbox_16 - tensorInfo.qpZp) * tensorInfo.qpScale
-            tensorInfo = output.getTensorInfo("bbox_32")
             bbox_32 = output.getTensor(f"bbox_32").reshape(len(score_32), 4).astype(np.float32)
-            bbox_32 = (bbox_32 - tensorInfo.qpZp) * tensorInfo.qpScale
-            tensorInfo = output.getTensorInfo("kps_8")
             kps_8 = output.getTensor(f"kps_8").reshape(len(score_8), 5, 2).astype(np.float32)
-            kps_8 = (kps_8 - tensorInfo.qpZp) * tensorInfo.qpScale
-            tensorInfo = output.getTensorInfo("kps_16")
             kps_16 = output.getTensor(f"kps_16").reshape(len(score_16), 5, 2).astype(np.float32)
-            kps_16 = (kps_16 - tensorInfo.qpZp) * tensorInfo.qpScale
-            tensorInfo = output.getTensorInfo("kps_32")
             kps_32 = output.getTensor(f"kps_32").reshape(len(score_32), 5, 2).astype(np.float32)
-            kps_32 = (kps_32 - tensorInfo.qpZp) * tensorInfo.qpScale
 
             bboxes = []
             keypoints = []
