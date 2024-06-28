@@ -2,7 +2,7 @@ import depthai as dai
 import numpy as np
 from typing import Tuple
 from .utils.xfeat import detect_and_compute, match
-from ..messages.creators import create_matched_points_message
+from ..messages.creators import create_tracked_features_message
 
 class XFeatParser(dai.node.ThreadedHostNode):
     def __init__(
@@ -52,7 +52,7 @@ class XFeatParser(dai.node.ThreadedHostNode):
 
             if self.previous_results is not None:
                 mkpts0, mkpts1 = match(self.previous_results, result)
-                matched_points = create_matched_points_message(mkpts0, mkpts1)
+                matched_points = create_tracked_features_message(mkpts0, mkpts1)
                 self.out.send(matched_points)
             else:
                 # save the result from first frame
