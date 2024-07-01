@@ -26,9 +26,19 @@ class SegmentationParser(dai.node.ThreadedHostNode):
             except dai.MessageQueue.QueueException as e:
                 break  # Pipeline was stopped
 
-            segmentation_mask = output.getTensor("output")
-            segmentation_mask = segmentation_mask[0]  # num_clases x H x W
-            segmentation_mask = np.vstack((np.zeros((1, segmentation_mask.shape[1], segmentation_mask.shape[2]), dtype=np.float32), segmentation_mask))
+            output_layer_names = output.getAllLayerNames()
+            
+            if len(output_layer_names) != 1:
+                raise ValueError(f"Expected 1 output layer, got {len(output_layer_names)}.")
+            
+            segmentation_mask = output.getTensor(output_layer_names[0])[0]  # num_clases x H x W
+
+            if len(segmentation_mask.shape) != 3:
+                raise ValueError(f"Expected 3D output tensor, got {len(segmentation_mask.shape)}D.")
+            
+            if segmentation_mask.shape[0] == 1:
+                segmentation_mask = np.vstack((np.zeros((1, segmentation_mask.shape[1], segmentation_mask.shape[2]), dtype=np.float32), segmentation_mask))
+
             overlay_image = np.argmax(segmentation_mask, axis=0).reshape(segmentation_mask.shape[1], segmentation_mask.shape[2], 1).astype(np.uint8)
 
             imgFrame = create_segmentation_message(overlay_image)
