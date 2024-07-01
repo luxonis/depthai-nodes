@@ -39,7 +39,7 @@ class SegmentationParser(dai.node.ThreadedHostNode):
             if segmentation_mask.shape[0] == 1:
                 segmentation_mask = np.vstack((np.zeros((1, segmentation_mask.shape[1], segmentation_mask.shape[2]), dtype=np.float32), segmentation_mask))
 
-            overlay_image = np.argmax(segmentation_mask, axis=0).reshape(segmentation_mask.shape[1], segmentation_mask.shape[2], 1).astype(np.uint8)
+            class_map = np.argmax(segmentation_mask, axis=0).reshape(segmentation_mask.shape[1], segmentation_mask.shape[2], 1).astype(np.uint8)
 
-            imgFrame = create_segmentation_message(overlay_image)
+            imgFrame = create_segmentation_message(class_map)
             self.out.send(imgFrame)
