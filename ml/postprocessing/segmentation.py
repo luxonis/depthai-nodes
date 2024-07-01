@@ -6,15 +6,15 @@ from ..messages.creators import create_segmentation_message
 class SegmentationParser(dai.node.ThreadedHostNode):
     def __init__(
         self,
-        add_background_class = False
+        background_class = False
     ):
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
-        self.add_background_class = add_background_class
+        self.background_class = background_class
 
-    def addBackgroundClass(self, add_background_class):
-        self.add_background_class = add_background_class
+    def setBackgroundClass(self, background_class):
+        self.background_class = background_class
 
     def run(self):
         """
@@ -41,7 +41,7 @@ class SegmentationParser(dai.node.ThreadedHostNode):
             if len(segmentation_mask.shape) != 3:
                 raise ValueError(f"Expected 3D output tensor, got {len(segmentation_mask.shape)}D.")
             
-            if self.add_background_class:
+            if self.background_class:
                 segmentation_mask = np.vstack((np.zeros((1, segmentation_mask.shape[1], segmentation_mask.shape[2]), dtype=np.float32), segmentation_mask))
 
             class_map = np.argmax(segmentation_mask, axis=0).reshape(segmentation_mask.shape[1], segmentation_mask.shape[2], 1).astype(np.uint8)
