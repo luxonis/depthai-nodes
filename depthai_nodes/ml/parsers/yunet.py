@@ -1,10 +1,11 @@
-import depthai as dai
-import numpy as np
-import cv2
 import math
 
-from .utils import decode_detections
+import cv2
+import depthai as dai
+import numpy as np
+
 from ..messages.creators import create_detection_message
+from .utils import decode_detections
 
 
 class YuNetParser(dai.node.ThreadedHostNode):
@@ -32,18 +33,16 @@ class YuNetParser(dai.node.ThreadedHostNode):
         self.top_k = top_k
 
     def run(self):
-        """
-        Postprocessing logic for YuNet model.
+        """Postprocessing logic for YuNet model.
 
         Returns:
             dai.ImgDetectionsWithKeypoints: Detections with keypoints.
         """
 
         while self.isRunning():
-
             try:
                 output: dai.NNData = self.input.get()
-            except dai.MessageQueue.QueueException as e:
+            except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
             # get strides

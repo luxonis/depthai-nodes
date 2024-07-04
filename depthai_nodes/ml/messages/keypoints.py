@@ -1,5 +1,6 @@
-import depthai as dai
 from typing import List
+
+import depthai as dai
 
 
 class Keypoints(dai.Buffer):
@@ -30,7 +31,7 @@ class HandKeypoints(Keypoints):
     @property
     def confidence(self) -> float:
         return self._confidence
-    
+
     @confidence.setter
     def confidence(self, value: float):
         if not isinstance(value, float):
@@ -40,7 +41,7 @@ class HandKeypoints(Keypoints):
     @property
     def handdedness(self) -> float:
         return self._handdedness
-    
+
     @handdedness.setter
     def handdedness(self, value: float):
         if not isinstance(value, float):

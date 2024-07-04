@@ -4,6 +4,7 @@ import numpy as np
 from ..messages.creators import create_keypoints_message
 from .utils.superanimal import get_pose_prediction
 
+
 class SuperAnimalParser(dai.node.ThreadedHostNode):
     def __init__(
         self,
@@ -24,23 +25,24 @@ class SuperAnimalParser(dai.node.ThreadedHostNode):
         self.scale_factor = scale_factor
 
     def run(self):
-        """
-        Postprocessing logic for SuperAnimal landmark model.
+        """Postprocessing logic for SuperAnimal landmark model.
 
         Returns:
             dai.Keypoints: Max 39 keypoints detected on the quadrupedal animal.
         """
 
         while self.isRunning():
-
             try:
                 output: dai.NNData = self.input.get()
-            except dai.MessageQueue.QueueException as e:
+            except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            heatmaps = output.getTensor(f"heatmaps").astype(np.float32)
+            heatmaps = output.getTensor("heatmaps").astype(np.float32)
 
-            heatmaps_scale_factor = (self.scale_factor / heatmaps.shape[1], self.scale_factor / heatmaps.shape[2])
+            heatmaps_scale_factor = (
+                self.scale_factor / heatmaps.shape[1],
+                self.scale_factor / heatmaps.shape[2],
+            )
 
             keypoints = get_pose_prediction(heatmaps, None, heatmaps_scale_factor)[0][0]
             scores = keypoints[:, 2]

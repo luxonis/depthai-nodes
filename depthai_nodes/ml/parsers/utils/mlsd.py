@@ -1,7 +1,11 @@
-import numpy as np
-from typing import Tuple, List
+from typing import List, Tuple
 
-def decode_scores_and_points(tpMap: np.ndarray, heat: np.ndarray, topk_n: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+import numpy as np
+
+
+def decode_scores_and_points(
+    tpMap: np.ndarray, heat: np.ndarray, topk_n: int
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     b, c, h, w = tpMap.shape
     displacement = tpMap[:, 1:5, :, :][0]
 
@@ -11,10 +15,18 @@ def decode_scores_and_points(tpMap: np.ndarray, heat: np.ndarray, topk_n: int) -
     xx_np = np.fmod(indices_np, w).reshape(-1, 1)
     pts = np.hstack((yy_np, xx_np))
 
-    vmap = displacement.transpose((1,2,0))
+    vmap = displacement.transpose((1, 2, 0))
     return pts, pts_score, vmap
 
-def get_lines(pts: np.ndarray, pts_score: np.ndarray, vmap: np.ndarray, score_thr: float, dist_thr: float, input_size: int = 512) -> Tuple[np.ndarray, List[float]]:
+
+def get_lines(
+    pts: np.ndarray,
+    pts_score: np.ndarray,
+    vmap: np.ndarray,
+    score_thr: float,
+    dist_thr: float,
+    input_size: int = 512,
+) -> Tuple[np.ndarray, List[float]]:
     start = vmap[:, :, :2]
     end = vmap[:, :, 2:]
     dist_map = np.sqrt(np.sum((start - end) ** 2, axis=-1))

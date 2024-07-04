@@ -1,5 +1,6 @@
+from typing import Any, Dict, List
+
 import numpy as np
-from typing import List, Dict, Any
 
 
 def decode_detections(
@@ -11,8 +12,7 @@ def decode_detections(
     bbox: np.ndarray,
     kps: np.ndarray,
 ) -> List[Dict[str, Any]]:
-    """
-    Decode the detections from neural network output tensors.
+    """Decode the detections from neural network output tensors.
 
     Args:
         input_size (float): The input size of the model that produced the detections, (width, height).

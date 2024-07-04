@@ -1,16 +1,12 @@
+import cv2
 import depthai as dai
 import numpy as np
-import cv2
 
-from ..messages import ImgDetectionsWithKeypoints
+from ..messages.creators import create_detection_message
+
 
 class SCRFDParser(dai.node.ThreadedHostNode):
-    def __init__(
-        self,
-        score_threshold=0.5,
-        nms_threshold=0.5,
-        top_k=100
-    ):
+    def __init__(self, score_threshold=0.5, nms_threshold=0.5, top_k=100):
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
@@ -29,38 +25,52 @@ class SCRFDParser(dai.node.ThreadedHostNode):
         self.top_k = top_k
 
     def run(self):
-        """
-        Postprocessing logic for SCRFD model.
+        """Postprocessing logic for SCRFD model.
 
         Returns:
             ...
         """
 
         while self.isRunning():
-
             try:
                 output: dai.NNData = self.input.get()
-            except dai.MessageQueue.QueueException as e:
+            except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            print('SCRFD node')
+            print("SCRFD node")
             print(f"Layer names = {output.getAllLayerNames()}")
 
-            score_8 = output.getTensor(f"score_8").flatten().astype(np.float32)
-            score_16 = output.getTensor(f"score_16").flatten().astype(np.float32)
-            score_32 = output.getTensor(f"score_32").flatten().astype(np.float32)
-            bbox_8 = output.getTensor(f"bbox_8").reshape(len(score_8), 4).astype(np.float32)
-            bbox_16 = output.getTensor(f"bbox_16").reshape(len(score_16), 4).astype(np.float32)
-            bbox_32 = output.getTensor(f"bbox_32").reshape(len(score_32), 4).astype(np.float32)
-            kps_8 = output.getTensor(f"kps_8").reshape(len(score_8), 5, 2).astype(np.float32)
-            kps_16 = output.getTensor(f"kps_16").reshape(len(score_16), 5, 2).astype(np.float32)
-            kps_32 = output.getTensor(f"kps_32").reshape(len(score_32), 5, 2).astype(np.float32)
+            score_8 = output.getTensor("score_8").flatten().astype(np.float32)
+            score_16 = output.getTensor("score_16").flatten().astype(np.float32)
+            score_32 = output.getTensor("score_32").flatten().astype(np.float32)
+            bbox_8 = (
+                output.getTensor("bbox_8").reshape(len(score_8), 4).astype(np.float32)
+            )
+            bbox_16 = (
+                output.getTensor("bbox_16").reshape(len(score_16), 4).astype(np.float32)
+            )
+            bbox_32 = (
+                output.getTensor("bbox_32").reshape(len(score_32), 4).astype(np.float32)
+            )
+            kps_8 = (
+                output.getTensor("kps_8").reshape(len(score_8), 5, 2).astype(np.float32)
+            )
+            kps_16 = (
+                output.getTensor("kps_16")
+                .reshape(len(score_16), 5, 2)
+                .astype(np.float32)
+            )
+            kps_32 = (
+                output.getTensor("kps_32")
+                .reshape(len(score_32), 5, 2)
+                .astype(np.float32)
+            )
 
             bboxes = []
             keypoints = []
 
-            for i, score in enumerate(score_8):
-                y = int(np.floor(i/80)) * 4
+            for i in range(len(score_8)):
+                y = int(np.floor(i / 80)) * 4
                 x = (i % 160) * 4
                 bbox = bbox_8[i]
                 xmin = int(x - bbox[0] * 8)
@@ -72,13 +82,13 @@ class SCRFDParser(dai.node.ThreadedHostNode):
                 for kp in kps:
                     kpx = int(x + kp[0] * 8)
                     kpy = int(y + kp[1] * 8)
-                    kps_batch.append([kpx,kpy])
+                    kps_batch.append([kpx, kpy])
                 keypoints.append(kps_batch)
                 bbox = [xmin, ymin, xmax, ymax]
                 bboxes.append(bbox)
 
-            for i, score in enumerate(score_16):
-                y = int(np.floor(i/40)) * 8
+            for i in range(len(score_16)):
+                y = int(np.floor(i / 40)) * 8
                 x = (i % 80) * 8
                 bbox = bbox_16[i]
                 xmin = int(x - bbox[0] * 16)
@@ -90,13 +100,13 @@ class SCRFDParser(dai.node.ThreadedHostNode):
                 for kp in kps:
                     kpx = int(x + kp[0] * 16)
                     kpy = int(y + kp[1] * 16)
-                    kps_batch.append([kpx,kpy])
+                    kps_batch.append([kpx, kpy])
                 keypoints.append(kps_batch)
                 bbox = [xmin, ymin, xmax, ymax]
                 bboxes.append(bbox)
 
-            for i, score in enumerate(score_32):
-                y = int(np.floor(i/20)) * 16
+            for i in range(len(score_32)):
+                y = int(np.floor(i / 20)) * 16
                 x = (i % 40) * 16
                 bbox = bbox_32[i]
                 xmin = int(x - bbox[0] * 32)
@@ -108,29 +118,22 @@ class SCRFDParser(dai.node.ThreadedHostNode):
                 for kp in kps:
                     kpx = int(x + kp[0] * 32)
                     kpy = int(y + kp[1] * 32)
-                    kps_batch.append([kpx,kpy])
+                    kps_batch.append([kpx, kpy])
                 keypoints.append(kps_batch)
                 bbox = [xmin, ymin, xmax, ymax]
                 bboxes.append(bbox)
 
             scores = np.concatenate([score_8, score_16, score_32])
-            indices = cv2.dnn.NMSBoxes(bboxes, list(scores), self.score_threshold, self.nms_threshold, top_k=self.top_k)
+            indices = cv2.dnn.NMSBoxes(
+                bboxes,
+                list(scores),
+                self.score_threshold,
+                self.nms_threshold,
+                top_k=self.top_k,
+            )
             bboxes = np.array(bboxes)[indices]
             keypoints = np.array(keypoints)[indices]
             scores = scores[indices]
 
-            img_detections_list = []
-            for i in range(len(bboxes)):
-                img_detection = dai.ImgDetection()
-                img_detection.label = 0
-                img_detection.xmin = bboxes[i][0]
-                img_detection.ymin = bboxes[i][1]
-                img_detection.xmax = bboxes[i][2]
-                img_detection.ymax = bboxes[i][3]
-                img_detection.confidence = scores[i]
-                img_detections_list.append(img_detection)
-
-            detection_msg = ImgDetectionsWithKeypoints()
-            detection_msg.detections = img_detections_list
-            detection_msg.keypoints = keypoints
+            detection_msg = create_detection_message(bboxes, scores, None, None)
             self.out.send(detection_msg)

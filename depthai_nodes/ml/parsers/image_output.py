@@ -1,7 +1,7 @@
 import depthai as dai
 
-from .utils import unnormalize_image
 from ..messages.creators import create_image_message
+from .utils import unnormalize_image
 
 
 class ImageOutputParser(dai.node.ThreadedHostNode):
@@ -16,18 +16,16 @@ class ImageOutputParser(dai.node.ThreadedHostNode):
         self.output_is_bgr = True
 
     def run(self):
-        """
-        Postprocessing logic for image-to-image models (e.g. DnCNN3, zero-dce etc.).
+        """Postprocessing logic for image-to-image models (e.g. DnCNN3, zero-dce etc.).
 
         Returns:
             dai.ImgFrame: uint8, grayscale HW / colorscale HWC BGR image.
         """
 
         while self.isRunning():
-
             try:
                 output: dai.NNData = self.input.get()
-            except dai.MessageQueue.QueueException as e:
+            except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
             output_layer_names = output.getAllLayerNames()

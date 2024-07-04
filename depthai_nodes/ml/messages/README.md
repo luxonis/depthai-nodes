@@ -14,4 +14,4 @@ class MyCustomMessage(dai.<MessageOfChoice>):
         print("My field is", self.myField)
 ```
 
-Note, this does NOT allow for passing to device and back. 
+Note, this does NOT allow for passing to device and back.

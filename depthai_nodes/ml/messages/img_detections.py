@@ -1,5 +1,6 @@
-import depthai as dai
 from typing import List, Tuple, Union
+
+import depthai as dai
 
 
 class ImgDetectionWithKeypoints(dai.ImgDetection):
@@ -28,7 +29,6 @@ class ImgDetectionWithKeypoints(dai.ImgDetection):
 
 
 class ImgDetectionsWithKeypoints(dai.Buffer):
-
     def __init__(self):
         dai.Buffer.__init__(self)  # TODO: change to super().__init__()?
         self._detections: List[ImgDetectionWithKeypoints] = []

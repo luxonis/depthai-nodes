@@ -1,10 +1,10 @@
 import depthai as dai
 import numpy as np
 
+
 def create_segmentation_message(x: np.array) -> dai.ImgFrame:
-    """
-    Create a message for the segmentation node output. Input is of the shape (H, W, 1). 
-    In the third dimesion we specify the class of the segmented objects.
+    """Create a message for the segmentation node output. Input is of the shape (H, W,
+    1). In the third dimesion we specify the class of the segmented objects.
 
     Args:
         x (np.array): Input from the segmentation node.
@@ -18,8 +18,10 @@ def create_segmentation_message(x: np.array) -> dai.ImgFrame:
     if len(x.shape) != 3:
         raise ValueError(f"Expected 3D input, got {len(x.shape)}D input.")
     if x.shape[2] != 1:
-        raise ValueError(f"Expected 1 channel in the third dimension, got {x.shape[2]} channels.")
-    
+        raise ValueError(
+            f"Expected 1 channel in the third dimension, got {x.shape[2]} channels."
+        )
+
     imgFrame = dai.ImgFrame()
     imgFrame.setFrame(x)
     imgFrame.setWidth(x.shape[1])

@@ -1,18 +1,13 @@
+import cv2
 import depthai as dai
 import numpy as np
-import cv2
 
-from .utils import generate_anchors_and_decode
 from ..messages.creators import create_detection_message
+from .utils import generate_anchors_and_decode
 
 
 class MPHandDetectionParser(dai.node.ThreadedHostNode):
-    def __init__(
-        self,
-        score_threshold=0.5,
-        nms_threshold=0.5,
-        top_k=100
-    ):
+    def __init__(self, score_threshold=0.5, nms_threshold=0.5, top_k=100):
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
@@ -31,25 +26,25 @@ class MPHandDetectionParser(dai.node.ThreadedHostNode):
         self.top_k = top_k
 
     def run(self):
-        """
-        Postprocessing logic for MediPipe Hand detection model.
+        """Postprocessing logic for MediPipe Hand detection model.
 
         Returns:
             dai.ImgDetections containing bounding boxes, labels, and confidence scores of detected hands.
         """
 
         while self.isRunning():
-
             try:
                 output: dai.NNData = self.input.get()
-            except dai.MessageQueue.QueueException as e:
+            except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            bboxes = output.getTensor(f"Identity").reshape(2016, 18).astype(np.float32)
-            scores = output.getTensor(f"Identity_1").reshape(2016).astype(np.float32)
+            bboxes = output.getTensor("Identity").reshape(2016, 18).astype(np.float32)
+            scores = output.getTensor("Identity_1").reshape(2016).astype(np.float32)
 
-            decoded_bboxes = generate_anchors_and_decode(bboxes=bboxes, scores=scores, threshold=self.score_threshold, scale=192)
-            
+            decoded_bboxes = generate_anchors_and_decode(
+                bboxes=bboxes, scores=scores, threshold=self.score_threshold, scale=192
+            )
+
             bboxes = []
             scores = []
 
@@ -62,8 +57,14 @@ class MPHandDetectionParser(dai.node.ThreadedHostNode):
 
                 bboxes.append([xmin, ymin, xmax, ymax])
                 scores.append(hand.pd_score)
-            
-            indices = cv2.dnn.NMSBoxes(bboxes, scores, self.score_threshold, self.nms_threshold, top_k=self.top_k)
+
+            indices = cv2.dnn.NMSBoxes(
+                bboxes,
+                scores,
+                self.score_threshold,
+                self.nms_threshold,
+                top_k=self.top_k,
+            )
             bboxes = np.array(bboxes)[indices]
             scores = np.array(scores)[indices]
 

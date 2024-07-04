@@ -1,6 +1,8 @@
-import numpy as np
+from typing import Any, Dict, List, Tuple
+
 import cv2
-from typing import Any, Dict, Tuple, List
+import numpy as np
+
 
 def local_maximum_filter(x: np.ndarray, kernel_size: int) -> np.ndarray:
     # Ensure input is a 4D array (e.g., batch, channels, height, width)
@@ -14,7 +16,11 @@ def local_maximum_filter(x: np.ndarray, kernel_size: int) -> np.ndarray:
 
     # Pad the input array
     pad_width = kernel_size // 2
-    padded_x = np.pad(x, ((0, 0), (0, 0), (pad_width, pad_width), (pad_width, pad_width)), mode='constant')
+    padded_x = np.pad(
+        x,
+        ((0, 0), (0, 0), (pad_width, pad_width), (pad_width, pad_width)),
+        mode="constant",
+    )
 
     # Initialize the output array
     local_max = np.zeros_like(x)
@@ -23,13 +29,16 @@ def local_maximum_filter(x: np.ndarray, kernel_size: int) -> np.ndarray:
     for i in range(height):
         for j in range(width):
             # Extract the local region
-            local_region = padded_x[:, :, i:i + kernel_size, j:j + kernel_size]
+            local_region = padded_x[:, :, i : i + kernel_size, j : j + kernel_size]
             # Compute the local maximum
             local_max[:, :, i, j] = np.max(local_region, axis=(2, 3))
 
     return local_max
 
-def bilinear_grid_sample(im: np.ndarray, grid: np.ndarray, align_corners: bool = False) -> np.ndarray:
+
+def bilinear_grid_sample(
+    im: np.ndarray, grid: np.ndarray, align_corners: bool = False
+) -> np.ndarray:
     n, c, h, w = im.shape
     gn, gh, gw, _ = grid.shape
     assert n == gn
@@ -58,7 +67,9 @@ def bilinear_grid_sample(im: np.ndarray, grid: np.ndarray, align_corners: bool =
     wd = ((x - x0) * (y - y0)).reshape(n, 1, -1)
 
     # Apply padding
-    im_padded = np.pad(im, ((0, 0), (0, 0), (1, 1), (1, 1)), mode='constant', constant_values=0)
+    im_padded = np.pad(
+        im, ((0, 0), (0, 0), (1, 1), (1, 1)), mode="constant", constant_values=0
+    )
     padded_h = h + 2
     padded_w = w + 2
     x0, x1, y0, y1 = x0 + 1, x1 + 1, y0 + 1, y1 + 1
@@ -89,6 +100,7 @@ def bilinear_grid_sample(im: np.ndarray, grid: np.ndarray, align_corners: bool =
     result = (Ia * wa + Ib * wb + Ic * wc + Id * wd).reshape(n, c, gh, gw)
     return result
 
+
 def _get_kpts_heatmap(
     kpts: np.ndarray,
     softmax_temp: float = 1.0,
@@ -98,9 +110,9 @@ def _get_kpts_heatmap(
     scores = scores[:, :64]
     B, _, H, W = scores.shape
     heatmap = np.transpose(scores, (0, 2, 3, 1)).reshape(B, H, W, 8, 8)
-    heatmap = np.transpose(heatmap,
-                            (0, 1, 3, 2, 4)).reshape(B, 1, H * 8, W * 8)
+    heatmap = np.transpose(heatmap, (0, 1, 3, 2, 4)).reshape(B, 1, H * 8, W * 8)
     return heatmap
+
 
 def _nms(
     x: np.ndarray,
@@ -118,13 +130,19 @@ def _nms(
     pos_array = np.zeros((B, pad_val, 2), dtype=int)
 
     for b, kpts in enumerate(pos_batched):
-        pos_array[b, :len(kpts)] = kpts
+        pos_array[b, : len(kpts)] = kpts
 
     return pos_array
 
 
-def detect_and_compute(feats: np.ndarray, kpts: np.ndarray, resize_rate_w: float, resize_rate_h: float, input_size: Tuple[int, int], top_k: int = 4096) -> List[Dict[str, Any]]:
-
+def detect_and_compute(
+    feats: np.ndarray,
+    kpts: np.ndarray,
+    resize_rate_w: float,
+    resize_rate_h: float,
+    input_size: Tuple[int, int],
+    top_k: int = 4096,
+) -> List[Dict[str, Any]]:
     norm = np.linalg.norm(feats, axis=1, keepdims=True)
     feats = feats / norm
 
@@ -132,18 +150,32 @@ def detect_and_compute(feats: np.ndarray, kpts: np.ndarray, resize_rate_w: float
     mkpts = _nms(kpts_heats, threshold=0.05, kernel_size=5)  # int64
 
     # Numpy implementation of normgrid
-    div_array = np.array([input_size[0]-1, input_size[1]-1], dtype=mkpts.dtype)
+    div_array = np.array([input_size[0] - 1, input_size[1] - 1], dtype=mkpts.dtype)
     grid = 2.0 * (mkpts / div_array) - 1.0
     grid = np.expand_dims(grid, axis=2)
 
     # Numpy implementation of F.grid_sample
     map_x = grid[..., 0].reshape(-1).astype(np.float32)
     map_y = grid[..., 1].reshape(-1).astype(np.float32)
-    remapped = cv2.remap(kpts_heats[0, 0], map_x, map_y, interpolation=cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    remapped = cv2.remap(
+        kpts_heats[0, 0],
+        map_x,
+        map_y,
+        interpolation=cv2.INTER_NEAREST,
+        borderMode=cv2.BORDER_CONSTANT,
+        borderValue=0,
+    )
     nearest_result = np.expand_dims(remapped, axis=0)
 
     # Numpy implementation of F.grid_sample
-    remapped = cv2.remap(kpts_heats[0, 0], map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    remapped = cv2.remap(
+        kpts_heats[0, 0],
+        map_x,
+        map_y,
+        interpolation=cv2.INTER_LINEAR,
+        borderMode=cv2.BORDER_CONSTANT,
+        borderValue=0,
+    )
     bilinear_result = np.expand_dims(remapped, axis=0)
     scores = (nearest_result * bilinear_result).reshape(1, -1)
 
@@ -151,14 +183,14 @@ def detect_and_compute(feats: np.ndarray, kpts: np.ndarray, resize_rate_w: float
     mkpts = mkpts.astype(np.int64)
 
     scores[np.all(mkpts == 0, axis=-1)] = -1
-    
+
     idxs = np.argsort(-scores)
     mkpts_x = np.take_along_axis(mkpts[..., 0], idxs, axis=-1)[:, :top_k]
     mkpts_y = np.take_along_axis(mkpts[..., 1], idxs, axis=-1)[:, :top_k]
     mkpts = np.stack([mkpts_x, mkpts_y], axis=-1)
     scores = np.take_along_axis(scores, idxs, axis=-1)[:, :top_k]
 
-    div_array = np.array([input_size[0]-1, input_size[1]-1], dtype=mkpts.dtype)
+    div_array = np.array([input_size[0] - 1, input_size[1] - 1], dtype=mkpts.dtype)
     grid = 2.0 * (mkpts / div_array) - 1.0
     grid = np.expand_dims(grid, axis=2)
     map_x = grid[..., 0].reshape(-1).astype(np.float32)
@@ -177,26 +209,31 @@ def detect_and_compute(feats: np.ndarray, kpts: np.ndarray, resize_rate_w: float
     valid = scores > 0
     result = []
     valid = valid[0]
-    result.append({
-        'keypoints': mkpts[0][valid],
-        'scores': scores[0][valid],
-        'descriptors': feats[0][valid]
-    })
+    result.append(
+        {
+            "keypoints": mkpts[0][valid],
+            "scores": scores[0][valid],
+            "descriptors": feats[0][valid],
+        }
+    )
 
     return result
 
-def _match_mkpts(feats1: np.ndarray, feats2: np.ndarray, min_cossim: float = 0.62) -> Tuple[np.ndarray, np.ndarray]:
+
+def _match_mkpts(
+    feats1: np.ndarray, feats2: np.ndarray, min_cossim: float = 0.62
+) -> Tuple[np.ndarray, np.ndarray]:
     cossim = feats1 @ feats2.T
     cossim_t = feats2 @ feats1.T
     match12 = np.argmax(cossim, axis=1)
     match21 = np.argmax(cossim_t, axis=1)
 
     idx0 = np.arange(len(match12))
-    mutual = (match21[match12] == idx0)
+    mutual = match21[match12] == idx0
 
     if min_cossim > 0:
         max_cossim = np.max(cossim, axis=1)
-        good = (max_cossim > min_cossim)
+        good = max_cossim > min_cossim
         idx0 = idx0[mutual & good]
         idx1 = match12[mutual & good]
     else:
@@ -205,15 +242,17 @@ def _match_mkpts(feats1: np.ndarray, feats2: np.ndarray, min_cossim: float = 0.6
 
     return idx0, idx1
 
-def match(result1: Dict[str, Any] ,result2: Dict[str, Any], min_cossim: float = -1) -> Tuple[np.ndarray, np.ndarray]:
-    
+
+def match(
+    result1: Dict[str, Any], result2: Dict[str, Any], min_cossim: float = -1
+) -> Tuple[np.ndarray, np.ndarray]:
     indexes1, indexes2 = _match_mkpts(
-        result1['descriptors'],
-        result2['descriptors'],
+        result1["descriptors"],
+        result2["descriptors"],
         min_cossim=min_cossim,
     )
 
-    mkpts0 = result1['keypoints'][indexes1]
-    mkpts1 = result2['keypoints'][indexes2]
+    mkpts0 = result1["keypoints"][indexes1]
+    mkpts1 = result2["keypoints"][indexes2]
 
     return mkpts0, mkpts1

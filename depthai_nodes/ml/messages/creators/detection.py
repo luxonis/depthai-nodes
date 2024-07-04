@@ -1,10 +1,11 @@
-import numpy as np
 from typing import List, Tuple
+
 import depthai as dai
+import numpy as np
 
 from ...messages import (
-    ImgDetectionWithKeypoints,
     ImgDetectionsWithKeypoints,
+    ImgDetectionWithKeypoints,
     Line,
     Lines,
 )
@@ -16,9 +17,10 @@ def create_detection_message(
     labels: List[int] = None,
     keypoints: List[List[Tuple[float, float]]] = None,
 ) -> dai.ImgDetections:
-    """
-    Create a message for the detection. The message contains the bounding boxes, labels, and confidence scores of detected objects.
-    If there are no labels or we only have one class, we can set labels to None and all detections will have label set to 0.
+    """Create a message for the detection. The message contains the bounding boxes,
+    labels, and confidence scores of detected objects. If there are no labels or we only
+    have one class, we can set labels to None and all detections will have label set to
+    0.
 
     Args:
         bboxes (np.ndarray): Detected bounding boxes of shape (N,4) meaning [...,[x_min, y_min, x_max, y_max],...].
@@ -46,7 +48,7 @@ def create_detection_message(
         y_valid = bboxes[:, 1] < bboxes[:, 3]
         if not (np.all(x_valid) and np.all(y_valid)):
             raise ValueError(
-                f"bboxes should be in format [x_min, y_min, x_max, y_max] where xmin < xmax and ymin < ymax."
+                "bboxes should be in format [x_min, y_min, x_max, y_max] where xmin < xmax and ymin < ymax."
             )
 
     # checks for scores
@@ -54,7 +56,9 @@ def create_detection_message(
         raise ValueError(f"scores should be numpy array, got {type(scores)}.")
     if len(scores) != 0:
         if len(scores.shape) != 1:
-            raise ValueError(f"scores should be of shape (N,) meaning, got {scores.shape}.")
+            raise ValueError(
+                f"scores should be of shape (N,) meaning, got {scores.shape}."
+            )
         if scores.shape[0] != bboxes.shape[0]:
             raise ValueError(
                 f"scores should have same length as bboxes, got {scores.shape[0]} and {bboxes.shape[0]}."
@@ -116,9 +120,10 @@ def create_detection_message(
     detections_msg.detections = detections
     return detections_msg
 
+
 def create_line_detection_message(lines: np.ndarray, scores: np.ndarray):
-    """
-    Create a message for the line detection. The message contains the lines and confidence scores of detected lines.
+    """Create a message for the line detection. The message contains the lines and
+    confidence scores of detected lines.
 
     Args:
         lines (np.ndarray): Detected lines of shape (N,4) meaning [...,[x_start, y_start, x_end, y_end],...].
@@ -146,7 +151,9 @@ def create_line_detection_message(lines: np.ndarray, scores: np.ndarray):
         raise ValueError(f"scores should be numpy array, got {type(scores)}.")
     if len(scores) != 0:
         if len(scores.shape) != 1:
-            raise ValueError(f"scores should be of shape (N,) meaning, got {scores.shape}.")
+            raise ValueError(
+                f"scores should be of shape (N,) meaning, got {scores.shape}."
+            )
         if scores.shape[0] != lines.shape[0]:
             raise ValueError(
                 f"scores should have same length as lines, got {scores.shape[0]} and {lines.shape[0]}."

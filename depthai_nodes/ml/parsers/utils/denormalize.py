@@ -2,8 +2,7 @@ import numpy as np
 
 
 def unnormalize_image(image, normalize=True):
-    """
-    Un-normalize an image tensor by scaling it to the [0, 255] range.
+    """Un-normalize an image tensor by scaling it to the [0, 255] range.
 
     Args:
         image (np.ndarray): The normalized image tensor of shape (H, W, C) or (C, H, W).

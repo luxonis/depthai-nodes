@@ -1,5 +1,5 @@
-from .denormalize import unnormalize_image
 from .decode_detections import decode_detections
+from .denormalize import unnormalize_image
 from .medipipe import generate_anchors_and_decode
 
 __all__ = [

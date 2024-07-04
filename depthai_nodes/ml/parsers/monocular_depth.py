@@ -18,18 +18,17 @@ class MonocularDepthParser(dai.node.ThreadedHostNode):
         self.depth_type = "metric"
 
     def run(self):
-        """
-        Postprocessing logic for a model with monocular depth output (e.g.Depth Anything model).
+        """Postprocessing logic for a model with monocular depth output (e.g.Depth
+        Anything model).
 
         Returns:
             dai.ImgFrame: uint16, HW depth map.
         """
 
         while self.isRunning():
-
             try:
                 output: dai.NNData = self.input.get()
-            except dai.MessageQueue.QueueException as e:
+            except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
             output_layer_names = output.getAllLayerNames()
