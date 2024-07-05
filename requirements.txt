@@ -1,2 +1,2 @@
-depthai==2.25.0.0.dev+0de43a9d9296fd88ac7852922aca03e9ee524a1e
+depthai==2.25.0.0.dev+e59ddcdee91982f28d37b336ddfad2dc676c398b
 opencv-python
