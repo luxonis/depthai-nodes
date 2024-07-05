@@ -1,7 +1,7 @@
 [project]
 name = "depthai-nodes"
 version = "0.0.1"
-description = "Luxonis package providing Python nodes for on-host DepthAI model's output decoding and postprocessing."
+description = "Community on-host nodes for DepthAI."
 readme = "README.md"
 requires-python = ">=3.8"
 license = { file = "LICENSE" }
