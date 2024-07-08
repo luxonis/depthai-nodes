@@ -6,7 +6,7 @@ from ..messages.creators import create_detection_message
 from .utils import generate_anchors_and_decode
 
 
-class MPHandDetectionParser(dai.node.ThreadedHostNode):
+class MPPalmDetectionParser(dai.node.ThreadedHostNode):
     def __init__(self, score_threshold=0.5, nms_threshold=0.5, top_k=100):
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
