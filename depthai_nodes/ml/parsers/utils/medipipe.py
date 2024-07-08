@@ -273,7 +273,7 @@ def decode_bboxes(score_thresh, scores, bboxes, anchors, scale=128, best_only=Fa
     return regions
 
 
-def rect_transformation(regions, w, h):
+def rect_transformation(regions, w, h, no_shift=False):
     """W, h : image input shape."""
     # https://github.com/google/mediapipe/blob/master/mediapipe/modules/hand_landmark/palm_detection_detection_to_roi.pbtxt
     # # Expands and shifts the rectangle that contains the palm so that it's likely
@@ -292,10 +292,10 @@ def rect_transformation(regions, w, h):
     #     }
     # }
     # IMHO 2.9 is better than 2.6. With 2.6, it may happen that finger tips stay outside of the bouding rotated rectangle
-    scale_x = 2.9
-    scale_y = 2.9
+    scale_x = 2.9 if not no_shift else 1
+    scale_y = 2.9 if not no_shift else 1
     shift_x = 0
-    shift_y = -0.5
+    shift_y = -0.5 if not no_shift else 0
     for region in regions:
         width = region.rect_w
         height = region.rect_h
@@ -381,5 +381,5 @@ def generate_anchors_and_decode(bboxes, scores, threshold=0.5, scale=192):
     anchors = generate_handtracker_anchors(scale, scale)
     decoded_bboxes = decode_bboxes(threshold, scores, bboxes, anchors, scale=scale)
     detections_to_rect(decoded_bboxes)
-    rect_transformation(decoded_bboxes, scale, scale)
+    rect_transformation(decoded_bboxes, scale, scale, no_shift=True)
     return decoded_bboxes

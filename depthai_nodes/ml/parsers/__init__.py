@@ -1,7 +1,7 @@
 from .image_output import ImageOutputParser
 from .keypoints import KeypointParser
-from .mediapipe_hand_detection import MPHandDetectionParser
 from .mediapipe_hand_landmarker import MPHandLandmarkParser
+from .mediapipe_palm_detection import MPPalmDetectionParser
 from .mlsd import MLSDParser
 from .monocular_depth import MonocularDepthParser
 from .scrfd import SCRFDParser
@@ -14,7 +14,7 @@ __all__ = [
     "ImageOutputParser",
     "MonocularDepthParser",
     "YuNetParser",
-    "MPHandDetectionParser",
+    "MPPalmDetectionParser",
     "MPHandLandmarkParser",
     "SCRFDParser",
     "SegmentationParser",
