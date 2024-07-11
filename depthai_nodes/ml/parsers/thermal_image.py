@@ -28,10 +28,8 @@ class ThermalImageParser(dai.node.ThreadedHostNode):
                     f"Expected 1 output layer, got {len(output_layer_names)}."
                 )
             output = output.getTensor(output_layer_names[0])
-           
+
             thermal_map = output[0]
 
-            depth_message = create_thermal_message(
-                thermal_map=thermal_map
-            )
-            self.out.send(depth_message)
+            thermal_message = create_thermal_message(thermal_map=thermal_map)
+            self.out.send(thermal_message)
