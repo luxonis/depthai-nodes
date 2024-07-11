@@ -4,7 +4,7 @@ from ..messages.creators import create_thermal_message
 
 
 class ThermalImageParser(dai.node.ThreadedHostNode):
-    def __init__(self, depth_type="relative"):
+    def __init__(self):
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
