@@ -9,6 +9,7 @@ from .segmentation import SegmentationParser
 from .superanimal_landmarker import SuperAnimalParser
 from .xfeat import XFeatParser
 from .yunet import YuNetParser
+from .thermal_image import ThermalImageParser
 
 __all__ = [
     "ImageOutputParser",
@@ -22,4 +23,5 @@ __all__ = [
     "KeypointParser",
     "MLSDParser",
     "XFeatParser",
+    "ThermalImageParser",
 ]
