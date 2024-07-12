@@ -7,6 +7,7 @@ from .monocular_depth import MonocularDepthParser
 from .scrfd import SCRFDParser
 from .segmentation import SegmentationParser
 from .superanimal_landmarker import SuperAnimalParser
+from .thermal_image import ThermalImageParser
 from .xfeat import XFeatParser
 from .yunet import YuNetParser
 
@@ -22,4 +23,5 @@ __all__ = [
     "KeypointParser",
     "MLSDParser",
     "XFeatParser",
+    "ThermalImageParser",
 ]
