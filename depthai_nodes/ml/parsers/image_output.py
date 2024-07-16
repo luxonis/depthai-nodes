@@ -5,7 +5,16 @@ from .utils import unnormalize_image
 
 
 class ImageOutputParser(dai.node.ThreadedHostNode):
+    """ImageOutputParser class for image-to-image models (e.g. DnCNN3, zero-dce etc.)
+    where the output is modifed image (denoised, enhanced etc.)."""
+
     def __init__(self, output_is_bgr=False):
+        """Initializes ImageOutputParser node with input, output, and flag indicating if
+        the output is in BGR.
+
+        @param output_is_bgr: Flag indicating if the output is in BGR.
+        @type output_is_bgr: bool
+        """
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
@@ -13,13 +22,16 @@ class ImageOutputParser(dai.node.ThreadedHostNode):
         self.output_is_bgr = output_is_bgr
 
     def setBGROutput(self):
+        """Sets the flag indicating that output is in BGR."""
         self.output_is_bgr = True
 
     def run(self):
-        """Postprocessing logic for image-to-image models (e.g. DnCNN3, zero-dce etc.).
+        """Function executed in a separate thread that processes the input data and
+        sends it out in form of messages.
 
-        Returns:
-            dai.ImgFrame: uint8, grayscale HW / colorscale HWC BGR image.
+        @raises ValueError: If the output is not 3- or 4-dimensional.
+        @raises ValueError: If the number of output layers is not 1.
+        @return: Image message containing the output image of type dai.ImgFrame.
         """
 
         while self.isRunning():
