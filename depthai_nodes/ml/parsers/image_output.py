@@ -6,11 +6,30 @@ from .utils import unnormalize_image
 
 class ImageOutputParser(dai.node.ThreadedHostNode):
     """ImageOutputParser class for image-to-image models (e.g. DnCNN3, zero-dce etc.)
-    where the output is modifed image (denoised, enhanced etc.)."""
+    where the output is modifed image (denoised, enhanced etc.).
+
+    @param input: Node's input. It accepts the output of the Neural Network node.
+    @type input: dai.Node.Input
+    @param out: Node's output. Parser sends the processed network results to this output in form of messages.
+    @type out: dai.Node.Output
+    @param output_is_bgr: Flag indicating if the output is in BGR.
+    @type output_is_bgr: bool
+
+    Message
+    -------
+    **Type**: dai.ImgFrame
+
+    **Description**: Image message containing the output image.
+
+    Error Handling
+    --------------
+    **ValueError**: If the output is not 3- or 4-dimensional.
+
+    **ValueError**: If the number of output layers is not 1.
+    """
 
     def __init__(self, output_is_bgr=False):
-        """Initializes ImageOutputParser node with input, output, and flag indicating if
-        the output is in BGR.
+        """Initializes ImageOutputParser node.
 
         @param output_is_bgr: Flag indicating if the output is in BGR.
         @type output_is_bgr: bool
@@ -26,14 +45,6 @@ class ImageOutputParser(dai.node.ThreadedHostNode):
         self.output_is_bgr = True
 
     def run(self):
-        """Function executed in a separate thread that processes the input data and
-        sends it out in form of messages.
-
-        @raises ValueError: If the output is not 3- or 4-dimensional.
-        @raises ValueError: If the number of output layers is not 1.
-        @return: Image message containing the output image of type dai.ImgFrame.
-        """
-
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()

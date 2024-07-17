@@ -5,15 +5,35 @@ from ..messages.creators import create_keypoints_message
 
 
 class KeypointParser(dai.node.ThreadedHostNode):
-    """KeypointParser class for 2D or 3D keypoints models."""
+    """KeypointParser class for 2D or 3D keypoints models.
+
+    @param input: Node's input. It accepts the output of the Neural Network node.
+    @type input: dai.Node.Input
+    @param out: Node's output. Parser sends the processed network results to this output in form of messages.
+    @type out: dai.Node.Output
+    @param scale_factor: Scale factor to divide the keypoints by.
+    @type scale_factor: float
+    @param num_keypoints: Number of keypoints.
+    @type num_keypoints: int
+
+    Message
+    -------
+    **Type**: Keypoints
+    **Description**: Keypoints message containing 2D or 3D keypoints.
+
+    Error Handling
+    --------------
+    **ValueError**: If the number of keypoints is not specified.
+    **ValueError**: If the number of coordinates per keypoint is not 2 or 3.
+    **ValueError**: If the number of output layers is not 1.
+    """
 
     def __init__(
         self,
         scale_factor=1,
         num_keypoints=None,
     ):
-        """Initializes KeypointParser node with input, output, scale factor, and number
-        of keypoints.
+        """Initializes KeypointParser node.
 
         @param scale_factor: Scale factor to divide the keypoints by.
         @type scale_factor: float
@@ -44,15 +64,6 @@ class KeypointParser(dai.node.ThreadedHostNode):
         self.num_keypoints = num_keypoints
 
     def run(self):
-        """Function executed in a separate thread that processes the input data and
-        sends it out in form of messages.
-
-        @raises ValueError: If the number of keypoints is not specified.
-        @raises ValueError: If the number of coordinates per keypoint is not 2 or 3.
-        @raises ValueError: If the number of output layers is not 1.
-        @return: Keypoints message containing 2D or 3D keypoints.
-        """
-
         if self.num_keypoints is None:
             raise ValueError("Number of keypoints must be specified!")
 
