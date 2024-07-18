@@ -12,13 +12,17 @@ def create_depth_message(
     """Creates a depth message in the form of an ImgFrame using the provided depth map
     and depth type.
 
-    Args:
-        depth_map (np.array): A NumPy array representing the depth map with shape (CHW or HWC).
-        depth_type (Literal['relative', 'metric']): A string indicating the type of depth map.
-            It can either be 'relative' or 'metric'.
-
-    Returns:
-        dai.ImgFrame: An ImgFrame object containing the depth information.
+    @param depth_map: A NumPy array representing the depth map with shape (CHW or HWC).
+    @type depth_map: np.array
+    @param depth_type: A string indicating the type of depth map. It can either be
+        'relative' or 'metric'.
+    @type depth_type: Literal['relative', 'metric']
+    @return: An ImgFrame object containing the depth information.
+    @rtype: dai.ImgFrame
+    @raise ValueError: If the depth map is not a NumPy array.
+    @raise ValueError: If the depth map is not 3D.
+    @raise ValueError: If the depth map shape is not CHW or HWC.
+    @raise ValueError: If the depth type is not 'relative' or 'metric'.
     """
 
     if not isinstance(depth_map, np.ndarray):

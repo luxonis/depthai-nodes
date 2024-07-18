@@ -4,18 +4,30 @@ from ..messages.creators import create_thermal_message
 
 
 class ThermalImageParser(dai.node.ThreadedHostNode):
+    """ThermalImageParser class for parsing the output of models with thermal image
+    output (e.g. UGSR-FA).
+
+    Attributes
+    ----------
+    input : Node.Input
+        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
+    out : Node.Output
+        Parser sends the processed network results to this output in form of messages. It is a linking point from which the processed network results are retrieved.
+
+    Output Message/s
+    ----------------
+    **Type**: dai.ImgFrame
+
+    **Description**: Thermal message containing the thermal image.
+    """
+
     def __init__(self):
+        """Initializes the ThermalImageParser node."""
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
 
     def run(self):
-        """Postprocessing logic for a model with thermal image output (e.g. UGSR-FA).
-
-        Returns:
-            dai.ImgFrame: uint16, HW thermal image.
-        """
-
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()

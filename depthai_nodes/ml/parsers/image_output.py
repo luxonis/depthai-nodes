@@ -8,18 +8,20 @@ class ImageOutputParser(dai.node.ThreadedHostNode):
     """ImageOutputParser class for image-to-image models (e.g. DnCNN3, zero-dce etc.)
     where the output is modifed image (denoised, enhanced etc.).
 
-    @param input: Node's input. It accepts the output of the Neural Network node.
-    @type input: dai.Node.Input
-    @param out: Node's output. Parser sends the processed network results to this output in form of messages.
-    @type out: dai.Node.Output
-    @param output_is_bgr: Flag indicating if the output is in BGR.
-    @type output_is_bgr: bool
+    Attributes
+    ----------
+    input : Node.Input
+        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
+    out : Node.Output
+        Parser sends the processed network results to this output in form of messages. It is a linking point from which the processed network results are retrieved.
+    output_is_bgr : bool
+        Flag indicating if the output is in BGR (Blue-Green-Red) format.
 
-    Message
+    Output Message/s
     -------
     **Type**: dai.ImgFrame
 
-    **Description**: Image message containing the output image.
+    **Description**: Image message containing the output image e.g. denoised or enhanced images.
 
     Error Handling
     --------------

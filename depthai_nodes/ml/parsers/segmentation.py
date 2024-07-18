@@ -5,22 +5,50 @@ from ..messages.creators import create_segmentation_message
 
 
 class SegmentationParser(dai.node.ThreadedHostNode):
+    """SegmentationParser class for parsing the output of the Segmentation model.
+
+    Attributes
+    ----------
+    input : Node.Input
+        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
+    out : Node.Output
+        Parser sends the processed network results to this output in form of messages. It is a linking point from which the processed network results are retrieved.
+    background_class : bool
+        Whether to add additional layer for background.
+
+    Output Message/s
+    ----------------
+    **Type**: dai.ImgFrame
+
+    **Description**: Segmentation message containing the segmentation mask. Every pixel belongs to exactly one class.
+
+    Error Handling
+    --------------
+    **ValueError**: If the number of output layers is not E{1}.
+
+    **ValueError**: If the number of dimensions of the output tensor is not E{3}.
+    """
+
     def __init__(self, background_class=False):
+        """Initializes the SegmentationParser node.
+
+        @param background_class: Whether to add additional layer for background.
+        @type background_class: bool
+        """
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
         self.background_class = background_class
 
     def setBackgroundClass(self, background_class):
+        """Sets the background class.
+
+        @param background_class: Whether to add additional layer for background.
+        @type background_class: bool
+        """
         self.background_class = background_class
 
     def run(self):
-        """Postprocessing logic for Segmentation model.
-
-        Returns:
-            Segmenation mask with classes given by the model and background class 0.
-        """
-
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()

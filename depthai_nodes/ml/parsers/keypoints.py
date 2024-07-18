@@ -5,26 +5,34 @@ from ..messages.creators import create_keypoints_message
 
 
 class KeypointParser(dai.node.ThreadedHostNode):
-    """KeypointParser class for 2D or 3D keypoints models.
+    """KeypointParser class for 2D or 3D keypoints models. It expects one ouput layer
+    containing keypoints. The number of keypoints and the number of coordinates per
+    keypoint must be specified. It is also divided by a scale factor so that the
+    keypoints are in normalized form.
 
-    @param input: Node's input. It accepts the output of the Neural Network node.
-    @type input: dai.Node.Input
-    @param out: Node's output. Parser sends the processed network results to this output in form of messages.
-    @type out: dai.Node.Output
-    @param scale_factor: Scale factor to divide the keypoints by.
-    @type scale_factor: float
-    @param num_keypoints: Number of keypoints.
-    @type num_keypoints: int
+    Attributes
+    ----------
+    input : Node.Input
+        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
+    out : Node.Output
+        Parser sends the processed network results to this output in form of messages. It is a linking point from which the processed network results are retrieved.
+    scale_factor : float
+        Scale factor to divide the keypoints by.
+    num_keypoints : int
+        Number of keypoints the model detects.
 
-    Message
-    -------
+    Output Message/s
+    ----------------
     **Type**: Keypoints
+
     **Description**: Keypoints message containing 2D or 3D keypoints.
 
     Error Handling
     --------------
     **ValueError**: If the number of keypoints is not specified.
+
     **ValueError**: If the number of coordinates per keypoint is not 2 or 3.
+
     **ValueError**: If the number of output layers is not 1.
     """
 

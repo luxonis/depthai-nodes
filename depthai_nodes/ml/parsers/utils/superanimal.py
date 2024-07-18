@@ -2,6 +2,13 @@ import numpy as np
 
 
 def get_top_values(heatmap):
+    """Get the top values from the heatmap tensor.
+
+    @param heatmap: Heatmap tensor.
+    @type heatmap: np.ndarray
+    @return: Y and X coordinates of the top values.
+    @rtype: Tuple[np.ndarray, np.ndarray]
+    """
     batchsize, ny, nx, num_joints = heatmap.shape
     heatmap_flat = heatmap.reshape(batchsize, nx * ny, num_joints)
 
@@ -12,6 +19,18 @@ def get_top_values(heatmap):
 
 
 def get_pose_prediction(heatmap, locref, scale_factors):
+    """Get the pose prediction from the heatmap and locref tensors. Used for SuperAnimal
+    model.
+
+    @param heatmap: Heatmap tensor.
+    @type heatmap: np.ndarray
+    @param locref: Locref tensor.
+    @type locref: np.ndarray
+    @param scale_factors: Scale factors for the x and y axes.
+    @type scale_factors: Tuple[float, float]
+    @return: Pose prediction.
+    @rtype: np.ndarray
+    """
     Y, X = get_top_values(heatmap)
     batch_size, num_joints = X.shape
 

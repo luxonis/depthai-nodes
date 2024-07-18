@@ -14,23 +14,31 @@ def decode_detections(
 ) -> List[Dict[str, Any]]:
     """Decode the detections from neural network output tensors.
 
-    Args:
-        input_size (float): The input size of the model that produced the detections, (width, height).
-        stride (int): The stride used in the detection grid.
-        rows (int): Number of rows in the detection grid.
-        cols (int): Number of columns in the detection grid.
-        score_threshold (float): Minimum score threshold for a detection to be considered valid.
-        cls (np.ndarray): 2D array of class scores for each grid cell, shape (grid_size, num_classes).
-        obj (np.ndarray): 1D array of objectness scores for each grid cell, shape (grid_size,).
-        bbox (np.ndarray): 2D array of bounding box coordinates, shape (grid_size, 4).
-        kps (np.ndarray): 2D array of keypoint coordinates, shape (grid_size, num_keypoints * 2).
+    @param input_size: The input size of the model that produced the detections, (width, height).
+    @type input_size: float
+    @param stride: The stride used in the detection grid.
+    @type stride: int
+    @param rows: Number of rows in the detection grid.
+    @type rows: int
+    @param cols: Number of columns in the detection grid.
+    @type cols: int
+    @param score_threshold: Minimum score threshold for a detection to be considered valid.
+    @type score_threshold: float
+    @param cls: 2D array of class scores for each grid cell, shape (grid_size, num_classes).
+    @type cls: np.ndarray
+    @param obj: 1D array of objectness scores for each grid cell, shape (grid_size,).
+    @type obj: np.ndarray
+    @param bbox: 2D array of bounding box coordinates, shape (grid_size, 4).
+    @type bbox: np.ndarray
+    @param kps: 2D array of keypoint coordinates, shape (grid_size, num_keypoints * 2).
+    @type kps: np.ndarray
 
-    Returns:
-        List[Dict[str, Any]]: A list of detections, where each detection is a dictionary containing:
-            - "bbox": [x1, y1, width, height] (relative bounding box coordinates)
-            - "label": int (class label)
-            - "keypoints": List[float] (relative keypoint coordinates)
-            - "score": float (detection score)
+    @return: A list of detections, where each detection is a dictionary containing:
+        - "bbox": [x1, y1, width, height] (relative bounding box coordinates)
+        - "label": int (class label)
+        - "keypoints": List[float] (relative keypoint coordinates)
+        - "score": float (detection score)
+    @rtype: List[Dict[str, Any]]
     """
 
     input_width, input_height = input_size

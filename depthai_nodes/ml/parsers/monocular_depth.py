@@ -4,7 +4,35 @@ from ..messages.creators import create_depth_message
 
 
 class MonocularDepthParser(dai.node.ThreadedHostNode):
+    """MonocularDepthParser class for monocular depth models (e.g. Depth Anything
+    model).
+
+    Attributes
+    ----------
+    input : Node.Input
+        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
+    out : Node.Output
+        Parser sends the processed network results to this output in form of messages. It is a linking point from which the processed network results are retrieved.
+    depth_type : str
+        Type of depth output (relative or metric).
+
+    Output Message/s
+    ----------------
+    **Type**: dai.ImgFrame
+
+    **Description**: Depth message containing the depth map. The depth map is represented with dai.ImgFrame.
+
+    Error Handling
+    --------------
+    **ValueError**: If the number of output layers is not E{1}.
+    """
+
     def __init__(self, depth_type="relative"):
+        """Initializes the MonocularDepthParser node.
+
+        @param depth_type: Type of depth output (relative or metric).
+        @type depth_type: str
+        """
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
@@ -12,19 +40,14 @@ class MonocularDepthParser(dai.node.ThreadedHostNode):
         self.depth_type = depth_type
 
     def setRelativeDepthType(self):
+        """Sets the depth type to relative."""
         self.depth_type = "relative"
 
     def setMetricDepthType(self):
+        """Sets the depth type to metric."""
         self.depth_type = "metric"
 
     def run(self):
-        """Postprocessing logic for a model with monocular depth output (e.g.Depth
-        Anything model).
-
-        Returns:
-            dai.ImgFrame: uint16, HW depth map.
-        """
-
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()

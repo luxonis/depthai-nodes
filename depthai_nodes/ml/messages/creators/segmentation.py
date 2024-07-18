@@ -4,13 +4,15 @@ import numpy as np
 
 def create_segmentation_message(x: np.array) -> dai.ImgFrame:
     """Create a message for the segmentation node output. Input is of the shape (H, W,
-    1). In the third dimesion we specify the class of the segmented objects.
+    E{1}). In the third dimesion we specify the class of the segmented objects.
 
-    Args:
-        x (np.array): Input from the segmentation node.
-
-    Returns:
-        dai.ImgFrame: Output segmentaion message in ImgFrame.Type.RAW8.
+    @param x: Input from the segmentation node.
+    @type x: np.array
+    @return: Output segmentaion message in ImgFrame.Type.RAW8.
+    @rtype: dai.ImgFrame
+    @raise ValueError: If the input is not a numpy array.
+    @raise ValueError: If the input is not 3D.
+    @raise ValueError: If the input 3rd dimension is not E{1}.
     """
 
     if not isinstance(x, np.ndarray):

@@ -9,11 +9,14 @@ def create_image_message(
 ) -> dai.ImgFrame:
     """Create a depthai message for an image array.
 
+    @param image: Image array in HWC or CHW format.
     @type image: np.array
-    @ivar image: Image array in HWC or CHW format.
+    @param is_bgr: If True, the image is in BGR format. If False, the image is in RGB
+        format. Defaults to True.
     @type is_bgr: bool
-    @ivar is_bgr: If True, the image is in BGR format. If False, the image is in RGB
-        format.
+    @return: dai.ImgFrame object containing the image information.
+    @rtype: dai.ImgFrame
+    @raise ValueError: If the image shape is not CHW or HWC.
     """
 
     if image.shape[0] in [1, 3]:
