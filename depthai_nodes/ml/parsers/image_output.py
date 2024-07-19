@@ -33,7 +33,7 @@ class ImageOutputParser(dai.node.ThreadedHostNode):
                 raise ValueError(
                     f"Expected 1 output layer, got {len(output_layer_names)}."
                 )
-            output = output.getTensor(output_layer_names[0])
+            output = output.getTensor(output_layer_names[0], dequantize=True)
 
             if len(output.shape) == 4:
                 image = output[0]
