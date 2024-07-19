@@ -58,7 +58,11 @@ class YuNetParser(dai.node.ThreadedHostNode):
 
             # get input_size
             stride0 = strides[0]
-            _, spatial_positions0, _ = output.getTensor(f"cls_{stride0}").shape
+            cls_stride0_shape = output.getTensor(f"cls_{stride0}", dequantize=True).shape
+            if len(cls_stride0_shape) == 3:
+                _, spatial_positions0, _ = cls_stride0_shape
+            elif len(cls_stride0_shape) == 2:
+                spatial_positions0, _ = cls_stride0_shape
             input_width = input_height = int(
                 math.sqrt(spatial_positions0) * stride0
             )  # TODO: We assume a square input size. How to get input size when height and width are not equal?
