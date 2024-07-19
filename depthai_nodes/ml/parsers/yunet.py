@@ -58,7 +58,9 @@ class YuNetParser(dai.node.ThreadedHostNode):
 
             # get input_size
             stride0 = strides[0]
-            cls_stride0_shape = output.getTensor(f"cls_{stride0}", dequantize=True).shape
+            cls_stride0_shape = output.getTensor(
+                f"cls_{stride0}", dequantize=True
+            ).shape
             if len(cls_stride0_shape) == 3:
                 _, spatial_positions0, _ = cls_stride0_shape
             elif len(cls_stride0_shape) == 2:
