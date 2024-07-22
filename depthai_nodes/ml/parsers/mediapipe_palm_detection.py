@@ -7,16 +7,16 @@ from .utils import generate_anchors_and_decode
 
 
 class MPPalmDetectionParser(dai.node.ThreadedHostNode):
-    """MPPalmDetectionParser class for parsing the output of the Mediapipe Palm
-    detection model. As the result, the node sends out the detected hands in the form of
-    a message containing bounding boxes, labels, and confidence scores.
+    """Parser class for parsing the output of the Mediapipe Palm detection model. As the
+    result, the node sends out the detected hands in the form of a message containing
+    bounding boxes, labels, and confidence scores.
 
     Attributes
     ----------
     input : Node.Input
         Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
     out : Node.Output
-        Parser sends the processed network results to this output in form of messages. It is a linking point from which the processed network results are retrieved.
+        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.Parser sends the processed network results to this output in form of messages. It is a linking point from which the processed network results are retrieved.
     score_threshold : float
         Confidence score threshold for detected hands.
     nms_threshold : float

@@ -17,19 +17,16 @@ def create_detection_message(
     labels: List[int] = None,
     keypoints: List[List[Tuple[float, float]]] = None,
 ) -> dai.ImgDetections:
-    """Create a message for the detection. The message contains the bounding boxes,
-    labels, and confidence scores of detected objects. If there are no labels or we only
-    have one class, we can set labels to None and all detections will have label set to
-    E{0}.
+    """Create a DepthAI message for an object detection.
 
-    @param bbox: Detected bounding boxes of shape (N,4) meaning [...,[x_min, y_min, x_max, y_max],...].
+    @param bbox: Bounding boxes of detected objects of shape (N,4) meaning [...,[x_min, y_min, x_max, y_max],...].
     @type bbox: np.ndarray
     @param scores: Confidence scores of detected objects of shape (N,).
     @type scores: np.ndarray
     @param labels: Labels of detected objects of shape (N,).
     @type labels: List[int]
     @param keypoints: Keypoints of detected objects of shape (N,2).
-    @type keypoints: List[List[Tuple[float, float]]]
+    @type keypoints: Optional[List[List[Tuple[float, float]]]]
 
     @return: Message containing the bounding boxes, labels, confidence scores, and keypoints of detected objects.
     @rtype: dai.ImgDetections OR ImgDetectionsWithKeypoints
@@ -139,8 +136,7 @@ def create_detection_message(
 
 
 def create_line_detection_message(lines: np.ndarray, scores: np.ndarray):
-    """Create a message for the line detection. The message contains the lines and
-    confidence scores of detected lines.
+    """Create a DepthAI message for a line detection.
 
     @param lines: Detected lines of shape (N,4) meaning [...,[x_start, y_start, x_end, y_end],...].
     @type lines: np.ndarray

@@ -5,17 +5,17 @@ from ..messages.creators import create_hand_keypoints_message
 
 
 class MPHandLandmarkParser(dai.node.ThreadedHostNode):
-    """MPHandLandmarkParser class for MediaPipe Hand landmark model. It parses the
-    output of the MediaPipe Hand landmark model containing 21 3D hand landmarks. The
-    landmarks are normalized and sent as a message to the output. Besides landmarks, the
-    message contains confidence score and handedness score (right or left hand).
+    """Parser class for MediaPipe Hand landmark model. It parses the output of the
+    MediaPipe Hand landmark model containing 21 3D hand landmarks. The landmarks are
+    normalized and sent as a message to the output. Besides landmarks, the message
+    contains confidence score and handedness score (right or left hand).
 
     Attributes
     ----------
     input : Node.Input
         Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
     out : Node.Output
-        Parser sends the processed network results to this output in form of messages. It is a linking point from which the processed network results are retrieved.
+        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     score_threshold : float
         Confidence score threshold for hand landmarks.
     scale_factor : float

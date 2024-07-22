@@ -9,8 +9,7 @@ UINT16_MAX_VALUE = 65535
 def create_depth_message(
     depth_map: np.array, depth_type: Literal["relative", "metric"]
 ) -> dai.ImgFrame:
-    """Creates a depth message in the form of an ImgFrame using the provided depth map
-    and depth type.
+    """Create a DepthAI message for a depth map.
 
     @param depth_map: A NumPy array representing the depth map with shape (CHW or HWC).
     @type depth_map: np.array

@@ -19,7 +19,7 @@ class ImgDetectionWithKeypoints(dai.ImgDetection):
 
     @property
     def keypoints(self) -> List[Tuple[float, float]]:
-        """Returns the keypoints of the image detection.
+        """Returns the keypoints.
 
         @return: List of keypoints.
         @rtype: List[Tuple[float, float]]
@@ -28,7 +28,7 @@ class ImgDetectionWithKeypoints(dai.ImgDetection):
 
     @keypoints.setter
     def keypoints(self, value: List[Tuple[Union[int, float], Union[int, float]]]):
-        """Sets the keypoints of the image detection.
+        """Sets the keypoints.
 
         @param value: List of keypoints.
         @type value: List[Tuple[Union[int, float], Union[int, float]]]

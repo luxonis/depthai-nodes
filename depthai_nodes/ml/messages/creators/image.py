@@ -7,7 +7,7 @@ def create_image_message(
     image: np.array,
     is_bgr: bool = True,
 ) -> dai.ImgFrame:
-    """Create a depthai message for an image array.
+    """Create a DepthAI message for an image array.
 
     @param image: Image array in HWC or CHW format.
     @type image: np.array

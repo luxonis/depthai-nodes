@@ -3,8 +3,7 @@ import numpy as np
 
 
 def create_thermal_message(thermal_image: np.array) -> dai.ImgFrame:
-    """Creates a thermal image message in the form of an ImgFrame using the provided
-    thermal image array.
+    """Create a DepthAI message for thermal image.
 
     @param thermal_image: A NumPy array representing the thermal image with shape (CHW
         or HWC).

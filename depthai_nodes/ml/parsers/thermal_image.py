@@ -4,15 +4,15 @@ from ..messages.creators import create_thermal_message
 
 
 class ThermalImageParser(dai.node.ThreadedHostNode):
-    """ThermalImageParser class for parsing the output of models with thermal image
-    output (e.g. UGSR-FA).
+    """Parser class for parsing the output of models with thermal image output (e.g.
+    UGSR-FA).
 
     Attributes
     ----------
     input : Node.Input
         Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
     out : Node.Output
-        Parser sends the processed network results to this output in form of messages. It is a linking point from which the processed network results are retrieved.
+        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
 
     Output Message/s
     ----------------

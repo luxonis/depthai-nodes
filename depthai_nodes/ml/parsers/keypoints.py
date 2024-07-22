@@ -5,17 +5,16 @@ from ..messages.creators import create_keypoints_message
 
 
 class KeypointParser(dai.node.ThreadedHostNode):
-    """KeypointParser class for 2D or 3D keypoints models. It expects one ouput layer
-    containing keypoints. The number of keypoints and the number of coordinates per
-    keypoint must be specified. It is also divided by a scale factor so that the
-    keypoints are in normalized form.
+    """Parser class for 2D or 3D keypoints models. It expects one ouput layer containing
+    keypoints. The number of keypoints must be specified. Moreover, the keypoints are
+    normalized by a scale factor if provided.
 
     Attributes
     ----------
     input : Node.Input
         Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
     out : Node.Output
-        Parser sends the processed network results to this output in form of messages. It is a linking point from which the processed network results are retrieved.
+        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     scale_factor : float
         Scale factor to divide the keypoints by.
     num_keypoints : int

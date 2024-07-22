@@ -29,7 +29,7 @@ def create_feature_point(x: float, y: float, id: int, age: int) -> dai.TrackedFe
 def create_tracked_features_message(
     reference_points: np.ndarray, target_points: np.ndarray
 ) -> dai.TrackedFeatures:
-    """Create a message for the tracked features.
+    """Create a DepthAI message for tracked features.
 
     @param reference_points: Reference points of shape (N,2) meaning [...,[x, y],...].
     @type reference_points: np.ndarray
