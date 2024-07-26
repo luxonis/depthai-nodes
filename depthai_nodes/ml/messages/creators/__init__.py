@@ -5,7 +5,7 @@ from .keypoints import create_hand_keypoints_message, create_keypoints_message
 from .segmentation import create_segmentation_message
 from .thermal import create_thermal_message
 from .tracked_features import create_tracked_features_message
-
+from .classification_message import create_classification_message
 __all__ = [
     "create_image_message",
     "create_segmentation_message",
@@ -16,4 +16,5 @@ __all__ = [
     "create_tracked_features_message",
     "create_keypoints_message",
     "create_thermal_message",
+    "create_classification_message",
 ]
