@@ -31,6 +31,7 @@ def create_classification_message(
 
     if len(scores) == 0:
         raise ValueError("Scores should not be empty.")
+
     if len(scores) != len(scores.flatten()):
         raise ValueError(f"Scores should be a 1D array, got {scores.shape}.")
 
