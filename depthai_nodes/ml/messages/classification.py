@@ -3,22 +3,22 @@ from typing import List
 import depthai as dai
 
 
-class ClassificationMessage(dai.Buffer):
+class Classifications(dai.Buffer):
     def __init__(self):
         dai.Buffer.__init__(self)
-        self._sortedClasses = []
+        self._classes = []
 
     @property
-    def sortedClasses(self) -> List:
-        return self._sortedClasses
+    def classes(self) -> List:
+        return self._classes
 
-    @sortedClasses.setter
-    def sortedClasses(self, value: List):
+    @classes.setter
+    def classes(self, value: List):
         if not isinstance(value, list):
-            raise TypeError("Sorted classes must be a list.")
+            raise TypeError("Must be a list.")
         for item in value:
             if not isinstance(item, list) or len(item) != 2:
-                raise TypeError("Each sorted class must be a list of 2 elements.")
-            if not isinstance(item[0], str):
-                raise TypeError("Class name must be a string.")
-        self._sortedClasses = value
+                raise TypeError(
+                    "Each item must be a list of [class_name, probability_score], got {item}."
+                )
+        self._classes = value
