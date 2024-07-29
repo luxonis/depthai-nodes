@@ -1,13 +1,18 @@
 import depthai as dai
 import numpy as np
 
-def create_classification_message(scores: np.array, labels: np.array = []) -> dai.ADatatype:
-    msg = dai.ADatatype()
-    
-    msg.labels = labels
-    msg.scores = scores
-    msg.combined_results = []
-    if len(labels) == len(scores):
-        msg.combined_results = [[labels[i], scores[i]] for i in range(len(labels))]
-    
+from ...messages import ClassificationMessage
+
+
+def create_classification_message(scores, classes) -> dai.Buffer:
+    msg = ClassificationMessage()
+
+    sorted_args = np.argsort(scores)[::-1]
+    scores = scores[sorted_args]
+    classes = classes[sorted_args]
+
+    msg.sortedClasses = [
+        [str(classes[i]), float(scores[i])] for i in range(len(classes))
+    ]
+
     return msg
