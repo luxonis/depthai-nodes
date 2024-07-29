@@ -3,9 +3,6 @@
 __pycache__/
 *.py[cod]
 *$py.class
-*_old.py
-tst.py
-*unit_test*.py
 # C extensions
 *.so
 
