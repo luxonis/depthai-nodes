@@ -6,6 +6,7 @@ from .keypoints import create_hand_keypoints_message, create_keypoints_message
 from .segmentation import create_segmentation_message
 from .thermal import create_thermal_message
 from .tracked_features import create_tracked_features_message
+from .misc import create_age_gender_message
 
 __all__ = [
     "create_image_message",
@@ -18,4 +19,5 @@ __all__ = [
     "create_keypoints_message",
     "create_thermal_message",
     "create_classification_message",
+    "create_age_gender_message",
 ]

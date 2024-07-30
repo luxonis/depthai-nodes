@@ -11,6 +11,7 @@ from .superanimal_landmarker import SuperAnimalParser
 from .thermal_image import ThermalImageParser
 from .xfeat import XFeatParser
 from .yunet import YuNetParser
+from .age_gender import AgeGenderParser
 
 __all__ = [
     "ImageOutputParser",
@@ -26,4 +27,5 @@ __all__ = [
     "XFeatParser",
     "ThermalImageParser",
     "ClassificationParser",
+    "AgeGenderParser",
 ]
