@@ -5,6 +5,15 @@ import numpy as np
 
 
 def local_maximum_filter(x: np.ndarray, kernel_size: int) -> np.ndarray:
+    """Apply a local maximum filter to the input array.
+
+    @param x: Input array.
+    @type x: np.ndarray
+    @param kernel_size: Size of the local maximum filter.
+    @type kernel_size: int
+    @return: Output array after applying the local maximum filter.
+    @rtype: np.ndarray
+    """
     # Ensure input is a 4D array (e.g., batch, channels, height, width)
     if len(x.shape) != 4:
         raise ValueError("Input array must be 4-dimensional.")
@@ -39,6 +48,17 @@ def local_maximum_filter(x: np.ndarray, kernel_size: int) -> np.ndarray:
 def bilinear_grid_sample(
     im: np.ndarray, grid: np.ndarray, align_corners: bool = False
 ) -> np.ndarray:
+    """Bilinear grid sample.
+
+    @param im: Input image tensor.
+    @type im: np.ndarray
+    @param grid: Grid tensor.
+    @type grid: np.ndarray
+    @param align_corners: Whether to align corners.
+    @type align_corners: bool
+    @return: Output image tensor after applying bilinear grid sample.
+    @rtype: np.ndarray
+    """
     n, c, h, w = im.shape
     gn, gh, gw, _ = grid.shape
     assert n == gn
@@ -105,6 +125,15 @@ def _get_kpts_heatmap(
     kpts: np.ndarray,
     softmax_temp: float = 1.0,
 ) -> np.ndarray:
+    """Get the keypoints heatmap.
+
+    @param kpts: Keypoints.
+    @type kpts: np.ndarray
+    @param softmax_temp: Softmax temperature.
+    @type softmax_temp: float
+    @return: Keypoints heatmap.
+    @rtype: np.ndarray
+    """
     kpts = np.exp(kpts * softmax_temp)
     scores = kpts / np.sum(kpts, axis=1, keepdims=True)
     scores = scores[:, :64]
@@ -119,6 +148,17 @@ def _nms(
     threshold: float = 0.05,
     kernel_size: int = 5,
 ) -> np.ndarray:
+    """Non-Maximum Suppression.
+
+    @param x: Input array.
+    @type x: np.ndarray
+    @param threshold: Non-maximum suppression threshold.
+    @type threshold: float
+    @param kernel_size: Size of the local maximum filter.
+    @type kernel_size: int
+    @return: Output array after applying non-maximum suppression.
+    @rtype: np.ndarray
+    """
     # Non-Maximum Suppression
     B, _, H, W = x.shape
     local_max = local_maximum_filter(x, kernel_size)
@@ -143,6 +183,23 @@ def detect_and_compute(
     input_size: Tuple[int, int],
     top_k: int = 4096,
 ) -> List[Dict[str, Any]]:
+    """Detect and compute keypoints.
+
+    @param feats: Features.
+    @type feats: np.ndarray
+    @param kpts: Keypoints.
+    @type kpts: np.ndarray
+    @param resize_rate_w: Resize rate for width.
+    @type resize_rate_w: float
+    @param resize_rate_h: Resize rate for height.
+    @type resize_rate_h: float
+    @param input_size: Input size.
+    @type input_size: Tuple[int, int]
+    @param top_k: Maximum number of keypoints to keep.
+    @type top_k: int
+    @return: List of dictionaries containing keypoints, scores, and descriptors.
+    @rtype: List[Dict[str, Any]]
+    """
     norm = np.linalg.norm(feats, axis=1, keepdims=True)
     feats = feats / norm
 
@@ -223,6 +280,17 @@ def detect_and_compute(
 def _match_mkpts(
     feats1: np.ndarray, feats2: np.ndarray, min_cossim: float = 0.62
 ) -> Tuple[np.ndarray, np.ndarray]:
+    """Match features.
+
+    @param feats1: Features 1.
+    @type feats1: np.ndarray
+    @param feats2: Features 2.
+    @type feats2: np.ndarray
+    @param min_cossim: Minimum cosine similarity.
+    @type min_cossim: float
+    @return: Matched features.
+    @rtype: Tuple[np.ndarray, np.ndarray]
+    """
     cossim = feats1 @ feats2.T
     cossim_t = feats2 @ feats1.T
     match12 = np.argmax(cossim, axis=1)
@@ -246,6 +314,17 @@ def _match_mkpts(
 def match(
     result1: Dict[str, Any], result2: Dict[str, Any], min_cossim: float = -1
 ) -> Tuple[np.ndarray, np.ndarray]:
+    """Match keypoints.
+
+    @param result1: Result 1.
+    @type result1: Dict[str, Any]
+    @param result2: Result 2.
+    @type result2: Dict[str, Any]
+    @param min_cossim: Minimum cosine similarity.
+    @type min_cossim: float
+    @return: Matched keypoints.
+    @rtype: Tuple[np.ndarray, np.ndarray]
+    """
     indexes1, indexes2 = _match_mkpts(
         result1["descriptors"],
         result2["descriptors"],

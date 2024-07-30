@@ -17,19 +17,33 @@ def create_detection_message(
     labels: List[int] = None,
     keypoints: List[List[Tuple[float, float]]] = None,
 ) -> dai.ImgDetections:
-    """Create a message for the detection. The message contains the bounding boxes,
-    labels, and confidence scores of detected objects. If there are no labels or we only
-    have one class, we can set labels to None and all detections will have label set to
-    0.
+    """Create a DepthAI message for an object detection.
 
-    Args:
-        bboxes (np.ndarray): Detected bounding boxes of shape (N,4) meaning [...,[x_min, y_min, x_max, y_max],...].
-        scores (np.ndarray): Confidence scores of detected objects of shape (N,).
-        labels (List[int], optional): Labels of detected objects of shape (N,). Defaults to None.
-        keypoints (List[List[Tuple[float, float]]], optional): Keypoints of detected objects of shape (N,2). Defaults to None.
+    @param bbox: Bounding boxes of detected objects of shape (N,4) meaning [...,[x_min, y_min, x_max, y_max],...].
+    @type bbox: np.ndarray
+    @param scores: Confidence scores of detected objects of shape (N,).
+    @type scores: np.ndarray
+    @param labels: Labels of detected objects of shape (N,).
+    @type labels: List[int]
+    @param keypoints: Keypoints of detected objects of shape (N,2).
+    @type keypoints: Optional[List[List[Tuple[float, float]]]]
 
-    Returns:
-        dai.ImgDetections OR ImgDetectionsWithKeypoints: Message containing the bounding boxes, labels, confidence scores, and keypoints of detected objects.
+    @return: Message containing the bounding boxes, labels, confidence scores, and keypoints of detected objects.
+    @rtype: dai.ImgDetections OR ImgDetectionsWithKeypoints
+
+    @raise ValueError: If the bboxes are not a numpy array.
+    @raise ValueError: If the bboxes are not of shape (N,4).
+    @raise ValueError: If the bboxes 2nd dimension is not of size 4.
+    @raise ValueError: If the bboxes are not in format [x_min, y_min, x_max, y_max] where xmin < xmax and ymin < ymax.
+    @raise ValueError: If the scores are not a numpy array.
+    @raise ValueError: If the scores are not of shape (N,).
+    @raise ValueError: If the scores do not have the same length as bboxes.
+    @raise ValueError: If the labels are not a list.
+    @raise ValueError: If each label is not an integer.
+    @raise ValueError: If the labels do not have the same length as bboxes.
+    @raise ValueError: If the keypoints are not a list.
+    @raise ValueError: If each keypoint pair is not a tuple of two floats.
+    @raise ValueError: If the keypoints do not have the same length as bboxes.
     """
 
     # checks for bboxes
@@ -122,15 +136,22 @@ def create_detection_message(
 
 
 def create_line_detection_message(lines: np.ndarray, scores: np.ndarray):
-    """Create a message for the line detection. The message contains the lines and
-    confidence scores of detected lines.
+    """Create a DepthAI message for a line detection.
 
-    Args:
-        lines (np.ndarray): Detected lines of shape (N,4) meaning [...,[x_start, y_start, x_end, y_end],...].
-        scores (np.ndarray): Confidence scores of detected lines of shape (N,).
+    @param lines: Detected lines of shape (N,4) meaning [...,[x_start, y_start, x_end, y_end],...].
+    @type lines: np.ndarray
+    @param scores: Confidence scores of detected lines of shape (N,).
+    @type scores: np.ndarray
 
-    Returns:
-        dai.Lines: Message containing the lines and confidence scores of detected lines.
+    @return: Message containing the lines and confidence scores of detected lines.
+    @rtype: Lines
+
+    @raise ValueError: If the lines are not a numpy array.
+    @raise ValueError: If the lines are not of shape (N,4).
+    @raise ValueError: If the lines 2nd dimension is not of size E{4}.
+    @raise ValueError: If the scores are not a numpy array.
+    @raise ValueError: If the scores are not of shape (N,).
+    @raise ValueError: If the scores do not have the same length as lines.
     """
 
     # checks for lines

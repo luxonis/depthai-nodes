@@ -6,7 +6,38 @@ from ..messages.creators import create_detection_message
 
 
 class SCRFDParser(dai.node.ThreadedHostNode):
+    """Parser class for parsing the output of the SCRFD face detection model.
+
+    Attributes
+    ----------
+    input : Node.Input
+        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
+    out : Node.Output
+        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
+    score_threshold : float
+        Confidence score threshold for detected faces.
+    nms_threshold : float
+        Non-maximum suppression threshold.
+    top_k : int
+        Maximum number of detections to keep.
+
+    Output Message/s
+    ----------------
+    **Type**: dai.ImgDetections
+
+    **Description**: ImgDetections message containing bounding boxes, labels, and confidence scores of detected faces.
+    """
+
     def __init__(self, score_threshold=0.5, nms_threshold=0.5, top_k=100):
+        """Initializes the SCRFDParser node.
+
+        @param score_threshold: Confidence score threshold for detected faces.
+        @type score_threshold: float
+        @param nms_threshold: Non-maximum suppression threshold.
+        @type nms_threshold: float
+        @param top_k: Maximum number of detections to keep.
+        @type top_k: int
+        """
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
@@ -16,29 +47,35 @@ class SCRFDParser(dai.node.ThreadedHostNode):
         self.top_k = top_k
 
     def setConfidenceThreshold(self, threshold):
+        """Sets the confidence score threshold for detected faces.
+
+        @param threshold: Confidence score threshold for detected faces.
+        @type threshold: float
+        """
         self.score_threshold = threshold
 
     def setNMSThreshold(self, threshold):
+        """Sets the non-maximum suppression threshold.
+
+        @param threshold: Non-maximum suppression threshold.
+        @type threshold: float
+        """
         self.nms_threshold = threshold
 
     def setTopK(self, top_k):
+        """Sets the maximum number of detections to keep.
+
+        @param top_k: Maximum number of detections to keep.
+        @type top_k: int
+        """
         self.top_k = top_k
 
     def run(self):
-        """Postprocessing logic for SCRFD model.
-
-        Returns:
-            ...
-        """
-
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
-
-            print("SCRFD node")
-            print(f"Layer names = {output.getAllLayerNames()}")
 
             score_8 = output.getTensor("score_8").flatten().astype(np.float32)
             score_16 = output.getTensor("score_16").flatten().astype(np.float32)

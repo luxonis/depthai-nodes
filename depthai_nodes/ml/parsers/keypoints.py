@@ -5,11 +5,48 @@ from ..messages.creators import create_keypoints_message
 
 
 class KeypointParser(dai.node.ThreadedHostNode):
+    """Parser class for 2D or 3D keypoints models. It expects one ouput layer containing
+    keypoints. The number of keypoints must be specified. Moreover, the keypoints are
+    normalized by a scale factor if provided.
+
+    Attributes
+    ----------
+    input : Node.Input
+        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
+    out : Node.Output
+        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
+    scale_factor : float
+        Scale factor to divide the keypoints by.
+    num_keypoints : int
+        Number of keypoints the model detects.
+
+    Output Message/s
+    ----------------
+    **Type**: Keypoints
+
+    **Description**: Keypoints message containing 2D or 3D keypoints.
+
+    Error Handling
+    --------------
+    **ValueError**: If the number of keypoints is not specified.
+
+    **ValueError**: If the number of coordinates per keypoint is not 2 or 3.
+
+    **ValueError**: If the number of output layers is not 1.
+    """
+
     def __init__(
         self,
         scale_factor=1,
         num_keypoints=None,
     ):
+        """Initializes KeypointParser node.
+
+        @param scale_factor: Scale factor to divide the keypoints by.
+        @type scale_factor: float
+        @param num_keypoints: Number of keypoints.
+        @type num_keypoints: int
+        """
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
@@ -18,18 +55,22 @@ class KeypointParser(dai.node.ThreadedHostNode):
         self.num_keypoints = num_keypoints
 
     def setScaleFactor(self, scale_factor):
+        """Sets the scale factor to divide the keypoints by.
+
+        @param scale_factor: Scale factor to divide the keypoints by.
+        @type scale_factor: float
+        """
         self.scale_factor = scale_factor
 
     def setNumKeypoints(self, num_keypoints):
+        """Sets the number of keypoints.
+
+        @param num_keypoints: Number of keypoints.
+        @type num_keypoints: int
+        """
         self.num_keypoints = num_keypoints
 
     def run(self):
-        """Postprocessing logic for Keypoint model.
-
-        Returns:
-            dai.Keypoints: num_keypoints keypoints (2D or 3D).
-        """
-
         if self.num_keypoints is None:
             raise ValueError("Number of keypoints must be specified!")
 
