@@ -12,6 +12,7 @@ from .thermal_image import ThermalImageParser
 from .xfeat import XFeatParser
 from .yunet import YuNetParser
 from .age_gender import AgeGenderParser
+from .hrnet import HRNetParser
 
 __all__ = [
     "ImageOutputParser",
@@ -28,4 +29,5 @@ __all__ = [
     "ThermalImageParser",
     "ClassificationParser",
     "AgeGenderParser",
+    "HRNetParser",
 ]
