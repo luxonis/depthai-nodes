@@ -16,7 +16,7 @@ def create_classification_message(
         A numpy array of shape (n_classes,) containing the probability score of each class.
 
     classes : np.ndarray = []
-        A numpy array of class names. If not provided, class names are set to None.
+        A numpy array of shape (n_classes, ), containing class names. If not provided, class names are set to [].
 
 
     Returns
@@ -26,8 +26,11 @@ def create_classification_message(
         where each item is [class_name, probability_score].
         If no class names are provided, class_name is set to None.
     """
-    if classes is None:
+
+    if type(classes) == type(None):
         classes = np.array([])
+    else:
+        classes = np.array(classes)
 
     if len(scores) == 0:
         raise ValueError("Scores should not be empty.")
@@ -35,12 +38,15 @@ def create_classification_message(
     if len(scores) != len(scores.flatten()):
         raise ValueError(f"Scores should be a 1D array, got {scores.shape}.")
 
+    if len(classes) != len(classes.flatten()):
+        raise ValueError(f"Classes should be a 1D array, got {classes.shape}.")
+
     scores = scores.flatten()
+    classes = classes.flatten()
 
     if not np.issubdtype(scores.dtype, np.floating):
         raise ValueError(f"Scores should be of type float, got {scores.dtype}.")
 
-    print("scores", np.sum(scores))
     if not np.isclose(np.sum(scores), 1.0, atol=1e-1):
         raise ValueError(f"Scores should sum to 1, got {np.sum(scores)}.")
 
@@ -54,15 +60,9 @@ def create_classification_message(
     sorted_args = np.argsort(scores)[::-1]
     scores = scores[sorted_args]
 
-    if len(classes) == 0:
-        classification_msg.classes = [
-            [None, float(scores[i])] for i in range(len(scores))
-        ]
-        return classification_msg
+    if len(classes) != 0:
+        classification_msg.classes = classes[sorted_args].tolist()
 
-    classes = classes[sorted_args]
-    classification_msg.classes = [
-        [str(classes[i]), float(scores[i])] for i in range(len(classes))
-    ]
+    classification_msg.scores = scores.tolist()
 
     return classification_msg

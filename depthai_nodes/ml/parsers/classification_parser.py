@@ -7,34 +7,57 @@ from ..messages.creators import create_classification_message
 class ClassificationParser(dai.node.ThreadedHostNode):
     """Postprocessing logic for Classification model.
 
-    Parameters
+    Attributes
     ----------
+    input : Node.Input
+        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
+    out : Node.Output
+        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     classes : list[str]
-        List of class labels.
+        List of class names to be used for linking with their respective scores. Expected to be in the same order as Neural Network's output. If not provided, the message will only return sorted scores.
     is_softmax : bool = True
-        True, if output is already softmaxed.
+        If False, the scores are converted to probabilities using softmax function.
+    n_classes : int = len(classes)
+        Number of provided classes. This variable is set automatically based on provided classes.
 
-    Returns
-    -------
-        Classifications: dai.Buffer
-            An object with parameter `classes`, which is a list of items like [class_name, probability_score].
-            If no class names are provided, class_name is set to None.
+    Output Message/s
+    ----------------
+    **Type** : Classifications(dai.Buffer):
+         An object with attributes `classes` and `scores`. `classes` is a list of classes, sorted in descending order of scores. `scores` is a list of corresponding scores.
     """
 
     def __init__(self, classes: list[str] = None, is_softmax: bool = True):
+        """Initializes the ClassificationParser node.
+
+        @param classes: List of class names to be used for linking with their respective
+            scores.
+        @param is_softmax: If False, the scores are converted to probabilities using
+            softmax function.
+        """
+
         dai.node.ThreadedHostNode.__init__(self)
         self.out = self.createOutput()
         self.input = self.createInput()
-        if classes is None:
-            self.classes = []
-        else:
-            self.classes = np.array(classes)
-        self.n_classes = len(classes)
+        self.classes = classes if classes is not None else []
+        self.n_classes = len(self.classes)
         self.is_softmax = is_softmax
 
-    def setClasses(self, classes):
-        self.classes = classes
-        self.n_classes = len(classes)
+    def setClasses(self, classes: list[str]):
+        """Sets the class names for the classification model.
+
+        @param classes: List of class names to be used for linking with their respective
+            scores.
+        """
+        self.classes = classes if classes is not None else []
+        self.n_classes = len(self.classes)
+
+    def setSoftmax(self, is_softmax: bool):
+        """Sets the softmax flag for the classification model.
+
+        @param is_softmax: If False, the parser will convert the scores to probabilities
+            using softmax function.
+        """
+        self.is_softmax = is_softmax
 
     def run(self):
         while self.isRunning():
@@ -51,7 +74,7 @@ class ClassificationParser(dai.node.ThreadedHostNode):
 
             scores = output.getTensor(output_layer_names[0])
             scores = np.array(scores).flatten()
-
+            classes = np.array(self.classes)
             if len(scores) != self.n_classes and self.n_classes != 0:
                 raise ValueError(
                     f"Number of labels and scores mismatch. Provided {self.n_classes} class names and {len(scores)} scores."
@@ -61,6 +84,6 @@ class ClassificationParser(dai.node.ThreadedHostNode):
                 ex = np.exp(scores)
                 scores = ex / np.sum(ex)
 
-            msg = create_classification_message(scores, self.classes)
+            msg = create_classification_message(scores, classes)
 
             self.out.send(msg)
