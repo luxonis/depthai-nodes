@@ -31,16 +31,30 @@ def local_maximum_filter(x: np.ndarray, kernel_size: int) -> np.ndarray:
         mode="constant",
     )
 
-    # Initialize the output array
-    local_max = np.zeros_like(x)
+    # Use stride tricks to generate a view of the array with sliding windows
+    shape = (
+        padded_x.shape[0],
+        padded_x.shape[1],
+        height,
+        width,
+        kernel_size,
+        kernel_size,
+    )
+    strides = (
+        padded_x.strides[0],
+        padded_x.strides[1],
+        padded_x.strides[2],
+        padded_x.strides[3],
+        padded_x.strides[2],
+        padded_x.strides[3],
+    )
 
-    # Apply the maximum filter
-    for i in range(height):
-        for j in range(width):
-            # Extract the local region
-            local_region = padded_x[:, :, i : i + kernel_size, j : j + kernel_size]
-            # Compute the local maximum
-            local_max[:, :, i, j] = np.max(local_region, axis=(2, 3))
+    sliding_window_view = np.lib.stride_tricks.as_strided(
+        padded_x, shape=shape, strides=strides
+    )
+
+    # Compute the local maximum over the sliding windows
+    local_max = np.max(sliding_window_view, axis=(4, 5))
 
     return local_max
 
