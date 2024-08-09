@@ -146,5 +146,6 @@ class YuNetParser(dai.node.ThreadedHostNode):
                 labels,
                 keypoints,
             )
+            detections_message.setTimestamp(output.getTimestamp())
 
             self.out.send(detections_message)

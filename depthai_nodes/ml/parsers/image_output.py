@@ -75,5 +75,6 @@ class ImageOutputParser(dai.node.ThreadedHostNode):
                 image=image,
                 is_bgr=self.output_is_bgr,
             )
+            image_message.setTimestamp(output.getTimestamp())
 
             self.out.send(image_message)

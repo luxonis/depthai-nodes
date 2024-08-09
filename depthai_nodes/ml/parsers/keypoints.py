@@ -100,5 +100,6 @@ class KeypointParser(dai.node.ThreadedHostNode):
             keypoints /= self.scale_factor
 
             msg = create_keypoints_message(keypoints)
+            msg.setTimestamp(output.getTimestamp())
 
             self.out.send(msg)

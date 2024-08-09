@@ -80,5 +80,6 @@ class SuperAnimalParser(dai.node.ThreadedHostNode):
             keypoints = keypoints[:, :2] / self.scale_factor
 
             msg = create_keypoints_message(keypoints, scores, self.score_threshold)
+            msg.setTimestamp(output.getTimestamp())
 
             self.out.send(msg)
