@@ -89,4 +89,5 @@ class SegmentationParser(dai.node.ThreadedHostNode):
             )
 
             imgFrame = create_segmentation_message(class_map)
+            imgFrame.setTimestamp(output.getTimestamp())
             self.out.send(imgFrame)

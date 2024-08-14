@@ -83,4 +83,5 @@ class MPHandLandmarkParser(dai.node.ThreadedHostNode):
             hand_landmarks_msg = create_hand_keypoints_message(
                 landmarks, float(handedness), float(hand_score), self.score_threshold
             )
+            hand_landmarks_msg.setTimestamp(output.getTimestamp())
             self.out.send(hand_landmarks_msg)

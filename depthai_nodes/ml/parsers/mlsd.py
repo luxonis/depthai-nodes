@@ -97,4 +97,5 @@ class MLSDParser(dai.node.ThreadedHostNode):
             )
 
             message = create_line_detection_message(lines, np.array(scores))
+            message.setTimestamp(output.getTimestamp())
             self.out.send(message)
