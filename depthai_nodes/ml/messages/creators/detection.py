@@ -98,7 +98,7 @@ def create_detection_message(
             raise ValueError(f"keypoints should be list, got {type(keypoints)}.")
         for pointcloud in keypoints:
             for point in pointcloud:
-                if not isinstance(point, Tuple):
+                if not isinstance(point, Tuple) and not isinstance(point, List):
                     raise ValueError(
                         f"keypoint pairs should be list of tuples, got {type(point)}."
                     )
