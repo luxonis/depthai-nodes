@@ -44,4 +44,5 @@ class ThermalImageParser(dai.node.ThreadedHostNode):
             thermal_map = output[0]
 
             thermal_message = create_thermal_message(thermal_map=thermal_map)
+            thermal_message.setTimestamp(output.getTimestamp())
             self.out.send(thermal_message)

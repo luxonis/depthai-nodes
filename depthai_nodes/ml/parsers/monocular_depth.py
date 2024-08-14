@@ -66,4 +66,5 @@ class MonocularDepthParser(dai.node.ThreadedHostNode):
                 depth_map=depth_map,
                 depth_type=self.depth_type,
             )
+            depth_message.setTimestamp(output.getTimestamp())
             self.out.send(depth_message)

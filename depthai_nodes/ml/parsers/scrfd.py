@@ -173,4 +173,5 @@ class SCRFDParser(dai.node.ThreadedHostNode):
             scores = scores[indices]
 
             detection_msg = create_detection_message(bboxes, scores, None, None)
+            detection_msg.setTimestamp(output.getTimestamp())
             self.out.send(detection_msg)
