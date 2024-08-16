@@ -38,12 +38,17 @@ class MonocularDepthParser(dai.node.ThreadedHostNode):
                 )
             output = output.getTensor(output_layer_names[0], dequantize=True)
 
-            if output.shape[0] == 1:
-                depth_map = output[0]
-            elif output.shape[2] == 1:
-                depth_map = output[:, :, 0]
-            else:
+            if len(output.shape) == 3:
+                if output.shape[0] == 1:
+                    depth_map = output[0]
+                elif output.shape[2] == 1:
+                    depth_map = output[:, :, 0]
+            elif len(output.shape) == 2:
                 depth_map = output
+            else:
+                raise ValueError(
+                    f"Expected 3- or 2-dimensional output, got {len(output.shape)}-dimensional",
+                )
 
             depth_message = create_depth_message(
                 depth_map=depth_map,
