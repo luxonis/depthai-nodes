@@ -1,4 +1,6 @@
 from .classification import ClassificationParser
+from .age_gender import AgeGenderParser
+from .hrnet import HRNetParser
 from .image_output import ImageOutputParser
 from .keypoints import KeypointParser
 from .mediapipe_hand_landmarker import MPHandLandmarkParser
@@ -11,8 +13,6 @@ from .superanimal_landmarker import SuperAnimalParser
 from .thermal_image import ThermalImageParser
 from .xfeat import XFeatParser
 from .yunet import YuNetParser
-from .age_gender import AgeGenderParser
-from .hrnet import HRNetParser
 
 __all__ = [
     "ImageOutputParser",

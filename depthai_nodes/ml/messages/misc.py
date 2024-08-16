@@ -8,11 +8,11 @@ class AgeGender(dai.Buffer):
         super().__init__()
         self._age: float = None
         self._gender_prob: List[float] = None
-        
+
     @property
     def age(self) -> float:
         return self._age
-    
+
     @age.setter
     def age(self, value: float):
         if not isinstance(value, float):
@@ -20,11 +20,11 @@ class AgeGender(dai.Buffer):
                 f"start_point must be of type float, instead got {type(value)}."
             )
         self._age = value
-    
+
     @property
     def gender_prob(self) -> List[float]:
         return self._gender_prob
-    
+
     @gender_prob.setter
     def gender_prob(self, value: List[float]):
         if not isinstance(value, List):
