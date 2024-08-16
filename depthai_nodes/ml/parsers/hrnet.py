@@ -70,10 +70,11 @@ class HRNetParser(dai.node.ThreadedHostNode):
                 [map_w, map_h]
             )  # normalize keypoints to [0, 1]
 
-            keypoints_msg = create_keypoints_message(
+            keypoints_message = create_keypoints_message(
                 keypoints=keypoints,
                 scores=scores,
                 confidence_threshold=self.score_threshold,
             )
+            keypoints_message.setTimestamp(output.getTimestamp())
 
-            self.out.send(keypoints_msg)
+            self.out.send(keypoints_message)

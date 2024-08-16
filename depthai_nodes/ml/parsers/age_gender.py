@@ -38,5 +38,6 @@ class AgeGenderParser(dai.node.ThreadedHostNode):
             prob = output.getTensor("prob", dequantize=True).flatten().tolist()
 
             age_gender_message = create_age_gender_message(age=age, gender_prob=prob)
+            age_gender_message.setTimestamp(output.getTimestamp())
 
             self.out.send(age_gender_message)
