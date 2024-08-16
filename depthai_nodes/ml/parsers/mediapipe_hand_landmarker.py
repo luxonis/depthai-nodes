@@ -71,9 +71,21 @@ class MPHandLandmarkParser(dai.node.ThreadedHostNode):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            landmarks = output.getTensor("Identity").reshape(21, 3).astype(np.float32)
-            hand_score = output.getTensor("Identity_1").reshape(-1).astype(np.float32)
-            handedness = output.getTensor("Identity_2").reshape(-1).astype(np.float32)
+            landmarks = (
+                output.getTensor("Identity", dequantize=True)
+                .reshape(21, 3)
+                .astype(np.float32)
+            )
+            hand_score = (
+                output.getTensor("Identity_1", dequantize=True)
+                .reshape(-1)
+                .astype(np.float32)
+            )
+            handedness = (
+                output.getTensor("Identity_2", dequantize=True)
+                .reshape(-1)
+                .astype(np.float32)
+            )
             hand_score = hand_score[0]
             handedness = handedness[0]
 
