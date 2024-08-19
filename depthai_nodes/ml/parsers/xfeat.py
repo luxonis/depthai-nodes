@@ -82,8 +82,17 @@ class XFeatParser(dai.node.ThreadedHostNode):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            feats = output.getTensor("feats").astype(np.float32)
-            keypoints = output.getTensor("keypoints").astype(np.float32)
+            feats = output.getTensor("feats", dequantize=True).astype(np.float32)
+            keypoints = output.getTensor("keypoints", dequantize=True).astype(
+                np.float32
+            )
+
+            if len(feats.shape) == 3:
+                feats = feats.reshape((1,) + feats.shape).transpose(0, 3, 1, 2)
+            if len(keypoints.shape) == 3:
+                keypoints = keypoints.reshape((1,) + keypoints.shape).transpose(
+                    0, 3, 1, 2
+                )
 
             result = detect_and_compute(
                 feats, keypoints, resize_rate_w, resize_rate_h, self.input_size

@@ -87,7 +87,9 @@ class KeypointParser(dai.node.ThreadedHostNode):
                     f"Expected 1 output layer, got {len(output_layer_names)}."
                 )
 
-            keypoints = output.getTensor(output_layer_names[0])
+            keypoints = output.getTensor(output_layer_names[0], dequantize=True).astype(
+                np.float32
+            )
             num_coords = int(np.prod(keypoints.shape) / self.num_keypoints)
 
             if num_coords not in [2, 3]:

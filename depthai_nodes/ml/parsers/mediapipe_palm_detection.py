@@ -85,8 +85,16 @@ class MPPalmDetectionParser(dai.node.ThreadedHostNode):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            bboxes = output.getTensor("Identity").reshape(2016, 18).astype(np.float32)
-            scores = output.getTensor("Identity_1").reshape(2016).astype(np.float32)
+            bboxes = (
+                output.getTensor("Identity", dequantize=True)
+                .reshape(2016, 18)
+                .astype(np.float32)
+            )
+            scores = (
+                output.getTensor("Identity_1", dequantize=True)
+                .reshape(2016)
+                .astype(np.float32)
+            )
 
             decoded_bboxes = generate_anchors_and_decode(
                 bboxes=bboxes, scores=scores, threshold=self.score_threshold, scale=192

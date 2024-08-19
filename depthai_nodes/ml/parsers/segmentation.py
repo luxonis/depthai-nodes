@@ -62,9 +62,11 @@ class SegmentationParser(dai.node.ThreadedHostNode):
                     f"Expected 1 output layer, got {len(output_layer_names)}."
                 )
 
-            segmentation_mask = output.getTensor(output_layer_names[0])[
-                0
-            ]  # num_clases x H x W
+            segmentation_mask = output.getTensor(output_layer_names[0], dequantize=True)
+            if len(segmentation_mask.shape) == 4:
+                segmentation_mask = segmentation_mask[0]
+            else:
+                segmentation_mask = segmentation_mask.transpose(2, 0, 1)
 
             if len(segmentation_mask.shape) != 3:
                 raise ValueError(
