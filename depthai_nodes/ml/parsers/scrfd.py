@@ -125,55 +125,46 @@ class SCRFDParser(dai.node.ThreadedHostNode):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            score_8 = (
-                output.getTensor("score_8", dequantize=True)
-                .flatten()
-                .astype(np.float32)
-            )
-            score_16 = (
-                output.getTensor("score_16", dequantize=True)
-                .flatten()
-                .astype(np.float32)
-            )
-            score_32 = (
-                output.getTensor("score_32", dequantize=True)
-                .flatten()
-                .astype(np.float32)
-            )
-            bbox_8 = (
-                output.getTensor("bbox_8", dequantize=True)
-                .reshape(len(score_8), 4)
-                .astype(np.float32)
-            )
-            bbox_16 = (
-                output.getTensor("bbox_16", dequantize=True)
-                .reshape(len(score_16), 4)
-                .astype(np.float32)
-            )
-            bbox_32 = (
-                output.getTensor("bbox_32", dequantize=True)
-                .reshape(len(score_32), 4)
-                .astype(np.float32)
-            )
-            kps_8 = (
-                output.getTensor("kps_8", dequantize=True)
-                .reshape(len(score_8), 10)
-                .astype(np.float32)
-            )
-            kps_16 = (
-                output.getTensor("kps_16", dequantize=True)
-                .reshape(len(score_16), 10)
-                .astype(np.float32)
-            )
-            kps_32 = (
-                output.getTensor("kps_32", dequantize=True)
-                .reshape(len(score_32), 10)
-                .astype(np.float32)
-            )
+            scores_concatenated = []
+            bboxes_concatenated = []
+            kps_concatenated = []
 
-            bboxes_concatenated = [bbox_8, bbox_16, bbox_32]
-            scores_concatenated = [score_8, score_16, score_32]
-            kps_concatenated = [kps_8, kps_16, kps_32]
+            for stride in self.feat_stride_fpn:
+                score_layer_name = f"score_{stride}"
+                bbox_layer_name = f"bbox_{stride}"
+                kps_layer_name = f"kps_{stride}"
+                if score_layer_name not in output.getAllLayerNames():
+                    raise ValueError(
+                        f"Layer {score_layer_name} not found in the model output."
+                    )
+                if bbox_layer_name not in output.getAllLayerNames():
+                    raise ValueError(
+                        f"Layer {bbox_layer_name} not found in the model output."
+                    )
+                if kps_layer_name not in output.getAllLayerNames():
+                    raise ValueError(
+                        f"Layer {kps_layer_name} not found in the model output."
+                    )
+
+                score_tensor = (
+                    output.getTensor(score_layer_name, dequantize=True)
+                    .flatten()
+                    .astype(np.float32)
+                )
+                bbox_tensor = (
+                    output.getTensor(bbox_layer_name, dequantize=True)
+                    .reshape(len(score_tensor), 4)
+                    .astype(np.float32)
+                )
+                kps_tensor = (
+                    output.getTensor(kps_layer_name, dequantize=True)
+                    .reshape(len(score_tensor), 10)
+                    .astype(np.float32)
+                )
+
+                scores_concatenated.append(score_tensor)
+                bboxes_concatenated.append(bbox_tensor)
+                kps_concatenated.append(kps_tensor)
 
             bboxes, scores, keypoints = decode_scrfd(
                 bboxes_concatenated=bboxes_concatenated,
