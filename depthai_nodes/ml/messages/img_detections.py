@@ -39,7 +39,7 @@ class ImgDetectionWithKeypoints(dai.ImgDetection):
             raise TypeError("Keypoints must be a list")
         for item in value:
             if (
-                not isinstance(item, tuple)
+                not (isinstance(item, tuple) or isinstance(item, list))
                 or len(item) != 2
                 or not all(isinstance(i, (int, float)) for i in item)
             ):
