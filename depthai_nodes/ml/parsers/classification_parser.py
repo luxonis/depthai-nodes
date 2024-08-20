@@ -85,5 +85,6 @@ class ClassificationParser(dai.node.ThreadedHostNode):
                 scores = ex / np.sum(ex)
 
             msg = create_classification_message(scores, classes)
+            msg.setTimestamp(output.getTimestamp())
 
             self.out.send(msg)
