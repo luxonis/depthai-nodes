@@ -1,3 +1,4 @@
+from .classification_message import create_classification_message
 from .depth import create_depth_message
 from .detection import create_detection_message, create_line_detection_message
 from .image import create_image_message
@@ -16,4 +17,5 @@ __all__ = [
     "create_tracked_features_message",
     "create_keypoints_message",
     "create_thermal_message",
+    "create_classification_message",
 ]
