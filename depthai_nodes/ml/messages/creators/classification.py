@@ -14,7 +14,7 @@ def create_classification_message(
     @param classes: A numpy array of shape (n_classes, ), containing class names. If not provided, class names are set to [].
     @type classes: np.ndarray
 
-    @return: A message with parameter `classes` which is a list of shape (n_classes, 2) where each item is [class_name, probability_score]. If no class names are provided, class_name is set to None.
+    @return: A message with attributes `classes` and `scores`. `classes` is a list of classes, sorted in descending order of scores. `scores` is a list of the corresponding scores.
     @rtype: Classifications
 
     @raise ValueError: If the scores are empty.
