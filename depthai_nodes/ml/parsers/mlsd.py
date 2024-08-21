@@ -84,12 +84,17 @@ class MLSDParser(dai.node.ThreadedHostNode):
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
-                nn_passthrough: dai.NNData = self.nn_passthrough.get()
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            tpMap = nn_passthrough.getTensor("output").astype(np.float32)
-            heat_np = output.getTensor("heat").astype(np.float32)
+            tpMap = output.getTensor("tpMap", dequantize=True).astype(np.float32)
+            heat_np = output.getTensor("heat", dequantize=True).astype(np.float32)
+
+            if len(tpMap.shape) != 4:
+                raise ValueError("Invalid shape of the tpMap tensor. Should be 4D.")
+            if tpMap.shape[3] == 9:
+                # We have NWHC format, transform to NCHW
+                tpMap = np.transpose(tpMap, (0, 3, 1, 2))
 
             pts, pts_score, vmap = decode_scores_and_points(tpMap, heat_np, self.topk_n)
             lines, scores = get_lines(
