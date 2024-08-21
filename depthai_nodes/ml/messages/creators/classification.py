@@ -1,10 +1,12 @@
+from typing import List, Union
+
 import numpy as np
 
 from ...messages import Classifications
 
 
 def create_classification_message(
-    scores: np.ndarray, classes: np.ndarray = None
+    classes: Union[np.ndarray, List], scores: Union[np.ndarray, List]
 ) -> Classifications:
     """Create a message for classification. The message contains the class names and
     their respective scores, sorted in descending order of scores.
@@ -26,9 +28,14 @@ def create_classification_message(
     """
 
     if type(classes) == type(None):
-        classes = np.array([])
-    else:
+        raise ValueError("Classes should not be None.")
+    elif isinstance(classes, list):
         classes = np.array(classes)
+
+    if type(scores) == type(None):
+        raise ValueError("Scores should not be None.")
+    elif isinstance(scores, list):
+        scores = np.array(scores)
 
     if len(scores) == 0:
         raise ValueError("Scores should not be empty.")

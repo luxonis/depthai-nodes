@@ -74,7 +74,12 @@ class ClassificationParser(dai.node.ThreadedHostNode):
                     f"Expected 1 output layer, got {len(output_layer_names)}."
                 )
 
-            scores = output.getTensor(output_layer_names[0])
+            if self.n_classes == 0:
+                raise ValueError("Classes must be provided for classification.")
+
+            scores = output.getTensor(output_layer_names[0], dequantize=True).astype(
+                np.float32
+            )
             scores = np.array(scores).flatten()
             classes = np.array(self.classes)
             if len(scores) != self.n_classes and self.n_classes != 0:
@@ -86,7 +91,7 @@ class ClassificationParser(dai.node.ThreadedHostNode):
                 ex = np.exp(scores)
                 scores = ex / np.sum(ex)
 
-            msg = create_classification_message(scores, classes)
+            msg = create_classification_message(classes, scores)
             msg.setTimestamp(output.getTimestamp())
 
             self.out.send(msg)
