@@ -1,4 +1,4 @@
-from .classification_parser import ClassificationParser
+from .classification import ClassificationParser
 from .image_output import ImageOutputParser
 from .keypoints import KeypointParser
 from .mediapipe_hand_landmarker import MPHandLandmarkParser

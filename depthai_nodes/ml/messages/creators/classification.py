@@ -1,4 +1,3 @@
-import depthai as dai
 import numpy as np
 
 from ...messages import Classifications
@@ -6,25 +5,24 @@ from ...messages import Classifications
 
 def create_classification_message(
     scores: np.ndarray, classes: np.ndarray = None
-) -> dai.Buffer:
+) -> Classifications:
     """Create a message for classification. The message contains the class names and
     their respective scores, sorted in descending order of scores.
 
-    Parameters
-    ----------
-    scores : np.ndarray
-        A numpy array of shape (n_classes,) containing the probability score of each class.
+    @param scores: A numpy array of shape (n_classes,) containing the probability score of each class.
+    @type scores: np.ndarray
+    @param classes: A numpy array of shape (n_classes, ), containing class names. If not provided, class names are set to [].
+    @type classes: np.ndarray
 
-    classes : np.ndarray = []
-        A numpy array of shape (n_classes, ), containing class names. If not provided, class names are set to [].
+    @return: A message with parameter `classes` which is a list of shape (n_classes, 2) where each item is [class_name, probability_score]. If no class names are provided, class_name is set to None.
+    @rtype: Classifications
 
-
-    Returns
-    --------
-    Classifications : dai.Buffer
-        A message with parameter `classes` which is a list of shape (n_classes, 2)
-        where each item is [class_name, probability_score].
-        If no class names are provided, class_name is set to None.
+    @raise ValueError: If the scores are empty.
+    @raise ValueError: If the scores are not a 1D array.
+    @raise ValueError: If the classes are not a 1D array.
+    @raise ValueError: If the scores are not of type float.
+    @raise ValueError: If the scores do not sum to 1.
+    @raise ValueError: If the number of labels and scores mismatch.
     """
 
     if type(classes) == type(None):
