@@ -81,7 +81,7 @@ class ClassificationParser(dai.node.ThreadedHostNode):
                 np.float32
             )
             scores = np.array(scores).flatten()
-            classes = np.array(self.classes)
+
             if len(scores) != self.n_classes and self.n_classes != 0:
                 raise ValueError(
                     f"Number of labels and scores mismatch. Provided {self.n_classes} class names and {len(scores)} scores."
@@ -91,7 +91,7 @@ class ClassificationParser(dai.node.ThreadedHostNode):
                 ex = np.exp(scores)
                 scores = ex / np.sum(ex)
 
-            msg = create_classification_message(classes, scores)
+            msg = create_classification_message(self.classes, scores)
             msg.setTimestamp(output.getTimestamp())
 
             self.out.send(msg)
