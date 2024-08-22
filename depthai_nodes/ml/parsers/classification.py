@@ -1,3 +1,5 @@
+from typing import List
+
 import depthai as dai
 import numpy as np
 
@@ -13,7 +15,7 @@ class ClassificationParser(dai.node.ThreadedHostNode):
         Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
     out : Node.Output
         Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
-    classes : list[str]
+    classes : List[str]
         List of class names to be used for linking with their respective scores. Expected to be in the same order as Neural Network's output. If not provided, the message will only return sorted scores.
     is_softmax : bool = True
         If False, the scores are converted to probabilities using softmax function.
@@ -26,7 +28,7 @@ class ClassificationParser(dai.node.ThreadedHostNode):
          An object with attributes `classes` and `scores`. `classes` is a list of classes, sorted in descending order of scores. `scores` is a list of corresponding scores.
     """
 
-    def __init__(self, classes: list[str] = None, is_softmax: bool = True):
+    def __init__(self, classes: List[str] = None, is_softmax: bool = True):
         """Initializes the ClassificationParser node.
 
         @param classes: List of class names to be used for linking with their respective
@@ -42,7 +44,7 @@ class ClassificationParser(dai.node.ThreadedHostNode):
         self.n_classes = len(self.classes)
         self.is_softmax = is_softmax
 
-    def setClasses(self, classes: list[str]):
+    def setClasses(self, classes: List[str]):
         """Sets the class names for the classification model.
 
         @param classes: List of class names to be used for linking with their respective
@@ -72,9 +74,14 @@ class ClassificationParser(dai.node.ThreadedHostNode):
                     f"Expected 1 output layer, got {len(output_layer_names)}."
                 )
 
-            scores = output.getTensor(output_layer_names[0])
+            if self.n_classes == 0:
+                raise ValueError("Classes must be provided for classification.")
+
+            scores = output.getTensor(output_layer_names[0], dequantize=True).astype(
+                np.float32
+            )
             scores = np.array(scores).flatten()
-            classes = np.array(self.classes)
+
             if len(scores) != self.n_classes and self.n_classes != 0:
                 raise ValueError(
                     f"Number of labels and scores mismatch. Provided {self.n_classes} class names and {len(scores)} scores."
@@ -84,7 +91,7 @@ class ClassificationParser(dai.node.ThreadedHostNode):
                 ex = np.exp(scores)
                 scores = ex / np.sum(ex)
 
-            msg = create_classification_message(scores, classes)
+            msg = create_classification_message(self.classes, scores)
             msg.setTimestamp(output.getTimestamp())
 
             self.out.send(msg)
