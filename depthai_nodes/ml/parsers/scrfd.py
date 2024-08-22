@@ -14,11 +14,11 @@ class SCRFDParser(dai.node.ThreadedHostNode):
         Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
     out : Node.Output
         Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
-    score_threshold : float
+    conf_threshold : float
         Confidence score threshold for detected faces.
-    nms_threshold : float
+    iou_threshold : float
         Non-maximum suppression threshold.
-    top_k : int
+    max_det : int
         Maximum number of detections to keep.
     feat_stride_fpn : tuple
         Tuple of the feature strides.
@@ -36,21 +36,21 @@ class SCRFDParser(dai.node.ThreadedHostNode):
 
     def __init__(
         self,
-        score_threshold=0.5,
-        nms_threshold=0.5,
-        top_k=100,
+        conf_threshold=0.5,
+        iou_threshold=0.5,
+        max_det=100,
         input_size=(640, 640),
         feat_stride_fpn=(8, 16, 32),
         num_anchors=2,
     ):
         """Initializes the SCRFDParser node.
 
-        @param score_threshold: Confidence score threshold for detected faces.
-        @type score_threshold: float
-        @param nms_threshold: Non-maximum suppression threshold.
-        @type nms_threshold: float
-        @param top_k: Maximum number of detections to keep.
-        @type top_k: int
+        @param conf_threshold: Confidence score threshold for detected faces.
+        @type conf_threshold: float
+        @param iou_threshold: Non-maximum suppression threshold.
+        @type iou_threshold: float
+        @param max_det: Maximum number of detections to keep.
+        @type max_det: int
         @param feat_stride_fpn: List of the feature strides.
         @type feat_stride_fpn: tuple
         @param num_anchors: Number of anchors.
@@ -62,9 +62,9 @@ class SCRFDParser(dai.node.ThreadedHostNode):
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
 
-        self.score_threshold = score_threshold
-        self.nms_threshold = nms_threshold
-        self.top_k = top_k
+        self.conf_threshold = conf_threshold
+        self.iou_threshold = iou_threshold
+        self.max_det = max_det
 
         self.feat_stride_fpn = feat_stride_fpn
         self.num_anchors = num_anchors
@@ -76,23 +76,23 @@ class SCRFDParser(dai.node.ThreadedHostNode):
         @param threshold: Confidence score threshold for detected faces.
         @type threshold: float
         """
-        self.score_threshold = threshold
+        self.conf_threshold = threshold
 
-    def setNMSThreshold(self, threshold):
+    def setIOUThreshold(self, threshold):
         """Sets the non-maximum suppression threshold.
 
         @param threshold: Non-maximum suppression threshold.
         @type threshold: float
         """
-        self.nms_threshold = threshold
+        self.iou_threshold = threshold
 
-    def setTopK(self, top_k):
+    def setMaxDetections(self, max_det):
         """Sets the maximum number of detections to keep.
 
-        @param top_k: Maximum number of detections to keep.
-        @type top_k: int
+        @param max_det: Maximum number of detections to keep.
+        @type max_det: int
         """
-        self.top_k = top_k
+        self.max_det = max_det
 
     def setFeatStrideFPN(self, feat_stride_fpn):
         """Sets the feature stride of the FPN.
@@ -173,8 +173,8 @@ class SCRFDParser(dai.node.ThreadedHostNode):
                 feat_stride_fpn=self.feat_stride_fpn,
                 input_size=self.input_size,
                 num_anchors=self.num_anchors,
-                score_threshold=self.score_threshold,
-                nms_threshold=self.nms_threshold,
+                score_threshold=self.conf_threshold,
+                nms_threshold=self.iou_threshold,
             )
             detection_msg = create_detection_message(
                 bboxes, scores, None, keypoints.tolist()

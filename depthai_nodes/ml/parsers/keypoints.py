@@ -17,7 +17,7 @@ class KeypointParser(dai.node.ThreadedHostNode):
         Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     scale_factor : float
         Scale factor to divide the keypoints by.
-    num_keypoints : int
+    n_keypoints : int
         Number of keypoints the model detects.
 
     Output Message/s
@@ -38,21 +38,21 @@ class KeypointParser(dai.node.ThreadedHostNode):
     def __init__(
         self,
         scale_factor=1,
-        num_keypoints=None,
+        n_keypoints=None,
     ):
         """Initializes KeypointParser node.
 
         @param scale_factor: Scale factor to divide the keypoints by.
         @type scale_factor: float
-        @param num_keypoints: Number of keypoints.
-        @type num_keypoints: int
+        @param n_keypoints: Number of keypoints.
+        @type n_keypoints: int
         """
         dai.node.ThreadedHostNode.__init__(self)
         self.input = dai.Node.Input(self)
         self.out = dai.Node.Output(self)
 
         self.scale_factor = scale_factor
-        self.num_keypoints = num_keypoints
+        self.n_keypoints = n_keypoints
 
     def setScaleFactor(self, scale_factor):
         """Sets the scale factor to divide the keypoints by.
@@ -62,16 +62,16 @@ class KeypointParser(dai.node.ThreadedHostNode):
         """
         self.scale_factor = scale_factor
 
-    def setNumKeypoints(self, num_keypoints):
+    def setNumKeypoints(self, n_keypoints):
         """Sets the number of keypoints.
 
-        @param num_keypoints: Number of keypoints.
-        @type num_keypoints: int
+        @param n_keypoints: Number of keypoints.
+        @type n_keypoints: int
         """
-        self.num_keypoints = num_keypoints
+        self.n_keypoints = n_keypoints
 
     def run(self):
-        if self.num_keypoints is None:
+        if self.n_keypoints is None:
             raise ValueError("Number of keypoints must be specified!")
 
         while self.isRunning():
@@ -90,14 +90,14 @@ class KeypointParser(dai.node.ThreadedHostNode):
             keypoints = output.getTensor(output_layer_names[0], dequantize=True).astype(
                 np.float32
             )
-            num_coords = int(np.prod(keypoints.shape) / self.num_keypoints)
+            num_coords = int(np.prod(keypoints.shape) / self.n_keypoints)
 
             if num_coords not in [2, 3]:
                 raise ValueError(
                     f"Expected 2 or 3 coordinates per keypoint, got {num_coords}."
                 )
 
-            keypoints = keypoints.reshape(self.num_keypoints, num_coords)
+            keypoints = keypoints.reshape(self.n_keypoints, num_coords)
 
             keypoints /= self.scale_factor
 
