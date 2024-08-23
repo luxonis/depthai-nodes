@@ -105,10 +105,10 @@ class MPPalmDetectionParser(dai.node.ThreadedHostNode):
 
             for hand in decoded_bboxes:
                 extended_points = hand.rect_points
-                xmin = int(min(extended_points[0][0], extended_points[1][0]))
-                ymin = int(min(extended_points[0][1], extended_points[1][1]))
-                xmax = int(max(extended_points[2][0], extended_points[3][0]))
-                ymax = int(max(extended_points[2][1], extended_points[3][1]))
+                xmin = int(min([point[0] for point in extended_points]))
+                ymin = int(min([point[1] for point in extended_points]))
+                xmax = int(max([point[0] for point in extended_points]))
+                ymax = int(max([point[1] for point in extended_points]))
 
                 bboxes.append([xmin, ymin, xmax, ymax])
                 scores.append(hand.pd_score)
