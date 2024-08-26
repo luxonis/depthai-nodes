@@ -37,8 +37,8 @@ class ImageOutputParser(dai.node.ThreadedHostNode):
         @type output_is_bgr: bool
         """
         dai.node.ThreadedHostNode.__init__(self)
-        self.input = dai.Node.Input(self)
-        self.out = dai.Node.Output(self)
+        self.input = self.createInput()
+        self.out = self.createOutput()
 
         self.output_is_bgr = output_is_bgr
 

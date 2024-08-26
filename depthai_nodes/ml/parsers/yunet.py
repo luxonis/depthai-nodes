@@ -47,8 +47,8 @@ class YuNetParser(dai.node.ThreadedHostNode):
         @type max_det: int
         """
         dai.node.ThreadedHostNode.__init__(self)
-        self.input = dai.Node.Input(self)
-        self.out = dai.Node.Output(self)
+        self.input = self.createInput()
+        self.out = self.createOutput()
 
         self.conf_threshold = conf_threshold
         self.iou_threshold = iou_threshold

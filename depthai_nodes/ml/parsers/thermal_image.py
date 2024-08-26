@@ -24,8 +24,8 @@ class ThermalImageParser(dai.node.ThreadedHostNode):
     def __init__(self):
         """Initializes the ThermalImageParser node."""
         dai.node.ThreadedHostNode.__init__(self)
-        self.input = dai.Node.Input(self)
-        self.out = dai.Node.Output(self)
+        self.input = self.createInput()
+        self.out = self.createOutput()
 
     def run(self):
         while self.isRunning():

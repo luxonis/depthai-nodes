@@ -33,8 +33,8 @@ class MonocularDepthParser(dai.node.ThreadedHostNode):
         @type depth_type: str
         """
         dai.node.ThreadedHostNode.__init__(self)
-        self.input = dai.Node.Input(self)
-        self.out = dai.Node.Output(self)
+        self.input = self.createInput()
+        self.out = self.createOutput()
 
         self.depth_type = depth_type
 

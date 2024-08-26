@@ -36,8 +36,8 @@ class SegmentationParser(dai.node.ThreadedHostNode):
         @type background_class: bool
         """
         dai.node.ThreadedHostNode.__init__(self)
-        self.input = dai.Node.Input(self)
-        self.out = dai.Node.Output(self)
+        self.input = self.createInput()
+        self.out = self.createOutput()
         self.background_class = background_class
 
     def setBackgroundClass(self, background_class):
