@@ -58,9 +58,9 @@ class MonocularDepthParser(dai.node.ThreadedHostNode):
                 raise ValueError(
                     f"Expected 1 output layer, got {len(output_layer_names)}."
                 )
-            output = output.getTensor(output_layer_names[0])
+            depth_map = output.getTensor(output_layer_names[0])
 
-            depth_map = output[0]
+            depth_map = depth_map[0]
 
             depth_message = create_depth_message(
                 depth_map=depth_map,

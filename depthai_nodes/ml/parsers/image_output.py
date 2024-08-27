@@ -58,15 +58,15 @@ class ImageOutputParser(dai.node.ThreadedHostNode):
                 raise ValueError(
                     f"Expected 1 output layer, got {len(output_layer_names)}."
                 )
-            output = output.getTensor(output_layer_names[0], dequantize=True)
+            output_image = output.getTensor(output_layer_names[0], dequantize=True)
 
-            if len(output.shape) == 4:
-                image = output[0]
-            elif len(output.shape) == 3:
-                image = output
+            if len(output_image.shape) == 4:
+                image = output_image[0]
+            elif len(output_image.shape) == 3:
+                image = output_image
             else:
                 raise ValueError(
-                    f"Expected 3- or 4-dimensional output, got {len(output.shape)}-dimensional",
+                    f"Expected 3- or 4-dimensional output, got {len(output_image.shape)}-dimensional",
                 )
 
             image = unnormalize_image(image)
