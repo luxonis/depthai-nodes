@@ -1,13 +1,13 @@
-from typing import List
-
 import depthai as dai
+
+from ..messages import Classifications
 
 
 class AgeGender(dai.Buffer):
     def __init__(self):
         super().__init__()
         self._age: float = None
-        self._gender_prob: List[float] = None
+        self._gender = Classifications()
 
     @property
     def age(self) -> float:
@@ -22,18 +22,13 @@ class AgeGender(dai.Buffer):
         self._age = value
 
     @property
-    def gender_prob(self) -> List[float]:
-        return self._gender_prob
+    def gender(self) -> Classifications:
+        return self._gender
 
-    @gender_prob.setter
-    def gender_prob(self, value: List[float]):
-        if not isinstance(value, List):
+    @gender.setter
+    def gender(self, value: Classifications):
+        if not isinstance(value, Classifications):
             raise TypeError(
-                f"gender_prob must be of type List, instead got {type(value)}."
+                f"gender must be of type Classifications, instead got {type(value)}."
             )
-        for item in value:
-            if not isinstance(item, float):
-                raise TypeError(
-                    f"gender_prob list values must be of type float, instead got {type(value)}."
-                )
-        self._gender_prob = value
+        self._gender = value

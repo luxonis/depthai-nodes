@@ -1,6 +1,6 @@
 from typing import List
 
-from ...messages import AgeGender
+from ...messages import AgeGender, Classifications
 
 
 def create_age_gender_message(age: float, gender_prob: List[float]) -> AgeGender:
@@ -31,6 +31,9 @@ def create_age_gender_message(age: float, gender_prob: List[float]) -> AgeGender
 
     age_gender_message = AgeGender()
     age_gender_message.age = age
-    age_gender_message.gender_prob = gender_prob
+    gender = Classifications()
+    gender.classes = ["female", "male"]
+    gender.scores = gender_prob
+    age_gender_message.gender = gender
 
     return age_gender_message
