@@ -4,8 +4,8 @@ import depthai as dai
 import numpy as np
 
 from ...messages import (
-    ImgDetectionsWithKeypoints,
-    ImgDetectionWithKeypoints,
+    ImgDetectionsWithAdditionalOutput,
+    ImgDetectionWithAdditionalOutput,
     Line,
     Lines,
 )
@@ -16,6 +16,7 @@ def create_detection_message(
     scores: np.ndarray,
     labels: List[int] = None,
     keypoints: List[List[Tuple[float, float]]] = None,
+    masks: List[np.ndarray] = None,
 ) -> dai.ImgDetections:
     """Create a DepthAI message for an object detection.
 
@@ -27,9 +28,10 @@ def create_detection_message(
     @type labels: List[int]
     @param keypoints: Keypoints of detected objects of shape (N,2).
     @type keypoints: Optional[List[List[Tuple[float, float]]]]
+    @param masks: Masks of detected objects of shape (N, H/4, W/4).
 
     @return: Message containing the bounding boxes, labels, confidence scores, and keypoints of detected objects.
-    @rtype: dai.ImgDetections OR ImgDetectionsWithKeypoints
+    @rtype: dai.ImgDetections OR ImgDetectionsWithAdditionalOutput
 
     @raise ValueError: If the bboxes are not a numpy array.
     @raise ValueError: If the bboxes are not of shape (N,4).
@@ -44,6 +46,8 @@ def create_detection_message(
     @raise ValueError: If the keypoints are not a list.
     @raise ValueError: If each keypoint pair is not a tuple of two floats.
     @raise ValueError: If the keypoints do not have the same length as bboxes.
+    @raise ValueError: If the masks are not a list.
+    @raise ValueError: If each mask is not a 2D numpy array.
     """
 
     # checks for bboxes
@@ -106,10 +110,24 @@ def create_detection_message(
             raise ValueError(
                 f"keypoints should have same length as bboxes, got {len(keypoints)} and {bboxes.shape[0]}."
             )
+    
+    if masks is not None and len(masks) != 0:
+        if not isinstance(masks, List):
+            raise ValueError(f"masks should be list, got {type(masks)}.")
+        for mask in masks:
+            if not isinstance(mask, np.ndarray):
+                raise ValueError(f"mask should be numpy array, got {type(mask)}.")
+            if len(mask.shape) != 2:
+                raise ValueError(f"mask should be of shape (H/4, W/4), got {mask.shape}.")
 
-    if keypoints is not None:
-        img_detection = ImgDetectionWithKeypoints
-        img_detections = ImgDetectionsWithKeypoints
+        if len(masks) != bboxes.shape[0]:
+            raise ValueError(
+                f"masks should have same length as bboxes, got {len(masks)} and {bboxes.shape[0]}."
+            )
+
+    if keypoints is not None or masks is not None:
+        img_detection = ImgDetectionWithAdditionalOutput
+        img_detections = ImgDetectionsWithAdditionalOutput
     else:
         img_detection = dai.ImgDetection
         img_detections = dai.ImgDetections
@@ -128,6 +146,8 @@ def create_detection_message(
             detection.label = labels[i]
         if keypoints is not None:
             detection.keypoints = keypoints[i]
+        if masks is not None:
+            detection.mask = masks[i]
         detections.append(detection)
 
     detections_msg = img_detections()
