@@ -1,5 +1,5 @@
-from .classification import ClassificationParser
 from .age_gender import AgeGenderParser
+from .classification import ClassificationParser
 from .hrnet import HRNetParser
 from .image_output import ImageOutputParser
 from .keypoints import KeypointParser
