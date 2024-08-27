@@ -16,9 +16,6 @@ class MLSDParser(dai.node.ThreadedHostNode):
         Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
     out : Node.Output
         Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
-    nn_passthrough : Node.Input
-        Node's 2nd input. It accepts the passthrough of the Neural Network node. This is required for parsing the output of the M-LSD model.
-        It is a linking point to which the Neural Network's passthrough (network's input accutualy) is linked.
     topk_n : int
         Number of top candidates to keep.
     score_thr : float
@@ -49,9 +46,8 @@ class MLSDParser(dai.node.ThreadedHostNode):
         @type dist_thr: float
         """
         dai.node.ThreadedHostNode.__init__(self)
-        self.input = dai.Node.Input(self)
-        self.nn_passthrough = dai.Node.Input(self)
-        self.out = dai.Node.Output(self)
+        self.input = self.createInput()
+        self.out = self.createOutput()
         self.topk_n = topk_n
         self.score_thr = score_thr
         self.dist_thr = dist_thr

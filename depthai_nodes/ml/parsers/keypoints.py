@@ -48,8 +48,8 @@ class KeypointParser(dai.node.ThreadedHostNode):
         @type n_keypoints: int
         """
         dai.node.ThreadedHostNode.__init__(self)
-        self.input = dai.Node.Input(self)
-        self.out = dai.Node.Output(self)
+        self.input = self.createInput()
+        self.out = self.createOutput()
 
         self.scale_factor = scale_factor
         self.n_keypoints = n_keypoints

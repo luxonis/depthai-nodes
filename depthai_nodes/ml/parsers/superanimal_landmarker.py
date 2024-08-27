@@ -39,8 +39,8 @@ class SuperAnimalParser(dai.node.ThreadedHostNode):
         @type scale_factor: float
         """
         dai.node.ThreadedHostNode.__init__(self)
-        self.input = dai.Node.Input(self)
-        self.out = dai.Node.Output(self)
+        self.input = self.createInput()
+        self.out = self.createOutput()
 
         self.score_threshold = score_threshold
         self.scale_factor = scale_factor
