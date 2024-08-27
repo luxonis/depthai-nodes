@@ -20,6 +20,8 @@ class XFeatParser(dai.node.ThreadedHostNode):
         Original image size.
     input_size : Tuple[float, float]
         Input image size.
+    max_keypoints : int
+        Maximum number of keypoints to keep.
     previous_results : np.ndarray
         Previous results from the model. Previous results are used to match keypoints between two frames.
 
@@ -38,6 +40,7 @@ class XFeatParser(dai.node.ThreadedHostNode):
         self,
         original_size: Tuple[float, float] = None,
         input_size: Tuple[float, float] = (640, 352),
+        max_keypoints: int = 4096,
     ):
         """Initializes the XFeatParser node.
 
@@ -51,6 +54,7 @@ class XFeatParser(dai.node.ThreadedHostNode):
         self.out = self.createOutput()
         self.original_size = original_size
         self.input_size = input_size
+        self.max_keypoints = max_keypoints
         self.previous_results = None
 
     def setOriginalSize(self, original_size):
@@ -68,6 +72,14 @@ class XFeatParser(dai.node.ThreadedHostNode):
         @type input_size: Tuple[float, float]
         """
         self.input_size = input_size
+
+    def setMaxKeypoints(self, max_keypoints):
+        """Sets the maximum number of keypoints to keep.
+
+        @param max_keypoints: Maximum number of keypoints.
+        @type max_keypoints: int
+        """
+        self.max_keypoints = max_keypoints
 
     def run(self):
         if self.original_size is None:
@@ -95,14 +107,27 @@ class XFeatParser(dai.node.ThreadedHostNode):
                 )
 
             result = detect_and_compute(
-                feats, keypoints, resize_rate_w, resize_rate_h, self.input_size
-            )[0]
+                feats,
+                keypoints,
+                resize_rate_w,
+                resize_rate_h,
+                self.input_size,
+                self.max_keypoints,
+            )
+
+            if result is not None:
+                result = result[0]
+            else:
+                matched_points = dai.TrackedFeatures()
+                matched_points.setTimestamp(output.getTimestamp())
+                self.out.send(matched_points)
+                continue
 
             if self.previous_results is not None:
                 mkpts0, mkpts1 = match(self.previous_results, result)
                 matched_points = create_tracked_features_message(mkpts0, mkpts1)
                 matched_points.setTimestamp(output.getTimestamp())
                 self.out.send(matched_points)
-            else:
-                # save the result from first frame
-                self.previous_results = result
+
+            # save the result from first frame
+            self.previous_results = result
