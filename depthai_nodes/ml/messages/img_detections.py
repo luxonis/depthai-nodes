@@ -10,7 +10,7 @@ class ImgDetectionWithAdditionalOutput(dai.ImgDetection):
 
     Attributes
     ----------
-    keypoints: List[Tuple[float, float]]
+    keypoints: Union[List[Tuple[float, float]], List[Tuple[float, float, float]]]
         Keypoints of the image detection.
     masks: np.ndarray
         Mask of the image segmentation.
@@ -19,24 +19,24 @@ class ImgDetectionWithAdditionalOutput(dai.ImgDetection):
     def __init__(self):
         """Initializes the ImgDetectionWithAdditionalOutput object."""
         dai.ImgDetection.__init__(self)  # TODO: change to super().__init__()?
-        self._keypoints: List[Tuple[float, float]] = []
+        self._keypoints: Union[List[Tuple[float, float]], List[Tuple[float, float, float]]] = []
         self._mask: np.ndarray = np.array([])
 
     @property
-    def keypoints(self) -> List[Tuple[float, float]]:
+    def keypoints(self) -> Union[List[Tuple[float, float]], List[Tuple[float, float, float]]]:
         """Returns the keypoints.
 
         @return: List of keypoints.
-        @rtype: List[Tuple[float, float]]
+        @rtype: Union[List[Tuple[float, float]], List[Tuple[float, float, float]]]
         """
         return self._keypoints
 
     @keypoints.setter
-    def keypoints(self, value: List[Tuple[Union[int, float], Union[int, float]]]):
+    def keypoints(self, value: Union[List[Tuple[Union[int, float], Union[int, float]]], List[Tuple[Union[int, float, float], Union[int, float, float]]]]):
         """Sets the keypoints.
 
         @param value: List of keypoints.
-        @type value: List[Tuple[Union[int, float], Union[int, float]]]
+        @type value: Union[List[Tuple[Union[int, float], Union[int, float]]], List[Tuple[Union[int, float, float], Union[int, float, float]]]]
         @raise TypeError: If the keypoints are not a list.
         @raise TypeError: If each keypoint is not a tuple of two floats or integers.
         """
@@ -45,13 +45,15 @@ class ImgDetectionWithAdditionalOutput(dai.ImgDetection):
         for item in value:
             if (
                 not (isinstance(item, tuple) or isinstance(item, list))
-                or len(item) != 2
+                or (len(item) != 2 and len(item) != 3)
                 or not all(isinstance(i, (int, float)) for i in item)
             ):
                 raise TypeError(
                     "Each keypoint must be a tuple of two floats or integers"
                 )
-        self._keypoints = [(float(x), float(y)) for x, y in value]
+        self._keypoints = []
+        for items in value:
+            self._keypoints.append(tuple(float(v) for v in items))
 
     @property
     def mask(self) -> np.ndarray:
@@ -76,6 +78,7 @@ class ImgDetectionWithAdditionalOutput(dai.ImgDetection):
         if len(value.shape) != 2:
             raise ValueError("Mask must be of shape (H/4, W/4)")
         self._mask = value
+
 
 class ImgDetectionsWithAdditionalOutput(dai.Buffer):
     """ImgDetectionsWithAdditionalOutput class for storing image detections with keypoints.

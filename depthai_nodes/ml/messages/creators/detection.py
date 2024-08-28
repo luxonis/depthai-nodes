@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import depthai as dai
 import numpy as np
@@ -15,7 +15,7 @@ def create_detection_message(
     bboxes: np.ndarray,
     scores: np.ndarray,
     labels: List[int] = None,
-    keypoints: List[List[Tuple[float, float]]] = None,
+    keypoints: Union[List[Tuple[float, float]], List[Tuple[float, float, float]]] = None,
     masks: List[np.ndarray] = None,
 ) -> dai.ImgDetections:
     """Create a DepthAI message for an object detection.
@@ -26,8 +26,8 @@ def create_detection_message(
     @type scores: np.ndarray
     @param labels: Labels of detected objects of shape (N,).
     @type labels: List[int]
-    @param keypoints: Keypoints of detected objects of shape (N,2).
-    @type keypoints: Optional[List[List[Tuple[float, float]]]]
+    @param keypoints: Keypoints of detected objects of shape (N,2) or (N,3).
+    @type keypoints: Optional[Union[List[Tuple[float, float]], List[Tuple[float, float, float]]]]
     @param masks: Masks of detected objects of shape (N, H/4, W/4).
 
     @return: Message containing the bounding boxes, labels, confidence scores, and keypoints of detected objects.
