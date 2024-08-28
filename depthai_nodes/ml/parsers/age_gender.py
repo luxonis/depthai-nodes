@@ -17,7 +17,7 @@ class AgeGenderParser(dai.node.ThreadedHostNode):
     ----------------
     **Type**: AgeGender
 
-    **Description**: Message containing the detected person age and probabilities for each gender class.
+    **Description**: Message containing the detected person age and Classfications object for storing information about the detected person's gender.
     """
 
     def __init__(self):

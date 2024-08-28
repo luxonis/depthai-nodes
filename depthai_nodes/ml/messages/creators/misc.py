@@ -10,8 +10,8 @@ def create_age_gender_message(age: float, gender_prob: List[float]) -> AgeGender
     @type age: float
     @param gender_prob: Detected person gender probability [female, male].
     @type gender_prob: List[float]
-    @return: AgeGender message containing the detected person age and gender
-        probability.
+    @return: AgeGender message containing the predicted person's age and Classifications
+        message containing the classes and probabilities of the predicted gender.
     @rtype: AgeGender
     @raise ValueError: If age is not a float.
     @raise ValueError: If gender_prob is not a list.
