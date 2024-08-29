@@ -68,6 +68,8 @@ class MonocularDepthParser(dai.node.ThreadedHostNode):
                     depth_map = output_map[:, :, 0]
             elif len(output_map.shape) == 2:
                 depth_map = output_map
+            elif len(output_map.shape) == 4:
+                depth_map = output_map[0][0]
             else:
                 raise ValueError(
                     f"Expected 3- or 2-dimensional output, got {len(output_map.shape)}-dimensional",
