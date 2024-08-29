@@ -166,9 +166,11 @@ def decode_scrfd(
     kpss = kpss[order, :, :]
     kpss = kpss[keep, :, :]
 
+    height, width = input_size
     scores = det[:, 4]
-    bboxes = np.int32(det[:, :4])
-    keypoints = np.int32(kpss)
+    bboxes = det[:, :4] / np.array([width, height] * 2)
+
+    keypoints = kpss / np.tile([width, height], (5, 1))
     keypoints = keypoints.reshape(-1, 5, 2)
 
     return bboxes, scores, keypoints
