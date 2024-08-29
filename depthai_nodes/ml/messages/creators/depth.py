@@ -16,7 +16,6 @@ def create_depth_message(
     @param depth_type: A string indicating the type of depth map. It can either be
         'relative' or 'metric'.
     @type depth_type: Literal['relative', 'metric']
-    
     @return: An ImgFrame object containing the depth information.
     @rtype: dai.ImgFrame
     @raise ValueError: If the depth map is not a NumPy array.
