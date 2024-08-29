@@ -1,6 +1,7 @@
+from typing import List, Union
+
 import depthai as dai
 import numpy as np
-from typing import Union, List
 
 from ...messages import SegmentationMasks
 

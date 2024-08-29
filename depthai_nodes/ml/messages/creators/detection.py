@@ -110,7 +110,7 @@ def create_detection_message(
             raise ValueError(
                 f"keypoints should have same length as bboxes, got {len(keypoints)} and {bboxes.shape[0]}."
             )
-    
+
     if masks is not None and len(masks) != 0:
         if not isinstance(masks, List):
             raise ValueError(f"masks should be list, got {type(masks)}.")

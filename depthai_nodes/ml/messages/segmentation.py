@@ -25,7 +25,7 @@ class SegmentationMasks(dai.Buffer):
         @rtype: np.ndarray
         """
         return self._masks
-    
+
     @masks.setter
     def masks(self, values: np.ndarray):
         """Sets the masks coefficients.

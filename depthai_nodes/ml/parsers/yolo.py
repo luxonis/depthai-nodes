@@ -1,10 +1,9 @@
+
 import depthai as dai
 import numpy as np
-from typing import Tuple
 
 from ..messages.creators import create_detection_message
-from .utils.yolo import decode_yolo_output, process_single_mask, parse_kpts
-
+from .utils.yolo import decode_yolo_output, parse_kpts, process_single_mask
 
 KPTS_MODE = 0
 SEG_MODE = 1
@@ -79,7 +78,7 @@ class YOLOParser(dai.node.ThreadedHostNode):
         protos_output = nnDataIn.getTensor("protos_output", dequantize=True).astype(np.float32)
         protos_len = protos_output.shape[1]
         return masks_outputs_values, protos_output, protos_len
-    
+
     def _reshape_seg_outputs(self, protos_output, protos_len, masks_outputs_values):
         """Reshape the segmentation outputs."""
         protos_output = protos_output.transpose((2, 0, 1))[np.newaxis, ...]
@@ -91,7 +90,7 @@ class YOLOParser(dai.node.ThreadedHostNode):
         while self.isRunning():
             try:
                 nnDataIn : dai.NNData = self.input.get()
-            except dai.MessageQueue.QueueException as e:
+            except dai.MessageQueue.QueueException:
                 break # Pipeline was stopped, no more data
             # Get all the layer names
             layer_names = nnDataIn.getAllLayerNames()
@@ -119,9 +118,9 @@ class YOLOParser(dai.node.ThreadedHostNode):
 
             # Decode the outputs
             results = decode_yolo_output(
-                outputs_values, 
-                [8, 16, 32], 
-                [None, None, None], 
+                outputs_values,
+                [8, 16, 32],
+                [None, None, None],
                 kpts=kpts_outputs if mode == KPTS_MODE else None,
                 conf_thres=self.confidence_threshold,
                 iou_thres=self.iou_threshold,
@@ -131,7 +130,7 @@ class YOLOParser(dai.node.ThreadedHostNode):
             bboxes, labels, scores, additional_output = [], [], [], []
             for i in range(results.shape[0]):
                 bbox, conf, label, other = results[i, :4].astype(int), results[i, 4], results[i, 5].astype(int), results[i, 6:]
-                
+
                 bboxes.append(bbox)
                 labels.append(int(label))
                 scores.append(conf)

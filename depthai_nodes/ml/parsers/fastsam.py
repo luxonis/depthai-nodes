@@ -1,9 +1,15 @@
+from typing import Optional, Tuple
+
 import depthai as dai
 import numpy as np
-from typing import Tuple, Optional
 
 from ..messages.creators import create_sam_message
-from .utils.fastsam import decode_fastsam_output, process_single_mask, box_prompt, point_prompt
+from .utils.fastsam import (
+    box_prompt,
+    decode_fastsam_output,
+    point_prompt,
+    process_single_mask,
+)
 from .yolo import YOLOParser
 
 
@@ -73,7 +79,7 @@ class FastSAMParser(YOLOParser):
         @type points: Tuple[int, int]
         """
         self.points = points
-    
+
     def setPointLabel(self, point_label):
         """Sets the point label.
 
@@ -81,7 +87,7 @@ class FastSAMParser(YOLOParser):
         @type point_label: int
         """
         self.point_label = point_label
-    
+
     def setBoundingBox(self, bbox):
         """Sets the bounding box.
 
@@ -94,7 +100,7 @@ class FastSAMParser(YOLOParser):
         while self.isRunning():
             try:
                 nnDataIn : dai.NNData = self.input.get()
-            except dai.MessageQueue.QueueException as e:
+            except dai.MessageQueue.QueueException:
                 break # Pipeline was stopped, no more data
             # Get all the layer names
             layer_names = nnDataIn.getAllLayerNames()
@@ -108,11 +114,11 @@ class FastSAMParser(YOLOParser):
                 # RVC4
                 outputs_values = [o.transpose((2, 0, 1))[np.newaxis, ...] for o in outputs_values]
                 protos_output, protos_len, masks_outputs_values = self._reshape_seg_outputs(protos_output, protos_len, masks_outputs_values)
-            
+
             # Decode the outputs
             results = decode_fastsam_output(
-                outputs_values, 
-                [8, 16, 32], 
+                outputs_values,
+                [8, 16, 32],
                 [None, None, None],
                 img_shape=self.input_shape[::-1],
                 conf_thres=self.confidence_threshold,

@@ -1,6 +1,7 @@
-import numpy as np
 import time
 from typing import Optional
+
+import numpy as np
 
 from .nms import nms
 
@@ -20,11 +21,11 @@ def xywh2xyxy(x: np.ndarray) -> np.ndarray:
 
 
 def non_max_suppression(
-    prediction: np.ndarray, conf_thres: float = 0.5, 
+    prediction: np.ndarray, conf_thres: float = 0.5,
     iou_thres: float = 0.45, classes: list = None,
-    num_classes: int = 1, agnostic: bool = False, 
-    multi_label: bool = False, max_det: int = 300, 
-    max_time_img: float = 0.05, max_nms: int = 30000, 
+    num_classes: int = 1, agnostic: bool = False,
+    multi_label: bool = False, max_det: int = 300,
+    max_time_img: float = 0.05, max_nms: int = 30000,
     max_wh: int = 7680, kpts_mode: bool = False
 ):
     '''
@@ -67,12 +68,12 @@ def non_max_suppression(
         # If no box remains, skip the next process.
         if not x.shape[0]:
             continue
-        
+
         # (center x, center y, width, height) to (x1, y1, x2, y2)
         box = xywh2xyxy(x[:, :4])
         cls = x[:, 5:5+num_classes]
         other = x[:, 5+num_classes:] # Either kpts or pos
-        
+
         if multi_label:
             box_idx, class_idx = (cls > conf_thres).nonzero(as_tuple=False).T
             x = np.concatenate((box[box_idx], x[box_idx, class_idx + 5, None], class_idx[:, None], other[box_idx, :]), 1)
@@ -104,7 +105,7 @@ def non_max_suppression(
         if (time.time() - tik) > time_limit:
             print(f'WARNING: NMS cost time exceed the limited {time_limit}s.')
             break  # time limit exceeded
-    
+
     return output
 
 
@@ -115,14 +116,14 @@ def parse_yolo_outputs(outputs: list, strides: list, anchors: np.ndarray, kpts =
         kpt = kpts[i] if kpts is not None else None
         out = parse_yolo_output(x, s, a, head_id=i, kpts=kpt)
         output = out if output is None else np.concatenate((output, out), axis=1)
-    
+
     return output
 
 
 def parse_yolo_output(
-        out: np.ndarray, 
-        stride: int, 
-        anchors: np.ndarray, 
+        out: np.ndarray,
+        stride: int,
+        anchors: np.ndarray,
         head_id: int = -1,
         kpts: Optional[np.ndarray] = None
     ) -> np.ndarray:
@@ -130,7 +131,7 @@ def parse_yolo_output(
     bs, _, ny, nx = out.shape     # bs - batch size, ny|nx - y and x of grid cells
 
     grid = make_grid_numpy(ny, nx, na)
-    
+
     out = out.reshape(bs, na, -1, ny, nx).transpose((0, 1, 3, 4, 2))
 
     x1y1 = grid - out[..., 0:2] + 0.5
@@ -140,7 +141,7 @@ def parse_yolo_output(
     wh = x2y2 - x1y1
     out[..., 0:2] = c_xy * stride
     out[..., 2:4] = wh * stride
-    
+
     if kpts is None:
         # Segmentation
         x_coors = np.tile(np.arange(0,nx), (ny, 1))
@@ -148,11 +149,11 @@ def parse_yolo_output(
 
         y_coors = np.tile(np.arange(0,ny)[np.newaxis, ...].T, (1, nx))
         y_coors = np.repeat(y_coors[np.newaxis, np.newaxis, ..., np.newaxis], 1, axis = 1)
-        
+
         ai = np.ones((bs,na,ny,nx)) * np.arange(na)[np.newaxis,..., np.newaxis,np.newaxis]
         ai = ai[..., np.newaxis]
         hi = np.ones((bs,na,ny,nx,1)) * head_id
-        
+
         out = np.concatenate((out, hi, ai, x_coors, y_coors), axis=4).reshape(bs, na * ny * nx, -1)
     else:
         # Keypoints
@@ -185,11 +186,11 @@ def parse_kpts(kpts):
 def decode_yolo_output(yolo_outputs, strides, anchors, kpts=None, conf_thres=0.5, iou_thres=0.45, num_classes=1):
     output = parse_yolo_outputs(yolo_outputs, strides, anchors, kpts)
     output_nms = non_max_suppression(
-        output, 
+        output,
         conf_thres=conf_thres,
         iou_thres=iou_thres,
         num_classes=num_classes,
         kpts_mode=kpts is not None
     )[0]
-    
+
     return output_nms

@@ -1,6 +1,7 @@
+from typing import Tuple
+
 import cv2
 import numpy as np
-from typing import Tuple
 
 from .yolo import non_max_suppression, parse_yolo_outputs, sigmoid
 
@@ -113,10 +114,10 @@ def adjust_bboxes_to_image_border(boxes: np.ndarray, image_shape: Tuple[int, int
 
 
 def bbox_iou(
-        box1: np.ndarray, 
-        boxes: np.ndarray, 
-        iou_thres: float = 0.9, 
-        image_shape: Tuple[int, int] = (640, 640), 
+        box1: np.ndarray,
+        boxes: np.ndarray,
+        iou_thres: float = 0.9,
+        image_shape: Tuple[int, int] = (640, 640),
         raw_output: bool = False
     ) -> np.ndarray:
     """
@@ -163,7 +164,7 @@ def bbox_iou(
 def decode_fastsam_output(yolo_outputs, strides, anchors, img_shape: Tuple[int, int], conf_thres=0.5, iou_thres=0.45, num_classes=1):
     """
     Decode the bounding boxes
-    
+
     Args:
         yolo_outputs (list): List of yolo outputs
         strides (list): List of strides
@@ -171,13 +172,13 @@ def decode_fastsam_output(yolo_outputs, strides, anchors, img_shape: Tuple[int, 
         img_shape (tuple): Image shape (height, width)
         conf_thres (float): Confidence threshold
         iou_thres (float): IOU threshold
-        
+
     Returns:
         output_nms (np.ndarray): NMS output
     """
     output = parse_yolo_outputs(yolo_outputs, strides, anchors, kpts=None)
     output_nms = non_max_suppression(
-        output, 
+        output,
         conf_thres=conf_thres,
         iou_thres=iou_thres,
         num_classes=num_classes,
@@ -188,12 +189,12 @@ def decode_fastsam_output(yolo_outputs, strides, anchors, img_shape: Tuple[int, 
     full_box[2], full_box[3], full_box[4], full_box[6:] = img_shape[1], img_shape[0], 1.0, 1.0
     full_box = full_box.reshape((1, -1))
     critical_iou_index = bbox_iou(full_box[0][:4], output_nms[:, :4], iou_thres=0.9, image_shape=img_shape)
-    
+
     if critical_iou_index.size > 0:
         full_box[0][4] = output_nms[critical_iou_index][:, 4]
         full_box[0][6:] = output_nms[critical_iou_index][:, 6:]
         output_nms[critical_iou_index] = full_box
-    
+
     return output_nms
 
 
@@ -212,7 +213,7 @@ def crop_mask(masks, box):
     x1, y1, x2, y2 = box
     r = np.arange(w).reshape(1, w)
     c = np.arange(h).reshape(h, 1)
-    return masks * ((r >= x1) * (r < x2) * (c >= y1) * (c < y2)) 
+    return masks * ((r >= x1) * (r < x2) * (c >= y1) * (c < y2))
 
 
 def process_single_mask(protos, mask_coeff, mask_conf, img_shape: Tuple[int, int], bbox: Tuple[int, int, int, int]) -> np.ndarray:

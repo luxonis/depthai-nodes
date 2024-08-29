@@ -1,4 +1,5 @@
 from .classification import ClassificationParser
+from .fastsam import FastSAMParser
 from .image_output import ImageOutputParser
 from .keypoints import KeypointParser
 from .mediapipe_hand_landmarker import MPHandLandmarkParser
@@ -10,9 +11,8 @@ from .segmentation import SegmentationParser
 from .superanimal_landmarker import SuperAnimalParser
 from .thermal_image import ThermalImageParser
 from .xfeat import XFeatParser
-from .yunet import YuNetParser
 from .yolo import YOLOParser
-from .fastsam import FastSAMParser
+from .yunet import YuNetParser
 
 __all__ = [
     "ImageOutputParser",

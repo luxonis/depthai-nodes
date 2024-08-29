@@ -1,8 +1,8 @@
 
-import numpy as np
 from typing import List, Tuple, Union
 
 import depthai as dai
+import numpy as np
 
 
 class ImgDetectionWithAdditionalOutput(dai.ImgDetection):
@@ -63,7 +63,7 @@ class ImgDetectionWithAdditionalOutput(dai.ImgDetection):
         @rtype: np.ndarray
         """
         return self._mask
-    
+
     @mask.setter
     def mask(self, value: np.ndarray):
         """Sets the mask coefficients.
