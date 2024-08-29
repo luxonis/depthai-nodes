@@ -1,4 +1,3 @@
-
 from typing import List, Tuple, Union
 
 import depthai as dai
@@ -19,11 +18,15 @@ class ImgDetectionWithAdditionalOutput(dai.ImgDetection):
     def __init__(self):
         """Initializes the ImgDetectionWithAdditionalOutput object."""
         dai.ImgDetection.__init__(self)  # TODO: change to super().__init__()?
-        self._keypoints: Union[List[Tuple[float, float]], List[Tuple[float, float, float]]] = []
+        self._keypoints: Union[
+            List[Tuple[float, float]], List[Tuple[float, float, float]]
+        ] = []
         self._mask: np.ndarray = np.array([])
 
     @property
-    def keypoints(self) -> Union[List[Tuple[float, float]], List[Tuple[float, float, float]]]:
+    def keypoints(
+        self,
+    ) -> Union[List[Tuple[float, float]], List[Tuple[float, float, float]]]:
         """Returns the keypoints.
 
         @return: List of keypoints.
@@ -32,7 +35,13 @@ class ImgDetectionWithAdditionalOutput(dai.ImgDetection):
         return self._keypoints
 
     @keypoints.setter
-    def keypoints(self, value: Union[List[Tuple[Union[int, float], Union[int, float]]], List[Tuple[Union[int, float, float], Union[int, float, float]]]]):
+    def keypoints(
+        self,
+        value: Union[
+            List[Tuple[Union[int, float], Union[int, float]]],
+            List[Tuple[Union[int, float, float], Union[int, float, float]]],
+        ],
+    ):
         """Sets the keypoints.
 
         @param value: List of keypoints.

@@ -1,4 +1,3 @@
-
 import depthai as dai
 import numpy as np
 

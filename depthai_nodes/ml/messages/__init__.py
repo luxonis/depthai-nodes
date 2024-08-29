@@ -5,8 +5,8 @@ from .img_detections import (
 )
 from .keypoints import HandKeypoints, Keypoints
 from .lines import Line, Lines
-from .segmentation import SegmentationMasks
 from .misc import AgeGender
+from .segmentation import SegmentationMasks
 
 __all__ = [
     "ImgDetectionWithAdditionalOutput",

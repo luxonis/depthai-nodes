@@ -75,10 +75,17 @@ def point_prompt(bboxes, masks, points, pointlabel, orig_shape):  # numpy
         h = masks[0]["segmentation"].shape[0]
         w = masks[0]["segmentation"].shape[1]
         if h != target_height or w != target_width:
-            points = [[int(point[0] * w / target_width), int(point[1] * h / target_height)] for point in points]
+            points = [
+                [int(point[0] * w / target_width), int(point[1] * h / target_height)]
+                for point in points
+            ]
         onemask = np.zeros((h, w))
         for annotation in masks:
-            mask = annotation["segmentation"] if isinstance(annotation, dict) else annotation
+            mask = (
+                annotation["segmentation"]
+                if isinstance(annotation, dict)
+                else annotation
+            )
             for i, point in enumerate(points):
                 if mask[point[1], point[0]] == 1 and pointlabel[i] == 1:
                     onemask += mask
@@ -89,7 +96,9 @@ def point_prompt(bboxes, masks, points, pointlabel, orig_shape):  # numpy
     return masks
 
 
-def adjust_bboxes_to_image_border(boxes: np.ndarray, image_shape: Tuple[int, int], threshold: int = 20) -> np.ndarray:
+def adjust_bboxes_to_image_border(
+    boxes: np.ndarray, image_shape: Tuple[int, int], threshold: int = 20
+) -> np.ndarray:
     """
     Source: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/utils.py#L6 (Ultralytics)
     Adjust bounding boxes to stick to image border if they are within a certain threshold.
@@ -114,12 +123,12 @@ def adjust_bboxes_to_image_border(boxes: np.ndarray, image_shape: Tuple[int, int
 
 
 def bbox_iou(
-        box1: np.ndarray,
-        boxes: np.ndarray,
-        iou_thres: float = 0.9,
-        image_shape: Tuple[int, int] = (640, 640),
-        raw_output: bool = False
-    ) -> np.ndarray:
+    box1: np.ndarray,
+    boxes: np.ndarray,
+    iou_thres: float = 0.9,
+    image_shape: Tuple[int, int] = (640, 640),
+    raw_output: bool = False,
+) -> np.ndarray:
     """
     Source: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/utils.py#L30 (Ultralytics - rewritten to numpy)
     Compute the Intersection-Over-Union of a bounding box with respect to an array of other bounding boxes.
@@ -161,7 +170,15 @@ def bbox_iou(
     return np.flatnonzero(iou > iou_thres)
 
 
-def decode_fastsam_output(yolo_outputs, strides, anchors, img_shape: Tuple[int, int], conf_thres=0.5, iou_thres=0.45, num_classes=1):
+def decode_fastsam_output(
+    yolo_outputs,
+    strides,
+    anchors,
+    img_shape: Tuple[int, int],
+    conf_thres=0.5,
+    iou_thres=0.45,
+    num_classes=1,
+):
     """
     Decode the bounding boxes
 
@@ -182,13 +199,20 @@ def decode_fastsam_output(yolo_outputs, strides, anchors, img_shape: Tuple[int, 
         conf_thres=conf_thres,
         iou_thres=iou_thres,
         num_classes=num_classes,
-        kpts_mode=False
+        kpts_mode=False,
     )[0]
 
     full_box = np.zeros(output_nms.shape[1])
-    full_box[2], full_box[3], full_box[4], full_box[6:] = img_shape[1], img_shape[0], 1.0, 1.0
+    full_box[2], full_box[3], full_box[4], full_box[6:] = (
+        img_shape[1],
+        img_shape[0],
+        1.0,
+        1.0,
+    )
     full_box = full_box.reshape((1, -1))
-    critical_iou_index = bbox_iou(full_box[0][:4], output_nms[:, :4], iou_thres=0.9, image_shape=img_shape)
+    critical_iou_index = bbox_iou(
+        full_box[0][:4], output_nms[:, :4], iou_thres=0.9, image_shape=img_shape
+    )
 
     if critical_iou_index.size > 0:
         full_box[0][4] = output_nms[critical_iou_index][:, 4]
@@ -216,8 +240,14 @@ def crop_mask(masks, box):
     return masks * ((r >= x1) * (r < x2) * (c >= y1) * (c < y2))
 
 
-def process_single_mask(protos, mask_coeff, mask_conf, img_shape: Tuple[int, int], bbox: Tuple[int, int, int, int]) -> np.ndarray:
-    mask = sigmoid(np.sum(protos * mask_coeff[..., np.newaxis, np.newaxis], axis = 0))
+def process_single_mask(
+    protos,
+    mask_coeff,
+    mask_conf,
+    img_shape: Tuple[int, int],
+    bbox: Tuple[int, int, int, int],
+) -> np.ndarray:
+    mask = sigmoid(np.sum(protos * mask_coeff[..., np.newaxis, np.newaxis], axis=0))
     mask = cv2.resize(mask, img_shape, interpolation=cv2.INTER_NEAREST)
     mask = crop_mask(mask, np.array(bbox))
     return (mask > mask_conf).astype(np.uint8)

@@ -15,7 +15,9 @@ def create_detection_message(
     bboxes: np.ndarray,
     scores: np.ndarray,
     labels: List[int] = None,
-    keypoints: Union[List[Tuple[float, float]], List[Tuple[float, float, float]]] = None,
+    keypoints: Union[
+        List[Tuple[float, float]], List[Tuple[float, float, float]]
+    ] = None,
     masks: List[np.ndarray] = None,
 ) -> dai.ImgDetections:
     """Create a DepthAI message for an object detection.
@@ -118,7 +120,9 @@ def create_detection_message(
             if not isinstance(mask, np.ndarray):
                 raise ValueError(f"mask should be numpy array, got {type(mask)}.")
             if len(mask.shape) != 2:
-                raise ValueError(f"mask should be of shape (H/4, W/4), got {mask.shape}.")
+                raise ValueError(
+                    f"mask should be of shape (H/4, W/4), got {mask.shape}."
+                )
 
         if len(masks) != bboxes.shape[0]:
             raise ValueError(
