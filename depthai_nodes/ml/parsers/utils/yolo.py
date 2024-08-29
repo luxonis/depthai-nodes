@@ -1,4 +1,3 @@
-import copy
 import numpy as np
 import time
 from typing import Optional
@@ -6,12 +5,9 @@ from typing import Optional
 from .nms import nms
 
 
-def make_grid_numpy(ny: int, nx: int, na: int, kpts_mode: bool = False) -> np.ndarray:
+def make_grid_numpy(ny: int, nx: int, na: int) -> np.ndarray:
     yv, xv = np.meshgrid(np.arange(ny), np.arange(nx), indexing='ij')
-    grid = np.stack((xv, yv), 2).reshape(1, na, ny, nx, 2)
-    if kpts_mode:
-        return grid
-    return grid + 0.5 if na == 1 else grid - 0.5
+    return np.stack((xv, yv), 2).reshape(1, na, ny, nx, 2)
 
 
 def xywh2xyxy(x: np.ndarray) -> np.ndarray:
@@ -52,7 +48,6 @@ def non_max_suppression(
     num_classes_check = prediction.shape[2] - (56 if kpts_mode else 9) # number of classes
     nm = prediction.shape[2] - num_classes - 5
     pred_candidates = prediction[..., 4] > conf_thres  # candidates
-    print(f"Prediction shape: {prediction.shape}, num_classes: {num_classes}")
 
     # Check the parameters.
     assert num_classes == num_classes_check, f"Number of classes {num_classes} does not match the model {num_classes_check}"
@@ -100,7 +95,6 @@ def non_max_suppression(
         # Batched NMS
         class_offset = x[:, 5:6] * (0 if agnostic else max_wh)  # classes
         boxes, scores = x[:, :4] + class_offset, x[:, 4][..., np.newaxis]        # boxes (offset by class), scores
-        print(np.hstack((boxes, scores)).astype(np.float32, copy=False).shape)
         keep_box_idx = np.array(nms(np.hstack((boxes, scores)).astype(np.float32, copy=False), iou_thres))
 
         if keep_box_idx.shape[0] > max_det:                     # limit detections
@@ -135,7 +129,7 @@ def parse_yolo_output(
     na = 1 if anchors is None else len(anchors) # number of anchors per head
     bs, _, ny, nx = out.shape     # bs - batch size, ny|nx - y and x of grid cells
 
-    grid = make_grid_numpy(ny, nx, na, kpts is not None)
+    grid = make_grid_numpy(ny, nx, na)
     
     out = out.reshape(bs, na, -1, ny, nx).transpose((0, 1, 3, 4, 2))
 
