@@ -5,14 +5,16 @@ import numpy as np
 def create_feature_point(x: float, y: float, id: int, age: int) -> dai.TrackedFeature:
     """Create a tracked feature point.
 
-    Args:
-        x (float): X coordinate of the feature point.
-        y (float): Y coordinate of the feature point.
-        id (int): ID of the feature point.
-        age (int): Age of the feature point.
-
-    Returns:
-        dai.TrackedFeature: Tracked feature point.
+    @param x: X coordinate of the feature point.
+    @type x: float
+    @param y: Y coordinate of the feature point.
+    @type y: float
+    @param id: ID of the feature point.
+    @type id: int
+    @param age: Age of the feature point.
+    @type age: int
+    @return: Tracked feature point.
+    @rtype: dai.TrackedFeature
     """
 
     feature = dai.TrackedFeature()
@@ -27,14 +29,22 @@ def create_feature_point(x: float, y: float, id: int, age: int) -> dai.TrackedFe
 def create_tracked_features_message(
     reference_points: np.ndarray, target_points: np.ndarray
 ) -> dai.TrackedFeatures:
-    """Create a message for the tracked features.
+    """Create a DepthAI message for tracked features.
 
-    Args:
-        reference_points (np.ndarray): Reference points of shape (N,2) meaning [...,[x, y],...].
-        target_points (np.ndarray): Target points of shape (N,2) meaning [...,[x, y],...].
+    @param reference_points: Reference points of shape (N,2) meaning [...,[x, y],...].
+    @type reference_points: np.ndarray
+    @param target_points: Target points of shape (N,2) meaning [...,[x, y],...].
+    @type target_points: np.ndarray
 
-    Returns:
-        dai.TrackedFeatures: Message containing the tracked features.
+    @return: Message containing the tracked features.
+    @rtype: dai.TrackedFeatures
+
+    @raise ValueError: If the reference_points are not a numpy array.
+    @raise ValueError: If the reference_points are not of shape (N,2).
+    @raise ValueError: If the reference_points 2nd dimension is not of size E{2}.
+    @raise ValueError: If the target_points are not a numpy array.
+    @raise ValueError: If the target_points are not of shape (N,2).
+    @raise ValueError: If the target_points 2nd dimension is not of size E{2}.
     """
 
     if not isinstance(reference_points, np.ndarray):

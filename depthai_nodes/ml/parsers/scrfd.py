@@ -1,139 +1,184 @@
-import cv2
 import depthai as dai
 import numpy as np
 
 from ..messages.creators import create_detection_message
+from .utils.scrfd import decode_scrfd
 
 
 class SCRFDParser(dai.node.ThreadedHostNode):
-    def __init__(self, score_threshold=0.5, nms_threshold=0.5, top_k=100):
-        dai.node.ThreadedHostNode.__init__(self)
-        self.input = dai.Node.Input(self)
-        self.out = dai.Node.Output(self)
+    """Parser class for parsing the output of the SCRFD face detection model.
 
-        self.score_threshold = score_threshold
-        self.nms_threshold = nms_threshold
-        self.top_k = top_k
+    Attributes
+    ----------
+    input : Node.Input
+        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
+    out : Node.Output
+        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
+    conf_threshold : float
+        Confidence score threshold for detected faces.
+    iou_threshold : float
+        Non-maximum suppression threshold.
+    max_det : int
+        Maximum number of detections to keep.
+    feat_stride_fpn : tuple
+        Tuple of the feature strides.
+    num_anchors : int
+        Number of anchors.
+    input_size : tuple
+        Input size of the model.
+
+    Output Message/s
+    ----------------
+    **Type**: dai.ImgDetections
+
+    **Description**: ImgDetections message containing bounding boxes, labels, and confidence scores of detected faces.
+    """
+
+    def __init__(
+        self,
+        conf_threshold=0.5,
+        iou_threshold=0.5,
+        max_det=100,
+        input_size=(640, 640),
+        feat_stride_fpn=(8, 16, 32),
+        num_anchors=2,
+    ):
+        """Initializes the SCRFDParser node.
+
+        @param conf_threshold: Confidence score threshold for detected faces.
+        @type conf_threshold: float
+        @param iou_threshold: Non-maximum suppression threshold.
+        @type iou_threshold: float
+        @param max_det: Maximum number of detections to keep.
+        @type max_det: int
+        @param feat_stride_fpn: List of the feature strides.
+        @type feat_stride_fpn: tuple
+        @param num_anchors: Number of anchors.
+        @type num_anchors: int
+        @param input_size: Input size of the model.
+        @type input_size: tuple
+        """
+        dai.node.ThreadedHostNode.__init__(self)
+        self.input = self.createInput()
+        self.out = self.createOutput()
+
+        self.conf_threshold = conf_threshold
+        self.iou_threshold = iou_threshold
+        self.max_det = max_det
+
+        self.feat_stride_fpn = feat_stride_fpn
+        self.num_anchors = num_anchors
+        self.input_size = input_size
 
     def setConfidenceThreshold(self, threshold):
-        self.score_threshold = threshold
+        """Sets the confidence score threshold for detected faces.
 
-    def setNMSThreshold(self, threshold):
-        self.nms_threshold = threshold
+        @param threshold: Confidence score threshold for detected faces.
+        @type threshold: float
+        """
+        self.conf_threshold = threshold
 
-    def setTopK(self, top_k):
-        self.top_k = top_k
+    def setIOUThreshold(self, threshold):
+        """Sets the non-maximum suppression threshold.
+
+        @param threshold: Non-maximum suppression threshold.
+        @type threshold: float
+        """
+        self.iou_threshold = threshold
+
+    def setMaxDetections(self, max_det):
+        """Sets the maximum number of detections to keep.
+
+        @param max_det: Maximum number of detections to keep.
+        @type max_det: int
+        """
+        self.max_det = max_det
+
+    def setFeatStrideFPN(self, feat_stride_fpn):
+        """Sets the feature stride of the FPN.
+
+        @param feat_stride_fpn: Feature stride of the FPN.
+        @type feat_stride_fpn: list
+        """
+        self.feat_stride_fpn = feat_stride_fpn
+
+    def setInputSize(self, input_size):
+        """Sets the input size of the model.
+
+        @param input_size: Input size of the model.
+        @type input_size: list
+        """
+        self.input_size = input_size
+
+    def setNumAnchors(self, num_anchors):
+        """Sets the number of anchors.
+
+        @param num_anchors: Number of anchors.
+        @type num_anchors: int
+        """
+        self.num_anchors = num_anchors
 
     def run(self):
-        """Postprocessing logic for SCRFD model.
-
-        Returns:
-            ...
-        """
-
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            print("SCRFD node")
-            print(f"Layer names = {output.getAllLayerNames()}")
+            scores_concatenated = []
+            bboxes_concatenated = []
+            kps_concatenated = []
 
-            score_8 = output.getTensor("score_8").flatten().astype(np.float32)
-            score_16 = output.getTensor("score_16").flatten().astype(np.float32)
-            score_32 = output.getTensor("score_32").flatten().astype(np.float32)
-            bbox_8 = (
-                output.getTensor("bbox_8").reshape(len(score_8), 4).astype(np.float32)
-            )
-            bbox_16 = (
-                output.getTensor("bbox_16").reshape(len(score_16), 4).astype(np.float32)
-            )
-            bbox_32 = (
-                output.getTensor("bbox_32").reshape(len(score_32), 4).astype(np.float32)
-            )
-            kps_8 = (
-                output.getTensor("kps_8").reshape(len(score_8), 5, 2).astype(np.float32)
-            )
-            kps_16 = (
-                output.getTensor("kps_16")
-                .reshape(len(score_16), 5, 2)
-                .astype(np.float32)
-            )
-            kps_32 = (
-                output.getTensor("kps_32")
-                .reshape(len(score_32), 5, 2)
-                .astype(np.float32)
-            )
+            for stride in self.feat_stride_fpn:
+                score_layer_name = f"score_{stride}"
+                bbox_layer_name = f"bbox_{stride}"
+                kps_layer_name = f"kps_{stride}"
+                if score_layer_name not in output.getAllLayerNames():
+                    raise ValueError(
+                        f"Layer {score_layer_name} not found in the model output."
+                    )
+                if bbox_layer_name not in output.getAllLayerNames():
+                    raise ValueError(
+                        f"Layer {bbox_layer_name} not found in the model output."
+                    )
+                if kps_layer_name not in output.getAllLayerNames():
+                    raise ValueError(
+                        f"Layer {kps_layer_name} not found in the model output."
+                    )
 
-            bboxes = []
-            keypoints = []
+                score_tensor = (
+                    output.getTensor(score_layer_name, dequantize=True)
+                    .flatten()
+                    .astype(np.float32)
+                )
+                bbox_tensor = (
+                    output.getTensor(bbox_layer_name, dequantize=True)
+                    .reshape(len(score_tensor), 4)
+                    .astype(np.float32)
+                )
+                kps_tensor = (
+                    output.getTensor(kps_layer_name, dequantize=True)
+                    .reshape(len(score_tensor), 10)
+                    .astype(np.float32)
+                )
 
-            for i in range(len(score_8)):
-                y = int(np.floor(i / 80)) * 4
-                x = (i % 160) * 4
-                bbox = bbox_8[i]
-                xmin = int(x - bbox[0] * 8)
-                ymin = int(y - bbox[1] * 8)
-                xmax = int(x + bbox[2] * 8)
-                ymax = int(y + bbox[3] * 8)
-                kps = kps_8[i]
-                kps_batch = []
-                for kp in kps:
-                    kpx = int(x + kp[0] * 8)
-                    kpy = int(y + kp[1] * 8)
-                    kps_batch.append([kpx, kpy])
-                keypoints.append(kps_batch)
-                bbox = [xmin, ymin, xmax, ymax]
-                bboxes.append(bbox)
+                scores_concatenated.append(score_tensor)
+                bboxes_concatenated.append(bbox_tensor)
+                kps_concatenated.append(kps_tensor)
 
-            for i in range(len(score_16)):
-                y = int(np.floor(i / 40)) * 8
-                x = (i % 80) * 8
-                bbox = bbox_16[i]
-                xmin = int(x - bbox[0] * 16)
-                ymin = int(y - bbox[1] * 16)
-                xmax = int(x + bbox[2] * 16)
-                ymax = int(y + bbox[3] * 16)
-                kps = kps_16[i]
-                kps_batch = []
-                for kp in kps:
-                    kpx = int(x + kp[0] * 16)
-                    kpy = int(y + kp[1] * 16)
-                    kps_batch.append([kpx, kpy])
-                keypoints.append(kps_batch)
-                bbox = [xmin, ymin, xmax, ymax]
-                bboxes.append(bbox)
-
-            for i in range(len(score_32)):
-                y = int(np.floor(i / 20)) * 16
-                x = (i % 40) * 16
-                bbox = bbox_32[i]
-                xmin = int(x - bbox[0] * 32)
-                ymin = int(y - bbox[1] * 32)
-                xmax = int(x + bbox[2] * 32)
-                ymax = int(y + bbox[3] * 32)
-                kps = kps_32[i]
-                kps_batch = []
-                for kp in kps:
-                    kpx = int(x + kp[0] * 32)
-                    kpy = int(y + kp[1] * 32)
-                    kps_batch.append([kpx, kpy])
-                keypoints.append(kps_batch)
-                bbox = [xmin, ymin, xmax, ymax]
-                bboxes.append(bbox)
-
-            scores = np.concatenate([score_8, score_16, score_32])
-            indices = cv2.dnn.NMSBoxes(
-                bboxes,
-                list(scores),
-                self.score_threshold,
-                self.nms_threshold,
-                top_k=self.top_k,
+            bboxes, scores, keypoints = decode_scrfd(
+                bboxes_concatenated=bboxes_concatenated,
+                scores_concatenated=scores_concatenated,
+                kps_concatenated=kps_concatenated,
+                feat_stride_fpn=self.feat_stride_fpn,
+                input_size=self.input_size,
+                num_anchors=self.num_anchors,
+                score_threshold=self.conf_threshold,
+                nms_threshold=self.iou_threshold,
             )
-            bboxes = np.array(bboxes)[indices]
-            keypoints = np.array(keypoints)[indices]
-            scores = scores[indices]
+            detection_msg = create_detection_message(
+                bboxes, scores, None, keypoints.tolist()
+            )
+            detection_msg.setTimestamp(output.getTimestamp())
 
-            detection_msg = create_detection_message(bboxes, scores, None, None)
             self.out.send(detection_msg)

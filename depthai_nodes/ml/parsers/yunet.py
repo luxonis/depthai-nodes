@@ -9,36 +9,76 @@ from .utils import decode_detections
 
 
 class YuNetParser(dai.node.ThreadedHostNode):
+    """Parser class for parsing the output of the YuNet face detection model.
+
+    Attributes
+    ----------
+    input : Node.Input
+        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
+    out : Node.Output
+        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
+    conf_threshold : float
+        Confidence score threshold for detected faces.
+    iou_threshold : float
+        Non-maximum suppression threshold.
+    max_det : int
+        Maximum number of detections to keep.
+
+    Output Message/s
+    ----------------
+    **Type**: ImgDetectionsWithKeypoints
+
+    **Description**: Message containing bounding boxes, labels, confidence scores, and keypoints of detected faces.
+    """
+
     def __init__(
         self,
-        score_threshold=0.6,
-        nms_threshold=0.3,
-        top_k=5000,
+        conf_threshold=0.6,
+        iou_threshold=0.3,
+        max_det=5000,
     ):
-        dai.node.ThreadedHostNode.__init__(self)
-        self.input = dai.Node.Input(self)
-        self.out = dai.Node.Output(self)
+        """Initializes the YuNetParser node.
 
-        self.score_threshold = score_threshold
-        self.nms_threshold = nms_threshold
-        self.top_k = top_k
+        @param conf_threshold: Confidence score threshold for detected faces.
+        @type conf_threshold: float
+        @param iou_threshold: Non-maximum suppression threshold.
+        @type iou_threshold: float
+        @param max_det: Maximum number of detections to keep.
+        @type max_det: int
+        """
+        dai.node.ThreadedHostNode.__init__(self)
+        self.input = self.createInput()
+        self.out = self.createOutput()
+
+        self.conf_threshold = conf_threshold
+        self.iou_threshold = iou_threshold
+        self.max_det = max_det
 
     def setConfidenceThreshold(self, threshold):
-        self.score_threshold = threshold
+        """Sets the confidence score threshold for detected faces.
 
-    def setNMSThreshold(self, threshold):
-        self.nms_threshold = threshold
+        @param threshold: Confidence score threshold for detected faces.
+        @type threshold: float
+        """
+        self.conf_threshold = threshold
 
-    def setTopK(self, top_k):
-        self.top_k = top_k
+    def setIOUThreshold(self, threshold):
+        """Sets the non-maximum suppression threshold.
+
+        @param threshold: Non-maximum suppression threshold.
+        @type threshold: float
+        """
+        self.iou_threshold = threshold
+
+    def setMaxDetections(self, max_det):
+        """Sets the maximum number of detections to keep.
+
+        @param max_det: Maximum number of detections to keep.
+        @type max_det: int
+        """
+        self.max_det = max_det
 
     def run(self):
-        """Postprocessing logic for YuNet model.
-
-        Returns:
-            dai.ImgDetectionsWithKeypoints: Detections with keypoints.
-        """
-
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
@@ -90,7 +130,7 @@ class YuNetParser(dai.node.ThreadedHostNode):
                 detections += decode_detections(
                     input_size,
                     stride,
-                    self.score_threshold,
+                    self.conf_threshold,
                     cls,
                     obj,
                     bbox,
@@ -103,9 +143,9 @@ class YuNetParser(dai.node.ThreadedHostNode):
             indices = cv2.dnn.NMSBoxes(
                 detection_boxes,
                 detection_scores,
-                self.score_threshold,
-                self.nms_threshold,
-                top_k=self.top_k,
+                self.conf_threshold,
+                self.iou_threshold,
+                top_k=self.max_det,
             )
             detections = np.array(detections)[indices]
 
@@ -123,5 +163,6 @@ class YuNetParser(dai.node.ThreadedHostNode):
                 labels,
                 keypoints,
             )
+            detections_message.setTimestamp(output.getTimestamp())
 
             self.out.send(detections_message)

@@ -5,22 +5,50 @@ from ..messages.creators import create_segmentation_message
 
 
 class SegmentationParser(dai.node.ThreadedHostNode):
+    """Parser class for parsing the output of the segmentation models.
+
+    Attributes
+    ----------
+    input : Node.Input
+        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
+    out : Node.Output
+        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
+    background_class : bool
+        Whether to add additional layer for background.
+
+    Output Message/s
+    ----------------
+    **Type**: dai.ImgFrame
+
+    **Description**: Segmentation message containing the segmentation mask. Every pixel belongs to exactly one class.
+
+    Error Handling
+    --------------
+    **ValueError**: If the number of output layers is not E{1}.
+
+    **ValueError**: If the number of dimensions of the output tensor is not E{3}.
+    """
+
     def __init__(self, background_class=False):
+        """Initializes the SegmentationParser node.
+
+        @param background_class: Whether to add additional layer for background.
+        @type background_class: bool
+        """
         dai.node.ThreadedHostNode.__init__(self)
-        self.input = dai.Node.Input(self)
-        self.out = dai.Node.Output(self)
+        self.input = self.createInput()
+        self.out = self.createOutput()
         self.background_class = background_class
 
     def setBackgroundClass(self, background_class):
+        """Sets the background class.
+
+        @param background_class: Whether to add additional layer for background.
+        @type background_class: bool
+        """
         self.background_class = background_class
 
     def run(self):
-        """Postprocessing logic for Segmentation model.
-
-        Returns:
-            Segmenation mask with classes given by the model and background class 0.
-        """
-
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
@@ -34,9 +62,11 @@ class SegmentationParser(dai.node.ThreadedHostNode):
                     f"Expected 1 output layer, got {len(output_layer_names)}."
                 )
 
-            segmentation_mask = output.getTensor(output_layer_names[0])[
-                0
-            ]  # num_clases x H x W
+            segmentation_mask = output.getTensor(output_layer_names[0], dequantize=True)
+            if len(segmentation_mask.shape) == 4:
+                segmentation_mask = segmentation_mask[0]
+            else:
+                segmentation_mask = segmentation_mask.transpose(2, 0, 1)
 
             if len(segmentation_mask.shape) != 3:
                 raise ValueError(
@@ -61,4 +91,5 @@ class SegmentationParser(dai.node.ThreadedHostNode):
             )
 
             imgFrame = create_segmentation_message(class_map)
+            imgFrame.setTimestamp(output.getTimestamp())
             self.out.send(imgFrame)

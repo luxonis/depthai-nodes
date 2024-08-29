@@ -4,12 +4,12 @@ import numpy as np
 def unnormalize_image(image, normalize=True):
     """Un-normalize an image tensor by scaling it to the [0, 255] range.
 
-    Args:
-        image (np.ndarray): The normalized image tensor of shape (H, W, C) or (C, H, W).
-        normalize (bool, optional): Whether to normalize the image tensor. Defaults to True.
-
-    Returns:
-        np.ndarray: The un-normalized image.
+    @param image: The normalized image tensor of shape (H, W, C) or (C, H, W).
+    @type image: np.ndarray
+    @param normalize: Whether to normalize the image tensor. Defaults to True.
+    @type normalize: bool
+    @return: The un-normalized image.
+    @rtype: np.ndarray
     """
     # Normalize the image tensor to the range [0, 1]
     if normalize:

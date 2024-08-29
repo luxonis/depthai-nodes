@@ -12,17 +12,25 @@ def create_hand_keypoints_message(
     confidence: float,
     confidence_threshold: float,
 ) -> HandKeypoints:
-    """Create a message for the hand keypoint detection. The message contains the 3D
-    coordinates of the detected hand keypoints, handedness, and confidence score.
+    """Create a DepthAI message for hand keypoints detection.
 
-    Args:
-        hand_keypoints (np.ndarray): Detected hand keypoints of shape (N,3) meaning [...,[x, y, z],...].
-        handedness (float): Handedness score of the detected hand (left or right).
-        confidence (float): Confidence score of the detected hand.
-        confidence_threshold (float): Confidence threshold for the overall hand.
+    @param hand_keypoints: Detected 3D hand keypoints of shape (N,3) meaning [...,[x, y, z],...].
+    @type hand_keypoints: np.ndarray
+    @param handedness: Handedness score of the detected hand (left: < 0.5, right > 0.5).
+    @type handedness: float
+    @param confidence: Confidence score of the detected hand.
+    @type confidence: float
+    @param confidence_threshold: Confidence threshold for the present hand.
+    @type confidence_threshold: float
 
-    Returns:
-        HandKeypoints: Message containing the 3D coordinates of the detected hand keypoints, handedness, and confidence score.
+    @return: HandKeypoints message containing the detected hand keypoints, handedness, and confidence score.
+    @rtype: HandKeypoints
+
+    @raise ValueError: If the hand_keypoints are not a numpy array.
+    @raise ValueError: If the hand_keypoints are not of shape (N,3).
+    @raise ValueError: If the hand_keypoints 2nd dimension is not of size E{3}.
+    @raise ValueError: If the handedness is not a float.
+    @raise ValueError: If the confidence is not a float.
     """
 
     if not isinstance(hand_keypoints, np.ndarray):
@@ -63,16 +71,26 @@ def create_keypoints_message(
     scores: Union[np.ndarray, List[float]] = None,
     confidence_threshold: float = None,
 ) -> Keypoints:
-    """Create a message for the keypoints. The message contains 2D or 3D coordinates of
-    the detected keypoints.
+    """Create a DepthAI message for the keypoints.
 
-    Args:
-        keypoints (np.ndarray OR List[List[float]]): Detected keypoints of shape (N,2 or 3) meaning [...,[x, y],...] or [...,[x, y, z],...].
-        scores (np.ndarray or List[float]): Confidence scores of the detected keypoints.
-        confidence_threshold (float): Confidence threshold for the keypoints.
+    @param keypoints: Detected 2D or 3D keypoints of shape (N,2 or 3) meaning [...,[x, y],...] or [...,[x, y, z],...].
+    @type keypoints: np.ndarray or List[List[float]]
+    @param scores: Confidence scores of the detected keypoints.
+    @type scores: np.ndarray or List[float]
+    @param confidence_threshold: Confidence threshold of keypoint detections.
+    @type confidence_threshold: float
 
-    Returns:
-        Keypoints: Message containing 2D or 3D coordinates of the detected keypoints.
+    @return: Keypoints message containing the detected keypoints.
+    @rtype: Keypoints
+
+    @raise ValueError: If the keypoints are not a numpy array or list.
+    @raise ValueError: If the keypoints are not of shape (N,2 or 3).
+    @raise ValueError: If the keypoints 2nd dimension is not of size E{2} or E{3}.
+    @raise ValueError: If the scores are not a numpy array or list.
+    @raise ValueError: If the scores are not of shape (N,).
+    @raise ValueError: If the keypoints and scores do not have the same length.
+    @raise ValueError: If the confidence threshold is not a float.
+    @raise ValueError: If the confidence threshold is not provided when scores are provided.
     """
 
     if not isinstance(keypoints, np.ndarray):

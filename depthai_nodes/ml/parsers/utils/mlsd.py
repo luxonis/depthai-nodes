@@ -6,6 +6,18 @@ import numpy as np
 def decode_scores_and_points(
     tpMap: np.ndarray, heat: np.ndarray, topk_n: int
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Decode the scores and points from the neural network output tensors. Used for
+    MLSD model.
+
+    @param tpMap: Tensor containing the vector map.
+    @type tpMap: np.ndarray
+    @param heat: Tensor containing the heat map.
+    @type heat: np.ndarray
+    @param topk_n: Number of top candidates to keep.
+    @type topk_n: int
+    @return: Detected points, confidence scores for the detected points, and vector map.
+    @rtype: Tuple[np.ndarray, np.ndarray, np.ndarray]
+    """
     b, c, h, w = tpMap.shape
     displacement = tpMap[:, 1:5, :, :][0]
 
@@ -27,6 +39,24 @@ def get_lines(
     dist_thr: float,
     input_size: int = 512,
 ) -> Tuple[np.ndarray, List[float]]:
+    """Get lines from the detected points and scores. The lines are filtered by the
+    score threshold and distance threshold. Used for MLSD model.
+
+    @param pts: Detected points.
+    @type pts: np.ndarray
+    @param pts_score: Confidence scores for the detected points.
+    @type pts_score: np.ndarray
+    @param vmap: Vector map.
+    @type vmap: np.ndarray
+    @param score_thr: Confidence score threshold for detected lines.
+    @type score_thr: float
+    @param dist_thr: Distance threshold for merging lines.
+    @type dist_thr: float
+    @param input_size: Input size of the model.
+    @type input_size: int
+    @return: Detected lines and their confidence scores.
+    @rtype: Tuple[np.ndarray, List[float]]
+    """
     start = vmap[:, :, :2]
     end = vmap[:, :, 2:]
     dist_map = np.sqrt(np.sum((start - end) ** 2, axis=-1))

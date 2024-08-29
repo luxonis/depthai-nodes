@@ -4,10 +4,15 @@ It outlines our workflow and standards for contributing to this project.
 
 ## Table of Contents
 
+- [Developing parser](#developing-parser)
 - [Pre-commit Hooks](#pre-commit-hooks)
 - [Documentation](#documentation)
   - [Editor Support](#editor-support)
 - [Making and Reviewing Changes](#making-and-reviewing-changes)
+
+## Developing parser
+
+Parser should be developed so that it is consistent with other parsers. Check out other parsers to see the required structure. Additionally, pay attention to the naming of the parser's attributes. Check out [NN Archive Parameters](docs/nn_archive_parameters.md).
 
 ## Pre-commit Hooks
 
