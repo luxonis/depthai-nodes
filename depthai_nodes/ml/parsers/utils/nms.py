@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def nms(dets, nms_thresh=0.5):
+def nms(dets, nms_thresh: float = 0.5):
     """Non-maximum suppression.
 
     @param dets: Bounding boxes and confidence scores.
