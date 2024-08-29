@@ -7,8 +7,9 @@ from .yolo import non_max_suppression, parse_yolo_outputs, sigmoid
 
 
 def box_prompt(masks, bbox, orig_shape):
-    """
-    Modifies the bounding box properties and calculates IoU between masks and bounding box.
+    """Modifies the bounding box properties and calculates IoU between masks and
+    bounding box.
+
     Source: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/prompt.py#L286
     Modified so it uses numpy instead of torch.
     """
@@ -42,9 +43,9 @@ def box_prompt(masks, bbox, orig_shape):
 
 
 def format_results(bboxes, masks, filter=0):
-    """
-    Formats detection results into list of annotations each containing ID, segmentation, bounding box, score and
-    area.
+    """Formats detection results into list of annotations each containing ID,
+    segmentation, bounding box, score and area.
+
     Source: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/prompt.py#L56
     """
     annotations = []
@@ -64,8 +65,9 @@ def format_results(bboxes, masks, filter=0):
 
 
 def point_prompt(bboxes, masks, points, pointlabel, orig_shape):  # numpy
-    """
-    Adjusts points on detected masks based on user input and returns the modified results.
+    """Adjusts points on detected masks based on user input and returns the modified
+    results.
+
     Source: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/prompt.py#L321
     Modified so it uses numpy instead of torch.
     """
@@ -179,8 +181,7 @@ def decode_fastsam_output(
     iou_thres=0.45,
     num_classes=1,
 ):
-    """
-    Decode the bounding boxes
+    """Decode the bounding boxes.
 
     Args:
         yolo_outputs (list): List of yolo outputs
@@ -223,8 +224,8 @@ def decode_fastsam_output(
 
 
 def crop_mask(masks, box):
-    """
-    It takes a mask and a bounding box, and returns a mask that is cropped to the bounding box.
+    """It takes a mask and a bounding box, and returns a mask that is cropped to the
+    bounding box.
 
     Args:
         masks (numpy.ndarray): [h, w] array of masks

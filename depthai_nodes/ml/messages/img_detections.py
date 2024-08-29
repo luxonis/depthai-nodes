@@ -5,7 +5,8 @@ import numpy as np
 
 
 class ImgDetectionWithAdditionalOutput(dai.ImgDetection):
-    """ImgDetectionWithAdditionalOutput class for storing image detection with keypoints and masks.
+    """ImgDetectionWithAdditionalOutput class for storing image detection with keypoints
+    and masks.
 
     Attributes
     ----------
@@ -45,7 +46,8 @@ class ImgDetectionWithAdditionalOutput(dai.ImgDetection):
         """Sets the keypoints.
 
         @param value: List of keypoints.
-        @type value: Union[List[Tuple[Union[int, float], Union[int, float]]], List[Tuple[Union[int, float, float], Union[int, float, float]]]]
+        @type value: Union[List[Tuple[Union[int, float], Union[int, float]]],
+            List[Tuple[Union[int, float, float], Union[int, float, float]]]]
         @raise TypeError: If the keypoints are not a list.
         @raise TypeError: If each keypoint is not a tuple of two floats or integers.
         """
@@ -90,7 +92,8 @@ class ImgDetectionWithAdditionalOutput(dai.ImgDetection):
 
 
 class ImgDetectionsWithAdditionalOutput(dai.Buffer):
-    """ImgDetectionsWithAdditionalOutput class for storing image detections with keypoints.
+    """ImgDetectionsWithAdditionalOutput class for storing image detections with
+    keypoints.
 
     Attributes
     ----------
