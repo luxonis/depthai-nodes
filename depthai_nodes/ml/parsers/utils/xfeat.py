@@ -225,6 +225,9 @@ def detect_and_compute(
     grid = 2.0 * (mkpts / div_array) - 1.0
     grid = np.expand_dims(grid, axis=2)
 
+    if grid.size == 0:
+        return None
+
     # Numpy implementation of F.grid_sample
     map_x = grid[..., 0].reshape(-1).astype(np.float32)
     map_y = grid[..., 1].reshape(-1).astype(np.float32)
