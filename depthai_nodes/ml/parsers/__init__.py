@@ -1,5 +1,7 @@
+from .age_gender import AgeGenderParser
 from .classification import ClassificationParser
 from .fastsam import FastSAMParser
+from .hrnet import HRNetParser
 from .image_output import ImageOutputParser
 from .keypoints import KeypointParser
 from .mediapipe_hand_landmarker import MPHandLandmarkParser
@@ -30,4 +32,6 @@ __all__ = [
     "ClassificationParser",
     "YOLOParser",
     "FastSAMParser",
+    "AgeGenderParser",
+    "HRNetParser",
 ]

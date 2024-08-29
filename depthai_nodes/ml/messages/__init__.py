@@ -6,6 +6,7 @@ from .img_detections import (
 from .keypoints import HandKeypoints, Keypoints
 from .lines import Line, Lines
 from .segmentation import SegmentationMasks
+from .misc import AgeGender
 
 __all__ = [
     "ImgDetectionWithAdditionalOutput",
@@ -16,4 +17,5 @@ __all__ = [
     "Lines",
     "Classifications",
     "SegmentationMasks",
+    "AgeGender",
 ]
