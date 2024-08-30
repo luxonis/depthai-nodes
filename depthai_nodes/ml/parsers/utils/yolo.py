@@ -42,7 +42,7 @@ def non_max_suppression(
     prediction: np.ndarray,
     conf_thres: float = 0.5,
     iou_thres: float = 0.45,
-    classes: list = None,
+    classes: List = None,
     num_classes: int = 1,
     agnostic: bool = False,
     multi_label: bool = False,
@@ -51,7 +51,7 @@ def non_max_suppression(
     max_nms: int = 30000,
     max_wh: int = 7680,
     kpts_mode: bool = False,
-) -> list[np.ndarray]:
+) -> List[np.ndarray]:
     """Performs Non-Maximum Suppression (NMS) on inference results.
 
     @param prediction: Prediction from the model, shape = (batch_size, boxes, xy+wh+...)
@@ -61,7 +61,7 @@ def non_max_suppression(
     @param iou_thres: Intersection over union threshold.
     @type iou_thres: float
     @param classes: For filtering by classes.
-    @type classes: list
+    @type classes: List
     @param num_classes: Number of classes.
     @type num_classes: int
     @param agnostic: Runs NMS on all boxes together rather than per class if True.
@@ -79,7 +79,7 @@ def non_max_suppression(
     @param kpts_mode: Keypoints mode.
     @type kpts_mode: bool
     @return: An array of detections with either kpts or segmentation outputs.
-    @rtype: list[np.ndarray]
+    @rtype: List[np.ndarray]
     """
     bs = prediction.shape[0]  # batch size
     # Keypoints: 4 (bbox) + 1 (objectness) + 51 (kpts) = 56
