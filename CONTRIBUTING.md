@@ -50,5 +50,6 @@ To verify that your documentation is formatted correctly, follow these steps:
    - [Matija Teršek](https://github.com/tersekmatija)
    - [Jakob Mraz](https://github.com/jkbmrz)
    - [Jaša Kerec](https://github.com/kkeroo)
+   - [Klemen Škrlj](https://github.com/klemen1999)
 1. Any other relevant team members can be added as reviewers as well.
 1. The team will review and merge your PR.
