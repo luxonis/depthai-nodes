@@ -1,7 +1,7 @@
 from .classification import Classifications
 from .img_detections import (
-    ImgDetectionsWithAdditionalOutput,
-    ImgDetectionWithAdditionalOutput,
+    ImgDetectionExtended,
+    ImgDetectionsExtended,
 )
 from .keypoints import HandKeypoints, Keypoints
 from .lines import Line, Lines
@@ -9,8 +9,8 @@ from .misc import AgeGender
 from .segmentation import SegmentationMasks
 
 __all__ = [
-    "ImgDetectionWithAdditionalOutput",
-    "ImgDetectionsWithAdditionalOutput",
+    "ImgDetectionExtended",
+    "ImgDetectionsExtended",
     "HandKeypoints",
     "Keypoints",
     "Line",

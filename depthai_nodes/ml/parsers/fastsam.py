@@ -10,14 +10,51 @@ from .utils.fastsam import (
     point_prompt,
     process_single_mask,
 )
-from .yolo import YOLOParser
+from .yolo import YOLOExtendedParser
 
 
-class FastSAMParser(YOLOParser):
+class FastSAMParser(YOLOExtendedParser):
+    """Parser class for parsing the output of the FastSAM model.
+
+    Attributes
+    ----------
+    input : Node.Input
+        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
+    out : Node.Output
+        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
+    conf_threshold : float
+        Confidence score threshold for detected faces.
+    n_classes : int
+        Number of classes in the model.
+    iou_threshold : float
+        Non-maximum suppression threshold.
+    mask_conf : float
+        Mask confidence threshold.
+    input_shape : Tuple[int, int]
+        Shape of the input image.
+    prompt : str
+        Prompt type.
+    points : Tuple[int, int]
+        Points.
+    point_label : int
+        Point label.
+    bbox : Tuple[int, int, int, int]
+        Bounding box.
+
+    Output Message/s
+    ----------------
+    **Type**: SegmentationMasks
+
+    **Description**: SegmentationMasks message containing the resulting segmentation masks given the prompt.
+
+    Error Handling
+    --------------
+    """
+
     def __init__(
         self,
-        confidence_threshold: int = 0.5,
-        num_classes: int = 1,
+        conf_threshold: int = 0.5,
+        n_classes: int = 1,
         iou_threshold: int = 0.5,
         mask_conf: float = 0.5,
         input_shape: Tuple[int, int] = (640, 640),
@@ -26,12 +63,12 @@ class FastSAMParser(YOLOParser):
         point_label: Optional[int] = None,
         bbox: Optional[Tuple[int, int, int, int]] = None,
     ):
-        """Initialize the YOLOParser node.
+        """Initialize the FastSAMParser node.
 
-        @param confidence_threshold: The confidence threshold for the detections
-        @type confidence_threshold: float
-        @param num_classes: The number of classes in the model
-        @type num_classes: int
+        @param conf_threshold: The confidence threshold for the detections
+        @type conf_threshold: float
+        @param n_classes: The number of classes in the model
+        @type n_classes: int
         @param iou_threshold: The intersection over union threshold
         @type iou_threshold: float
         @param mask_conf: The mask confidence threshold
@@ -47,8 +84,8 @@ class FastSAMParser(YOLOParser):
         @param bbox: The bounding box
         @type bbox: Optional[Tuple[int, int, int, int]]
         """
-        YOLOParser.__init__(
-            self, confidence_threshold, num_classes, iou_threshold, mask_conf
+        YOLOExtendedParser.__init__(
+            self, conf_threshold, n_classes, iou_threshold, mask_conf
         )
         self.input_shape = input_shape
         self.prompt = prompt
@@ -99,17 +136,20 @@ class FastSAMParser(YOLOParser):
         self.bbox = bbox
 
     def run(self):
+        if self.prompt not in ["everything", "bbox", "point"]:
+            raise ValueError("Prompt must be one of 'everything', 'bbox', or 'point'")
+
         while self.isRunning():
             try:
-                nnDataIn: dai.NNData = self.input.get()
+                output: dai.NNData = self.input.get()
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped, no more data
             # Get all the layer names
-            layer_names = nnDataIn.getAllLayerNames()
+            layer_names = output.getAllLayerNames()
 
             outputs_names = sorted([name for name in layer_names if "_yolo" in name])
             outputs_values = [
-                nnDataIn.getTensor(o, dequantize=True).astype(np.float32)
+                output.getTensor(o, dequantize=True).astype(np.float32)
                 for o in outputs_names
             ]
             # Get the segmentation outputs
@@ -117,7 +157,7 @@ class FastSAMParser(YOLOParser):
                 masks_outputs_values,
                 protos_output,
                 protos_len,
-            ) = self._get_segmentation_outputs(nnDataIn)
+            ) = self._get_segmentation_outputs(output)
 
             if len(outputs_values[0].shape) != 4:
                 # RVC4
@@ -138,9 +178,9 @@ class FastSAMParser(YOLOParser):
                 [8, 16, 32],
                 [None, None, None],
                 img_shape=self.input_shape[::-1],
-                conf_thres=self.confidence_threshold,
+                conf_thres=self.conf_threshold,
                 iou_thres=self.iou_threshold,
-                num_classes=self.num_classes,
+                num_classes=self.n_classes,
             )
 
             bboxes, masks = [], []
@@ -178,4 +218,6 @@ class FastSAMParser(YOLOParser):
                 )
 
             segmentation_message = create_sam_message(results_masks)
+            segmentation_message.setTimestamp(output.getTimestamp())
+
             self.out.send(segmentation_message)

@@ -4,9 +4,8 @@ import depthai as dai
 import numpy as np
 
 
-class ImgDetectionWithAdditionalOutput(dai.ImgDetection):
-    """ImgDetectionWithAdditionalOutput class for storing image detection with keypoints
-    and masks.
+class ImgDetectionExtended(dai.ImgDetection):
+    """ImgDetectionExtended class for storing image detection with keypoints and masks.
 
     Attributes
     ----------
@@ -17,7 +16,7 @@ class ImgDetectionWithAdditionalOutput(dai.ImgDetection):
     """
 
     def __init__(self):
-        """Initializes the ImgDetectionWithAdditionalOutput object."""
+        """Initializes the ImgDetectionExtended object."""
         dai.ImgDetection.__init__(self)  # TODO: change to super().__init__()?
         self._keypoints: Union[
             List[Tuple[float, float]], List[Tuple[float, float, float]]
@@ -40,14 +39,14 @@ class ImgDetectionWithAdditionalOutput(dai.ImgDetection):
         self,
         value: Union[
             List[Tuple[Union[int, float], Union[int, float]]],
-            List[Tuple[Union[int, float, float], Union[int, float, float]]],
+            List[Tuple[Union[int, float], Union[int, float], Union[int, float]]],
         ],
     ):
         """Sets the keypoints.
 
         @param value: List of keypoints.
         @type value: Union[List[Tuple[Union[int, float], Union[int, float]]],
-            List[Tuple[Union[int, float, float], Union[int, float, float]]]]
+            List[Tuple[Union[int, float], Union[int, float], Union[int, float]]]]
         @raise TypeError: If the keypoints are not a list.
         @raise TypeError: If each keypoint is not a tuple of two floats or integers.
         """
@@ -62,9 +61,10 @@ class ImgDetectionWithAdditionalOutput(dai.ImgDetection):
                 raise TypeError(
                     "Each keypoint must be a tuple of two floats or integers"
                 )
-        self._keypoints = []
+        keypoints = []
         for items in value:
-            self._keypoints.append(tuple(float(v) for v in items))
+            keypoints.append(tuple(float(v) for v in items))
+        self._keypoints = keypoints
 
     @property
     def mask(self) -> np.ndarray:
@@ -91,45 +91,43 @@ class ImgDetectionWithAdditionalOutput(dai.ImgDetection):
         self._mask = value
 
 
-class ImgDetectionsWithAdditionalOutput(dai.Buffer):
-    """ImgDetectionsWithAdditionalOutput class for storing image detections with
-    keypoints.
+class ImgDetectionsExtended(dai.Buffer):
+    """ImgDetectionsExtended class for storing image detections with keypoints.
 
     Attributes
     ----------
-    detections: List[ImgDetectionWithAdditionalOutput]
+    detections: List[ImgDetectionExtended]
         Image detections with keypoints.
     """
 
     def __init__(self):
-        """Initializes the ImgDetectionsWithAdditionalOutput object."""
+        """Initializes the ImgDetectionsExtended object."""
         dai.Buffer.__init__(self)  # TODO: change to super().__init__()?
-        self._detections: List[ImgDetectionWithAdditionalOutput] = []
+        self._detections: List[ImgDetectionExtended] = []
 
     @property
-    def detections(self) -> List[ImgDetectionWithAdditionalOutput]:
+    def detections(self) -> List[ImgDetectionExtended]:
         """Returns the image detections with keypoints.
 
         @return: List of image detections with keypoints.
-        @rtype: List[ImgDetectionWithAdditionalOutput]
+        @rtype: List[ImgDetectionExtended]
         """
         return self._detections
 
     @detections.setter
-    def detections(self, value: List[ImgDetectionWithAdditionalOutput]):
+    def detections(self, value: List[ImgDetectionExtended]):
         """Sets the image detections with keypoints.
 
         @param value: List of image detections with keypoints.
-        @type value: List[ImgDetectionWithAdditionalOutput]
+        @type value: List[ImgDetectionExtended]
         @raise TypeError: If the detections are not a list.
-        @raise TypeError: If each detection is not an instance of
-            ImgDetectionWithAdditionalOutput.
+        @raise TypeError: If each detection is not an instance of ImgDetectionExtended.
         """
         if not isinstance(value, list):
             raise TypeError("Detections must be a list")
         for item in value:
-            if not isinstance(item, ImgDetectionWithAdditionalOutput):
+            if not isinstance(item, ImgDetectionExtended):
                 raise TypeError(
-                    "Each detection must be an instance of ImgDetectionWithAdditionalOutput"
+                    "Each detection must be an instance of ImgDetectionExtended"
                 )
         self._detections = value

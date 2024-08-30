@@ -26,7 +26,7 @@ class YuNetParser(dai.node.ThreadedHostNode):
 
     Output Message/s
     ----------------
-    **Type**: ImgDetectionsWithAdditionalOutput
+    **Type**: ImgDetectionsExtended
 
     **Description**: Message containing bounding boxes, labels, confidence scores, and keypoints of detected faces.
     """

@@ -1,5 +1,5 @@
 import time
-from typing import Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -7,11 +7,29 @@ from .nms import nms
 
 
 def make_grid_numpy(ny: int, nx: int, na: int) -> np.ndarray:
+    """Create a grid of shape (1, na, ny, nx, 2)
+
+    @param ny: Number of y coordinates.
+    @type ny: int
+    @param nx: Number of x coordinates.
+    @type nx: int
+    @param na: Number of anchors.
+    @type na: int
+    @return: Grid.
+    @rtype: np.ndarray
+    """
     yv, xv = np.meshgrid(np.arange(ny), np.arange(nx), indexing="ij")
     return np.stack((xv, yv), 2).reshape(1, na, ny, nx, 2)
 
 
 def xywh2xyxy(x: np.ndarray) -> np.ndarray:
+    """Converts (center x, center y, width, height) to (x1, y1, x2, y2).
+
+    @param x: Bounding box.
+    @type x: np.ndarray
+    @return: Converted bounding box.
+    @rtype: np.ndarray
+    """
     y = np.copy(x)
     y[:, 0] = x[:, 0] - x[:, 2] / 2  # top left x
     y[:, 1] = x[:, 1] - x[:, 3] / 2  # top left y
@@ -33,21 +51,35 @@ def non_max_suppression(
     max_nms: int = 30000,
     max_wh: int = 7680,
     kpts_mode: bool = False,
-):
-    """
-    :param prediction: - prediction from the model, shape = (batch_size, boxes, xy+wh+...)
-    :param conf_thres: - confidence threshold
-    :param iou_thres: - intersection over union threshold
-    :param classes: - for filtering by classes
-    :param num_classes: - number of classes
-    :param agnostic: - runs NMS on all boxes together rather than per class if True
-    :param multi_label: - multilabel classification
-    :param max_det: - limiting detections
-    :param max_time_img: - maximum time for processing an image
-    :param max_nms: - maximum number of boxes
-    :param max_wh: - maximum width and height
-    :param kpts_mode: - keypoints mode
-    :return: - an array of detections per each batch = [...[...[xyxy, conf, label]...]...]
+) -> list[np.ndarray]:
+    """Performs Non-Maximum Suppression (NMS) on inference results.
+
+    @param prediction: Prediction from the model, shape = (batch_size, boxes, xy+wh+...)
+    @type prediction: np.ndarray
+    @param conf_thres: Confidence threshold.
+    @type conf_thres: float
+    @param iou_thres: Intersection over union threshold.
+    @type iou_thres: float
+    @param classes: For filtering by classes.
+    @type classes: list
+    @param num_classes: Number of classes.
+    @type num_classes: int
+    @param agnostic: Runs NMS on all boxes together rather than per class if True.
+    @type agnostic: bool
+    @param multi_label: Multilabel classification.
+    @type multi_label: bool
+    @param max_det: Limiting detections.
+    @type max_det: int
+    @param max_time_img: Maximum time for processing an image.
+    @type max_time_img: float
+    @param max_nms: Maximum number of boxes.
+    @type max_nms: int
+    @param max_wh: Maximum width and height.
+    @type max_wh: int
+    @param kpts_mode: Keypoints mode.
+    @type kpts_mode: bool
+    @return: An array of detections with either kpts or segmentation outputs.
+    @rtype: list[np.ndarray]
     """
     bs = prediction.shape[0]  # batch size
     # Keypoints: 4 (bbox) + 1 (objectness) + 51 (kpts) = 56
@@ -139,8 +171,24 @@ def non_max_suppression(
 
 
 def parse_yolo_outputs(
-    outputs: list, strides: list, anchors: np.ndarray, kpts=None
+    outputs: List[np.ndarray],
+    strides: List[int],
+    anchors: np.ndarray,
+    kpts: Optional[List[np.ndarray]] = None,
 ) -> np.ndarray:
+    """Parse all outputs of an YOLO model (all channels).
+
+    @param outputs: List of outputs of an YOLO model.
+    @type outputs: List[np.ndarray]
+    @param strides: List of strides.
+    @type strides: List[int]
+    @param anchors: List of anchors.
+    @type anchors: np.ndarray
+    @param kpts: An optional list of keypoints for each output.
+    @type kpts: Optional[List[np.ndarray]]
+    @return: Parsed output.
+    @rtype: np.ndarray
+    """
     output = None
 
     for i, (x, s, a) in enumerate(zip(outputs, strides, anchors)):
@@ -158,6 +206,21 @@ def parse_yolo_output(
     head_id: int = -1,
     kpts: Optional[np.ndarray] = None,
 ) -> np.ndarray:
+    """Parse a single channel output of an YOLO model.
+
+    @param out: A single output of an YOLO model for the given channel.
+    @type out: np.ndarray
+    @param stride: Stride.
+    @type stride: int
+    @param anchors: Anchors.
+    @type anchors: np.ndarray
+    @param head_id: Head ID.
+    @type head_id: int
+    @param kpts: A single output of keypoints for the given channel.
+    @type kpts: np.ndarray
+    @return: Parsed output.
+    @rtype: np.ndarray
+    """
     na = 1 if anchors is None else len(anchors)  # number of anchors per head
     bs, _, ny, nx = out.shape  # bs - batch size, ny|nx - y and x of grid cells
 
@@ -203,31 +266,79 @@ def parse_yolo_output(
 
 
 def sigmoid(x: np.ndarray) -> np.ndarray:
+    """Sigmoid function.
+
+    @param x: Input tensor.
+    @type x: np.ndarray
+    @return: A result tensor after applying a sigmoid function on the given input.
+    @rtype: np.ndarray
+    """
     return 1 / (1 + np.exp(-x))
 
 
-def process_single_mask(protos, mask_coeff, mask_conf):
+def process_single_mask(protos: np.ndarray, mask_coeff: np.ndarray, mask_conf: float):
+    """Process a single mask.
+
+    @param protos: Protos.
+    @type protos: np.ndarray
+    @param mask_coeff: Mask coefficient.
+    @type mask_coeff: np.ndarray
+    @param mask_conf: Mask confidence.
+    @type mask_conf: float
+    @return: Processed mask.
+    @rtype: np.ndarray
+    """
     mask = sigmoid(np.sum(protos * mask_coeff[..., np.newaxis, np.newaxis], axis=0))
     return (mask > mask_conf).astype(np.uint8)
 
 
-def parse_kpts(kpts):
+def parse_kpts(kpts: np.ndarray, n_keypoints: int) -> List[Tuple[int, int, float]]:
+    """Parse keypoints.
+
+    @param kpts: Result keypoints.
+    @type kpts: np.ndarray
+    @param n_keypoints: Number of keypoints.
+    @type n_keypoints: int
+    @return: Parsed keypoints.
+    @rtype: List[Tuple[int, int, float]]
+    """
     kps = []
-    for idx in range(0, kpts.shape[0], 3):
-        x, y, conf = kpts[idx], kpts[idx + 1], kpts[idx + 2]
+    ndim = len(kpts) // n_keypoints
+    for idx in range(0, kpts.shape[0], ndim):
+        x, y = kpts[idx], kpts[idx + 1]
+        conf = kpts[idx + 2] if ndim == 3 else 1.0
         kps.append((int(x), int(y), conf))
     return kps
 
 
 def decode_yolo_output(
-    yolo_outputs,
-    strides,
-    anchors,
-    kpts=None,
-    conf_thres=0.5,
-    iou_thres=0.45,
-    num_classes=1,
-):
+    yolo_outputs: List[np.ndarray],
+    strides: List[int],
+    anchors: List[Optional[np.ndarray]],
+    kpts: List[np.ndarray] = None,
+    conf_thres: float = 0.5,
+    iou_thres: float = 0.45,
+    num_classes: int = 1,
+) -> np.ndarray:
+    """Decode the output of an YOLO instance segmentation or pose estimation model.
+
+    @param yolo_outputs: List of YOLO outputs.
+    @type yolo_outputs: List[np.ndarray]
+    @param strides: List of strides.
+    @type strides: List[int]
+    @param anchors: List of anchors.
+    @type anchors: List[Optional[np.ndarray]]
+    @param kpts: List of keypoints.
+    @type kpts: List[np.ndarray]
+    @param conf_thres: Confidence threshold.
+    @type conf_thres: float
+    @param iou_thres: Intersection over union threshold.
+    @type iou_thres: float
+    @param num_classes: Number of classes.
+    @type num_classes: int
+    @return: NMS output.
+    @rtype: np.ndarray
+    """
     output = parse_yolo_outputs(yolo_outputs, strides, anchors, kpts)
     output_nms = non_max_suppression(
         output,

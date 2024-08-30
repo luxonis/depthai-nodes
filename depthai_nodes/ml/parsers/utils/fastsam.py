@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -6,12 +6,23 @@ import numpy as np
 from .yolo import non_max_suppression, parse_yolo_outputs, sigmoid
 
 
-def box_prompt(masks, bbox, orig_shape):
+def box_prompt(
+    masks: np.ndarray, bbox: Tuple[int, int, int, int], orig_shape: Tuple[int, int]
+) -> np.ndarray:
     """Modifies the bounding box properties and calculates IoU between masks and
     bounding box.
 
     Source: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/prompt.py#L286
     Modified so it uses numpy instead of torch.
+
+    @param masks: The resulting masks of the FastSAM model
+    @type masks: np.ndarray
+    @param bbox: The prompt bounding box coordinates
+    @type bbox: Tuple[int, int, int, int]
+    @param orig_shape: The original shape of the image
+    @type orig_shape: Tuple[int, int] (height, width)
+    @return: The modified masks
+    @rtype: np.ndarray
     """
     if masks is not None:
         assert bbox[2] != 0 and bbox[3] != 0
@@ -42,11 +53,22 @@ def box_prompt(masks, bbox, orig_shape):
     return masks.reshape(1, masks.shape[0], masks.shape[1])
 
 
-def format_results(bboxes, masks, filter=0):
+def format_results(
+    bboxes: np.ndarray, masks: np.ndarray, filter: int = 0
+) -> List[Dict[str, Any]]:
     """Formats detection results into list of annotations each containing ID,
     segmentation, bounding box, score and area.
 
     Source: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/prompt.py#L56
+
+    @param bboxes: The bounding boxes of the detected objects
+    @type bboxes: np.ndarray
+    @param masks: The masks of the detected objects
+    @type masks: np.ndarray
+    @param filter: The filter value
+    @type filter: int
+    @return: The formatted annotations
+    @rtype: List[Dict[str, Any]]
     """
     annotations = []
     n = len(masks) if masks is not None else 0
@@ -64,12 +86,31 @@ def format_results(bboxes, masks, filter=0):
     return annotations
 
 
-def point_prompt(bboxes, masks, points, pointlabel, orig_shape):  # numpy
+def point_prompt(
+    bboxes: np.ndarray,
+    masks: np.ndarray,
+    points: List[Tuple[int, int]],
+    pointlabel: List[int],
+    orig_shape: Tuple[int, int],
+) -> np.ndarray:
     """Adjusts points on detected masks based on user input and returns the modified
     results.
 
     Source: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/prompt.py#L321
     Modified so it uses numpy instead of torch.
+
+    @param bboxes: The bounding boxes of the detected objects
+    @type bboxes: np.ndarray
+    @param masks: The masks of the detected objects
+    @type masks: np.ndarray
+    @param points: The points to adjust
+    @type points: List[Tuple[int, int]]
+    @param pointlabel: The point labels
+    @type pointlabel: List[int]
+    @param orig_shape: The original shape of the image
+    @type orig_shape: Tuple[int, int] (height, width)
+    @return: The modified masks
+    @rtype: np.ndarray
     """
     if masks is not None:
         masks = format_results(bboxes, masks, 0)
@@ -105,13 +146,14 @@ def adjust_bboxes_to_image_border(
     Source: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/utils.py#L6 (Ultralytics)
     Adjust bounding boxes to stick to image border if they are within a certain threshold.
 
-    Args:
-        boxes (np.ndarray): (n, 4)
-        image_shape (tuple): (height, width)
-        threshold (int): pixel threshold
-
-    Returns:
-        adjusted_boxes (np.ndarray): adjusted bounding boxes
+    @param boxes: Bounding boxes
+    @type boxes: np.ndarray
+    @param image_shape: Image shape
+    @type image_shape: Tuple[int, int]
+    @param threshold: Pixel threshold
+    @type threshold: int
+    @return: Adjusted bounding boxes
+    @rtype: np.ndarray
     """
     # Image dimensions
     h, w = image_shape
@@ -135,15 +177,18 @@ def bbox_iou(
     Source: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/utils.py#L30 (Ultralytics - rewritten to numpy)
     Compute the Intersection-Over-Union of a bounding box with respect to an array of other bounding boxes.
 
-    Args:
-        box1 (np.ndarray): Array of shape (4, ) representing a single bounding box.
-        boxes (np.ndarray): Array of shape (n, 4) representing multiple bounding boxes.
-        iou_thres (float): IoU threshold.
-        image_shape (tuple): (height, width).
-        raw_output (bool): If True, return the raw IoU values instead of the indices.
-
-    Returns:
-        np.ndarray: Indices of boxes with IoU > thres, or the raw IoU values if raw_output is True.
+    @param box1: Array of shape (4, ) representing a single bounding box.
+    @type box1: np.ndarray
+    @param boxes: Array of shape (n, 4) representing multiple bounding boxes.
+    @type boxes: np.ndarray
+    @param iou_thres: IoU threshold
+    @type iou_thres: float
+    @param image_shape: Image shape (height, width)
+    @type image_shape: Tuple[int, int]
+    @param raw_output: If True, return the raw IoU values instead of the indices
+    @type raw_output: bool
+    @return: Indices of boxes with IoU > thres, or the raw IoU values if raw_output is True
+    @rtype: np.ndarray
     """
     boxes = adjust_bboxes_to_image_border(boxes, image_shape)
 
@@ -173,28 +218,34 @@ def bbox_iou(
 
 
 def decode_fastsam_output(
-    yolo_outputs,
-    strides,
-    anchors,
+    outputs: List[np.ndarray],
+    strides: List[int],
+    anchors: List[Optional[np.ndarray]],
     img_shape: Tuple[int, int],
-    conf_thres=0.5,
-    iou_thres=0.45,
-    num_classes=1,
-):
-    """Decode the bounding boxes.
+    conf_thres: float = 0.5,
+    iou_thres: float = 0.45,
+    num_classes: int = 1,
+) -> np.ndarray:
+    """Decode the output of the FastSAM model.
 
-    Args:
-        yolo_outputs (list): List of yolo outputs
-        strides (list): List of strides
-        anchors (list): List of anchors
-        img_shape (tuple): Image shape (height, width)
-        conf_thres (float): Confidence threshold
-        iou_thres (float): IOU threshold
-
-    Returns:
-        output_nms (np.ndarray): NMS output
+    @param outputs: List of FastSAM outputs
+    @type outputs: List[np.ndarray]
+    @param strides: List of strides
+    @type strides: List[int]
+    @param anchors: List of anchors
+    @type anchors: List[Optional[np.ndarray]]
+    @param img_shape: Image shape
+    @type img_shape: Tuple[int, int]
+    @param conf_thres: Confidence threshold
+    @type conf_thres: float
+    @param iou_thres: IoU threshold
+    @type iou_thres: float
+    @param num_classes: Number of classes
+    @type num_classes: int
+    @return: NMS output
+    @rtype: np.ndarray
     """
-    output = parse_yolo_outputs(yolo_outputs, strides, anchors, kpts=None)
+    output = parse_yolo_outputs(outputs, strides, anchors, kpts=None)
     output_nms = non_max_suppression(
         output,
         conf_thres=conf_thres,
@@ -223,16 +274,16 @@ def decode_fastsam_output(
     return output_nms
 
 
-def crop_mask(masks, box):
+def crop_mask(masks: np.ndarray, box: np.ndarray) -> np.ndarray:
     """It takes a mask and a bounding box, and returns a mask that is cropped to the
     bounding box.
 
-    Args:
-        masks (numpy.ndarray): [h, w] array of masks
-        boxes (numpy.ndarray): [4] array of bbox coordinates in (x1, y1, x2, y2) format
-
-    Returns:
-        numpy.ndarray: The masks are being cropped to the bounding box.
+    @param masks: [h, w] array of masks
+    @type masks: np.ndarray
+    @param box: An array of bbox coordinates in (x1, y1, x2, y2) format
+    @type box: np.ndarray
+    @return: The masks are being cropped to the bounding box.
+    @rtype: np.ndarray
     """
     h, w = masks.shape
     x1, y1, x2, y2 = box
@@ -242,12 +293,27 @@ def crop_mask(masks, box):
 
 
 def process_single_mask(
-    protos,
-    mask_coeff,
-    mask_conf,
+    protos: np.ndarray,
+    mask_coeff: np.ndarray,
+    mask_conf: float,
     img_shape: Tuple[int, int],
     bbox: Tuple[int, int, int, int],
 ) -> np.ndarray:
+    """Processes a single mask.
+
+    @param protos: Prototypes
+    @type protos: np.ndarray
+    @param mask_coeff: Mask coefficients
+    @type mask_coeff: np.ndarray
+    @param mask_conf: Mask confidence
+    @type mask_conf: float
+    @param img_shape: Image shape
+    @type img_shape: Tuple[int, int]
+    @param bbox: Bounding box
+    @type bbox: Tuple[int, int, int, int]
+    @return: Processed mask
+    @rtype: np.ndarray
+    """
     mask = sigmoid(np.sum(protos * mask_coeff[..., np.newaxis, np.newaxis], axis=0))
     mask = cv2.resize(mask, img_shape, interpolation=cv2.INTER_NEAREST)
     mask = crop_mask(mask, np.array(bbox))

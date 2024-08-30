@@ -13,7 +13,7 @@ from .segmentation import SegmentationParser
 from .superanimal_landmarker import SuperAnimalParser
 from .thermal_image import ThermalImageParser
 from .xfeat import XFeatParser
-from .yolo import YOLOParser
+from .yolo import YOLOExtendedParser
 from .yunet import YuNetParser
 
 __all__ = [
@@ -30,7 +30,7 @@ __all__ = [
     "XFeatParser",
     "ThermalImageParser",
     "ClassificationParser",
-    "YOLOParser",
+    "YOLOExtendedParser",
     "FastSAMParser",
     "AgeGenderParser",
     "HRNetParser",
