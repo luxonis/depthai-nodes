@@ -15,10 +15,10 @@ permissions:
 
 jobs:
   assigner:
-  runs-on: ubuntu-latest
-  steps:
-    - name: Auto-assign
-      uses: toshimaru/auto-author-assign@v2.1.1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-assign
+        uses: toshimaru/auto-author-assign@v2.1.1
 
   pre-commit:
     runs-on: ubuntu-latest
