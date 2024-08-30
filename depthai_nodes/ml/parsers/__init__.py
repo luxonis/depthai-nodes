@@ -1,5 +1,6 @@
 from .age_gender import AgeGenderParser
 from .classification import ClassificationParser
+from .fastsam import FastSAMParser
 from .hrnet import HRNetParser
 from .image_output import ImageOutputParser
 from .keypoints import KeypointParser
@@ -12,6 +13,7 @@ from .segmentation import SegmentationParser
 from .superanimal_landmarker import SuperAnimalParser
 from .thermal_image import ThermalImageParser
 from .xfeat import XFeatParser
+from .yolo import YOLOExtendedParser
 from .yunet import YuNetParser
 
 __all__ = [
@@ -28,6 +30,8 @@ __all__ = [
     "XFeatParser",
     "ThermalImageParser",
     "ClassificationParser",
+    "YOLOExtendedParser",
+    "FastSAMParser",
     "AgeGenderParser",
     "HRNetParser",
 ]

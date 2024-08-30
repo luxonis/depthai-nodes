@@ -1,5 +1,9 @@
+from typing import List, Union
+
 import depthai as dai
 import numpy as np
+
+from ...messages import SegmentationMasks
 
 
 def create_segmentation_message(x: np.ndarray) -> dai.ImgFrame:
@@ -31,3 +35,26 @@ def create_segmentation_message(x: np.ndarray) -> dai.ImgFrame:
     imgFrame.setHeight(x.shape[0])
     imgFrame.setType(dai.ImgFrame.Type.RAW8)
     return imgFrame
+
+
+def create_sam_message(x: Union[np.array, List[np.array]]) -> SegmentationMasks:
+    """Create a DepthAI message for segmentation masks.
+
+    @param x: List of segmentation map arrays of the shape (N, H, W).
+    @type x: Union[np.array, List[np.array]]
+    @return: Output segmentaion message in SegmentationMasks.
+    @rtype: SegmentationMasks
+    @raise ValueError: If the input is not a numpy array or list of numpy arrays.
+    @raise ValueError: If the input is not 3D.
+    """
+    if not isinstance(x, (np.ndarray, list)):
+        raise ValueError(f"Expected numpy array or list, got {type(x)}.")
+    for mask in x:
+        if not isinstance(mask, np.ndarray):
+            raise ValueError(f"Expected numpy array, got {type(mask)}.")
+        if len(mask.shape) != 2:
+            raise ValueError(f"Expected 2D input, got {len(mask.shape)}D input.")
+
+    masks_msg = SegmentationMasks()
+    masks_msg.masks = x if isinstance(x, np.ndarray) else np.array(x)
+    return masks_msg

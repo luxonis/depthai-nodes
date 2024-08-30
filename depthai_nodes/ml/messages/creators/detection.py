@@ -1,11 +1,11 @@
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import depthai as dai
 import numpy as np
 
 from ...messages import (
-    ImgDetectionsWithKeypoints,
-    ImgDetectionWithKeypoints,
+    ImgDetectionExtended,
+    ImgDetectionsExtended,
     Line,
     Lines,
 )
@@ -15,7 +15,10 @@ def create_detection_message(
     bboxes: np.ndarray,
     scores: np.ndarray,
     labels: List[int] = None,
-    keypoints: List[List[Tuple[float, float]]] = None,
+    keypoints: Union[
+        List[Tuple[float, float]], List[Tuple[float, float, float]]
+    ] = None,
+    masks: List[np.ndarray] = None,
 ) -> dai.ImgDetections:
     """Create a DepthAI message for an object detection.
 
@@ -25,11 +28,13 @@ def create_detection_message(
     @type scores: np.ndarray
     @param labels: Labels of detected objects of shape (N,).
     @type labels: List[int]
-    @param keypoints: Keypoints of detected objects of shape (N,2).
-    @type keypoints: Optional[List[List[Tuple[float, float]]]]
+    @param keypoints: Keypoints of detected objects of shape (N,2) or (N,3).
+    @type keypoints: Optional[Union[List[Tuple[float, float]], List[Tuple[float, float, float]]]]
+    @param masks: Masks of detected objects of shape (N, H, W).
+    @type masks: List[np.ndarray]
 
     @return: Message containing the bounding boxes, labels, confidence scores, and keypoints of detected objects.
-    @rtype: dai.ImgDetections OR ImgDetectionsWithKeypoints
+    @rtype: dai.ImgDetections OR ImgDetectionsExtended
 
     @raise ValueError: If the bboxes are not a numpy array.
     @raise ValueError: If the bboxes are not of shape (N,4).
@@ -44,6 +49,8 @@ def create_detection_message(
     @raise ValueError: If the keypoints are not a list.
     @raise ValueError: If each keypoint pair is not a tuple of two floats.
     @raise ValueError: If the keypoints do not have the same length as bboxes.
+    @raise ValueError: If the masks are not a list.
+    @raise ValueError: If each mask is not a 2D numpy array.
     """
 
     # checks for bboxes
@@ -116,9 +123,23 @@ def create_detection_message(
                         f"Keypoint pairs should be list of tuples of length 2, got {len(point)}."
                     )
 
-    if keypoints is not None:
-        img_detection = ImgDetectionWithKeypoints
-        img_detections = ImgDetectionsWithKeypoints
+    if masks is not None and len(masks) != 0:
+        if not isinstance(masks, List):
+            raise ValueError(f"masks should be list, got {type(masks)}.")
+        for mask in masks:
+            if not isinstance(mask, np.ndarray):
+                raise ValueError(f"mask should be numpy array, got {type(mask)}.")
+            if len(mask.shape) != 2:
+                raise ValueError(f"mask should be a 2D matrix, got {mask.shape}.")
+
+        if len(masks) != bboxes.shape[0]:
+            raise ValueError(
+                f"masks should have same length as bboxes, got {len(masks)} and {bboxes.shape[0]}."
+            )
+
+    if keypoints is not None or masks is not None:
+        img_detection = ImgDetectionExtended
+        img_detections = ImgDetectionsExtended
     else:
         img_detection = dai.ImgDetection
         img_detections = dai.ImgDetections
@@ -137,6 +158,8 @@ def create_detection_message(
             detection.label = labels[i]
         if keypoints is not None:
             detection.keypoints = keypoints[i]
+        if masks is not None:
+            detection.mask = masks[i]
         detections.append(detection)
 
     detections_msg = img_detections()
