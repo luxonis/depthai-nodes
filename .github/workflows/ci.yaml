@@ -46,7 +46,7 @@ jobs:
 
       - name: Build docs
         run: |
-          python gen-docs.py depthai-nodes
+          python gen-docs.py depthai_nodes
 
   tests:
     needs:
