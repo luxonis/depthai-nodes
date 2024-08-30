@@ -26,7 +26,7 @@ def create_depth_message(
     if not isinstance(depth_map, np.ndarray):
         raise ValueError(f"Expected numpy array, got {type(depth_map)}.")
 
-        if len(depth_map.shape) != 3:
+    if len(depth_map.shape) != 3:
         raise ValueError(f"Expected 3D input, got {len(depth_map.shape)}D input.")
 
     if depth_map.shape[0] == 1:
@@ -40,7 +40,6 @@ def create_depth_message(
 
     if len(depth_map.shape) != 2:
         raise ValueError(f"Expected 2D input, got {len(depth_map.shape)}D input.")
-
 
     if depth_type == "relative":
         data_type = dai.ImgFrame.Type.RAW16
