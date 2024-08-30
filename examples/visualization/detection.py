@@ -47,7 +47,7 @@ def visualize_detections(
                     -1,
                 )
         except Exception:
-            print("No keypoints available.")
+            pass
 
         cv2.putText(
             frame,
