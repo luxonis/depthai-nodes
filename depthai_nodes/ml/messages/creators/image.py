@@ -4,7 +4,7 @@ import numpy as np
 
 
 def create_image_message(
-    image: np.array,
+    image: np.ndarray,
     is_bgr: bool = True,
 ) -> dai.ImgFrame:
     """Create a DepthAI message for an image array.
@@ -25,11 +25,14 @@ def create_image_message(
         hwc = True
     else:
         raise ValueError(
-            "Unexpected image shape. Expected CHW or HWC, got", image.shape
+            f"Unexpected image shape. Expected CHW or HWC, got {image.shape}"
         )
 
     if not hwc:
         image = np.transpose(image, (1, 2, 0))
+
+    if isinstance(image[0, 0, 0], float):
+        raise ValueError(f"Expected int type, got {type(image[0, 0, 0])}.")
 
     if image.shape[2] == 1:  # grayscale
         image = image[:, :, 0]

@@ -58,7 +58,7 @@ class HandKeypoints(Keypoints):
         """Initializes the HandKeypoints object."""
         Keypoints.__init__(self)
         self._confidence: float = 0.0
-        self._handdedness: float = 0.0
+        self._handedness: float = 0.0
 
     @property
     def confidence(self) -> float:
@@ -82,22 +82,22 @@ class HandKeypoints(Keypoints):
         self._confidence = value
 
     @property
-    def handdedness(self) -> float:
-        """Returns the handdedness of the hand keypoints.
+    def handedness(self) -> float:
+        """Returns the handedness of the hand keypoints.
 
-        @return: Handdedness of the hand keypoints.
+        @return: Handedness of the hand keypoints.
         @rtype: float
         """
-        return self._handdedness
+        return self._handedness
 
-    @handdedness.setter
-    def handdedness(self, value: float):
-        """Sets the handdedness of the hand keypoints.
+    @handedness.setter
+    def handedness(self, value: float):
+        """Sets the handedness of the hand keypoints.
 
-        @param value: Handdedness of the hand keypoints.
+        @param value: Handedness of the hand keypoints.
         @type value: float
-        @raise TypeError: If the handdedness is not a float.
+        @raise TypeError: If the handedness is not a float.
         """
         if not isinstance(value, float):
-            raise TypeError("handdedness must be a float.")
-        self._handdedness = value
+            raise TypeError("handedness must be a float.")
+        self._handedness = value

@@ -2,7 +2,7 @@ import depthai as dai
 import numpy as np
 
 
-def create_segmentation_message(x: np.array) -> dai.ImgFrame:
+def create_segmentation_message(x: np.ndarray) -> dai.ImgFrame:
     """Create a DepthAI message for segmentation mask.
 
     @param x: Segmentation map array of the shape (H, W, E{1}) where E{1} stands for the
@@ -23,7 +23,8 @@ def create_segmentation_message(x: np.array) -> dai.ImgFrame:
         raise ValueError(
             f"Expected 1 channel in the third dimension, got {x.shape[2]} channels."
         )
-
+    if isinstance(x[0, 0, 0], float):
+        raise ValueError(f"Expected int type, got {type(x[0, 0, 0])}.")
     imgFrame = dai.ImgFrame()
     imgFrame.setFrame(x)
     imgFrame.setWidth(x.shape[1])

@@ -71,6 +71,10 @@ def create_tracked_features_message(
         raise ValueError(
             f"target_points 2nd dimension should be of size 2 e.g. [x, y], got {target_points.shape[1]}."
         )
+    if len(reference_points) != len(target_points):
+        raise ValueError(
+            "The number of reference points and target points should be the same."
+        )
 
     features = []
 
