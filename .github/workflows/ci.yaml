@@ -7,6 +7,7 @@ on:
       - 'depthai_nodes/**'
       - 'tests/**'
       - .github/workflows/ci.yaml
+      - 'examples/**'
 
 permissions:
   pull-requests: write
@@ -72,6 +73,9 @@ jobs:
         python-version: ${{ matrix.python-version }}
         cache: pip
 
+    - name: Install depthai
+      run: pip install --extra-index-url https://artifacts.luxonis.com/artifactory/luxonis-python-release-local/ depthai==3.0.0a2
+
     - name: Install package
       run: pip install -e .[dev]
 
@@ -79,7 +83,7 @@ jobs:
       uses: pavelzw/pytest-action@v2
       with:
         emoji: false
-        custom-arguments: --cov depthai-nodes --cov-report xml --junit-xml pytest.xml
+        custom-arguments: --cov depthai_nodes --cov-report xml --junit-xml pytest.xml
 
     - name: Create Test Report
       uses: EnricoMi/publish-unit-test-result-action@v2
