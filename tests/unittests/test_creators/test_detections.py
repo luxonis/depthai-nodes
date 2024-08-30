@@ -5,8 +5,8 @@ import numpy as np
 import pytest
 
 from depthai_nodes.ml.messages import (
-    ImgDetectionsWithKeypoints,
-    ImgDetectionWithKeypoints,
+    ImgDetectionExtended,
+    ImgDetectionsExtended,
 )
 from depthai_nodes.ml.messages.creators.detection import create_detection_message
 
@@ -172,10 +172,9 @@ def test_bboxes_scores_keypoints():
 
     message = create_detection_message(bboxes, scores, None, keypoints)
 
-    assert isinstance(message, ImgDetectionsWithKeypoints)
+    assert isinstance(message, ImgDetectionsExtended)
     assert all(
-        isinstance(detection, ImgDetectionWithKeypoints)
-        for detection in message.detections
+        isinstance(detection, ImgDetectionExtended) for detection in message.detections
     )
 
     for i, detection in enumerate(message.detections):
