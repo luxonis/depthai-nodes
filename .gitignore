@@ -162,3 +162,5 @@ cython_debug/
 #.idea/
 
 .DS_Store
+
+.depthai_cached_models/
