@@ -44,7 +44,7 @@ class ImgDetectionWithKeypoints(dai.ImgDetection):
                 or not all(isinstance(i, (int, float)) for i in item)
             ):
                 raise TypeError(
-                    "Each keypoint must be a tuple of two floats or integers"
+                    "Each keypoint must be a tuple of two floats or integers."
                 )
         self._keypoints = [(float(x), float(y)) for x, y in value]
 

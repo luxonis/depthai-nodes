@@ -31,6 +31,7 @@ def create_hand_keypoints_message(
     @raise ValueError: If the hand_keypoints 2nd dimension is not of size E{3}.
     @raise ValueError: If the handedness is not a float.
     @raise ValueError: If the confidence is not a float.
+    @raise ValueError: If the confidence_threshold is not a float.
     """
 
     if not isinstance(hand_keypoints, np.ndarray):
@@ -46,9 +47,27 @@ def create_hand_keypoints_message(
             f"hand_keypoints 2nd dimension should be of size 3 e.g. [x, y, z], got {hand_keypoints.shape[1]}."
         )
     if not isinstance(handedness, float):
-        raise ValueError(f"handedness should be float, got {type(handedness)}.")
+        raise ValueError(f"Handedness should be float, got {type(handedness)}.")
     if not isinstance(confidence, float):
-        raise ValueError(f"confidence should be float, got {type(confidence)}.")
+        raise ValueError(f"Confidence should be float, got {type(confidence)}.")
+    if not isinstance(confidence_threshold, float):
+        raise ValueError(
+            f"Confidence threshold should be float, got {type(confidence_threshold)}."
+        )
+
+    if handedness < 0 or handedness > 1:
+        raise ValueError(
+            f"Handedness should be between 0 and 1, got handedness {handedness}."
+        )
+
+    if confidence < 0 or confidence > 1:
+        raise ValueError(
+            f"Confidence should be between 0 and 1, got confidence {confidence}."
+        )
+    if confidence_threshold < 0 or confidence_threshold > 1:
+        raise ValueError(
+            f"Confidence threshold should be between 0 and 1, got confidence threshold {confidence_threshold}."
+        )
 
     hand_keypoints_msg = HandKeypoints()
     hand_keypoints_msg.handedness = handedness
@@ -93,67 +112,68 @@ def create_keypoints_message(
     @raise ValueError: If the confidence threshold is not provided when scores are provided.
     """
 
-    if not isinstance(keypoints, np.ndarray):
-        if not isinstance(keypoints, list):
-            raise ValueError(
-                f"keypoints should be numpy array or list, got {type(keypoints)}."
+    if not isinstance(keypoints, (np.ndarray, list)):
+        raise ValueError(
+            f"Keypoints should be numpy array or list, got {type(keypoints)}."
+        )
+
+    if not isinstance(scores, (np.ndarray, list)):
+        raise ValueError(f"Scores should be numpy array or list, got {type(scores)}.")
+
+    if len(keypoints) == 0:
+        raise ValueError("Keypoints should not be empty.")
+
+    if len(keypoints) != len(scores):
+        raise ValueError(
+            "Keypoints and scores should have the same length. Got {} keypoints and {} scores.".format(
+                len(keypoints), len(scores)
             )
+        )
+
+    if not all(isinstance(score, float) for score in scores):
+        raise ValueError("Scores should only contain float values.")
+    if not all(0 <= score <= 1 for score in scores):
+        raise ValueError("Scores should only contain values between 0 and 1.")
+
+    if not isinstance(confidence_threshold, float):
+        raise ValueError(
+            f"The confidence_threshold should be float, got {type(confidence_threshold)}."
+        )
+
+    if not (0 <= confidence_threshold <= 1):
+        raise ValueError(
+            f"The confidence_threshold should be between 0 and 1, got confidence_threshold {confidence_threshold}."
+        )
+
+    dimension = len(keypoints[0])
+    if dimension != 2 and dimension != 3:
+        raise ValueError(
+            f"All keypoints should be of dimension 2 or 3, got dimension {dimension}."
+        )
+
+    if isinstance(keypoints, list):
         for keypoint in keypoints:
             if not isinstance(keypoint, list):
                 raise ValueError(
-                    f"keypoints should be list of lists or np.array, got list of {type(keypoint)}."
+                    f"Keypoints should be list of lists or np.array, got list of {type(keypoint)}."
                 )
-            if len(keypoint) not in [2, 3]:
+            if len(keypoint) != dimension:
                 raise ValueError(
-                    f"keypoints inner list should be of size 2 or 3 e.g. [x, y] or [x, y, z], got {len(keypoint)}."
+                    "All keypoints have to be of same dimension e.g. [x, y] or [x, y, z], got mixed inner dimensions."
                 )
             for coord in keypoint:
                 if not isinstance(coord, (float)):
                     raise ValueError(
-                        f"keypoints inner list should contain only float, got {type(coord)}."
+                        f"Keypoints inner list should contain only float, got {type(coord)}."
                     )
-        keypoints = np.array(keypoints)
+
+    keypoints = np.array(keypoints)
+    scores = np.array(scores)
+
     if len(keypoints.shape) != 2:
         raise ValueError(
-            f"keypoints should be of shape (N,2 or 3) got {keypoints.shape}."
+            f"Keypoints should be of shape (N,2 or 3) got {keypoints.shape}."
         )
-    if keypoints.shape[1] not in [2, 3]:
-        raise ValueError(
-            f"keypoints 2nd dimension should be of size 2 or 3 e.g. [x, y] or [x, y, z], got {keypoints.shape[1]}."
-        )
-    if scores is not None:
-        if not isinstance(scores, np.ndarray):
-            if not isinstance(scores, list):
-                raise ValueError(
-                    f"scores should be numpy array or list, got {type(scores)}."
-                )
-            for score in scores:
-                if not isinstance(score, float):
-                    raise ValueError(
-                        f"scores should be list of floats or np.array, got list of {type(score)}."
-                    )
-            scores = np.array(scores)
-        if len(scores.shape) != 1:
-            raise ValueError(
-                f"scores should be of shape (N,) meaning [...,score,...], got {scores.shape}."
-            )
-        if keypoints.shape[0] != scores.shape[0]:
-            raise ValueError(
-                f"keypoints and scores should have the same length, got {keypoints.shape[0]} and {scores.shape[0]}."
-            )
-        if confidence_threshold is None:
-            raise ValueError(
-                "confidence_threshold should be provided when scores are provided."
-            )
-    if confidence_threshold is not None:
-        if not isinstance(confidence_threshold, float):
-            raise ValueError(
-                f"confidence_threshold should be float, got {type(confidence_threshold)}."
-            )
-        if scores is None:
-            raise ValueError(
-                "confidence_threshold should be provided when scores are provided."
-            )
 
     use_3d = keypoints.shape[1] == 3
 

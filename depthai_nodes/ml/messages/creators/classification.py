@@ -30,8 +30,7 @@ def create_classification_message(
     @raises ValueError: If the provided scores do not sum to 1.
     @raises ValueError: If the number of labels and scores mismatch.
     """
-
-    if type(classes) == type(None):
+    if isinstance(classes, type(None)):
         raise ValueError("Classes should not be None.")
 
     if not isinstance(classes, list):
@@ -62,7 +61,7 @@ def create_classification_message(
     if not np.issubdtype(scores.dtype, np.floating):
         raise ValueError(f"Scores should be of type float, got {scores.dtype}.")
 
-    if not np.isclose(np.sum(scores), 1.0, atol=1e-1):
+    if not np.isclose(np.sum(scores), 1.0, atol=1e-2):
         raise ValueError(f"Scores should sum to 1, got {np.sum(scores)}.")
 
     if len(scores) != len(classes):
@@ -71,8 +70,7 @@ def create_classification_message(
         )
 
     classification_msg = Classifications()
-
-    sorted_args = np.argsort(scores)[::-1]
+    sorted_args = np.argsort(-scores, kind="stable")
     scores = scores[sorted_args]
 
     classification_msg.classes = [classes[i] for i in sorted_args]

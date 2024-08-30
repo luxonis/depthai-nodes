@@ -2,7 +2,7 @@ import depthai as dai
 import numpy as np
 
 
-def create_thermal_message(thermal_image: np.array) -> dai.ImgFrame:
+def create_thermal_message(thermal_image: np.ndarray) -> dai.ImgFrame:
     """Create a DepthAI message for thermal image.
 
     @param thermal_image: A NumPy array representing the thermal image with shape (CHW
@@ -26,8 +26,14 @@ def create_thermal_message(thermal_image: np.array) -> dai.ImgFrame:
         thermal_image = thermal_image[:, :, 0]  # HWC to HW
     else:
         raise ValueError(
-            "Unexpected image shape. Expected CHW or HWC, got", thermal_image.shape
+            f"Unexpected image shape. Expected CHW or HWC, got {thermal_image.shape}."
         )
+
+    if isinstance(thermal_image.flat[0], float):
+        raise ValueError("Expected integer values, got float.")
+
+    if np.any(thermal_image < 0):
+        raise ValueError("All values of thermal_image have to be non-negative.")
 
     thermal_image = thermal_image.astype(np.uint16)
 

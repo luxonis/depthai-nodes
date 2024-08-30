@@ -7,7 +7,7 @@ UINT16_MAX_VALUE = 65535
 
 
 def create_depth_message(
-    depth_map: np.array, depth_type: Literal["relative", "metric"]
+    depth_map: np.ndarray, depth_type: Literal["relative", "metric"]
 ) -> dai.ImgFrame:
     """Create a DepthAI message for a depth map.
 
@@ -35,7 +35,7 @@ def create_depth_message(
         depth_map = depth_map[:, :, 0]  # HWC to HW
     else:
         raise ValueError(
-            "Unexpected image shape. Expected CHW or HWC, got", depth_map.shape
+            f"Unexpected image shape. Expected CHW or HWC, got {depth_map.shape}."
         )
 
     if depth_type == "relative":
