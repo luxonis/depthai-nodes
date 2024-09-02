@@ -216,7 +216,7 @@ def create_line_detection_message(lines: np.ndarray, scores: np.ndarray):
         )
 
     for score in scores:
-        if not isinstance(score, float):
+        if not isinstance(score, (float, np.floating)):
             raise ValueError(f"Scores should be of type float, got {type(score)}.")
 
     line_detections = []
