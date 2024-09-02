@@ -29,7 +29,7 @@ def create_age_gender_message(age: float, gender_prob: List[float]) -> AgeGender
         )
 
     for item in gender_prob:
-        if not isinstance(item, float):
+        if not isinstance(item, (float)):
             raise ValueError(
                 f"Gender_prob list values must be of type float, instead got {type(item)}."
             )
