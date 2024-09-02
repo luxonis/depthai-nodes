@@ -1,0 +1,33 @@
+DevOps:
+  - changed-files:
+    - any-glob-to-any-file: ".github/*"
+documentation:
+  - changed-files:
+    - any-glob-to-any-file: "docs/*"
+examples:
+  - changed-files:
+    - any-glob-to-any-file: "examples/*"
+messages:
+  - changed-files:
+    - any-glob-to-any-file: "depthai_nodes/ml/messages/*"
+parsers:
+  - changed-files:
+    - any-glob-to-any-file: "depthai_nodes/ml/parsers/*"
+tests:
+  - changed-files:
+    - any-glob-to-any-file: "tests/*"
+enhancement:
+  - head-branch:
+    - 'feature/*'
+    - 'feat/*'
+    - 'enhancement/*'
+fix:
+  - head-branch:
+    - 'fix/*'
+    - 'bug/*'
+    - 'hotfix/*'
+    - 'issue/*'
+    - 'bugfix/*'
+    - 'patch/*'
+release:
+  - base-branch: 'main'

@@ -6,8 +6,9 @@ on:
     paths:
       - 'depthai_nodes/**'
       - 'tests/**'
-      - .github/workflows/ci.yaml
       - 'examples/**'
+      - 'docs/**'
+      - .github/workflows/ci.yaml
 
 permissions:
   pull-requests: write
@@ -20,6 +21,19 @@ jobs:
     steps:
       - name: Auto-assign
         uses: toshimaru/auto-author-assign@v2.1.1
+
+  labeler:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Labeler
+        uses: actions/labeler@v5
+        with:
+          configuration-path: .github/labeler.yaml
 
   pre-commit:
     runs-on: ubuntu-latest
