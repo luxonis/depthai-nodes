@@ -56,5 +56,6 @@ def create_sam_message(x: Union[np.ndarray, List[np.ndarray]]) -> SegmentationMa
             raise ValueError(f"Expected 2D input, got {len(mask.shape)}D input.")
 
     masks_msg = SegmentationMasks()
-    masks_msg.masks = x if isinstance(x, np.ndarray) else np.array(x)
+    if len(x) != 0:
+        masks_msg.masks = x if isinstance(x, np.ndarray) else np.array(x)
     return masks_msg

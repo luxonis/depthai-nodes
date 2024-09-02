@@ -47,7 +47,7 @@ def create_detection_message(
     @raise ValueError: If each label is not an integer.
     @raise ValueError: If the labels do not have the same length as bboxes.
     @raise ValueError: If the keypoints are not a list.
-    @raise ValueError: If each keypoint pair is not a tuple of two floats.
+    @raise ValueError: If each keypoint pair is not a tuple of two or three floats.
     @raise ValueError: If the keypoints do not have the same length as bboxes.
     @raise ValueError: If the masks are not a list.
     @raise ValueError: If each mask is not a 2D numpy array.
@@ -56,24 +56,23 @@ def create_detection_message(
     # checks for bboxes
     if not isinstance(bboxes, np.ndarray):
         raise ValueError(f"Bounding boxes should be numpy array, got {type(bboxes)}.")
-    if len(bboxes) == 0:
-        raise ValueError("Bounding boxes should not be empty.")
 
-    if len(bboxes.shape) != 2:
-        raise ValueError(
-            f"Bounding boxes should be of shape (N,4) meaning [...,[x_min, y_min, x_max, y_max],...], got {bboxes.shape}."
-        )
-    if bboxes.shape[1] != 4:
-        raise ValueError(
-            f"Bounding boxes 2nd dimension should be of size 4 e.g. [x_min, y_min, x_max, y_max] got {bboxes.shape[1]}."
-        )
+    if len(bboxes) != 0:
+        if len(bboxes.shape) != 2:
+            raise ValueError(
+                f"Bounding boxes should be of shape (N,4) meaning [...,[x_min, y_min, x_max, y_max],...], got {bboxes.shape}."
+            )
+        if bboxes.shape[1] != 4:
+            raise ValueError(
+                f"Bounding boxes 2nd dimension should be of size 4 e.g. [x_min, y_min, x_max, y_max] got {bboxes.shape[1]}."
+            )
 
-    x_valid = bboxes[:, 0] < bboxes[:, 2]
-    y_valid = bboxes[:, 1] < bboxes[:, 3]
-    if not (np.all(x_valid) and np.all(y_valid)):
-        raise ValueError(
-            "Bounding boxes should be in format [x_min, y_min, x_max, y_max] where xmin < xmax and ymin < ymax."
-        )
+        x_valid = bboxes[:, 0] < bboxes[:, 2]
+        y_valid = bboxes[:, 1] < bboxes[:, 3]
+        if not (np.all(x_valid) and np.all(y_valid)):
+            raise ValueError(
+                "Bounding boxes should be in format [x_min, y_min, x_max, y_max] where xmin < xmax and ymin < ymax."
+            )
 
     # checks for scores
     if not isinstance(scores, np.ndarray):
@@ -113,14 +112,19 @@ def create_detection_message(
             )
 
         for object_keypoints in keypoints:
+            dim = len(object_keypoints[0]) if len(object_keypoints) != 0 else 0
             for point in object_keypoints:
-                if not isinstance(point, Tuple) and not isinstance(point, List):
+                if not isinstance(point, (Tuple, List)):
                     raise ValueError(
                         f"Keypoint pairs should be list of tuples, got {type(point)}."
                     )
-                if len(point) != 2:
+                if len(point) not in [2, 3]:
                     raise ValueError(
-                        f"Keypoint pairs should be list of tuples of length 2, got {len(point)}."
+                        f"Keypoint pairs should be list of tuples of length 2 or 3, got {len(point)}."
+                    )
+                if len(point) != dim:
+                    raise ValueError(
+                        "All keypoints should be of same dimension e.g. [x, y] or [x, y, z], got mixed inner dimensions."
                     )
 
     if masks is not None and len(masks) != 0:
@@ -189,35 +193,34 @@ def create_line_detection_message(lines: np.ndarray, scores: np.ndarray):
     # checks for lines
     if not isinstance(lines, np.ndarray):
         raise ValueError(f"Lines should be numpy array, got {type(lines)}.")
-    if len(lines) == 0:
-        raise ValueError("Lines should not be empty.")
-
-    if len(lines.shape) != 2:
-        raise ValueError(
-            f"Lines should be of shape (N,4) meaning [...,[x_start, y_start, x_end, y_end],...], got {lines.shape}."
-        )
-    if lines.shape[1] != 4:
-        raise ValueError(
-            f"Lines 2nd dimension should be of size 4 e.g. [x_start, y_start, x_end, y_end] got {lines.shape[1]}."
-        )
+    if len(lines) != 0:
+        if len(lines.shape) != 2:
+            raise ValueError(
+                f"Lines should be of shape (N,4) meaning [...,[x_start, y_start, x_end, y_end],...], got {lines.shape}."
+            )
+        if lines.shape[1] != 4:
+            raise ValueError(
+                f"Lines 2nd dimension should be of size 4 e.g. [x_start, y_start, x_end, y_end] got {lines.shape[1]}."
+            )
 
     # checks for scores
     if not isinstance(scores, np.ndarray):
         raise ValueError(f"Scores should be numpy array, got {type(scores)}.")
 
-    if len(scores) == 0:
-        raise ValueError("Scores should not be empty.")
+    if len(scores) != 0:
+        if len(scores.shape) != 1:
+            raise ValueError(
+                f"Scores should be of shape (N,) meaning, got {scores.shape}."
+            )
 
-    if len(scores.shape) != 1:
-        raise ValueError(f"Scores should be of shape (N,) meaning, got {scores.shape}.")
+        for score in scores:
+            if not isinstance(score, (float, np.floating)):
+                raise ValueError(f"Scores should be of type float, got {type(score)}.")
+
     if scores.shape[0] != lines.shape[0]:
         raise ValueError(
             f"Scores should have same length as lines, got {scores.shape[0]} and {lines.shape[0]}."
         )
-
-    for score in scores:
-        if not isinstance(score, (float, np.floating)):
-            raise ValueError(f"Scores should be of type float, got {type(score)}.")
 
     line_detections = []
     for i, line in enumerate(lines):
