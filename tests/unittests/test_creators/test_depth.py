@@ -21,7 +21,7 @@ def test_wrong_literal_type():
 
 
 def test_not_3d_input():
-    with pytest.raises(ValueError, match="Expected 3D input, got 1D input."):
+    with pytest.raises(ValueError, match="Expected 2D or 3D input, got 1D input."):
         create_depth_message(np.array([1, 2, 3]), "relative")
 
 
