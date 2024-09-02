@@ -21,14 +21,14 @@ def test_wrong_literal_type():
 
 
 def test_not_3d_input():
-    with pytest.raises(ValueError, match="Expected 3D input, got 1D input."):
+    with pytest.raises(ValueError, match="Expected 2D or 3D input, got 1D input."):
         create_depth_message(np.array([1, 2, 3]), "relative")
 
 
 def test_wrong_input_shape():
     with pytest.raises(
         ValueError,
-        match=re.escape("Unexpected image shape. Expected CHW or HWC, got (3, 1, 3)."),
+        match=re.escape("Unexpected image shape. Expected NHW or HWN, got (3, 1, 3)."),
     ):
         create_depth_message(
             np.array([[[1, 2, 3]], [[4, 5, 6]], [[7, 8, 9]]]), "relative"

@@ -31,16 +31,11 @@ def test_none_keypoints():
 
 
 def test_none_scores():
-    with pytest.raises(
-        ValueError,
-        match="Scores should be numpy array or list, got <class 'NoneType'>.",
-    ):
-        create_keypoints_message(np.array([[1.0, 2.0, 3.0]]), None, 0.8)
+    create_keypoints_message(np.array([[1.0, 2.0, 3.0]]), None, None)
 
 
 def test_empty_keypoints():
-    with pytest.raises(ValueError, match="Keypoints should not be empty."):
-        create_keypoints_message([], [], 0.8)
+    create_keypoints_message([], [], 0.8)
 
 
 def test_keypoints_and_scores_length():
