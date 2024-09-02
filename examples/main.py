@@ -1,6 +1,7 @@
 import depthai as dai
 from utils.arguments import initialize_argparser, parse_model_slug
-from utils.model import get_input_shape, get_model_from_hub, get_parser, setup_parser
+from utils.model import get_input_shape, get_model_from_hub, get_parser
+from utils.parser import setup_parser
 from visualization.visualize import visualize
 
 # Initialize the argument parser
