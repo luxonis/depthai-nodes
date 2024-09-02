@@ -28,7 +28,7 @@ def test_not_3d_input():
 def test_wrong_input_shape():
     with pytest.raises(
         ValueError,
-        match=re.escape("Unexpected image shape. Expected CHW or HWC, got (3, 1, 3)."),
+        match=re.escape("Unexpected image shape. Expected NHW or HWN, got (3, 1, 3)."),
     ):
         create_depth_message(
             np.array([[[1, 2, 3]], [[4, 5, 6]], [[7, 8, 9]]]), "relative"
