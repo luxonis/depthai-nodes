@@ -37,7 +37,7 @@ def create_segmentation_message(x: np.ndarray) -> dai.ImgFrame:
     return imgFrame
 
 
-def create_sam_message(x: Union[np.array, List[np.array]]) -> SegmentationMasks:
+def create_sam_message(x: Union[np.ndarray, List[np.ndarray]]) -> SegmentationMasks:
     """Create a DepthAI message for segmentation masks.
 
     @param x: List of segmentation map arrays of the shape (N, H, W).

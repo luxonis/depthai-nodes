@@ -31,7 +31,7 @@ def create_image_message(
     if not hwc:
         image = np.transpose(image, (1, 2, 0))
 
-    if isinstance(image[0, 0, 0], float):
+    if isinstance(image[0, 0, 0], (float, np.floating)):
         raise ValueError(f"Expected int type, got {type(image[0, 0, 0])}.")
 
     if image.shape[2] == 1:  # grayscale

@@ -130,7 +130,7 @@ def create_keypoints_message(
             )
         )
 
-    if not all(isinstance(score, float) for score in scores):
+    if not all(isinstance(score, (float, np.floating)) for score in scores):
         raise ValueError("Scores should only contain float values.")
     if not all(0 <= score <= 1 for score in scores):
         raise ValueError("Scores should only contain values between 0 and 1.")
@@ -162,7 +162,7 @@ def create_keypoints_message(
                     "All keypoints have to be of same dimension e.g. [x, y] or [x, y, z], got mixed inner dimensions."
                 )
             for coord in keypoint:
-                if not isinstance(coord, (float)):
+                if not isinstance(coord, (float, np.floating)):
                     raise ValueError(
                         f"Keypoints inner list should contain only float, got {type(coord)}."
                     )
