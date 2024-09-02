@@ -11,7 +11,7 @@ def create_depth_message(
 ) -> dai.ImgFrame:
     """Create a DepthAI message for a depth map.
 
-    @param depth_map: A NumPy array representing the depth map with shape (HW).
+    @param depth_map: A NumPy array representing the depth map with shape HW or CHW/HWC.
     @type depth_map: np.array
     @param depth_type: A string indicating the type of depth map. It can either be
         'relative' or 'metric'.
@@ -19,8 +19,10 @@ def create_depth_message(
     @return: An ImgFrame object containing the depth information.
     @rtype: dai.ImgFrame
     @raise ValueError: If the depth map is not a NumPy array.
-    @raise ValueError: If the depth map is not 2D.
+    @raise ValueError: If the depth map is not 2D or 3D.
+    @raise ValueError: If the depth map shape is not CHW or HWC.
     @raise ValueError: If the depth type is not 'relative' or 'metric'.
+    @raise NotImplementedError: If the depth type is 'metric'.
     """
 
     if not isinstance(depth_map, np.ndarray):

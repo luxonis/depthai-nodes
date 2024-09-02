@@ -95,21 +95,22 @@ def create_keypoints_message(
     @param keypoints: Detected 2D or 3D keypoints of shape (N,2 or 3) meaning [...,[x, y],...] or [...,[x, y, z],...].
     @type keypoints: np.ndarray or List[List[float]]
     @param scores: Confidence scores of the detected keypoints.
-    @type scores: np.ndarray or List[float]
+    @type scores: Optional[np.ndarray or List[float]]
     @param confidence_threshold: Confidence threshold of keypoint detections.
-    @type confidence_threshold: float
+    @type confidence_threshold: Optional[float]
 
     @return: Keypoints message containing the detected keypoints.
     @rtype: Keypoints
 
     @raise ValueError: If the keypoints are not a numpy array or list.
+    @raise ValueError: If the scores are not a numpy array or list.
+    @raise ValueError: If scores and keypoints do not have the same length.
+    @raise ValueError: If score values are not floats.
+    @raise ValueError: If score values are not between 0 and 1.
+    @raise ValueError: If the confidence threshold is not a float.
+    @raise ValueError: If the confidence threshold is not between 0 and 1.
     @raise ValueError: If the keypoints are not of shape (N,2 or 3).
     @raise ValueError: If the keypoints 2nd dimension is not of size E{2} or E{3}.
-    @raise ValueError: If the scores are not a numpy array or list.
-    @raise ValueError: If the scores are not of shape (N,).
-    @raise ValueError: If the keypoints and scores do not have the same length.
-    @raise ValueError: If the confidence threshold is not a float.
-    @raise ValueError: If the confidence threshold is not provided when scores are provided.
     """
 
     if not isinstance(keypoints, (np.ndarray, list)):
