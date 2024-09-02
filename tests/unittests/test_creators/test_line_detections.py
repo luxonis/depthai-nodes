@@ -14,6 +14,12 @@ def test_not_numpy_lines():
         create_line_detection_message([1, 2, 3], [0.1, 0.2, 0.3])
 
 
+def test_empty_numpy_lines():
+    lines_msg = create_line_detection_message(np.array([]), np.array([]))
+    assert isinstance(lines_msg, Lines)
+    assert len(lines_msg.lines) == 0
+
+
 def test_lines_shape():
     with pytest.raises(
         ValueError,
@@ -51,7 +57,7 @@ def test_empty_numpy_scores():
 def test_mixed_scores():
     with pytest.raises(
         ValueError,
-        match="Scores should be of type float or np.float32, got <class 'NoneType'>.",
+        match="Scores should be of type float, got <class 'NoneType'>.",
     ):
         create_line_detection_message(
             np.array([[1, 2, 3, 4], [1, 2, 3, 4]]), np.array([0.1, None])
