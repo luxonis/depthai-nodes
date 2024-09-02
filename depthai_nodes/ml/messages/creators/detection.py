@@ -114,7 +114,7 @@ def create_detection_message(
         for object_keypoints in keypoints:
             dim = len(object_keypoints[0]) if len(object_keypoints) != 0 else 0
             for point in object_keypoints:
-                if not isinstance(point, Tuple) and not isinstance(point, List):
+                if not isinstance(point, (Tuple, List)):
                     raise ValueError(
                         f"Keypoint pairs should be list of tuples, got {type(point)}."
                     )
