@@ -11,7 +11,8 @@ def create_depth_message(
 ) -> dai.ImgFrame:
     """Create a DepthAI message for a depth map.
 
-    @param depth_map: A NumPy array representing the depth map with shape HW or CHW/HWC.
+    @param depth_map: A NumPy array representing the depth map with shape HW or NHW/HWN.
+        Here N stands for batch dimension.
     @type depth_map: np.array
     @param depth_type: A string indicating the type of depth map. It can either be
         'relative' or 'metric'.
@@ -20,7 +21,7 @@ def create_depth_message(
     @rtype: dai.ImgFrame
     @raise ValueError: If the depth map is not a NumPy array.
     @raise ValueError: If the depth map is not 2D or 3D.
-    @raise ValueError: If the depth map shape is not CHW or HWC.
+    @raise ValueError: If the depth map shape is not NHW or HWN.
     @raise ValueError: If the depth type is not 'relative' or 'metric'.
     @raise NotImplementedError: If the depth type is 'metric'.
     """
@@ -35,7 +36,7 @@ def create_depth_message(
             depth_map = depth_map[:, :, 0]  # HWC to HW
         else:
             raise ValueError(
-                f"Unexpected image shape. Expected CHW or HWC, got {depth_map.shape}."
+                f"Unexpected image shape. Expected NHW or HWN, got {depth_map.shape}."
             )
 
     if len(depth_map.shape) != 2:
