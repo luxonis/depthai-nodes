@@ -207,16 +207,17 @@ def create_line_detection_message(lines: np.ndarray, scores: np.ndarray):
             raise ValueError(
                 f"Scores should be of shape (N,) meaning, got {scores.shape}."
             )
-        if scores.shape[0] != lines.shape[0]:
-            raise ValueError(
-                f"Scores should have same length as lines, got {scores.shape[0]} and {lines.shape[0]}."
-            )
 
         for score in scores:
             if not isinstance(score, float) and not isinstance(score, np.float32):
                 raise ValueError(
                     f"Scores should be of type float or np.float32, got {type(score)}."
                 )
+
+    if scores.shape[0] != lines.shape[0]:
+        raise ValueError(
+            f"Scores should have same length as lines, got {scores.shape[0]} and {lines.shape[0]}."
+        )
 
     line_detections = []
     for i, line in enumerate(lines):
