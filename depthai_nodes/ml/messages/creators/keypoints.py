@@ -117,39 +117,41 @@ def create_keypoints_message(
             f"Keypoints should be numpy array or list, got {type(keypoints)}."
         )
 
-    if not isinstance(scores, (np.ndarray, list)):
-        raise ValueError(f"Scores should be numpy array or list, got {type(scores)}.")
-
-    if len(keypoints) == 0:
-        raise ValueError("Keypoints should not be empty.")
-
-    if len(keypoints) != len(scores):
-        raise ValueError(
-            "Keypoints and scores should have the same length. Got {} keypoints and {} scores.".format(
-                len(keypoints), len(scores)
+    if scores is not None:
+        if not isinstance(scores, (np.ndarray, list)):
+            raise ValueError(
+                f"Scores should be numpy array or list, got {type(scores)}."
             )
-        )
 
-    if not all(isinstance(score, (float, np.floating)) for score in scores):
-        raise ValueError("Scores should only contain float values.")
-    if not all(0 <= score <= 1 for score in scores):
-        raise ValueError("Scores should only contain values between 0 and 1.")
+        if len(keypoints) != len(scores):
+            raise ValueError(
+                "Keypoints and scores should have the same length. Got {} keypoints and {} scores.".format(
+                    len(keypoints), len(scores)
+                )
+            )
 
-    if not isinstance(confidence_threshold, float):
-        raise ValueError(
-            f"The confidence_threshold should be float, got {type(confidence_threshold)}."
-        )
+        if not all(isinstance(score, (float, np.floating)) for score in scores):
+            raise ValueError("Scores should only contain float values.")
+        if not all(0 <= score <= 1 for score in scores):
+            raise ValueError("Scores should only contain values between 0 and 1.")
 
-    if not (0 <= confidence_threshold <= 1):
-        raise ValueError(
-            f"The confidence_threshold should be between 0 and 1, got confidence_threshold {confidence_threshold}."
-        )
+    if confidence_threshold is not None:
+        if not isinstance(confidence_threshold, float):
+            raise ValueError(
+                f"The confidence_threshold should be float, got {type(confidence_threshold)}."
+            )
 
-    dimension = len(keypoints[0])
-    if dimension != 2 and dimension != 3:
-        raise ValueError(
-            f"All keypoints should be of dimension 2 or 3, got dimension {dimension}."
-        )
+        if not (0 <= confidence_threshold <= 1):
+            raise ValueError(
+                f"The confidence_threshold should be between 0 and 1, got confidence_threshold {confidence_threshold}."
+            )
+
+    if len(keypoints) != 0:
+        dimension = len(keypoints[0])
+        if dimension != 2 and dimension != 3:
+            raise ValueError(
+                f"All keypoints should be of dimension 2 or 3, got dimension {dimension}."
+            )
 
     if isinstance(keypoints, list):
         for keypoint in keypoints:
@@ -168,14 +170,16 @@ def create_keypoints_message(
                     )
 
     keypoints = np.array(keypoints)
-    scores = np.array(scores)
+    if scores is not None:
+        scores = np.array(scores)
 
-    if len(keypoints.shape) != 2:
-        raise ValueError(
-            f"Keypoints should be of shape (N,2 or 3) got {keypoints.shape}."
-        )
+    if len(keypoints) != 0:
+        if len(keypoints.shape) != 2:
+            raise ValueError(
+                f"Keypoints should be of shape (N,2 or 3) got {keypoints.shape}."
+            )
 
-    use_3d = keypoints.shape[1] == 3
+        use_3d = keypoints.shape[1] == 3
 
     keypoints_msg = Keypoints()
     points = []
