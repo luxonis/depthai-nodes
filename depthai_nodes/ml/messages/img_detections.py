@@ -48,10 +48,12 @@ class ImgDetectionExtended(dai.ImgDetection):
         @type value: Union[List[Tuple[Union[int, float], Union[int, float]]],
             List[Tuple[Union[int, float], Union[int, float], Union[int, float]]]]
         @raise TypeError: If the keypoints are not a list.
-        @raise TypeError: If each keypoint is not a tuple of two floats or integers.
+        @raise TypeError: If each keypoint is not a tuple of two or three floats or
+            integers.
         """
         if not isinstance(value, list):
             raise TypeError("Keypoints must be a list")
+        dim = len(value[0]) if value else 0
         for item in value:
             if (
                 not (isinstance(item, tuple) or isinstance(item, list))
@@ -59,7 +61,11 @@ class ImgDetectionExtended(dai.ImgDetection):
                 or not all(isinstance(i, (int, float)) for i in item)
             ):
                 raise TypeError(
-                    "Each keypoint must be a tuple of two floats or integers."
+                    "Each keypoint must be a tuple of two or three floats or integers."
+                )
+            if len(item) != dim:
+                raise ValueError(
+                    "All keypoints must be of the same dimension e.g. [x, y] or [x, y, z], got mixed inner dimensions."
                 )
         keypoints = []
         for items in value:

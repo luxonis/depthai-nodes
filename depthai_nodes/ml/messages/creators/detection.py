@@ -47,7 +47,7 @@ def create_detection_message(
     @raise ValueError: If each label is not an integer.
     @raise ValueError: If the labels do not have the same length as bboxes.
     @raise ValueError: If the keypoints are not a list.
-    @raise ValueError: If each keypoint pair is not a tuple of two floats.
+    @raise ValueError: If each keypoint pair is not a tuple of two or three floats.
     @raise ValueError: If the keypoints do not have the same length as bboxes.
     @raise ValueError: If the masks are not a list.
     @raise ValueError: If each mask is not a 2D numpy array.
@@ -112,6 +112,7 @@ def create_detection_message(
             )
 
         for object_keypoints in keypoints:
+            dim = len(object_keypoints[0]) if len(object_keypoints) != 0 else 0
             for point in object_keypoints:
                 if not isinstance(point, Tuple) and not isinstance(point, List):
                     raise ValueError(
@@ -120,6 +121,10 @@ def create_detection_message(
                 if len(point) not in [2, 3]:
                     raise ValueError(
                         f"Keypoint pairs should be list of tuples of length 2 or 3, got {len(point)}."
+                    )
+                if len(point) != dim:
+                    raise ValueError(
+                        "All keypoints should be of same dimension e.g. [x, y] or [x, y, z], got mixed inner dimensions."
                     )
 
     if masks is not None and len(masks) != 0:
