@@ -7,6 +7,7 @@ from depthai_nodes.ml.parsers import (
     SCRFDParser,
     SegmentationParser,
     XFeatParser,
+    YOLOExtendedParser,
 )
 
 
@@ -86,6 +87,17 @@ def setup_xfeat_parser(parser: XFeatParser, params: dict):
         )
 
 
+def setup_yolo_extended_parser(parser: YOLOExtendedParser, params: dict):
+    """Setup the YOLO parser with the required metadata."""
+    try:
+        n_classes = params["n_classes"]
+        parser.setNumClasses(n_classes)
+    except Exception:
+        print(
+            "This NN archive does not have required metadata for YOLOExtendedParser. Skipping setup..."
+        )
+
+
 def setup_parser(parser: dai.ThreadedNode, nn_archive: dai.NNArchive, parser_name: str):
     """Setup the parser with the NN archive."""
 
@@ -105,3 +117,5 @@ def setup_parser(parser: dai.ThreadedNode, nn_archive: dai.NNArchive, parser_nam
         setup_monocular_depth_parser(parser, extraParams)
     elif parser_name == "XFeatParser":
         setup_xfeat_parser(parser, extraParams)
+    elif parser_name == "YOLOExtendedParser":
+        setup_yolo_extended_parser(parser, extraParams)
