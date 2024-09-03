@@ -1,5 +1,9 @@
 from .classification import visualize_age_gender, visualize_classification
-from .detection import visualize_detections, visualize_line_detections
+from .detection import (
+    visualize_detections,
+    visualize_line_detections,
+    visualize_yolo_extended,
+)
 from .image import visualize_image
 from .keypoints import visualize_keypoints
 from .segmentation import visualize_segmentation
@@ -20,4 +24,5 @@ parser_mapping = {
     "ImageOutputParser": visualize_image,
     "MonocularDepthParser": visualize_image,
     "AgeGenderParser": visualize_age_gender,
+    "YOLOExtendedParser": visualize_yolo_extended,
 }

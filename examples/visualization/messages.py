@@ -1,6 +1,12 @@
 import depthai as dai
 
-from depthai_nodes.ml.messages import AgeGender, Classifications, Keypoints, Lines
+from depthai_nodes.ml.messages import (
+    AgeGender,
+    Classifications,
+    ImgDetectionsExtended,
+    Keypoints,
+    Lines,
+)
 
 
 def parse_detection_message(message: dai.ImgDetections):
@@ -50,3 +56,9 @@ def parser_age_gender_message(message: AgeGender):
     gender_classes = gender.classes
 
     return age, gender_classes, gender_scores
+
+
+def parse_yolo_kpts_message(message: ImgDetectionsExtended):
+    """Parses the yolo keypoints message and returns the keypoints."""
+    detections = message.detections
+    return detections
