@@ -23,6 +23,8 @@ class MPPalmDetectionParser(dai.node.ThreadedHostNode):
         Non-maximum suppression threshold.
     max_det : int
         Maximum number of detections to keep.
+    scale : int
+        Scale of the input image.
 
     Output Message/s
     -------
@@ -36,7 +38,7 @@ class MPPalmDetectionParser(dai.node.ThreadedHostNode):
     https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker
     """
 
-    def __init__(self, conf_threshold=0.5, iou_threshold=0.5, max_det=100):
+    def __init__(self, conf_threshold=0.5, iou_threshold=0.5, max_det=100, scale=192):
         """Initializes the MPPalmDetectionParser node.
 
         @param conf_threshold: Confidence score threshold for detected hands.
@@ -53,6 +55,7 @@ class MPPalmDetectionParser(dai.node.ThreadedHostNode):
         self.conf_threshold = conf_threshold
         self.iou_threshold = iou_threshold
         self.max_det = max_det
+        self.scale = scale
 
     def setConfidenceThreshold(self, threshold):
         """Sets the confidence score threshold for detected hands.
@@ -78,6 +81,14 @@ class MPPalmDetectionParser(dai.node.ThreadedHostNode):
         """
         self.max_det = max_det
 
+    def setScale(self, scale):
+        """Sets the scale of the input image.
+
+        @param scale: Scale of the input image.
+        @type scale: int
+        """
+        self.scale = scale
+
     def run(self):
         while self.isRunning():
             try:
@@ -85,19 +96,33 @@ class MPPalmDetectionParser(dai.node.ThreadedHostNode):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            bboxes = (
-                output.getTensor("Identity", dequantize=True)
-                .reshape(2016, 18)
-                .astype(np.float32)
-            )
-            scores = (
-                output.getTensor("Identity_1", dequantize=True)
-                .reshape(2016)
-                .astype(np.float32)
-            )
+            all_tensors = output.getAllLayerNames()
+
+            bboxes = None
+            scores = None
+
+            for tensor_name in all_tensors:
+                tensor = output.getTensor(tensor_name, dequantize=True).astype(
+                    np.float32
+                )
+                if bboxes is None:
+                    bboxes = tensor
+                    scores = tensor
+                else:
+                    bboxes = bboxes if tensor.shape[-1] < bboxes.shape[-1] else tensor
+                    scores = tensor if tensor.shape[-1] < scores.shape[-1] else scores
+
+            bboxes = bboxes.reshape(-1, 18)
+            scores = scores.reshape(-1)
+
+            if bboxes is None or scores is None:
+                raise ValueError("No valid output tensors found.")
 
             decoded_bboxes = generate_anchors_and_decode(
-                bboxes=bboxes, scores=scores, threshold=self.conf_threshold, scale=192
+                bboxes=bboxes,
+                scores=scores,
+                threshold=self.conf_threshold,
+                scale=self.scale,
             )
 
             bboxes = []
@@ -122,6 +147,8 @@ class MPPalmDetectionParser(dai.node.ThreadedHostNode):
             )
             bboxes = np.array(bboxes)[indices]
             scores = np.array(scores)[indices]
+
+            bboxes = bboxes.astype(np.float32) / self.scale
 
             detections_msg = create_detection_message(bboxes, scores, labels=None)
             detections_msg.setTimestamp(output.getTimestamp())

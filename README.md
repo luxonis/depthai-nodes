@@ -49,6 +49,7 @@ and then inside the directory run:
 ```bash
 pip install .
 ```
+
 Note: You'll still need to manually install `depthai v3`.
 
 ## Contributing
