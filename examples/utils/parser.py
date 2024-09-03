@@ -167,6 +167,17 @@ def setup_yolo_extended_parser(parser: YOLOExtendedParser, params: dict):
         )
 
 
+def setup_palm_detection_parser(parser: MPPalmDetectionParser, params: dict):
+    """Setup the Palm Detection parser with the required metadata."""
+    try:
+        scale = params["scale"]
+        parser.setScale(scale)
+    except Exception:
+        print(
+            "This NN archive does not have required metadata for MPPalmDetectionParser. Skipping setup..."
+        )
+
+
 def setup_parser(parser: dai.ThreadedNode, nn_archive: dai.NNArchive, parser_name: str):
     """Setup the parser with the NN archive."""
 
