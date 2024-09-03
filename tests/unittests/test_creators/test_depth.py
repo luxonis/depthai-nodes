@@ -34,21 +34,31 @@ def test_wrong_input_shape():
             np.array([[[1, 2, 3]], [[4, 5, 6]], [[7, 8, 9]]]), "relative"
         )
 
+
 def test_depth_limit_for_relative_depth():
     depth_map = np.random.rand(320, 640, 1)
-    with pytest.raises(ValueError, match="Invalid depth limit: 1.0. For relative depth, depth limit must be equal to 0."):
+    with pytest.raises(
+        ValueError,
+        match="Invalid depth limit: 1.0. For relative depth, depth limit must be equal to 0.",
+    ):
         create_depth_message(depth_map, "relative", 1.0)
 
 
 def test_no_depth_limit_for_metric_depth():
     depth_map = np.random.rand(320, 640, 1)
-    with pytest.raises(ValueError, match="Invalid depth limit: 0.0. For metric depth, depth limit must be bigger than 0."):
+    with pytest.raises(
+        ValueError,
+        match="Invalid depth limit: 0.0. For metric depth, depth limit must be bigger than 0.",
+    ):
         create_depth_message(depth_map, "metric")
 
 
 def test_negative_depth_limit():
     depth_map = np.random.rand(320, 640, 1)
-    with pytest.raises(ValueError, match="Invalid depth limit: -1.0. Depth limit must be bigger than 0."):
+    with pytest.raises(
+        ValueError,
+        match="Invalid depth limit: -1.0. Depth limit must be bigger than 0.",
+    ):
         create_depth_message(depth_map, "metric", -1.0)
 
 
