@@ -148,6 +148,8 @@ class MPPalmDetectionParser(dai.node.ThreadedHostNode):
             bboxes = np.array(bboxes)[indices]
             scores = np.array(scores)[indices]
 
+            bboxes = bboxes.astype(np.float32) / self.scale
+
             detections_msg = create_detection_message(bboxes, scores, labels=None)
             detections_msg.setTimestamp(output.getTimestamp())
             self.out.send(detections_msg)
