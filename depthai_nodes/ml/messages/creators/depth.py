@@ -7,7 +7,9 @@ UINT16_MAX_VALUE = 65535
 
 
 def create_depth_message(
-    depth_map: np.ndarray, depth_type: Literal["relative", "metric"], depth_limit: float
+    depth_map: np.ndarray,
+    depth_type: Literal["relative", "metric"],
+    depth_limit: float = 0,
 ) -> dai.ImgFrame:
     """Create a DepthAI message for a depth map.
 
