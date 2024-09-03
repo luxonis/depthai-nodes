@@ -36,17 +36,20 @@ To install the package, run:
 pip install depthai-nodes
 ```
 
-Before the official release on PyPI you can install the package from the GitHub repository:
+### Manual installation
+
+If you want to manually install the package from GitHub repositoory you can run:
 
 ```bash
 git clone git@github.com:luxonis/depthai-nodes.git
 ```
 
-and then install the requirements:
+and then inside the directory run:
 
 ```bash
-pip install -r requirements.txt
+pip install .
 ```
+Note: You'll still need to manually install `depthai v3`.
 
 ## Contributing
 
