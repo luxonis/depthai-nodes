@@ -4,9 +4,11 @@ from depthai_nodes.ml.parsers import (
     ClassificationParser,
     KeypointParser,
     MonocularDepthParser,
+    MPPalmDetectionParser,
     SCRFDParser,
     SegmentationParser,
     XFeatParser,
+    YOLOExtendedParser,
 )
 
 
@@ -64,10 +66,12 @@ def setup_monocular_depth_parser(parser: MonocularDepthParser, params: dict):
     """Setup the monocular depth parser with the required metadata."""
     try:
         depth_type = params["depth_type"]
+        depth_limit = params["depth_limit"]
         if depth_type == "relative":
             parser.setRelativeDepthType()
         else:
             parser.setMetricDepthType()
+        parser.setDepthLimit(depth_limit)
     except Exception:
         print(
             "This NN archive does not have required metadata for MonocularDepthParser. Skipping setup..."
@@ -83,6 +87,28 @@ def setup_xfeat_parser(parser: XFeatParser, params: dict):
     except Exception:
         print(
             "This NN archive does not have required metadata for XFeatParser. Skipping setup..."
+        )
+
+
+def setup_yolo_extended_parser(parser: YOLOExtendedParser, params: dict):
+    """Setup the YOLO parser with the required metadata."""
+    try:
+        n_classes = params["n_classes"]
+        parser.setNumClasses(n_classes)
+    except Exception:
+        print(
+            "This NN archive does not have required metadata for YOLOExtendedParser. Skipping setup..."
+        )
+
+
+def setup_palm_detection_parser(parser: MPPalmDetectionParser, params: dict):
+    """Setup the Palm Detection parser with the required metadata."""
+    try:
+        scale = params["scale"]
+        parser.setScale(scale)
+    except Exception:
+        print(
+            "This NN archive does not have required metadata for MPPalmDetectionParser. Skipping setup..."
         )
 
 
@@ -105,3 +131,7 @@ def setup_parser(parser: dai.ThreadedNode, nn_archive: dai.NNArchive, parser_nam
         setup_monocular_depth_parser(parser, extraParams)
     elif parser_name == "XFeatParser":
         setup_xfeat_parser(parser, extraParams)
+    elif parser_name == "YOLOExtendedParser":
+        setup_yolo_extended_parser(parser, extraParams)
+    elif parser_name == "MPPalmDetectionParser":
+        setup_palm_detection_parser(parser, extraParams)

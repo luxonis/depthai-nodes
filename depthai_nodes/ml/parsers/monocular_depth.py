@@ -14,6 +14,8 @@ class MonocularDepthParser(dai.node.ThreadedHostNode):
         Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     depth_type : str
         Type of depth output (relative or metric).
+    depth_limit : float
+        The maximum depth value (in meters) to be used in the depth map.
 
     Output Message/s
     ----------------
@@ -26,17 +28,21 @@ class MonocularDepthParser(dai.node.ThreadedHostNode):
     **ValueError**: If the number of output layers is not E{1}.
     """
 
-    def __init__(self, depth_type="relative"):
+    def __init__(self, depth_type="relative", depth_limit=0.0):
         """Initializes the MonocularDepthParser node.
 
         @param depth_type: Type of depth output (relative or metric).
-        @type depth_type: str
+        @type depth_type: Literal['relative', 'metric']
+        @param depth_limit: The maximum depth value (in meters) to be used in the depth
+            map. The default value is 0, which means no limit.
+        @type depth_limit: float
         """
         dai.node.ThreadedHostNode.__init__(self)
         self.input = self.createInput()
         self.out = self.createOutput()
 
         self.depth_type = depth_type
+        self.depth_limit = depth_limit
 
     def setRelativeDepthType(self):
         """Sets the depth type to relative."""
@@ -45,6 +51,10 @@ class MonocularDepthParser(dai.node.ThreadedHostNode):
     def setMetricDepthType(self):
         """Sets the depth type to metric."""
         self.depth_type = "metric"
+
+    def setDepthLimit(self, depth_limit):
+        """Sets the depth limit."""
+        self.depth_limit = depth_limit
 
     def run(self):
         while self.isRunning():
@@ -78,6 +88,7 @@ class MonocularDepthParser(dai.node.ThreadedHostNode):
             depth_message = create_depth_message(
                 depth_map=depth_map,
                 depth_type=self.depth_type,
+                depth_limit=self.depth_limit,
             )
             depth_message.setTimestamp(output.getTimestamp())
             self.out.send(depth_message)
