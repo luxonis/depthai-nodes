@@ -66,10 +66,12 @@ def setup_monocular_depth_parser(parser: MonocularDepthParser, params: dict):
     """Setup the monocular depth parser with the required metadata."""
     try:
         depth_type = params["depth_type"]
+        depth_limit = params["depth_limit"]
         if depth_type == "relative":
             parser.setRelativeDepthType()
         else:
             parser.setMetricDepthType()
+        parser.setDepthLimit(depth_limit)
     except Exception:
         print(
             "This NN archive does not have required metadata for MonocularDepthParser. Skipping setup..."
