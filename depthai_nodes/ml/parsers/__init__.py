@@ -15,6 +15,7 @@ from .thermal_image import ThermalImageParser
 from .xfeat import XFeatParser
 from .yolo import YOLOExtendedParser
 from .yunet import YuNetParser
+from .dmcount import DMCountParser
 
 __all__ = [
     "ImageOutputParser",
@@ -34,4 +35,5 @@ __all__ = [
     "FastSAMParser",
     "AgeGenderParser",
     "HRNetParser",
+    "DMCountParser",
 ]

@@ -7,6 +7,7 @@ from .misc import create_age_gender_message
 from .segmentation import create_sam_message, create_segmentation_message
 from .thermal import create_thermal_message
 from .tracked_features import create_tracked_features_message
+from .density import create_density_message
 
 __all__ = [
     "create_image_message",
@@ -21,4 +22,5 @@ __all__ = [
     "create_classification_message",
     "create_sam_message",
     "create_age_gender_message",
+    "create_density_message",
 ]
