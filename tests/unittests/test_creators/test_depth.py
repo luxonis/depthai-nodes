@@ -35,15 +35,34 @@ def test_wrong_input_shape():
         )
 
 
-def test_metric_not_implemented():
+def test_depth_limit_for_relative_depth():
+    depth_map = np.random.rand(320, 640, 1)
     with pytest.raises(
-        NotImplementedError,
-        match="The message for 'metric' depth type is not yet implemented.",
+        ValueError,
+        match="Invalid depth limit: 1.0. For relative depth, depth limit must be equal to 0.",
     ):
-        create_depth_message(np.array([[[1, 2, 3]]]), "metric")
+        create_depth_message(depth_map, "relative", 1.0)
 
 
-def test_depth_map():
+def test_no_depth_limit_for_metric_depth():
+    depth_map = np.random.rand(320, 640, 1)
+    with pytest.raises(
+        ValueError,
+        match="Invalid depth limit: 0.0. For metric depth, depth limit must be bigger than 0.",
+    ):
+        create_depth_message(depth_map, "metric")
+
+
+def test_negative_depth_limit():
+    depth_map = np.random.rand(320, 640, 1)
+    with pytest.raises(
+        ValueError,
+        match="Invalid depth limit: -1.0. Depth limit must be bigger than 0.",
+    ):
+        create_depth_message(depth_map, "metric", -1.0)
+
+
+def test_relative_depth_map():
     depth_map = np.random.rand(320, 640, 1)
 
     message = create_depth_message(depth_map, "relative")
@@ -61,6 +80,26 @@ def test_depth_map():
         / (depth_map.max() - depth_map.min())
         * UINT16_MAX_VALUE
     )
+    scaled_depth_map = scaled_depth_map.astype(np.uint16)
+    assert np.all(np.isclose(frame, scaled_depth_map))
+
+
+def test_metric_depth_map():
+    depth_map = np.random.rand(320, 640, 1)
+    depth_limit = 10.0
+
+    message = create_depth_message(depth_map, "metric", depth_limit)
+    depth_map = depth_map[:, :, 0]
+    depth_map = np.clip(depth_map, a_min=None, a_max=depth_limit)
+
+    assert isinstance(message, dai.ImgFrame)
+    assert message.getType() == dai.ImgFrame.Type.RAW16
+    assert message.getWidth() == 640
+    assert message.getHeight() == 320
+
+    frame = message.getFrame()
+    assert frame.shape == depth_map.shape
+    scaled_depth_map = (depth_map - 0) / depth_limit * UINT16_MAX_VALUE
     scaled_depth_map = scaled_depth_map.astype(np.uint16)
     assert np.all(np.isclose(frame, scaled_depth_map))
 
