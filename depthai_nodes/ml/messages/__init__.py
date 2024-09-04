@@ -10,6 +10,7 @@ from .keypoints import HandKeypoints, Keypoints
 from .lines import Line, Lines
 from .map import Map2D
 from .segmentation import SegmentationMasks
+from .mapping import Map2D
 
 __all__ = [
     "ImgDetectionExtended",
