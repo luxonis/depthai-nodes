@@ -18,7 +18,6 @@ from .xfeat_mono import XFeatMonoParser
 from .xfeat_stereo import XFeatStereoParser
 from .yolo import YOLOExtendedParser
 from .yunet import YuNetParser
-from .dmcount import DMCountParser
 
 __all__ = [
     "ImageOutputParser",
