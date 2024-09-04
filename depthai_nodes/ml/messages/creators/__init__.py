@@ -15,7 +15,6 @@ from .map import create_map_message
 from .misc import create_age_gender_message
 from .segmentation import create_sam_message, create_segmentation_message
 from .tracked_features import create_tracked_features_message
-from .density import create_density_message
 
 __all__ = [
     "create_image_message",
