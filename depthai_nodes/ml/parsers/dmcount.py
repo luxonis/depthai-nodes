@@ -2,8 +2,10 @@ import depthai as dai
 
 from ..messages.creators import create_density_message
 
+
 class DMCountParser(dai.node.ThreadedHostNode):
-    """Parser class for parsing the output of the DM-Count crowd density estimation model.
+    """Parser class for parsing the output of the DM-Count crowd density estimation
+    model.
 
     Attributes
     ----------
@@ -40,7 +42,7 @@ class DMCountParser(dai.node.ThreadedHostNode):
                     f"Expected 1 output layer, got {len(output_layer_names)}."
                 )
 
-            density_map = output.getTensor(output_layer_names[0], dequantize=True)[0,0]
+            density_map = output.getTensor(output_layer_names[0], dequantize=True)[0, 0]
 
             density_message = create_density_message(density_map)
 

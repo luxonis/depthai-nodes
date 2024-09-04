@@ -1,5 +1,6 @@
 from .age_gender import AgeGenderParser
 from .classification import ClassificationParser
+from .dmcount import DMCountParser
 from .fastsam import FastSAMParser
 from .hrnet import HRNetParser
 from .image_output import ImageOutputParser
@@ -15,7 +16,6 @@ from .thermal_image import ThermalImageParser
 from .xfeat import XFeatParser
 from .yolo import YOLOExtendedParser
 from .yunet import YuNetParser
-from .dmcount import DMCountParser
 
 __all__ = [
     "ImageOutputParser",

@@ -3,13 +3,12 @@ import numpy as np
 
 from ...messages import Map2D
 
-def create_density_message(
-    density_map: np.ndarray
-) -> dai.ImgFrame:
+
+def create_density_message(density_map: np.ndarray) -> dai.ImgFrame:
     """Create a DepthAI message for a density map.
 
-    @param density_map: A NumPy array representing the density map with shape HW or NHW/HWN.
-        Here N stands for batch dimension.
+    @param density_map: A NumPy array representing the density map with shape HW or
+        NHW/HWN. Here N stands for batch dimension.
     @type density_map: np.array
     @return: An Map2D object containing the density information.
     @rtype: Map2D
@@ -21,9 +20,11 @@ def create_density_message(
     if not isinstance(density_map, np.ndarray):
         raise ValueError(f"Expected numpy array, got {type(density_map)}.")
 
-    if not (len(density_map.shape) == 2 or len(density_map.shape) == 3) :
-        raise ValueError(f"Expected 2D or 3D input, got {len(density_map.shape)}D input.")
-    
+    if not (len(density_map.shape) == 2 or len(density_map.shape) == 3):
+        raise ValueError(
+            f"Expected 2D or 3D input, got {len(density_map.shape)}D input."
+        )
+
     if len(density_map.shape) == 3:
         if density_map.shape[0] == 1:
             density_map = density_map[0, :, :]  # NHW to HW

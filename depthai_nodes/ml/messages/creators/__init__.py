@@ -1,4 +1,5 @@
 from .classification import create_classification_message
+from .density import create_density_message
 from .depth import create_depth_message
 from .detection import create_detection_message, create_line_detection_message
 from .image import create_image_message
@@ -7,7 +8,6 @@ from .misc import create_age_gender_message
 from .segmentation import create_sam_message, create_segmentation_message
 from .thermal import create_thermal_message
 from .tracked_features import create_tracked_features_message
-from .density import create_density_message
 
 __all__ = [
     "create_image_message",
