@@ -58,21 +58,23 @@ class SegmentationParser(dai.node.ThreadedHostNode):
             output_layer_names = output.getAllLayerNames()
 
             if len(output_layer_names) != 1:
-                raise ValueError(
-                    f"Expected 1 output layer, got {len(output_layer_names)}."
+                print(
+                    f"Expected 1 output layer, got {len(output_layer_names)}. Will take the first one."
                 )
 
             segmentation_mask = output.getTensor(output_layer_names[0], dequantize=True)
             if len(segmentation_mask.shape) == 4:
                 segmentation_mask = segmentation_mask[0]
-            else:
-                segmentation_mask = segmentation_mask.transpose(2, 0, 1)
 
             if len(segmentation_mask.shape) != 3:
                 raise ValueError(
                     f"Expected 3D output tensor, got {len(segmentation_mask.shape)}D."
                 )
 
+            mask_shape = segmentation_mask.shape
+            min_dim = np.argmin(mask_shape)
+            if min_dim == len(mask_shape) - 1:
+                segmentation_mask = segmentation_mask.transpose(2, 0, 1)
             if self.background_class:
                 segmentation_mask = np.vstack(
                     (
@@ -83,12 +85,17 @@ class SegmentationParser(dai.node.ThreadedHostNode):
                         segmentation_mask,
                     )
                 )
-
-            class_map = (
-                np.argmax(segmentation_mask, axis=0)
-                .reshape(segmentation_mask.shape[1], segmentation_mask.shape[2], 1)
-                .astype(np.uint8)
-            )
+                class_map = (
+                    np.max(segmentation_mask, axis=0)
+                    .reshape(segmentation_mask.shape[1], segmentation_mask.shape[2], 1)
+                    .astype(np.uint8)
+                )
+            else:
+                class_map = (
+                    np.argmax(segmentation_mask, axis=0)
+                    .reshape(segmentation_mask.shape[1], segmentation_mask.shape[2], 1)
+                    .astype(np.uint8)
+                )
 
             imgFrame = create_segmentation_message(class_map)
             imgFrame.setTimestamp(output.getTimestamp())
