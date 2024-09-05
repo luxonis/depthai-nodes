@@ -45,7 +45,7 @@ class DMCountParser(dai.node.ThreadedHostNode):
             density_map = output.getTensor(output_layer_names[0], dequantize=True)
 
             if density_map.shape[0] == 1:
-                density_map = density_map[0] # remove batch dimension
+                density_map = density_map[0]  # remove batch dimension
 
             density_message = create_density_message(density_map)
 
