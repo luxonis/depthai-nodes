@@ -24,3 +24,11 @@ class Map2D(dai.Buffer):
         self._map = map
         self._width = map.shape[1]
         self._height = map.shape[0]
+
+    @property
+    def width(self) -> int:
+        return self._width
+
+    @property
+    def height(self) -> int:
+        return self._height
