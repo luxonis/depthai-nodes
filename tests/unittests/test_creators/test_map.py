@@ -29,6 +29,8 @@ def test_wrong_input_shape():
 
 def test_map_with_scaling():
     map = np.random.rand(320, 640, 1)
+    map[0,0,0] = 0.0 # ensure that min==0
+    map[1,0,0] = 1.0 # ensure that max==1
     unscaled_map = map * 10
 
     message = create_map_message(map=unscaled_map, min_max_scaling=True)
