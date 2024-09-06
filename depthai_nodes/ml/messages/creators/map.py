@@ -7,8 +7,8 @@ from ...messages import Map2D
 def create_map_message(map: np.ndarray, min_max_scaling: bool = False) -> dai.ImgFrame:
     """Create a DepthAI message for a map of floats.
 
-    @param map: A NumPy array representing the map with shape HW or
-        NHW/HWN. Here N stands for batch dimension.
+    @param map: A NumPy array representing the map with shape HW or NHW/HWN. Here N
+        stands for batch dimension.
     @type map: np.array
     @param min_max_scaling: If True, the map is scaled to the range [0, 1].
     @type min_max_scaling: bool
@@ -23,9 +23,7 @@ def create_map_message(map: np.ndarray, min_max_scaling: bool = False) -> dai.Im
         raise ValueError(f"Expected numpy array, got {type(map)}.")
 
     if not (len(map.shape) == 2 or len(map.shape) == 3):
-        raise ValueError(
-            f"Expected 2D or 3D input, got {len(map.shape)}D input."
-        )
+        raise ValueError(f"Expected 2D or 3D input, got {len(map.shape)}D input.")
 
     if len(map.shape) == 3:
         if map.shape[0] == 1:
@@ -36,7 +34,7 @@ def create_map_message(map: np.ndarray, min_max_scaling: bool = False) -> dai.Im
             raise ValueError(
                 f"Unexpected map shape. Expected NHW or HWN, got {map.shape}."
             )
-        
+
     if min_max_scaling:
         min_val = map.min()
         max_val = map.max()

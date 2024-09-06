@@ -32,7 +32,7 @@ def test_map_with_scaling():
     unscaled_map = map * 10
 
     message = create_map_message(map=unscaled_map, min_max_scaling=True)
-    
+
     assert isinstance(message, Map2D)
     assert message.width == 640
     assert message.height == 320
@@ -47,7 +47,7 @@ def test_map_without_scaling():
     unscaled_map = map * 10
 
     message = create_map_message(map=unscaled_map, min_max_scaling=False)
-    
+
     assert isinstance(message, Map2D)
     assert message.width == 640
     assert message.height == 320
@@ -55,6 +55,7 @@ def test_map_without_scaling():
     unscaled_map2 = message.get()
     assert unscaled_map2.shape == unscaled_map[:, :, 0].shape
     assert np.all(np.isclose(unscaled_map[:, :, 0], unscaled_map2))
+
 
 if __name__ == "__main__":
     pytest.main()

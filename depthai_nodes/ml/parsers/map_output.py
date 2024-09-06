@@ -4,7 +4,8 @@ from ..messages.creators import create_map_message
 
 
 class MapOutputParser(dai.node.ThreadedHostNode):
-    """ A parser class for models that produce map outputs, such as depth maps (e.g. DepthAnything), density maps (e.g. DM-Count), heat maps, and similar.
+    """A parser class for models that produce map outputs, such as depth maps (e.g.
+    DepthAnything), density maps (e.g. DM-Count), heat maps, and similar.
 
     Attributes
     ----------
@@ -14,7 +15,7 @@ class MapOutputParser(dai.node.ThreadedHostNode):
         Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     min_max_scaling : bool
         If True, the map is scaled to the range [0, 1].
-        
+
     Output Message/s
     ----------------
     **Type**: Map2D
@@ -59,6 +60,8 @@ class MapOutputParser(dai.node.ThreadedHostNode):
             if map.shape[0] == 1:
                 map = map[0]  # remove batch dimension
 
-            map_message = create_map_message(map=map, min_max_scaling=self.min_max_scaling)
+            map_message = create_map_message(
+                map=map, min_max_scaling=self.min_max_scaling
+            )
 
             self.out.send(map_message)
