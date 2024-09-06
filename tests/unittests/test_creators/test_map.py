@@ -37,7 +37,7 @@ def test_map_with_scaling():
     assert message.width == 640
     assert message.height == 320
 
-    scaled_map = message.get()
+    scaled_map = message.map
     assert scaled_map.shape == map[:, :, 0].shape
     assert np.all(np.isclose(map[:, :, 0], scaled_map))
 
@@ -52,7 +52,7 @@ def test_map_without_scaling():
     assert message.width == 640
     assert message.height == 320
 
-    unscaled_map2 = message.get()
+    unscaled_map2 = message.map
     assert unscaled_map2.shape == unscaled_map[:, :, 0].shape
     assert np.all(np.isclose(unscaled_map[:, :, 0], unscaled_map2))
 
