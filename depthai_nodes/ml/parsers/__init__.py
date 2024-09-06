@@ -1,5 +1,6 @@
 from .age_gender import AgeGenderParser
 from .classification import ClassificationParser
+from .dmcount import DMCountParser
 from .fastsam import FastSAMParser
 from .hrnet import HRNetParser
 from .image_output import ImageOutputParser
@@ -34,4 +35,5 @@ __all__ = [
     "FastSAMParser",
     "AgeGenderParser",
     "HRNetParser",
+    "DMCountParser",
 ]
