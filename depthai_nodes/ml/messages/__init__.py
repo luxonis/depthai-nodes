@@ -5,7 +5,7 @@ from .img_detections import (
 )
 from .keypoints import HandKeypoints, Keypoints
 from .lines import Line, Lines
-from .mapping import Map2D
+from .map import Map2D
 from .misc import AgeGender
 from .segmentation import SegmentationMasks
 
