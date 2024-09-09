@@ -85,17 +85,11 @@ class SegmentationParser(dai.node.ThreadedHostNode):
                         segmentation_mask,
                     )
                 )
-                class_map = (
-                    np.max(segmentation_mask, axis=0)
-                    .reshape(segmentation_mask.shape[1], segmentation_mask.shape[2], 1)
-                    .astype(np.uint8)
-                )
-            else:
-                class_map = (
-                    np.argmax(segmentation_mask, axis=0)
-                    .reshape(segmentation_mask.shape[1], segmentation_mask.shape[2], 1)
-                    .astype(np.uint8)
-                )
+            class_map = (
+                np.argmax(segmentation_mask, axis=0)
+                .reshape(segmentation_mask.shape[1], segmentation_mask.shape[2], 1)
+                .astype(np.uint8)
+            )
 
             imgFrame = create_segmentation_message(class_map)
             imgFrame.setTimestamp(output.getTimestamp())
