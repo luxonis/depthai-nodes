@@ -1,4 +1,5 @@
 from .classification import Classifications
+from .clusters import Cluster, Clusters
 from .img_detections import (
     ImgDetectionExtended,
     ImgDetectionsExtended,
@@ -20,4 +21,6 @@ __all__ = [
     "SegmentationMasks",
     "AgeGender",
     "Map2D",
+    "Clusters",
+    "Cluster",
 ]
