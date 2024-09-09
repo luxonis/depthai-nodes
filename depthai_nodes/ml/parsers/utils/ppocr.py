@@ -117,17 +117,20 @@ def parse_paddle_detection_outputs(
     @return: A touple containing the bounding boxes and scores.
     @rtype: Touple[np.ndarray, np.ndarray]
     """
-    if len(predictions.shape) == 3:
-        if predictions.shape[0] == 1:
-            predictions = predictions[0]
-        elif predictions.shape[2] == 1:
-            predictions = predictions[:, :, 0]
+
+    if len(predictions.shape) == 4:
+        if predictions.shape[0] == 1 and predictions.shape[1] == 1:
+            predictions = predictions[0, 0]
+        elif predictions.shape[0] == 1 and predictions.shape[3] == 1:
+            predictions = predictions[0, :, :, 0]
         else:
             raise ValueError(
-                f"Predictions should be either (1, H, W) or (H, W, 1), got {predictions.shape}."
+                f"Predictions should be either (1, 1, H, W) or (1, H, W, 1), got {predictions.shape}."
             )
-    elif len(predictions.shape) != 2:
-        raise ValueError(f"Predictions should be 2D or 3D, got {predictions.shape}.")
+    else:
+        raise ValueError(
+            f"Predictions should be 4D array of shape (1, 1, H, W) or (1, H, W, 1), got {predictions.shape}."
+        )
 
     mask = predictions > mask_threshold
     src_h, src_w = predictions.shape[:2]
