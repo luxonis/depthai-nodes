@@ -2,6 +2,7 @@ import depthai as dai
 
 from depthai_nodes.ml.parsers import (
     ClassificationParser,
+    FastSAMParser,
     KeypointParser,
     MonocularDepthParser,
     MPPalmDetectionParser,
@@ -112,6 +113,23 @@ def setup_palm_detection_parser(parser: MPPalmDetectionParser, params: dict):
         )
 
 
+def setup_fastsam_parser(parser: FastSAMParser, params: dict):
+    """Setup the FastSAM parser with the required metadata."""
+    try:
+        conf_threshold = params["conf_threshold"]
+        n_classes = params["n_classes"]
+        iou_threshold = params["iou_threshold"]
+        parser.setConfidenceThreshold(conf_threshold)
+        parser.setIouThreshold(iou_threshold)
+        parser.setNumClasses(n_classes)
+        parser.setInputImageSize(512, 288)
+        parser.setPrompt("everything")
+    except Exception:
+        print(
+            "This NN archive does not have required metadata for FastSAMParser. Skipping setup..."
+        )
+
+
 def setup_parser(parser: dai.ThreadedNode, nn_archive: dai.NNArchive, parser_name: str):
     """Setup the parser with the NN archive."""
 
@@ -135,3 +153,5 @@ def setup_parser(parser: dai.ThreadedNode, nn_archive: dai.NNArchive, parser_nam
         setup_yolo_extended_parser(parser, extraParams)
     elif parser_name == "MPPalmDetectionParser":
         setup_palm_detection_parser(parser, extraParams)
+    elif parser_name == "FastSAMParser":
+        setup_fastsam_parser(parser, extraParams)

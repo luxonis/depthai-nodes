@@ -6,7 +6,7 @@ from .detection import (
 )
 from .image import visualize_image
 from .keypoints import visualize_keypoints
-from .segmentation import visualize_segmentation
+from .segmentation import visualize_fastsam, visualize_segmentation
 
 parser_mapping = {
     "YuNetParser": visualize_detections,
@@ -25,4 +25,5 @@ parser_mapping = {
     "MonocularDepthParser": visualize_image,
     "AgeGenderParser": visualize_age_gender,
     "YOLOExtendedParser": visualize_yolo_extended,
+    "FastSAMParser": visualize_fastsam,
 }

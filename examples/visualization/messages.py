@@ -6,6 +6,7 @@ from depthai_nodes.ml.messages import (
     ImgDetectionsExtended,
     Keypoints,
     Lines,
+    SegmentationMasks,
 )
 
 
@@ -62,3 +63,9 @@ def parse_yolo_kpts_message(message: ImgDetectionsExtended):
     """Parses the yolo keypoints message and returns the keypoints."""
     detections = message.detections
     return detections
+
+
+def parse_fast_sam_message(message: SegmentationMasks):
+    """Parses the fast sam message and returns the masks."""
+    masks = message.masks
+    return masks
