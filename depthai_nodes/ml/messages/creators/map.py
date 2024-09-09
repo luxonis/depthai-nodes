@@ -4,7 +4,7 @@ import numpy as np
 from ...messages import Map2D
 
 
-def create_map_message(map: np.ndarray, min_max_scaling: bool = False) -> dai.ImgFrame:
+def create_map_message(map: np.ndarray, min_max_scaling: bool = False) -> Map2D:
     """Create a DepthAI message for a map of floats.
 
     @param map: A NumPy array representing the map with shape HW or NHW/HWN. Here N
