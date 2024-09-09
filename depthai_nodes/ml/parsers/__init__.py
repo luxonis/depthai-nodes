@@ -32,7 +32,6 @@ __all__ = [
     "FastSAMParser",
     "AgeGenderParser",
     "HRNetParser",
-    "DMCountParser",
     "PPTextDetectionParser",
     "MapOutputParser",
 ]
