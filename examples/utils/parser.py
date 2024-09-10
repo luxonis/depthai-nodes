@@ -3,7 +3,7 @@ import depthai as dai
 from depthai_nodes.ml.parsers import (
     ClassificationParser,
     KeypointParser,
-    MonocularDepthParser,
+    LaneDetectionParser,
     MPPalmDetectionParser,
     SCRFDParser,
     SegmentationParser,
@@ -62,22 +62,6 @@ def setup_classification_parser(parser: ClassificationParser, params: dict):
         )
 
 
-def setup_monocular_depth_parser(parser: MonocularDepthParser, params: dict):
-    """Setup the monocular depth parser with the required metadata."""
-    try:
-        depth_type = params["depth_type"]
-        depth_limit = params["depth_limit"]
-        if depth_type == "relative":
-            parser.setRelativeDepthType()
-        else:
-            parser.setMetricDepthType()
-        parser.setDepthLimit(depth_limit)
-    except Exception:
-        print(
-            "This NN archive does not have required metadata for MonocularDepthParser. Skipping setup..."
-        )
-
-
 def setup_xfeat_parser(parser: XFeatParser, params: dict):
     """Setup the XFeat parser with the required metadata."""
     try:
@@ -112,6 +96,21 @@ def setup_palm_detection_parser(parser: MPPalmDetectionParser, params: dict):
         )
 
 
+def setup_land_detection_parser(parser: LaneDetectionParser, params: dict):
+    """Setup the Lane Detection parser with the required metadata."""
+    try:
+        row_ancors = params["row_anchors"]
+        griding_num = params["griding_num"]
+        cls_num_per_lane = params["cls_num_per_lane"]
+        parser.setRowAnchors(row_ancors)
+        parser.setGridingNum(griding_num)
+        parser.setClsNumPerLane(cls_num_per_lane)
+    except Exception:
+        print(
+            "This NN archive does not have required metadata for LaneDetectionParser. Skipping setup..."
+        )
+
+
 def setup_parser(parser: dai.ThreadedNode, nn_archive: dai.NNArchive, parser_name: str):
     """Setup the parser with the NN archive."""
 
@@ -127,11 +126,11 @@ def setup_parser(parser: dai.ThreadedNode, nn_archive: dai.NNArchive, parser_nam
         setup_keypoint_parser(parser, extraParams)
     elif parser_name == "ClassificationParser":
         setup_classification_parser(parser, extraParams)
-    elif parser_name == "MonocularDepthParser":
-        setup_monocular_depth_parser(parser, extraParams)
     elif parser_name == "XFeatParser":
         setup_xfeat_parser(parser, extraParams)
     elif parser_name == "YOLOExtendedParser":
         setup_yolo_extended_parser(parser, extraParams)
     elif parser_name == "MPPalmDetectionParser":
         setup_palm_detection_parser(parser, extraParams)
+    elif parser_name == "LaneDetectionParser":
+        setup_land_detection_parser(parser, extraParams)

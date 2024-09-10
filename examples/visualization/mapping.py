@@ -1,6 +1,7 @@
 from .classification import visualize_age_gender, visualize_classification
 from .detection import (
     visualize_detections,
+    visualize_lane_detections,
     visualize_line_detections,
     visualize_yolo_extended,
 )
@@ -25,4 +26,5 @@ parser_mapping = {
     "MonocularDepthParser": visualize_image,
     "AgeGenderParser": visualize_age_gender,
     "YOLOExtendedParser": visualize_yolo_extended,
+    "LaneDetectionParser": visualize_lane_detections,
 }
