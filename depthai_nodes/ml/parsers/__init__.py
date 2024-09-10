@@ -4,6 +4,7 @@ from .fastsam import FastSAMParser
 from .hrnet import HRNetParser
 from .image_output import ImageOutputParser
 from .keypoints import KeypointParser
+from .lane_detection import LaneDetectionParser
 from .map_output import MapOutputParser
 from .mediapipe_hand_landmarker import MPHandLandmarkParser
 from .mediapipe_palm_detection import MPPalmDetectionParser
@@ -32,4 +33,5 @@ __all__ = [
     "AgeGenderParser",
     "HRNetParser",
     "MapOutputParser",
+    "LaneDetectionParser",
 ]
