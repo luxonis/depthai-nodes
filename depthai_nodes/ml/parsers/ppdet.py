@@ -1,7 +1,7 @@
 import depthai as dai
 
 from ..messages.creators import create_detection_message
-from .utils.ppocr import corners2xyxy, parse_paddle_detection_outputs
+from .utils.ppdet import corners2xyxy, parse_paddle_detection_outputs
 
 
 class PPTextDetectionParser(dai.node.ThreadedHostNode):
