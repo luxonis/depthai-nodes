@@ -178,6 +178,21 @@ def setup_palm_detection_parser(parser: MPPalmDetectionParser, params: dict):
         )
 
 
+def setup_land_detection_parser(parser: LaneDetectionParser, params: dict):
+    """Setup the Lane Detection parser with the required metadata."""
+    try:
+        row_ancors = params["row_anchors"]
+        griding_num = params["griding_num"]
+        cls_num_per_lane = params["cls_num_per_lane"]
+        parser.setRowAnchors(row_ancors)
+        parser.setGridingNum(griding_num)
+        parser.setClsNumPerLane(cls_num_per_lane)
+    except Exception:
+        print(
+            "This NN archive does not have required metadata for LaneDetectionParser. Skipping setup..."
+        )
+
+
 def setup_fastsam_parser(parser: FastSAMParser, params: dict):
     """Setup the FastSAM parser with the required metadata."""
     try:
