@@ -3,7 +3,7 @@ import depthai as dai
 
 from depthai_nodes.ml.messages import Keypoints
 
-from .messages import parse_keypoints_message
+from utils.message_parsers import parse_keypoints_message
 
 
 def visualize_keypoints(frame: dai.ImgFrame, message: Keypoints, extraParams: dict):

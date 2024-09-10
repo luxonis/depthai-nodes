@@ -3,7 +3,7 @@ import depthai as dai
 
 from depthai_nodes.ml.messages import AgeGender, Classifications
 
-from .messages import parse_classification_message, parser_age_gender_message
+from utils.message_parsers import parse_classification_message, parser_age_gender_message
 
 
 def visualize_classification(
