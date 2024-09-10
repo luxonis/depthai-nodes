@@ -4,7 +4,7 @@ from depthai_nodes.ml.parsers import (
     ClassificationParser,
     FastSAMParser,
     KeypointParser,
-    MonocularDepthParser,
+    MapOutputParser,
     MPPalmDetectionParser,
     SCRFDParser,
     SegmentationParser,
@@ -63,19 +63,15 @@ def setup_classification_parser(parser: ClassificationParser, params: dict):
         )
 
 
-def setup_monocular_depth_parser(parser: MonocularDepthParser, params: dict):
+def setup_map_output_parser(parser: MapOutputParser, params: dict):
     """Setup the monocular depth parser with the required metadata."""
     try:
-        depth_type = params["depth_type"]
-        depth_limit = params["depth_limit"]
-        if depth_type == "relative":
-            parser.setRelativeDepthType()
-        else:
-            parser.setMetricDepthType()
-        parser.setDepthLimit(depth_limit)
+        min_max_scaling = params["min_max_scaling"]
+        if min_max_scaling:
+            parser.setMinMaxScaling(True)
     except Exception:
         print(
-            "This NN archive does not have required metadata for MonocularDepthParser. Skipping setup..."
+            "This NN archive does not have required metadata for MapOutputParser. Skipping setup..."
         )
 
 
@@ -145,8 +141,8 @@ def setup_parser(parser: dai.ThreadedNode, nn_archive: dai.NNArchive, parser_nam
         setup_keypoint_parser(parser, extraParams)
     elif parser_name == "ClassificationParser":
         setup_classification_parser(parser, extraParams)
-    elif parser_name == "MonocularDepthParser":
-        setup_monocular_depth_parser(parser, extraParams)
+    elif parser_name == "MapOutputParser":
+        setup_map_output_parser(parser, extraParams)
     elif parser_name == "XFeatParser":
         setup_xfeat_parser(parser, extraParams)
     elif parser_name == "YOLOExtendedParser":
