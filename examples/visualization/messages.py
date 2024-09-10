@@ -7,6 +7,7 @@ from depthai_nodes.ml.messages import (
     ImgDetectionsExtended,
     Keypoints,
     Lines,
+    SegmentationMasks,
 )
 
 
@@ -69,3 +70,9 @@ def parse_cluster_message(message: Clusters):
     """Parses the cluster message and returns the clusters."""
     clusters = message.clusters
     return clusters
+
+  
+def parse_fast_sam_message(message: SegmentationMasks):
+    """Parses the fast sam message and returns the masks."""
+    masks = message.masks
+    return masks
