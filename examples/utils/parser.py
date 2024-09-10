@@ -109,6 +109,7 @@ def setup_land_detection_parser(parser: LaneDetectionParser, params: dict):
     except Exception:
         print(
             "This NN archive does not have required metadata for LaneDetectionParser. Skipping setup..."
+        )
 
 
 def setup_fastsam_parser(parser: FastSAMParser, params: dict):

@@ -71,7 +71,7 @@ def parse_cluster_message(message: Clusters):
     clusters = message.clusters
     return clusters
 
-  
+
 def parse_fast_sam_message(message: SegmentationMasks):
     """Parses the fast sam message and returns the masks."""
     masks = message.masks
