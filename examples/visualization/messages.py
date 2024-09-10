@@ -65,7 +65,7 @@ def parse_yolo_kpts_message(message: ImgDetectionsExtended):
     return detections
 
 
-def parser_cluster_message(message: Clusters):
+def parse_cluster_message(message: Clusters):
     """Parses the cluster message and returns the clusters."""
     clusters = message.clusters
     return clusters

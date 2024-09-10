@@ -6,10 +6,10 @@ from depthai_nodes.ml.messages import Clusters, ImgDetectionsExtended, Lines
 
 from .colors import get_yolo_colors
 from .messages import (
+    parse_cluster_message,
     parse_detection_message,
     parse_line_detection_message,
     parse_yolo_kpts_message,
-    parser_cluster_message,
 )
 
 
@@ -182,7 +182,7 @@ def visualize_lane_detections(
     frame: dai.ImgFrame, message: Clusters, extraParams: dict
 ):
     """Visualizes the lines on the frame."""
-    clusters = parser_cluster_message(message)
+    clusters = parse_cluster_message(message)
 
     for cluster in clusters:
         for point in cluster.points:
