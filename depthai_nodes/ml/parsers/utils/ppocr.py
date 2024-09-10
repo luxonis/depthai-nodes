@@ -5,7 +5,7 @@ import numpy as np
 
 
 def _get_mini_boxes(contour: np.ndarray) -> Tuple[np.ndarray, float]:
-    """ Internal function to get the minimum bounding box of a contour.
+    """Internal function to get the minimum bounding box of a contour.
 
     @param contour: The contour to get the minimum bounding box of.
     @type contour: np.ndarray
