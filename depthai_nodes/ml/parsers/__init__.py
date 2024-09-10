@@ -9,6 +9,7 @@ from .map_output import MapOutputParser
 from .mediapipe_hand_landmarker import MPHandLandmarkParser
 from .mediapipe_palm_detection import MPPalmDetectionParser
 from .mlsd import MLSDParser
+from .ppdet import PPTextDetectionParser
 from .scrfd import SCRFDParser
 from .segmentation import SegmentationParser
 from .superanimal_landmarker import SuperAnimalParser
@@ -32,6 +33,7 @@ __all__ = [
     "FastSAMParser",
     "AgeGenderParser",
     "HRNetParser",
+    "PPTextDetectionParser",
     "MapOutputParser",
     "LaneDetectionParser",
 ]
