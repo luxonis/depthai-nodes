@@ -1,9 +1,11 @@
 import cv2
 import depthai as dai
+from utils.message_parsers import (
+    parse_classification_message,
+    parser_age_gender_message,
+)
 
 from depthai_nodes.ml.messages import AgeGender, Classifications
-
-from utils.message_parsers import parse_classification_message, parser_age_gender_message
 
 
 def visualize_classification(

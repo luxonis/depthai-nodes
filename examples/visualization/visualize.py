@@ -1,6 +1,16 @@
 import depthai as dai
-
-from visualizers import *
+from visualizers import (
+    visualize_age_gender,
+    visualize_classification,
+    visualize_detections,
+    visualize_fastsam,
+    visualize_image,
+    visualize_keypoints,
+    visualize_line_detections,
+    visualize_map,
+    visualize_segmentation,
+    visualize_yolo_extended,
+)
 
 visualizers = {
     "YuNetParser": visualize_detections,
@@ -21,6 +31,7 @@ visualizers = {
     "YOLOExtendedParser": visualize_yolo_extended,
     "FastSAMParser": visualize_fastsam,
 }
+
 
 def visualize(
     frame: dai.ImgFrame, message: dai.Buffer, parser_name: str, extraParams: dict

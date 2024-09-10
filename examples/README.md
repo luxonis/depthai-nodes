@@ -1,6 +1,6 @@
 # DepthAI Nodes examples
 
-The `main.py` script lets you run fully-automated pipeline with the model of your choice. To run the script: 
+The `main.py` script lets you run fully-automated pipeline with the model of your choice. To run the script:
 
 Make sure you have the `depthai-nodes` package installed:
 

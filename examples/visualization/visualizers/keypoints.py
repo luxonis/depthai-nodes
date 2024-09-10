@@ -1,9 +1,8 @@
 import cv2
 import depthai as dai
+from utils.message_parsers import parse_keypoints_message
 
 from depthai_nodes.ml.messages import Keypoints
-
-from utils.message_parsers import parse_keypoints_message
 
 
 def visualize_keypoints(frame: dai.ImgFrame, message: Keypoints, extraParams: dict):
