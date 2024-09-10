@@ -1,8 +1,18 @@
 # DepthAI Nodes examples
 
-The `main.py` script lets you run fully-automated pipeline with the model of your choice. To run the script you need the model slug and then move to `examples` folder and run:
+The `main.py` script lets you run fully-automated pipeline with the model of your choice. To run the script: 
+
+Make sure you have the `depthai-nodes` package installed:
 
 ```
+cd depthai-nodes
+pip install -e .
+```
+
+Prepare the model slug and run:
+
+```
+cd examples
 python main.py -s <slug_of_your_model>
 ```
 
