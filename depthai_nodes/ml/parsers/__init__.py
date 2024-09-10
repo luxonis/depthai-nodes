@@ -4,11 +4,13 @@ from .fastsam import FastSAMParser
 from .hrnet import HRNetParser
 from .image_output import ImageOutputParser
 from .keypoints import KeypointParser
+from .lane_detection import LaneDetectionParser
 from .map_output import MapOutputParser
 from .mediapipe_hand_landmarker import MPHandLandmarkParser
 from .mediapipe_palm_detection import MPPalmDetectionParser
 from .mlsd import MLSDParser
 from .ppocr import PaddleOCRParser
+from .ppdet import PPTextDetectionParser
 from .scrfd import SCRFDParser
 from .segmentation import SegmentationParser
 from .superanimal_landmarker import SuperAnimalParser
@@ -32,6 +34,8 @@ __all__ = [
     "FastSAMParser",
     "AgeGenderParser",
     "HRNetParser",
+    "PPTextDetectionParser",
     "MapOutputParser",
     "PaddleOCRParser",
+    "LaneDetectionParser",
 ]
