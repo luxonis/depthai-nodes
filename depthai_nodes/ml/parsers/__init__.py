@@ -8,7 +8,7 @@ from .map_output import MapOutputParser
 from .mediapipe_hand_landmarker import MPHandLandmarkParser
 from .mediapipe_palm_detection import MPPalmDetectionParser
 from .mlsd import MLSDParser
-from .ppocr_text_detection import PPTextDetectionParser
+from .ppdet import PPTextDetectionParser
 from .scrfd import SCRFDParser
 from .segmentation import SegmentationParser
 from .superanimal_landmarker import SuperAnimalParser
