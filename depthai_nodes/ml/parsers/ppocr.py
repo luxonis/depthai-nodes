@@ -8,11 +8,40 @@ from .classification import ClassificationParser
 
 
 class PaddleOCRParser(ClassificationParser):
-    """"""
+    """Postprocessing logic for PaddleOCR text recognition model.
+
+    Attributes
+    ----------
+    input : Node.Input
+        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
+    out : Node.Output
+        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
+    characters: List[str]
+        List of available characters for the text recognition model.
+    ignored_indexes: List[int]
+        List of indexes to ignore during classification generation (e.g., background class, blank space).
+    remove_duplicates: bool
+        If True, removes consecutive duplicates from the sequence.
+    concatenate_text: bool
+        If True, concatenates consecutive words based on the predicted spaces.
+    is_softmax: bool
+        If False, the scores are converted to probabilities using softmax function.
+
+    Output Message/s
+    ----------------
+    **Type**: Classifications(dai.Buffer)
+
+    **Description**: An object with attributes `classes` and `scores`. `classes` is a list containing the predicted text. `scores` is a list of corresponding probability scores.
+
+    See also
+    --------
+    Official PaddleOCR repository:
+    https://github.com/PaddlePaddle/PaddleOCR
+    """
 
     def __init__(
         self,
-        classes: List[str] = None,
+        characters: List[str] = None,
         ignored_indexes: List[int] = None,
         remove_duplicates: bool = False,
         concatenate_text: bool = True,
@@ -20,9 +49,21 @@ class PaddleOCRParser(ClassificationParser):
     ):
         """Initializes the PaddleOCR Parser node.
 
-        @param classes: List of class names to be
+        @param characters: List of available characters for the text recognition model.
+        @type characters: List[str]
+        @param ignored_indexes: List of indexes to ignore during classification
+            generation (e.g., background class, blank space).
+        @type ignored_indexes: List[int]
+        @param remove_duplicates: If True, removes consecutive duplicates from the
+            sequence.
+        @type remove_duplicates: bool
+        @param concatenate_text: If True, concatenates consecutive words based on the
+            predicted spaces.
+        @type concatenate_text: bool
+        @param is_softmax: If False, the scores are converted to probabilities using
+            softmax function.
         """
-        super().__init__(classes, is_softmax)
+        super().__init__(characters, is_softmax)
         self.ignored_indexes = [0] if ignored_indexes is None else ignored_indexes
         self.remove_duplicates = remove_duplicates
         self.concatenate_text = concatenate_text
@@ -67,6 +108,9 @@ class PaddleOCRParser(ClassificationParser):
 
             if self.n_classes == 0:
                 raise ValueError("Classes must be provided for classification.")
+
+            if any([len(ch) > 1 for ch in self.classes]):
+                raise ValueError("Each character should only be a single character.")
 
             scores = output.getTensor(output_layer_names[0], dequantize=True).astype(
                 np.float32
