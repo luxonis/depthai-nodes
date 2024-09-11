@@ -6,7 +6,7 @@ from .. import Classifications
 
 
 def create_classification_sequence_message(
-    classes: List,
+    classes: List[str],
     scores: Union[np.ndarray, List],
     ignored_indexes: List[int] = None,
     remove_duplicates: bool = False,
@@ -27,8 +27,10 @@ def create_classification_sequence_message(
     @param concatenate_text: If True, concatenates consecutive words based on the space character.
     @type concatenate_text: bool
 
-    @return: A message with attributes `classes` and `scores`, both ordered by the sequence.
-    @rtype: Classifications
+    Returns
+    -------
+    **Type**: Classifications
+        A message with attributes `classes` and `scores`, where `classes` is a list of class names and `scores` is a list of corresponding scores.
 
     @raises ValueError: If 'classes' is not a list of strings.
     @raises ValueError: If 'scores' is not a 2D array of list of shape (sequence_length, n_classes).
@@ -49,13 +51,13 @@ def create_classification_sequence_message(
 
     if scores.shape[1] != len(classes):
         raise ValueError(
-            f"Number of labels and scores mismatch. Provided {len(classes)} class names and {scores.shape[1]} scores."
+            f"Number of classes and scores mismatch. Provided {len(classes)} class names and {scores.shape[1]} scores."
         )
 
     if np.any(scores < 0) or np.any(scores > 1):
         raise ValueError("Scores should be in the range [0, 1].")
 
-    if not np.any(np.isclose(scores.sum(axis=1), 1.0, atol=1e-3)):
+    if np.any(~np.isclose(scores.sum(axis=1), 1.0, atol=1e-3)):
         raise ValueError("Each row of scores should sum to 1.")
 
     if ignored_indexes is not None:
@@ -63,6 +65,8 @@ def create_classification_sequence_message(
             raise ValueError(
                 f"Ignored indexes should be a list, got {type(ignored_indexes)}."
             )
+        if not all(isinstance(index, int) for index in ignored_indexes):
+            raise ValueError("Ignored indexes should be integers.")
         if np.any(np.array(ignored_indexes) < 0) or np.any(
             np.array(ignored_indexes) >= len(classes)
         ):
@@ -82,7 +86,11 @@ def create_classification_sequence_message(
     class_list = [classes[i] for i in indexes[selection]]
     score_list = np.max(scores, axis=1)[selection]
 
-    if concatenate_text and len(class_list) > 1:
+    if (
+        concatenate_text
+        and len(class_list) > 1
+        and all(len(word) <= 1 for word in class_list)
+    ):
         concatenated_scores = []
         concatenated_words = "".join(class_list).split()
         cumsumlist = np.cumsum([len(word) for word in concatenated_words])
@@ -94,11 +102,19 @@ def create_classification_sequence_message(
             start_index = end_index
 
         class_list = concatenated_words
-        score_list = concatenated_scores
+        score_list = np.array(concatenated_scores)
+
+    elif (
+        concatenate_text
+        and len(class_list) > 1
+        and any(len(word) >= 2 for word in class_list)
+    ):
+        class_list = [" ".join(class_list)]
+        score_list = np.mean(score_list)
 
     classification_msg = Classifications()
 
     classification_msg.classes = class_list
-    classification_msg.scores = score_list
+    classification_msg.scores = score_list.tolist()
 
     return classification_msg
