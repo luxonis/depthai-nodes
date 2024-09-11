@@ -8,8 +8,9 @@ from .. import Classifications
 def create_classification_sequence_message(
     classes: List,
     scores: Union[np.ndarray, List],
-    remove_duplicates: bool = False,
     ignored_indexes: List[int] = None,
+    remove_duplicates: bool = False,
+    concatenate_text: bool = False,
 ) -> Classifications:
     """Creates a message for a multi-class sequence. The 'scores' array is a sequence of
     probabilities for each class at each position in the sequence. The message contains
@@ -19,10 +20,12 @@ def create_classification_sequence_message(
     @type classes: List
     @param scores: A numpy array of shape (sequence_length, n_classes) containing the (row-wise) probability distributions over the classes.
     @type scores: np.ndarray
-    @param remove_duplicates: If True, removes consecutive duplicates from the sequence.
-    @type remove_duplicates: bool
     @param ignored_indexes: A list of indexes to ignore during classification generation (e.g., background class, padding class)
     @type ignored_indexes: List[int]
+    @param remove_duplicates: If True, removes consecutive duplicates from the sequence.
+    @type remove_duplicates: bool
+    @param concatenate_text: If True, concatenates consecutive words based on the space character.
+    @type concatenate_text: bool
 
     @return: A message with attributes `classes` and `scores`, both ordered by the sequence.
     @rtype: Classifications
@@ -52,7 +55,7 @@ def create_classification_sequence_message(
     if np.any(scores < 0) or np.any(scores > 1):
         raise ValueError("Scores should be in the range [0, 1].")
 
-    if np.any(np.isclose(scores.sum(axis=1), 1.0, atol=1e-2)):
+    if not np.any(np.isclose(scores.sum(axis=1), 1.0, atol=1e-3)):
         raise ValueError("Each row of scores should sum to 1.")
 
     if ignored_indexes is not None:
@@ -68,17 +71,30 @@ def create_classification_sequence_message(
             )
 
     selection = np.ones(len(scores), dtype=bool)
-
     indexes = np.argmax(scores, axis=1)
 
     if remove_duplicates:
         selection[1:] = indexes[1:] != indexes[:-1]
 
     if ignored_indexes is not None:
-        selection &= indexes != ignored_indexes
+        selection &= np.array([index not in ignored_indexes for index in indexes])
 
     class_list = [classes[i] for i in indexes[selection]]
-    score_list = scores[selection].tolist()
+    score_list = np.max(scores, axis=1)[selection]
+
+    if concatenate_text and len(class_list) > 1:
+        concatenated_scores = []
+        concatenated_words = "".join(class_list).split()
+        cumsumlist = np.cumsum([len(word) for word in concatenated_words])
+
+        start_index = 0
+        for num_spaces, end_index in enumerate(cumsumlist):
+            word_scores = score_list[start_index + num_spaces : end_index + num_spaces]
+            concatenated_scores.append(np.mean(word_scores))
+            start_index = end_index
+
+        class_list = concatenated_words
+        score_list = concatenated_scores
 
     classification_msg = Classifications()
 
