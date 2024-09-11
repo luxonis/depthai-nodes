@@ -26,12 +26,8 @@ def create_classification_sequence_message(
     @type remove_duplicates: bool
     @param concatenate_text: If True, concatenates consecutive words based on the space character.
     @type concatenate_text: bool
-
-    Returns
-    -------
-    **Type**: Classifications
-        A message with attributes `classes` and `scores`, where `classes` is a list of class names and `scores` is a list of corresponding scores.
-
+    @return: A Classification message with attributes `classes` and `scores`, where `classes` is a list of class names and `scores` is a list of corresponding scores.
+    @rtype: Classifications
     @raises ValueError: If 'classes' is not a list of strings.
     @raises ValueError: If 'scores' is not a 2D array of list of shape (sequence_length, n_classes).
     @raises ValueError: If the number of classes does not match the number of columns in 'scores'.
