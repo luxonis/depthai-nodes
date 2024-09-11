@@ -185,7 +185,9 @@ def corners2xyxy(boxes: np.ndarray) -> np.ndarray:
     if boxes.shape[1] != 4 or boxes.shape[2] != 2:
         raise ValueError(f"Each box should be of shape (4, 2), got {boxes.shape[1:]}")
 
-    mins = boxes[:, 0, :]
-    maxs = boxes[:, 2, :]
+    x_min = np.min(boxes[:, :, 0], axis=1)
+    x_max = np.max(boxes[:, :, 0], axis=1)
+    y_min = np.min(boxes[:, :, 1], axis=1)
+    y_max = np.max(boxes[:, :, 1], axis=1)
 
-    return np.concatenate([mins, maxs], axis=1)
+    return np.stack([x_min, y_min, x_max, y_max], axis=1)
