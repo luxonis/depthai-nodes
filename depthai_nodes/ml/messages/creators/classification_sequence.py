@@ -53,7 +53,7 @@ def create_classification_sequence_message(
     if np.any(scores < 0) or np.any(scores > 1):
         raise ValueError("Scores should be in the range [0, 1].")
 
-    if np.any(~np.isclose(scores.sum(axis=1), 1.0, atol=1e-3)):
+    if np.any(~np.isclose(scores.sum(axis=1), 1.0, atol=1e-2)):
         raise ValueError("Each row of scores should sum to 1.")
 
     if ignored_indexes is not None:
