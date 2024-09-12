@@ -7,7 +7,7 @@ from .img_detections import (
 from .keypoints import HandKeypoints, Keypoints
 from .lines import Line, Lines
 from .map import Map2D
-from .misc import AgeGender
+from .misc import AgeGender, VehicleAttributes
 from .segmentation import SegmentationMasks
 
 __all__ = [
@@ -23,4 +23,5 @@ __all__ = [
     "Map2D",
     "Clusters",
     "Cluster",
+    "VehicleAttributes",
 ]
