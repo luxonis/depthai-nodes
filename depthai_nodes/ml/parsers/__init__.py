@@ -14,7 +14,7 @@ from .ppocr import PaddleOCRParser
 from .scrfd import SCRFDParser
 from .segmentation import SegmentationParser
 from .superanimal_landmarker import SuperAnimalParser
-from .vehicle_attributes import VehicleAttributesParser
+from .vehicle_attributes import MultiClassificationParser
 from .xfeat import XFeatParser
 from .yolo import YOLOExtendedParser
 from .yunet import YuNetParser
@@ -39,5 +39,5 @@ __all__ = [
     "MapOutputParser",
     "PaddleOCRParser",
     "LaneDetectionParser",
-    "VehicleAttributesParser",
+    "MultiClassificationParser",
 ]

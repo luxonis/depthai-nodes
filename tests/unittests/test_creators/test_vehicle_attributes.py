@@ -1,99 +1,58 @@
-import re
-
 import pytest
 
-from depthai_nodes.ml.messages import VehicleAttributes
-from depthai_nodes.ml.messages.creators.misc import create_vehicle_attributes_message
+from depthai_nodes.ml.messages import Classifications, MiscellaneousMessage
+from depthai_nodes.ml.messages.creators.misc import create_multi_classification_message
 
 
-def test_wrong_vehicle_type():
-    with pytest.raises(
-        ValueError, match="Vehicle_types should be list, got <class 'str'>."
-    ):
-        create_vehicle_attributes_message("red", [0.3, 0.5])
-
-
-def test_subtype_vehicle_type():
+def test_incorect_lengths():
     with pytest.raises(
         ValueError,
-        match="Vehicle_types list values must be of type float, instead got <class 'str'>.",
+        match="Number of classification attributes, scores and labels should be equal. Got 1 attributes, 2 scores and 2 labels.",
     ):
-        create_vehicle_attributes_message(["red", 0.5], [0.3, 0.5])
+        create_multi_classification_message(
+            ["vehicle_type"],
+            [[0.1, 0.2, 0.3, 0.4], [0.5, 0.6, 0.7, 0.8]],
+            [["car", "truck"], ["red", "blue"]],
+        )
 
 
-def test_negative_vehicle_type():
+def test_incorect_score_label_lengths():
     with pytest.raises(
         ValueError,
-        match=re.escape(
-            "Vehicle_types list must contain probabilities between 0 and 1, instead got [-0.3, 1.5]."
-        ),
+        match="Number of scores and labels should be equal for each classification attribute, got 4 scores, 2 labels for attribute vehicle_type.",
     ):
-        create_vehicle_attributes_message([-0.3, 1.5], ["red", 0.5])
+        create_multi_classification_message(
+            ["vehicle_type", "vehicle_color"],
+            [[0.1, 0.2, 0.3, 0.4], [0.5, 0.6]],
+            [["car", "truck"], ["red", "blue"]],
+        )
 
 
-def test_sum_vehicle_type():
-    with pytest.raises(
-        ValueError,
-        match="Vehicle_types list must contain probabilities that sum to 1, instead got values that sum to 0.8.",
-    ):
-        create_vehicle_attributes_message([0.3, 0.5], ["red", 0.5])
+def test_correct_usage():
+    attrs = ["vehicle_type", "vehicle_color"]
+    scores = [[0.1, 0.2, 0.3, 0.4], [0.0, 0.1, 0.4, 0.2, 0.2, 0.1]]
+    names = [
+        ["car", "truck", "van", "bike"],
+        ["red", "blue", "green", "black", "white", "yellow"],
+    ]
 
+    res = create_multi_classification_message(attrs, scores, names)
 
-def test_length_is_four_vehicle_type():
-    with pytest.raises(
-        ValueError, match=re.escape("Vehicle_types list should have 4 values, got 2.")
-    ):
-        create_vehicle_attributes_message([0.5, 0.5], ["red", 0.5])
-
-
-def test_wrong_vehicle_color():
-    with pytest.raises(
-        ValueError, match="Vehicle_colors should be list, got <class 'str'>."
-    ):
-        create_vehicle_attributes_message([0.3, 0.5, 0.1, 0.1], "red")
-
-
-def test_subtype_vehicle_color():
-    with pytest.raises(
-        ValueError,
-        match="Vehicle_colors list values must be of type float, instead got <class 'str'>.",
-    ):
-        create_vehicle_attributes_message([0.3, 0.5, 0.1, 0.1], ["red", 0.5])
-
-
-def test_negative_vehicle_color():
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Vehicle_colors list must contain probabilities between 0 and 1, instead got [-0.3, 1.5]."
-        ),
-    ):
-        create_vehicle_attributes_message([0.3, 0.5, 0.1, 0.1], [-0.3, 1.5])
-
-
-def test_sum_vehicle_color():
-    with pytest.raises(
-        ValueError,
-        match="Vehicle_colors list must contain probabilities that sum to 1, instead got values that sum to 0.8.",
-    ):
-        create_vehicle_attributes_message([0.3, 0.5, 0.1, 0.1], [0.3, 0.5])
-
-
-def test_length_is_seven_vehicle_color():
-    with pytest.raises(
-        ValueError, match="Vehicle_colors list should have 7 values, got 3."
-    ):
-        create_vehicle_attributes_message([0.3, 0.5, 0.1, 0.1], [0.1, 0.4, 0.5])
-
-
-def test_vehicle_attributes():
-    vehicle_attributes_message = create_vehicle_attributes_message(
-        [0.3, 0.5, 0.1, 0.1], [0.1, 0.3, 0.1, 0.05, 0.05, 0.2, 0.2]
-    )
-
-    assert isinstance(vehicle_attributes_message, VehicleAttributes)
-    assert vehicle_attributes_message.vehicle_type == ("Bus", 0.5)
-    assert vehicle_attributes_message.vehicle_color == ("Gray", 0.3)
+    assert isinstance(res, MiscellaneousMessage)
+    res = res.getData()
+    assert isinstance(res["vehicle_type"], Classifications)
+    assert isinstance(res["vehicle_color"], Classifications)
+    assert res["vehicle_type"].classes == ["bike", "van", "truck", "car"]
+    assert res["vehicle_type"].scores == [0.4, 0.3, 0.2, 0.1]
+    assert res["vehicle_color"].classes == [
+        "green",
+        "black",
+        "white",
+        "blue",
+        "yellow",
+        "red",
+    ]
+    assert res["vehicle_color"].scores == [0.4, 0.2, 0.2, 0.1, 0.1, 0.0]
 
 
 if __name__ == "__main__":
