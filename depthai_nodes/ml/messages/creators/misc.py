@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 from ...messages import Classifications, CompositeMessage
 
@@ -49,83 +49,51 @@ def create_age_gender_message(age: float, gender_prob: List[float]) -> Composite
     return age_gender_message
 
 
-def create_vehicle_attributes_message(
-    vehicle_types: List[float], vehicle_colors: List[float]
+def create_multi_classification_message(
+    classification_attributes: List[str],
+    classification_scores: Union[np.ndarray, List[List[float]]],
+    classification_labels: List[List[str]],
 ):
     """Create a DepthAI message for the vehicle attributes.
 
-    @param vehicle_types: Probabilities for classes [car, bus, truck, van].
-    @type vehicle_types: List[float]
-    @param vehicle_colors: Probabilities for classes [white, gray, yellow, red, green,
-        blue, black].
-    @type vehicle_colors: List[float]
-    @return: VehicleAttributes message containing the predicted vehicle type and color
-        with the highest probability.
-    @rtype: VehicleAttributes
-    @raise ValueError: If vehicle_types is not a list of floats.
-    @raise ValueError: If vehicle_colors is not a list of floats.
-    @raise ValueError: If vehicle_types not a probability list.
-    @raise ValueError: If vehicle_colors not a probability list.
+    @param classification_attributes: List of attributes being classified.
+    @type classification_attributes: List[str]
+    @param classification_scores: A 2D array or list of classification scores for each
+        attribute.
+    @type classification_scores: Union[np.ndarray, List[List[float]]]
+    @param classification_labels: A 2D list of class labels for each classification
+        attribute.
+    @type classification_labels: List[List[str]]
+    @return: MultiClassification message containing a dictionary of classification
+        attributes and their respective Classifications.
+    @rtype: dai.Buffer
+    @raise ValueError: If number of attributes is not same as number of score-label
+        pairs.
+    @raise ValueError: If number of scores is not same as number of labels for each
+        attribute.
+    @raise ValueError: If each class score not in the range [0, 1].
+    @raise ValueError: If each class score not a probability distribution that sums to
+        1.
     """
-    vehicle_type_classes = ["Car", "Bus", "Truck", "Van"]
-    vehicle_color_classes = ["White", "Gray", "Yellow", "Red", "Green", "Blue", "Black"]
 
-    if not isinstance(vehicle_types, List):
-        raise ValueError(f"Vehicle_types should be list, got {type(vehicle_types)}.")
-
-    if any([not isinstance(item, float) for item in vehicle_types]):
+    if len(classification_attributes) != len(classification_scores) or len(
+        classification_attributes
+    ) != len(classification_labels):
         raise ValueError(
-            f"Vehicle_types list values must be of type float, instead got {type(vehicle_types[0])}."
-        )
-    if any([value < 0 or value > 1 for value in vehicle_types]):
-        raise ValueError(
-            f"Vehicle_types list must contain probabilities between 0 and 1, instead got {vehicle_types}."
+            f"Number of classification attributes, scores and labels should be equal. Got {len(classification_attributes)} attributes, {len(classification_scores)} scores and {len(classification_labels)} labels."
         )
 
-    if sum(vehicle_types) < 0.99 or sum(vehicle_types) > 1.01:
-        raise ValueError(
-            f"Vehicle_types list must contain probabilities that sum to 1, instead got values that sum to {sum(vehicle_types)}."
-        )
+    multi_class_dict = {}
+    for attribute, scores, labels in zip(
+        classification_attributes, classification_scores, classification_labels
+    ):
+        if len(scores) != len(labels):
+            raise ValueError(
+                f"Number of scores and labels should be equal for each classification attribute, got {len(scores)} scores, {len(labels)} labels for attribute {attribute}."
+            )
+        multi_class_dict[attribute] = create_classification_message(labels, scores)
 
-    if len(vehicle_types) != len(vehicle_type_classes):
-        raise ValueError(
-            f"Vehicle_types list should have {len(vehicle_type_classes)} values, got {len(vehicle_types)}."
-        )
+    multi_classification_message = MiscellaneousMessage()
+    multi_classification_message.setData(multi_class_dict)
 
-    if not isinstance(vehicle_colors, List):
-        raise ValueError(f"Vehicle_colors should be list, got {type(vehicle_colors)}.")
-
-    if any([not isinstance(item, float) for item in vehicle_colors]):
-        raise ValueError(
-            f"Vehicle_colors list values must be of type float, instead got {type(vehicle_colors[0])}."
-        )
-
-    if any([value < 0 or value > 1 for value in vehicle_colors]):
-        raise ValueError(
-            f"Vehicle_colors list must contain probabilities between 0 and 1, instead got {vehicle_colors}."
-        )
-
-    if sum(vehicle_colors) < 0.99 or sum(vehicle_colors) > 1.01:
-        raise ValueError(
-            f"Vehicle_colors list must contain probabilities that sum to 1, instead got values that sum to {sum(vehicle_colors)}."
-        )
-
-    if len(vehicle_colors) != len(vehicle_color_classes):
-        raise ValueError(
-            f"Vehicle_colors list should have {len(vehicle_color_classes)} values, got {len(vehicle_colors)}."
-        )
-
-    vehicle_attributes_message = VehicleAttributes()
-    max_type_index = vehicle_types.index(max(vehicle_types))
-    max_color_index = vehicle_colors.index(max(vehicle_colors))
-
-    vehicle_attributes_message.vehicle_type = (
-        vehicle_type_classes[max_type_index],
-        round(vehicle_types[max_type_index], 4),
-    )
-    vehicle_attributes_message.vehicle_color = (
-        vehicle_color_classes[max_color_index],
-        round(vehicle_colors[max_color_index], 4),
-    )
-
-    return vehicle_attributes_message
+    return multi_classification_message
