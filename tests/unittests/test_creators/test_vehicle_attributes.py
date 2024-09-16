@@ -1,6 +1,6 @@
 import pytest
 
-from depthai_nodes.ml.messages import Classifications, MiscellaneousMessage
+from depthai_nodes.ml.messages import Classifications, CompositeMessage
 from depthai_nodes.ml.messages.creators.misc import create_multi_classification_message
 
 
@@ -38,7 +38,7 @@ def test_correct_usage():
 
     res = create_multi_classification_message(attrs, scores, names)
 
-    assert isinstance(res, MiscellaneousMessage)
+    assert isinstance(res, CompositeMessage)
     res = res.getData()
     assert isinstance(res["vehicle_type"], Classifications)
     assert isinstance(res["vehicle_color"], Classifications)
