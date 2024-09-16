@@ -1,6 +1,6 @@
 import cv2
 import depthai as dai
-from utils.message_parsers import (
+from .utils.message_parsers import (
     parse_classification_message,
     parser_age_gender_message,
 )

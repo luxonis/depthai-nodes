@@ -1,6 +1,6 @@
 import cv2
 import depthai as dai
-from utils.message_parsers import parse_image_message
+from .utils.message_parsers import parse_image_message
 
 
 def visualize_image(frame: dai.ImgFrame, message: dai.ImgFrame, extraParams: dict):

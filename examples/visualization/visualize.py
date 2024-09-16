@@ -1,5 +1,5 @@
 import depthai as dai
-from visualizers import (
+from .visualizers import (
     visualize_age_gender,
     visualize_classification,
     visualize_detections,
