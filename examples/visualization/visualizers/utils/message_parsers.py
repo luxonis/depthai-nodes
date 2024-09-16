@@ -3,6 +3,7 @@ import depthai as dai
 from depthai_nodes.ml.messages import (
     AgeGender,
     Classifications,
+    Clusters,
     ImgDetectionsExtended,
     Keypoints,
     Lines,
@@ -64,6 +65,12 @@ def parse_yolo_kpts_message(message: ImgDetectionsExtended):
     """Parses the yolo keypoints message and returns the keypoints."""
     detections = message.detections
     return detections
+
+
+def parse_cluster_message(message: Clusters):
+    """Parses the cluster message and returns the clusters."""
+    clusters = message.clusters
+    return clusters
 
 
 def parse_fast_sam_message(message: SegmentationMasks):

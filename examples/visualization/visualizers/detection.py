@@ -2,10 +2,11 @@ import cv2
 import depthai as dai
 import numpy as np
 
-from depthai_nodes.ml.messages import ImgDetectionsExtended, Lines
+from depthai_nodes.ml.messages import Clusters, ImgDetectionsExtended, Lines
 
 from .utils.colors import get_yolo_colors
 from .utils.message_parsers import (
+    parse_cluster_message,
     parse_detection_message,
     parse_line_detection_message,
     parse_yolo_kpts_message,
@@ -170,6 +171,37 @@ def visualize_yolo_extended(
     if task == "segmentation":
         frame = cv2.addWeighted(overlay, 0.8, frame, 0.5, 0, None)
     cv2.imshow("YOLO Pose Estimation", frame)
+    if cv2.waitKey(1) == ord("q"):
+        cv2.destroyAllWindows()
+        return True
+
+    return False
+
+
+def visualize_lane_detections(
+    frame: dai.ImgFrame, message: Clusters, extraParams: dict
+):
+    """Visualizes the lines on the frame."""
+    clusters = parse_cluster_message(message)
+
+    for cluster in clusters:
+        for point in cluster.points:
+            x = int(point.x)
+            y = int(point.y)
+            cv2.circle(frame, (x, y), 3, (0, 255, 0), -1)
+
+    # draw lines between points
+    for cluster in clusters:
+        for i in range(len(cluster.points) - 1):
+            cv2.line(
+                frame,
+                (int(cluster.points[i].x), int(cluster.points[i].y)),
+                (int(cluster.points[i + 1].x), int(cluster.points[i + 1].y)),
+                (0, 255, 0),
+                2,
+            )
+
+    cv2.imshow("Lane Detection", frame)
     if cv2.waitKey(1) == ord("q"):
         cv2.destroyAllWindows()
         return True

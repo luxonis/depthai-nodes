@@ -1,6 +1,7 @@
 from .classification import visualize_age_gender, visualize_classification
 from .detection import (
     visualize_detections,
+    visualize_lane_detections,
     visualize_line_detections,
     visualize_yolo_extended,
 )
@@ -19,5 +20,6 @@ __all__ = [
     "visualize_yolo_extended",
     "visualize_detections",
     "visualize_line_detections",
+    "visualize_lane_detections",
     "visualize_fastsam",
 ]

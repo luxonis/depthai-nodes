@@ -7,6 +7,7 @@ from .visualizers import (
     visualize_fastsam,
     visualize_image,
     visualize_keypoints,
+    visualize_lane_detections,
     visualize_line_detections,
     visualize_map,
     visualize_segmentation,
@@ -30,6 +31,7 @@ visualizers = {
     "MapOutputParser": visualize_map,
     "AgeGenderParser": visualize_age_gender,
     "YOLOExtendedParser": visualize_yolo_extended,
+    "LaneDetectionParser": visualize_lane_detections,
     "FastSAMParser": visualize_fastsam,
 }
 
