@@ -53,8 +53,8 @@ def create_multi_classification_message(
     classification_attributes: List[str],
     classification_scores: Union[np.ndarray, List[List[float]]],
     classification_labels: List[List[str]],
-):
-    """Create a DepthAI message for the vehicle attributes.
+) -> CompositeMessage:
+    """Create a DepthAI message for multi-classification.
 
     @param classification_attributes: List of attributes being classified.
     @type classification_attributes: List[str]
@@ -93,7 +93,7 @@ def create_multi_classification_message(
             )
         multi_class_dict[attribute] = create_classification_message(labels, scores)
 
-    multi_classification_message = MiscellaneousMessage()
+    multi_classification_message = CompositeMessage()
     multi_classification_message.setData(multi_class_dict)
 
     return multi_classification_message
