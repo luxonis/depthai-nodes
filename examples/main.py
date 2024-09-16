@@ -4,6 +4,8 @@ from utils.model import get_input_shape, get_model_from_hub, get_parser
 from utils.parser import setup_parser
 from visualization.visualize import visualize
 
+FPS_LIMIT = 28 # adding a limit to the FPS to avoid errors on OAK-D Lite. TODO: remove once fixed
+
 # Initialize the argument parser
 arg_parser, args = initialize_argparser()
 
@@ -27,7 +29,7 @@ with dai.Pipeline() as pipeline:
     # YOLO and MobileNet-SSD have native parsers in DAI - no need to create a separate parser
     if parser_name == "YOLO" or parser_name == "SSD":
         network = pipeline.create(dai.node.DetectionNetwork).build(
-            cam.requestOutput(input_shape, type=dai.ImgFrame.Type.BGR888p), nn_archive
+            cam.requestOutput(input_shape, type=dai.ImgFrame.Type.BGR888p, fps = FPS_LIMIT), nn_archive
         )
         parser_queue = network.out.createOutputQueue()
     else:
@@ -45,13 +47,13 @@ with dai.Pipeline() as pipeline:
             manip = pipeline.create(dai.node.ImageManip)
             manip.initialConfig.setResize(input_shape)
             large_input_shape = (input_shape[0] * 4, input_shape[1] * 4)
-            cam.requestOutput(large_input_shape, type=image_type).link(manip.inputImage)
+            cam.requestOutput(large_input_shape, type=image_type, fps = FPS_LIMIT).link(manip.inputImage)
             network = pipeline.create(dai.node.NeuralNetwork).build(
                 manip.out, nn_archive
             )
         else:
             network = pipeline.create(dai.node.NeuralNetwork).build(
-                cam.requestOutput(input_shape, type=image_type), nn_archive
+                cam.requestOutput(input_shape, type=image_type, fps = FPS_LIMIT), nn_archive
             )
 
         parser = pipeline.create(parser_class)
