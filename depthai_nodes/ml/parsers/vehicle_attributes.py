@@ -53,9 +53,9 @@ class MultiClassificationParser(dai.node.ThreadedHostNode):
                     output.getTensor(layer_name, dequantize=True).flatten().tolist()
                 )
 
-            vehicle_attributes_message = create_multi_classification_message(
+            multi_classification_message = create_multi_classification_message(
                 self.classification_attributes, scores, self.classification_labels
             )
-            vehicle_attributes_message.setTimestamp(output.getTimestamp())
+            multi_classification_message.setTimestamp(output.getTimestamp())
 
-            self.out.send(vehicle_attributes_message)
+            self.out.send(multi_classification_message)
