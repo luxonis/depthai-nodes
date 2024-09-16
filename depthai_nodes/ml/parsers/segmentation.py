@@ -1,3 +1,5 @@
+import warnings
+
 import depthai as dai
 import numpy as np
 
@@ -39,6 +41,7 @@ class SegmentationParser(dai.node.ThreadedHostNode):
         self.input = self.createInput()
         self.out = self.createOutput()
         self.background_class = background_class
+        self._warned = False
 
     def setBackgroundClass(self, background_class):
         """Sets the background class.
@@ -57,10 +60,11 @@ class SegmentationParser(dai.node.ThreadedHostNode):
 
             output_layer_names = output.getAllLayerNames()
 
-            if len(output_layer_names) != 1:
-                print(
+            if len(output_layer_names) != 1 and not self._warned:
+                warnings.warn(
                     f"Expected 1 output layer, got {len(output_layer_names)}. Will take the first one."
                 )
+                self._warned = True
 
             segmentation_mask = output.getTensor(output_layer_names[0], dequantize=True)
             if len(segmentation_mask.shape) == 4:
