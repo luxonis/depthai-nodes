@@ -64,7 +64,7 @@ def setup_classification_parser(parser: ClassificationParser, params: dict):
 
 
 def setup_map_output_parser(parser: MapOutputParser, params: dict):
-    """Setup the monocular depth parser with the required metadata."""
+    """Setup the map output parser with the required metadata."""
     try:
         min_max_scaling = params["min_max_scaling"]
         if min_max_scaling:
