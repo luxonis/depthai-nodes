@@ -94,7 +94,7 @@ jobs:
       run: pip install -e .[dev]
 
     - name: Install pytest (if not included in dev dependencies)
-      run: pip install pytest
+      run: pip install pytest==8.3.2
 
     - name: Run pytest
       uses: pavelzw/pytest-action@v2
