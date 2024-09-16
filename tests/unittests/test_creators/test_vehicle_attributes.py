@@ -1,7 +1,7 @@
 import pytest
 
 from depthai_nodes.ml.messages import Classifications, CompositeMessage
-from depthai_nodes.ml.messages.creators.misc import create_multi_classification_message
+from depthai_nodes.ml.messages.creators import create_multi_classification_message
 
 
 def test_incorect_lengths():

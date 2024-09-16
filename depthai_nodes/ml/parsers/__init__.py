@@ -1,5 +1,5 @@
 from .age_gender import AgeGenderParser
-from .classification import ClassificationParser
+from .classification import ClassificationParser, MultiClassificationParser
 from .fastsam import FastSAMParser
 from .hrnet import HRNetParser
 from .image_output import ImageOutputParser
@@ -14,7 +14,6 @@ from .ppocr import PaddleOCRParser
 from .scrfd import SCRFDParser
 from .segmentation import SegmentationParser
 from .superanimal_landmarker import SuperAnimalParser
-from .vehicle_attributes import MultiClassificationParser
 from .xfeat import XFeatParser
 from .yolo import YOLOExtendedParser
 from .yunet import YuNetParser
