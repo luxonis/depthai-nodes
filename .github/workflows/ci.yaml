@@ -93,8 +93,16 @@ jobs:
     - name: Install package
       run: pip install -e .[dev]
 
-    - name: Install pytest (if not included in dev dependencies)
-      run: pip install pytest==8.3.2
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-cov
+
+    - name: Check Python version
+      run: python --version
+
+    - name: Check installed packages
+      run: pip list
 
     - name: Run pytest
       uses: pavelzw/pytest-action@v2
