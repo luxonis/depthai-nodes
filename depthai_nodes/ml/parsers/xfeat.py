@@ -56,6 +56,7 @@ class XFeatParser(dai.node.ThreadedHostNode):
         self.input_size = input_size
         self.max_keypoints = max_keypoints
         self.previous_results = None
+        self.trigger = False
 
     def setOriginalSize(self, original_size):
         """Sets the original image size.
@@ -80,6 +81,9 @@ class XFeatParser(dai.node.ThreadedHostNode):
         @type max_keypoints: int
         """
         self.max_keypoints = max_keypoints
+
+    def setTrigger(self):
+        self.trigger = True
 
     def run(self):
         if self.original_size is None:
@@ -128,6 +132,11 @@ class XFeatParser(dai.node.ThreadedHostNode):
                 matched_points = create_tracked_features_message(mkpts0, mkpts1)
                 matched_points.setTimestamp(output.getTimestamp())
                 self.out.send(matched_points)
+            else:
+                matched_points = dai.TrackedFeatures()
+                matched_points.setTimestamp(output.getTimestamp())
+                self.out.send(matched_points)
 
-            # save the result from first frame
-            self.previous_results = result
+            if self.trigger:
+                self.previous_results = result
+                self.trigger = False
