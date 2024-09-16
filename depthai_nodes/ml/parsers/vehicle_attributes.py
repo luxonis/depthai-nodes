@@ -21,9 +21,9 @@ class MultiClassificationParser(dai.node.ThreadedHostNode):
 
     Output Message/s
     ----------------
-    **Type**: VehicleAttributes
+    **Type**: CompositeMessage
 
-    **Description**: Message containing two tuples like (class_name, probability). First is `vehicle_type` and second is `vehicle_color`.
+    **Description**: A CompositeMessage containing a dictionary of classification attributes as keys and their respective Classifications as values.
     """
 
     def __init__(
