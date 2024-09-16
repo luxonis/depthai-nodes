@@ -1,10 +1,11 @@
 import cv2
 import depthai as dai
 import numpy as np
-from .utils.colors import get_adas_colors, get_ewasr_colors, get_selfie_colors
-from .utils.message_parsers import parse_fast_sam_message, parse_segmentation_message
 
 from depthai_nodes.ml.messages import SegmentationMasks
+
+from .utils.colors import get_adas_colors, get_ewasr_colors, get_selfie_colors
+from .utils.message_parsers import parse_fast_sam_message, parse_segmentation_message
 
 
 def visualize_segmentation(

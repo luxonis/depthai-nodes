@@ -1,14 +1,15 @@
 import cv2
 import depthai as dai
 import numpy as np
+
+from depthai_nodes.ml.messages import ImgDetectionsExtended, Lines
+
 from .utils.colors import get_yolo_colors
 from .utils.message_parsers import (
     parse_detection_message,
     parse_line_detection_message,
     parse_yolo_kpts_message,
 )
-
-from depthai_nodes.ml.messages import ImgDetectionsExtended, Lines
 
 
 def visualize_detections(

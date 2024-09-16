@@ -1,5 +1,6 @@
 import cv2
 import depthai as dai
+
 from .utils.message_parsers import parse_image_message
 
 

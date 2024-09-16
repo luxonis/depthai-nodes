@@ -1,9 +1,10 @@
 import cv2
 import depthai as dai
 import numpy as np
-from .utils.message_parsers import parse_map_message
 
 from depthai_nodes.ml.messages import Map2D
+
+from .utils.message_parsers import parse_map_message
 
 
 def visualize_map(frame: dai.ImgFrame, message: Map2D, extraParams: dict):
