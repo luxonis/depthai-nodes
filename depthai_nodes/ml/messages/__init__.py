@@ -1,5 +1,6 @@
 from .classification import Classifications
 from .clusters import Cluster, Clusters
+from .composite import CompositeMessage
 from .img_detections import (
     ImgDetectionExtended,
     ImgDetectionsExtended,
@@ -23,4 +24,5 @@ __all__ = [
     "Map2D",
     "Clusters",
     "Cluster",
+    "CompositeMessage",
 ]

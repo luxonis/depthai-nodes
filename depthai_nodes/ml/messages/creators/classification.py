@@ -61,6 +61,11 @@ def create_classification_message(
     if not np.issubdtype(scores.dtype, np.floating):
         raise ValueError(f"Scores should be of type float, got {scores.dtype}.")
 
+    if any([value < 0 or value > 1 for value in scores]):
+        raise ValueError(
+            f"Scores list must contain probabilities between 0 and 1, instead got {scores}."
+        )
+
     if not np.isclose(np.sum(scores), 1.0, atol=1e-2):
         raise ValueError(f"Scores should sum to 1, got {np.sum(scores)}.")
 
