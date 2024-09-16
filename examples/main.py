@@ -1,16 +1,15 @@
 import depthai as dai
-from utils.arguments import initialize_argparser, parse_model_slug
+from utils.arguments import initialize_argparser, parse_fps_limit, parse_model_slug
 from utils.model import get_input_shape, get_model_from_hub, get_parser
 from utils.parser import setup_parser
 from visualization.visualize import visualize
-
-FPS_LIMIT = 28  # adding a limit to the FPS to avoid errors on OAK-D Lite. TODO: remove once fixed
 
 # Initialize the argument parser
 arg_parser, args = initialize_argparser()
 
 # Parse the model slug
 model_slug, model_version_slug = parse_model_slug(args)
+fps_limit = parse_fps_limit(args)
 
 # Get the model from the HubAI
 nn_archive = get_model_from_hub(model_slug, model_version_slug)
@@ -30,7 +29,7 @@ with dai.Pipeline() as pipeline:
     if parser_name == "YOLO" or parser_name == "SSD":
         network = pipeline.create(dai.node.DetectionNetwork).build(
             cam.requestOutput(
-                input_shape, type=dai.ImgFrame.Type.BGR888p, fps=FPS_LIMIT
+                input_shape, type=dai.ImgFrame.Type.BGR888p, fps=fps_limit
             ),
             nn_archive,
         )
@@ -50,7 +49,7 @@ with dai.Pipeline() as pipeline:
             manip = pipeline.create(dai.node.ImageManip)
             manip.initialConfig.setResize(input_shape)
             large_input_shape = (input_shape[0] * 4, input_shape[1] * 4)
-            cam.requestOutput(large_input_shape, type=image_type, fps=FPS_LIMIT).link(
+            cam.requestOutput(large_input_shape, type=image_type, fps=fps_limit).link(
                 manip.inputImage
             )
             network = pipeline.create(dai.node.NeuralNetwork).build(
@@ -58,7 +57,7 @@ with dai.Pipeline() as pipeline:
             )
         else:
             network = pipeline.create(dai.node.NeuralNetwork).build(
-                cam.requestOutput(input_shape, type=image_type, fps=FPS_LIMIT),
+                cam.requestOutput(input_shape, type=image_type, fps=fps_limit),
                 nn_archive,
             )
 
