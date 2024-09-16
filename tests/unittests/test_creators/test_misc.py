@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from depthai_nodes.ml.messages import AgeGender
-from depthai_nodes.ml.messages.creators.misc import create_age_gender_message
+from depthai_nodes.ml.messages import CompositeMessage
+from depthai_nodes.ml.messages.creators import create_age_gender_message
 
 
 def test_wrong_age():
@@ -45,10 +45,13 @@ def test_correct_types():
     gender = [0.35, 0.65]
     message = create_age_gender_message(age, gender)
 
-    assert isinstance(message, AgeGender)
-    assert message.age == age
-    assert message.gender.classes == ["female", "male"]
-    assert np.all(np.isclose(message.gender.scores, gender))
+    assert isinstance(message, CompositeMessage)
+    result = message.getData()
+    assert "age" in result
+    assert "gender" in result
+    assert result["age"] == age
+    assert result["gender"].classes == ["female", "male"]
+    assert np.all(np.isclose(result["gender"].scores, gender))
 
 
 if __name__ == "__main__":
