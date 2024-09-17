@@ -100,9 +100,13 @@ def create_keypoints_message(
     @type scores: Optional[np.ndarray or List[float]]
     @param confidence_threshold: Confidence threshold of keypoint detections.
     @type confidence_threshold: Optional[float]
+    @param objectness: Objectness score indicating if the object is present.
+    @type objectness: Optional[float]
+    @param objectness_threshold: Objectness threshold of present object.
+    @type objectness_threshold: Optional[float]
 
-    @return: Keypoints message containing the detected keypoints.
-    @rtype: Keypoints
+    @return: Keypoints message containing the detected keypoints and optional objectness.
+    @rtype: Union[Keypoints, KeypointsWithObjectness]
 
     @raise ValueError: If the keypoints are not a numpy array or list.
     @raise ValueError: If the scores are not a numpy array or list.
@@ -113,6 +117,10 @@ def create_keypoints_message(
     @raise ValueError: If the confidence threshold is not between 0 and 1.
     @raise ValueError: If the keypoints are not of shape (N,2 or 3).
     @raise ValueError: If the keypoints 2nd dimension is not of size E{2} or E{3}.
+    @raise ValueError: If the objectness is not float.
+    @raise ValueError: If the objectness is not between 0 and 1.
+    @raise ValueError: If the objectness threshold is not float.
+    @raise ValueError: If the objectness threshold is not between 0 and 1.
     """
 
     if not isinstance(keypoints, (np.ndarray, list)):
@@ -227,47 +235,3 @@ def create_keypoints_message(
 
     keypoints_msg.keypoints = points
     return keypoints_msg
-
-
-# def create_keypoints_with_objectness_message(keypoints: np.ndarray, confidence: float, confidence_threshold: float) -> KeypointsWithObjectness:
-#     if not isinstance(keypoints, np.ndarray):
-#         raise ValueError(f"Keypoints should be numpy array, got {type(keypoints)}.")
-
-#     use_3d = False
-
-#     if len(keypoints) != 0:
-#         dimension = len(keypoints[0])
-#         if dimension != 2 and dimension != 3:
-#             raise ValueError(f"All keypoints should be of dimension 2 or 3, got dimension {dimension}.")
-#         for keypoint in keypoints:
-#             if len(keypoint) != dimension:
-#                 raise ValueError("All keypoints have to be of same dimension e.g. [x, y] or [x, y, z], got mixed inner dimensions.")
-#             for coord in keypoint:
-#                 if not isinstance(coord, (float, np.floating)):
-#                     raise ValueError(f"Keypoints inner list should contain only float, got {type(coord)}.")
-#         if dimension == 3:
-#             use_3d = True
-
-#     if not isinstance(confidence, float):
-#         raise ValueError(f"Confidence should be float, got {type(confidence)}.")
-#     if confidence < 0 or confidence > 1:
-#         raise ValueError(f"Confidence should be between 0 and 1, got confidence {confidence}.")
-
-#     if not isinstance(confidence_threshold, float):
-#         raise ValueError(f"Confidence threshold should be float, got {type(confidence_threshold)}.")
-#     if confidence_threshold < 0 or confidence_threshold > 1:
-#         raise ValueError(f"Confidence threshold should be between 0 and 1, got confidence threshold {confidence_threshold}.")
-
-#     keypoints_msg = KeypointsWithObjectness()
-#     keypoints_msg.objectness = confidence
-#     points = []
-#     if confidence >= confidence_threshold:
-#         for i in range(keypoints.shape[0]):
-#             pt = dai.Point3f()
-#             pt.x = keypoints[i][0]
-#             pt.y = keypoints[i][1]
-#             pt.z = keypoints[i][2] if use_3d else 0
-#             points.append(pt)
-#     keypoints_msg.keypoints = points
-
-#     return keypoints_msg

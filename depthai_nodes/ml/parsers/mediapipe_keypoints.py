@@ -24,18 +24,18 @@ class MPKeypointsParser(KeypointParser):
 
     Output Message/s
     ----------------
-    **Type**: HandKeypoints or KeypointsWithConfidence
+    **Type**: HandKeypoints or KeypointsWithObjectness
 
-    **Description**: HandKeypoints message containing normalized 21 3D keypoints, confidence score, and handedness score (right or left hand) or KeypointsWithConfidence message containing normalized 9 keypoints and confidence score.
+    **Description**: HandKeypoints message containing normalized 21 3D keypoints, confidence score, and handedness score (right or left hand) or KeypointsWithObjectness message containing normalized 9 keypoints and objectness score.
 
     """
 
-    def __init__(self, score_threshold=0.5, scale_factor=224, n_keypoints=21):
-        """Initialize MPHandLandmarkParser node.
+    def __init__(self, objectness_threshold=0.5, scale_factor=224, n_keypoints=21):
+        """Initialize MPKeypoints node.
 
-        @param score_threshold: Confidence score threshold for hand landmarks.
-        @type score_threshold: float
-        @param scale_factor: Scale factor to divide the landmarks by.
+        @param objectness_threshold: Objectness threshold for present object.
+        @type objectness_threshold: float
+        @param scale_factor: Scale factor to divide the keypoints by.
         @type scale_factor: float
         @param n_keypoints: Number of keypoints the model detects.
         @type n_keypoints: int
@@ -44,17 +44,17 @@ class MPKeypointsParser(KeypointParser):
         self.input = self.createInput()
         self.out = self.createOutput()
 
-        self.score_threshold = score_threshold
+        self.objectness_threshold = objectness_threshold
         self.scale_factor = scale_factor
         self.n_keypoints = n_keypoints
 
-    def setScoreThreshold(self, threshold):
-        """Set the confidence score threshold for hand landmarks.
+    def setObjectnessThreshold(self, threshold):
+        """Set the objectness score threshold.
 
-        @param threshold: Confidence score threshold for hand landmarks.
+        @param threshold: Objectness score.
         @type threshold: float
         """
-        self.score_threshold = threshold
+        self.objectness_threshold = threshold
 
     def run(self):
         while self.isRunning():
@@ -68,7 +68,7 @@ class MPKeypointsParser(KeypointParser):
             keypoints = output.getTensor("keypoints", dequantize=True).astype(
                 np.float32
             )
-            score = (
+            objectness_score = (
                 output.getTensor("score", dequantize=True)
                 .astype(np.float32)
                 .reshape(-1)[0]
@@ -89,7 +89,7 @@ class MPKeypointsParser(KeypointParser):
                 )
 
             keypoints = keypoints.reshape(self.n_keypoints, num_coords)
-            print(keypoints)
+
             # normalize keypoints
             keypoints /= self.scale_factor
 
@@ -98,12 +98,15 @@ class MPKeypointsParser(KeypointParser):
                     keypoints=keypoints,
                     scores=None,
                     confidence_threshold=None,
-                    objectness=float(score),
-                    objectness_threshold=self.score_threshold,
+                    objectness=float(objectness_score),
+                    objectness_threshold=self.objectness_threshold,
                 )
                 if not handedness
                 else create_hand_keypoints_message(
-                    keypoints, float(handedness), float(score), self.score_threshold
+                    keypoints,
+                    float(handedness),
+                    float(objectness_score),
+                    self.objectness_threshold,
                 )
             )
 
