@@ -1,7 +1,7 @@
 import cv2
 import depthai as dai
 
-from depthai_nodes.ml.messages import AgeGender, Classifications
+from depthai_nodes.ml.messages import Classifications, CompositeMessage
 
 from .utils.message_parsers import (
     parse_classification_message,
@@ -36,7 +36,9 @@ def visualize_classification(
     return False
 
 
-def visualize_age_gender(frame: dai.ImgFrame, message: AgeGender, extraParams: dict):
+def visualize_age_gender(
+    frame: dai.ImgFrame, message: CompositeMessage, extraParams: dict
+):
     """Visualizes the age and predicted gender on the frame."""
     if frame.shape[0] < 128:
         frame = cv2.resize(frame, (frame.shape[1] * 2, frame.shape[0] * 2))
