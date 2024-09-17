@@ -5,6 +5,7 @@ from depthai_nodes.ml.parsers import (
     FastSAMParser,
     KeypointParser,
     LaneDetectionParser,
+    MapOutputParser,
     MPPalmDetectionParser,
     SCRFDParser,
     SegmentationParser,
@@ -60,6 +61,18 @@ def setup_classification_parser(parser: ClassificationParser, params: dict):
     except Exception:
         print(
             "This NN archive does not have required metadata for ClassificationParser. Skipping setup..."
+        )
+
+
+def setup_map_output_parser(parser: MapOutputParser, params: dict):
+    """Setup the map output parser with the required metadata."""
+    try:
+        min_max_scaling = params["min_max_scaling"]
+        if min_max_scaling:
+            parser.setMinMaxScaling(True)
+    except Exception:
+        print(
+            "This NN archive does not have required metadata for MapOutputParser. Skipping setup..."
         )
 
 
@@ -144,6 +157,8 @@ def setup_parser(parser: dai.ThreadedNode, nn_archive: dai.NNArchive, parser_nam
         setup_keypoint_parser(parser, extraParams)
     elif parser_name == "ClassificationParser":
         setup_classification_parser(parser, extraParams)
+    elif parser_name == "MapOutputParser":
+        setup_map_output_parser(parser, extraParams)
     elif parser_name == "XFeatParser":
         setup_xfeat_parser(parser, extraParams)
     elif parser_name == "YOLOExtendedParser":
