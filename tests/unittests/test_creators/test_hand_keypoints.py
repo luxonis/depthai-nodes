@@ -97,7 +97,7 @@ def test_confidence_below_thr():
     message = create_hand_keypoints_message(np.array([[1, 2, 3]]), 0.5, 0.8, 0.9)
 
     assert isinstance(message, HandKeypoints)
-    assert message.confidence == 0.8
+    assert message.objectness == 0.8
     assert message.handedness == 0.5
     assert message.keypoints == []
 
@@ -110,7 +110,7 @@ def test_confidence_above_thr():
     true_pt.y = 2
     true_pt.z = 3
 
-    assert message.confidence == 0.8
+    assert message.objectness == 0.8
     assert message.handedness == 0.5
     assert isinstance(message.keypoints, list)
     assert isinstance(message.keypoints[0], dai.Point3f)
