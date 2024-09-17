@@ -7,6 +7,7 @@ from depthai_nodes.ml.messages import (
     ImgDetectionsExtended,
     Keypoints,
     Lines,
+    Map2D,
     SegmentationMasks,
 )
 
@@ -76,3 +77,8 @@ def parse_fast_sam_message(message: SegmentationMasks):
     """Parses the fast sam message and returns the masks."""
     masks = message.masks
     return masks
+
+def parse_map_message(message: Map2D):
+    """Parses the map message and returns the map."""
+    map = message.map
+    return map
