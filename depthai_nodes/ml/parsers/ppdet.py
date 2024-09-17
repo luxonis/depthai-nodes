@@ -91,7 +91,6 @@ class PPTextDetectionParser(dai.node.ThreadedHostNode):
                 self.max_detections,
             )
 
-
             message = create_corner_detection_message(bboxes, scores)
             message.setTimestamp(output.getTimestamp())
 
