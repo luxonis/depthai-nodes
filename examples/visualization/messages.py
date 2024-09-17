@@ -1,9 +1,9 @@
 import depthai as dai
 
 from depthai_nodes.ml.messages import (
-    AgeGender,
     Classifications,
     Clusters,
+    CompositeMessage,
     ImgDetectionsExtended,
     Keypoints,
     Lines,
@@ -49,11 +49,11 @@ def parse_image_message(message: dai.ImgFrame):
     return image
 
 
-def parser_age_gender_message(message: AgeGender):
+def parser_age_gender_message(message: CompositeMessage):
     """Parses the age-gender message and return the age and scores for all genders."""
-
-    age = message.age
-    gender = message.gender
+    message = message.getData()
+    age = message["age"]
+    gender = message["gender"]
     gender_scores = gender.scores
     gender_classes = gender.classes
 
