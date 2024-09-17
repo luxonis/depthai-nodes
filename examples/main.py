@@ -1,5 +1,5 @@
 import depthai as dai
-from utils.arguments import initialize_argparser, parse_model_slug
+from utils.arguments import initialize_argparser, parse_fps_limit, parse_model_slug
 from utils.model import get_input_shape, get_model_from_hub, get_parser
 from utils.parser import setup_parser
 from visualization.visualize import visualize
@@ -9,6 +9,7 @@ arg_parser, args = initialize_argparser()
 
 # Parse the model slug
 model_slug, model_version_slug = parse_model_slug(args)
+fps_limit = parse_fps_limit(args)
 
 # Get the model from the HubAI
 nn_archive = get_model_from_hub(model_slug, model_version_slug)
@@ -27,7 +28,10 @@ with dai.Pipeline() as pipeline:
     # YOLO and MobileNet-SSD have native parsers in DAI - no need to create a separate parser
     if parser_name == "YOLO" or parser_name == "SSD":
         network = pipeline.create(dai.node.DetectionNetwork).build(
-            cam.requestOutput(input_shape, type=dai.ImgFrame.Type.BGR888p), nn_archive
+            cam.requestOutput(
+                input_shape, type=dai.ImgFrame.Type.BGR888p, fps=fps_limit
+            ),
+            nn_archive,
         )
         parser_queue = network.out.createOutputQueue()
     else:
@@ -45,13 +49,16 @@ with dai.Pipeline() as pipeline:
             manip = pipeline.create(dai.node.ImageManip)
             manip.initialConfig.setResize(input_shape)
             large_input_shape = (input_shape[0] * 4, input_shape[1] * 4)
-            cam.requestOutput(large_input_shape, type=image_type).link(manip.inputImage)
+            cam.requestOutput(large_input_shape, type=image_type, fps=fps_limit).link(
+                manip.inputImage
+            )
             network = pipeline.create(dai.node.NeuralNetwork).build(
                 manip.out, nn_archive
             )
         else:
             network = pipeline.create(dai.node.NeuralNetwork).build(
-                cam.requestOutput(input_shape, type=image_type), nn_archive
+                cam.requestOutput(input_shape, type=image_type, fps=fps_limit),
+                nn_archive,
             )
 
         parser = pipeline.create(parser_class)
