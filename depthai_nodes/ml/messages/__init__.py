@@ -8,7 +8,6 @@ from .img_detections import (
 from .keypoints import HandKeypoints, Keypoints
 from .lines import Line, Lines
 from .map import Map2D
-from .misc import AgeGender
 from .segmentation import SegmentationMasks
 
 __all__ = [
@@ -20,7 +19,6 @@ __all__ = [
     "Lines",
     "Classifications",
     "SegmentationMasks",
-    "AgeGender",
     "Map2D",
     "Clusters",
     "Cluster",
