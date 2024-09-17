@@ -87,6 +87,9 @@ jobs:
         python-version: ${{ matrix.python-version }}
         cache: pip
 
+    - name: Upgrade pip
+      run: python -m pip install --upgrade pip
+
     - name: Install depthai
       run: pip install --extra-index-url https://artifacts.luxonis.com/artifactory/luxonis-python-release-local/ depthai==3.0.0a2
 
