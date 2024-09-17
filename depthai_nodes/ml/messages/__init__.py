@@ -2,6 +2,7 @@ from .classification import Classifications
 from .clusters import Cluster, Clusters
 from .composite import CompositeMessage
 from .img_detections import (
+    CornerDetections,
     ImgDetectionExtended,
     ImgDetectionsExtended,
 )
@@ -23,4 +24,5 @@ __all__ = [
     "Clusters",
     "Cluster",
     "CompositeMessage",
+    "CornerDetections",
 ]

@@ -1,7 +1,7 @@
 import depthai as dai
 
-from ..messages.creators import create_detection_message
-from .utils import corners2xyxy, parse_paddle_detection_outputs
+from ..messages.creators import create_corner_detection_message
+from .utils import parse_paddle_detection_outputs
 
 
 class PPTextDetectionParser(dai.node.ThreadedHostNode):
@@ -91,9 +91,7 @@ class PPTextDetectionParser(dai.node.ThreadedHostNode):
                 self.max_detections,
             )
 
-            bboxes = corners2xyxy(bboxes)
-
-            message = create_detection_message(bboxes, scores)
+            message = create_corner_detection_message(bboxes, scores)
             message.setTimestamp(output.getTimestamp())
 
             self.out.send(message)
