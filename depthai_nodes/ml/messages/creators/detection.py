@@ -4,11 +4,13 @@ import depthai as dai
 import numpy as np
 
 from ...messages import (
+    CornerDetections,
     ImgDetectionExtended,
     ImgDetectionsExtended,
     Line,
     Lines,
 )
+from .keypoints import create_keypoints_message
 
 
 def create_detection_message(
@@ -233,3 +235,55 @@ def create_line_detection_message(lines: np.ndarray, scores: np.ndarray):
     lines_msg = Lines()
     lines_msg.lines = line_detections
     return lines_msg
+
+
+def create_corner_detection_message(
+    bboxes: np.ndarray,
+    scores: np.ndarray,
+    labels: List[int] = None,
+) -> CornerDetections:
+    """Create a DepthAI message for an object detection.
+
+    @param bbox: Bounding boxes of detected objects in corner format of shape (N,4,2) meaning [...,[[x1, y1], [x2, y2], [x3, y3], [x4, y4]],...].
+    @type bbox: np.ndarray
+    @param scores: Confidence scores of detected objects of shape (N,).
+    @type scores: np.ndarray
+    @param labels: Labels of detected objects of shape (N,).
+    @type labels: List[int]
+
+    @return: CornerDetections message containing a list of corners, a list of labels, and a list of scores.
+    @rtype: CornerDetections
+    """
+    if bboxes.shape[0] == 0:
+        return CornerDetections()
+
+    if bboxes.shape[1] != 4 or bboxes.shape[2] != 2:
+        raise ValueError(
+            f"Bounding boxes should be of shape (N,4,2), got {bboxes.shape}."
+        )
+
+    if bboxes.shape[0] != len(scores):
+        raise ValueError(
+            f"Number of bounding boxes and scores should have the same length, got {len(scores)} scores and {bboxes.shape[0]} bounding boxes."
+        )
+
+    if labels is not None:
+        if len(labels) != len(scores):
+            raise ValueError(
+                f"Number of labels and scores should have the same length, got {len(labels)} labels and {len(scores)} scores."
+            )
+
+    corner_boxes = []
+
+    for bbox in bboxes:
+        corner_box = create_keypoints_message(bbox)
+        corner_boxes.append(corner_box)
+
+    message = CornerDetections()
+    if labels is not None:
+        message.labels = labels
+
+    message.detections = corner_boxes
+    message.scores = list(scores)
+
+    return message
