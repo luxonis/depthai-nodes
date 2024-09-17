@@ -5,3 +5,4 @@ pytest-cov>=4.1.0
 pytest-subtests>=0.12.1
 pytest-md>=0.2.0
 coverage-badge>=1.1.0
+identify==2.6.0
