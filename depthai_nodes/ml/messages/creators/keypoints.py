@@ -3,7 +3,7 @@ from typing import List, Union
 import depthai as dai
 import numpy as np
 
-from ...messages import HandKeypoints, Keypoints
+from ...messages import HandKeypoints, Keypoints, KeypointsWithObjectness
 
 
 def create_hand_keypoints_message(
@@ -71,7 +71,7 @@ def create_hand_keypoints_message(
 
     hand_keypoints_msg = HandKeypoints()
     hand_keypoints_msg.handedness = handedness
-    hand_keypoints_msg.confidence = confidence
+    hand_keypoints_msg.objectness = confidence
     points = []
     if confidence >= confidence_threshold:
         for i in range(hand_keypoints.shape[0]):
@@ -89,7 +89,9 @@ def create_keypoints_message(
     keypoints: Union[np.ndarray, List[List[float]]],
     scores: Union[np.ndarray, List[float]] = None,
     confidence_threshold: float = None,
-) -> Keypoints:
+    objectness: float = None,
+    objectness_threshold: float = None,
+) -> Union[Keypoints, KeypointsWithObjectness]:
     """Create a DepthAI message for the keypoints.
 
     @param keypoints: Detected 2D or 3D keypoints of shape (N,2 or 3) meaning [...,[x, y],...] or [...,[x, y, z],...].
@@ -170,6 +172,26 @@ def create_keypoints_message(
                         f"Keypoints inner list should contain only float, got {type(coord)}."
                     )
 
+    if objectness is not None:
+        if not isinstance(objectness, float):
+            raise ValueError(f"Objectness should be a float, got {type(objectness)}")
+        if objectness < 0 or objectness > 1:
+            raise ValueError(f"Objectness should be between 0 and 1, got {objectness}")
+        if objectness_threshold is None:
+            raise ValueError("Objectness threshold should be defined.")
+
+    if objectness_threshold is not None:
+        if not isinstance(objectness_threshold, float):
+            raise ValueError(
+                f"Objectness threshold should be a float, got {type(objectness_threshold)}"
+            )
+        if objectness_threshold < 0 or objectness_threshold > 1:
+            raise ValueError(
+                f"Objectness threshold should be between 0 and 1, got {objectness_threshold}"
+            )
+        if objectness is None:
+            raise ValueError("Objectness should be defined.")
+
     keypoints = np.array(keypoints)
     if scores is not None:
         scores = np.array(scores)
@@ -183,7 +205,16 @@ def create_keypoints_message(
         use_3d = keypoints.shape[1] == 3
 
     keypoints_msg = Keypoints()
+    if objectness is not None:
+        keypoints_msg = KeypointsWithObjectness()
+        keypoints_msg.objectness = objectness
+
     points = []
+    if objectness is not None:
+        if objectness < objectness_threshold:
+            keypoints_msg.keypoints = points
+            return keypoints_msg
+
     for i, keypoint in enumerate(keypoints):
         if scores is not None:
             if scores[i] < confidence_threshold:
@@ -196,3 +227,47 @@ def create_keypoints_message(
 
     keypoints_msg.keypoints = points
     return keypoints_msg
+
+
+# def create_keypoints_with_objectness_message(keypoints: np.ndarray, confidence: float, confidence_threshold: float) -> KeypointsWithObjectness:
+#     if not isinstance(keypoints, np.ndarray):
+#         raise ValueError(f"Keypoints should be numpy array, got {type(keypoints)}.")
+
+#     use_3d = False
+
+#     if len(keypoints) != 0:
+#         dimension = len(keypoints[0])
+#         if dimension != 2 and dimension != 3:
+#             raise ValueError(f"All keypoints should be of dimension 2 or 3, got dimension {dimension}.")
+#         for keypoint in keypoints:
+#             if len(keypoint) != dimension:
+#                 raise ValueError("All keypoints have to be of same dimension e.g. [x, y] or [x, y, z], got mixed inner dimensions.")
+#             for coord in keypoint:
+#                 if not isinstance(coord, (float, np.floating)):
+#                     raise ValueError(f"Keypoints inner list should contain only float, got {type(coord)}.")
+#         if dimension == 3:
+#             use_3d = True
+
+#     if not isinstance(confidence, float):
+#         raise ValueError(f"Confidence should be float, got {type(confidence)}.")
+#     if confidence < 0 or confidence > 1:
+#         raise ValueError(f"Confidence should be between 0 and 1, got confidence {confidence}.")
+
+#     if not isinstance(confidence_threshold, float):
+#         raise ValueError(f"Confidence threshold should be float, got {type(confidence_threshold)}.")
+#     if confidence_threshold < 0 or confidence_threshold > 1:
+#         raise ValueError(f"Confidence threshold should be between 0 and 1, got confidence threshold {confidence_threshold}.")
+
+#     keypoints_msg = KeypointsWithObjectness()
+#     keypoints_msg.objectness = confidence
+#     points = []
+#     if confidence >= confidence_threshold:
+#         for i in range(keypoints.shape[0]):
+#             pt = dai.Point3f()
+#             pt.x = keypoints[i][0]
+#             pt.y = keypoints[i][1]
+#             pt.z = keypoints[i][2] if use_3d else 0
+#             points.append(pt)
+#     keypoints_msg.keypoints = points
+
+#     return keypoints_msg

@@ -43,58 +43,76 @@ class Keypoints(dai.Buffer):
         self._keypoints = value
 
 
-class HandKeypoints(Keypoints):
+class KeypointsWithObjectness(Keypoints):
+    """KeypointsWithObjectness class for storing keypoints with objectness score.
+
+    Attributes
+    ----------
+    keypoints: List[dai.Point3f]
+        List of dai.Point3f, each representing a keypoint.
+    objectness: float
+        Objectness score indicating the presence of an object in image.
+    """
+
+    def __init__(self):
+        """Initializes the KeypointsWithObjectness object."""
+        Keypoints.__init__(self)
+        self._objectness: float = 0.0
+
+    @property
+    def objectness(self) -> float:
+        """Returns the objectness.
+
+        @return: objectness score indicating the presence of an object in image.
+        @rtype: float
+        """
+        return self._objectness
+
+    @objectness.setter
+    def objectness(self, value: float):
+        """Sets the objectness score.
+
+        @param value: objectness score indicating the presence of an object in image.
+        @type value: float
+        @raise TypeError: If the objectness is not a float.
+        """
+        if not isinstance(value, float):
+            raise TypeError("objectness must be a float.")
+        self._objectness = value
+
+
+class HandKeypoints(KeypointsWithObjectness):
     """HandKeypoints class for storing hand keypoints.
 
     Attributes
     ----------
-    confidence: float
-        Confidence of the hand keypoints.
-    handdedness: float
-        Handedness of the hand keypoints. 0.0 for left hand and 1.0 for right hand.
+    keypoints: List[dai.Point3f]
+        List of dai.Point3f, each representing a keypoint.
+    objectness: float
+        Objectness score indicating the presence of an object in image.
+    handedness: float
+        Handedness of the hand. 0.0 for left hand and 1.0 for right hand.
     """
 
     def __init__(self):
         """Initializes the HandKeypoints object."""
-        Keypoints.__init__(self)
-        self._confidence: float = 0.0
+        KeypointsWithObjectness.__init__(self)
         self._handedness: float = 0.0
 
     @property
-    def confidence(self) -> float:
-        """Returns the confidence of the hand keypoints.
-
-        @return: Confidence of the hand keypoints.
-        @rtype: float
-        """
-        return self._confidence
-
-    @confidence.setter
-    def confidence(self, value: float):
-        """Sets the confidence of the hand keypoints.
-
-        @param value: Confidence of the hand keypoints.
-        @type value: float
-        @raise TypeError: If the confidence is not a float.
-        """
-        if not isinstance(value, float):
-            raise TypeError("confidence must be a float.")
-        self._confidence = value
-
-    @property
     def handedness(self) -> float:
-        """Returns the handedness of the hand keypoints.
+        """Returns the handedness of the hand.
 
-        @return: Handedness of the hand keypoints.
+        @return: Handedness of the hand.
         @rtype: float
         """
         return self._handedness
 
     @handedness.setter
     def handedness(self, value: float):
-        """Sets the handedness of the hand keypoints.
+        """Sets the handedness of the hand.
 
-        @param value: Handedness of the hand keypoints.
+        @param value: Handedness of the hand.
         @type value: float
         @raise TypeError: If the handedness is not a float.
         """

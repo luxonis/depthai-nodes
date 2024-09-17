@@ -5,7 +5,7 @@ from .img_detections import (
     ImgDetectionExtended,
     ImgDetectionsExtended,
 )
-from .keypoints import HandKeypoints, Keypoints
+from .keypoints import HandKeypoints, Keypoints, KeypointsWithObjectness
 from .lines import Line, Lines
 from .map import Map2D
 from .misc import AgeGender
@@ -15,6 +15,7 @@ __all__ = [
     "ImgDetectionExtended",
     "ImgDetectionsExtended",
     "HandKeypoints",
+    "KeypointsWithObjectness",
     "Keypoints",
     "Line",
     "Lines",
