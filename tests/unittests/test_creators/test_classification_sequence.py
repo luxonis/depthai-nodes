@@ -3,7 +3,7 @@ import re
 import numpy as np
 import pytest
 
-from depthai_nodes.ml.messages.creators.classification_sequence import (
+from depthai_nodes.ml.messages.creators import (
     create_classification_sequence_message,
 )
 
