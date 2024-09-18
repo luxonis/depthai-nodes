@@ -23,16 +23,17 @@ if parser_name == "XFeatParser":
 
 # Create the pipeline
 with dai.Pipeline() as pipeline:
-    cam = pipeline.create(dai.node.Camera).build()
+    cam = pipeline.create(dai.node.ColorCamera)
+    cam.setPreviewSize(input_shape)
+    cam.setInterleaved(False)
+    cam.setFps(fps_limit)
 
     # YOLO and MobileNet-SSD have native parsers in DAI - no need to create a separate parser
     if parser_name == "YOLO" or parser_name == "SSD":
-        network = pipeline.create(dai.node.DetectionNetwork).build(
-            cam.requestOutput(
-                input_shape, type=dai.ImgFrame.Type.BGR888p, fps=fps_limit
-            ),
-            nn_archive,
-        )
+        network = pipeline.create(dai.node.DetectionNetwork)
+        network.setNNArchive(nn_archive)
+        cam.preview.link(network.input)
+
         parser_queue = network.out.createOutputQueue()
     else:
         image_type = dai.ImgFrame.Type.BGR888p
@@ -49,17 +50,16 @@ with dai.Pipeline() as pipeline:
             manip = pipeline.create(dai.node.ImageManip)
             manip.initialConfig.setResize(input_shape)
             large_input_shape = (input_shape[0] * 4, input_shape[1] * 4)
-            cam.requestOutput(large_input_shape, type=image_type, fps=fps_limit).link(
-                manip.inputImage
-            )
+
+            cam.setPreviewSize(large_input_shape)
+            cam.preview.link(manip.inputImage)
             network = pipeline.create(dai.node.NeuralNetwork).build(
                 manip.out, nn_archive
             )
         else:
-            network = pipeline.create(dai.node.NeuralNetwork).build(
-                cam.requestOutput(input_shape, type=image_type, fps=fps_limit),
-                nn_archive,
-            )
+            network = pipeline.create(dai.node.NeuralNetwork)
+            network.setNNArchive(nn_archive)
+            cam.preview.link(network.input)
 
         parser = pipeline.create(parser_class)
         setup_parser(parser, nn_archive, parser_name)
