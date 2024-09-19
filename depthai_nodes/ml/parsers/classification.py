@@ -31,20 +31,61 @@ class ClassificationParser(dai.node.ThreadedHostNode):
          An object with attributes `classes` and `scores`. `classes` is a list of classes, sorted in descending order of scores. `scores` is a list of corresponding scores.
     """
 
-    def __init__(self, classes: List[str] = None, is_softmax: bool = True):
+    def __init__(
+        self, archive_heads: list, head_name: str = "", is_softmax: bool = True
+    ):
         """Initializes the ClassificationParser node.
 
-        @param classes: List of class names to be used for linking with their respective
-            scores.
-        @param is_softmax: If False, the scores are converted to probabilities using
-            softmax function.
+        Attributes
+        ----------
+        archive_metadata : list
+            List of all archive head objects: [<depthai.nn_archive.v1.Head object>, ...]
+        head_name : str
+            If the list has multiple heads, this will specify which head to use. will throw an error if archive heads is longer then 1 and no head name is provided
         """
 
         dai.node.ThreadedHostNode.__init__(self)
         self.out = self.createOutput()
         self.input = self.createInput()
-        self.classes = classes if classes is not None else []
-        self.n_classes = len(self.classes)
+
+        if len(archive_heads) == 0:
+            raise ValueError("No heads parsed from archive")
+
+        if len(archive_heads) > 1 and head_name == "":
+            raise ValueError("Multiple heads detected, please specify head name")
+
+        self.head = archive_heads[0]
+        if head_name != "":
+            head_candidates = [
+                head
+                for head in archive_heads
+                if head.metadata.extraParams["name"] == head_name
+            ]  # possibly integrate name into dai such that we can call head.name
+            if len(head_candidates) == 0:
+                raise ValueError("Head name not found in archive")
+            if len(head_candidates) > 1:
+                raise ValueError(
+                    "Multiple heads with the same name found in archive, please specify a unique head name"
+                )
+            self.head = head_candidates[0]
+
+        if (
+            self.head.parser != "ClassificationParser"
+        ):  # Maybe we change to a more generic name like 'classification'
+            raise ValueError(
+                "Head is not a classification head, please correct the nn_archive"
+            )
+
+        layers = self.head.outputs
+        if len(layers) != 1:
+            raise ValueError(
+                "Only one output layer supported for classification, please correct nn_archive/ model"
+            )
+        self.output_layer_name = layers[0]
+
+        self.classes = self.head.metadata.classes
+        self.n_classes = self.head.metadata.nClasses
+
         self.is_softmax = is_softmax
 
     def setClasses(self, classes: List[str]):
@@ -71,16 +112,7 @@ class ClassificationParser(dai.node.ThreadedHostNode):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            output_layer_names = output.getAllLayerNames()
-            if len(output_layer_names) != 1:
-                raise ValueError(
-                    f"Expected 1 output layer, got {len(output_layer_names)}."
-                )
-
-            if self.n_classes == 0:
-                raise ValueError("Classes must be provided for classification.")
-
-            scores = output.getTensor(output_layer_names[0], dequantize=True).astype(
+            scores = output.getTensor(self.output_layer_name, dequantize=True).astype(
                 np.float32
             )
             scores = np.array(scores).flatten()
