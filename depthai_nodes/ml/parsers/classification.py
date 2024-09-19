@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List, Union
 
 import depthai as dai
 import numpy as np
@@ -7,9 +7,10 @@ from ..messages.creators import (
     create_classification_message,
     create_multi_classification_message,
 )
+from .parser import Parser
 
 
-class ClassificationParser(dai.node.ThreadedHostNode):
+class ClassificationParser(Parser):
     """Postprocessing logic for Classification model.
 
     Attributes
@@ -31,9 +32,7 @@ class ClassificationParser(dai.node.ThreadedHostNode):
          An object with attributes `classes` and `scores`. `classes` is a list of classes, sorted in descending order of scores. `scores` is a list of corresponding scores.
     """
 
-    def __init__(
-        self, archive_heads: list, head_name: str = "", is_softmax: bool = True
-    ):
+    def __init__(self):
         """Initializes the ClassificationParser node.
 
         Attributes
@@ -43,50 +42,47 @@ class ClassificationParser(dai.node.ThreadedHostNode):
         head_name : str
             If the list has multiple heads, this will specify which head to use. will throw an error if archive heads is longer then 1 and no head name is provided
         """
+        super().__init__()
+        self.output_layer_name: str = ""
+        self.classes: List = None
+        self.n_classes: int = 0
+        self.is_softmax: bool = True
 
-        dai.node.ThreadedHostNode.__init__(self)
-        self.out = self.createOutput()
-        self.input = self.createInput()
+    def build(
+        self,
+        head_metadata: Union[List, Dict],
+        head_name: str = "",
+        is_softmax: bool = True,
+    ):
+        super().build(head_metadata, head_name)
 
-        if len(archive_heads) == 0:
-            raise ValueError("No heads parsed from archive")
+        ## should we add or not?
+        # if (self.head_configs["parser"] != "ClassificationParser"):
+        #     raise ValueError("Head is not a classification head, please correct the nn_archive")
 
-        if len(archive_heads) > 1 and head_name == "":
-            raise ValueError("Multiple heads detected, please specify head name")
-
-        self.head = archive_heads[0]
-        if head_name != "":
-            head_candidates = [
-                head
-                for head in archive_heads
-                if head.metadata.extraParams["name"] == head_name
-            ]  # possibly integrate name into dai such that we can call head.name
-            if len(head_candidates) == 0:
-                raise ValueError("Head name not found in archive")
-            if len(head_candidates) > 1:
-                raise ValueError(
-                    "Multiple heads with the same name found in archive, please specify a unique head name"
-                )
-            self.head = head_candidates[0]
-
-        if (
-            self.head.parser != "ClassificationParser"
-        ):  # Maybe we change to a more generic name like 'classification'
-            raise ValueError(
-                "Head is not a classification head, please correct the nn_archive"
-            )
-
-        layers = self.head.outputs
-        if len(layers) != 1:
+        output_layers = self.head_configs["outputs"]
+        if len(output_layers) != 1:
             raise ValueError(
                 "Only one output layer supported for classification, please correct nn_archive/ model"
             )
-        self.output_layer_name = layers[0]
+        self.output_layer_name = output_layers[0]
 
-        self.classes = self.head.metadata.classes
-        self.n_classes = self.head.metadata.nClasses
+        try:
+            self.classes = self.head_configs["classes"]
+        except KeyError:
+            print(
+                "No classes provided in nn_archive metadata. Please provide class names in the nn_archive"
+            )
+
+        try:
+            self.n_classes = self.head_configs["n_classes"]
+        except KeyError:
+            print(
+                "No n_classes provided in nn_archive metadata. Please provide number of classes in the nn_archive"
+            )
 
         self.is_softmax = is_softmax
+        return self
 
     def setClasses(self, classes: List[str]):
         """Sets the class names for the classification model.
