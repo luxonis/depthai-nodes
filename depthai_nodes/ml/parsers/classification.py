@@ -21,10 +21,10 @@ class ClassificationParser(Parser):
         Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     classes : List[str]
         List of class names to be used for linking with their respective scores. Expected to be in the same order as Neural Network's output. If not provided, the message will only return sorted scores.
-    is_softmax : bool = True
-        If False, the scores are converted to probabilities using softmax function.
     n_classes : int = len(classes)
         Number of provided classes. This variable is set automatically based on provided classes.
+    is_softmax : bool = True
+        If False, the scores are converted to probabilities using softmax function.
 
     Output Message/s
     ----------------
@@ -37,10 +37,16 @@ class ClassificationParser(Parser):
 
         Attributes
         ----------
-        archive_metadata : list
-            List of all archive head objects: [<depthai.nn_archive.v1.Head object>, ...]
-        head_name : str
-            If the list has multiple heads, this will specify which head to use. will throw an error if archive heads is longer then 1 and no head name is provided
+        head_config : Dict
+            The head configuration for the parser.
+        output_layer_name : str
+            The name of the output layer.
+        classes : List
+            List of class names to be used for linking with their respective scores.
+        n_classes : int
+            Number of provided classes.
+        is_softmax : bool
+            If False, the scores are converted to probabilities using the softmax function.
         """
         super().__init__()
         self.output_layer_name: str = ""
@@ -50,35 +56,31 @@ class ClassificationParser(Parser):
 
     def build(
         self,
-        head_metadata: Union[List, Dict],
+        heads: Union[List, Dict],
         head_name: str = "",
         is_softmax: bool = True,
     ):
-        super().build(head_metadata, head_name)
+        super().build(heads, head_name)
 
-        ## should we add or not?
-        # if (self.head_configs["parser"] != "ClassificationParser"):
-        #     raise ValueError("Head is not a classification head, please correct the nn_archive")
-
-        output_layers = self.head_configs["outputs"]
+        output_layers = self.head_config["outputs"]
         if len(output_layers) != 1:
             raise ValueError(
-                "Only one output layer supported for classification, please correct nn_archive/ model"
+                f"Only one output layer supported for Classification, got {output_layers} layers."
             )
         self.output_layer_name = output_layers[0]
 
         try:
-            self.classes = self.head_configs["classes"]
+            self.classes = self.head_config["classes"]
         except KeyError:
             print(
-                "No classes provided in nn_archive metadata. Please provide class names in the nn_archive"
+                "No classes provided in nn_archive metadata. Please provide 'classes' in the nn_archive."
             )
 
         try:
-            self.n_classes = self.head_configs["n_classes"]
+            self.n_classes = self.head_config["n_classes"]
         except KeyError:
             print(
-                "No n_classes provided in nn_archive metadata. Please provide number of classes in the nn_archive"
+                "No n_classes provided in nn_archive metadata. Please provide number of classes in the nn_archive."
             )
 
         self.is_softmax = is_softmax
@@ -100,6 +102,14 @@ class ClassificationParser(Parser):
             using softmax function.
         """
         self.is_softmax = is_softmax
+
+    def setOutputLayerName(self, output_layer_name: str):
+        """Sets the name of the output layer.
+
+        @param output_layer_name: The name of the output layer.
+        @type output_layer_name: str
+        """
+        self.output_layer_name = output_layer_name
 
     def run(self):
         while self.isRunning():
