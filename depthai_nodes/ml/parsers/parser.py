@@ -102,7 +102,7 @@ class Parser(dai.node.ThreadedHostNode):
 
         else:
             raise ValueError(
-                f"Provided heads must be of type Dict or List[Dict] not {type(heads)}."
+                f"Provided heads must be of type Dict or List not {type(heads)}."
             )
 
         return self
