@@ -58,7 +58,6 @@ class ClassificationParser(Parser):
         self,
         heads: Union[List, Dict],
         head_name: str = "",
-        is_softmax: bool = True,
     ):
         super().build(heads, head_name)
 
@@ -68,22 +67,10 @@ class ClassificationParser(Parser):
                 f"Only one output layer supported for Classification, got {output_layers} layers."
             )
         self.output_layer_name = output_layers[0]
+        self.classes = self.head_config["classes"]
+        self.n_classes = self.head_config["n_classes"]
+        self.is_softmax = self.head_config["is_softmax"]
 
-        try:
-            self.classes = self.head_config["classes"]
-        except KeyError:
-            print(
-                "No classes provided in nn_archive metadata. Please provide 'classes' in the nn_archive."
-            )
-
-        try:
-            self.n_classes = self.head_config["n_classes"]
-        except KeyError:
-            print(
-                "No n_classes provided in nn_archive metadata. Please provide number of classes in the nn_archive."
-            )
-
-        self.is_softmax = is_softmax
         return self
 
     def setClasses(self, classes: List[str]):

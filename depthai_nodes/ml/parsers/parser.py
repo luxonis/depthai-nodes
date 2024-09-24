@@ -49,7 +49,7 @@ class Parser(dai.node.ThreadedHostNode):
                     head = [head for head in heads if head.parser == current_parser][0]
                 else:
                     raise ValueError(
-                        "Multiple heads detected, please specify a head name."
+                        f"Multiple heads with parser= {current_parser} detected, please specify a head name."
                     )
 
             if head_name != "":
