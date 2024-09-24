@@ -9,6 +9,7 @@ from .map_output import MapOutputParser
 from .mediapipe_hand_landmarker import MPHandLandmarkParser
 from .mediapipe_palm_detection import MPPalmDetectionParser
 from .mlsd import MLSDParser
+from .parser import Parser
 from .ppdet import PPTextDetectionParser
 from .ppocr import PaddleOCRParser
 from .scrfd import SCRFDParser
@@ -41,4 +42,5 @@ __all__ = [
     "PaddleOCRParser",
     "LaneDetectionParser",
     "MultiClassificationParser",
+    "Parser",
 ]

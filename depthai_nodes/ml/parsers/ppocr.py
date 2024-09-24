@@ -4,10 +4,10 @@ import depthai as dai
 import numpy as np
 
 from ..messages.creators import create_classification_sequence_message
-from .classification import ClassificationParser
+from .classification import Parser
 
 
-class PaddleOCRParser(ClassificationParser):
+class PaddleOCRParser(Parser):
     """Postprocessing logic for PaddleOCR text recognition model.
 
     Attributes

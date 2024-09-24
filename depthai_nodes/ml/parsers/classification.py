@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List, Union
 
 import depthai as dai
 import numpy as np
@@ -7,9 +7,10 @@ from ..messages.creators import (
     create_classification_message,
     create_multi_classification_message,
 )
+from .parser import Parser
 
 
-class ClassificationParser(dai.node.ThreadedHostNode):
+class ClassificationParser(Parser):
     """Postprocessing logic for Classification model.
 
     Attributes
@@ -20,10 +21,10 @@ class ClassificationParser(dai.node.ThreadedHostNode):
         Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     classes : List[str]
         List of class names to be used for linking with their respective scores. Expected to be in the same order as Neural Network's output. If not provided, the message will only return sorted scores.
-    is_softmax : bool = True
-        If False, the scores are converted to probabilities using softmax function.
     n_classes : int = len(classes)
         Number of provided classes. This variable is set automatically based on provided classes.
+    is_softmax : bool = True
+        If False, the scores are converted to probabilities using softmax function.
 
     Output Message/s
     ----------------
@@ -31,21 +32,46 @@ class ClassificationParser(dai.node.ThreadedHostNode):
          An object with attributes `classes` and `scores`. `classes` is a list of classes, sorted in descending order of scores. `scores` is a list of corresponding scores.
     """
 
-    def __init__(self, classes: List[str] = None, is_softmax: bool = True):
+    def __init__(self):
         """Initializes the ClassificationParser node.
 
-        @param classes: List of class names to be used for linking with their respective
-            scores.
-        @param is_softmax: If False, the scores are converted to probabilities using
-            softmax function.
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+        output_layer_name : str
+            The name of the output layer.
+        classes : List
+            List of class names to be used for linking with their respective scores.
+        n_classes : int
+            Number of provided classes.
+        is_softmax : bool
+            If False, the scores are converted to probabilities using the softmax function.
         """
+        super().__init__()
+        self.output_layer_name: str = ""
+        self.classes: List = None
+        self.n_classes: int = 0
+        self.is_softmax: bool = True
 
-        dai.node.ThreadedHostNode.__init__(self)
-        self.out = self.createOutput()
-        self.input = self.createInput()
-        self.classes = classes if classes is not None else []
-        self.n_classes = len(self.classes)
-        self.is_softmax = is_softmax
+    def build(
+        self,
+        heads: Union[List, Dict],
+        head_name: str = "",
+    ):
+        super().build(heads, head_name)
+
+        output_layers = self.head_config["outputs"]
+        if len(output_layers) != 1:
+            raise ValueError(
+                f"Only one output layer supported for Classification, got {output_layers} layers."
+            )
+        self.output_layer_name = output_layers[0]
+        self.classes = self.head_config["classes"]
+        self.n_classes = self.head_config["n_classes"]
+        self.is_softmax = self.head_config["is_softmax"]
+
+        return self
 
     def setClasses(self, classes: List[str]):
         """Sets the class names for the classification model.
@@ -64,6 +90,14 @@ class ClassificationParser(dai.node.ThreadedHostNode):
         """
         self.is_softmax = is_softmax
 
+    def setOutputLayerName(self, output_layer_name: str):
+        """Sets the name of the output layer.
+
+        @param output_layer_name: The name of the output layer.
+        @type output_layer_name: str
+        """
+        self.output_layer_name = output_layer_name
+
     def run(self):
         while self.isRunning():
             try:
@@ -71,16 +105,7 @@ class ClassificationParser(dai.node.ThreadedHostNode):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            output_layer_names = output.getAllLayerNames()
-            if len(output_layer_names) != 1:
-                raise ValueError(
-                    f"Expected 1 output layer, got {len(output_layer_names)}."
-                )
-
-            if self.n_classes == 0:
-                raise ValueError("Classes must be provided for classification.")
-
-            scores = output.getTensor(output_layer_names[0], dequantize=True).astype(
+            scores = output.getTensor(self.output_layer_name, dequantize=True).astype(
                 np.float32
             )
             scores = np.array(scores).flatten()
