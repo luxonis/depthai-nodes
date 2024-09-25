@@ -6,8 +6,8 @@ from ...messages import Prediction, Predictions
 def create_regression_message(predictions: List[float]) -> Predictions:
     """Create a DepthAI message for prediction models.
 
-    @param prediction: Predicted value(s).
-    @type prediction: List[float]
+    @param predictions: Predicted value(s).
+    @type predictions: List[float]
     @return: Predictions message containing the predicted value(s).
     @rtype: Predictions
     @raise ValueError: If predictions is not a list.
