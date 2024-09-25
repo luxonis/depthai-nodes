@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Optional
 
 import depthai as dai
 
@@ -27,13 +27,13 @@ class Parser(dai.node.ThreadedHostNode):
 
         self.head_config: Dict = {}
 
-    def build(self, heads: Union[List, Dict], head_name: str = None):
+    def build(self, nn_archive: dai.NNArchive, head_name: str = None):
         """Sets the head configuration for the specified head.
 
         Attributes
         ----------
-        heads : Union[List, Dict]
-            List of all head objects of the model: [<depthai.nn_archive.v1.Head object>, ...] or a dictionary containing the head configuration.
+        nn_archive: dai.NNArchive
+            NN Archive of the model.
         head_name : str
             The name of the head to use. If multiple heads are available, the name must be specified.
 
@@ -43,67 +43,70 @@ class Parser(dai.node.ThreadedHostNode):
             Returns the parser object with the head configuration set.
         """
 
-        if isinstance(heads, list):
-            if len(heads) == 0:
-                raise ValueError("No heads available in the nn_archive.")
-            elif len(heads) == 1:
-                head = heads[0]
-            else:
-                if head_name:
-                    head_candidates = [
-                        head
-                        for head in heads
-                        if head.metadata.extraParams["name"] == head_name
-                    ]
-                    if len(head_candidates) == 0:
-                        raise ValueError(
-                            f"No head with name {head_name} specified in nn_archive."
-                        )
-                    if len(head_candidates) > 1:
-                        raise ValueError(
-                            f"Multiple heads with name {head_name} found in nn_archive, please specify a unique name."
-                        )
-                    head = head_candidates[0]
-                else:
-                    current_parser = self.__class__.__name__
-                    parser_names_in_archive = [head.parser for head in heads]
-                    num_matches = parser_names_in_archive.count(current_parser)
-                    if num_matches == 0:
-                        raise ValueError(
-                            f"No heads available for {current_parser} in the nn_archive."
-                        )
-                    elif num_matches == 1:
-                        head = [
-                            head for head in heads if head.parser == current_parser
-                        ][0]
-                    else:
-                        raise ValueError(
-                            f"Multiple heads with parser= {current_parser} detected, please specify a head name."
-                        )
-
-            parser_name = head.parser
-            metadata = head.metadata
-            outputs = head.outputs
-
-            if outputs is None:
-                raise ValueError(
-                    f"{head_name} head does not have any outputs specified."
-                )
-
-            head_dictionary = {}
-            head_dictionary["parser"] = parser_name
-            head_dictionary["outputs"] = outputs
-            if metadata is not None:
-                head_dictionary.update(metadata.extraParams)
-            self.head_config = head_dictionary
-
-        elif isinstance(heads, dict):
-            self.head_config = heads
-
-        else:
+        if not isinstance(nn_archive, dai.NNArchive):
             raise ValueError(
-                f"Provided heads must be of type Dict or List not {type(heads)}."
+                f"Provided heads must be of type depthai.NNArchive not {type(nn_archive)}."
             )
+
+        try:
+            heads = nn_archive.getConfig().getConfigV1().model.heads
+        except:
+            raise ValueError(
+                "Only the NN Archives of version V1 are supported."
+            )
+
+        if len(heads) == 0:
+            raise ValueError("No heads defined in the NN Archive.")
+        elif len(heads) == 1:
+            head = heads[0]
+        else:
+            if head_name:
+                head_candidates = [
+                    head
+                    for head in heads
+                    if head.metadata.extraParams["name"] == head_name
+                ]
+                if len(head_candidates) == 0:
+                    raise ValueError(
+                        f"No head with name {head_name} specified in NN Archive."
+                    )
+                if len(head_candidates) > 1:
+                    raise ValueError(
+                        f"Multiple heads with name {head_name} found in NN Archive, please specify a unique name."
+                    )
+                head = head_candidates[0]
+            else:
+                current_parser = self.__class__.__name__
+                parser_names_in_archive = [head.parser for head in heads]
+                num_matches = parser_names_in_archive.count(current_parser)
+                if num_matches == 0:
+                    raise ValueError(
+                        f"No heads available for {current_parser} in the NN Archive."
+                    )
+                elif num_matches == 1:
+                    head = [
+                        head for head in heads if head.parser == current_parser
+                    ][0]
+                else:
+                    raise ValueError(
+                        f"Multiple heads with parser= {current_parser} detected, please specify a head name."
+                    )
+
+        parser_name = head.parser
+        metadata = head.metadata
+        outputs = head.outputs
+
+        if outputs is None:
+            raise ValueError(
+                f"{head_name} head does not have any outputs specified."
+            )
+
+        head_dictionary = {}
+        head_dictionary["parser"] = parser_name
+        head_dictionary["outputs"] = outputs
+        if metadata is not None:
+            head_dictionary.update(metadata.extraParams)
+        self.head_config = head_dictionary
 
         return self
 
