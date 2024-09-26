@@ -7,11 +7,12 @@ from .base_parser import BaseParser
 from .utils import decode_head
 
 
-class Parser:
+class Parser(dai.node.ThreadedHostNode):
     """General interface for instantiating parsers based on the provided model
     archive."""
 
     def __init__(self):
+        super().__init__()
         pass
 
     def build(
@@ -39,6 +40,7 @@ class Parser:
         if head__index:
             heads = [heads[head__index]]
         parsers = []
+        pipeline = self.getParentPipeline()
 
         for head in heads:
             parser_name = head.parser
@@ -50,6 +52,6 @@ class Parser:
 
             parser = parser()
             head = decode_head(head)
-            parsers.append(parser.build(head))
+            parsers.append(pipeline.create(parser).build(head))
 
         return parsers
