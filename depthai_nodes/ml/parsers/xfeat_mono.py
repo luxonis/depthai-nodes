@@ -7,7 +7,7 @@ from ..messages.creators import create_tracked_features_message
 from .utils.xfeat import detect_and_compute, match
 
 
-class XFeatTwoParser(dai.node.ThreadedHostNode):
+class XFeatMonoParser(dai.node.ThreadedHostNode):
     """Parser class for parsing the output of the XFeat model.
 
     Attributes
@@ -50,12 +50,13 @@ class XFeatTwoParser(dai.node.ThreadedHostNode):
         @type input_size: Tuple[float, float]
         """
         dai.node.ThreadedHostNode.__init__(self)
-        self.reference_input = self.createInput()
-        self.target_input = self.createInput()
+        self.input = self.createInput()
         self.out = self.createOutput()
         self.original_size = original_size
         self.input_size = input_size
         self.max_keypoints = max_keypoints
+        self.previous_results = None
+        self.trigger = False
 
     def setOriginalSize(self, original_size):
         """Sets the original image size.
@@ -81,6 +82,9 @@ class XFeatTwoParser(dai.node.ThreadedHostNode):
         """
         self.max_keypoints = max_keypoints
 
+    def setTrigger(self):
+        self.trigger = True
+
     def run(self):
         if self.original_size is None:
             raise ValueError("Original image size must be specified!")
@@ -90,83 +94,49 @@ class XFeatTwoParser(dai.node.ThreadedHostNode):
 
         while self.isRunning():
             try:
-                reference_output: dai.NNData = self.reference_input.get()
-                target_output: dai.NNData = self.target_input.get()
+                output: dai.NNData = self.input.get()
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            reference_feats = reference_output.getTensor(
-                "feats", dequantize=True
-            ).astype(np.float32)
-            reference_keypoints = reference_output.getTensor(
-                "keypoints", dequantize=True
-            ).astype(np.float32)
-
-            target_feats = target_output.getTensor("feats", dequantize=True).astype(
+            feats = output.getTensor("feats", dequantize=True).astype(np.float32)
+            keypoints = output.getTensor("keypoints", dequantize=True).astype(
                 np.float32
             )
-            target_keypoints = target_output.getTensor(
-                "keypoints", dequantize=True
-            ).astype(np.float32)
 
-            # feats = output.getTensor("feats", dequantize=True).astype(np.float32)
-            # keypoints = output.getTensor("keypoints", dequantize=True).astype(
-            #     np.float32
-            # )
+            if len(feats.shape) == 3:
+                feats = feats.reshape((1,) + feats.shape).transpose(0, 3, 1, 2)
+            if len(keypoints.shape) == 3:
+                keypoints = keypoints.reshape((1,) + keypoints.shape).transpose(
+                    0, 3, 1, 2
+                )
 
-            if len(reference_feats.shape) == 3:
-                reference_feats = reference_feats.reshape(
-                    (1,) + reference_feats.shape
-                ).transpose(0, 3, 1, 2)
-            if len(reference_keypoints.shape) == 3:
-                reference_keypoints = reference_keypoints.reshape(
-                    (1,) + reference_keypoints.shape
-                ).transpose(0, 3, 1, 2)
-
-            if len(target_feats.shape) == 3:
-                target_feats = target_feats.reshape(
-                    (1,) + target_feats.shape
-                ).transpose(0, 3, 1, 2)
-            if len(target_keypoints.shape) == 3:
-                target_keypoints = target_keypoints.reshape(
-                    (1,) + target_keypoints.shape
-                ).transpose(0, 3, 1, 2)
-
-            reference_result = detect_and_compute(
-                reference_feats,
-                reference_keypoints,
+            result = detect_and_compute(
+                feats,
+                keypoints,
                 resize_rate_w,
                 resize_rate_h,
                 self.input_size,
                 self.max_keypoints,
             )
 
-            target_result = detect_and_compute(
-                target_feats,
-                target_keypoints,
-                resize_rate_w,
-                resize_rate_h,
-                self.input_size,
-                self.max_keypoints,
-            )
-
-            if reference_result is not None:
-                reference_result = reference_result[0]
+            if result is not None:
+                result = result[0]
             else:
                 matched_points = dai.TrackedFeatures()
-                matched_points.setTimestamp(reference_output.getTimestamp())
+                matched_points.setTimestamp(output.getTimestamp())
                 self.out.send(matched_points)
                 continue
 
-            if target_result is not None:
-                target_result = target_result[0]
+            if self.previous_results is not None:
+                mkpts0, mkpts1 = match(self.previous_results, result)
+                matched_points = create_tracked_features_message(mkpts0, mkpts1)
+                matched_points.setTimestamp(output.getTimestamp())
+                self.out.send(matched_points)
             else:
                 matched_points = dai.TrackedFeatures()
-                matched_points.setTimestamp(target_output.getTimestamp())
+                matched_points.setTimestamp(output.getTimestamp())
                 self.out.send(matched_points)
-                continue
 
-            mkpts0, mkpts1 = match(reference_result, target_result)
-            matched_points = create_tracked_features_message(mkpts0, mkpts1)
-            matched_points.setTimestamp(target_output.getTimestamp())
-            self.out.send(matched_points)
+            if self.trigger:
+                self.previous_results = result
+                self.trigger = False
