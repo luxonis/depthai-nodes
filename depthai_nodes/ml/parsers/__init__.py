@@ -1,4 +1,5 @@
 from .age_gender import AgeGenderParser
+from .base_parser import BaseParser
 from .classification import ClassificationParser, MultiClassificationParser
 from .fastsam import FastSAMParser
 from .hrnet import HRNetParser
@@ -41,4 +42,5 @@ __all__ = [
     "LaneDetectionParser",
     "MultiClassificationParser",
     "Parser",
+    "BaseParser",
 ]

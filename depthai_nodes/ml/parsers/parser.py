@@ -1,127 +1,55 @@
-from typing import Dict, List, Union, Optional
+from typing import List
 
 import depthai as dai
 
+from . import *
+from .base_parser import BaseParser
+from .utils import decode_head
 
-class Parser(dai.node.ThreadedHostNode):
-    """Base class for neural network output parsers.
 
-    This class serves as a foundation for specific parser implementations used to postprocess the outputs of neural network models.
-    Each parser is attached to a model "head" that governs the parsing process as it contains all the necessary information for the parser to function correctly.
-    Subclasses should implement the `run` method to define the parsing logic.
-
-    Attributes
-    ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
-    head_config : Dict
-        A dictionary containing configuration details relevant to the parser, including parameters and settings required for output parsing.
-    """
+class Parser:
+    """General interface for instantiating parsers based on the provided model
+    archive."""
 
     def __init__(self):
-        super().__init__()
-        self.input = self.createInput()
-        self.out = self.createOutput()
+        pass
 
-        self.head_config: Dict = {}
-
-    def build(self, nn_archive: dai.NNArchive, head_name: str = None):
-        """Sets the head configuration for the specified head.
+    def build(
+        self, nn_archive: dai.NNArchive, head__index: int = None
+    ) -> List[BaseParser]:
+        """Instantiates parsers based on the provided model archive.
 
         Attributes
         ----------
         nn_archive: dai.NNArchive
             NN Archive of the model.
-        head_name : str
-            The name of the head to use. If multiple heads are available, the name must be specified.
+        head__index: int
+            Index of the head to be used for parsing. If not provided, each head will instantiate a separate parser.
 
         Returns
         -------
-        Parser
-            Returns the parser object with the head configuration set.
+        parsers: List[BaseParser]
+            List of instantiated parsers.
         """
-
-        if not isinstance(nn_archive, dai.NNArchive):
-            raise ValueError(
-                f"Provided heads must be of type depthai.NNArchive not {type(nn_archive)}."
-            )
-
-        try:
-            heads = nn_archive.getConfig().getConfigV1().model.heads
-        except:
-            raise ValueError(
-                "Only the NN Archives of version V1 are supported."
-            )
+        heads = nn_archive.getConfig().getConfigV1().model.heads
 
         if len(heads) == 0:
             raise ValueError("No heads defined in the NN Archive.")
-        elif len(heads) == 1:
-            head = heads[0]
-        else:
-            if head_name:
-                head_candidates = [
-                    head
-                    for head in heads
-                    if head.metadata.extraParams["name"] == head_name
-                ]
-                if len(head_candidates) == 0:
-                    raise ValueError(
-                        f"No head with name {head_name} specified in NN Archive."
-                    )
-                if len(head_candidates) > 1:
-                    raise ValueError(
-                        f"Multiple heads with name {head_name} found in NN Archive, please specify a unique name."
-                    )
-                head = head_candidates[0]
-            else:
-                current_parser = self.__class__.__name__
-                parser_names_in_archive = [head.parser for head in heads]
-                num_matches = parser_names_in_archive.count(current_parser)
-                if num_matches == 0:
-                    raise ValueError(
-                        f"No heads available for {current_parser} in the NN Archive."
-                    )
-                elif num_matches == 1:
-                    head = [
-                        head for head in heads if head.parser == current_parser
-                    ][0]
-                else:
-                    raise ValueError(
-                        f"Multiple heads with parser= {current_parser} detected, please specify a head name."
-                    )
 
-        parser_name = head.parser
-        metadata = head.metadata
-        outputs = head.outputs
+        if head__index:
+            heads = [heads[head__index]]
+        parsers = []
 
-        if outputs is None:
-            raise ValueError(
-                f"{head_name} head does not have any outputs specified."
-            )
+        for head in heads:
+            parser_name = head.parser
 
-        head_dictionary = {}
-        head_dictionary["parser"] = parser_name
-        head_dictionary["outputs"] = outputs
-        if metadata is not None:
-            head_dictionary.update(metadata.extraParams)
-        self.head_config = head_dictionary
+            parser = globals().get(parser_name)
 
-        return self
+            if parser is None:
+                raise ValueError(f"Parser {parser_name} not found in the parsers.")
 
-    def run(self, **kwargs):
-        """Parses the output from the neural network head.
+            parser = parser()
+            head = decode_head(head)
+            parsers.append(parser.build(head))
 
-        This method should be overridden by subclasses to implement the specific parsing logic.
-        It accepts arbitrary keyword arguments for flexibility.
-
-        Args:
-            **kwargs: Arbitrary keyword arguments for the parsing process.
-
-        Returns:
-            The parsed output message, as defined by the logic in the subclass.
-        """
-        raise NotImplementedError(
-            "Missing the parsing logic. Implement the run method."
-        )
+        return parsers

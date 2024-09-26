@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from typing import Any, Dict, List
 
 import depthai as dai
 import numpy as np
@@ -7,10 +7,10 @@ from ..messages.creators import (
     create_classification_message,
     create_multi_classification_message,
 )
-from .parser import Parser
+from .base_parser import BaseParser
 
 
-class ClassificationParser(Parser):
+class ClassificationParser(BaseParser):
     """Postprocessing logic for Classification model.
 
     Attributes
@@ -19,6 +19,8 @@ class ClassificationParser(Parser):
         Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
     out : Node.Output
         Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
+    output_layer_name: str
+        Name of the output layer from which the scores are extracted.
     classes : List[str]
         List of class names to be used for linking with their respective scores. Expected to be in the same order as Neural Network's output. If not provided, the message will only return sorted scores.
     n_classes : int = len(classes)
@@ -32,44 +34,45 @@ class ClassificationParser(Parser):
          An object with attributes `classes` and `scores`. `classes` is a list of classes, sorted in descending order of scores. `scores` is a list of corresponding scores.
     """
 
-    def __init__(self):
-        """Initializes the ClassificationParser node.
+    def __init__(
+        self,
+        output_layer_name: str = "",
+        classes: List = None,
+        n_classes: int = 0,
+        is_softmax: bool = True,
+    ):
+        super().__init__()
+        self.output_layer_name = output_layer_name
+        self.classes = classes if classes is not None else []
+        self.n_classes = n_classes
+        self.is_softmax = is_softmax
+
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ):
+        """Sets the head configuration for the parser.
 
         Attributes
         ----------
         head_config : Dict
             The head configuration for the parser.
-        output_layer_name : str
-            The name of the output layer.
-        classes : List
-            List of class names to be used for linking with their respective scores.
-        n_classes : int
-            Number of provided classes.
-        is_softmax : bool
-            If False, the scores are converted to probabilities using the softmax function.
+
+        Returns
+        -------
+        ClassificationParser
+            Returns the parser object with the head configuration set.
         """
-        super().__init__()
-        self.output_layer_name: str = ""
-        self.classes: List = None
-        self.n_classes: int = 0
-        self.is_softmax: bool = True
 
-    def build(
-        self,
-        heads: Union[List, Dict],
-        head_name: str = "",
-    ):
-        super().build(heads, head_name)
-
-        output_layers = self.head_config["outputs"]
+        output_layers = head_config["outputs"]
         if len(output_layers) != 1:
             raise ValueError(
                 f"Only one output layer supported for Classification, got {output_layers} layers."
             )
         self.output_layer_name = output_layers[0]
-        self.classes = self.head_config["classes"]
-        self.n_classes = self.head_config["n_classes"]
-        self.is_softmax = self.head_config["is_softmax"]
+        self.classes = head_config["classes"]
+        self.n_classes = head_config["n_classes"]
+        self.is_softmax = head_config["is_softmax"]
 
         return self
 
@@ -104,6 +107,14 @@ class ClassificationParser(Parser):
                 output: dai.NNData = self.input.get()
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
+            layers = output.getAllLayerNames()
+
+            if len(layers) == 1 and self.output_layer_name == "":
+                self.output_layer_name = layers[0]
+            elif len(layers) != 1 and self.output_layer_name == "":
+                raise ValueError(
+                    f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
+                )
 
             scores = output.getTensor(self.output_layer_name, dequantize=True).astype(
                 np.float32
