@@ -8,7 +8,7 @@ from .utils.xfeat import detect_and_compute, match
 
 
 class XFeatStereoParser(dai.node.ThreadedHostNode):
-    """Parser class for parsing the output of the XFeat model.
+    """Parser class for parsing the output of the XFeat model. It can be used for parsing the output from two sources (e.g. two cameras - left and right).
 
     Attributes
     ----------
@@ -22,8 +22,6 @@ class XFeatStereoParser(dai.node.ThreadedHostNode):
         Input image size.
     max_keypoints : int
         Maximum number of keypoints to keep.
-    previous_results : np.ndarray
-        Previous results from the model. Previous results are used to match keypoints between two frames.
 
     Output Message/s
     ----------------
@@ -48,6 +46,8 @@ class XFeatStereoParser(dai.node.ThreadedHostNode):
         @type original_size: Tuple[float, float]
         @param input_size: Input image size.
         @type input_size: Tuple[float, float]
+        @param max_keypoints: Maximum number of keypoints to keep.
+        @type max_keypoints: int
         """
         dai.node.ThreadedHostNode.__init__(self)
         self.reference_input = self.createInput()
@@ -101,6 +101,9 @@ class XFeatStereoParser(dai.node.ThreadedHostNode):
             reference_keypoints = reference_output.getTensor(
                 "keypoints", dequantize=True
             ).astype(np.float32)
+            reference_heatmaps = reference_output.getTensor(
+                "heatmaps", dequantize=True
+            ).astype(np.float32)
 
             target_feats = target_output.getTensor("feats", dequantize=True).astype(
                 np.float32
@@ -108,11 +111,9 @@ class XFeatStereoParser(dai.node.ThreadedHostNode):
             target_keypoints = target_output.getTensor(
                 "keypoints", dequantize=True
             ).astype(np.float32)
-
-            # feats = output.getTensor("feats", dequantize=True).astype(np.float32)
-            # keypoints = output.getTensor("keypoints", dequantize=True).astype(
-            #     np.float32
-            # )
+            target_heatmaps = target_output.getTensor(
+                "heatmaps", dequantize=True
+            ).astype(np.float32)
 
             if len(reference_feats.shape) == 3:
                 reference_feats = reference_feats.reshape(
@@ -121,6 +122,10 @@ class XFeatStereoParser(dai.node.ThreadedHostNode):
             if len(reference_keypoints.shape) == 3:
                 reference_keypoints = reference_keypoints.reshape(
                     (1,) + reference_keypoints.shape
+                ).transpose(0, 3, 1, 2)
+            if len(reference_heatmaps.shape) == 3:
+                reference_heatmaps = reference_heatmaps.reshape(
+                    (1,) + reference_heatmaps.shape
                 ).transpose(0, 3, 1, 2)
 
             if len(target_feats.shape) == 3:
@@ -131,10 +136,15 @@ class XFeatStereoParser(dai.node.ThreadedHostNode):
                 target_keypoints = target_keypoints.reshape(
                     (1,) + target_keypoints.shape
                 ).transpose(0, 3, 1, 2)
+            if len(target_heatmaps.shape) == 3:
+                target_heatmaps = target_heatmaps.reshape(
+                    (1,) + target_heatmaps.shape
+                ).transpose(0, 3, 1, 2)
 
             reference_result = detect_and_compute(
                 reference_feats,
                 reference_keypoints,
+                reference_heatmaps,
                 resize_rate_w,
                 resize_rate_h,
                 self.input_size,
@@ -144,6 +154,7 @@ class XFeatStereoParser(dai.node.ThreadedHostNode):
             target_result = detect_and_compute(
                 target_feats,
                 target_keypoints,
+                target_heatmaps,
                 resize_rate_w,
                 resize_rate_h,
                 self.input_size,

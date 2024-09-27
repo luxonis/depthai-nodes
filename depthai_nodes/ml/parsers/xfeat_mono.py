@@ -8,7 +8,9 @@ from .utils.xfeat import detect_and_compute, match
 
 
 class XFeatMonoParser(dai.node.ThreadedHostNode):
-    """Parser class for parsing the output of the XFeat model.
+    """Parser class for parsing the output of the XFeat model. It can be used for
+    parsing the output from one source (e.g. one camera). The reference frame can be set
+    with trigger method.
 
     Attributes
     ----------
@@ -24,6 +26,8 @@ class XFeatMonoParser(dai.node.ThreadedHostNode):
         Maximum number of keypoints to keep.
     previous_results : np.ndarray
         Previous results from the model. Previous results are used to match keypoints between two frames.
+    trigger : bool
+        Trigger to set the reference frame.
 
     Output Message/s
     ----------------
@@ -48,6 +52,8 @@ class XFeatMonoParser(dai.node.ThreadedHostNode):
         @type original_size: Tuple[float, float]
         @param input_size: Input image size.
         @type input_size: Tuple[float, float]
+        @param max_keypoints: Maximum number of keypoints to keep.
+        @type max_keypoints: int
         """
         dai.node.ThreadedHostNode.__init__(self)
         self.input = self.createInput()
@@ -83,6 +89,7 @@ class XFeatMonoParser(dai.node.ThreadedHostNode):
         self.max_keypoints = max_keypoints
 
     def setTrigger(self):
+        """Sets the trigger to set the reference frame."""
         self.trigger = True
 
     def run(self):
@@ -102,6 +109,7 @@ class XFeatMonoParser(dai.node.ThreadedHostNode):
             keypoints = output.getTensor("keypoints", dequantize=True).astype(
                 np.float32
             )
+            heatmaps = output.getTensor("heatmaps", dequantize=True).astype(np.float32)
 
             if len(feats.shape) == 3:
                 feats = feats.reshape((1,) + feats.shape).transpose(0, 3, 1, 2)
@@ -109,10 +117,13 @@ class XFeatMonoParser(dai.node.ThreadedHostNode):
                 keypoints = keypoints.reshape((1,) + keypoints.shape).transpose(
                     0, 3, 1, 2
                 )
+            if len(heatmaps.shape) == 3:
+                heatmaps = heatmaps.reshape((1,) + heatmaps.shape).transpose(0, 3, 1, 2)
 
             result = detect_and_compute(
                 feats,
                 keypoints,
+                heatmaps,
                 resize_rate_w,
                 resize_rate_h,
                 self.input_size,
