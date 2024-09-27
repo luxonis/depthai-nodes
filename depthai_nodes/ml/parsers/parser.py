@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict
 
 import depthai as dai
 
@@ -17,7 +17,7 @@ class Parser(dai.node.ThreadedHostNode):
 
     def build(
         self, nn_archive: dai.NNArchive, head__index: int = None
-    ) -> List[BaseParser]:
+    ) -> Dict[BaseParser]:
         """Instantiates parsers based on the provided model archive.
 
         Attributes
@@ -33,25 +33,30 @@ class Parser(dai.node.ThreadedHostNode):
             List of instantiated parsers.
         """
         heads = nn_archive.getConfig().getConfigV1().model.heads
+        indexes = range(len(heads))
 
         if len(heads) == 0:
             raise ValueError("No heads defined in the NN Archive.")
 
         if head__index:
             heads = [heads[head__index]]
-        parsers = []
+            indexes = [head__index]
+
+        parsers = {}
         pipeline = self.getParentPipeline()
 
-        for head in heads:
+        for index, head in zip(heads, indexes):
             parser_name = head.parser
-
             parser = globals().get(parser_name)
 
             if parser is None:
-                raise ValueError(f"Parser {parser_name} not found in the parsers.")
+                raise ValueError(f"Parser {parser_name} not a valid parser class.")
+            elif not issubclass(parser, BaseParser):
+                raise ValueError(
+                    f"Parser {parser_name} does not inherit from BaseParser class."
+                )
 
-            parser = parser()
             head = decode_head(head)
-            parsers.append(pipeline.create(parser).build(head))
+            parsers[index] = pipeline.create(parser).build(head)
 
         return parsers
