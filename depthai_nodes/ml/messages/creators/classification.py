@@ -2,7 +2,7 @@ from typing import List, Union
 
 import numpy as np
 
-from ...messages import Classifications, CompositeMessage
+from ...messages import Classifications
 
 
 def create_classification_message(
@@ -82,56 +82,6 @@ def create_classification_message(
     classification_msg.scores = scores.tolist()
 
     return classification_msg
-
-
-def create_multi_classification_message(
-    classification_attributes: List[str],
-    classification_scores: Union[np.ndarray, List[List[float]]],
-    classification_labels: List[List[str]],
-) -> CompositeMessage:
-    """Create a DepthAI message for multi-classification.
-
-    @param classification_attributes: List of attributes being classified.
-    @type classification_attributes: List[str]
-    @param classification_scores: A 2D array or list of classification scores for each
-        attribute.
-    @type classification_scores: Union[np.ndarray, List[List[float]]]
-    @param classification_labels: A 2D list of class labels for each classification
-        attribute.
-    @type classification_labels: List[List[str]]
-    @return: MultiClassification message containing a dictionary of classification
-        attributes and their respective Classifications.
-    @rtype: dai.Buffer
-    @raise ValueError: If number of attributes is not same as number of score-label
-        pairs.
-    @raise ValueError: If number of scores is not same as number of labels for each
-        attribute.
-    @raise ValueError: If each class score not in the range [0, 1].
-    @raise ValueError: If each class score not a probability distribution that sums to
-        1.
-    """
-
-    if len(classification_attributes) != len(classification_scores) or len(
-        classification_attributes
-    ) != len(classification_labels):
-        raise ValueError(
-            f"Number of classification attributes, scores and labels should be equal. Got {len(classification_attributes)} attributes, {len(classification_scores)} scores and {len(classification_labels)} labels."
-        )
-
-    multi_class_dict = {}
-    for attribute, scores, labels in zip(
-        classification_attributes, classification_scores, classification_labels
-    ):
-        if len(scores) != len(labels):
-            raise ValueError(
-                f"Number of scores and labels should be equal for each classification attribute, got {len(scores)} scores, {len(labels)} labels for attribute {attribute}."
-            )
-        multi_class_dict[attribute] = create_classification_message(labels, scores)
-
-    multi_classification_message = CompositeMessage()
-    multi_classification_message.setData(multi_class_dict)
-
-    return multi_classification_message
 
 
 def create_classification_sequence_message(
