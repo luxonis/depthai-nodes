@@ -1,7 +1,6 @@
 from .classification import (
     create_classification_message,
     create_classification_sequence_message,
-    create_multi_classification_message,
 )
 from .clusters import create_cluster_message
 from .detection import (
@@ -30,6 +29,5 @@ __all__ = [
     "create_map_message",
     "create_classification_sequence_message",
     "create_cluster_message",
-    "create_multi_classification_message",
     "create_corner_detection_message",
 ]
