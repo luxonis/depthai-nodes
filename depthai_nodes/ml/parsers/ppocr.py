@@ -4,10 +4,9 @@ import depthai as dai
 import numpy as np
 
 from ..messages.creators import create_classification_sequence_message
-from .classification import Parser
 
 
-class PaddleOCRParser(Parser):
+class PaddleOCRParser(dai.node.ThreadedHostNode):
     """Postprocessing logic for PaddleOCR text recognition model.
 
     Attributes
