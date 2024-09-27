@@ -43,7 +43,7 @@ class ClassificationParser(BaseParser):
     ):
         super().__init__()
         self.output_layer_name = output_layer_name
-        self.classes = classes if classes is not None else []
+        self.classes = classes or []
         self.n_classes = n_classes
         self.is_softmax = is_softmax
 

@@ -15,7 +15,7 @@ class Parser(dai.node.ThreadedHostNode):
         super().__init__()
 
     def build(
-        self, nn_archive: dai.NNArchive, head__index: int = None
+        self, nn_archive: dai.NNArchive, head_index: int = None
     ) -> Dict[int, BaseParser]:
         """Instantiates parsers based on the provided model archive.
 
@@ -37,9 +37,9 @@ class Parser(dai.node.ThreadedHostNode):
         if len(heads) == 0:
             raise ValueError("No heads defined in the NN Archive.")
 
-        if head__index:
-            heads = [heads[head__index]]
-            indexes = [head__index]
+        if head_index:
+            heads = [heads[head_index]]
+            indexes = [head_index]
 
         parsers = {}
         pipeline = self.getParentPipeline()
