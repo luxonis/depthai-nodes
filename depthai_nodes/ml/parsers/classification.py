@@ -43,7 +43,7 @@ class ClassificationParser(BaseParser):
         super().__init__()
         self.output_layer_name = output_layer_name
         self.classes = classes or []
-        self.n_classes = n_classes
+        self.n_classes = len(self.classes)
         self.is_softmax = is_softmax
 
     def build(
