@@ -13,7 +13,6 @@ class Parser(dai.node.ThreadedHostNode):
 
     def __init__(self):
         super().__init__()
-        pass
 
     def build(
         self, nn_archive: dai.NNArchive, head__index: int = None
@@ -45,7 +44,7 @@ class Parser(dai.node.ThreadedHostNode):
         parsers = {}
         pipeline = self.getParentPipeline()
 
-        for index, head in zip(heads, indexes):
+        for index, head in zip(indexes, heads):
             parser_name = head.parser
             parser = globals().get(parser_name)
 
