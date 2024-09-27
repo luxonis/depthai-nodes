@@ -1,11 +1,11 @@
-import math
+from typing import Tuple
 
-import cv2
 import depthai as dai
-import numpy as np
 
 from ..messages.creators import create_detection_message
-from .utils import decode_detections
+from .utils.bbox import xywh2xyxy
+from .utils.nms import nms_cv2
+from .utils.yunet import decode_detections, format_detections, prune_detections
 
 
 class YuNetParser(dai.node.ThreadedHostNode):
@@ -31,12 +31,7 @@ class YuNetParser(dai.node.ThreadedHostNode):
     **Description**: Message containing bounding boxes, labels, confidence scores, and keypoints of detected faces.
     """
 
-    def __init__(
-        self,
-        conf_threshold=0.6,
-        iou_threshold=0.3,
-        max_det=5000,
-    ):
+    def __init__(self):
         """Initializes the YuNetParser node.
 
         @param conf_threshold: Confidence score threshold for detected faces.
@@ -50,9 +45,15 @@ class YuNetParser(dai.node.ThreadedHostNode):
         self.input = self.createInput()
         self.out = self.createOutput()
 
-        self.conf_threshold = conf_threshold
-        self.iou_threshold = iou_threshold
-        self.max_det = max_det
+        self.conf_threshold = 0.8
+        self.iou_threshold = 0.3
+        self.max_det = 5000
+
+        self.loc_output_layer_name = None
+        self.conf_output_layer_name = None
+        self.iou_output_layer_name = None
+
+        self.input_shape: Tuple[int] = (640, 480)  # None
 
     def setConfidenceThreshold(self, threshold):
         """Sets the confidence score threshold for detected faces.
@@ -78,6 +79,32 @@ class YuNetParser(dai.node.ThreadedHostNode):
         """
         self.max_det = max_det
 
+    def setInputShape(self, width, height):
+        """Sets the input shape.
+
+        @param height: Height of the input image.
+        @type height: int
+        @param width: Width of the input image.
+        @type width: int
+        """
+        self.input_shape = (width, height)
+
+    def setOutputLayerNames(
+        self, loc_output_layer_name, conf_output_layer_name, iou_output_layer_name
+    ):
+        """Sets the output layers.
+
+        @param loc_output_layer_name: Output layer name for the location predictions.
+        @type loc_output_layer_name: str
+        @param conf_output_layer_name: Output layer name for the confidence predictions.
+        @type conf_output_layer_name: str
+        @param iou_output_layer_name: Output layer name for the IoU predictions.
+        @type iou_output_layer_name: str
+        """
+        self.loc_output_layer_name = loc_output_layer_name
+        self.conf_output_layer_name = conf_output_layer_name
+        self.iou_output_layer_name = iou_output_layer_name
+
     def run(self):
         while self.isRunning():
             try:
@@ -85,84 +112,136 @@ class YuNetParser(dai.node.ThreadedHostNode):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            # get strides
-            strides = list(
-                set(
-                    [
-                        int(layer_name.split("_")[1])
-                        for layer_name in output.getAllLayerNames()
-                        if layer_name.startswith(("cls", "obj", "bbox", "kps"))
-                    ]
-                )
+            output_layer_names = output.getAllLayerNames()
+
+            # get loc
+            if self.loc_output_layer_name:
+                try:
+                    loc = output.getTensor(self.loc_output_layer_name, dequantize=True)
+                except KeyError as err:
+                    raise ValueError(
+                        f"Layer {self.loc_output_layer_name} not found in the model output."
+                    ) from err
+            else:
+                loc_output_layer_name_candidates = [
+                    layer_name
+                    for layer_name in output_layer_names
+                    if layer_name.startswith(("loc"))
+                ]
+                if len(loc_output_layer_name_candidates) == 0:
+                    raise ValueError(
+                        "No loc layer candidates found in the model output."
+                    )
+                elif len(loc_output_layer_name_candidates) > 1:
+                    raise ValueError(
+                        "Multiple loc layer candidates found in the model output."
+                    )
+                else:
+                    self.loc_output_layer_name = loc_output_layer_name_candidates[0]
+
+            # get conf
+            if self.conf_output_layer_name:
+                try:
+                    conf = output.getTensor(
+                        self.conf_output_layer_name, dequantize=True
+                    )
+                except KeyError as err:
+                    raise ValueError(
+                        f"Layer {self.conf_output_layer_name} not found in the model output."
+                    ) from err
+            else:
+                conf_output_layer_name_candidates = [
+                    layer_name
+                    for layer_name in output_layer_names
+                    if layer_name.startswith(("conf"))
+                ]
+                if len(conf_output_layer_name_candidates) == 0:
+                    raise ValueError(
+                        "No conf layer candidates found in the model output."
+                    )
+                elif len(conf_output_layer_name_candidates) > 1:
+                    raise ValueError(
+                        "Multiple conf layer candidates found in the model output."
+                    )
+                else:
+                    self.conf_output_layer_name = conf_output_layer_name_candidates[0]
+
+            # get iou
+            if self.iou_output_layer_name:
+                try:
+                    iou = output.getTensor(self.iou_output_layer_name, dequantize=True)
+                except KeyError as err:
+                    raise ValueError(
+                        f"Layer {self.iou_output_layer_name} not found in the model output."
+                    ) from err
+            else:
+                iou_output_layer_name_candidates = [
+                    layer_name
+                    for layer_name in output_layer_names
+                    if layer_name.startswith(("iou"))
+                ]
+                if len(iou_output_layer_name_candidates) == 0:
+                    raise ValueError(
+                        "No iou layer candidates found in the model output."
+                    )
+                elif len(iou_output_layer_name_candidates) > 1:
+                    raise ValueError(
+                        "Multiple iou layer candidates found in the model output."
+                    )
+                else:
+                    self.iou_output_layer_name = iou_output_layer_name_candidates[0]
+
+            loc = output.getTensor(self.loc_output_layer_name, dequantize=True)
+            conf = output.getTensor(self.conf_output_layer_name, dequantize=True)
+            iou = output.getTensor(self.iou_output_layer_name, dequantize=True)
+
+            # decode detections
+            bboxes, keypoints, scores = decode_detections(
+                input_shape=self.input_shape,
+                loc=loc,
+                conf=conf,
+                iou=iou,
             )
 
-            # get input_size
-            stride0 = strides[0]
-            cls_stride0_shape = output.getTensor(
-                f"cls_{stride0}", dequantize=True
-            ).shape
-            if len(cls_stride0_shape) == 3:
-                _, spatial_positions0, _ = cls_stride0_shape
-            elif len(cls_stride0_shape) == 2:
-                spatial_positions0, _ = cls_stride0_shape
-            input_width = input_height = int(
-                math.sqrt(spatial_positions0) * stride0
-            )  # TODO: We assume a square input size. How to get input size when height and width are not equal?
-            input_size = (input_width, input_height)
-
-            detections = []
-            for stride in strides:
-                cls = output.getTensor(f"cls_{stride}", dequantize=True)
-                cls = cls.astype(np.float32)
-                cls = cls.squeeze(0) if cls.shape[0] == 1 else cls
-
-                obj = output.getTensor(f"obj_{stride}", dequantize=True).flatten()
-                obj = obj.astype(np.float32)
-
-                bbox = output.getTensor(f"bbox_{stride}", dequantize=True)
-                bbox = bbox.astype(np.float32)
-                bbox = bbox.squeeze(0) if bbox.shape[0] == 1 else bbox
-
-                kps = output.getTensor(f"kps_{stride}", dequantize=True)
-                kps = kps.astype(np.float32)
-                kps = kps.squeeze(0) if kps.shape[0] == 1 else kps
-
-                detections += decode_detections(
-                    input_size,
-                    stride,
-                    self.conf_threshold,
-                    cls,
-                    obj,
-                    bbox,
-                    kps,
-                )
-
-            # non-maximum suppression
-            detection_boxes = [detection["bbox"] for detection in detections]
-            detection_scores = [detection["score"] for detection in detections]
-            indices = cv2.dnn.NMSBoxes(
-                detection_boxes,
-                detection_scores,
-                self.conf_threshold,
-                self.iou_threshold,
-                top_k=self.max_det,
+            # prune detections
+            bboxes, keypoints, scores = prune_detections(
+                bboxes=bboxes,
+                keypoints=keypoints,
+                scores=scores,
+                conf_threshold=self.conf_threshold,
             )
-            detections = np.array(detections)[indices]
 
-            bboxes = []
-            for detection in detections:
-                xmin, ymin, width, height = detection["bbox"]
-                bboxes.append([xmin, ymin, xmin + width, ymin + height])
-            scores = [detection["score"] for detection in detections]
-            labels = [detection["label"] for detection in detections]
-            keypoints = [detection["keypoints"] for detection in detections]
+            # format detections
+            bboxes, keypoints, scores = format_detections(
+                bboxes=bboxes,
+                keypoints=keypoints,
+                scores=scores,
+                input_shape=self.input_shape,
+            )
+
+            # run nms
+            keep_indices = nms_cv2(
+                bboxes=bboxes,
+                scores=scores,
+                conf_threshold=self.conf_threshold,
+                iou_threshold=self.iou_threshold,
+                max_det=self.max_det,
+            )
+
+            bboxes = bboxes[keep_indices]
+            keypoints = keypoints[keep_indices]
+            scores = scores[keep_indices]
+
+            bboxes = xywh2xyxy(bboxes)
+            keypoints = [
+                [tuple(keypoint) for keypoint in keypoint_set]
+                for keypoint_set in keypoints.tolist()
+            ]
 
             detections_message = create_detection_message(
-                np.array(bboxes),
-                np.array(scores),
-                labels,
-                keypoints,
+                bboxes=bboxes, scores=scores, keypoints=keypoints
             )
+
             detections_message.setTimestamp(output.getTimestamp())
 
             self.out.send(detections_message)
