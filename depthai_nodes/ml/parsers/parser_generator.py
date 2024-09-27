@@ -7,9 +7,11 @@ from .base_parser import BaseParser
 from .utils import decode_head
 
 
-class Parser(dai.node.ThreadedHostNode):
-    """General interface for instantiating parsers based on the provided model
-    archive."""
+class ParserGenerator(dai.node.ThreadedHostNode):
+    """General interface for instantiating parsers based on the provided model archive.
+
+    The `build` method creates parsers based on the head information stored in the NN Archive. The method then returns a dictionary of these parsers.
+    """
 
     def __init__(self):
         super().__init__()
@@ -28,8 +30,8 @@ class Parser(dai.node.ThreadedHostNode):
 
         Returns
         -------
-        parsers: List[BaseParser]
-            List of instantiated parsers.
+        parsers: Dict[int : BaseParser]
+            A dictionary of instantiated parsers.
         """
         heads = nn_archive.getConfig().getConfigV1().model.heads
         indexes = range(len(heads))
