@@ -17,7 +17,7 @@ class Parser(dai.node.ThreadedHostNode):
 
     def build(
         self, nn_archive: dai.NNArchive, head__index: int = None
-    ) -> Dict[BaseParser]:
+    ) -> Dict[int, BaseParser]:
         """Instantiates parsers based on the provided model archive.
 
         Attributes
