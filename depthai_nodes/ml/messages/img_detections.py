@@ -97,7 +97,7 @@ class ImgDetectionExtended(dai.ImgDetection):
         self._mask = value
 
 
-class ImgDetectionsExtended(dai.Buffer):
+class ImgDetectionsExtended(dai.ImgDetections):
     """ImgDetectionsExtended class for storing image detections with keypoints.
 
     Attributes
@@ -108,7 +108,7 @@ class ImgDetectionsExtended(dai.Buffer):
 
     def __init__(self):
         """Initializes the ImgDetectionsExtended object."""
-        dai.Buffer.__init__(self)  # TODO: change to super().__init__()?
+        dai.ImgDetections.__init__(self)  # TODO: change to super().__init__()?
         self._detections: List[ImgDetectionExtended] = []
 
     @property
