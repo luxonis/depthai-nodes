@@ -9,8 +9,8 @@ from .classification import ClassificationParser
 
 class ClassificationSequenceParser(ClassificationParser):
     """Postprocessing logic for a classification sequence model. The model predicts the
-    classes multiple times and returns an array where each row represents the predicted
-    classes for the specific step in the sequence. In addition to time series
+    classes multiple times and returns a list of predicted classes, where each item
+    corresponds to the relative step in the sequence. In addition to time series
     classification, this parser can also be used for text recognition models where words
     can be interpreted as a sequence of characters (classes).
 
@@ -46,7 +46,7 @@ class ClassificationSequenceParser(ClassificationParser):
         ignored_indexes: List[int] = None,
         remove_duplicates: bool = False,
         concatenate_classes: bool = False,
-    ):
+    ) -> None:
         """Initializes the parser node.
 
         @param classes: List of available classes.
@@ -67,11 +67,11 @@ class ClassificationSequenceParser(ClassificationParser):
             output_layer_name=output_layer_name, classes=classes, is_softmax=is_softmax
         )
 
-        self.ignored_indexes = ignored_indexes or []
+        self.ignored_indexes = ignored_indexes if ignored_indexes is not None else []
         self.remove_duplicates = remove_duplicates
         self.concatenate_classes = concatenate_classes
 
-    def setRemoveDuplicates(self, remove_duplicates: bool):
+    def setRemoveDuplicates(self, remove_duplicates: bool) -> None:
         """Sets the remove_duplicates flag for the classification sequence model.
 
         @param remove_duplicates: If True, removes consecutive duplicates from the
@@ -79,7 +79,7 @@ class ClassificationSequenceParser(ClassificationParser):
         """
         self.remove_duplicates = remove_duplicates
 
-    def setIgnoredIndexes(self, ignored_indexes: List[int]):
+    def setIgnoredIndexes(self, ignored_indexes: List[int]) -> None:
         """Sets the ignored_indexes for the classification sequence model.
 
         @param ignored_indexes: A list of indexes to ignore during classification
@@ -87,7 +87,7 @@ class ClassificationSequenceParser(ClassificationParser):
         """
         self.ignored_indexes = ignored_indexes
 
-    def setConcatenateClasses(self, concatenate_classes: bool):
+    def setConcatenateClasses(self, concatenate_classes: bool) -> None:
         """Sets the concatenate_classes flag for the classification sequence model.
 
         @param concatenate_classes: If True, concatenates consecutive classes into a
@@ -95,8 +95,8 @@ class ClassificationSequenceParser(ClassificationParser):
         """
         self.concatenate_classes = concatenate_classes
 
-    def build(self, head_config: Dict[str, Any]):
-        """Sets the head configuration for the parser.
+    def build(self, head_config: Dict[str, Any]) -> "ClassificationSequenceParser":
+        """Sets the configuration of the parser.
 
         Attributes
         ----------
@@ -106,9 +106,8 @@ class ClassificationSequenceParser(ClassificationParser):
         Returns
         -------
         ClassificationParser
-            Returns the parser object with the head configuration set.
+            Returns the instantiated parser with the correct configuration.
         """
-
         super().build(head_config)
         self.ignored_indexes = head_config.get("ignored_indexes", [])
         self.remove_duplicates = head_config.get("remove_duplicates", False)
@@ -139,8 +138,10 @@ class ClassificationSequenceParser(ClassificationParser):
                 np.float32
             )
 
-            if len(scores.shape) != 3:
-                raise ValueError(f"Scores should be a 3D array, got {scores.shape}.")
+            if len(scores.shape) != 3 and len(scores.shape) != 2:
+                raise ValueError(
+                    f"Scores should be a 3D or 2D array, got shape {scores.shape}."
+                )
 
             if len(scores.shape) == 3:
                 if scores.shape[0] == 1:
@@ -151,13 +152,6 @@ class ClassificationSequenceParser(ClassificationParser):
                     raise ValueError(
                         "Scores should be a 3D array of shape (1, sequence_length, n_classes) or (sequence_length, n_classes, 1)."
                     )
-            elif len(scores.shape) == 2:
-                if scores.shape[0] == self.n_classes:
-                    scores = scores.T
-            else:
-                raise ValueError(
-                    "Scores should be a 2D array of shape (sequence_length, n_classes) or (sequence_length, n_classes)."
-                )
 
             if not self.is_softmax:
                 scores = np.exp(scores) / np.sum(np.exp(scores), axis=1, keepdims=True)
