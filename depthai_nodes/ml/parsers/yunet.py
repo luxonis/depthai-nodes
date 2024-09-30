@@ -49,7 +49,10 @@ class YuNetParser(dai.node.ThreadedHostNode):
         dai.node.ThreadedHostNode.__init__(self)
         self.input = self.createInput()
         self.out = self.createOutput(
-                possibleDatatypes=[dai.Node.DatatypeHierarchy(dai.DatatypeEnum.ImgDetections, True)])
+            possibleDatatypes=[
+                dai.Node.DatatypeHierarchy(dai.DatatypeEnum.ImgDetections, True)
+            ]
+        )
 
         self.conf_threshold = conf_threshold
         self.iou_threshold = iou_threshold
