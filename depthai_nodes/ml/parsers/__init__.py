@@ -13,6 +13,7 @@ from .mlsd import MLSDParser
 from .parser_generator import ParserGenerator
 from .ppdet import PPTextDetectionParser
 from .ppocr import PaddleOCRParser
+from .regression import RegressionParser
 from .scrfd import SCRFDParser
 from .segmentation import SegmentationParser
 from .superanimal_landmarker import SuperAnimalParser
@@ -34,7 +35,7 @@ __all__ = [
     "ClassificationParser",
     "YOLOExtendedParser",
     "FastSAMParser",
-    "AgeGenderParser",
+    "RegressionParser",
     "HRNetParser",
     "PPTextDetectionParser",
     "MapOutputParser",
