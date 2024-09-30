@@ -8,6 +8,7 @@ from .img_detections import (
 from .keypoints import HandKeypoints, Keypoints
 from .lines import Line, Lines
 from .map import Map2D
+from .prediction import Prediction, Predictions
 from .segmentation import SegmentationMasks
 
 __all__ = [
@@ -23,4 +24,6 @@ __all__ = [
     "Clusters",
     "Cluster",
     "CornerDetections",
+    "Prediction",
+    "Predictions",
 ]
