@@ -1,7 +1,9 @@
+import cv2
 import depthai as dai
 import numpy as np
+
 from .utils.to_planar import to_planar
-import cv2
+
 
 class Tiling(dai.node.HostNode):
     def __init__(self) -> None:
@@ -11,12 +13,21 @@ class Tiling(dai.node.HostNode):
         self.grid_size = None
         self.grid_matrix = None
         self.nn_shape = None
-        self.x = None # vector [x,y] of the tile's dimensions
+        self.x = None  # vector [x,y] of the tile's dimensions
         self.tile_positions = []
         self.img_shape = None
-        self.global_detection = False 
+        self.global_detection = False
 
-    def build(self, overlap: float, img_output: dai.Node.Output, grid_size: tuple, img_shape: tuple, nn_shape: tuple, global_detection: bool = False, grid_matrix=None) -> "Tiling":
+    def build(
+        self,
+        overlap: float,
+        img_output: dai.Node.Output,
+        grid_size: tuple,
+        img_shape: tuple,
+        nn_shape: tuple,
+        global_detection: bool = False,
+        grid_matrix=None,
+    ) -> "Tiling":
         self.sendProcessingToPipeline(True)
         self.link_args(img_output)
         self.overlap = overlap
@@ -27,7 +38,7 @@ class Tiling(dai.node.HostNode):
         self.global_detection = global_detection
         self.x = self._calculate_tiles(grid_size, img_shape, overlap)
         self._compute_tile_positions()
-        
+
         return self
 
     def process(self, img_frame) -> None:
@@ -39,31 +50,40 @@ class Tiling(dai.node.HostNode):
             raise ValueError("Tile positions are not initialized.")
 
         for index, tile_info in enumerate(self.tile_positions):
-            x1, y1, x2, y2 = tile_info['coords']
-            scaled_width, scaled_height = tile_info['scaled_size']
+            x1, y1, x2, y2 = tile_info["coords"]
+            scaled_width, scaled_height = tile_info["scaled_size"]
             tile = frame[y1:y2, x1:x2]
-            tile_img_frame = self._create_img_frame(tile, img_frame, index, scaled_width, scaled_height)
-            self.out.send(tile_img_frame)          
+            tile_img_frame = self._create_img_frame(
+                tile, img_frame, index, scaled_width, scaled_height
+            )
+            self.out.send(tile_img_frame)
 
-    def _crop_to_nn_shape(self, frame: np.ndarray, scaled_width, scaled_height) -> np.ndarray:
+    def _crop_to_nn_shape(
+        self, frame: np.ndarray, scaled_width, scaled_height
+    ) -> np.ndarray:
         if self.nn_shape is None:
             raise ValueError("NN shape is not initialized.")
-        frame_resized = cv2.resize(frame, (scaled_width, scaled_height), interpolation=cv2.INTER_NEAREST)
-        frame_padded = np.zeros((self.nn_shape[1], self.nn_shape[0], 3), dtype=np.uint8)  
-        
-        x_offset = (self.nn_shape[0] - scaled_width) // 2 
-        y_offset = (self.nn_shape[1] - scaled_height) // 2 
-        frame_padded[y_offset:y_offset+scaled_height, x_offset:x_offset+scaled_width] = frame_resized
+        frame_resized = cv2.resize(
+            frame, (scaled_width, scaled_height), interpolation=cv2.INTER_NEAREST
+        )
+        frame_padded = np.zeros((self.nn_shape[1], self.nn_shape[0], 3), dtype=np.uint8)
+
+        x_offset = (self.nn_shape[0] - scaled_width) // 2
+        y_offset = (self.nn_shape[1] - scaled_height) // 2
+        frame_padded[
+            y_offset : y_offset + scaled_height, x_offset : x_offset + scaled_width
+        ] = frame_resized
 
         return frame_padded
-        
-    def _create_img_frame(self, tile: np.ndarray, frame, tile_index, scaled_width, scaled_height) -> dai.ImgFrame:
-        """
-        Creates an ImgFrame from the tile, which is then sent to the neural network input queue.
-        """
+
+    def _create_img_frame(
+        self, tile: np.ndarray, frame, tile_index, scaled_width, scaled_height
+    ) -> dai.ImgFrame:
+        """Creates an ImgFrame from the tile, which is then sent to the neural network
+        input queue."""
         if self.nn_shape is None:
             raise ValueError("NN shape is not initialized.")
-        tile_padded = self._crop_to_nn_shape(tile, scaled_width, scaled_height) 
+        tile_padded = self._crop_to_nn_shape(tile, scaled_width, scaled_height)
 
         planar_tile = to_planar(tile_padded, self.nn_shape)
 
@@ -80,34 +100,44 @@ class Tiling(dai.node.HostNode):
         return img_frame
 
     def _calculate_tiles(self, grid_size, img_shape, overlap):
-        """
-        Calculate tile dimensions (x, y) given grid size, image shape, and overlap.
-        """
+        """Calculate tile dimensions (x, y) given grid size, image shape, and
+        overlap."""
         n_tiles_w, n_tiles_h = grid_size
-        
-        A = np.array([
-            [n_tiles_w * (1 - overlap) + overlap, 0],
-            [0, n_tiles_h * (1 - overlap) + overlap]
-        ])
-        
+
+        A = np.array(
+            [
+                [n_tiles_w * (1 - overlap) + overlap, 0],
+                [0, n_tiles_h * (1 - overlap) + overlap],
+            ]
+        )
+
         b = np.array(img_shape)
-        
+
         tile_dims = np.linalg.inv(A).dot(b)
 
         return tile_dims
 
     def _compute_tile_positions(self):
-        """
-        Computes and stores tile positions and their scaled dimensions based on the grid matrix and overlap.
-        """
-        if self.grid_size is None or self.overlap is None or self.x is None or self.img_shape is None or self.nn_shape is None:
-            raise ValueError("Grid size, overlap, tile dimensions, or image shape not initialized.")
+        """Computes and stores tile positions and their scaled dimensions based on the
+        grid matrix and overlap."""
+        if (
+            self.grid_size is None
+            or self.overlap is None
+            or self.x is None
+            or self.img_shape is None
+            or self.nn_shape is None
+        ):
+            raise ValueError(
+                "Grid size, overlap, tile dimensions, or image shape not initialized."
+            )
         if self.grid_matrix is None:
             n_tiles_w, n_tiles_h = self.grid_size
-            self.grid_matrix = [[j + i * n_tiles_w for j in range(n_tiles_w)] for i in range(n_tiles_h)]
+            self.grid_matrix = [
+                [j + i * n_tiles_w for j in range(n_tiles_w)] for i in range(n_tiles_h)
+            ]
         if self.grid_size != (len(self.grid_matrix[0]), len(self.grid_matrix)):
             raise ValueError("Grid matrix dimensions do not match the grid size.")
-        
+
         n_tiles_w, n_tiles_h = self.grid_size
         img_width, img_height = self.img_shape
 
@@ -122,7 +152,7 @@ class Tiling(dai.node.HostNode):
             for j in range(n_tiles_w):
                 if labels[i][j] != -1:
                     # Already visited, skip
-                    continue 
+                    continue
 
                 # Start a new component
                 index_value = self.grid_matrix[i][j]
@@ -139,12 +169,20 @@ class Tiling(dai.node.HostNode):
                     labels[ci][cj] = component_id
 
                     # BFS: Check neighbors (up, down, left, right)
-                    for ni, nj in [(ci-1, cj), (ci+1, cj), (ci, cj-1), (ci, cj+1)]:
+                    for ni, nj in [
+                        (ci - 1, cj),
+                        (ci + 1, cj),
+                        (ci, cj - 1),
+                        (ci, cj + 1),
+                    ]:
                         if 0 <= ni < n_tiles_h and 0 <= nj < n_tiles_w:
-                            if labels[ni][nj] == -1 and self.grid_matrix[ni][nj] == index_value:
+                            if (
+                                labels[ni][nj] == -1
+                                and self.grid_matrix[ni][nj] == index_value
+                            ):
                                 # this tile is part of the current component, add it to the queue to explore its neighbors
                                 queue.append((ni, nj))
-                                
+
                 # queue is empty, the current component is fully explored, move on to the next component
                 component_id += 1
 
@@ -158,18 +196,20 @@ class Tiling(dai.node.HostNode):
                 components[comp_id].append((i, j))
 
         self.tile_positions = []
-        # add a whole image as a tile with index 0 (hence the first to go) 
+        # add a whole image as a tile with index 0 (hence the first to go)
         if self.global_detection:
-            scale = min(self.nn_shape / img_width, self.nn_shape / img_height) 
+            scale = min(self.nn_shape / img_width, self.nn_shape / img_height)
             scaled_width = int(img_width * scale)
             scaled_height = int(img_height * scale)
-            self.tile_positions.append({
-                'coords': (0, 0, img_width, img_height),
-                'scaled_size': (scaled_width, scaled_height)
-            })
-        
+            self.tile_positions.append(
+                {
+                    "coords": (0, 0, img_width, img_height),
+                    "scaled_size": (scaled_width, scaled_height),
+                }
+            )
+
         # Compute the bounding box for each component
-        for comp_id, positions in components.items():
+        for _, positions in components.items():
             x1_list = []
             y1_list = []
             x2_list = []
@@ -203,7 +243,9 @@ class Tiling(dai.node.HostNode):
             scaled_width = int(tile_actual_width * scale)
             scaled_height = int(tile_actual_height * scale)
 
-            self.tile_positions.append({
-                'coords': (x1, y1, x2, y2),
-                'scaled_size': (scaled_width, scaled_height)
-            })
+            self.tile_positions.append(
+                {
+                    "coords": (x1, y1, x2, y2),
+                    "scaled_size": (scaled_width, scaled_height),
+                }
+            )

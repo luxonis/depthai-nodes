@@ -1,9 +1,9 @@
-import numpy as np 
 import depthai as dai
+import numpy as np
+
 
 def nms_detections(detections: list[dai.ImgDetection], conf_thresh=0.3, iou_thresh=0.4):
-    """
-    Applies Non-Maximum Suppression (NMS) on a list of dai.ImgDetection objects.
+    """Applies Non-Maximum Suppression (NMS) on a list of dai.ImgDetection objects.
 
     Parameters:
     - detections: List of dai.ImgDetection objects.
@@ -30,7 +30,7 @@ def nms_detections(detections: list[dai.ImgDetection], conf_thresh=0.3, iou_thre
         detections_by_class[label].append(det)
 
     final_detections = []
-    for label, dets in detections_by_class.items():
+    for _, dets in detections_by_class.items():
         boxes = []
         scores = []
         for det in dets:
@@ -50,9 +50,9 @@ def nms_detections(detections: list[dai.ImgDetection], conf_thresh=0.3, iou_thre
 
     return final_detections
 
+
 def nms(boxes, scores, iou_thresh):
-    """
-    Perform Non-Maximum Suppression (NMS).
+    """Perform Non-Maximum Suppression (NMS).
 
     Parameters:
     - boxes: ndarray of shape (N, 4), where each row is [xmin, ymin, xmax, ymax].
@@ -84,7 +84,9 @@ def nms(boxes, scores, iou_thresh):
         w = np.maximum(0.0, xx2 - xx1)
         h = np.maximum(0.0, yy2 - yy1)
         inter = w * h
-        union = areas[i] + areas[order[1:]] - inter + 1e-6  # Add a small epsilon to prevent division by zero
+        union = (
+            areas[i] + areas[order[1:]] - inter + 1e-6
+        )  # Add a small epsilon to prevent division by zero
         iou = inter / union
 
         # Keep boxes with IoU less than the threshold
