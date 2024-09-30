@@ -24,21 +24,34 @@ class BaseParser(dai.node.ThreadedHostNode, metaclass=BaseMeta):
         Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
+        self._input = self.createInput()
+        self._out = self.createOutput()
 
     @property
     @abstractmethod
     def input(self) -> dai.Node.Input:
-        pass
+        return self._input
 
     @property
     @abstractmethod
-    def output(self) -> dai.Node.Output:
-        pass
+    def out(self) -> dai.Node.Output:
+        return self._out
+
+    @input.setter
+    def input(self, node: dai.Node.Input) -> None:
+        """Linking point to which the Neural Network's output is linked."""
+        self._input = node
+
+    @out.setter
+    def out(self, node: dai.Node.Output) -> None:
+        """Output node to which the processed network results are sent in the form of a
+        DepthAI message."""
+        self._out = node
 
     @abstractmethod
-    def build(self, head_config: Dict[str, Any]):
+    def build(self, head_config: Dict[str, Any]) -> "BaseParser":
         """Sets the head configuration for the specified head.
 
         Attributes

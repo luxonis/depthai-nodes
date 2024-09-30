@@ -89,11 +89,12 @@ def create_classification_sequence_message(
     scores: Union[np.ndarray, List],
     ignored_indexes: List[int] = None,
     remove_duplicates: bool = False,
-    concatenate_text: bool = False,
+    concatenate_classes: bool = False,
 ) -> Classifications:
-    """Creates a message for a multi-class sequence. The 'scores' array is a sequence of
-    probabilities for each class at each position in the sequence. The message contains
-    the class names and their respective scores, ordered according to the sequence.
+    """Creates a message for a multi-class sequence. The message contains the class
+    names and their respective scores, ordered according to the sequence. The 'scores'
+    array is a sequence of probabilities for each class at each position in the
+    sequence.
 
     @param classes: A list of class names, with length 'n_classes'.
     @type classes: List
@@ -103,8 +104,8 @@ def create_classification_sequence_message(
     @type ignored_indexes: List[int]
     @param remove_duplicates: If True, removes consecutive duplicates from the sequence.
     @type remove_duplicates: bool
-    @param concatenate_text: If True, concatenates consecutive words based on the space character.
-    @type concatenate_text: bool
+    @param concatenate_classes: If True, concatenates consecutive classes based on the space character.
+    @type concatenate_classes: bool
     @return: A Classification message with attributes `classes` and `scores`, where `classes` is a list of class names and `scores` is a list of corresponding scores.
     @rtype: Classifications
     @raises ValueError: If 'classes' is not a list of strings.
@@ -162,7 +163,7 @@ def create_classification_sequence_message(
     score_list = np.max(scores, axis=1)[selection]
 
     if (
-        concatenate_text
+        concatenate_classes
         and len(class_list) > 1
         and all(len(word) <= 1 for word in class_list)
     ):
@@ -180,7 +181,7 @@ def create_classification_sequence_message(
         score_list = np.array(concatenated_scores)
 
     elif (
-        concatenate_text
+        concatenate_classes
         and len(class_list) > 1
         and any(len(word) >= 2 for word in class_list)
     ):

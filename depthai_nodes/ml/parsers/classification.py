@@ -37,19 +37,18 @@ class ClassificationParser(BaseParser):
         self,
         output_layer_name: str = "",
         classes: List = None,
-        n_classes: int = 0,
         is_softmax: bool = True,
-    ):
+    ) -> None:
         super().__init__()
         self.output_layer_name = output_layer_name
         self.classes = classes or []
-        self.n_classes = n_classes
+        self.n_classes = len(self.classes)
         self.is_softmax = is_softmax
 
     def build(
         self,
         head_config: Dict[str, Any],
-    ):
+    ) -> "ClassificationParser":
         """Sets the head configuration for the parser.
 
         Attributes
@@ -75,7 +74,7 @@ class ClassificationParser(BaseParser):
 
         return self
 
-    def setClasses(self, classes: List[str]):
+    def setClasses(self, classes: List[str]) -> None:
         """Sets the class names for the classification model.
 
         @param classes: List of class names to be used for linking with their respective
@@ -84,7 +83,7 @@ class ClassificationParser(BaseParser):
         self.classes = classes if classes is not None else []
         self.n_classes = len(self.classes)
 
-    def setSoftmax(self, is_softmax: bool):
+    def setSoftmax(self, is_softmax: bool) -> None:
         """Sets the softmax flag for the classification model.
 
         @param is_softmax: If False, the parser will convert the scores to probabilities
@@ -92,7 +91,7 @@ class ClassificationParser(BaseParser):
         """
         self.is_softmax = is_softmax
 
-    def setOutputLayerName(self, output_layer_name: str):
+    def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
 
         @param output_layer_name: The name of the output layer.
@@ -105,7 +104,8 @@ class ClassificationParser(BaseParser):
             try:
                 output: dai.NNData = self.input.get()
             except dai.MessageQueue.QueueException:
-                break  # Pipeline was stopped
+                break
+
             layers = output.getAllLayerNames()
 
             if len(layers) == 1 and self.output_layer_name == "":
