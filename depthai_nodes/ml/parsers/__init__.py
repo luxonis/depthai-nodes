@@ -1,4 +1,3 @@
-from .age_gender import AgeGenderParser
 from .base_parser import BaseParser
 from .classification import ClassificationParser
 from .fastsam import FastSAMParser
