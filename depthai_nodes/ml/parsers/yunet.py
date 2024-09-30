@@ -1,14 +1,15 @@
-from typing import Tuple
+from typing import Any, Dict, Tuple
 
 import depthai as dai
 
 from ..messages.creators import create_detection_message
+from .base_parser import BaseParser
 from .utils.bbox import xywh2xyxy
 from .utils.nms import nms_cv2
 from .utils.yunet import decode_detections, format_detections, prune_detections
 
 
-class YuNetParser(dai.node.ThreadedHostNode):
+class YuNetParser(BaseParser):
     """Parser class for parsing the output of the YuNet face detection model.
 
     Attributes
@@ -31,7 +32,13 @@ class YuNetParser(dai.node.ThreadedHostNode):
     **Description**: Message containing bounding boxes, labels, confidence scores, and keypoints of detected faces.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        conf_threshold: float = 0.8,
+        iou_threshold: float = 0.3,
+        max_det: int = 5000,
+        input_shape: Tuple[int, int] = None,
+    ):
         """Initializes the YuNetParser node.
 
         @param conf_threshold: Confidence score threshold for detected faces.
@@ -40,20 +47,54 @@ class YuNetParser(dai.node.ThreadedHostNode):
         @type iou_threshold: float
         @param max_det: Maximum number of detections to keep.
         @type max_det: int
+        @param input_shape: Input shape of the model (width, height).
+        @type input_shape: Tuple[int, int]
         """
         dai.node.ThreadedHostNode.__init__(self)
         self.input = self.createInput()
         self.out = self.createOutput()
 
-        self.conf_threshold = 0.8
-        self.iou_threshold = 0.3
-        self.max_det = 5000
+        self.conf_threshold = conf_threshold
+        self.iou_threshold = iou_threshold
+        self.max_det = max_det
+
+        self.input_shape = input_shape
 
         self.loc_output_layer_name = None
         self.conf_output_layer_name = None
         self.iou_output_layer_name = None
 
-        self.input_shape: Tuple[int] = (640, 480)  # None
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ):
+        """Sets the head configuration for the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        YuNetParser
+            Returns the parser object with the head configuration set.
+        """
+        output_layers = head_config["outputs"]
+        if len(output_layers) != 3:
+            raise ValueError(
+                f"YuNetParser expects exactly 3 output layers, got {output_layers} layers."
+            )
+        for output_layer in output_layers:
+            self.loc_output_layer_name = output_layer if "loc" in output_layer else None
+            self.conf_output_layer_name = (
+                output_layer if "conf" in output_layer else None
+            )
+            self.iou_output_layer_name = output_layer if "iou" in output_layer else None
+
+        self.conf_threshold = head_config["metadata"]["conf_threshold"]
+        self.iou_threshold = head_config["metadata"]["iou_threshold"]
+        self.max_det = head_config["metadata"]["max_det"]
 
     def setConfidenceThreshold(self, threshold):
         """Sets the confidence score threshold for detected faces.
