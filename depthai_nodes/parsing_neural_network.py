@@ -138,7 +138,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
                 f"Property out is only available when there is exactly one model head. \
                                The model has {len(self._getModelHeads())} heads. Use {self.getOutput.__name__} method instead."
             )
-        return list(self._parsers.values())[0].output
+        return list(self._parsers.values())[0].out
 
     def _getModelHeads(self):
         return self._getConfig().model.heads
@@ -170,7 +170,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
             raise KeyError(
                 f"Head {head} is not available. Available heads for the model {self._getModelName()} are {list(self._parsers.keys())}."
             )
-        return self._parsers[head].output
+        return self._parsers[head].out
 
     def _getModelName(self) -> str:
         return self._getConfig().model.metadata.name
