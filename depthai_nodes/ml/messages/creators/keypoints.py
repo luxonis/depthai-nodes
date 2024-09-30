@@ -3,7 +3,7 @@ from typing import List, Union
 import depthai as dai
 import numpy as np
 
-from ...messages import HandKeypoints, Keypoints
+from ...messages import HandKeypoints, Keypoint, Keypoints
 
 
 def create_hand_keypoints_message(
@@ -188,10 +188,12 @@ def create_keypoints_message(
         if scores is not None:
             if scores[i] < confidence_threshold:
                 continue
-        pt = dai.Point3f()
-        pt.x = keypoint[0]
-        pt.y = keypoint[1]
-        pt.z = keypoint[2] if use_3d else 0
+        pt = Keypoint()
+        pt.x = float(keypoint[0])
+        pt.y = float(keypoint[1])
+        pt.z = float(keypoint[2]) if use_3d else 0.0
+        if scores is not None:
+            pt.confidence = float(scores[i])
         points.append(pt)
 
     keypoints_msg.keypoints = points
