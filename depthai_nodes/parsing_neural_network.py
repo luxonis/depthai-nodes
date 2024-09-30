@@ -61,7 +61,9 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         parser_generator = self._pipeline.create(ParserGenerator)
         parsers = parser_generator.build(nnArchive)
         for parser in parsers.values():
-            self._nn.out.link(parser.input)
+            self._nn.out.link(
+                parser.input
+            )  # TODO: once NN node has output dictionary, link to the correct output
         self._pipeline.remove(parser_generator)
         return parsers
 
