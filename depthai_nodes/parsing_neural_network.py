@@ -7,8 +7,31 @@ from .ml.parsers import BaseParser, ParserGenerator
 
 class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
     Propeties = dai.node.NeuralNetwork.Properties
+    """Node that wraps the NeuralNetwork node and adds parsing capabilities. A
+    NeuralNetwork node is created with it's appropriate parser nodes for each model
+    head. Parser nodes are chosen based on the supplied NNArchive.
+
+    Attributes
+    ----------
+    input : Node.Input
+        Neural network input.
+    inputs : Node.InputMap
+        Neural network inputs.
+    out : Node.Output
+        Neural network output. Can be used only when there is exactly one model head. Otherwise, getOutput method must be used.
+    passthrough : Node.Output
+        Neural network passthrough.
+    passthroughs : Node.OutputMap
+        Neural network passthroughs.
+    """
 
     def __init__(self, *args, **kwargs) -> None:
+        """Initializes the ParsingNeuralNetwork node. NeuralNetwork node is created in
+        the pipeline.
+
+        @param args: Arguments to be passed to the ThreadedHostNode class.
+        @param kwargs: Keyword arguments to be passed to the ThreadedHostNode class.
+        """
         super().__init__(*args, **kwargs)
         self._pipeline = self.getParentPipeline()
         self._nn = self._pipeline.create(dai.node.NeuralNetwork)
@@ -17,6 +40,10 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
     def build(
         self, input: dai.Node.Output, nnArchive: dai.NNArchive
     ) -> "ParsingNeuralNetwork":
+        """Builds the underlying NeuralNetwork node.
+
+        Creates parser nodes for each model head according to passed NNArchive.
+        """
         self._nn_archive = nnArchive
         self._nn.build(input, nnArchive)
         self._updateParsers(nnArchive)
@@ -39,43 +66,58 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         return parsers
 
     def getNumInferenceThreads(self) -> int:
+        """Returns number of inference threads of the NeuralNetwork node."""
         return self._nn.getNumInferenceThreads()
 
     def setBackend(self, setBackend: str) -> None:
+        """Sets the backend of the NeuralNetwork node."""
         self._nn.setBackend(setBackend)
 
     def setBackendProperties(self, setBackendProperties: dict[str, str]) -> None:
+        """Sets the backend properties of the NeuralNetwork node."""
         self._nn.setBackendProperties(setBackendProperties)
 
     def setBlob(self, blob: Path | dai.OpenVINO.Blob) -> None:
+        """Sets the blob of the NeuralNetwork node."""
         self._nn.setBlob(blob)
 
     def setBlobPath(self, path: Path) -> None:
+        """Sets the blob path of the NeuralNetwork node."""
         self._nn.setBlobPath(path)
 
     def setFromModelZoo(
         self, description: dai.NNModelDescription, useCached: bool
     ) -> None:
+        """Sets the model from the model zoo of the NeuralNetwork node."""
         self._nn.setFromModelZoo(description, useCached)
 
     def setModelPath(self, modelPath: Path) -> None:
+        """Sets the model path of the NeuralNetwork node."""
         self._nn.setModelPath(modelPath)
 
     def setNNArchive(self, nnArchive: dai.NNArchive) -> None:
+        """Sets the NNArchive of the ParsingNeuralNetwork node.
+
+        Updates the NeuralNetwork node and parser nodes.
+        """
         self._nn_archive = nnArchive
         self._nn.setNNArchive(nnArchive)
         self._updateParsers(nnArchive)
 
     def setNumInferenceThreads(self, numThreads: int) -> None:
+        """Sets the number of inference threads of the NeuralNetwork node."""
         self._nn.setNumInferenceThreads(numThreads)
 
     def setNumNCEPerInferenceThread(self, numNCEPerThread: int) -> None:
+        """Sets the number of NCE per inference thread of the NeuralNetwork node."""
         self._nn.setNumNCEPerInferenceThread(numNCEPerThread)
 
     def setNumPoolFrames(self, numFrames: int) -> None:
+        """Sets the number of pool frames of the NeuralNetwork node."""
         self._nn.setNumPoolFrames(numFrames)
 
     def setNumShavesPerInferenceThread(self, numShavesPerInferenceThread: int) -> None:
+        """Sets the number of shaves per inference thread of the NeuralNetwork node."""
         self._nn.setNumShavesPerInferenceThread(numShavesPerInferenceThread)
 
     @property
@@ -108,6 +150,10 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         return self._nn.passthroughs
 
     def run(self) -> None:
+        """Methods inherited from ThreadedHostNode.
+
+        Method runs with start of the pipeline.
+        """
         self._checkNNArchive()
 
     def _checkNNArchive(self) -> None:
@@ -117,6 +163,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
             )
 
     def getOutput(self, head: int) -> dai.Node.Output:
+        """Obtains output of a parser for specified NeuralNetwork model head."""
         if head not in self._parsers:
             raise KeyError(
                 f"Head {head} is not available. Available heads for the model {self._getModelName()} are {list(self._parsers.keys())}."
