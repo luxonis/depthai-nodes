@@ -1,12 +1,16 @@
+from itertools import (
+    product,  # NOTE: you can use manual_product function instead of itertools.product
+)
+from typing import List, Tuple
+
 import numpy as np
-from itertools import product # NOTE: you can use manual_product function instead of itertools.product
 
 from .bbox import normalize_bboxes
 from .keypoints import normalize_keypoints
 
 
 def manual_product(*args):
-    """You can use this function instead of itertools.product"""
+    """You can use this function instead of itertools.product."""
     if not args:
         return [()]
     result = [[]]
@@ -16,15 +20,15 @@ def manual_product(*args):
 
 
 def generate_anchors(
-    input_shape,
-    min_sizes=[[10, 16, 24], [32, 48], [64, 96], [128, 192, 256]],
-    strides=[8, 16, 32, 64],
+    input_shape: Tuple[int, int],
+    min_sizes: List[List[int]] = None,
+    strides: List[int] = None,
 ):
     """Generate a set of default bounding boxes, known as anchors.
     The code is taken from https://github.com/Kazuhito00/YuNet-ONNX-TFLite-Sample/tree/main
 
-    @param input_shape: A tuple representing the height and width of the input image.
-    @type input_shape: tuple
+    @param input_shape: A tuple representing the width and height of the input image.
+    @type input_shape: Tuple[int, int]
     @param min_sizes: A list of lists, where each inner list contains the minimum sizes of the anchors for different feature maps.
     @type min_sizes List[List[int]]
     @param strides: Strides for each feature map layer.
@@ -33,6 +37,11 @@ def generate_anchors(
     @rtype: np.ndarray
     """
     w, h = input_shape
+
+    if min_sizes is None:
+        min_sizes = [[10, 16, 24], [32, 48], [64, 96], [128, 192, 256]]
+    if strides is None:
+        strides = [8, 16, 32, 64]
 
     # Calculate sizes of different feature maps by progressively halving the dimensions of the input image.
     feature_map_2th = [int(int((h + 1) / 2) / 2), int(int((w + 1) / 2) / 2)]
@@ -61,16 +70,16 @@ def generate_anchors(
 
 
 def decode_detections(
-    input_shape,
-    loc,
-    conf,
-    iou,
-    variance=[0.1, 0.2],
+    input_shape: Tuple[int, int],
+    loc: np.ndarray,
+    conf: np.ndarray,
+    iou: np.ndarray,
+    variance: List[float] = None,
 ):
     """
     Decodes the output of an object detection model by converting the model's predictions (localization, confidence, and IoU scores) into bounding boxes, keypoints, and scores.
     The code is taken from https://github.com/Kazuhito00/YuNet-ONNX-TFLite-Sample/tree/main
-    
+
     @param input_shape: The shape of the input image (height, width).
     @type input_shape: tuple
     @param loc: The predicted locations (or offsets) of the bounding boxes.
@@ -89,7 +98,10 @@ def decode_detections(
 
     """
 
-    w,h = input_shape
+    w, h = input_shape
+
+    if variance is None:
+        variance = [0.1, 0.2]
 
     anchors = generate_anchors(input_shape)
 
@@ -104,7 +116,7 @@ def decode_detections(
     scores = scores[:, np.newaxis]
 
     # Get bounding boxes
-    scale = np.array((w,h))
+    scale = np.array((w, h))
     bboxes = np.hstack(
         (
             (anchors[:, 0:2] + loc[:, 0:2] * variance[0] * anchors[:, 2:4]) * scale,
@@ -127,9 +139,10 @@ def decode_detections(
     return bboxes, keypoints, scores
 
 
-def prune_detections(bboxes, keypoints, scores, conf_threshold):
-    """
-    Prune detections based on confidence threshold.
+def prune_detections(
+    bboxes: np.ndarray, keypoints: np.ndarray, scores: np.ndarray, conf_threshold: float
+):
+    """Prune detections based on confidence threshold.
 
     Parameters:
     @param bboxes: A numpy array of shape (N, 4) containing the bounding boxes.
@@ -151,9 +164,13 @@ def prune_detections(bboxes, keypoints, scores, conf_threshold):
     return bboxes[keep_indices], keypoints[keep_indices], scores[keep_indices]
 
 
-def format_detections(bboxes, keypoints, scores, input_shape):
-    """
-    Format detections into a list of dictionaries.
+def format_detections(
+    bboxes: np.ndarray,
+    keypoints: np.ndarray,
+    scores: np.ndarray,
+    input_shape: Tuple[int, int],
+):
+    """Format detections into a list of dictionaries.
 
     @param bboxes: A numpy array of shape (N, 4) containing the bounding boxes.
     @type np.ndarray
@@ -175,9 +192,9 @@ def format_detections(bboxes, keypoints, scores, input_shape):
     bboxes = normalize_bboxes(bboxes, height=h, width=w)
 
     keypoints = keypoints.astype(np.int32)
-    keypoints = keypoints.reshape(-1, 5, 2) # (N,10) to (N,5,2)
+    keypoints = keypoints.reshape(-1, 5, 2)  # (N,10) to (N,5,2)
     keypoints = normalize_keypoints(keypoints, height=h, width=w)
-    
+
     scores = scores.squeeze()
-    
+
     return bboxes, keypoints, scores
