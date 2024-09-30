@@ -1,6 +1,6 @@
-from .age_gender import AgeGenderParser
 from .base_parser import BaseParser
 from .classification import ClassificationParser
+from .classification_sequence import ClassificationSequenceParser
 from .fastsam import FastSAMParser
 from .hrnet import HRNetParser
 from .image_output import ImageOutputParser
@@ -12,7 +12,8 @@ from .mediapipe_palm_detection import MPPalmDetectionParser
 from .mlsd import MLSDParser
 from .parser_generator import ParserGenerator
 from .ppdet import PPTextDetectionParser
-from .ppocr import PaddleOCRParser
+from .classification_sequence import ClassificationSequenceParser
+from .regression import RegressionParser
 from .scrfd import SCRFDParser
 from .segmentation import SegmentationParser
 from .superanimal_landmarker import SuperAnimalParser
@@ -34,11 +35,11 @@ __all__ = [
     "ClassificationParser",
     "YOLOExtendedParser",
     "FastSAMParser",
-    "AgeGenderParser",
+    "RegressionParser",
     "HRNetParser",
     "PPTextDetectionParser",
     "MapOutputParser",
-    "PaddleOCRParser",
+    "ClassificationSequenceParser",
     "LaneDetectionParser",
     "ParserGenerator",
     "BaseParser",

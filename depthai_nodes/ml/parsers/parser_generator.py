@@ -16,9 +16,7 @@ class ParserGenerator(dai.node.ThreadedHostNode):
     def __init__(self):
         super().__init__()
 
-    def build(
-        self, nn_archive: dai.NNArchive, head_index: int = None
-    ) -> Dict[int, BaseParser]:
+    def build(self, nn_archive: dai.NNArchive, head_index: int = None) -> Dict:
         """Instantiates parsers based on the provided model archive.
 
         Attributes
@@ -61,3 +59,6 @@ class ParserGenerator(dai.node.ThreadedHostNode):
             parsers[index] = pipeline.create(parser).build(head)
 
         return parsers
+
+    def run(self):
+        pass
