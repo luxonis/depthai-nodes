@@ -7,12 +7,10 @@ from .image_output import ImageOutputParser
 from .keypoints import KeypointParser
 from .lane_detection import LaneDetectionParser
 from .map_output import MapOutputParser
-from .mediapipe_hand_landmarker import MPHandLandmarkParser
 from .mediapipe_palm_detection import MPPalmDetectionParser
 from .mlsd import MLSDParser
 from .parser_generator import ParserGenerator
 from .ppdet import PPTextDetectionParser
-from .classification_sequence import ClassificationSequenceParser
 from .regression import RegressionParser
 from .scrfd import SCRFDParser
 from .segmentation import SegmentationParser
@@ -25,7 +23,6 @@ __all__ = [
     "ImageOutputParser",
     "YuNetParser",
     "MPPalmDetectionParser",
-    "MPHandLandmarkParser",
     "SCRFDParser",
     "SegmentationParser",
     "SuperAnimalParser",
