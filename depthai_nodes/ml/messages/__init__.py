@@ -5,7 +5,7 @@ from .img_detections import (
     ImgDetectionExtended,
     ImgDetectionsExtended,
 )
-from .keypoints import HandKeypoints, Keypoint, Keypoints
+from .keypoints import Keypoint, Keypoints
 from .lines import Line, Lines
 from .map import Map2D
 from .prediction import Prediction, Predictions
@@ -14,7 +14,6 @@ from .segmentation import SegmentationMasks
 __all__ = [
     "ImgDetectionExtended",
     "ImgDetectionsExtended",
-    "HandKeypoints",
     "Keypoints",
     "Keypoint",
     "Line",
