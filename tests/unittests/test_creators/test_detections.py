@@ -81,7 +81,9 @@ def test_scores_length():
 
 
 def test_labels_list():
-    with pytest.raises(ValueError, match="Labels should be numpy array, got <class 'int'>."):
+    with pytest.raises(
+        ValueError, match="Labels should be numpy array, got <class 'int'>."
+    ):
         create_detection_message(
             np.array([[1.0, 2.0, 3.0, 4.0]]), np.array([0.1]), 1, None
         )
