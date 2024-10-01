@@ -50,9 +50,12 @@ class YuNetParser(BaseParser):
         @param input_shape: Input shape of the model (width, height).
         @type input_shape: Tuple[int, int]
         """
-        dai.node.ThreadedHostNode.__init__(self)
-        self.input = self.createInput()
-        self.out = self.createOutput()
+        super().__init__()
+        self._out = self.createOutput(
+            possibleDatatypes=[
+                dai.Node.DatatypeHierarchy(dai.DatatypeEnum.ImgDetections, True)
+            ]
+        )
 
         self.conf_threshold = conf_threshold
         self.iou_threshold = iou_threshold
@@ -270,14 +273,9 @@ class YuNetParser(BaseParser):
             )
 
             bboxes = bboxes[keep_indices]
+            bboxes = xywh2xyxy(bboxes)
             keypoints = keypoints[keep_indices]
             scores = scores[keep_indices]
-
-            bboxes = xywh2xyxy(bboxes)
-            keypoints = [
-                [tuple(keypoint) for keypoint in keypoint_set]
-                for keypoint_set in keypoints.tolist()
-            ]
 
             detections_message = create_detection_message(
                 bboxes=bboxes, scores=scores, keypoints=keypoints
