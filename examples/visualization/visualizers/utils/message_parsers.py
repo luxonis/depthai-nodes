@@ -1,11 +1,14 @@
 import depthai as dai
 
 from depthai_nodes.ml.messages import (
-    AgeGender,
     Classifications,
+    Clusters,
+    CompositeMessage,
     ImgDetectionsExtended,
     Keypoints,
     Lines,
+    Map2D,
+    SegmentationMasks,
 )
 
 
@@ -47,11 +50,11 @@ def parse_image_message(message: dai.ImgFrame):
     return image
 
 
-def parser_age_gender_message(message: AgeGender):
+def parser_age_gender_message(message: CompositeMessage):
     """Parses the age-gender message and return the age and scores for all genders."""
-
-    age = message.age
-    gender = message.gender
+    message = message.getData()
+    age = message["age"]
+    gender = message["gender"]
     gender_scores = gender.scores
     gender_classes = gender.classes
 
@@ -62,3 +65,21 @@ def parse_yolo_kpts_message(message: ImgDetectionsExtended):
     """Parses the yolo keypoints message and returns the keypoints."""
     detections = message.detections
     return detections
+
+
+def parse_cluster_message(message: Clusters):
+    """Parses the cluster message and returns the clusters."""
+    clusters = message.clusters
+    return clusters
+
+
+def parse_fast_sam_message(message: SegmentationMasks):
+    """Parses the fast sam message and returns the masks."""
+    masks = message.masks
+    return masks
+
+
+def parse_map_message(message: Map2D):
+    """Parses the map message and returns the map."""
+    map = message.map
+    return map
