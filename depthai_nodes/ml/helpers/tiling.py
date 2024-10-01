@@ -6,7 +6,24 @@ from .utils.to_planar import to_planar
 
 
 class Tiling(dai.node.HostNode):
+    """Manages tiling of input frames for neural network processing, divides frames into
+    overlapping tiles based on configuration parameters, and creates ImgFrames for each
+    tile to be sent to a neural network node.
+
+    Attributes:
+        overlap (float): Overlap between adjacent tiles, valid in [0,1).
+        grid_size (tuple): Grid size (number of tiles horizontally and vertically).
+        grid_matrix (list): The matrix representing the grid of tiles.
+        nn_shape (tuple): Shape of the neural network input.
+        x (list): Vector representing the tile's dimensions.
+        tile_positions (list): Coordinates and scaled sizes of the tiles.
+        img_shape (tuple): Shape of the original input image.
+        global_detection (bool): Whether to use global detection.
+    """
+
     def __init__(self) -> None:
+        """Initializes the Tiling node, setting default attributes like overlap, grid
+        size, and tile positions."""
         super().__init__()
         self.name = "Tiling"
         self.overlap = None
@@ -28,6 +45,21 @@ class Tiling(dai.node.HostNode):
         global_detection: bool = False,
         grid_matrix=None,
     ) -> "Tiling":
+        """Configures the Tiling node with grid size, overlap, image and neural network
+        shapes, and other necessary parameters.
+
+        Args:
+            overlap (float): Overlap between adjacent tiles, valid in [0,1).
+            img_output (dai.Node.Output): The node from which the frames are sent.
+            grid_size (tuple): Number of tiles horizontally and vertically.
+            img_shape (tuple): Shape of the original image.
+            nn_shape (tuple): Shape of the neural network input.
+            global_detection (bool, optional): Whether to perform global detection.
+            grid_matrix (list, optional): Predefined matrix for tiling.
+
+        Returns:
+            Tiling: Returns self for method chaining.
+        """
         self.sendProcessingToPipeline(True)
         self.link_args(img_output)
         self.overlap = overlap
@@ -42,6 +74,12 @@ class Tiling(dai.node.HostNode):
         return self
 
     def process(self, img_frame) -> None:
+        """Processes the input frame by cropping and tiling it, and sending each tile to
+        the neural network input.
+
+        Args:
+            img_frame (dai.ImgFrame): The frame to be sent to a neural network.
+        """
         frame: np.ndarray = img_frame.getCvFrame()
 
         if self.grid_size is None or self.x is None or self.nn_shape is None:
@@ -61,6 +99,17 @@ class Tiling(dai.node.HostNode):
     def _crop_to_nn_shape(
         self, frame: np.ndarray, scaled_width, scaled_height
     ) -> np.ndarray:
+        """Crops and resizes the input tile to fit the neural network's input shape.
+        Adds padding if necessary to preserve aspect ratio.
+
+        Args:
+            frame (np.ndarray): The tile to be cropped and resized.
+            scaled_width (int): The width of the scaled tile.
+            scaled_height (int): The height of the scaled tile.
+
+        Returns:
+            np.ndarray: The padded and resized tile.
+        """
         if self.nn_shape is None:
             raise ValueError("NN shape is not initialized.")
         frame_resized = cv2.resize(
@@ -79,8 +128,20 @@ class Tiling(dai.node.HostNode):
     def _create_img_frame(
         self, tile: np.ndarray, frame, tile_index, scaled_width, scaled_height
     ) -> dai.ImgFrame:
-        """Creates an ImgFrame from the tile, which is then sent to the neural network
-        input queue."""
+        """Creates an ImgFrame from the cropped tile and prepares it for input into the
+        neural network. This ImgFrame contains the tiled image in a planar format ready
+        for inference.
+
+        Args:
+            tile (np.ndarray): The cropped tile.
+            frame: The original ImgFrame object, providing metadata such as timestamps.
+            tile_index (int): Index of the current tile.
+            scaled_width (int): Width of the scaled tile.
+            scaled_height (int): Height of the scaled tile.
+
+        Returns:
+            dai.ImgFrame: The ImgFrame object with the tile data, ready for neural network inference.
+        """
         if self.nn_shape is None:
             raise ValueError("NN shape is not initialized.")
         tile_padded = self._crop_to_nn_shape(tile, scaled_width, scaled_height)
@@ -100,8 +161,19 @@ class Tiling(dai.node.HostNode):
         return img_frame
 
     def _calculate_tiles(self, grid_size, img_shape, overlap):
-        """Calculate tile dimensions (x, y) given grid size, image shape, and
-        overlap."""
+        """Calculates the dimensions (x, y) of each tile given the grid size, image
+        shape, and overlap.
+
+        Args:
+            grid_size (tuple): The number of tiles in width and height.
+            img_shape (tuple): The dimensions (width, height) of the input image.
+            overlap (float): The overlap between adjacent tiles, valid in the range [0,1).
+
+        Returns:
+            np.ndarray: The dimensions (width, height) of each tile.
+        """
+        if not 0 <= overlap < 1:
+            raise ValueError("Overlap must be in the range [0,1).")
         n_tiles_w, n_tiles_h = grid_size
 
         A = np.array(
@@ -118,8 +190,12 @@ class Tiling(dai.node.HostNode):
         return tile_dims
 
     def _compute_tile_positions(self):
-        """Computes and stores tile positions and their scaled dimensions based on the
-        grid matrix and overlap."""
+        """Computes and stores the tile positions and their scaled dimensions based on
+        the grid matrix and overlap.
+
+        This function is responsible for determining how the image is divided into tiles
+        and how each tile maps back to the original image coordinates.
+        """
         if (
             self.grid_size is None
             or self.overlap is None
