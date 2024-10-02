@@ -123,8 +123,8 @@ class MultiClassificationParser(dai.node.ThreadedHostNode):
 
     def __init__(
         self,
-        classification_attributes: List[str],
-        classification_labels: List[List[str]],
+        classification_attributes: List[str] = None,
+        classification_labels: List[List[str]] = None,
     ):
         """Initializes the MultipleClassificationParser node."""
         dai.node.ThreadedHostNode.__init__(self)
@@ -133,7 +133,28 @@ class MultiClassificationParser(dai.node.ThreadedHostNode):
         self.classification_attributes: List[str] = classification_attributes
         self.classification_labels: List[List[str]] = classification_labels
 
+    def setClassificationAttributes(self, classification_attributes: List[str]):
+        """Sets the classification attributes for the multiple classification model.
+
+        @param classification_attributes: List of attributes to be classified.
+        @type classification_attributes: List[str]
+        """
+        self.classification_attributes = classification_attributes
+
+    def setClassificationLabels(self, classification_labels: List[List[str]]):
+        """Sets the classification labels for the multiple classification model.
+
+        @param classification_labels: List of class labels for each attribute.
+        @type classification_labels: List[List[str]]
+        """
+        self.classification_labels = classification_labels
+
     def run(self):
+        if not self.classification_attributes:
+            raise ValueError("Classification attributes must be provided.")
+        if not self.classification_labels:
+            raise ValueError("Classification labels must be provided.")
+
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
