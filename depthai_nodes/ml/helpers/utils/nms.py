@@ -5,13 +5,14 @@ import numpy as np
 def nms_detections(detections: list[dai.ImgDetection], conf_thresh=0.3, iou_thresh=0.4):
     """Applies Non-Maximum Suppression (NMS) on a list of dai.ImgDetection objects.
 
-    Parameters:
-    - detections: List of dai.ImgDetection objects.
-    - conf_thresh: Confidence threshold for filtering boxes.
-    - iou_thresh: IoU threshold for NMS.
+    @param detections: List of dai.ImgDetection objects. @type
+    detections: list[dai.ImgDetection] @param conf_thresh: Confidence
+    threshold for filtering boxes. @type conf_thresh: float @param
+    iou_thresh: IoU threshold for Non-Maximum Suppression (NMS). @type
+    iou_thresh: float
 
-    Returns:
-    - A list of dai.ImgDetection objects after NMS.
+    @return: A list of dai.ImgDetection objects after applying NMS.
+    @rtype: list[dai.ImgDetection]
     """
     if len(detections) == 0:
         return []
@@ -54,13 +55,16 @@ def nms_detections(detections: list[dai.ImgDetection], conf_thresh=0.3, iou_thre
 def nms(boxes, scores, iou_thresh):
     """Perform Non-Maximum Suppression (NMS).
 
-    Parameters:
-    - boxes: ndarray of shape (N, 4), where each row is [xmin, ymin, xmax, ymax].
-    - scores: ndarray of shape (N,), scores for each box.
-    - iou_thresh: float, IoU threshold for NMS.
-
-    Returns:
-    - List of indices of boxes to keep.
+    @param boxes: An ndarray of shape (N, 4), where each row is [xmin, ymin, xmax,
+        ymax].
+    @type boxes: np.ndarray
+    @param scores: An ndarray of shape (N,), containing the confidence scores for each
+        box.
+    @type scores: np.ndarray
+    @param iou_thresh: The IoU threshold for Non-Maximum Suppression (NMS).
+    @type iou_thresh: float
+    @return: A list of indices of the boxes to keep after applying NMS.
+    @rtype: list[int]
     """
     x1 = boxes[:, 0]
     y1 = boxes[:, 1]

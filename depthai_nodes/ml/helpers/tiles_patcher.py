@@ -9,13 +9,18 @@ class TilesPatcher(dai.node.HostNode):
     detections from tiles back into the global frame, and sends out the combined
     detections for further processing.
 
-    Attributes:
-        conf_thresh (float): Confidence threshold for filtering detections.
-        iou_thresh (float): IOU threshold for non-max suppression.
-        tile_manager (Tiling): Manager responsible for handling tiling configurations.
-        tile_buffer (list): Buffer to store tile detections temporarily.
-        current_timestamp (float): Timestamp for the current frame being processed.
-        expected_tiles_count (int): Number of tiles expected per frame.
+    @ivar conf_thresh: Confidence threshold for filtering detections.
+    @type conf_thresh: float
+    @ivar iou_thresh: IOU threshold for non-max suppression.
+    @type iou_thresh: float
+    @ivar tile_manager: Manager responsible for handling tiling configurations.
+    @type tile_manager: Tiling
+    @ivar tile_buffer: Buffer to store tile detections temporarily.
+    @type tile_buffer: list
+    @ivar current_timestamp: Timestamp for the current frame being processed.
+    @type current_timestamp: float
+    @ivar expected_tiles_count: Number of tiles expected per frame.
+    @type expected_tiles_count: int
     """
 
     def __init__(self) -> None:
@@ -37,14 +42,19 @@ class TilesPatcher(dai.node.HostNode):
         """Configures the TilesPatcher node with the tile manager and links the neural
         network's output.
 
-        Args:
-            tile_manager (Tiling): The tiling manager responsible for tile positions and dimensions.
-            nn (dai.Node.Output): The output of the neural network node from which detections are received.
-            conf_thresh (float, optional): Confidence threshold for filtering detections (default: 0.3).
-            iou_thresh (float, optional): IOU threshold for non-max suppression (default: 0.4).
-
-        Returns:
-            TilesPatcher: Returns self for method chaining.
+        @param tile_manager: The tiling manager responsible for tile positions and
+            dimensions.
+        @type tile_manager: Tiling
+        @param nn: The output of the neural network node from which detections are
+            received.
+        @type nn: dai.Node.Output
+        @param conf_thresh: Confidence threshold for filtering detections (default:
+            0.3).
+        @type conf_thresh: float
+        @param iou_thresh: IOU threshold for non-max suppression (default: 0.4).
+        @type iou_thresh: float
+        @return: Returns self for method chaining.
+        @rtype: TilesPatcher
         """
         self.conf_thresh = conf_thresh
         self.iou_thresh = iou_thresh
@@ -65,8 +75,8 @@ class TilesPatcher(dai.node.HostNode):
         patches back into the global frame and buffering them until all tiles for the
         current frame are processed.
 
-        Args:
-            nn_output (dai.ImgDetections): The detections from the neural network's output.
+        @param nn_output: The detections from the neural network's output.
+        @type nn_output: dai.ImgDetections
         """
         timestamp = nn_output.getTimestamp()
         device_timestamp = nn_output.getTimestampDevice()
@@ -96,12 +106,12 @@ class TilesPatcher(dai.node.HostNode):
         """Maps bounding boxes from their local tile coordinates back to the global
         frame of the full image.
 
-        Args:
-            bboxes (list[dai.ImgDetection]): The bounding boxes to be mapped.
-            tile_index (int): The index of the tile being proccessed.
-
-        Returns:
-            list[dai.ImgDetection]: Mapped bounding boxes in the global image frame.
+        @param bboxes: The bounding boxes to be mapped.
+        @type bboxes: list[dai.ImgDetection]
+        @param tile_index: The index of the tile being processed.
+        @type tile_index: int
+        @return: Mapped bounding boxes in the global image frame.
+        @rtype: list[dai.ImgDetection]
         """
         tile_info = self._get_tile_info(tile_index)
         if (
@@ -178,7 +188,12 @@ class TilesPatcher(dai.node.HostNode):
 
     def _get_tile_info(self, tile_index: int):
         """Retrieves the tile's coordinates and scaled dimensions based on the tile
-        index."""
+        index.
+
+        @param tile_index: The index of the tile.
+        @type tile_index: int
+        @return: Tile information for the given index.
+        """
         if self.tile_manager is None or self.tile_manager.tile_positions is None:
             raise ValueError("Tile manager or tile positions not initialized.")
         if tile_index >= len(self.tile_manager.tile_positions):
@@ -187,7 +202,11 @@ class TilesPatcher(dai.node.HostNode):
 
     def _send_output(self, timestamp, device_timestamp):
         """Send the final combined bounding boxes as output when all tiles for a frame
-        are processed."""
+        are processed.
+
+        @param timestamp: The timestamp of the frame.
+        @param device_timestamp: The timestamp of the frame on the device.
+        """
         combined_bboxes: list[dai.ImgDetection] = []
         for bboxes in self.tile_buffer:
             combined_bboxes.extend(bboxes)
