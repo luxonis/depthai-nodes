@@ -10,15 +10,22 @@ class Tiling(dai.node.HostNode):
     overlapping tiles based on configuration parameters, and creates ImgFrames for each
     tile to be sent to a neural network node.
 
-    Attributes:
-        overlap (float): Overlap between adjacent tiles, valid in [0,1).
-        grid_size (tuple): Grid size (number of tiles horizontally and vertically).
-        grid_matrix (list): The matrix representing the grid of tiles.
-        nn_shape (tuple): Shape of the neural network input.
-        x (list): Vector representing the tile's dimensions.
-        tile_positions (list): Coordinates and scaled sizes of the tiles.
-        img_shape (tuple): Shape of the original input image.
-        global_detection (bool): Whether to use global detection.
+    @ivar overlap: Overlap between adjacent tiles, valid in [0,1).
+    @type overlap: float
+    @ivar grid_size: Grid size (number of tiles horizontally and vertically).
+    @type grid_size: tuple
+    @ivar grid_matrix: The matrix representing the grid of tiles.
+    @type grid_matrix: list
+    @ivar nn_shape: Shape of the neural network input.
+    @type nn_shape: tuple
+    @ivar x: Vector representing the tile's dimensions.
+    @type x: list
+    @ivar tile_positions: Coordinates and scaled sizes of the tiles.
+    @type tile_positions: list
+    @ivar img_shape: Shape of the original input image.
+    @type img_shape: tuple
+    @ivar global_detection: Whether to use global detection.
+    @type global_detection: bool
     """
 
     def __init__(self) -> None:
@@ -48,17 +55,22 @@ class Tiling(dai.node.HostNode):
         """Configures the Tiling node with grid size, overlap, image and neural network
         shapes, and other necessary parameters.
 
-        Args:
-            overlap (float): Overlap between adjacent tiles, valid in [0,1).
-            img_output (dai.Node.Output): The node from which the frames are sent.
-            grid_size (tuple): Number of tiles horizontally and vertically.
-            img_shape (tuple): Shape of the original image.
-            nn_shape (tuple): Shape of the neural network input.
-            global_detection (bool, optional): Whether to perform global detection.
-            grid_matrix (list, optional): Predefined matrix for tiling.
-
-        Returns:
-            Tiling: Returns self for method chaining.
+        @param overlap: Overlap between adjacent tiles, valid in [0,1).
+        @type overlap: float
+        @param img_output: The node from which the frames are sent.
+        @type img_output: dai.Node.Output
+        @param grid_size: Number of tiles horizontally and vertically.
+        @type grid_size: tuple
+        @param img_shape: Shape of the original image.
+        @type img_shape: tuple
+        @param nn_shape: Shape of the neural network input.
+        @type nn_shape: tuple
+        @param global_detection: Whether to perform global detection. Defaults to False.
+        @type global_detection: bool
+        @param grid_matrix: Predefined matrix for tiling. Defaults to None.
+        @type grid_matrix: list or None
+        @return: Returns self for method chaining.
+        @rtype: Tiling
         """
         self.sendProcessingToPipeline(True)
         self.link_args(img_output)
@@ -77,8 +89,8 @@ class Tiling(dai.node.HostNode):
         """Processes the input frame by cropping and tiling it, and sending each tile to
         the neural network input.
 
-        Args:
-            img_frame (dai.ImgFrame): The frame to be sent to a neural network.
+        @param img_frame: The frame to be sent to a neural network.
+        @type img_frame: dai.ImgFrame
         """
         frame: np.ndarray = img_frame.getCvFrame()
 
@@ -102,13 +114,14 @@ class Tiling(dai.node.HostNode):
         """Crops and resizes the input tile to fit the neural network's input shape.
         Adds padding if necessary to preserve aspect ratio.
 
-        Args:
-            frame (np.ndarray): The tile to be cropped and resized.
-            scaled_width (int): The width of the scaled tile.
-            scaled_height (int): The height of the scaled tile.
-
-        Returns:
-            np.ndarray: The padded and resized tile.
+        @param frame: The tile to be cropped and resized.
+        @type frame: np.ndarray
+        @param scaled_width: The width of the scaled tile.
+        @type scaled_width: int
+        @param scaled_height: The height of the scaled tile.
+        @type scaled_height: int
+        @return: The padded and resized tile.
+        @rtype: np.ndarray
         """
         if self.nn_shape is None:
             raise ValueError("NN shape is not initialized.")
@@ -132,15 +145,19 @@ class Tiling(dai.node.HostNode):
         neural network. This ImgFrame contains the tiled image in a planar format ready
         for inference.
 
-        Args:
-            tile (np.ndarray): The cropped tile.
-            frame: The original ImgFrame object, providing metadata such as timestamps.
-            tile_index (int): Index of the current tile.
-            scaled_width (int): Width of the scaled tile.
-            scaled_height (int): Height of the scaled tile.
-
-        Returns:
-            dai.ImgFrame: The ImgFrame object with the tile data, ready for neural network inference.
+        @param tile: The cropped tile.
+        @type tile: np.ndarray
+        @param frame: The original ImgFrame object, providing metadata such as
+            timestamps.
+        @param tile_index: Index of the current tile.
+        @type tile_index: int
+        @param scaled_width: Width of the scaled tile.
+        @type scaled_width: int
+        @param scaled_height: Height of the scaled tile.
+        @type scaled_height: int
+        @return: The ImgFrame object with the tile data, ready for neural network
+            inference.
+        @rtype: dai.ImgFrame
         """
         if self.nn_shape is None:
             raise ValueError("NN shape is not initialized.")
@@ -164,13 +181,14 @@ class Tiling(dai.node.HostNode):
         """Calculates the dimensions (x, y) of each tile given the grid size, image
         shape, and overlap.
 
-        Args:
-            grid_size (tuple): The number of tiles in width and height.
-            img_shape (tuple): The dimensions (width, height) of the input image.
-            overlap (float): The overlap between adjacent tiles, valid in the range [0,1).
-
-        Returns:
-            np.ndarray: The dimensions (width, height) of each tile.
+        @param grid_size: The number of tiles in width and height.
+        @type grid_size: tuple
+        @param img_shape: The dimensions (width, height) of the input image.
+        @type img_shape: tuple
+        @param overlap: The overlap between adjacent tiles, valid in the range [0,1).
+        @type overlap: float
+        @return: The dimensions (width, height) of each tile.
+        @rtype: np.ndarray
         """
         if not 0 <= overlap < 1:
             raise ValueError("Overlap must be in the range [0,1).")

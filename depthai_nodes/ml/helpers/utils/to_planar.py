@@ -6,12 +6,12 @@ def to_planar(arr: np.ndarray, shape: tuple) -> np.ndarray:
     """Converts the input image `arr` (NumPy array) to the planar format expected by
     depthai. The image is resized to the dimensions specified in `shape`.
 
-    Parameters:
-    - arr: Input NumPy array (image).
-    - shape: Target dimensions (width, height).
-
-    Returns:
-    - A 1D NumPy array with the planar image data.
+    @param arr: Input NumPy array (image).
+    @type arr: np.ndarray
+    @param shape: Target dimensions (width, height).
+    @type shape: tuple
+    @return: A 1D NumPy array with the planar image data.
+    @rtype: np.ndarray
     """
     if arr.shape[:2] == shape:
         resized = arr
