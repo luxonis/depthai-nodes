@@ -1,4 +1,4 @@
-from typing import List, Tuple, Union
+from typing import List, Union
 
 import depthai as dai
 import numpy as np
@@ -7,6 +7,8 @@ from ...messages import (
     CornerDetections,
     ImgDetectionExtended,
     ImgDetectionsExtended,
+    Keypoint,
+    Keypoints,
     Line,
     Lines,
 )
@@ -16,49 +18,54 @@ from .keypoints import create_keypoints_message
 def create_detection_message(
     bboxes: np.ndarray,
     scores: np.ndarray,
-    labels: List[int] = None,
-    keypoints: Union[
-        List[Tuple[float, float]], List[Tuple[float, float, float]]
-    ] = None,
-    masks: List[np.ndarray] = None,
-) -> dai.ImgDetections:
-    """Create a DepthAI message for an object detection.
+    labels: np.ndarray = None,
+    keypoints: np.ndarray = None,
+    keypoints_scores: np.ndarray = None,
+    masks: np.ndarray = None,
+) -> Union[dai.ImgDetections, ImgDetectionsExtended]:
+    """Create a DepthAI message for object detection.
 
-    @param bbox: Bounding boxes of detected objects of shape (N,4) meaning [...,[x_min, y_min, x_max, y_max],...].
+    @param bbox: Bounding boxes of the detected objects of shape (N,4) meaning [...,[x_min, y_min, x_max, y_max],...].
     @type bbox: np.ndarray
-    @param scores: Confidence scores of detected objects of shape (N,).
+    @param scores: Confidence scores of the detected objects of shape (N,).
     @type scores: np.ndarray
-    @param labels: Labels of detected objects of shape (N,).
-    @type labels: List[int]
-    @param keypoints: Keypoints of detected objects of shape (N,2) or (N,3).
-    @type keypoints: Optional[Union[List[Tuple[float, float]], List[Tuple[float, float, float]]]]
-    @param masks: Masks of detected objects of shape (N, H, W).
-    @type masks: List[np.ndarray]
+    @param labels: Labels of the detected objects of shape (N,).
+    @type labels: np.ndarray
+    @param keypoints: Keypoints of the detected objects of shape (N,K,2) for 3D keypoints and (N,K,3) for 3D keypoints. K is the number of keypoints per object.
+    @type keypoints: np.ndarray
+    @param bbox_scores: Confidence scores of the detected keypoints of shape (N,K).
+    @type scores: np.ndarray
+    @param masks: Masks of the detected objects of shape (N,H,W).
+    @type masks: np.ndarray
 
-    @return: Message containing the bounding boxes, labels, confidence scores, and keypoints of detected objects.
-    @rtype: dai.ImgDetections OR ImgDetectionsExtended
+    @return: Message containing the bounding boxes, confidence scores, and optionally also labels, keypoints, and masks of the detected objects.
+    @rtype: Union[dai.ImgDetections, ImgDetectionsExtended]
 
-    @raise ValueError: If the bboxes are not a numpy array.
-    @raise ValueError: If the bboxes are not of shape (N,4).
-    @raise ValueError: If the bboxes 2nd dimension is not of size 4.
-    @raise ValueError: If the bboxes are not in format [x_min, y_min, x_max, y_max] where xmin < xmax and ymin < ymax.
-    @raise ValueError: If the scores are not a numpy array.
-    @raise ValueError: If the scores are not of shape (N,).
-    @raise ValueError: If the scores do not have the same length as bboxes.
-    @raise ValueError: If the labels are not a list.
-    @raise ValueError: If each label is not an integer.
-    @raise ValueError: If the labels do not have the same length as bboxes.
-    @raise ValueError: If the keypoints are not a list.
-    @raise ValueError: If each keypoint pair is not a tuple of two or three floats.
-    @raise ValueError: If the keypoints do not have the same length as bboxes.
-    @raise ValueError: If the masks are not a list.
-    @raise ValueError: If each mask is not a 2D numpy array.
+    @raise ValueError: If bboxes are not a numpy array.
+    @raise ValueError: If bboxes are not of shape (N,4).
+    @raise ValueError: If bboxes 2nd dimension is not of size 4.
+    @raise ValueError: If bboxes are not in format [x_min, y_min, x_max, y_max] where xmin < xmax and ymin < ymax.
+    @raise ValueError: If scores are not a numpy array.
+    @raise ValueError: If scores are not of shape (N,).
+    @raise ValueError: If scores do not have the same length as bboxes.
+    @raise ValueError: If labels are not a numpy array.
+    @raise ValueError: If labels are not of shape (N,).
+    @raise ValueError: If labels do not have the same length as bboxes.
+    @raise ValueError: If keypoints are not a numpy array.
+    @raise ValueError: If keypoints are not of shape (N,K,2) or (N,K,3).
+    @raise ValueError: If keypoints do not have the same length as bboxes.
+    @raise ValueError: If keypoints 3nd dimension is not of size 2 or 3.
+    @raise ValueError: If keypoint_scores are not a numpy array.
+    @raise ValueError: If keypoint_scores are not of shape (N,K).
+    @raise ValueError: If keypoint_scores do not have the same length as bboxes
+    @raise ValueError: If masks are not a numpy array.
+    @raise ValueError: If masks are not of shape (N,H,W).
+    @raise ValueError: If masks do not have the same length as bboxes.
     """
 
     # checks for bboxes
     if not isinstance(bboxes, np.ndarray):
         raise ValueError(f"Bounding boxes should be numpy array, got {type(bboxes)}.")
-
     if len(bboxes) != 0:
         if len(bboxes.shape) != 2:
             raise ValueError(
@@ -68,7 +75,6 @@ def create_detection_message(
             raise ValueError(
                 f"Bounding boxes 2nd dimension should be of size 4 e.g. [x_min, y_min, x_max, y_max] got {bboxes.shape[1]}."
             )
-
         x_valid = bboxes[:, 0] < bboxes[:, 2]
         y_valid = bboxes[:, 1] < bboxes[:, 3]
         if not (np.all(x_valid) and np.all(y_valid)):
@@ -76,71 +82,74 @@ def create_detection_message(
                 "Bounding boxes should be in format [x_min, y_min, x_max, y_max] where xmin < xmax and ymin < ymax."
             )
 
+    number_of_detections = bboxes.shape[0]
+
     # checks for scores
     if not isinstance(scores, np.ndarray):
         raise ValueError(f"Scores should be numpy array, got {type(scores)}.")
-
     if len(scores) != 0:
         if len(scores.shape) != 1:
+            raise ValueError(f"Scores should be of shape (N,), got {scores.shape}.")
+        if scores.shape[0] != number_of_detections:
             raise ValueError(
-                f"Scores should be of shape (N,) meaning, got {scores.shape}."
-            )
-        if scores.shape[0] != bboxes.shape[0]:
-            raise ValueError(
-                f"Scores should have same length as bboxes, got {scores.shape[0]} and {bboxes.shape[0]}."
+                f"Scores should have length N. Got {scores.shape[0]}, expected {number_of_detections}."
             )
 
     # checks for labels
-    if labels is not None:
-        if not isinstance(labels, List):
-            raise ValueError(f"Labels should be list, got {type(labels)}.")
-        for label in labels:
-            if not isinstance(label, int):
-                raise ValueError(
-                    f"Labels should be list of integers, got {type(label)}."
-                )
-        if len(labels) != bboxes.shape[0]:
+    if labels is not None and len(labels) != 0:
+        if not isinstance(labels, np.ndarray):
+            raise ValueError(f"Labels should be numpy array, got {type(labels)}.")
+        if len(labels.shape) != 1:
+            raise ValueError(f"Labels should be of shape (N,), got {labels.shape}.")
+        if len(labels) != number_of_detections:
             raise ValueError(
-                f"Labels should have same length as bboxes, got {len(labels)} and {bboxes.shape[0]}."
+                f"Labels should have length N. Got {len(labels)}, expected {number_of_detections}."
             )
 
     # checks for keypoints
-    if keypoints is not None:
-        if not isinstance(keypoints, List):
-            raise ValueError(f"Keypoints should be list, got {type(keypoints)}.")
-        if len(keypoints) != bboxes.shape[0]:
+    if keypoints is not None and len(keypoints) != 0:
+        if not isinstance(keypoints, np.ndarray):
+            raise ValueError(f"Keypoints should be numpy array, got {type(keypoints)}.")
+        if len(keypoints.shape) != 3:
             raise ValueError(
-                f"Keypoints should have same length as bboxes, got {len(keypoints)} and {bboxes.shape[0]}."
+                f"Keypoints should be of shape (N,K,2) or (N,K,3), got {labels.shape}."
+            )
+        if len(keypoints) != number_of_detections:
+            raise ValueError(
+                f"Keypoints should have length N. Got {len(keypoints)}, expected {number_of_detections}."
+            )
+        if keypoints.shape[2] not in [2, 3]:
+            raise ValueError(
+                f"Keypoint should consist of 2 (x,y) or 3 (x,y,z) coordinates, got {keypoints.shape[2]}."
             )
 
-        for object_keypoints in keypoints:
-            dim = len(object_keypoints[0]) if len(object_keypoints) != 0 else 0
-            for point in object_keypoints:
-                if not isinstance(point, (Tuple, List)):
-                    raise ValueError(
-                        f"Keypoint pairs should be list of tuples, got {type(point)}."
-                    )
-                if len(point) not in [2, 3]:
-                    raise ValueError(
-                        f"Keypoint pairs should be list of tuples of length 2 or 3, got {len(point)}."
-                    )
-                if len(point) != dim:
-                    raise ValueError(
-                        "All keypoints should be of same dimension e.g. [x, y] or [x, y, z], got mixed inner dimensions."
-                    )
-
-    if masks is not None and len(masks) != 0:
-        if not isinstance(masks, List):
-            raise ValueError(f"masks should be list, got {type(masks)}.")
-        for mask in masks:
-            if not isinstance(mask, np.ndarray):
-                raise ValueError(f"mask should be numpy array, got {type(mask)}.")
-            if len(mask.shape) != 2:
-                raise ValueError(f"mask should be a 2D matrix, got {mask.shape}.")
-
-        if len(masks) != bboxes.shape[0]:
+    # checks for keypoint scores
+    if keypoints_scores is not None and len(keypoints_scores) != 0:
+        if not isinstance(keypoints_scores, np.ndarray):
             raise ValueError(
-                f"masks should have same length as bboxes, got {len(masks)} and {bboxes.shape[0]}."
+                f"Keypoint scores should be numpy array, got {type(keypoints_scores)}."
+            )
+        if len(keypoints_scores) != 0:
+            if len(keypoints_scores.shape) != 2:
+                raise ValueError(
+                    f"Keypoints Scores should be of shape (N,K), got {keypoints_scores.shape}."
+                )
+            if len(keypoints_scores) != number_of_detections:
+                raise ValueError(
+                    f"Keypoints Scores should have length N. Got {len(keypoints_scores)}, expected {number_of_detections}."
+                )
+
+    # checks for masks
+    if masks is not None and len(masks) != 0:
+        if not isinstance(masks, np.ndarray):
+            raise ValueError(f"Masks should be numpy array, got {type(masks)}.")
+        if len(masks.shape) != 3:
+            raise ValueError(
+                f"Keypoints should be of shape (N,H,W), got {labels.shape}."
+            )
+        if len(masks) != number_of_detections:
+            raise ValueError(
+                f"Masks should have length N. Got {len(masks)}, expected {number_of_detections}."
             )
 
     if keypoints is not None or masks is not None:
@@ -150,26 +159,47 @@ def create_detection_message(
         img_detection = dai.ImgDetection
         img_detections = dai.ImgDetections
 
-    detections = []
-    for i in range(bboxes.shape[0]):
-        detection = img_detection()
-        detection.xmin = bboxes[i][0]
-        detection.ymin = bboxes[i][1]
-        detection.xmax = bboxes[i][2]
-        detection.ymax = bboxes[i][3]
-        detection.confidence = scores[i]
-        if labels is None:
-            detection.label = 0
-        else:
-            detection.label = labels[i]
+    dets_list = []
+    for i in range(number_of_detections):
+        det = img_detection()
+
+        # set bbox coordinates
+        det.xmin = bboxes[i][0].item()
+        det.ymin = bboxes[i][1].item()
+        det.xmax = bboxes[i][2].item()
+        det.ymax = bboxes[i][3].item()
+
+        # set confidence score
+        det.confidence = scores[i].item()
+
+        # set label
+        det.label = labels[i].item() if labels is not None else 0
+
+        # set keypoints
         if keypoints is not None:
-            detection.keypoints = keypoints[i]
+            kps_list = []
+            for ii, keypoint in enumerate(keypoints[i]):
+                kp = Keypoint()
+                kp.x = keypoint[0].item()
+                kp.y = keypoint[1].item()
+                if len(keypoint) > 2:
+                    kp.z = keypoint[2].item()
+                # set keypoint score
+                if keypoints_scores is not None:
+                    kp.confidence = keypoints_scores[i, ii].item()
+                kps_list.append(kp)
+            kps = Keypoints()
+            kps.keypoints = kps_list
+            det.keypoints = kps
+
+        # set mask
         if masks is not None:
-            detection.mask = masks[i]
-        detections.append(detection)
+            det.mask = masks[i]
+
+        dets_list.append(det)
 
     detections_msg = img_detections()
-    detections_msg.detections = detections
+    detections_msg.detections = dets_list
     return detections_msg
 
 

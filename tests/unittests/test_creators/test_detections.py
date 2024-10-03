@@ -60,7 +60,7 @@ def test_scores_not_numpy_array():
 def test_scores_shape():
     with pytest.raises(
         ValueError,
-        match=re.escape("Scores should be of shape (N,) meaning, got (1, 1)."),
+        match=re.escape("Scores should be of shape (N,), got (1, 1)."),
     ):
         create_detection_message(
             np.array([[1.0, 2.0, 3.0, 4.0]]), np.array([[0.1]]), None, None
@@ -70,7 +70,7 @@ def test_scores_shape():
 def test_scores_length():
     with pytest.raises(
         ValueError,
-        match=re.escape("Scores should have same length as bboxes, got 1 and 2."),
+        match=re.escape("Scores should have length N. Got 1 expected 2."),
     ):
         create_detection_message(
             np.array([[1.0, 2.0, 3.0, 4.0], [1.0, 2.0, 3.0, 4.0]]),
@@ -81,7 +81,9 @@ def test_scores_length():
 
 
 def test_labels_list():
-    with pytest.raises(ValueError, match="Labels should be list, got <class 'int'>."):
+    with pytest.raises(
+        ValueError, match="Labels should be numpy array, got <class 'int'>."
+    ):
         create_detection_message(
             np.array([[1.0, 2.0, 3.0, 4.0]]), np.array([0.1]), 1, None
         )
@@ -89,28 +91,19 @@ def test_labels_list():
 
 def test_labels_bbox_lengths():
     with pytest.raises(
-        ValueError, match="Labels should have same length as bboxes, got 1 and 2."
+        ValueError, match="Labels should have length N. Got 1 expected 2."
     ):
         create_detection_message(
             np.array([[1.0, 2.0, 3.0, 4.0], [1.0, 2.0, 3.0, 4.0]]),
             np.array([0.1, 0.3]),
-            [1],
+            np.array([1]),
             None,
-        )
-
-
-def test_in_label_elements():
-    with pytest.raises(
-        ValueError, match="Labels should be list of integers, got <class 'str'>."
-    ):
-        create_detection_message(
-            np.array([[1.0, 2.0, 3.0, 4.0]]), np.array([0.1]), ["1"], None
         )
 
 
 def test_keypoints_list():
     with pytest.raises(
-        ValueError, match="Keypoints should be list, got <class 'int'>."
+        ValueError, match="Keypoints should be numpy array, got <class 'int'>."
     ):
         create_detection_message(
             np.array([[1.0, 2.0, 3.0, 4.0]]), np.array([0.1]), None, 1
@@ -119,13 +112,13 @@ def test_keypoints_list():
 
 def test_keypoints_bbox_lengths():
     with pytest.raises(
-        ValueError, match="Keypoints should have same length as bboxes, got 1 and 2."
+        ValueError, match="Keypoints should have length N. Got 1 expected 2."
     ):
         create_detection_message(
             np.array([[1.0, 2.0, 3.0, 4.0], [1.0, 2.0, 3.0, 4.0]]),
             np.array([0.1, 0.3]),
             None,
-            [[(0, 0), (1, 1)]],
+            np.array([[(0, 0), (1, 1)]]),
         )
 
 
@@ -155,7 +148,7 @@ def test_bboxes_scores_labels():
         [[20.0, 20.0, 40.0, 40.0], [50.0, 50.0, 100.0, 100.0], [10.0, 10.0, 20.0, 20.0]]
     )
     scores = np.array([0.1, 0.2, 0.3])
-    labels = [1, 2, 3]
+    labels = np.array([1, 2, 3])
 
     message = create_detection_message(bboxes, scores, labels, None)
 
@@ -168,7 +161,7 @@ def test_bboxes_scores_keypoints():
         [[20.0, 20.0, 40.0, 40.0], [50.0, 50.0, 100.0, 100.0], [10.0, 10.0, 20.0, 20.0]]
     )
     scores = np.array([0.1, 0.2, 0.3])
-    keypoints = [[(0, 0), (1, 1)], [], [(4, 4), (5, 5), (6, 6)]]
+    keypoints = np.array([[(0, 0), (1, 1)], [(2, 2), (3, 3)], [(4, 4), (5, 5)]])
 
     message = create_detection_message(bboxes, scores, None, keypoints)
 

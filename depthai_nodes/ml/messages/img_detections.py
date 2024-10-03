@@ -1,4 +1,4 @@
-from typing import List, Tuple, Union
+from typing import List
 
 import depthai as dai
 import numpy as np
@@ -11,68 +11,46 @@ class ImgDetectionExtended(dai.ImgDetection):
 
     Attributes
     ----------
-    keypoints: Union[List[Tuple[float, float]], List[Tuple[float, float, float]]]
-        Keypoints of the image detection.
+    keypoints: Keypoints
+        Keypoints of the detection.
     masks: np.ndarray
-        Mask of the image segmentation.
+        Segmentation Mask of the detection.
+    angle: float
+        Angle of the detection.
     """
 
     def __init__(self):
         """Initializes the ImgDetectionExtended object."""
-        dai.ImgDetection.__init__(self)  # TODO: change to super().__init__()?
-        self._keypoints: Union[
-            List[Tuple[float, float]], List[Tuple[float, float, float]]
-        ] = []
+        super().__init__()
+        self._keypoints: Keypoints = []
         self._mask: np.ndarray = np.array([])
+        self._angle: float = 0.0
 
     @property
     def keypoints(
         self,
-    ) -> Union[List[Tuple[float, float]], List[Tuple[float, float, float]]]:
+    ) -> Keypoints:
         """Returns the keypoints.
 
         @return: List of keypoints.
-        @rtype: Union[List[Tuple[float, float]], List[Tuple[float, float, float]]]
+        @rtype: Keypoints
         """
         return self._keypoints
 
     @keypoints.setter
     def keypoints(
         self,
-        value: Union[
-            List[Tuple[Union[int, float], Union[int, float]]],
-            List[Tuple[Union[int, float], Union[int, float], Union[int, float]]],
-        ],
+        value: Keypoints,
     ):
         """Sets the keypoints.
 
         @param value: List of keypoints.
-        @type value: Union[List[Tuple[Union[int, float], Union[int, float]]],
-            List[Tuple[Union[int, float], Union[int, float], Union[int, float]]]]
-        @raise TypeError: If the keypoints are not a list.
-        @raise TypeError: If each keypoint is not a tuple of two or three floats or
-            integers.
+        @type value: Keypoints
+        @raise TypeError: If the keypoints are not a Keypoints object.
         """
-        if not isinstance(value, list):
-            raise TypeError("Keypoints must be a list")
-        dim = len(value[0]) if value else 0
-        for item in value:
-            if (
-                not (isinstance(item, tuple) or isinstance(item, list))
-                or (len(item) != 2 and len(item) != 3)
-                or not all(isinstance(i, (int, float)) for i in item)
-            ):
-                raise TypeError(
-                    "Each keypoint must be a tuple of two or three floats or integers."
-                )
-            if len(item) != dim:
-                raise ValueError(
-                    "All keypoints must be of the same dimension e.g. [x, y] or [x, y, z], got mixed inner dimensions."
-                )
-        keypoints = []
-        for items in value:
-            keypoints.append(tuple(float(v) for v in items))
-        self._keypoints = keypoints
+        if not isinstance(value, Keypoints):
+            raise TypeError("Keypoints must be a Keypoints object")
+        self._keypoints = value
 
     @property
     def mask(self) -> np.ndarray:
@@ -99,7 +77,7 @@ class ImgDetectionExtended(dai.ImgDetection):
         self._mask = value
 
 
-class ImgDetectionsExtended(dai.Buffer):
+class ImgDetectionsExtended(dai.ImgDetections):
     """ImgDetectionsExtended class for storing image detections with keypoints.
 
     Attributes
@@ -110,7 +88,7 @@ class ImgDetectionsExtended(dai.Buffer):
 
     def __init__(self):
         """Initializes the ImgDetectionsExtended object."""
-        dai.Buffer.__init__(self)  # TODO: change to super().__init__()?
+        super().__init__()
         self._detections: List[ImgDetectionExtended] = []
 
     @property
