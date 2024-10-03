@@ -1,11 +1,14 @@
+from typing import Any, Dict
+
 import depthai as dai
 import numpy as np
 
 from ..messages.creators import create_detection_message
+from .base_parser import BaseParser
 from .utils.scrfd import decode_scrfd
 
 
-class SCRFDParser(dai.node.ThreadedHostNode):
+class SCRFDParser(BaseParser):
     """Parser class for parsing the output of the SCRFD face detection model.
 
     Attributes
@@ -14,6 +17,8 @@ class SCRFDParser(dai.node.ThreadedHostNode):
         Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
     out : Node.Output
         Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
+    output_layer_name: str
+        Name of the output layer from which the scores are extracted.
     conf_threshold : float
         Confidence score threshold for detected faces.
     iou_threshold : float
@@ -58,9 +63,8 @@ class SCRFDParser(dai.node.ThreadedHostNode):
         @param input_size: Input size of the model.
         @type input_size: tuple
         """
-        dai.node.ThreadedHostNode.__init__(self)
-        self.input = self.createInput()
-        self.out = self.createOutput()
+        super().__init__()
+        self.output_layer_names = []
 
         self.conf_threshold = conf_threshold
         self.iou_threshold = iou_threshold
@@ -69,6 +73,43 @@ class SCRFDParser(dai.node.ThreadedHostNode):
         self.feat_stride_fpn = feat_stride_fpn
         self.num_anchors = num_anchors
         self.input_size = input_size
+
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ):
+        """Sets the head configuration for the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        SCRFDParser
+            Returns the parser object with the head configuration set.
+        """
+
+        output_layers = head_config["outputs"]
+        score_layer_names = [layer for layer in output_layers if "score" in layer]
+        bbox_layer_names = [layer for layer in output_layers if "bbox" in layer]
+        kps_layer_names = [layer for layer in output_layers if "kps" in layer]
+        if len(score_layer_names) != len(bbox_layer_names) or len(
+            score_layer_names
+        ) != len(kps_layer_names):
+            raise ValueError(
+                f"Number of score, bbox, and kps layers should be equal, got {len(score_layer_names)}, {len(bbox_layer_names)}, and {len(kps_layer_names)} layers."
+            )
+
+        self.conf_threshold = head_config["conf_threshold"]
+        self.iou_threshold = head_config["iou_threshold"]
+        self.max_det = head_config["max_det"]
+        self.feat_stride_fpn = head_config["feat_stride_fpn"]
+        self.num_anchors = head_config["num_anchors"]
+        self.output_layer_names = output_layers
+
+        return self
 
     def setConfidenceThreshold(self, threshold):
         """Sets the confidence score threshold for detected faces.
@@ -133,15 +174,15 @@ class SCRFDParser(dai.node.ThreadedHostNode):
                 score_layer_name = f"score_{stride}"
                 bbox_layer_name = f"bbox_{stride}"
                 kps_layer_name = f"kps_{stride}"
-                if score_layer_name not in output.getAllLayerNames():
+                if score_layer_name not in self.output_layer_names:
                     raise ValueError(
                         f"Layer {score_layer_name} not found in the model output."
                     )
-                if bbox_layer_name not in output.getAllLayerNames():
+                if bbox_layer_name not in self.output_layer_names:
                     raise ValueError(
                         f"Layer {bbox_layer_name} not found in the model output."
                     )
-                if kps_layer_name not in output.getAllLayerNames():
+                if kps_layer_name not in self.output_layer_names:
                     raise ValueError(
                         f"Layer {kps_layer_name} not found in the model output."
                     )
@@ -177,7 +218,7 @@ class SCRFDParser(dai.node.ThreadedHostNode):
                 nms_threshold=self.iou_threshold,
             )
             detection_msg = create_detection_message(
-                bboxes, scores, None, keypoints.tolist()
+                bboxes=bboxes, scores=scores, labels=None, keypoints=keypoints
             )
             detection_msg.setTimestamp(output.getTimestamp())
 
