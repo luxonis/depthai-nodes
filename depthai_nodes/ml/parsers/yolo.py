@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 import depthai as dai
 import numpy as np
 
@@ -35,14 +37,18 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
 
     _KPTS_MODE = 0
     _SEG_MODE = 1
+    _DET_MODE = 2
 
     def __init__(
         self,
-        conf_threshold: int = 0.5,
+        conf_threshold: float = 0.5,
         n_classes: int = 1,
-        iou_threshold: int = 0.5,
+        iou_threshold: float = 0.5,
         mask_conf: float = 0.5,
         n_keypoints: int = 17,
+        anchors: Optional[List[Optional[np.ndarray]]] = None,
+        bbox_only: bool = False,
+        yolo_version: Optional[str] = None,
     ):
         """Initialize the YOLOExtendedParser node.
 
@@ -56,6 +62,13 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
         @type mask_conf: float
         @param n_keypoints: The number of keypoints in the model
         @type n_keypoints: int
+        @param anchors: The anchors for the YOLO model
+        @type anchors: List[np.ndarray]
+        @param bbox_only: If True, the parser will only output the detections without
+            keypoints or masks
+        @type bbox_only: bool
+        @param yolo_version: The version of the YOLO model
+        @type yolo_version: Optional[str]
         """
         dai.node.ThreadedHostNode.__init__(self)
         self.input = self.createInput()
@@ -66,6 +79,9 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
         self.iou_threshold = iou_threshold
         self.mask_conf = mask_conf
         self.n_keypoints = n_keypoints
+        self.anchors = anchors if anchors is not None else [None, None, None]
+        self.bbox_only = bbox_only
+        self.yolo_version = yolo_version
 
     def setConfidenceThreshold(self, threshold):
         """Sets the confidence score threshold for detected faces.
@@ -107,6 +123,31 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
         """
         self.n_keypoints = n_keypoints
 
+    def setAnchors(self, anchors):
+        """Sets the anchors for the YOLO model.
+
+        @param anchors: The anchors for the YOLO model.
+        @type anchors: List[np.ndarray]
+        """
+        self.anchors = anchors
+
+    def setBboxOnly(self, bbox_only):
+        """Sets the parser to output only the detections without keypoints or masks.
+
+        @param bbox_only: If True, the parser will only output the detections without
+            keypoints or masks.
+        @type bbox_only: bool
+        """
+        self.bbox_only = bbox_only
+
+    def setYoloVersion(self, yolo_version):
+        """Sets the version of the YOLO model.
+
+        @param yolo_version: The version of the YOLO model.
+        @type yolo_version: Optional[str]
+        """
+        self.yolo_version = yolo_version
+
     def _get_segmentation_outputs(self, output):
         """Get the segmentation outputs from the Neural Network data."""
         # Get all the layer names
@@ -146,7 +187,9 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
                 for o in outputs_names
             ]
 
-            if any("kpt_output" in name for name in layer_names):
+            if self.bbox_only:
+                mode = self._DET_MODE
+            elif any("kpt_output" in name for name in layer_names):
                 mode = self._KPTS_MODE
                 # Get the keypoint outputs
                 kpts_output_names = sorted(
@@ -185,11 +228,13 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
             results = decode_yolo_output(
                 outputs_values,
                 [8, 16, 32],
-                [None, None, None],
+                self.anchors,
                 kpts=kpts_outputs if mode == self._KPTS_MODE else None,
                 conf_thres=self.conf_threshold,
                 iou_thres=self.iou_threshold,
                 num_classes=self.n_classes,
+                det_mode=mode == self._DET_MODE,
+                yolo_version=self.yolo_version,
             )
 
             bboxes, labels, scores, additional_output = [], [], [], []
@@ -221,15 +266,25 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
 
             if mode == self._KPTS_MODE:
                 detections_message = create_detection_message(
-                    np.array(bboxes),
-                    np.array(scores),
-                    labels,
-                    keypoints=additional_output,
+                    bboxes=np.array(bboxes),
+                    scores=np.array(scores),
+                    labels=np.array(labels),
+                    keypoints=np.array(additional_output),
                 )
             elif mode == self._SEG_MODE:
                 detections_message = create_detection_message(
-                    np.array(bboxes), np.array(scores), labels, masks=additional_output
+                    bboxes=np.array(bboxes),
+                    scores=np.array(scores),
+                    labels=np.array(labels),
+                    masks=np.array(additional_output),
                 )
+            elif mode == self._DET_MODE:
+                detections_message = create_detection_message(
+                    bboxes=np.array(bboxes),
+                    scores=np.array(scores),
+                    labels=np.array(labels),
+                )
+
             detections_message.setTimestamp(output.getTimestamp())
 
             self.out.send(detections_message)

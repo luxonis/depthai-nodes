@@ -51,6 +51,7 @@ def non_max_suppression(
     max_nms: int = 30000,
     max_wh: int = 7680,
     kpts_mode: bool = False,
+    det_mode: bool = False,
 ) -> List[np.ndarray]:
     """Performs Non-Maximum Suppression (NMS) on inference results.
 
@@ -78,15 +79,23 @@ def non_max_suppression(
     @type max_wh: int
     @param kpts_mode: Keypoints mode.
     @type kpts_mode: bool
+    @param det_mode: Detection only mode.
+    @type det_mode: bool
     @return: An array of detections with either kpts or segmentation outputs.
     @rtype: List[np.ndarray]
     """
     bs = prediction.shape[0]  # batch size
+
+    # Detection: 4 (bbox) + 1 (objectness) = 5
     # Keypoints: 4 (bbox) + 1 (objectness) + 51 (kpts) = 56
     # Segmentation: 4 (bbox) + 1 (objectness) + 4 (pos) = 9
-    num_classes_check = prediction.shape[2] - (
-        56 if kpts_mode else 9
-    )  # number of classes
+    if det_mode:
+        num_classes_check = prediction.shape[2] - 5
+    else:
+        num_classes_check = prediction.shape[2] - (
+            56 if kpts_mode else 9
+        )  # number of classes
+
     nm = prediction.shape[2] - num_classes - 5
     pred_candidates = prediction[..., 4] > conf_thres  # candidates
 
@@ -173,8 +182,10 @@ def non_max_suppression(
 def parse_yolo_outputs(
     outputs: List[np.ndarray],
     strides: List[int],
-    anchors: np.ndarray,
+    anchors: List[Optional[np.ndarray]],
     kpts: Optional[List[np.ndarray]] = None,
+    det_mode: bool = False,
+    yolo_version: Optional[str] = None,
 ) -> np.ndarray:
     """Parse all outputs of an YOLO model (all channels).
 
@@ -186,6 +197,10 @@ def parse_yolo_outputs(
     @type anchors: np.ndarray
     @param kpts: An optional list of keypoints for each output.
     @type kpts: Optional[List[np.ndarray]]
+    @param det_mode: Detection only mode.
+    @type det_mode: bool
+    @param yolo_version: YOLO version.
+    @type yolo_version: Optional[str]
     @return: Parsed output.
     @rtype: np.ndarray
     """
@@ -193,7 +208,9 @@ def parse_yolo_outputs(
 
     for i, (x, s, a) in enumerate(zip(outputs, strides, anchors)):
         kpt = kpts[i] if kpts is not None else None
-        out = parse_yolo_output(x, s, a, head_id=i, kpts=kpt)
+        out = parse_yolo_output(
+            x, s, a, head_id=i, kpts=kpt, det_mode=det_mode, yolo_version=yolo_version
+        )
         output = out if output is None else np.concatenate((output, out), axis=1)
 
     return output
@@ -202,9 +219,11 @@ def parse_yolo_outputs(
 def parse_yolo_output(
     out: np.ndarray,
     stride: int,
-    anchors: np.ndarray,
+    anchors: Optional[np.ndarray],
     head_id: int = -1,
     kpts: Optional[np.ndarray] = None,
+    det_mode: bool = False,
+    yolo_version: Optional[str] = None,
 ) -> np.ndarray:
     """Parse a single channel output of an YOLO model.
 
@@ -218,25 +237,47 @@ def parse_yolo_output(
     @type head_id: int
     @param kpts: A single output of keypoints for the given channel.
     @type kpts: np.ndarray
+    @param det_mode: Detection only mode.
+    @type det_mode: bool
+    @param yolo_version: YOLO version.
+    @type yolo_version: Optional[str]
     @return: Parsed output.
     @rtype: np.ndarray
     """
-    na = 1 if anchors is None else len(anchors)  # number of anchors per head
+    na = 1 if anchors is None else len(anchors) // 2  # number of anchors per head
     bs, _, ny, nx = out.shape  # bs - batch size, ny|nx - y and x of grid cells
 
-    grid = make_grid_numpy(ny, nx, na)
+    if yolo_version is not None and yolo_version.lower() == "yolop":
+        grid = make_grid_numpy(ny, nx, 1)
+    else:
+        grid = make_grid_numpy(ny, nx, na)
 
     out = out.reshape(bs, na, -1, ny, nx).transpose((0, 1, 3, 4, 2))
 
-    x1y1 = grid - out[..., 0:2] + 0.5
-    x2y2 = grid + out[..., 2:4] + 0.5
+    if anchors is not None:
+        anchors = anchors.reshape(bs, -1, 1, 1, 2)
+        assert (
+            anchors.shape[1] == na
+        ), f"Anchor shape mismatch at dimension 1: {anchors.shape[1]} vs {na}"
 
-    c_xy = (x1y1 + x2y2) / 2
-    wh = x2y2 - x1y1
-    out[..., 0:2] = c_xy * stride
-    out[..., 2:4] = wh * stride
+        c_xy = out[..., 0:2] * 2 - 0.5 + grid
+        wh = (out[..., 2:4] * 2) ** 2
 
-    if kpts is None:
+        out[..., 0:2] = c_xy * stride
+        out[..., 2:4] = wh * anchors
+    else:
+        x1y1 = grid - out[..., 0:2] + 0.5
+        x2y2 = grid + out[..., 2:4] + 0.5
+
+        c_xy = (x1y1 + x2y2) / 2
+        wh = x2y2 - x1y1
+        out[..., 0:2] = c_xy * stride
+        out[..., 2:4] = wh * stride
+
+    if det_mode:
+        # Detection
+        out = out.reshape(bs, -1, 6)
+    elif kpts is None:
         # Segmentation
         x_coors = np.tile(np.arange(0, nx), (ny, 1))
         x_coors = np.repeat(x_coors[np.newaxis, np.newaxis, ..., np.newaxis], 1, axis=1)
@@ -319,6 +360,8 @@ def decode_yolo_output(
     conf_thres: float = 0.5,
     iou_thres: float = 0.45,
     num_classes: int = 1,
+    det_mode: bool = False,
+    yolo_version: Optional[str] = None,
 ) -> np.ndarray:
     """Decode the output of an YOLO instance segmentation or pose estimation model.
 
@@ -327,7 +370,7 @@ def decode_yolo_output(
     @param strides: List of strides.
     @type strides: List[int]
     @param anchors: List of anchors.
-    @type anchors: List[Optional[np.ndarray]]
+    @type anchors: List[np.ndarray]
     @param kpts: List of keypoints.
     @type kpts: List[np.ndarray]
     @param conf_thres: Confidence threshold.
@@ -336,16 +379,23 @@ def decode_yolo_output(
     @type iou_thres: float
     @param num_classes: Number of classes.
     @type num_classes: int
+    @param det_mode: Detection only mode.
+    @type det_mode: bool
+    @param yolo_version: YOLO version.
+    @type yolo_version: Optional[str]
     @return: NMS output.
     @rtype: np.ndarray
     """
-    output = parse_yolo_outputs(yolo_outputs, strides, anchors, kpts)
+    output = parse_yolo_outputs(
+        yolo_outputs, strides, anchors, kpts, det_mode, yolo_version
+    )
     output_nms = non_max_suppression(
         output,
         conf_thres=conf_thres,
         iou_thres=iou_thres,
         num_classes=num_classes,
         kpts_mode=kpts is not None,
+        det_mode=det_mode,
     )[0]
 
     return output_nms
