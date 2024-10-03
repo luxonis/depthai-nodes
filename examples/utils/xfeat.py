@@ -107,7 +107,7 @@ def xfeat_stereo(nn_archive: dai.NNArchive, input_shape: List[int], fps_limit: i
         parser = pipeline.create(XFeatStereoParser)
         parser.setOriginalSize(input_shape)
         parser.setInputSize(input_shape)
-        parser.setMaxKeypoints(4096)
+        parser.setMaxKeypoints(512)
 
         left_network.out.link(parser.reference_input)
         right_network.out.link(parser.target_input)
@@ -124,7 +124,9 @@ def xfeat_stereo(nn_archive: dai.NNArchive, input_shape: List[int], fps_limit: i
             features: dai.TrackedFeatures = parser_queue.get()
             features = features.trackedFeatures
 
-            resulting_frame = xfeat_visualizer(left_frame, right_frame, features)
+            resulting_frame = xfeat_visualizer(
+                left_frame, right_frame, features, draw_warp_corners=False
+            )
             number_of_matches = len(features) // 2
             cv2.putText(
                 resulting_frame,

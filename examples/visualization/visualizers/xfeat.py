@@ -31,7 +31,7 @@ def calc_warp_corners_and_matches(
     return warped_corners, [keypoints1, keypoints2, matches]
 
 
-def xfeat_visualizer(image1, image2, features):
+def xfeat_visualizer(image1, image2, features, draw_warp_corners=True):
     n = len(features)
     if n < 50:
         return image2
@@ -53,10 +53,11 @@ def xfeat_visualizer(image1, image2, features):
     matches = result[1][2]
 
     image2_with_corners = image2.copy()
-    for i in range(len(warped_corners)):
-        start_point = tuple(warped_corners[i - 1][0].astype(int))
-        end_point = tuple(warped_corners[i][0].astype(int))
-        cv2.line(image2_with_corners, start_point, end_point, (0, 255, 0), 4)
+    if draw_warp_corners:
+        for i in range(len(warped_corners)):
+            start_point = tuple(warped_corners[i - 1][0].astype(int))
+            end_point = tuple(warped_corners[i][0].astype(int))
+            cv2.line(image2_with_corners, start_point, end_point, (0, 255, 0), 4)
 
     debug_image = cv2.drawMatches(
         image1,
