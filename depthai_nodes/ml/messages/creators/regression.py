@@ -22,13 +22,13 @@ def create_regression_message(predictions: List[float]) -> Predictions:
             raise ValueError(
                 f"Each predictions should be a float, got {type(prediction)} instead."
             )
-        
+
     prediction_objects_list = []
     for prediction in predictions:
         prediction_object = Prediction()
         prediction_object.prediction = prediction
         prediction_objects_list.append((prediction_object))
-        
+
     predictions_message = Predictions()
     predictions_message.predictions = prediction_objects_list
 
