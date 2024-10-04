@@ -1,11 +1,14 @@
+from typing import Any, Dict
+
 import depthai as dai
 import numpy as np
 
 from ..messages.creators import create_line_detection_message
+from .base_parser import BaseParser
 from .utils.mlsd import decode_scores_and_points, get_lines
 
 
-class MLSDParser(dai.node.ThreadedHostNode):
+class MLSDParser(BaseParser):
     """Parser class for parsing the output of the M-LSD line detection model. The parser
     is specifically designed to parse the output of the M-LSD model. As the result, the
     node sends out the detected lines in the form of a message.
@@ -45,12 +48,39 @@ class MLSDParser(dai.node.ThreadedHostNode):
         @param dist_thr: Distance threshold for merging lines.
         @type dist_thr: float
         """
-        dai.node.ThreadedHostNode.__init__(self)
-        self.input = self.createInput()
-        self.out = self.createOutput()
+        super().__init__()
+
         self.topk_n = topk_n
         self.score_thr = score_thr
         self.dist_thr = dist_thr
+
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ):
+        """Sets the head configuration for the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        MLSDParser
+            Returns the parser object with the head configuration set.
+        """
+
+        output_layers = head_config["outputs"]
+        if len(output_layers) != 2:
+            raise ValueError(
+                f"Only two output layers are supported for MLSDParser, got {len(output_layers)} layers."
+            )
+        self.topk_n = head_config["topk_n"]
+        self.score_thr = head_config["score_thr"]
+        self.dist_thr = head_config["dist_thr"]
+
+        return self
 
     def setTopK(self, topk_n):
         """Sets the number of top candidates to keep.
