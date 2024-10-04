@@ -10,7 +10,10 @@ from .visualizers import (
     visualize_lane_detections,
     visualize_line_detections,
     visualize_map,
+    visualize_multi_classification,
     visualize_segmentation,
+    visualize_text_detection,
+    visualize_text_recognition,
     visualize_yolo_extended,
 )
 
@@ -33,6 +36,9 @@ visualizers_dict = {
     "YOLOExtendedParser": visualize_yolo_extended,
     "LaneDetectionParser": visualize_lane_detections,
     "FastSAMParser": visualize_fastsam,
+    "PPTextDetectionParser": visualize_text_detection,
+    "PaddleOCRParser": visualize_text_recognition,
+    "MultiClassificationParser": visualize_multi_classification,
 }
 
 

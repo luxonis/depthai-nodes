@@ -2,6 +2,7 @@ import depthai as dai
 from utils.arguments import initialize_argparser, parse_fps_limit, parse_model_slug
 from utils.model import get_input_shape, get_model_from_hub, get_parser
 from utils.parser import setup_parser
+from utils.xfeat import xfeat_mono, xfeat_stereo
 from visualization.visualize import visualize
 
 # Initialize the argument parser
@@ -18,8 +19,12 @@ nn_archive = get_model_from_hub(model_slug, model_version_slug)
 parser_class, parser_name = get_parser(nn_archive)
 input_shape = get_input_shape(nn_archive)
 
-if parser_name == "XFeatParser":
-    raise NotImplementedError("XFeatParser is not supported in this script yet.")
+if parser_name == "XFeatMonoParser":
+    xfeat_mono(nn_archive, input_shape, fps_limit)
+    exit(0)
+elif parser_name == "XFeatStereoParser":
+    xfeat_stereo(nn_archive, input_shape, fps_limit)
+    exit(0)
 
 # Create the pipeline
 with dai.Pipeline() as pipeline:

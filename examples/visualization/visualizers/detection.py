@@ -2,11 +2,17 @@ import cv2
 import depthai as dai
 import numpy as np
 
-from depthai_nodes.ml.messages import Clusters, ImgDetectionsExtended, Lines
+from depthai_nodes.ml.messages import (
+    Clusters,
+    CornerDetections,
+    ImgDetectionsExtended,
+    Lines,
+)
 
 from .utils.colors import get_yolo_colors
 from .utils.message_parsers import (
     parse_cluster_message,
+    parse_corner_detection_message,
     parse_detection_message,
     parse_line_detection_message,
     parse_yolo_kpts_message,
@@ -202,6 +208,44 @@ def visualize_lane_detections(
             )
 
     cv2.imshow("Lane Detection", frame)
+    if cv2.waitKey(1) == ord("q"):
+        cv2.destroyAllWindows()
+        return True
+
+    return False
+
+
+def visualize_text_detection(
+    frame: dai.ImgFrame, message: CornerDetections, extraParams: dict
+):
+    detections = parse_corner_detection_message(message)
+    for detection in detections:
+        for i in range(len(detection.keypoints)):
+            cv2.circle(
+                frame,
+                (int(detection.keypoints[i].x), int(detection.keypoints[i].y)),
+                3,
+                (0, 255, 0),
+                -1,
+            )
+            if i == len(detection.keypoints) - 1:
+                cv2.line(
+                    frame,
+                    (int(detection.keypoints[i].x), int(detection.keypoints[i].y)),
+                    (int(detection.keypoints[0].x), int(detection.keypoints[0].y)),
+                    (0, 255, 0),
+                    2,
+                )
+                break
+            cv2.line(
+                frame,
+                (int(detection.keypoints[i].x), int(detection.keypoints[i].y)),
+                (int(detection.keypoints[i + 1].x), int(detection.keypoints[i + 1].y)),
+                (0, 255, 0),
+                2,
+            )
+
+    cv2.imshow("Text Detection", frame)
     if cv2.waitKey(1) == ord("q"):
         cv2.destroyAllWindows()
         return True
