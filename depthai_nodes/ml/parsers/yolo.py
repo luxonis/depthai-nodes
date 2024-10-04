@@ -27,6 +27,13 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
         Mask confidence threshold.
     n_keypoints : int
         Number of keypoints in the model.
+    anchors : Optional[List[np.ndarray]]
+        Anchors for the YOLO model (optional).
+    bbox_only : bool
+        If True, the parser will only output the bbox detections without keypoints or masks.
+    yolo_version : Optional[str]
+        Version of the YOLO model (optional).
+
 
     Output Message/s
     ----------------
@@ -46,7 +53,7 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
         iou_threshold: float = 0.5,
         mask_conf: float = 0.5,
         n_keypoints: int = 17,
-        anchors: Optional[List[Optional[np.ndarray]]] = None,
+        anchors: Optional[List[np.ndarray]] = None,
         bbox_only: bool = False,
         yolo_version: Optional[str] = None,
     ):
@@ -63,7 +70,7 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
         @param n_keypoints: The number of keypoints in the model
         @type n_keypoints: int
         @param anchors: The anchors for the YOLO model
-        @type anchors: List[np.ndarray]
+        @type anchors: Optional[List[np.ndarray]]
         @param bbox_only: If True, the parser will only output the detections without
             keypoints or masks
         @type bbox_only: bool
@@ -79,7 +86,7 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
         self.iou_threshold = iou_threshold
         self.mask_conf = mask_conf
         self.n_keypoints = n_keypoints
-        self.anchors = anchors if anchors is not None else [None, None, None]
+        self.anchors = anchors
         self.bbox_only = bbox_only
         self.yolo_version = yolo_version
 
@@ -278,7 +285,7 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
                     labels=np.array(labels),
                     masks=np.array(additional_output),
                 )
-            elif mode == self._DET_MODE:
+            else:
                 detections_message = create_detection_message(
                     bboxes=np.array(bboxes),
                     scores=np.array(scores),

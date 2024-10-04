@@ -79,9 +79,9 @@ def non_max_suppression(
     @type max_wh: int
     @param kpts_mode: Keypoints mode.
     @type kpts_mode: bool
-    @param det_mode: Detection only mode.
+    @param det_mode: Detection only mode. If True, the output will only contain bbox detections.
     @type det_mode: bool
-    @return: An array of detections with either kpts or segmentation outputs.
+    @return: An array of detections. If det_mode is False, the detections may include kpts or segmentation outputs.
     @rtype: List[np.ndarray]
     """
     bs = prediction.shape[0]  # batch size
@@ -182,7 +182,7 @@ def non_max_suppression(
 def parse_yolo_outputs(
     outputs: List[np.ndarray],
     strides: List[int],
-    anchors: List[Optional[np.ndarray]],
+    anchors: Optional[List[np.ndarray]] = None,
     kpts: Optional[List[np.ndarray]] = None,
     det_mode: bool = False,
     yolo_version: Optional[str] = None,
@@ -193,8 +193,8 @@ def parse_yolo_outputs(
     @type outputs: List[np.ndarray]
     @param strides: List of strides.
     @type strides: List[int]
-    @param anchors: List of anchors.
-    @type anchors: np.ndarray
+    @param anchors: An optional list of anchors.
+    @type anchors: Optional[List[np.ndarray]]
     @param kpts: An optional list of keypoints for each output.
     @type kpts: Optional[List[np.ndarray]]
     @param det_mode: Detection only mode.
@@ -206,8 +206,9 @@ def parse_yolo_outputs(
     """
     output = None
 
-    for i, (x, s, a) in enumerate(zip(outputs, strides, anchors)):
+    for i, (x, s) in enumerate(zip(outputs, strides)):
         kpt = kpts[i] if kpts is not None else None
+        a = anchors[i] if anchors is not None else None
         out = parse_yolo_output(
             x, s, a, head_id=i, kpts=kpt, det_mode=det_mode, yolo_version=yolo_version
         )
@@ -219,7 +220,7 @@ def parse_yolo_outputs(
 def parse_yolo_output(
     out: np.ndarray,
     stride: int,
-    anchors: Optional[np.ndarray],
+    anchors: Optional[np.ndarray] = None,
     head_id: int = -1,
     kpts: Optional[np.ndarray] = None,
     det_mode: bool = False,
@@ -231,12 +232,12 @@ def parse_yolo_output(
     @type out: np.ndarray
     @param stride: Stride.
     @type stride: int
-    @param anchors: Anchors.
-    @type anchors: np.ndarray
+    @param anchors: Anchors for the given head.
+    @type anchors: Optional[np.ndarray]
     @param head_id: Head ID.
     @type head_id: int
     @param kpts: A single output of keypoints for the given channel.
-    @type kpts: np.ndarray
+    @type kpts: Optional[np.ndarray]
     @param det_mode: Detection only mode.
     @type det_mode: bool
     @param yolo_version: YOLO version.
@@ -355,8 +356,8 @@ def parse_kpts(kpts: np.ndarray, n_keypoints: int) -> List[Tuple[int, int, float
 def decode_yolo_output(
     yolo_outputs: List[np.ndarray],
     strides: List[int],
-    anchors: List[Optional[np.ndarray]],
-    kpts: List[np.ndarray] = None,
+    anchors: Optional[List[np.ndarray]] = None,
+    kpts: Optional[List[np.ndarray]] = None,
     conf_thres: float = 0.5,
     iou_thres: float = 0.45,
     num_classes: int = 1,
@@ -369,17 +370,18 @@ def decode_yolo_output(
     @type yolo_outputs: List[np.ndarray]
     @param strides: List of strides.
     @type strides: List[int]
-    @param anchors: List of anchors.
-    @type anchors: List[np.ndarray]
-    @param kpts: List of keypoints.
-    @type kpts: List[np.ndarray]
+    @param anchors: An optional list of anchors.
+    @type anchors: Optional[List[np.ndarray]]
+    @param kpts: An optional list of keypoints.
+    @type kpts: Optional[List[np.ndarray]]
     @param conf_thres: Confidence threshold.
     @type conf_thres: float
     @param iou_thres: Intersection over union threshold.
     @type iou_thres: float
     @param num_classes: Number of classes.
     @type num_classes: int
-    @param det_mode: Detection only mode.
+    @param det_mode: Detection only mode. If True, the output will only contain bbox
+        detections.
     @type det_mode: bool
     @param yolo_version: YOLO version.
     @type yolo_version: Optional[str]
