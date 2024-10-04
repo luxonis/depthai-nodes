@@ -164,3 +164,6 @@ cython_debug/
 .DS_Store
 
 .depthai_cached_models/
+
+#VS Code
+.vscode/
