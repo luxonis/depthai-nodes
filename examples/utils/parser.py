@@ -71,31 +71,10 @@ def setup_map_output_parser(parser: MapOutputParser, params: dict):
         min_max_scaling = params["min_max_scaling"]
         if min_max_scaling:
             parser.setMinMaxScaling(True)
+
     except Exception:
         print(
             "This NN archive does not have required metadata for MapOutputParser. Skipping setup..."
-        )
-
-
-def setup_yolo_extended_parser(parser: YOLOExtendedParser, params: dict):
-    """Setup the YOLO parser with the required metadata."""
-    try:
-        n_classes = params["n_classes"]
-        parser.setNumClasses(n_classes)
-    except Exception:
-        print(
-            "This NN archive does not have required metadata for YOLOExtendedParser. Skipping setup..."
-        )
-
-
-def setup_palm_detection_parser(parser: MPPalmDetectionParser, params: dict):
-    """Setup the Palm Detection parser with the required metadata."""
-    try:
-        scale = params["scale"]
-        parser.setScale(scale)
-    except Exception:
-        print(
-            "This NN archive does not have required metadata for MPPalmDetectionParser. Skipping setup..."
         )
 
 
@@ -152,6 +131,28 @@ def setup_multi_classification_parser(parser: MultiClassificationParser, params:
     except Exception:
         print(
             "This NN archive does not have required metadata for MultiClassificationParser. Skipping setup..."
+        )
+
+
+def setup_yolo_extended_parser(parser: YOLOExtendedParser, params: dict):
+    """Setup the YOLO parser with the required metadata."""
+    try:
+        n_classes = params["n_classes"]
+        parser.setNumClasses(n_classes)
+    except Exception:
+        print(
+            "This NN archive does not have required metadata for YOLOExtendedParser. Skipping setup..."
+        )
+
+
+def setup_palm_detection_parser(parser: MPPalmDetectionParser, params: dict):
+    """Setup the Palm Detection parser with the required metadata."""
+    try:
+        scale = params["scale"]
+        parser.setScale(scale)
+    except Exception:
+        print(
+            "This NN archive does not have required metadata for MPPalmDetectionParser. Skipping setup..."
         )
 
 
