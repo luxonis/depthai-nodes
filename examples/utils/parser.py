@@ -210,6 +210,30 @@ def setup_fastsam_parser(parser: FastSAMParser, params: dict):
         )
 
 
+def setup_paddleocr_parser(parser: PaddleOCRParser, params: dict):
+    """Setup the PaddleOCR parser with the required metadata."""
+    try:
+        classes = params["classes"]
+        parser.setClasses(classes)
+    except Exception:
+        print(
+            "This NN archive does not have required metadata for PaddleOCRParser. Skipping setup..."
+        )
+
+
+def setup_multi_classification_parser(parser: MultiClassificationParser, params: dict):
+    """Setup the Multi Classification parser with the required metadata."""
+    try:
+        classification_attributes = params["classification_attributes"]
+        classification_labels = params["classification_labels"]
+        parser.setClassificationAttributes(classification_attributes)
+        parser.setClassificationLabels(classification_labels)
+    except Exception:
+        print(
+            "This NN archive does not have required metadata for MultiClassificationParser. Skipping setup..."
+        )
+
+
 def setup_parser(parser: dai.ThreadedNode, nn_archive: dai.NNArchive, parser_name: str):
     """Setup the parser with the NN archive."""
 
