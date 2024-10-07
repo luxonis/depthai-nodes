@@ -186,6 +186,14 @@ class YOLOExtendedParser(BaseParser):
         """
         self.yolo_version = yolo_version
 
+    def setOutputLayerNames(self, output_layer_names):
+        """Sets the output layer names for the parser.
+
+        @param output_layer_names: The output layer names for the parser.
+        @type output_layer_names: List[str]
+        """
+        self.output_layer_names = output_layer_names
+
     def _get_segmentation_outputs(self, output):
         """Get the segmentation outputs from the Neural Network data."""
         # Get all the layer names
