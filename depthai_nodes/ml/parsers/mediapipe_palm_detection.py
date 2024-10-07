@@ -1,12 +1,15 @@
+from typing import Any, Dict
+
 import cv2
 import depthai as dai
 import numpy as np
 
 from ..messages.creators import create_detection_message
+from .base_parser import BaseParser
 from .utils import generate_anchors_and_decode
 
 
-class MPPalmDetectionParser(dai.node.ThreadedHostNode):
+class MPPalmDetectionParser(BaseParser):
     """Parser class for parsing the output of the Mediapipe Palm detection model. As the
     result, the node sends out the detected hands in the form of a message containing
     bounding boxes, labels, and confidence scores.
@@ -48,14 +51,41 @@ class MPPalmDetectionParser(dai.node.ThreadedHostNode):
         @param max_det: Maximum number of detections to keep.
         @type max_det: int
         """
-        dai.node.ThreadedHostNode.__init__(self)
-        self.input = self.createInput()
-        self.out = self.createOutput()
+        super().__init__()
 
         self.conf_threshold = conf_threshold
         self.iou_threshold = iou_threshold
         self.max_det = max_det
         self.scale = scale
+
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ):
+        """Sets the head configuration for the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        MPPalmDetectionParser
+            Returns the parser object with the head configuration set.
+        """
+
+        output_layers = head_config["outputs"]
+        if len(output_layers) != 2:
+            raise ValueError(
+                f"Only two output layers are supported for MPPalmDetectionParser, got {len(output_layers)} layers."
+            )
+        self.conf_threshold = head_config["conf_threshold"]
+        self.iou_threshold = head_config["iou_threshold"]
+        self.max_det = head_config["max_det"]
+        self.scale = head_config["scale"]
+
+        return self
 
     def setConfidenceThreshold(self, threshold):
         """Sets the confidence score threshold for detected hands.
@@ -150,6 +180,6 @@ class MPPalmDetectionParser(dai.node.ThreadedHostNode):
 
             bboxes = bboxes.astype(np.float32) / self.scale
 
-            detections_msg = create_detection_message(bboxes, scores, labels=None)
+            detections_msg = create_detection_message(bboxes=bboxes, scores=scores)
             detections_msg.setTimestamp(output.getTimestamp())
             self.out.send(detections_msg)

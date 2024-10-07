@@ -1,11 +1,14 @@
+from typing import Any, Dict
+
 import depthai as dai
 import numpy as np
 
 from ..messages.creators import create_cluster_message
+from .base_parser import BaseParser
 from .utils.ufld import decode_ufld
 
 
-class LaneDetectionParser(dai.node.ThreadedHostNode):
+class LaneDetectionParser(BaseParser):
     """
     Parser class for Ultra-Fast-Lane-Detection model. It expects one ouput layer containing the lane detection results.
     It supports two versions of the model: CuLane and TuSimple. Results are representented with clusters of points.
@@ -16,6 +19,8 @@ class LaneDetectionParser(dai.node.ThreadedHostNode):
         Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
     out : Node.Output
         Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
+    output_layer_name: str
+        Name of the output layer from which the scores are extracted.
     row_anchors : List[int]
         List of row anchors.
     griding_num : int
@@ -24,10 +29,22 @@ class LaneDetectionParser(dai.node.ThreadedHostNode):
         Number of points per lane.
     input_shape : Tuple[int, int]
         Input shape.
+
+    Output Message/s
+    ----------------
+    **Type**: Clusters
+    **Description**: Detected lanes represented as clusters of points.
+
+    Error Handling
+    --------------
+    **ValueError**: If the row anchors are not specified.
+    **ValueError**: If the griding number is not specified.
+    **ValueError**: If the number of points per lane is not specified.
     """
 
     def __init__(
         self,
+        output_layer_name="",
         row_anchors=None,
         griding_num=None,
         cls_num_per_lane=None,
@@ -35,6 +52,9 @@ class LaneDetectionParser(dai.node.ThreadedHostNode):
     ):
         """Initializes the lane detection parser node.
 
+        @param output_layer_name: Name of the output layer from which the results are
+            extracted.
+        @type output_layer_name: str
         @param row_anchors: List of row anchors.
         @type row_anchors: List[int]
         @param griding_num: Griding number.
@@ -44,13 +64,50 @@ class LaneDetectionParser(dai.node.ThreadedHostNode):
         @param input_shape: Input shape.
         @type input_shape: Tuple[int, int]
         """
-        dai.node.ThreadedHostNode.__init__(self)
-        self.input = self.createInput()
-        self.out = self.createOutput()
+        super().__init__()
+        self.output_layer_name = output_layer_name
+
         self.row_anchors = row_anchors
         self.griding_num = griding_num
         self.cls_num_per_lane = cls_num_per_lane
         self.input_shape = input_shape
+
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ):
+        """Sets the head configuration for the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        LaneDetectionParser
+            Returns the parser object with the head configuration set.
+        """
+
+        output_layers = head_config["outputs"]
+        if len(output_layers) != 1:
+            raise ValueError(
+                f"Only one output layer supported for LaneDetectionParser, got {len(output_layers)} layers."
+            )
+        self.output_layer_name = output_layers[0]
+        self.row_anchors = head_config["row_anchors"]
+        self.griding_num = head_config["griding_num"]
+        self.cls_num_per_lane = head_config["cls_num_per_lane"]
+
+        return self
+
+    def setOutputLayerName(self, output_layer_name):
+        """Set the output layer name for the lane detection model.
+
+        @param output_layer_name: Name of the output layer.
+        @type output_layer_name: str
+        """
+        self.output_layer_name = output_layer_name
 
     def setRowAnchors(self, row_anchors):
         """Set the row anchors for the lane detection model.
@@ -98,7 +155,18 @@ class LaneDetectionParser(dai.node.ThreadedHostNode):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            tensor = output.getFirstTensor(dequantize=True).astype(np.float32)
+            layers = output.getAllLayerNames()
+
+            if len(layers) == 1 and self.output_layer_name == "":
+                self.output_layer_name = layers[0]
+            elif len(layers) != 1 and self.output_layer_name == "":
+                raise ValueError(
+                    f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
+                )
+
+            tensor = output.getTensor(self.output_layer_name, dequantize=True).astype(
+                np.float32
+            )
             y = tensor[0]
 
             points = decode_ufld(
