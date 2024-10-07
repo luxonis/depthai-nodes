@@ -8,7 +8,7 @@ def initialize_argparser():
     parser.description = "General example script to run any model available in HubAI on DepthAI device. \
         All you need is a model slug of the model and the script will download the model from HubAI and create \
         the whole pipeline with visualizations. You also need a DepthAI device connected to your computer. \
-        Currently, only RVC2 devices are supported."
+        Currently, only RVC2 devices are supported. If using OAK-D Lite, please set the FPS limit to 28."
 
     parser.add_argument(
         "-s",
@@ -16,6 +16,15 @@ def initialize_argparser():
         help="slug of the model in HubAI.",
         required=True,
         type=str,
+    )
+
+    parser.add_argument(
+        "-fps",
+        "--fps_limit",
+        help="FPS limit for the model runtime.",
+        required=False,
+        default=30.0,  # default DepthAI FPS value
+        type=float,
     )
 
     args = parser.parse_args()
@@ -41,3 +50,13 @@ def parse_model_slug(args: argparse.Namespace) -> Tuple[str, str]:
     model_version_slug = model_slug_parts[1]
 
     return model_slug, model_version_slug
+
+
+def parse_fps_limit(args: argparse.Namespace) -> int:
+    """Parse the FPS limit from the arguments.
+
+    Returns the FPS limit.
+    """
+    fps_limit = args.fps_limit
+
+    return fps_limit

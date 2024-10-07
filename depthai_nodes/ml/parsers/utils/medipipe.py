@@ -240,8 +240,13 @@ def decode_bboxes(score_thresh, scores, bboxes, anchors, scale=128, best_only=Fa
         det_scores = scores[detection_mask]
         if det_scores.size == 0:
             return regions
+    try:
         det_bboxes2 = bboxes[detection_mask]
         det_anchors = anchors[detection_mask]
+    except Exception as e:
+        raise IndexError(
+            "Wrong parser scale set. Please use setScale method to set different scale according to model dimensions (e.g. 128)."
+        ) from e
 
     det_bboxes = det_bboxes2 * np.tile(det_anchors[:, 2:4], 9) / scale + np.tile(
         det_anchors[:, 0:2], 9

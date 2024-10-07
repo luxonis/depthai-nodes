@@ -1,9 +1,9 @@
 from typing import List
 
-from ...messages import AgeGender, Classifications
+from ...messages import Classifications, CompositeMessage
 
 
-def create_age_gender_message(age: float, gender_prob: List[float]) -> AgeGender:
+def create_age_gender_message(age: float, gender_prob: List[float]) -> CompositeMessage:
     """Create a DepthAI message for the age and gender probability.
 
     @param age: Detected person age (must be multiplied by 100 to get years).
@@ -39,11 +39,11 @@ def create_age_gender_message(age: float, gender_prob: List[float]) -> AgeGender
             f"Gender_prob list must contain probabilities and sum to 1, got sum {sum(gender_prob)}."
         )
 
-    age_gender_message = AgeGender()
-    age_gender_message.age = age
     gender = Classifications()
     gender.classes = ["female", "male"]
     gender.scores = gender_prob
-    age_gender_message.gender = gender
+
+    age_gender_message = CompositeMessage()
+    age_gender_message.setData({"age": age, "gender": gender})
 
     return age_gender_message

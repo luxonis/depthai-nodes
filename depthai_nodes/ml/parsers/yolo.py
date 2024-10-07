@@ -124,11 +124,9 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
 
     def _reshape_seg_outputs(self, protos_output, protos_len, masks_outputs_values):
         """Reshape the segmentation outputs."""
-        protos_output = protos_output.transpose((2, 0, 1))[np.newaxis, ...]
+        protos_output = protos_output.transpose((0, 3, 1, 2))
         protos_len = protos_output.shape[1]
-        masks_outputs_values = [
-            o.transpose((2, 0, 1))[np.newaxis, ...] for o in masks_outputs_values
-        ]
+        masks_outputs_values = [o.transpose((0, 3, 1, 2)) for o in masks_outputs_values]
         return protos_output, protos_len, masks_outputs_values
 
     def run(self):
@@ -165,14 +163,13 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
                     protos_len,
                 ) = self._get_segmentation_outputs(output)
 
-            if len(outputs_values[0].shape) != 4:
+            if (
+                len(outputs_values[0].shape) == 4
+                and outputs_values[0].shape[-1] == outputs_values[1].shape[-1]
+            ):
                 # RVC4
-                outputs_values = [
-                    o.transpose((2, 0, 1))[np.newaxis, ...] for o in outputs_values
-                ]
-                if mode == self._KPTS_MODE:
-                    kpts_outputs = [o[np.newaxis, ...] for o in kpts_outputs]
-                elif mode == self._SEG_MODE:
+                outputs_values = [o.transpose((0, 3, 1, 2)) for o in outputs_values]
+                if mode == self._SEG_MODE:
                     (
                         protos_output,
                         protos_len,
