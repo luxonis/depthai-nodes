@@ -282,7 +282,7 @@ def parse_yolo_output(
     else:
         grid = make_grid_numpy(ny, nx, na)
 
-    out = out.reshape(bs, na, -1, ny, nx).transpose((0, 1, 3, 4, 2))
+    out = out.reshape(bs, na, no, ny, nx).transpose((0, 1, 3, 4, 2))
 
     if anchors is not None:
         if isinstance(anchors, np.ndarray):
@@ -299,13 +299,16 @@ def parse_yolo_output(
         out[..., 0:2] = c_xy * stride
         out[..., 2:4] = wh * anchors
     else:
-        x1y1 = grid - out[..., 0:2] + 0.5
-        x2y2 = grid + out[..., 2:4] + 0.5
-
-        c_xy = (x1y1 + x2y2) / 2
-        wh = x2y2 - x1y1
-        out[..., 0:2] = c_xy * stride
-        out[..., 2:4] = wh * stride
+        if yolo_version == YOLOVersion.V6R1:
+            c_xy = out[..., 0:2] + grid
+            wh = np.exp(out[..., 2:4])
+            out[..., 0:2] = c_xy * stride
+            out[..., 2:4] = wh * stride
+        else:
+            x1y1 = grid - out[..., 0:2] + 0.5
+            x2y2 = grid + out[..., 2:4] + 0.5
+            c_xy = (x1y1 + x2y2) / 2
+            wh = x2y2 - x1y1
 
     if det_mode:
         # Detection
