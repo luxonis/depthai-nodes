@@ -28,7 +28,9 @@ class ImgDetectionExtended:
     keypoints: Union[List[Tuple[float, float]], List[Tuple[float, float, float]]]
         Keypoints of the image detection.
     masks: np.ndarray
-        Mask of the image segmentation.
+        Segmentation Mask of the detection.
+    angle: float
+        Angle of the detection.
     """
 
     def __init__(self):
@@ -212,7 +214,7 @@ class ImgDetectionsExtended(dai.Buffer):
 
     def __init__(self):
         """Initializes the ImgDetectionsExtended object."""
-        dai.Buffer.__init__(self)
+        super().__init__()
         self._detections: List[ImgDetectionExtended] = []
         self._masks: np.ndarray = np.array([])
 

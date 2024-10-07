@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import depthai as dai
 import numpy as np
@@ -17,6 +17,8 @@ class SCRFDParser(DetectionParser):
         Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
     out : Node.Output
         Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
+    output_layer_name: str
+        Name of the output layer from which the scores are extracted.
     conf_threshold : float
         Confidence score threshold for detected faces.
     iou_threshold : float
@@ -74,16 +76,52 @@ class SCRFDParser(DetectionParser):
         self.num_anchors = num_anchors
         self.input_size = input_size
 
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ) -> "SCRFDParser":
+        """Sets the head configuration for the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        SCRFDParser
+            Returns the parser object with the head configuration set.
+        """
+
+        output_layers = head_config["outputs"]
+        score_layer_names = [layer for layer in output_layers if "score" in layer]
+        bbox_layer_names = [layer for layer in output_layers if "bbox" in layer]
+        kps_layer_names = [layer for layer in output_layers if "kps" in layer]
+        if len(score_layer_names) != len(bbox_layer_names) or len(
+            score_layer_names
+        ) != len(kps_layer_names):
+            raise ValueError(
+                f"Number of score, bbox, and kps layers should be equal, got {len(score_layer_names)}, {len(bbox_layer_names)}, and {len(kps_layer_names)} layers."
+            )
+
+        self.conf_threshold = head_config["conf_threshold"]
+        self.iou_threshold = head_config["iou_threshold"]
+        self.max_det = head_config["max_det"]
+        self.feat_stride_fpn = head_config["feat_stride_fpn"]
+        self.num_anchors = head_config["num_anchors"]
+        self.output_layer_names = output_layers
+
+        return self
+
     def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
         """Sets the output layer name(s) for the parser.
 
-        @param output_layer_names: The name of the output layer(s) from which the scores
-            are extracted.
+        @param output_layer_names: The name of the output layer(s) to be used.
         @type output_layer_names: List[str]
         """
         self.output_layer_names = output_layer_names
 
-    def setFeatStrideFPN(self, feat_stride_fpn):
+    def setFeatStrideFPN(self, feat_stride_fpn) -> None:
         """Sets the feature stride of the FPN.
 
         @param feat_stride_fpn: Feature stride of the FPN.
@@ -91,7 +129,7 @@ class SCRFDParser(DetectionParser):
         """
         self.feat_stride_fpn = feat_stride_fpn
 
-    def setInputSize(self, input_size):
+    def setInputSize(self, input_size) -> None:
         """Sets the input size of the model.
 
         @param input_size: Input size of the model.
@@ -99,7 +137,7 @@ class SCRFDParser(DetectionParser):
         """
         self.input_size = input_size
 
-    def setNumAnchors(self, num_anchors):
+    def setNumAnchors(self, num_anchors) -> None:
         """Sets the number of anchors.
 
         @param num_anchors: Number of anchors.
@@ -122,15 +160,15 @@ class SCRFDParser(DetectionParser):
                 score_layer_name = f"score_{stride}"
                 bbox_layer_name = f"bbox_{stride}"
                 kps_layer_name = f"kps_{stride}"
-                if score_layer_name not in output.getAllLayerNames():
+                if score_layer_name not in self.output_layer_names:
                     raise ValueError(
                         f"Layer {score_layer_name} not found in the model output."
                     )
-                if bbox_layer_name not in output.getAllLayerNames():
+                if bbox_layer_name not in self.output_layer_names:
                     raise ValueError(
                         f"Layer {bbox_layer_name} not found in the model output."
                     )
-                if kps_layer_name not in output.getAllLayerNames():
+                if kps_layer_name not in self.output_layer_names:
                     raise ValueError(
                         f"Layer {kps_layer_name} not found in the model output."
                     )
@@ -166,7 +204,7 @@ class SCRFDParser(DetectionParser):
                 nms_threshold=self.iou_threshold,
             )
             detection_msg = create_detection_message(
-                bboxes, scores, None, keypoints.tolist()
+                bboxes=bboxes, scores=scores, labels=None, keypoints=keypoints
             )
             detection_msg.setTimestamp(output.getTimestamp())
 
