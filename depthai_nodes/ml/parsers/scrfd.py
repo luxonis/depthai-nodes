@@ -5,6 +5,7 @@ import numpy as np
 
 from ..messages.creators import create_detection_message
 from .detection import DetectionParser
+from .utils.bbox_format_converters import xyxy_to_xywh
 from .utils.scrfd import decode_scrfd
 
 
@@ -92,7 +93,7 @@ class SCRFDParser(DetectionParser):
         SCRFDParser
             Returns the parser object with the head configuration set.
         """
-
+        super().build(head_config)
         output_layers = head_config["outputs"]
         score_layer_names = [layer for layer in output_layers if "score" in layer]
         bbox_layer_names = [layer for layer in output_layers if "bbox" in layer]
@@ -103,13 +104,10 @@ class SCRFDParser(DetectionParser):
             raise ValueError(
                 f"Number of score, bbox, and kps layers should be equal, got {len(score_layer_names)}, {len(bbox_layer_names)}, and {len(kps_layer_names)} layers."
             )
-
-        self.conf_threshold = head_config["conf_threshold"]
-        self.iou_threshold = head_config["iou_threshold"]
-        self.max_det = head_config["max_det"]
-        self.feat_stride_fpn = head_config["feat_stride_fpn"]
-        self.num_anchors = head_config["num_anchors"]
         self.output_layer_names = output_layers
+
+        self.feat_stride_fpn = head_config.get("feat_stride_fpn", self.feat_stride_fpn)
+        self.num_anchors = head_config.get("num_anchors", self.num_anchors)
 
         return self
 
@@ -203,8 +201,9 @@ class SCRFDParser(DetectionParser):
                 score_threshold=self.conf_threshold,
                 nms_threshold=self.iou_threshold,
             )
+            bboxes = xyxy_to_xywh(bboxes)
             detection_msg = create_detection_message(
-                bboxes=bboxes, scores=scores, labels=None, keypoints=keypoints
+                bboxes=bboxes, scores=scores, keypoints=keypoints
             )
             detection_msg.setTimestamp(output.getTimestamp())
 
