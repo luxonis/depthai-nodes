@@ -1,9 +1,11 @@
 from typing import Any, Dict, Tuple
 
 import depthai as dai
+import numpy as np
 
 from ..messages.creators import create_detection_message
 from .detection import DetectionParser
+from .utils.bbox_format_converters import top_left_wh_to_xywh
 from .utils.nms import nms_cv2
 from .utils.yunet import decode_detections, format_detections, prune_detections
 
@@ -81,6 +83,7 @@ class YuNetParser(DetectionParser):
         YuNetParser
             Returns the parser object with the head configuration set.
         """
+        super().build(head_config)
         output_layers = head_config["outputs"]
         if len(output_layers) != 3:
             raise ValueError(
@@ -92,10 +95,6 @@ class YuNetParser(DetectionParser):
                 output_layer if "conf" in output_layer else None
             )
             self.iou_output_layer_name = output_layer if "iou" in output_layer else None
-
-        self.conf_threshold = head_config["metadata"]["conf_threshold"]
-        self.iou_threshold = head_config["metadata"]["iou_threshold"]
-        self.max_det = head_config["metadata"]["max_det"]
 
         return self
 
@@ -241,14 +240,15 @@ class YuNetParser(DetectionParser):
 
             # run nms
             keep_indices = nms_cv2(
-                bboxes=bboxes,
-                scores=scores,
+                bboxes=np.array(bboxes),
+                scores=np.array(scores),
                 conf_threshold=self.conf_threshold,
                 iou_threshold=self.iou_threshold,
-                max_det=self.max_det,
+                max_det=self.max_detections,
             )
 
             bboxes = bboxes[keep_indices]
+            bboxes = top_left_wh_to_xywh(bboxes)
             keypoints = keypoints[keep_indices]
             scores = scores[keep_indices]
 

@@ -89,7 +89,7 @@ def create_detection_message(
 
     if keypoints is not None:
         n_detections, n_keypoints, dim = keypoints.shape
-
+        keypoints = np.array(keypoints, dtype=float)
         if n_detections != n_bboxes:
             raise ValueError(
                 f"Keypoints should have same length as bboxes, got {n_detections} and {n_bboxes}."

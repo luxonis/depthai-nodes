@@ -73,8 +73,8 @@ def xyxy_to_xywh(bboxes: np.ndarray) -> np.ndarray:
 
 
 def xywh_to_xyxy(bboxes: np.ndarray):
-    """Convert bounding box coordinates from (x, y, width, height) to (x_min, y_min,
-    x_max, y_max).
+    """Convert bounding box coordinates from (x_center, y_center, width, height) to
+    (x_min, y_min, x_max, y_max).
 
     @param bboxes: A numpy array of shape (N, 4) containing the bounding boxes in (x, y, width, height) format.
     @type np.ndarray
@@ -90,6 +90,23 @@ def xywh_to_xyxy(bboxes: np.ndarray):
     return xyxy_bboxes
 
 
+def top_left_wh_to_xywh(bboxes: np.ndarray) -> np.ndarray:
+    """Converts bounding boxes from [top_left_x, top_left_y, width, height] to
+    [x_center, y_center, width, height].
+
+    @param bboxes: The bounding boxes to convert.
+    @type bboxes: np.ndarray
+    @return: The converted bounding boxes.
+    @rtype: np.ndarray
+    """
+    x_center = bboxes[:, 0] + bboxes[:, 2] / 2
+    y_center = bboxes[:, 1] + bboxes[:, 3] / 2
+    width = bboxes[:, 2]
+    height = bboxes[:, 3]
+
+    return np.stack([x_center, y_center, width, height], axis=-1)
+
+
 def normalize_bboxes(bboxes: np.ndarray, height: int, width: int):
     """Normalize bounding box coordinates to (0, 1).
 
@@ -102,7 +119,10 @@ def normalize_bboxes(bboxes: np.ndarray, height: int, width: int):
     @return: A numpy array of shape (N, 4) containing the normalized bounding boxes.
     @type np.ndarray
     """
-
+    if bboxes.shape[1] != 4:
+        raise ValueError(
+            "Bounding boxes must be of shape (N, 4). Other options are currently not supported"
+        )
     bboxes[:, 0] = bboxes[:, 0] / width
     bboxes[:, 1] = bboxes[:, 1] / height
     bboxes[:, 2] = bboxes[:, 2] / width

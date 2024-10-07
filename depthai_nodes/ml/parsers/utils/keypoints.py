@@ -15,14 +15,24 @@ def normalize_keypoints(keypoints: np.ndarray, height: int, width: int):
     Returns:
     np.ndarray: A numpy array of shape (N, 2) containing the normalized keypoints.
     """
-
+    keypoints = keypoints.astype(np.float32)
     if not isinstance(keypoints, np.ndarray):
         raise TypeError("Keypoints must be a numpy array.")
 
-    if keypoints.shape[1] != 2:
+    if len(keypoints.shape) != 2 and len(keypoints.shape) != 3:
+        raise ValueError(
+            f"Keypoints must be of shape (N, 2) or (N, K, 2). Got {keypoints.shape}."
+        )
+
+    if keypoints.shape[1] != 2 and len(keypoints.shape) == 2:
         raise ValueError(
             "Keypoints must be of shape (N, 2). Other options are currently not supported"
         )
+    elif len(keypoints.shape) == 3:
+        if keypoints.shape[2] != 2:
+            raise ValueError(
+                "Keypoints must be of shape (N, K, 2). Other options are currently not supported"
+            )
     keypoints[:, 0] = keypoints[:, 0] / width
     keypoints[:, 1] = keypoints[:, 1] / height
 
