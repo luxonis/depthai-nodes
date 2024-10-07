@@ -1,11 +1,14 @@
+from typing import List, Tuple
+
 import depthai as dai
 import numpy as np
 
 from ..messages.creators import create_detection_message
+from .detection import DetectionParser
 from .utils.scrfd import decode_scrfd
 
 
-class SCRFDParser(dai.node.ThreadedHostNode):
+class SCRFDParser(DetectionParser):
     """Parser class for parsing the output of the SCRFD face detection model.
 
     Attributes
@@ -36,15 +39,19 @@ class SCRFDParser(dai.node.ThreadedHostNode):
 
     def __init__(
         self,
-        conf_threshold=0.5,
-        iou_threshold=0.5,
-        max_det=100,
-        input_size=(640, 640),
-        feat_stride_fpn=(8, 16, 32),
-        num_anchors=2,
+        output_layer_names: List[str] = None,
+        conf_threshold: float = 0.5,
+        iou_threshold: float = 0.5,
+        max_det: int = 100,
+        input_size: Tuple[int, int] = (640, 640),
+        feat_stride_fpn: Tuple = (8, 16, 32),
+        num_anchors: int = 2,
     ):
         """Initializes the SCRFDParser node.
 
+        @param output_layer_names: The name of the output layer(s) from which the scores
+            are extracted.
+        @type output_layer_names: List[str]
         @param conf_threshold: Confidence score threshold for detected faces.
         @type conf_threshold: float
         @param iou_threshold: Non-maximum suppression threshold.
@@ -58,41 +65,23 @@ class SCRFDParser(dai.node.ThreadedHostNode):
         @param input_size: Input size of the model.
         @type input_size: tuple
         """
-        dai.node.ThreadedHostNode.__init__(self)
-        self.input = self.createInput()
-        self.out = self.createOutput()
-
-        self.conf_threshold = conf_threshold
-        self.iou_threshold = iou_threshold
-        self.max_det = max_det
+        super().__init__("", conf_threshold, iou_threshold, max_det)
+        self.output_layer_names = (
+            [] if output_layer_names is None else output_layer_names
+        )
 
         self.feat_stride_fpn = feat_stride_fpn
         self.num_anchors = num_anchors
         self.input_size = input_size
 
-    def setConfidenceThreshold(self, threshold):
-        """Sets the confidence score threshold for detected faces.
+    def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
+        """Sets the output layer name(s) for the parser.
 
-        @param threshold: Confidence score threshold for detected faces.
-        @type threshold: float
+        @param output_layer_names: The name of the output layer(s) from which the scores
+            are extracted.
+        @type output_layer_names: List[str]
         """
-        self.conf_threshold = threshold
-
-    def setIOUThreshold(self, threshold):
-        """Sets the non-maximum suppression threshold.
-
-        @param threshold: Non-maximum suppression threshold.
-        @type threshold: float
-        """
-        self.iou_threshold = threshold
-
-    def setMaxDetections(self, max_det):
-        """Sets the maximum number of detections to keep.
-
-        @param max_det: Maximum number of detections to keep.
-        @type max_det: int
-        """
-        self.max_det = max_det
+        self.output_layer_names = output_layer_names
 
     def setFeatStrideFPN(self, feat_stride_fpn):
         """Sets the feature stride of the FPN.

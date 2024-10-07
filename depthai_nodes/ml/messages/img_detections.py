@@ -1,16 +1,30 @@
-from typing import List, Tuple, Union
+from typing import List
 
 import depthai as dai
 import numpy as np
 
-from .keypoints import Keypoints
+from .keypoints import Keypoint
 
 
-class ImgDetectionExtended(dai.ImgDetection):
-    """ImgDetectionExtended class for storing image detection with keypoints and masks.
+class ImgDetectionExtended:
+    """A class for storing image detections in  with keypoints and masks.
 
     Attributes
     ----------
+    x_center: float
+        The X coordinate of the center of the bounding box.
+    y_center: float
+        The Y coordinate of the center of the bounding box.
+    width: float
+        The width of the bounding box.
+    height: float
+        The height of the bounding box.
+    angle: float
+        The angle of the bounding box expressed in degrees.
+    confidence: float
+        Confidence of the detection.
+    label: int
+        Label of the detection.
     keypoints: Union[List[Tuple[float, float]], List[Tuple[float, float, float]]]
         Keypoints of the image detection.
     masks: np.ndarray
@@ -19,84 +33,172 @@ class ImgDetectionExtended(dai.ImgDetection):
 
     def __init__(self):
         """Initializes the ImgDetectionExtended object."""
-        dai.ImgDetection.__init__(self)  # TODO: change to super().__init__()?
-        self._keypoints: Union[
-            List[Tuple[float, float]], List[Tuple[float, float, float]]
-        ] = []
-        self._mask: np.ndarray = np.array([])
+
+        self._x_center: float
+        self._y_center: float
+        self._width: float
+        self._height: float
+
+        self._angle: float = 0.0
+        self._confidence: float = -1.0
+        self._label: int = -1
+        self._keypoints: List[Keypoint] = []
 
     @property
     def keypoints(
         self,
-    ) -> Union[List[Tuple[float, float]], List[Tuple[float, float, float]]]:
+    ) -> List[Keypoint]:
         """Returns the keypoints.
 
         @return: List of keypoints.
-        @rtype: Union[List[Tuple[float, float]], List[Tuple[float, float, float]]]
+        @rtype: Keypoints
         """
         return self._keypoints
 
     @keypoints.setter
     def keypoints(
         self,
-        value: Union[
-            List[Tuple[Union[int, float], Union[int, float]]],
-            List[Tuple[Union[int, float], Union[int, float], Union[int, float]]],
-        ],
-    ):
+        keypoints: List[Keypoint],
+    ) -> None:
         """Sets the keypoints.
 
         @param value: List of keypoints.
-        @type value: Union[List[Tuple[Union[int, float], Union[int, float]]],
-            List[Tuple[Union[int, float], Union[int, float], Union[int, float]]]]
-        @raise TypeError: If the keypoints are not a list.
-        @raise TypeError: If each keypoint is not a tuple of two or three floats or
-            integers.
+        @type value: List[Keypoint]
         """
-        if not isinstance(value, list):
-            raise TypeError("Keypoints must be a list")
-        dim = len(value[0]) if value else 0
-        for item in value:
-            if (
-                not (isinstance(item, tuple) or isinstance(item, list))
-                or (len(item) != 2 and len(item) != 3)
-                or not all(isinstance(i, (int, float)) for i in item)
-            ):
-                raise TypeError(
-                    "Each keypoint must be a tuple of two or three floats or integers."
-                )
-            if len(item) != dim:
-                raise ValueError(
-                    "All keypoints must be of the same dimension e.g. [x, y] or [x, y, z], got mixed inner dimensions."
-                )
-        keypoints = []
-        for items in value:
-            keypoints.append(tuple(float(v) for v in items))
         self._keypoints = keypoints
 
     @property
-    def mask(self) -> np.ndarray:
-        """Returns the mask coefficients.
+    def x_center(self) -> float:
+        """Returns the X coordinate of the center of the bounding box.
 
-        @return: Mask coefficients.
-        @rtype: np.ndarray
+        @return: X coordinate of the center of the bounding box.
+        @rtype: float
         """
-        return self._mask
+        return self._x_center
 
-    @mask.setter
-    def mask(self, value: np.ndarray):
-        """Sets the mask coefficients.
+    @property
+    def y_center(self) -> float:
+        """Returns the Y coordinate of the center of the bounding box.
 
-        @param value: Mask coefficients.
-        @type value: np.ndarray
-        @raise TypeError: If the mask is not a numpy array.
-        @raise ValueError: If the mask is not of shape (H/4, W/4).
+        @return: Y coordinate of the center of the bounding box.
+        @rtype: float
         """
-        if not isinstance(value, np.ndarray):
-            raise TypeError("Mask must be a numpy array")
-        if len(value.shape) != 2:
-            raise ValueError("Mask must be of shape (H/4, W/4)")
-        self._mask = value
+        return self._y_center
+
+    @property
+    def width(self) -> float:
+        """Returns the width of the bounding box.
+
+        @return: Width of the bounding box.
+        @rtype: float
+        """
+        return self._width
+
+    @property
+    def height(self) -> float:
+        """Returns the height of the bounding box.
+
+        @return: Height of the bounding box.
+        @rtype: float
+        """
+        return self._height
+
+    @property
+    def angle(self) -> float:
+        """Returns the angle of the bounding box.
+
+        @return: Angle of the bounding box.
+        @rtype: float
+        """
+        return self._angle
+
+    @x_center.setter
+    def x_center(self, value: float):
+        """Sets the X coordinate of the center of the bounding box.
+
+        @param value: X coordinate of the center of the bounding box.
+        @type value: float
+        @raise TypeError: If the X coordinate is not a float.
+        """
+        self._x_center = value
+
+    @y_center.setter
+    def y_center(self, value: float):
+        """Sets the Y coordinate of the center of the bounding box.
+
+        @param value: Y coordinate of the center of the bounding box.
+        @type value: float
+        @raise TypeError: If the Y coordinate is not a float.
+        """
+        self._y_center = value
+
+    @width.setter
+    def width(self, value: float):
+        """Sets the width of the bounding box.
+
+        @param value: Width of the bounding box.
+        @type value: float
+        @raise TypeError: If the width is not a float.
+        """
+        self._width = value
+
+    @height.setter
+    def height(self, value: float):
+        """Sets the height of the bounding box.
+
+        @param value: Height of the bounding box.
+        @type value: float
+        @raise TypeError: If the height is not a float.
+        """
+        self._height = value
+
+    @angle.setter
+    def angle(self, value: float):
+        """Sets the angle of the bounding box.
+
+        @param value: Angle of the bounding box.
+        @type value: float
+        @raise TypeError: If the angle is not between -360 and 360.
+        """
+        if value < -360 or value > 360:
+            raise TypeError("Angle must be between -360 and 360 degrees.")
+        self._angle = value
+
+    @property
+    def confidence(self) -> float:
+        """Returns the confidence of the detection.
+
+        @return: Confidence of the detection.
+        @rtype: float
+        """
+        return self._confidence
+
+    @confidence.setter
+    def confidence(self, value: float):
+        """Sets the confidence of the detection.
+
+        @param value: Confidence of the detection.
+        @type value: float
+        """
+        self._confidence = value
+
+    @property
+    def label(self) -> int:
+        """Returns the label of the detection.
+
+        @return: Label of the detection.
+        @rtype: int
+        """
+        return self._label
+
+    @label.setter
+    def label(self, value: int):
+        """Sets the label of the detection.
+
+        @param value: Label of the detection.
+        @type value: int
+        """
+        self._label = value
 
 
 class ImgDetectionsExtended(dai.Buffer):
@@ -110,8 +212,9 @@ class ImgDetectionsExtended(dai.Buffer):
 
     def __init__(self):
         """Initializes the ImgDetectionsExtended object."""
-        dai.Buffer.__init__(self)  # TODO: change to super().__init__()?
+        dai.Buffer.__init__(self)
         self._detections: List[ImgDetectionExtended] = []
+        self._masks: np.ndarray = np.array([])
 
     @property
     def detections(self) -> List[ImgDetectionExtended]:
@@ -121,6 +224,15 @@ class ImgDetectionsExtended(dai.Buffer):
         @rtype: List[ImgDetectionExtended]
         """
         return self._detections
+
+    @property
+    def masks(self) -> np.ndarray:
+        """Returns the masks.
+
+        @return: Masks.
+        @rtype: np.ndarray
+        """
+        return self._masks
 
     @detections.setter
     def detections(self, value: List[ImgDetectionExtended]):
@@ -140,97 +252,18 @@ class ImgDetectionsExtended(dai.Buffer):
                 )
         self._detections = value
 
+    @masks.setter
+    def masks(self, masks: np.ndarray):
+        """Sets the masks of the image.
 
-class CornerDetections(dai.Buffer):
-    """Detection Class for storing object detections in corner format.
-
-    Attributes
-    ----------
-    detections: List[Keypoints]
-        List of detections in keypoint format.
-
-    labels: List[int]
-        List of labels for each detection
-    """
-
-    def __init__(self):
-        """Initializes the CornerDetections object."""
-        dai.Buffer.__init__(self)
-        self._detections: List[Keypoints] = []
-        self._scores: List[float] = None
-        self._labels: List[int] = None
-
-    @property
-    def detections(self) -> List[Keypoints]:
-        """Returns the detections.
-
-        @return: List of detections.
-        @rtype: List[Keypoints]
+        @param masks: Mask coefficients.
+        @type value: np.ndarray
+        @raise TypeError: If the mask is not a numpy array.
         """
-        return self._detections
+        if not isinstance(masks, np.ndarray):
+            raise TypeError("Mask must be a numpy array")
 
-    @detections.setter
-    def detections(self, value: List[Keypoints]):
-        """Sets the detections.
+        if not np.all(masks >= 0 or masks <= 1):
+            raise ValueError(f"Masks should be in range [0, 1], got {masks}.")
 
-        @param value: List of detections.
-        @type value: List[Keypoints]
-        @raise TypeError: If the detections are not a list.
-        @raise TypeError: If each detection is not an instance of Keypoints.
-        """
-        if not isinstance(value, list):
-            raise TypeError("Detections must be a list")
-        for item in value:
-            if not isinstance(item, Keypoints):
-                raise TypeError("Each detection must be an instance of Keypoints")
-        self._detections = value
-
-    @property
-    def labels(self) -> List[int]:
-        """Returns the labels.
-
-        @return: List of labels.
-        @rtype: List[int]
-        """
-        return self._labels
-
-    @labels.setter
-    def labels(self, value: List[int]):
-        """Sets the labels.
-
-        @param value: List of labels.
-        @type value: List[int]
-        @raise TypeError: If the labels are not a list.
-        @raise TypeError: If each label is not an integer.
-        """
-        if not isinstance(value, list):
-            raise TypeError("Labels must be a list")
-        for item in value:
-            if not isinstance(item, int):
-                raise TypeError("Each label must be an integer")
-        self._labels = value
-
-    @property
-    def scores(self) -> List[float]:
-        """Returns the scores.
-
-        @return: List of scores.
-        @rtype: List[float]
-        """
-        return self._scores
-
-    @scores.setter
-    def scores(self, value: List[float]):
-        """Sets the scores.
-
-        @param value: List of scores.
-        @type value: List[float]
-        @raise TypeError: If the scores are not a list.
-        @raise TypeError: If each score is not a float.
-        """
-        if not isinstance(value, list):
-            raise TypeError("Scores must be a list")
-        for item in value:
-            if not isinstance(item, float):
-                raise TypeError("Each score must be a float")
-        self._scores = value
+        self._masks = masks

@@ -1,7 +1,6 @@
 from .classification import Classifications
 from .clusters import Cluster, Clusters
 from .img_detections import (
-    CornerDetections,
     ImgDetectionExtended,
     ImgDetectionsExtended,
 )
@@ -23,7 +22,6 @@ __all__ = [
     "Map2D",
     "Clusters",
     "Cluster",
-    "CornerDetections",
     "Prediction",
     "Predictions",
 ]
