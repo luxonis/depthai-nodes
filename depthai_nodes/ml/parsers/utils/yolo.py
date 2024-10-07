@@ -182,6 +182,7 @@ def non_max_suppression(
 def parse_yolo_outputs(
     outputs: List[np.ndarray],
     strides: List[int],
+    no: int,
     anchors: Optional[List[np.ndarray]] = None,
     kpts: Optional[List[np.ndarray]] = None,
     det_mode: bool = False,
@@ -193,6 +194,8 @@ def parse_yolo_outputs(
     @type outputs: List[np.ndarray]
     @param strides: List of strides.
     @type strides: List[int]
+    @param no: Number of outputs of the model.
+    @type no: int
     @param anchors: An optional list of anchors.
     @type anchors: Optional[List[np.ndarray]]
     @param kpts: An optional list of keypoints for each output.
@@ -210,7 +213,14 @@ def parse_yolo_outputs(
         kpt = kpts[i] if kpts is not None else None
         a = anchors[i] if anchors is not None else None
         out = parse_yolo_output(
-            x, s, a, head_id=i, kpts=kpt, det_mode=det_mode, yolo_version=yolo_version
+            x,
+            s,
+            no,
+            a,
+            head_id=i,
+            kpts=kpt,
+            det_mode=det_mode,
+            yolo_version=yolo_version,
         )
         output = out if output is None else np.concatenate((output, out), axis=1)
 
@@ -220,6 +230,7 @@ def parse_yolo_outputs(
 def parse_yolo_output(
     out: np.ndarray,
     stride: int,
+    no: int,
     anchors: Optional[np.ndarray] = None,
     head_id: int = -1,
     kpts: Optional[np.ndarray] = None,
@@ -232,6 +243,8 @@ def parse_yolo_output(
     @type out: np.ndarray
     @param stride: Stride.
     @type stride: int
+    @param no: Number of outputs of the model.
+    @type no: int
     @param anchors: Anchors for the given head.
     @type anchors: Optional[np.ndarray]
     @param head_id: Head ID.
@@ -256,7 +269,10 @@ def parse_yolo_output(
     out = out.reshape(bs, na, -1, ny, nx).transpose((0, 1, 3, 4, 2))
 
     if anchors is not None:
-        anchors = anchors.reshape(bs, -1, 1, 1, 2)
+        if isinstance(anchors, np.ndarray):
+            anchors = anchors.reshape(bs, -1, 1, 1, 2)
+        else:
+            anchors = np.array(anchors).reshape(bs, -1, 1, 1, 2)
         assert (
             anchors.shape[1] == na
         ), f"Anchor shape mismatch at dimension 1: {anchors.shape[1]} vs {na}"
@@ -277,7 +293,7 @@ def parse_yolo_output(
 
     if det_mode:
         # Detection
-        out = out.reshape(bs, -1, 6)
+        out = out.reshape(bs, -1, no)
     elif kpts is None:
         # Segmentation
         x_coors = np.tile(np.arange(0, nx), (ny, 1))
@@ -388,8 +404,9 @@ def decode_yolo_output(
     @return: NMS output.
     @rtype: np.ndarray
     """
+    no = num_classes + 5
     output = parse_yolo_outputs(
-        yolo_outputs, strides, anchors, kpts, det_mode, yolo_version
+        yolo_outputs, strides, no, anchors, kpts, det_mode, yolo_version
     )
     output_nms = non_max_suppression(
         output,

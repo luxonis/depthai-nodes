@@ -1,13 +1,14 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import depthai as dai
 import numpy as np
 
 from ..messages.creators import create_detection_message
+from .base_parser import BaseParser
 from .utils.yolo import decode_yolo_output, parse_kpts, process_single_mask
 
 
-class YOLOExtendedParser(dai.node.ThreadedHostNode):
+class YOLOExtendedParser(BaseParser):
     """Parser class for parsing the output of the YOLO Instance Segmentation and Pose
     Estimation models.
 
@@ -29,8 +30,6 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
         Number of keypoints in the model.
     anchors : Optional[List[np.ndarray]]
         Anchors for the YOLO model (optional).
-    bbox_only : bool
-        If True, the parser will only output the bbox detections without keypoints or masks.
     yolo_version : Optional[str]
         Version of the YOLO model (optional).
 
@@ -54,8 +53,7 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
         mask_conf: float = 0.5,
         n_keypoints: int = 17,
         anchors: Optional[List[np.ndarray]] = None,
-        bbox_only: bool = False,
-        yolo_version: Optional[str] = None,
+        yolo_version: str = "",
     ):
         """Initialize the YOLOExtendedParser node.
 
@@ -71,24 +69,66 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
         @type n_keypoints: int
         @param anchors: The anchors for the YOLO model
         @type anchors: Optional[List[np.ndarray]]
-        @param bbox_only: If True, the parser will only output the detections without
-            keypoints or masks
-        @type bbox_only: bool
         @param yolo_version: The version of the YOLO model
         @type yolo_version: Optional[str]
         """
-        dai.node.ThreadedHostNode.__init__(self)
-        self.input = self.createInput()
-        self.out = self.createOutput()
+        super().__init__()
 
+        self.output_layer_names = []
         self.conf_threshold = conf_threshold
         self.n_classes = n_classes
         self.iou_threshold = iou_threshold
         self.mask_conf = mask_conf
         self.n_keypoints = n_keypoints
         self.anchors = anchors
-        self.bbox_only = bbox_only
         self.yolo_version = yolo_version
+
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ):
+        """Sets the head configuration for the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+        Returns
+        -------
+        YOLOExtendedParser
+            Returns the parser object with the head configuration set.
+        """
+
+        output_layers = head_config["outputs"]
+        bbox_layer_names = [name for name in output_layers if "_yolo" in name]
+        kps_layer_names = [name for name in output_layers if "kpt_output" in name]
+        masks_layer_names = [name for name in output_layers if "_masks" in name]
+
+        if not bbox_layer_names:
+            raise ValueError(
+                "YOLOExtendedParser requires the output layers of the bounding boxes detection head."
+            )
+        if (kps_layer_names and masks_layer_names) or (
+            not bbox_layer_names and (kps_layer_names or masks_layer_names)
+        ):
+            raise ValueError(
+                "YOLOExtendedParser requires either the output layers of the keypoints detection head or the output layers of the masks detection head along with the output layers of the bounding boxes detection head but not both."
+            )
+
+        self.output_layer_names = bbox_layer_names + kps_layer_names + masks_layer_names
+
+        metadata = head_config["metadata"]
+        self.conf_threshold = metadata["conf_threshold"]
+        self.n_classes = metadata["n_classes"]
+        self.iou_threshold = metadata["iou_threshold"]
+        self.anchors = metadata["anchors"]
+        if "mask_conf" in metadata:
+            self.mask_conf = metadata["mask_conf"]
+        if "n_keypoints" in metadata:
+            self.n_keypoints = metadata["n_keypoints"]
+        if "yolo_version" in metadata:
+            self.yolo_version = metadata["yolo_version"]
+        return self
 
     def setConfidenceThreshold(self, threshold):
         """Sets the confidence score threshold for detected faces.
@@ -138,15 +178,6 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
         """
         self.anchors = anchors
 
-    def setBboxOnly(self, bbox_only):
-        """Sets the parser to output only the detections without keypoints or masks.
-
-        @param bbox_only: If True, the parser will only output the detections without
-            keypoints or masks.
-        @type bbox_only: bool
-        """
-        self.bbox_only = bbox_only
-
     def setYoloVersion(self, yolo_version):
         """Sets the version of the YOLO model.
 
@@ -158,7 +189,7 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
     def _get_segmentation_outputs(self, output):
         """Get the segmentation outputs from the Neural Network data."""
         # Get all the layer names
-        layer_names = output.getAllLayerNames()
+        layer_names = self.output_layer_names or output.getAllLayerNames()
         mask_outputs = sorted([name for name in layer_names if "_masks" in name])
         masks_outputs_values = [
             output.getTensor(o, dequantize=True).astype(np.float32)
@@ -186,7 +217,7 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped, no more data
             # Get all the layer names
-            layer_names = output.getAllLayerNames()
+            layer_names = self.output_layer_names or output.getAllLayerNames()
 
             outputs_names = sorted([name for name in layer_names if "_yolo" in name])
             outputs_values = [
@@ -194,9 +225,10 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
                 for o in outputs_names
             ]
 
-            if self.bbox_only:
-                mode = self._DET_MODE
-            elif any("kpt_output" in name for name in layer_names):
+            if (
+                any("kpt_output" in name for name in layer_names)
+                and self.yolo_version.lower() != "yolop"
+            ):
                 mode = self._KPTS_MODE
                 # Get the keypoint outputs
                 kpts_output_names = sorted(
@@ -206,7 +238,10 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
                     output.getTensor(o, dequantize=True).astype(np.float32)
                     for o in kpts_output_names
                 ]
-            elif any("_masks" in name for name in layer_names):
+            elif (
+                any("_masks" in name for name in layer_names)
+                and self.yolo_version.lower() != "yolop"
+            ):
                 mode = self._SEG_MODE
                 # Get the segmentation outputs
                 (
@@ -214,6 +249,8 @@ class YOLOExtendedParser(dai.node.ThreadedHostNode):
                     protos_output,
                     protos_len,
                 ) = self._get_segmentation_outputs(output)
+            else:
+                mode = self._DET_MODE
 
             if len(outputs_values[0].shape) != 4:
                 # RVC4
