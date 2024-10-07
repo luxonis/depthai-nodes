@@ -5,7 +5,7 @@ import numpy as np
 
 from ..messages.creators import create_detection_message
 from .base_parser import BaseParser
-from .utils.yolo import decode_yolo_output, parse_kpts, process_single_mask
+from .utils.yolo import YOLOVersion, decode_yolo_output, parse_kpts, process_single_mask
 
 
 class YOLOExtendedParser(BaseParser):
@@ -30,8 +30,8 @@ class YOLOExtendedParser(BaseParser):
         Number of keypoints in the model.
     anchors : Optional[List[np.ndarray]]
         Anchors for the YOLO model (optional).
-    yolo_version : Optional[str]
-        Version of the YOLO model (optional).
+    yolo_version : YOLOVersion
+        Version of the YOLO model.
 
 
     Output Message/s
@@ -41,9 +41,9 @@ class YOLOExtendedParser(BaseParser):
     **Description**: Message containing bounding boxes, labels, confidence scores, and keypoints or masks and protos of the detected objects.
     """
 
-    _KPTS_MODE = 0
-    _SEG_MODE = 1
-    _DET_MODE = 2
+    _DET_MODE = 0
+    _KPTS_MODE = 1
+    _SEG_MODE = 2
 
     def __init__(
         self,
@@ -53,7 +53,7 @@ class YOLOExtendedParser(BaseParser):
         mask_conf: float = 0.5,
         n_keypoints: int = 17,
         anchors: Optional[List[np.ndarray]] = None,
-        yolo_version: str = "",
+        yolo_version: YOLOVersion = YOLOVersion.DEFAULT,
     ):
         """Initialize the YOLOExtendedParser node.
 
@@ -70,7 +70,7 @@ class YOLOExtendedParser(BaseParser):
         @param anchors: The anchors for the YOLO model
         @type anchors: Optional[List[np.ndarray]]
         @param yolo_version: The version of the YOLO model
-        @type yolo_version: Optional[str]
+        @type yolo_version: YOLOVersion
         """
         super().__init__()
 
@@ -127,7 +127,12 @@ class YOLOExtendedParser(BaseParser):
         if "n_keypoints" in metadata:
             self.n_keypoints = metadata["n_keypoints"]
         if "yolo_version" in metadata:
-            self.yolo_version = metadata["yolo_version"]
+            try:
+                self.yolo_version = YOLOVersion(metadata["yolo_version"].lower())
+            except ValueError as err:
+                raise ValueError(
+                    "Invalid YOLO version. Supported versions are 'yolov3', 'yolov5', 'yolov5-u', 'yolov6', 'yolov6-r1', 'yolov7', 'yolov8', 'yolov9', 'yolov10', 'yolo-p', 'yolo-gold'."
+                ) from err
         return self
 
     def setConfidenceThreshold(self, threshold):
@@ -182,9 +187,14 @@ class YOLOExtendedParser(BaseParser):
         """Sets the version of the YOLO model.
 
         @param yolo_version: The version of the YOLO model.
-        @type yolo_version: Optional[str]
+        @type yolo_version: YOLOVersion
         """
-        self.yolo_version = yolo_version
+        try:
+            self.yolo_version = YOLOVersion(yolo_version.lower())
+        except ValueError as err:
+            raise ValueError(
+                "Invalid YOLO version. Supported versions are 'yolov3', 'yolov5', 'yolov5-u', 'yolov6', 'yolov6-r1', 'yolov7', 'yolov8', 'yolov9', 'yolov10', 'yolo-p', 'yolo-gold'."
+            ) from err
 
     def setOutputLayerNames(self, output_layer_names):
         """Sets the output layer names for the parser.
@@ -235,7 +245,7 @@ class YOLOExtendedParser(BaseParser):
 
             if (
                 any("kpt_output" in name for name in layer_names)
-                and self.yolo_version.lower() != "yolop"
+                and self.yolo_version != YOLOVersion.P
             ):
                 mode = self._KPTS_MODE
                 # Get the keypoint outputs
@@ -248,7 +258,7 @@ class YOLOExtendedParser(BaseParser):
                 ]
             elif (
                 any("_masks" in name for name in layer_names)
-                and self.yolo_version.lower() != "yolop"
+                and self.yolo_version != YOLOVersion.P
             ):
                 mode = self._SEG_MODE
                 # Get the segmentation outputs

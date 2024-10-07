@@ -1,9 +1,25 @@
 import time
+from enum import Enum
 from typing import List, Optional, Tuple
 
 import numpy as np
 
 from .nms import nms
+
+
+class YOLOVersion(str, Enum):
+    V3 = "yolov3"
+    V5 = "yolov5"
+    V5U = "yolov5-u"
+    V6 = "yolov6"
+    V6R1 = "yolov6-r1"
+    V7 = "yolov7"
+    V8 = "yolov8"
+    V9 = "yolov9"
+    V10 = "yolov10"
+    P = "yolo-p"
+    GOLD = "yolo-gold"
+    DEFAULT = ""
 
 
 def make_grid_numpy(ny: int, nx: int, na: int) -> np.ndarray:
@@ -186,7 +202,7 @@ def parse_yolo_outputs(
     anchors: Optional[List[np.ndarray]] = None,
     kpts: Optional[List[np.ndarray]] = None,
     det_mode: bool = False,
-    yolo_version: Optional[str] = None,
+    yolo_version: YOLOVersion = YOLOVersion.DEFAULT,
 ) -> np.ndarray:
     """Parse all outputs of an YOLO model (all channels).
 
@@ -203,15 +219,15 @@ def parse_yolo_outputs(
     @param det_mode: Detection only mode.
     @type det_mode: bool
     @param yolo_version: YOLO version.
-    @type yolo_version: Optional[str]
+    @type yolo_version: YOLOVersion
     @return: Parsed output.
     @rtype: np.ndarray
     """
     output = None
 
     for i, (x, s) in enumerate(zip(outputs, strides)):
-        kpt = kpts[i] if kpts is not None else None
-        a = anchors[i] if anchors is not None else None
+        kpt = kpts[i] if kpts else None
+        a = anchors[i] if anchors else None
         out = parse_yolo_output(
             x,
             s,
@@ -235,7 +251,7 @@ def parse_yolo_output(
     head_id: int = -1,
     kpts: Optional[np.ndarray] = None,
     det_mode: bool = False,
-    yolo_version: Optional[str] = None,
+    yolo_version: YOLOVersion = YOLOVersion.DEFAULT,
 ) -> np.ndarray:
     """Parse a single channel output of an YOLO model.
 
@@ -254,14 +270,14 @@ def parse_yolo_output(
     @param det_mode: Detection only mode.
     @type det_mode: bool
     @param yolo_version: YOLO version.
-    @type yolo_version: Optional[str]
+    @type yolo_version: YOLOVersion
     @return: Parsed output.
     @rtype: np.ndarray
     """
-    na = 1 if anchors is None else len(anchors) // 2  # number of anchors per head
+    na = len(anchors) // 2 if anchors else 1  # number of anchors per head
     bs, _, ny, nx = out.shape  # bs - batch size, ny|nx - y and x of grid cells
 
-    if yolo_version is not None and yolo_version.lower() == "yolop":
+    if yolo_version in [YOLOVersion.P, YOLOVersion.V5, YOLOVersion.V5U, YOLOVersion.V7]:
         grid = make_grid_numpy(ny, nx, 1)
     else:
         grid = make_grid_numpy(ny, nx, na)
@@ -378,7 +394,7 @@ def decode_yolo_output(
     iou_thres: float = 0.45,
     num_classes: int = 1,
     det_mode: bool = False,
-    yolo_version: Optional[str] = None,
+    yolo_version: YOLOVersion = YOLOVersion.DEFAULT,
 ) -> np.ndarray:
     """Decode the output of an YOLO instance segmentation or pose estimation model.
 
@@ -400,7 +416,7 @@ def decode_yolo_output(
         detections.
     @type det_mode: bool
     @param yolo_version: YOLO version.
-    @type yolo_version: Optional[str]
+    @type yolo_version: YOLOVersion
     @return: NMS output.
     @rtype: np.ndarray
     """
