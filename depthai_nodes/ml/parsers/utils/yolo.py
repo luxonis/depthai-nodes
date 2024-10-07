@@ -302,13 +302,13 @@ def parse_yolo_output(
         if yolo_version == YOLOVersion.V6R1:
             c_xy = out[..., 0:2] + grid
             wh = np.exp(out[..., 2:4])
-            out[..., 0:2] = c_xy * stride
-            out[..., 2:4] = wh * stride
         else:
             x1y1 = grid - out[..., 0:2] + 0.5
             x2y2 = grid + out[..., 2:4] + 0.5
             c_xy = (x1y1 + x2y2) / 2
             wh = x2y2 - x1y1
+        out[..., 0:2] = c_xy * stride
+        out[..., 2:4] = wh * stride
 
     if det_mode:
         # Detection
