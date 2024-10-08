@@ -30,7 +30,7 @@ class YOLOExtendedParser(BaseParser):
         Number of keypoints in the model.
     anchors : Optional[List[np.ndarray]]
         Anchors for the YOLO model (optional).
-    yolo_version : YOLOVersion
+    yolo_version : str
         Version of the YOLO model.
 
 
@@ -53,7 +53,7 @@ class YOLOExtendedParser(BaseParser):
         mask_conf: float = 0.5,
         n_keypoints: int = 17,
         anchors: Optional[List[np.ndarray]] = None,
-        yolo_version: YOLOVersion = YOLOVersion.DEFAULT,
+        yolo_version: str = "",
     ):
         """Initialize the YOLOExtendedParser node.
 
@@ -70,7 +70,7 @@ class YOLOExtendedParser(BaseParser):
         @param anchors: The anchors for the YOLO model
         @type anchors: Optional[List[np.ndarray]]
         @param yolo_version: The version of the YOLO model
-        @type yolo_version: YOLOVersion
+        @type yolo_version: str
         """
         super().__init__()
 
@@ -81,7 +81,12 @@ class YOLOExtendedParser(BaseParser):
         self.mask_conf = mask_conf
         self.n_keypoints = n_keypoints
         self.anchors = anchors
-        self.yolo_version = yolo_version
+        try:
+            self.yolo_version = YOLOVersion(yolo_version.lower())
+        except ValueError as err:
+            raise ValueError(
+                f"Invalid YOLO version. Supported YOLO versions are {[e.value for e in YOLOVersion][:-1]}."
+            ) from err
 
     def build(
         self,
@@ -131,7 +136,7 @@ class YOLOExtendedParser(BaseParser):
                 self.yolo_version = YOLOVersion(metadata["yolo_version"].lower())
             except ValueError as err:
                 raise ValueError(
-                    "Invalid YOLO version. Supported versions are 'yolov3', 'yolov5', 'yolov5-u', 'yolov6', 'yolov6-r1', 'yolov7', 'yolov8', 'yolov9', 'yolov10', 'yolo-p', 'yolo-gold'."
+                    f"Invalid YOLO version. Supported YOLO versions are {[e.value for e in YOLOVersion][:-1]}."
                 ) from err
         return self
 
@@ -193,7 +198,7 @@ class YOLOExtendedParser(BaseParser):
             self.yolo_version = YOLOVersion(yolo_version.lower())
         except ValueError as err:
             raise ValueError(
-                "Invalid YOLO version. Supported versions are 'yolov3', 'yolov5', 'yolov5-u', 'yolov6', 'yolov6-r1', 'yolov7', 'yolov8', 'yolov9', 'yolov10', 'yolo-p', 'yolo-gold'."
+                f"Invalid YOLO version. Supported YOLO versions are {[e.value for e in YOLOVersion][:-1]}."
             ) from err
 
     def setOutputLayerNames(self, output_layer_names):
@@ -289,7 +294,7 @@ class YOLOExtendedParser(BaseParser):
             # Decode the outputs
             results = decode_yolo_output(
                 outputs_values,
-                [8, 16, 32],
+                [8, 16, 32] if self.yolo_version != YOLOVersion.V3 else [16, 32],
                 self.anchors,
                 kpts=kpts_outputs if mode == self._KPTS_MODE else None,
                 conf_thres=self.conf_threshold,
