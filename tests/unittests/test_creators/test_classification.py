@@ -58,7 +58,7 @@ def test_mixed_scores():
 
 def test_non_probability_scores():
     with pytest.raises(ValueError):
-        create_classification_message(["cat", "dog", "bird"], [0.2, 0.3, 0.4])
+        create_classification_message(["cat", "dog", "bird"], [0.2, 0.3, 0.1])
 
 
 def test_non_probability_scores_2():
@@ -66,22 +66,22 @@ def test_non_probability_scores_2():
         create_classification_message(["cat", "dog", "bird"], [0.5, 0.5, 0.5])
 
 
-def test_sum_above_upper_thr():  # upper thr is 1.01001001
+def test_sum_above_upper_thr():
     with pytest.raises(ValueError):
-        create_classification_message(["cat", "dog", "bird"], [0.5, 0.11001001, 0.4])
+        create_classification_message(["cat", "dog", "bird"], [0.5, 0.21, 0.4])
 
 
 def test_sum_below_upper_thr():
     create_classification_message(["cat", "dog", "bird"], [0.5, 0.11001000, 0.4])
 
 
-def test_sum_above_lower_thr():  # lower thr is 0.98999001
-    create_classification_message(["cat", "dog", "bird"], [0.5, 0.18999001, 0.3])
+def test_sum_above_lower_thr():
+    create_classification_message(["cat", "dog", "bird"], [0.5, 0.2, 0.3])
 
 
 def test_sum_below_bottom_thr():
     with pytest.raises(ValueError):
-        create_classification_message(["cat", "dog", "bird"], [0.5, 0.18999, 0.3])
+        create_classification_message(["cat", "dog", "bird"], [0.5, 0.9, 0.3])
 
 
 def test_mismatch_lengths():

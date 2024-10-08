@@ -159,11 +159,12 @@ class FastSAMParser(YOLOExtendedParser):
                 protos_len,
             ) = self._get_segmentation_outputs(output)
 
-            if len(outputs_values[0].shape) != 4:
+            if (
+                len(outputs_values[0].shape) == 4
+                and outputs_values[0].shape[-1] == outputs_values[1].shape[-1]
+            ):
                 # RVC4
-                outputs_values = [
-                    o.transpose((2, 0, 1))[np.newaxis, ...] for o in outputs_values
-                ]
+                outputs_values = [o.transpose((0, 3, 1, 2)) for o in outputs_values]
                 (
                     protos_output,
                     protos_len,
