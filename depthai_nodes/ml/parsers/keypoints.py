@@ -84,8 +84,8 @@ class KeypointParser(BaseParser):
                 f"Only one output layer supported for Keypoint, got {output_layers} layers."
             )
         self.output_layer_name = output_layers[0]
-        self.scale_factor = head_config["scale_factor"]
-        self.n_keypoints = head_config["n_keypoints"]
+        self.scale_factor = head_config.get("scale_factor", self.scale_factor)
+        self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
 
         return self
 
