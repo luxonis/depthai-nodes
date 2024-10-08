@@ -47,12 +47,12 @@ class HRNetParser(KeypointParser):
 
         Returns
         -------
-        SuperAnimalParser
+        HRNetParser
             Returns the parser object with the head configuration set.
         """
 
         super().build(head_config)
-        self.score_threshold = head_config["score_threshold"]
+        self.score_threshold = head_config.get("score_threshold", self.score_threshold)
 
         return self
 
@@ -73,11 +73,12 @@ class HRNetParser(KeypointParser):
 
             heatmaps = output.getTensor(
                 self.output_layer_name,
-                dai.TensorInfo.StorageOrder.NCHW,  # this signals DAI to send out output as NCHW
+                dai.TensorInfo.StorageOrder.NCHW,  # this signals DAI to return output as NCHW
                 dequantize=True,
             )
 
-            heatmaps = np.squeeze(heatmaps, axis=0) if heatmaps.shape[0] == 1 else heatmaps
+            if heatmaps.shape[0] == 1:
+                heatmaps = heatmaps[0]  # remove batch dimension
 
             if len(heatmaps.shape) != 3:
                 raise ValueError(
