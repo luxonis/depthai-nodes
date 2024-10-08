@@ -81,12 +81,12 @@ def xywh_to_xyxy(bboxes: np.ndarray):
     @return: A numpy array of shape (N, 4) containing the bounding boxes in (x_min, y_min, x_max, y_max) format.
     @type np.ndarray
     """
-
     xyxy_bboxes = np.zeros_like(bboxes)
-    xyxy_bboxes[:, 0] = bboxes[:, 0]  # x_min = x
-    xyxy_bboxes[:, 1] = bboxes[:, 1]  # y_min = y
-    xyxy_bboxes[:, 2] = bboxes[:, 0] + bboxes[:, 2]  # x_max = x + w
-    xyxy_bboxes[:, 3] = bboxes[:, 1] + bboxes[:, 3]  # y_max = y + h
+    xyxy_bboxes[:, 0] = bboxes[:, 0] - bboxes[:, 2] / 2  # x_min = x - w/2
+    xyxy_bboxes[:, 1] = bboxes[:, 1] - bboxes[:, 3] / 2  # y_min = y - h/2
+    xyxy_bboxes[:, 2] = bboxes[:, 0] + bboxes[:, 2] / 2  # x_max = x + w/2
+    xyxy_bboxes[:, 3] = bboxes[:, 1] + bboxes[:, 3] / 2  # y_max = y + h/2
+
     return xyxy_bboxes
 
 

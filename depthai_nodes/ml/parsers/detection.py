@@ -135,21 +135,3 @@ class DetectionParser(BaseParser):
             message.setTimestamp(output.getTimestamp())
 
             self.out.send(message)
-
-
-def xywh2xyxy(bboxes: np.ndarray):
-    """Convert bounding box coordinates from (x, y, width, height) to (x_min, y_min,
-    x_max, y_max).
-
-    @param bboxes: A numpy array of shape (N, 4) containing the bounding boxes in (x, y, width, height) format.
-    @type np.ndarray
-    @return: A numpy array of shape (N, 4) containing the bounding boxes in (x_min, y_min, x_max, y_max) format.
-    @type np.ndarray
-    """
-
-    xyxy_bboxes = np.zeros_like(bboxes)
-    xyxy_bboxes[:, 0] = bboxes[:, 0]  # x_min = x
-    xyxy_bboxes[:, 1] = bboxes[:, 1]  # y_min = y
-    xyxy_bboxes[:, 2] = bboxes[:, 0] + bboxes[:, 2]  # x_max = x + w
-    xyxy_bboxes[:, 3] = bboxes[:, 1] + bboxes[:, 3]  # y_max = y + h
-    return xyxy_bboxes
