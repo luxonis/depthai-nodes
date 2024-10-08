@@ -1,6 +1,7 @@
+from typing import Any, Dict
+
 import depthai as dai
 import numpy as np
-from typing import Any, Dict
 
 from ..messages.creators import create_keypoints_message
 from .keypoints import KeypointParser
@@ -15,6 +16,8 @@ class HRNetParser(KeypointParser):
         Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
     out : Node.Output
         Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
+    output_layer_name: str
+        Name of the output layer from which the keypoints are extracted.
     score_threshold : float
         Confidence score threshold for detected keypoints.
 
@@ -84,11 +87,11 @@ class HRNetParser(KeypointParser):
                 raise ValueError(
                     f"Expected 3D output tensor, got {len(heatmaps.shape)}D."
                 )
-            
+
             self.n_keypoints, map_h, map_w = heatmaps.shape
 
             scores = np.array([np.max(heatmap) for heatmap in heatmaps])
-            
+
             keypoints = np.array(
                 [
                     np.unravel_index(heatmap.argmax(), heatmap.shape)
