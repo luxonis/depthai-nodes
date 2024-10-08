@@ -1,10 +1,12 @@
 import depthai as dai
 import numpy as np
+from typing import Any, Dict
 
 from ..messages.creators import create_keypoints_message
+from .keypoints import KeypointParser
 
 
-class HRNetParser(dai.node.ThreadedHostNode):
+class HRNetParser(KeypointParser):
     """Parser class for parsing the output of the HRNet pose estimation model. The code is inspired by https://github.com/ibaiGorordo/ONNX-HRNET-Human-Pose-Estimation.
 
     Attributes
@@ -23,17 +25,36 @@ class HRNetParser(dai.node.ThreadedHostNode):
     **Description**: Keypoints message containing detected body keypoints.
     """
 
-    def __init__(self, score_threshold=0.5):
+    def __init__(self, output_layer_name="heatmaps", score_threshold=0.5):
         """Initializes the HRNetParser node.
 
         @param score_threshold: Confidence score threshold for detected keypoints.
         @type score_threshold: float
         """
-        dai.node.ThreadedHostNode.__init__(self)
-        self.input = dai.Node.Input(self)
-        self.out = dai.Node.Output(self)
-
+        super().__init__(output_layer_name)
         self.score_threshold = score_threshold
+
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ):
+        """Sets the head configuration for the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        SuperAnimalParser
+            Returns the parser object with the head configuration set.
+        """
+
+        super().build(head_config)
+        self.score_threshold = head_config["score_threshold"]
+
+        return self
 
     def setScoreThreshold(self, threshold):
         """Sets the confidence score threshold for the detected body keypoints.
@@ -50,15 +71,23 @@ class HRNetParser(dai.node.ThreadedHostNode):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            heatmaps = output.getTensor("heatmaps", dequantize=True)
+            heatmaps = output.getTensor(
+                self.output_layer_name,
+                dai.TensorInfo.StorageOrder.NCHW,  # this signals DAI to send out output as NCHW
+                dequantize=True,
+            )
 
-            if len(heatmaps.shape) == 4:
-                heatmaps = heatmaps[0]
-            if heatmaps.shape[2] == 16:  # HW_ instead of _HW
-                heatmaps = heatmaps.transpose(2, 0, 1)
-            _, map_h, map_w = heatmaps.shape
+            heatmaps = np.squeeze(heatmaps, axis=0) if heatmaps.shape[0] == 1 else heatmaps
+
+            if len(heatmaps.shape) != 3:
+                raise ValueError(
+                    f"Expected 3D output tensor, got {len(heatmaps.shape)}D."
+                )
+            
+            self.n_keypoints, map_h, map_w = heatmaps.shape
 
             scores = np.array([np.max(heatmap) for heatmap in heatmaps])
+            
             keypoints = np.array(
                 [
                     np.unravel_index(heatmap.argmax(), heatmap.shape)
