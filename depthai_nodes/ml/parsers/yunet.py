@@ -61,7 +61,11 @@ class YuNetParser(DetectionParser):
         @type iou_output_layer_name: str
         """
         super().__init__("", conf_threshold, iou_threshold, max_det)
-
+        self._out = self.createOutput(
+            possibleDatatypes=[
+                dai.Node.DatatypeHierarchy(dai.DatatypeEnum.ImgDetections, True)
+            ]
+        )
         self.loc_output_layer_name = loc_output_layer_name
         self.conf_output_layer_name = conf_output_layer_name
         self.iou_output_layer_name = iou_output_layer_name
@@ -244,7 +248,7 @@ class YuNetParser(DetectionParser):
                 scores=np.array(scores),
                 conf_threshold=self.conf_threshold,
                 iou_threshold=self.iou_threshold,
-                max_det=self.max_detections,
+                max_det=self.max_det,
             )
 
             bboxes = bboxes[keep_indices]

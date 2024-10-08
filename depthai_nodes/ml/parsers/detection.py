@@ -11,7 +11,7 @@ class DetectionParser(BaseParser):
         output_layer_name: str = "",
         conf_threshold: float = 0.5,
         iou_threshold: float = 0.5,
-        max_detections: int = 100,
+        max_det: int = 100,
     ) -> None:
         """Parser class for parsing the output of a detection model. The parser expects
         the output of the model to be in the (x_min, y_min, x_max, y_max, confidence)
@@ -30,8 +30,8 @@ class DetectionParser(BaseParser):
         @type conf_threshold: float
         @param iou_threshold: Non-maximum suppression threshold.
         @type iou_threshold: float
-        @param max_detections: Maximum number of detections to keep.
-        @type max_detections: int
+        @param max_det: Maximum number of detections to keep.
+        @type max_det: int
 
         Output Message/s
         -------
@@ -43,7 +43,7 @@ class DetectionParser(BaseParser):
         self.output_layer_name = output_layer_name
         self.conf_threshold = conf_threshold
         self.iou_threshold = iou_threshold
-        self.max_detections = max_detections
+        self.max_det = max_det
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the output layer name(s) for the parser.
@@ -92,16 +92,9 @@ class DetectionParser(BaseParser):
             Returns the parser object with the head configuration set.
         """
 
-        output_layer = head_config["outputs"]
-        if len(output_layer) != 1:
-            raise ValueError(
-                f"Only one output layer supported for Detection, got {output_layer} layers."
-            )
-
-        self.output_layer_names = output_layer[0]
-        self.conf_threshold = head_config.get("conf_threshold", 0.5)
-        self.iou_threshold = head_config.get("iou_threshold", 0.5)
-        self.max_detections = head_config.get("max_detections", 100)
+        self.conf_threshold = head_config.get("conf_threshold", self.conf_threshold)
+        self.iou_threshold = head_config.get("iou_threshold", self.iou_threshold)
+        self.max_det = head_config.get("max_det", self.max_det)
 
         return self
 

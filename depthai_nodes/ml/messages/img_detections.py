@@ -6,8 +6,9 @@ import numpy as np
 from .keypoints import Keypoint
 
 
-class ImgDetectionExtended:
-    """A class for storing image detections in  with keypoints and masks.
+class ImgDetectionExtended(dai.Buffer):
+    """A class for storing image detections in (x_center, y_center, width, height)
+    format with additional angle and keypoints.
 
     Attributes
     ----------
@@ -25,17 +26,13 @@ class ImgDetectionExtended:
         Confidence of the detection.
     label: int
         Label of the detection.
-    keypoints: Union[List[Tuple[float, float]], List[Tuple[float, float, float]]]
-        Keypoints of the image detection.
-    masks: np.ndarray
-        Segmentation Mask of the detection.
-    angle: float
-        Angle of the detection.
+    keypoints: List[Keypoint]
+        Keypoints of the detection.
     """
 
     def __init__(self):
         """Initializes the ImgDetectionExtended object."""
-
+        super().__init__()
         self._x_center: float
         self._y_center: float
         self._width: float
@@ -45,29 +42,6 @@ class ImgDetectionExtended:
         self._confidence: float = -1.0
         self._label: int = -1
         self._keypoints: List[Keypoint] = []
-
-    @property
-    def keypoints(
-        self,
-    ) -> List[Keypoint]:
-        """Returns the keypoints.
-
-        @return: List of keypoints.
-        @rtype: Keypoints
-        """
-        return self._keypoints
-
-    @keypoints.setter
-    def keypoints(
-        self,
-        keypoints: List[Keypoint],
-    ) -> None:
-        """Sets the keypoints.
-
-        @param value: List of keypoints.
-        @type value: List[Keypoint]
-        """
-        self._keypoints = keypoints
 
     @property
     def x_center(self) -> float:
@@ -114,58 +88,6 @@ class ImgDetectionExtended:
         """
         return self._angle
 
-    @x_center.setter
-    def x_center(self, value: float):
-        """Sets the X coordinate of the center of the bounding box.
-
-        @param value: X coordinate of the center of the bounding box.
-        @type value: float
-        @raise TypeError: If the X coordinate is not a float.
-        """
-        self._x_center = value
-
-    @y_center.setter
-    def y_center(self, value: float):
-        """Sets the Y coordinate of the center of the bounding box.
-
-        @param value: Y coordinate of the center of the bounding box.
-        @type value: float
-        @raise TypeError: If the Y coordinate is not a float.
-        """
-        self._y_center = value
-
-    @width.setter
-    def width(self, value: float):
-        """Sets the width of the bounding box.
-
-        @param value: Width of the bounding box.
-        @type value: float
-        @raise TypeError: If the width is not a float.
-        """
-        self._width = value
-
-    @height.setter
-    def height(self, value: float):
-        """Sets the height of the bounding box.
-
-        @param value: Height of the bounding box.
-        @type value: float
-        @raise TypeError: If the height is not a float.
-        """
-        self._height = value
-
-    @angle.setter
-    def angle(self, value: float):
-        """Sets the angle of the bounding box.
-
-        @param value: Angle of the bounding box.
-        @type value: float
-        @raise TypeError: If the angle is not between -360 and 360.
-        """
-        if value < -360 or value > 360:
-            raise TypeError("Angle must be between -360 and 360 degrees.")
-        self._angle = value
-
     @property
     def confidence(self) -> float:
         """Returns the confidence of the detection.
@@ -174,15 +96,6 @@ class ImgDetectionExtended:
         @rtype: float
         """
         return self._confidence
-
-    @confidence.setter
-    def confidence(self, value: float):
-        """Sets the confidence of the detection.
-
-        @param value: Confidence of the detection.
-        @type value: float
-        """
-        self._confidence = value
 
     @property
     def label(self) -> int:
@@ -193,6 +106,97 @@ class ImgDetectionExtended:
         """
         return self._label
 
+    @property
+    def keypoints(
+        self,
+    ) -> List[Keypoint]:
+        """Returns the keypoints.
+
+        @return: List of keypoints.
+        @rtype: Keypoints
+        """
+        return self._keypoints
+
+    @x_center.setter
+    def x_center(self, value: float):
+        """Sets the X coordinate of the center of the bounding box.
+
+        @param value: X coordinate of the center of the bounding box.
+        @type value: float
+        @raise TypeError: If the X coordinate is not a float.
+        """
+        if not isinstance(value, float):
+            raise TypeError("X center must be a float.")
+
+        self._x_center = value
+
+    @y_center.setter
+    def y_center(self, value: float):
+        """Sets the Y coordinate of the center of the bounding box.
+
+        @param value: Y coordinate of the center of the bounding box.
+        @type value: float
+        @raise TypeError: If the Y coordinate is not a float.
+        """
+        if not isinstance(value, float):
+            raise TypeError("Y center must be a float.")
+
+        self._y_center = value
+
+    @width.setter
+    def width(self, value: float):
+        """Sets the width of the bounding box.
+
+        @param value: Width of the bounding box.
+        @type value: float
+        @raise TypeError: If the width is not a float.
+        """
+        if not isinstance(value, float):
+            raise TypeError("Width must be a float.")
+
+        self._width = value
+
+    @height.setter
+    def height(self, value: float):
+        """Sets the height of the bounding box.
+
+        @param value: Height of the bounding box.
+        @type value: float
+        @raise TypeError: If the height is not a float.
+        """
+        if not isinstance(value, float):
+            raise TypeError("Height must be a float.")
+
+        self._height = value
+
+    @angle.setter
+    def angle(self, value: float):
+        """Sets the angle of the bounding box.
+
+        @param value: Angle of the bounding box.
+        @type value: float
+        @raise TypeError: If the angle is not between -360 and 360.
+        """
+        if not isinstance(value, float):
+            raise TypeError("Angle must be a float.")
+
+        if value < -360 or value > 360:
+            raise TypeError("Angle must be between -360 and 360 degrees.")
+
+        self._angle = value
+
+    @confidence.setter
+    def confidence(self, value: float):
+        """Sets the confidence of the detection.
+
+        @param value: Confidence of the detection.
+        @type value: float
+        """
+        if not isinstance(value, float):
+            raise TypeError("Confidence must be a float.")
+
+        self._confidence = value
+
     @label.setter
     def label(self, value: int):
         """Sets the label of the detection.
@@ -200,7 +204,27 @@ class ImgDetectionExtended:
         @param value: Label of the detection.
         @type value: int
         """
+        if not isinstance(value, int):
+            raise TypeError("Label must be an integer.")
+
         self._label = value
+
+    @keypoints.setter
+    def keypoints(
+        self,
+        keypoints: List[Keypoint],
+    ) -> None:
+        """Sets the keypoints.
+
+        @param value: List of keypoints.
+        @type value: List[Keypoint]
+        """
+        if not isinstance(keypoints, list) or not all(
+            isinstance(kp, Keypoint) for kp in keypoints
+        ):
+            raise ValueError("Keypoints must be a list of Keypoint objects.")
+
+        self._keypoints = keypoints
 
 
 class ImgDetectionsExtended(dai.Buffer):
@@ -210,10 +234,20 @@ class ImgDetectionsExtended(dai.Buffer):
     ----------
     detections: List[ImgDetectionExtended]
         Image detections with keypoints.
+    masks: np.ndarray
+        The segmentation masks of the image. All masks are stored in a single numpy array.
     """
 
-    def __init__(self):
-        """Initializes the ImgDetectionsExtended object."""
+    def __init__(self) -> None:
+        """Initializes the ImgDetectionsExtended object.
+
+        Attributes
+        ----------
+        detections: List[ImgDetectionExtended]
+            Image detections with keypoints.
+        masks: np.ndarray
+            The segmentation masks of the image. All masks are stored in a single numpy array.
+        """
         super().__init__()
         self._detections: List[ImgDetectionExtended] = []
         self._masks: np.ndarray = np.array([])
@@ -237,7 +271,7 @@ class ImgDetectionsExtended(dai.Buffer):
         return self._masks
 
     @detections.setter
-    def detections(self, value: List[ImgDetectionExtended]):
+    def detections(self, detections: List[ImgDetectionExtended]):
         """Sets the image detections with keypoints.
 
         @param value: List of image detections with keypoints.
@@ -245,14 +279,13 @@ class ImgDetectionsExtended(dai.Buffer):
         @raise TypeError: If the detections are not a list.
         @raise TypeError: If each detection is not an instance of ImgDetectionExtended.
         """
-        if not isinstance(value, list):
+        if not isinstance(detections, list):
             raise TypeError("Detections must be a list")
-        for item in value:
-            if not isinstance(item, ImgDetectionExtended):
-                raise TypeError(
-                    "Each detection must be an instance of ImgDetectionExtended"
-                )
-        self._detections = value
+        if not all(isinstance(item, ImgDetectionExtended) for item in detections):
+            raise TypeError(
+                "Each detection must be an instance of ImgDetectionExtended"
+            )
+        self._detections = detections
 
     @masks.setter
     def masks(self, masks: np.ndarray):

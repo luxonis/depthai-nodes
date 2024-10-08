@@ -21,7 +21,7 @@ class PPTextDetectionParser(DetectionParser):
         The threshold for the mask.
     bbox_threshold : float
         The threshold for bounding boxes.
-    max_detections : int
+    max_det : int
         The maximum number of candidate bounding boxes.
 
     Output Message/s
@@ -35,7 +35,7 @@ class PPTextDetectionParser(DetectionParser):
         output_layer_name: str = "",
         conf_threshold: float = 0.5,
         mask_threshold: float = 0.25,
-        max_detections: int = 100,
+        max_det: int = 100,
     ) -> None:
         """Initializes the PPTextDetectionParser node.
 
@@ -46,13 +46,13 @@ class PPTextDetectionParser(DetectionParser):
         @type mask_threshold: float
         @param conf_threshold: The threshold for bounding boxes.
         @type conf_threshold: float
-        @param max_detections: The maximum number of candidate bounding boxes.
-        @type max_detections:
+        @param max_det: The maximum number of candidate bounding boxes.
+        @type max_det:
         """
         super().__init__(
             output_layer_name=output_layer_name,
             conf_threshold=conf_threshold,
-            max_detections=max_detections,
+            max_det=max_det,
         )
         self.mask_threshold = mask_threshold
 
@@ -108,7 +108,7 @@ class PPTextDetectionParser(DetectionParser):
                 predictions,
                 self.mask_threshold,
                 self.conf_threshold,
-                self.max_detections,
+                self.max_det,
             )
 
             message = create_detection_message(

@@ -77,40 +77,6 @@ class SCRFDParser(DetectionParser):
         self.num_anchors = num_anchors
         self.input_size = input_size
 
-    def build(
-        self,
-        head_config: Dict[str, Any],
-    ) -> "SCRFDParser":
-        """Sets the head configuration for the parser.
-
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        SCRFDParser
-            Returns the parser object with the head configuration set.
-        """
-        super().build(head_config)
-        output_layers = head_config["outputs"]
-        score_layer_names = [layer for layer in output_layers if "score" in layer]
-        bbox_layer_names = [layer for layer in output_layers if "bbox" in layer]
-        kps_layer_names = [layer for layer in output_layers if "kps" in layer]
-        if len(score_layer_names) != len(bbox_layer_names) or len(
-            score_layer_names
-        ) != len(kps_layer_names):
-            raise ValueError(
-                f"Number of score, bbox, and kps layers should be equal, got {len(score_layer_names)}, {len(bbox_layer_names)}, and {len(kps_layer_names)} layers."
-            )
-        self.output_layer_names = output_layers
-
-        self.feat_stride_fpn = head_config.get("feat_stride_fpn", self.feat_stride_fpn)
-        self.num_anchors = head_config.get("num_anchors", self.num_anchors)
-
-        return self
-
     def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
         """Sets the output layer name(s) for the parser.
 
@@ -142,6 +108,42 @@ class SCRFDParser(DetectionParser):
         @type num_anchors: int
         """
         self.num_anchors = num_anchors
+
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ) -> "SCRFDParser":
+        """Sets the head configuration for the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        SCRFDParser
+            Returns the parser object with the head configuration set.
+        """
+        super().build(head_config)
+
+        output_layers = head_config["outputs"]
+        score_layer_names = [layer for layer in output_layers if "score" in layer]
+        bbox_layer_names = [layer for layer in output_layers if "bbox" in layer]
+        kps_layer_names = [layer for layer in output_layers if "kps" in layer]
+
+        if len(score_layer_names) != len(bbox_layer_names) or len(
+            score_layer_names
+        ) != len(kps_layer_names):
+            raise ValueError(
+                f"Number of score, bbox, and kps layers should be equal, got {len(score_layer_names)}, {len(bbox_layer_names)}, and {len(kps_layer_names)} layers."
+            )
+
+        self.output_layer_names = output_layers
+        self.feat_stride_fpn = head_config.get("feat_stride_fpn", self.feat_stride_fpn)
+        self.num_anchors = head_config.get("num_anchors", self.num_anchors)
+
+        return self
 
     def run(self):
         while self.isRunning():

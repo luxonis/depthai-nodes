@@ -1,5 +1,3 @@
-from typing import List
-
 import depthai as dai
 import numpy as np
 
@@ -16,7 +14,7 @@ def create_detection_message(
     bboxes: np.ndarray,
     scores: np.ndarray,
     angles: np.ndarray = None,
-    labels: List[int] = None,
+    labels: np.ndarray = None,
     keypoints: np.ndarray = None,
 ) -> ImgDetectionsExtended:
     """Create a DepthAI message for object detection. The message contains the bounding
@@ -31,7 +29,7 @@ def create_detection_message(
     @param angles: Angles of detected objects expressed in degrees.
     @type angles: Optional[np.ndarray]
     @param labels: Labels of detected objects of shape (N,).
-    @type labels: Optional[List[int]]
+    @type labels: Optional[np.ndarray]
     @param keypoints: Keypoints of detected objects of shape (N,2) or (N,3).
     @type keypoints: Optional[np.array]
     @param masks: Masks of detected objects of shape (N, H, W).
@@ -54,6 +52,9 @@ def create_detection_message(
     @raise ValueError: If the masks are not in the range [0, 1].
     """
 
+    if not isinstance(bboxes, np.ndarray):
+        raise ValueError(f"Bboxes should be a numpy array, got {type(bboxes)}.")
+
     if len(bboxes) == 0:
         return ImgDetectionsExtended()
 
@@ -65,8 +66,13 @@ def create_detection_message(
         raise ValueError(
             f"Bounding boxes should be of shape (n, 4), got {bboxes.shape}."
         )
+
+    if not isinstance(scores, np.ndarray):
+        raise ValueError(f"Scores should be a numpy array, got {type(scores)}.")
+
     if len(scores.shape) != 1:
         raise ValueError(f"Scores should be of shape (N,), got {scores.shape}.")
+
     n_bboxes = len(bboxes)
     if len(scores) != n_bboxes:
         raise ValueError(
@@ -74,12 +80,16 @@ def create_detection_message(
         )
 
     if labels is not None:
-        if len(labels) != n_bboxes:
+        if not isinstance(labels, np.ndarray):
+            raise ValueError(f"Labels should be a numpy array, got {type(labels)}.")
+        if labels.shape[0] != n_bboxes:
             raise ValueError(
                 f"Labels should have same length as bboxes, got {len(labels)} and {n_bboxes}."
             )
 
     if angles is not None:
+        if not isinstance(angles, np.ndarray):
+            raise ValueError(f"Angles should be a numpy array, got {type(angles)}.")
         if len(angles) != n_bboxes:
             raise ValueError(
                 f"Angles should have same length as bboxes, got {len(angles)} and {n_bboxes}."
@@ -88,6 +98,14 @@ def create_detection_message(
             raise ValueError(f"Angles should be between -360 and 360, got {angles}.")
 
     if keypoints is not None:
+        if not isinstance(keypoints, np.ndarray):
+            raise ValueError(
+                f"Keypoints should be a numpy array, got {type(keypoints)}."
+            )
+        if len(keypoints.shape) != 3:
+            raise ValueError(
+                f"Keypoints should be of shape (N, M, 2 or 3) meaning [..., [x, y] or [x, y, z], ...], got {keypoints.shape}."
+            )
         n_detections, n_keypoints, dim = keypoints.shape
         keypoints = np.array(keypoints, dtype=float)
         if n_detections != n_bboxes:

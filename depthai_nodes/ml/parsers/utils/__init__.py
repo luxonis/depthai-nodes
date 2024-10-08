@@ -9,9 +9,9 @@ from .bbox_format_converters import (
 from .decode_detections import decode_detections
 from .decode_head import decode_head
 from .denormalize import unnormalize_image
+from .keypoints import transform_to_keypoints
 from .medipipe import generate_anchors_and_decode
 from .ppdet import parse_paddle_detection_outputs
-from .transform_to_keypoints import transform_to_keypoints
 
 __all__ = [
     "unnormalize_image",
