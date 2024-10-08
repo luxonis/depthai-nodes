@@ -4,6 +4,7 @@ from depthai_nodes.ml.messages import (
     Classifications,
     Clusters,
     CompositeMessage,
+    CornerDetections,
     ImgDetectionsExtended,
     Keypoints,
     Lines,
@@ -42,6 +43,17 @@ def parse_classification_message(message: Classifications):
     classes = message.classes
     scores = message.scores
     return classes, scores
+
+
+def parse_multi_classification_message(message: CompositeMessage):
+    """Parses the multi classification message and returns the classification."""
+    message = message.getData()
+    result = {}
+    for key in message:
+        classes = message[key].classes
+        scores = message[key].scores
+        result[key] = {"classes": classes, "scores": scores}
+    return result
 
 
 def parse_image_message(message: dai.ImgFrame):
@@ -83,3 +95,9 @@ def parse_map_message(message: Map2D):
     """Parses the map message and returns the map."""
     map = message.map
     return map
+
+
+def parse_corner_detection_message(message: CornerDetections):
+    """Parses the corner detection message and returns the corners."""
+    detections = message.detections
+    return detections

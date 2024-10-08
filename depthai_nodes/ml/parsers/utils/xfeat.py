@@ -1,6 +1,5 @@
 from typing import Any, Dict, List, Tuple
 
-import cv2
 import numpy as np
 
 
@@ -59,26 +58,44 @@ def local_maximum_filter(x: np.ndarray, kernel_size: int) -> np.ndarray:
     return local_max
 
 
-def bilinear_grid_sample(
-    im: np.ndarray, grid: np.ndarray, align_corners: bool = False
-) -> np.ndarray:
-    """Bilinear grid sample.
+def normgrid(x, H, W):
+    """Normalize coords to [-1,1].
 
-    @param im: Input image tensor.
-    @type im: np.ndarray
-    @param grid: Grid tensor.
-    @type grid: np.ndarray
-    @param align_corners: Whether to align corners.
-    @type align_corners: bool
-    @return: Output image tensor after applying bilinear grid sample.
+    @param x: Input coordinates, shape (N, Hg, Wg, 2)
+    @type x: np.ndarray
+    @param H: Height of the output feature map
+    @type H: int
+    @param W: Width of the output feature map
+    @type W: int
+    @return: Normalized coordinates, shape (N, Hg, Wg, 2)
     @rtype: np.ndarray
     """
-    n, c, h, w = im.shape
-    gn, gh, gw, _ = grid.shape
-    assert n == gn
+    return 2.0 * (x / np.array([W - 1, H - 1], dtype=x.dtype)) - 1.0
 
-    x = grid[:, :, :, 0]
-    y = grid[:, :, :, 1]
+
+def bilinear(im, pos, H, W):
+    """Given an input and a flow-field grid, computes the output using input values and
+    pixel locations from grid. Supported only bilinear interpolation method to sample
+    the input pixels.
+
+    @param im: Input feature map, shape (N, C, H, W)
+    @type im: np.ndarray
+    @param pos: Point coordinates, shape (N, Hg, Wg, 2)
+    @type pos: np.ndarray
+    @param H: Height of the output feature map
+    @type H: int
+    @param W: Width of the output feature map
+    @type W: int
+    @return: A tensor with sampled points, shape (N, C, Hg, Wg)
+    @rtype: np.ndarray
+    """
+    align_corners = False
+    n, c, h, w = im.shape
+    grid = normgrid(pos, H, W)[..., np.newaxis]
+    grid = grid.transpose(0, 1, 3, 2)
+
+    x = grid[..., 0]
+    y = grid[..., 1]
 
     if align_corners:
         x = ((x + 1) / 2) * (w - 1)
@@ -95,10 +112,10 @@ def bilinear_grid_sample(
     x1 = x0 + 1
     y1 = y0 + 1
 
-    wa = ((x1 - x) * (y1 - y)).reshape(n, 1, -1)
-    wb = ((x1 - x) * (y - y0)).reshape(n, 1, -1)
-    wc = ((x - x0) * (y1 - y)).reshape(n, 1, -1)
-    wd = ((x - x0) * (y - y0)).reshape(n, 1, -1)
+    wa = ((x1 - x) * (y1 - y))[:, np.newaxis]
+    wb = ((x1 - x) * (y - y0))[:, np.newaxis]
+    wc = ((x - x0) * (y1 - y))[:, np.newaxis]
+    wd = ((x - x0) * (y - y0))[:, np.newaxis]
 
     # Apply padding
     im_padded = np.pad(
@@ -106,32 +123,33 @@ def bilinear_grid_sample(
     )
     padded_h = h + 2
     padded_w = w + 2
-    x0, x1, y0, y1 = x0 + 1, x1 + 1, y0 + 1, y1 + 1
 
-    # Clip coordinates to padded image size
+    # Adjust points for padding
+    x0, x1 = x0 + 1, x1 + 1
+    y0, y1 = y0 + 1, y1 + 1
+
+    # Clip coordinates to stay within bounds
     x0 = np.clip(x0, 0, padded_w - 1)
     x1 = np.clip(x1, 0, padded_w - 1)
     y0 = np.clip(y0, 0, padded_h - 1)
     y1 = np.clip(y1, 0, padded_h - 1)
 
+    # Flatten im_padded for indexing
     im_padded = im_padded.reshape(n, c, -1)
 
-    x0_y0 = (x0 + y0 * padded_w).reshape(n, 1, -1)
-    x0_y1 = (x0 + y1 * padded_w).reshape(n, 1, -1)
-    x1_y0 = (x1 + y0 * padded_w).reshape(n, 1, -1)
-    x1_y1 = (x1 + y1 * padded_w).reshape(n, 1, -1)
+    x0_y0 = (x0 + y0 * padded_w)[:, np.newaxis].repeat(c, axis=1)
+    x0_y1 = (x0 + y1 * padded_w)[:, np.newaxis].repeat(c, axis=1)
+    x1_y0 = (x1 + y0 * padded_w)[:, np.newaxis].repeat(c, axis=1)
+    x1_y1 = (x1 + y1 * padded_w)[:, np.newaxis].repeat(c, axis=1)
 
-    def gather(im_padded, idx):
-        idx = idx.astype(np.int32)
-        gathered = np.take_along_axis(im_padded, idx, axis=2)
-        return gathered
+    Ia = np.take_along_axis(im_padded, x0_y0, axis=2)
+    Ib = np.take_along_axis(im_padded, x0_y1, axis=2)
+    Ic = np.take_along_axis(im_padded, x1_y0, axis=2)
+    Id = np.take_along_axis(im_padded, x1_y1, axis=2)
 
-    Ia = gather(im_padded, x0_y0)
-    Ib = gather(im_padded, x0_y1)
-    Ic = gather(im_padded, x1_y0)
-    Id = gather(im_padded, x1_y1)
-
-    result = (Ia * wa + Ib * wb + Ic * wc + Id * wd).reshape(n, c, gh, gw)
+    result = (Ia * wa + Ib * wb + Ic * wc + Id * wd).reshape(
+        n, c, grid.shape[1], grid.shape[2]
+    )
     return result
 
 
@@ -192,6 +210,7 @@ def _nms(
 def detect_and_compute(
     feats: np.ndarray,
     kpts: np.ndarray,
+    heatmaps: np.ndarray,
     resize_rate_w: float,
     resize_rate_h: float,
     input_size: Tuple[int, int],
@@ -220,37 +239,12 @@ def detect_and_compute(
     kpts_heats = _get_kpts_heatmap(kpts)
     mkpts = _nms(kpts_heats, threshold=0.05, kernel_size=5)  # int64
 
-    # Numpy implementation of normgrid
-    div_array = np.array([input_size[0] - 1, input_size[1] - 1], dtype=mkpts.dtype)
-    grid = 2.0 * (mkpts / div_array) - 1.0
-    grid = np.expand_dims(grid, axis=2)
-
-    if grid.size == 0:
+    if mkpts.size == 0:
         return None
-
     # Numpy implementation of F.grid_sample
-    map_x = grid[..., 0].reshape(-1).astype(np.float32)
-    map_y = grid[..., 1].reshape(-1).astype(np.float32)
-    remapped = cv2.remap(
-        kpts_heats[0, 0],
-        map_x,
-        map_y,
-        interpolation=cv2.INTER_NEAREST,
-        borderMode=cv2.BORDER_CONSTANT,
-        borderValue=0,
-    )
-    nearest_result = np.expand_dims(remapped, axis=0)
+    nearest_result = bilinear(kpts_heats, mkpts, input_size[1], input_size[0])
+    bilinear_result = bilinear(heatmaps, mkpts, input_size[1], input_size[0])
 
-    # Numpy implementation of F.grid_sample
-    remapped = cv2.remap(
-        kpts_heats[0, 0],
-        map_x,
-        map_y,
-        interpolation=cv2.INTER_LINEAR,
-        borderMode=cv2.BORDER_CONSTANT,
-        borderValue=0,
-    )
-    bilinear_result = np.expand_dims(remapped, axis=0)
     scores = (nearest_result * bilinear_result).reshape(1, -1)
 
     scores = scores.astype(np.float32)
@@ -262,17 +256,12 @@ def detect_and_compute(
     mkpts_x = np.take_along_axis(mkpts[..., 0], idxs, axis=-1)[:, :top_k]
     mkpts_y = np.take_along_axis(mkpts[..., 1], idxs, axis=-1)[:, :top_k]
     mkpts = np.stack([mkpts_x, mkpts_y], axis=-1)
-    scores = np.take_along_axis(scores, idxs, axis=-1)[:, :top_k]
-
-    div_array = np.array([input_size[0] - 1, input_size[1] - 1], dtype=mkpts.dtype)
-    grid = 2.0 * (mkpts / div_array) - 1.0
-    grid = np.expand_dims(grid, axis=2)
-    map_x = grid[..., 0].reshape(-1).astype(np.float32)
-    map_y = grid[..., 1].reshape(-1).astype(np.float32)
     mkpts = mkpts.astype(np.float32)
 
-    feats = bilinear_grid_sample(feats, grid, align_corners=False)
-    feats = feats.transpose(0, 2, 3, 1).squeeze(-2)
+    scores = np.take_along_axis(scores, idxs, axis=-1)[:, :top_k]
+
+    feats = bilinear(feats, mkpts, input_size[1], input_size[0])
+    feats = feats[0].transpose(2, 1, 0)
 
     norm = np.linalg.norm(feats, axis=-1, keepdims=True)
     feats = feats / norm

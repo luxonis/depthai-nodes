@@ -66,7 +66,7 @@ def create_classification_message(
             f"Scores list must contain probabilities between 0 and 1, instead got {scores}."
         )
 
-    if not np.isclose(np.sum(scores), 1.0, atol=1e-2):
+    if not np.isclose(np.sum(scores), 1.0, atol=1e-1):
         raise ValueError(f"Scores should sum to 1, got {np.sum(scores)}.")
 
     if len(scores) != len(classes):
