@@ -1,11 +1,15 @@
-import depthai as dai
+from typing import Any, Dict
 
-from ..messages.creators import create_corner_detection_message
+import depthai as dai
+import numpy as np
+
+from ..messages.creators import create_detection_message
+from .detection import DetectionParser
 from .utils import parse_paddle_detection_outputs
 
 
-class PPTextDetectionParser(dai.node.ThreadedHostNode):
-    """Parser class for parsing the output of the PP-OCR text detection model.
+class PPTextDetectionParser(DetectionParser):
+    """Parser class for parsing the output of the PaddlePaddle OCR text detection model.
 
     Attributes
     ----------
@@ -17,7 +21,7 @@ class PPTextDetectionParser(dai.node.ThreadedHostNode):
         The threshold for the mask.
     bbox_threshold : float
         The threshold for bounding boxes.
-    max_detections : int
+    max_det : int
         The maximum number of candidate bounding boxes.
 
     Output Message/s
@@ -28,28 +32,31 @@ class PPTextDetectionParser(dai.node.ThreadedHostNode):
 
     def __init__(
         self,
-        mask_threshold: float = 0.3,
-        bbox_threshold: float = 0.7,
-        max_detections: int = 1000,
-    ):
+        output_layer_name: str = "",
+        conf_threshold: float = 0.5,
+        mask_threshold: float = 0.25,
+        max_det: int = 100,
+    ) -> None:
         """Initializes the PPTextDetectionParser node.
 
+        @param output_layer_name: The name of the output layer from which the scores are
+            extracted.
+        @type output_layer_name: str
         @param mask_threshold: The threshold for the mask.
         @type mask_threshold: float
-        @param bbox_threshold: The threshold for bounding boxes.
-        @type bbox_threshold: float
-        @param max_detections: The maximum number of candidate bounding boxes.
-        @type max_detections:
+        @param conf_threshold: The threshold for bounding boxes.
+        @type conf_threshold: float
+        @param max_det: The maximum number of candidate bounding boxes.
+        @type max_det:
         """
-        dai.node.ThreadedHostNode.__init__(self)
-        self.input = self.createInput()
-        self.out = self.createOutput()
-
+        super().__init__(
+            output_layer_name=output_layer_name,
+            conf_threshold=conf_threshold,
+            max_det=max_det,
+        )
         self.mask_threshold = mask_threshold
-        self.bbox_threshold = bbox_threshold
-        self.max_detections = max_detections
 
-    def setMaskThreshold(self, mask_threshold: float = 0.3):
+    def setMaskThreshold(self, mask_threshold: float = 0.25) -> None:
         """Sets the mask threshold for creating the mask from model output
         probabilities.
 
@@ -58,22 +65,24 @@ class PPTextDetectionParser(dai.node.ThreadedHostNode):
         """
         self.mask_threshold = mask_threshold
 
-    def setBoundingBoxThreshold(self, bbox_threshold: float = 0.7):
-        """Sets the threshold for bounding boxes confidences.
+    def build(self, head_config: Dict[str, Any]) -> "PPTextDetectionParser":
+        """Sets the head configuration for the parser. If any configuration parameters
+        are missing, default values are used.
 
-        @param threshold: The threshold for bounding box confidences.
-        @type threshold: float
+        Attributes
+        ----------
+        config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        PPTextDetectionParser
+            Returns the parser object with the head configuration set.
         """
-        self.bbox_threshold = bbox_threshold
+        super().build(head_config)
+        self.mask_threshold = head_config.get("mask_threshold", 0.25)
 
-    def setMaxDetections(self, max_detections: int = 1000):
-        """Sets the maximum number of candidate bounding boxes. Recommended upper limit
-        is 1000.
-
-        @param max_detections: The maximum number of candidate bounding boxes.
-        @type max_detections: int
-        """
-        self.max_detections = max_detections
+        return self
 
     def run(self):
         while self.isRunning():
@@ -82,16 +91,29 @@ class PPTextDetectionParser(dai.node.ThreadedHostNode):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            predictions = output.getFirstTensor()
+            layers = output.getAllLayerNames()
 
-            bboxes, scores = parse_paddle_detection_outputs(
-                predictions,
-                self.mask_threshold,
-                self.bbox_threshold,
-                self.max_detections,
+            if len(layers) == 1 and self.output_layer_name == "":
+                self.output_layer_name = layers[0]
+            elif len(layers) != 1 and self.output_layer_name == "":
+                raise ValueError(
+                    f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
+                )
+
+            predictions = np.array(
+                output.getTensor(self.output_layer_name, dequantize=True)
             )
 
-            message = create_corner_detection_message(bboxes, scores)
+            bboxes, angles, corners, scores = parse_paddle_detection_outputs(
+                predictions,
+                self.mask_threshold,
+                self.conf_threshold,
+                self.max_det,
+            )
+
+            message = create_detection_message(
+                bboxes, scores, angles=angles, keypoints=corners
+            )
             message.setTimestamp(output.getTimestamp())
 
             self.out.send(message)

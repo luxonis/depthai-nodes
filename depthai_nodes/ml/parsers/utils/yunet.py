@@ -5,7 +5,7 @@ from typing import List, Tuple
 
 import numpy as np
 
-from .bbox import normalize_bboxes
+from .bbox_format_converters import normalize_bboxes
 from .keypoints import normalize_keypoints
 
 
@@ -192,9 +192,10 @@ def format_detections(
     bboxes = normalize_bboxes(bboxes, height=h, width=w)
 
     keypoints = keypoints.astype(np.int32)
-    keypoints = keypoints.reshape(-1, 5, 2)  # (N,10) to (N,5,2)
+    keypoints = keypoints.reshape(-1, 2)
     keypoints = normalize_keypoints(keypoints, height=h, width=w)
+    keypoints = keypoints.reshape(-1, 5, 2)  # (N,2) to (N,5,2)
 
-    scores = scores.squeeze()
+    scores = np.array([scores]).flatten()
 
     return bboxes, keypoints, scores
