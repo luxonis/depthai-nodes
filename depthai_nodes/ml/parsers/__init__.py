@@ -15,8 +15,7 @@ from .regression import RegressionParser
 from .scrfd import SCRFDParser
 from .segmentation import SegmentationParser
 from .superanimal_landmarker import SuperAnimalParser
-from .xfeat_mono import XFeatMonoParser
-from .xfeat_stereo import XFeatStereoParser
+from .xfeat import XFeatMonoParser, XFeatStereoParser
 from .yolo import YOLOExtendedParser
 from .yunet import YuNetParser
 
