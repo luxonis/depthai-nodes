@@ -64,6 +64,8 @@ def nms_cv2(
     """
 
     # NMS
+    if len(bboxes) == 0 or len(scores) == 0:
+        return []
     keep_indices = cv2.dnn.NMSBoxes(
         bboxes=bboxes.tolist(),
         scores=scores.tolist(),

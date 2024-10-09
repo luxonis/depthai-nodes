@@ -1,15 +1,15 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import cv2
 import depthai as dai
 import numpy as np
 
 from ..messages.creators import create_detection_message
-from .base_parser import BaseParser
+from .detection import DetectionParser
 from .utils import generate_anchors_and_decode
 
 
-class MPPalmDetectionParser(BaseParser):
+class MPPalmDetectionParser(DetectionParser):
     """Parser class for parsing the output of the Mediapipe Palm detection model. As the
     result, the node sends out the detected hands in the form of a message containing
     bounding boxes, labels, and confidence scores.
@@ -41,9 +41,18 @@ class MPPalmDetectionParser(BaseParser):
     https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker
     """
 
-    def __init__(self, conf_threshold=0.5, iou_threshold=0.5, max_det=100, scale=192):
+    def __init__(
+        self,
+        output_layer_names=None,
+        conf_threshold=0.5,
+        iou_threshold=0.5,
+        max_det=100,
+        scale=192,
+    ) -> None:
         """Initializes the MPPalmDetectionParser node.
 
+        @param output_layer_names: The name of the output layers for the parser.
+        @type output_layer_names: List[str]
         @param conf_threshold: Confidence score threshold for detected hands.
         @type conf_threshold: float
         @param iou_threshold: Non-maximum suppression threshold.
@@ -52,7 +61,9 @@ class MPPalmDetectionParser(BaseParser):
         @type max_det: int
         """
         super().__init__()
-
+        self.output_layer_names = (
+            [] if output_layer_names is None else output_layer_names
+        )
         self.conf_threshold = conf_threshold
         self.iou_threshold = iou_threshold
         self.max_det = max_det
@@ -61,7 +72,7 @@ class MPPalmDetectionParser(BaseParser):
     def build(
         self,
         head_config: Dict[str, Any],
-    ):
+    ) -> "MPPalmDetectionParser":
         """Sets the head configuration for the parser.
 
         Attributes
@@ -74,44 +85,31 @@ class MPPalmDetectionParser(BaseParser):
         MPPalmDetectionParser
             Returns the parser object with the head configuration set.
         """
-
+        super().build(head_config)
         output_layers = head_config["outputs"]
         if len(output_layers) != 2:
             raise ValueError(
                 f"Only two output layers are supported for MPPalmDetectionParser, got {len(output_layers)} layers."
             )
-        self.conf_threshold = head_config["conf_threshold"]
-        self.iou_threshold = head_config["iou_threshold"]
-        self.max_det = head_config["max_det"]
+        self.output_layer_names = output_layers
         self.scale = head_config["scale"]
 
         return self
 
-    def setConfidenceThreshold(self, threshold):
-        """Sets the confidence score threshold for detected hands.
+    def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
+        """Sets the output layer name(s) for the parser.
 
-        @param threshold: Confidence score threshold for detected hands.
-        @type threshold: float
+        @param output_layer_names: The name of the output layer(s) from which the scores
+            are extracted.
+        @type output_layer_names: List[str]
         """
-        self.conf_threshold = threshold
+        if len(output_layer_names) != 2:
+            raise ValueError(
+                f"Only two output layers are supported for MPPalmDetectionParser, got {len(output_layer_names)} layers."
+            )
+        self.output_layer_names = output_layer_names
 
-    def setIOUThreshold(self, threshold):
-        """Sets the non-maximum suppression threshold.
-
-        @param threshold: Non-maximum suppression threshold.
-        @type threshold: float
-        """
-        self.iou_threshold = threshold
-
-    def setMaxDetections(self, max_det):
-        """Sets the maximum number of detections to keep.
-
-        @param max_det: Maximum number of detections to keep.
-        @type max_det: int
-        """
-        self.max_det = max_det
-
-    def setScale(self, scale):
+    def setScale(self, scale: int) -> None:
         """Sets the scale of the input image.
 
         @param scale: Scale of the input image.
@@ -157,15 +155,22 @@ class MPPalmDetectionParser(BaseParser):
 
             bboxes = []
             scores = []
-
+            points = []
+            angles = []
             for hand in decoded_bboxes:
-                extended_points = hand.rect_points
-                xmin = int(min([point[0] for point in extended_points]))
-                ymin = int(min([point[1] for point in extended_points]))
-                xmax = int(max([point[0] for point in extended_points]))
-                ymax = int(max([point[1] for point in extended_points]))
+                extended_points = np.array(hand.rect_points)
 
-                bboxes.append([xmin, ymin, xmax, ymax])
+                x_dist = extended_points[3][0] - extended_points[0][0]
+                y_dist = extended_points[3][1] - extended_points[0][1]
+
+                angle = np.degrees(np.arctan2(y_dist, x_dist))
+                x_center, y_center = np.mean(extended_points, axis=0)
+                width = np.linalg.norm(extended_points[0] - extended_points[3])
+                height = np.linalg.norm(extended_points[0] - extended_points[1])
+
+                points.append(extended_points)
+                bboxes.append([x_center, y_center, width, height])
+                angles.append(angle)
                 scores.append(hand.pd_score)
 
             indices = cv2.dnn.NMSBoxes(
@@ -177,9 +182,13 @@ class MPPalmDetectionParser(BaseParser):
             )
             bboxes = np.array(bboxes)[indices]
             scores = np.array(scores)[indices]
+            points = np.array(points)[indices]
+            angles = np.array(angles)[indices]
+            points = points.astype(float) / self.scale
+            bboxes = bboxes.astype(float) / self.scale
 
-            bboxes = bboxes.astype(np.float32) / self.scale
-
-            detections_msg = create_detection_message(bboxes=bboxes, scores=scores)
+            detections_msg = create_detection_message(
+                bboxes=bboxes, scores=scores, angles=angles, keypoints=points
+            )
             detections_msg.setTimestamp(output.getTimestamp())
             self.out.send(detections_msg)

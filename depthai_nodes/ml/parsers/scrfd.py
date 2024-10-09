@@ -1,14 +1,15 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 import depthai as dai
 import numpy as np
 
 from ..messages.creators import create_detection_message
-from .base_parser import BaseParser
+from .detection import DetectionParser
+from .utils.bbox_format_converters import xyxy_to_xywh
 from .utils.scrfd import decode_scrfd
 
 
-class SCRFDParser(BaseParser):
+class SCRFDParser(DetectionParser):
     """Parser class for parsing the output of the SCRFD face detection model.
 
     Attributes
@@ -41,15 +42,19 @@ class SCRFDParser(BaseParser):
 
     def __init__(
         self,
-        conf_threshold=0.5,
-        iou_threshold=0.5,
-        max_det=100,
-        input_size=(640, 640),
-        feat_stride_fpn=(8, 16, 32),
-        num_anchors=2,
+        output_layer_names: List[str] = None,
+        conf_threshold: float = 0.5,
+        iou_threshold: float = 0.5,
+        max_det: int = 100,
+        input_size: Tuple[int, int] = (640, 640),
+        feat_stride_fpn: Tuple = (8, 16, 32),
+        num_anchors: int = 2,
     ):
         """Initializes the SCRFDParser node.
 
+        @param output_layer_names: The name of the output layer(s) from which the scores
+            are extracted.
+        @type output_layer_names: List[str]
         @param conf_threshold: Confidence score threshold for detected faces.
         @type conf_threshold: float
         @param iou_threshold: Non-maximum suppression threshold.
@@ -63,21 +68,51 @@ class SCRFDParser(BaseParser):
         @param input_size: Input size of the model.
         @type input_size: tuple
         """
-        super().__init__()
-        self.output_layer_names = []
-
-        self.conf_threshold = conf_threshold
-        self.iou_threshold = iou_threshold
-        self.max_det = max_det
+        super().__init__("", conf_threshold, iou_threshold, max_det)
+        self.output_layer_names = (
+            [] if output_layer_names is None else output_layer_names
+        )
 
         self.feat_stride_fpn = feat_stride_fpn
         self.num_anchors = num_anchors
         self.input_size = input_size
 
+    def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
+        """Sets the output layer name(s) for the parser.
+
+        @param output_layer_names: The name of the output layer(s) to be used.
+        @type output_layer_names: List[str]
+        """
+        self.output_layer_names = output_layer_names
+
+    def setFeatStrideFPN(self, feat_stride_fpn) -> None:
+        """Sets the feature stride of the FPN.
+
+        @param feat_stride_fpn: Feature stride of the FPN.
+        @type feat_stride_fpn: list
+        """
+        self.feat_stride_fpn = feat_stride_fpn
+
+    def setInputSize(self, input_size) -> None:
+        """Sets the input size of the model.
+
+        @param input_size: Input size of the model.
+        @type input_size: list
+        """
+        self.input_size = input_size
+
+    def setNumAnchors(self, num_anchors) -> None:
+        """Sets the number of anchors.
+
+        @param num_anchors: Number of anchors.
+        @type num_anchors: int
+        """
+        self.num_anchors = num_anchors
+
     def build(
         self,
         head_config: Dict[str, Any],
-    ):
+    ) -> "SCRFDParser":
         """Sets the head configuration for the parser.
 
         Attributes
@@ -90,11 +125,13 @@ class SCRFDParser(BaseParser):
         SCRFDParser
             Returns the parser object with the head configuration set.
         """
+        super().build(head_config)
 
         output_layers = head_config["outputs"]
         score_layer_names = [layer for layer in output_layers if "score" in layer]
         bbox_layer_names = [layer for layer in output_layers if "bbox" in layer]
         kps_layer_names = [layer for layer in output_layers if "kps" in layer]
+
         if len(score_layer_names) != len(bbox_layer_names) or len(
             score_layer_names
         ) != len(kps_layer_names):
@@ -102,62 +139,11 @@ class SCRFDParser(BaseParser):
                 f"Number of score, bbox, and kps layers should be equal, got {len(score_layer_names)}, {len(bbox_layer_names)}, and {len(kps_layer_names)} layers."
             )
 
-        self.conf_threshold = head_config["conf_threshold"]
-        self.iou_threshold = head_config["iou_threshold"]
-        self.max_det = head_config["max_det"]
-        self.feat_stride_fpn = head_config["feat_stride_fpn"]
-        self.num_anchors = head_config["num_anchors"]
         self.output_layer_names = output_layers
+        self.feat_stride_fpn = head_config.get("feat_stride_fpn", self.feat_stride_fpn)
+        self.num_anchors = head_config.get("num_anchors", self.num_anchors)
 
         return self
-
-    def setConfidenceThreshold(self, threshold):
-        """Sets the confidence score threshold for detected faces.
-
-        @param threshold: Confidence score threshold for detected faces.
-        @type threshold: float
-        """
-        self.conf_threshold = threshold
-
-    def setIOUThreshold(self, threshold):
-        """Sets the non-maximum suppression threshold.
-
-        @param threshold: Non-maximum suppression threshold.
-        @type threshold: float
-        """
-        self.iou_threshold = threshold
-
-    def setMaxDetections(self, max_det):
-        """Sets the maximum number of detections to keep.
-
-        @param max_det: Maximum number of detections to keep.
-        @type max_det: int
-        """
-        self.max_det = max_det
-
-    def setFeatStrideFPN(self, feat_stride_fpn):
-        """Sets the feature stride of the FPN.
-
-        @param feat_stride_fpn: Feature stride of the FPN.
-        @type feat_stride_fpn: list
-        """
-        self.feat_stride_fpn = feat_stride_fpn
-
-    def setInputSize(self, input_size):
-        """Sets the input size of the model.
-
-        @param input_size: Input size of the model.
-        @type input_size: list
-        """
-        self.input_size = input_size
-
-    def setNumAnchors(self, num_anchors):
-        """Sets the number of anchors.
-
-        @param num_anchors: Number of anchors.
-        @type num_anchors: int
-        """
-        self.num_anchors = num_anchors
 
     def run(self):
         while self.isRunning():
@@ -217,8 +203,9 @@ class SCRFDParser(BaseParser):
                 score_threshold=self.conf_threshold,
                 nms_threshold=self.iou_threshold,
             )
+            bboxes = xyxy_to_xywh(bboxes)
             detection_msg = create_detection_message(
-                bboxes=bboxes, scores=scores, labels=None, keypoints=keypoints
+                bboxes=bboxes, scores=scores, keypoints=keypoints
             )
             detection_msg.setTimestamp(output.getTimestamp())
 
