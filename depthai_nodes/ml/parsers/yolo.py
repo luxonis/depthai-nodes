@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional
 
+import cv2
 import depthai as dai
 import numpy as np
 
@@ -8,9 +9,9 @@ from .base_parser import BaseParser
 from .utils.yolo import (
     YOLOVersion,
     decode_yolo_output,
-    normalize_bbox,
     parse_kpts,
     process_single_mask,
+    xyxy2xywhn,
 )
 
 
@@ -299,7 +300,8 @@ class YOLOExtendedParser(BaseParser):
             # Get the model's input shape
             strides = (
                 [8, 16, 32]
-                if self.yolo_version not in [YOLOVersion.V3UT, YOLOVersion.V3T]
+                if self.yolo_version
+                not in [YOLOVersion.V3UT, YOLOVersion.V3T, YOLOVersion.V4T]
                 else [16, 32]
             )
             input_shape = tuple(
@@ -320,6 +322,7 @@ class YOLOExtendedParser(BaseParser):
             )
 
             bboxes, labels, scores, additional_output = [], [], [], []
+            final_mask = np.full(input_shape, -1, dtype=float)
             for i in range(results.shape[0]):
                 bbox, conf, label, other = (
                     results[i, :4],
@@ -328,7 +331,7 @@ class YOLOExtendedParser(BaseParser):
                     results[i, 6:],
                 )
 
-                bbox = normalize_bbox(bbox, input_shape)
+                bbox = xyxy2xywhn(bbox, input_shape)
                 bboxes.append(bbox)
                 labels.append(int(label))
                 scores.append(conf)
@@ -345,7 +348,14 @@ class YOLOExtendedParser(BaseParser):
                     mask = process_single_mask(
                         protos_output[0], mask_coeff, self.mask_conf, bbox
                     )
-                    additional_output.append(mask)
+                    # Resize mask to input shape
+                    resized_mask = cv2.resize(
+                        mask,
+                        (input_shape[1], input_shape[0]),
+                        interpolation=cv2.INTER_NEAREST,
+                    )
+                    # Fill the final mask with the instance values
+                    final_mask[resized_mask > 0] = i
 
             if mode == self._KPTS_MODE:
                 detections_message = create_detection_message(
@@ -359,7 +369,7 @@ class YOLOExtendedParser(BaseParser):
                     bboxes=np.array(bboxes),
                     scores=np.array(scores),
                     labels=np.array(labels),
-                    masks=np.array(additional_output),
+                    masks=final_mask,
                 )
             else:
                 detections_message = create_detection_message(

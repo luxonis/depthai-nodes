@@ -59,23 +59,23 @@ def xywh2xyxy(x: np.ndarray) -> np.ndarray:
     return y
 
 
-def normalize_bbox(box: np.ndarray, img_shape: Tuple[int, int]) -> np.ndarray:
-    """Normalize bounding box coordinates to be in the range [0, 1].
+def xyxy2xywhn(x: np.ndarray, img_shape: Tuple[int, int]) -> np.ndarray:
+    """Converts (x1, y1, x2, y2) to normalized (center x, center y, width, height).
 
-    @param box: Bounding box.
-    @type box: np.ndarray
+    @param x: Bounding box.
+    @type x: np.ndarray
     @param img_shape: Image shape in (height, width) format.
     @type img_shape: Tuple[int, int]
     @return: Normalized bounding box.
     @rtype: np.ndarray
     """
     h, w = img_shape
-    norm_bbox = np.copy(box)
-    norm_bbox[0] /= w
-    norm_bbox[1] /= h
-    norm_bbox[2] /= w
-    norm_bbox[3] /= h
-    return norm_bbox
+    y = np.copy(x)
+    y[0] = ((x[0] + x[2]) / 2) / w  # center x
+    y[1] = ((x[1] + x[3]) / 2) / h  # center y
+    y[2] = (x[2] - x[0]) / w  # width
+    y[3] = (x[3] - x[1]) / h  # height
+    return y
 
 
 def non_max_suppression(
@@ -398,13 +398,18 @@ def crop_mask(mask: np.ndarray, bbox: np.ndarray) -> np.ndarray:
 
     @param mask: [h, w] numpy array of a single mask
     @type mask: np.ndarray
-    @param bbox: A numpy array of bbox coordinates in (x1, y1, x2, y2) format
+    @param bbox: A numpy array of bbox coordinates in (x_center, y_center, width,
+        height) format
     @type bbox: np.ndarray
     @return: A mask that is cropped to the bounding box
     @rtype: np.ndarray
     """
     h, w = mask.shape
-    x1, y1, x2, y2 = bbox
+    c_x, c_y, width, height = bbox
+    x1 = c_x - width / 2
+    y1 = c_y - height / 2
+    x2 = c_x + width / 2
+    y2 = c_y + height / 2
     r = np.arange(w).reshape(1, w)
     c = np.arange(h).reshape(h, 1)
 

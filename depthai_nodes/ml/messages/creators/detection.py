@@ -18,6 +18,7 @@ def create_detection_message(
     angles: np.ndarray = None,
     labels: np.ndarray = None,
     keypoints: np.ndarray = None,
+    masks: np.ndarray = None,
 ) -> ImgDetectionsExtended:
     """Create a DepthAI message for object detection. The message contains the bounding
     boxes in X_center, Y_center, Width, Height format with optional angles, labels and
@@ -132,7 +133,7 @@ def create_detection_message(
         if angles is not None:
             detection.angle = angles[detection_idx]
         if labels is not None:
-            detection.label = labels[detection_idx]
+            detection.label = labels[detection_idx].item()
         if keypoints is not None:
             detection.keypoints = transform_to_keypoints(keypoints[detection_idx])
 
@@ -140,6 +141,9 @@ def create_detection_message(
 
     detections_msg = ImgDetectionsExtended()
     detections_msg.detections = detections
+
+    if masks is not None:
+        detections_msg.masks = masks
 
     return detections_msg
 
