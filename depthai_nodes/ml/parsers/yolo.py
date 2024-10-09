@@ -5,7 +5,13 @@ import numpy as np
 
 from ..messages.creators import create_detection_message
 from .base_parser import BaseParser
-from .utils.yolo import YOLOVersion, decode_yolo_output, parse_kpts, process_single_mask
+from .utils.yolo import (
+    YOLOVersion,
+    decode_yolo_output,
+    normalize_bbox,
+    parse_kpts,
+    process_single_mask,
+)
 
 
 class YOLOExtendedParser(BaseParser):
@@ -85,7 +91,7 @@ class YOLOExtendedParser(BaseParser):
             self.yolo_version = YOLOVersion(yolo_version.lower())
         except ValueError as err:
             raise ValueError(
-                f"Invalid YOLO version. Supported YOLO versions are {[e.value for e in YOLOVersion][:-1]}."
+                f"Invalid YOLO version {yolo_version}. Supported YOLO versions are {[e.value for e in YOLOVersion][:-1]}."
             ) from err
 
     def build(
@@ -136,7 +142,7 @@ class YOLOExtendedParser(BaseParser):
                 self.yolo_version = YOLOVersion(metadata["yolo_version"].lower())
             except ValueError as err:
                 raise ValueError(
-                    f"Invalid YOLO version. Supported YOLO versions are {[e.value for e in YOLOVersion][:-1]}."
+                    f"Invalid YOLO version {metadata['yolo_version']}. Supported YOLO versions are {[e.value for e in YOLOVersion][:-1]}."
                 ) from err
         return self
 
@@ -198,7 +204,7 @@ class YOLOExtendedParser(BaseParser):
             self.yolo_version = YOLOVersion(yolo_version.lower())
         except ValueError as err:
             raise ValueError(
-                f"Invalid YOLO version. Supported YOLO versions are {[e.value for e in YOLOVersion][:-1]}."
+                f"Invalid YOLO version {yolo_version}. Supported YOLO versions are {[e.value for e in YOLOVersion][:-1]}."
             ) from err
 
     def setOutputLayerNames(self, output_layer_names):
@@ -242,7 +248,9 @@ class YOLOExtendedParser(BaseParser):
             # Get all the layer names
             layer_names = self.output_layer_names or output.getAllLayerNames()
 
-            outputs_names = sorted([name for name in layer_names if "_yolo" in name])
+            outputs_names = sorted(
+                [name for name in layer_names if "_yolo" in name or "yolo-" in name]
+            )
             outputs_values = [
                 output.getTensor(o, dequantize=True).astype(np.float32)
                 for o in outputs_names
@@ -291,10 +299,20 @@ class YOLOExtendedParser(BaseParser):
                         protos_output, protos_len, masks_outputs_values
                     )
 
+            # Get the model's input shape
+            strides = (
+                [8, 16, 32]
+                if self.yolo_version not in [YOLOVersion.V3UT, YOLOVersion.V3T]
+                else [16, 32]
+            )
+            input_shape = tuple(
+                dim * strides[0] for dim in outputs_values[0].shape[2:4]
+            )
+
             # Decode the outputs
             results = decode_yolo_output(
                 outputs_values,
-                [8, 16, 32] if self.yolo_version != YOLOVersion.V3 else [16, 32],
+                strides,
                 self.anchors,
                 kpts=kpts_outputs if mode == self._KPTS_MODE else None,
                 conf_thres=self.conf_threshold,
@@ -307,18 +325,19 @@ class YOLOExtendedParser(BaseParser):
             bboxes, labels, scores, additional_output = [], [], [], []
             for i in range(results.shape[0]):
                 bbox, conf, label, other = (
-                    results[i, :4].astype(int),
+                    results[i, :4],
                     results[i, 4],
                     results[i, 5].astype(int),
                     results[i, 6:],
                 )
 
+                bbox = normalize_bbox(bbox, input_shape)
                 bboxes.append(bbox)
                 labels.append(int(label))
                 scores.append(conf)
 
                 if mode == self._KPTS_MODE:
-                    kpts = parse_kpts(other, self.n_keypoints)
+                    kpts = parse_kpts(other, self.n_keypoints, input_shape)
                     additional_output.append(kpts)
                 elif mode == self._SEG_MODE:
                     seg_coeff = other.astype(int)
@@ -327,7 +346,7 @@ class YOLOExtendedParser(BaseParser):
                         0, ai * protos_len : (ai + 1) * protos_len, yi, xi
                     ]
                     mask = process_single_mask(
-                        protos_output[0], mask_coeff, self.mask_conf
+                        protos_output[0], mask_coeff, self.mask_conf, bbox
                     )
                     additional_output.append(mask)
 

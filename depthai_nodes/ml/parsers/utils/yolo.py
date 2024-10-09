@@ -9,6 +9,11 @@ from .nms import nms
 
 class YOLOVersion(str, Enum):
     V3 = "yolov3"
+    V3T = "yolov3-tiny"
+    V3U = "yolov3-u"
+    V3UT = "yolov3-tinyu"
+    V4 = "yolov4"
+    V4T = "yolov4-tiny"
     V5 = "yolov5"
     V5U = "yolov5-u"
     V6 = "yolov6"
@@ -52,6 +57,25 @@ def xywh2xyxy(x: np.ndarray) -> np.ndarray:
     y[:, 2] = x[:, 0] + x[:, 2] / 2  # bottom right x
     y[:, 3] = x[:, 1] + x[:, 3] / 2  # bottom right y
     return y
+
+
+def normalize_bbox(box: np.ndarray, img_shape: Tuple[int, int]) -> np.ndarray:
+    """Normalize bounding box coordinates to be in the range [0, 1].
+
+    @param box: Bounding box.
+    @type box: np.ndarray
+    @param img_shape: Image shape in (height, width) format.
+    @type img_shape: Tuple[int, int]
+    @return: Normalized bounding box.
+    @rtype: np.ndarray
+    """
+    h, w = img_shape
+    norm_bbox = np.copy(box)
+    norm_bbox[0] /= w
+    norm_bbox[1] /= h
+    norm_bbox[2] /= w
+    norm_bbox[3] /= h
+    return norm_bbox
 
 
 def non_max_suppression(
@@ -277,7 +301,16 @@ def parse_yolo_output(
     na = len(anchors) // 2 if anchors else 1  # number of anchors per head
     bs, _, ny, nx = out.shape  # bs - batch size, ny|nx - y and x of grid cells
 
-    if yolo_version in [YOLOVersion.P, YOLOVersion.V5, YOLOVersion.V5U, YOLOVersion.V7]:
+    if yolo_version in [
+        YOLOVersion.P,
+        YOLOVersion.V5,
+        YOLOVersion.V5U,
+        YOLOVersion.V7,
+        YOLOVersion.V3,
+        YOLOVersion.V3T,
+        YOLOVersion.V4,
+        YOLOVersion.V4T,
+    ]:
         grid = make_grid_numpy(ny, nx, 1)
     else:
         grid = make_grid_numpy(ny, nx, na)
@@ -293,8 +326,14 @@ def parse_yolo_output(
             anchors.shape[1] == na
         ), f"Anchor shape mismatch at dimension 1: {anchors.shape[1]} vs {na}"
 
-        c_xy = out[..., 0:2] * 2 - 0.5 + grid
-        wh = (out[..., 2:4] * 2) ** 2
+        if yolo_version in [YOLOVersion.V3, YOLOVersion.V3T]:
+            c_xy = out[..., 0:2] + grid
+            wh = np.exp(out[..., 2:4])
+        elif yolo_version in [YOLOVersion.V4, YOLOVersion.V4T]:
+            raise NotImplementedError("YOLOv4 is not supported yet")
+        else:
+            c_xy = out[..., 0:2] * 2 - 0.5 + grid
+            wh = (out[..., 2:4] * 2) ** 2
 
         out[..., 0:2] = c_xy * stride
         out[..., 2:4] = wh * anchors
@@ -353,7 +392,31 @@ def sigmoid(x: np.ndarray) -> np.ndarray:
     return 1 / (1 + np.exp(-x))
 
 
-def process_single_mask(protos: np.ndarray, mask_coeff: np.ndarray, mask_conf: float):
+def crop_mask(mask: np.ndarray, bbox: np.ndarray) -> np.ndarray:
+    """It takes a mask and a bounding box, and returns a mask that is cropped to the
+    bounding box.
+
+    @param mask: [h, w] numpy array of a single mask
+    @type mask: np.ndarray
+    @param bbox: A numpy array of bbox coordinates in (x1, y1, x2, y2) format
+    @type bbox: np.ndarray
+    @return: A mask that is cropped to the bounding box
+    @rtype: np.ndarray
+    """
+    h, w = mask.shape
+    x1, y1, x2, y2 = bbox
+    r = np.arange(w).reshape(1, w)
+    c = np.arange(h).reshape(h, 1)
+
+    return mask * ((r >= x1) * (r < x2) * (c >= y1) * (c < y2))
+
+
+def process_single_mask(
+    protos: np.ndarray,
+    mask_coeff: np.ndarray,
+    mask_conf: float,
+    bbox: np.ndarray,
+) -> np.ndarray:
     """Process a single mask.
 
     @param protos: Protos.
@@ -362,29 +425,39 @@ def process_single_mask(protos: np.ndarray, mask_coeff: np.ndarray, mask_conf: f
     @type mask_coeff: np.ndarray
     @param mask_conf: Mask confidence.
     @type mask_conf: float
+    @param bbox: A numpy array of bbox coordinates in (x1, y1, x2, y2) format.
+    @type bbox: np.ndarray
     @return: Processed mask.
     @rtype: np.ndarray
     """
+    c, mh, mw = protos.shape  # CHW
+    scaled_bbox = bbox * np.array([mw, mh, mw, mh])
     mask = sigmoid(np.sum(protos * mask_coeff[..., np.newaxis, np.newaxis], axis=0))
+    mask = crop_mask(mask, scaled_bbox)
     return (mask > mask_conf).astype(np.uint8)
 
 
-def parse_kpts(kpts: np.ndarray, n_keypoints: int) -> List[Tuple[int, int, float]]:
+def parse_kpts(
+    kpts: np.ndarray, n_keypoints: int, img_shape: Tuple[int, int]
+) -> List[Tuple[int, int, float]]:
     """Parse keypoints.
 
     @param kpts: Result keypoints.
     @type kpts: np.ndarray
     @param n_keypoints: Number of keypoints.
     @type n_keypoints: int
+    @param img_shape: Image shape of the model input in (height, width) format.
+    @type img_shape: Tuple[int, int]
     @return: Parsed keypoints.
     @rtype: List[Tuple[int, int, float]]
     """
+    h, w = img_shape
     kps = []
     ndim = len(kpts) // n_keypoints
     for idx in range(0, kpts.shape[0], ndim):
-        x, y = kpts[idx], kpts[idx + 1]
+        x, y = kpts[idx] / w, kpts[idx + 1] / h
         conf = kpts[idx + 2] if ndim == 3 else 1.0
-        kps.append((int(x), int(y), conf))
+        kps.append((x, y, conf))
     return kps
 
 
