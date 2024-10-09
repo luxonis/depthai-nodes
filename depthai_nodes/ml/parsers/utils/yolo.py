@@ -196,7 +196,7 @@ def non_max_suppression(
         if not num_box:  # no boxes kept.
             continue
         elif num_box > max_nms:  # excess max boxes' number.
-            x = x[x[:, 4].argsort(descending=True)[:max_nms]]  # sort by confidence
+            x = x[x[:, 4].argsort()[:max_nms]]  # sort by confidence
 
         # Batched NMS
         class_offset = x[:, 5:6] * (0 if agnostic else max_wh)  # classes

@@ -3,13 +3,13 @@ from typing import Any, Dict, Tuple
 import depthai as dai
 
 from ..messages.creators import create_detection_message
-from .base_parser import BaseParser
-from .utils.bbox import xywh2xyxy
+from .detection import DetectionParser
+from .utils.bbox_format_converters import top_left_wh_to_xywh
 from .utils.nms import nms_cv2
 from .utils.yunet import decode_detections, format_detections, prune_detections
 
 
-class YuNetParser(BaseParser):
+class YuNetParser(DetectionParser):
     """Parser class for parsing the output of the YuNet face detection model.
 
     Attributes
@@ -38,7 +38,10 @@ class YuNetParser(BaseParser):
         iou_threshold: float = 0.3,
         max_det: int = 5000,
         input_shape: Tuple[int, int] = None,
-    ):
+        loc_output_layer_name: str = None,
+        conf_output_layer_name: str = None,
+        iou_output_layer_name: str = None,
+    ) -> None:
         """Initializes the YuNetParser node.
 
         @param conf_threshold: Confidence score threshold for detected faces.
@@ -49,28 +52,28 @@ class YuNetParser(BaseParser):
         @type max_det: int
         @param input_shape: Input shape of the model (width, height).
         @type input_shape: Tuple[int, int]
+        @param loc_output_layer_name: Output layer name for the location predictions.
+        @type loc_output_layer_name: str
+        @param conf_output_layer_name: Output layer name for the confidence predictions.
+        @type conf_output_layer_name: str
+        @param iou_output_layer_name: Output layer name for the IoU predictions.
+        @type iou_output_layer_name: str
         """
-        super().__init__()
+        super().__init__("", conf_threshold, iou_threshold, max_det)
         self._out = self.createOutput(
             possibleDatatypes=[
                 dai.Node.DatatypeHierarchy(dai.DatatypeEnum.ImgDetections, True)
             ]
         )
-
-        self.conf_threshold = conf_threshold
-        self.iou_threshold = iou_threshold
-        self.max_det = max_det
-
+        self.loc_output_layer_name = loc_output_layer_name
+        self.conf_output_layer_name = conf_output_layer_name
+        self.iou_output_layer_name = iou_output_layer_name
         self.input_shape = input_shape
-
-        self.loc_output_layer_name = None
-        self.conf_output_layer_name = None
-        self.iou_output_layer_name = None
 
     def build(
         self,
         head_config: Dict[str, Any],
-    ):
+    ) -> "YuNetParser":
         """Sets the head configuration for the parser.
 
         Attributes
@@ -83,6 +86,7 @@ class YuNetParser(BaseParser):
         YuNetParser
             Returns the parser object with the head configuration set.
         """
+        super().build(head_config)
         output_layers = head_config["outputs"]
         if len(output_layers) != 3:
             raise ValueError(
@@ -95,33 +99,33 @@ class YuNetParser(BaseParser):
             )
             self.iou_output_layer_name = output_layer if "iou" in output_layer else None
 
-        self.conf_threshold = head_config["metadata"]["conf_threshold"]
-        self.iou_threshold = head_config["metadata"]["iou_threshold"]
-        self.max_det = head_config["metadata"]["max_det"]
+        return self
 
-    def setConfidenceThreshold(self, threshold):
-        """Sets the confidence score threshold for detected faces.
+    def setInputShape(self, width, height):
+        """Sets the input shape.
 
-        @param threshold: Confidence score threshold for detected faces.
-        @type threshold: float
+        @param height: Height of the input image.
+        @type height: int
+        @param width: Width of the input image.
+        @type width: int
         """
-        self.conf_threshold = threshold
+        self.input_shape = (width, height)
 
-    def setIOUThreshold(self, threshold):
-        """Sets the non-maximum suppression threshold.
+    def setOutputLayerNames(
+        self, loc_output_layer_name, conf_output_layer_name, iou_output_layer_name
+    ):
+        """Sets the output layers.
 
-        @param threshold: Non-maximum suppression threshold.
-        @type threshold: float
+        @param loc_output_layer_name: Output layer name for the location predictions.
+        @type loc_output_layer_name: str
+        @param conf_output_layer_name: Output layer name for the confidence predictions.
+        @type conf_output_layer_name: str
+        @param iou_output_layer_name: Output layer name for the IoU predictions.
+        @type iou_output_layer_name: str
         """
-        self.iou_threshold = threshold
-
-    def setMaxDetections(self, max_det):
-        """Sets the maximum number of detections to keep.
-
-        @param max_det: Maximum number of detections to keep.
-        @type max_det: int
-        """
-        self.max_det = max_det
+        self.loc_output_layer_name = loc_output_layer_name
+        self.conf_output_layer_name = conf_output_layer_name
+        self.iou_output_layer_name = iou_output_layer_name
 
     def setInputShape(self, width, height):
         """Sets the input shape.
@@ -265,15 +269,15 @@ class YuNetParser(BaseParser):
 
             # run nms
             keep_indices = nms_cv2(
-                bboxes=bboxes,
-                scores=scores,
+                bboxes=np.array(bboxes),
+                scores=np.array(scores),
                 conf_threshold=self.conf_threshold,
                 iou_threshold=self.iou_threshold,
                 max_det=self.max_det,
             )
 
             bboxes = bboxes[keep_indices]
-            bboxes = xywh2xyxy(bboxes)
+            bboxes = top_left_wh_to_xywh(bboxes)
             keypoints = keypoints[keep_indices]
             scores = scores[keep_indices]
 

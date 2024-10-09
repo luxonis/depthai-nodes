@@ -1,6 +1,7 @@
 from .base_parser import BaseParser
 from .classification import ClassificationParser
 from .classification_sequence import ClassificationSequenceParser
+from .detection import DetectionParser
 from .fastsam import FastSAMParser
 from .hrnet import HRNetParser
 from .image_output import ImageOutputParser
@@ -15,7 +16,8 @@ from .regression import RegressionParser
 from .scrfd import SCRFDParser
 from .segmentation import SegmentationParser
 from .superanimal_landmarker import SuperAnimalParser
-from .xfeat import XFeatParser
+from .xfeat_mono import XFeatMonoParser
+from .xfeat_stereo import XFeatStereoParser
 from .yolo import YOLOExtendedParser
 from .yunet import YuNetParser
 
@@ -28,7 +30,8 @@ __all__ = [
     "SuperAnimalParser",
     "KeypointParser",
     "MLSDParser",
-    "XFeatParser",
+    "XFeatMonoParser",
+    "XFeatStereoParser",
     "ClassificationParser",
     "YOLOExtendedParser",
     "FastSAMParser",
@@ -40,4 +43,5 @@ __all__ = [
     "LaneDetectionParser",
     "ParserGenerator",
     "BaseParser",
+    "DetectionParser",
 ]
