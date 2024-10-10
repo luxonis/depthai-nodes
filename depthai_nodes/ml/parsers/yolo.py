@@ -6,7 +6,7 @@ import numpy as np
 
 from ..messages.creators import create_detection_message
 from .base_parser import BaseParser
-from .utils.bbox_format_converters import xyxy_to_xywh_norm
+from .utils.bbox_format_converters import normalize_bboxes, xyxy_to_xywh
 from .utils.yolo import YOLOVersion, decode_yolo_output, parse_kpts, process_single_mask
 
 
@@ -333,7 +333,10 @@ class YOLOExtendedParser(BaseParser):
                     results[i, 6:],
                 )
 
-                bbox = xyxy_to_xywh_norm(bbox, input_shape)
+                bbox = xyxy_to_xywh(bbox.reshape(1, 4))
+                bbox = normalize_bboxes(
+                    bbox, height=input_shape[0], width=input_shape[1]
+                )[0]
                 bboxes.append(bbox)
                 labels.append(int(label))
                 scores.append(conf)

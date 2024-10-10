@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import numpy as np
 
 
@@ -101,7 +99,7 @@ def xyxy_to_xywh(bboxes: np.ndarray) -> np.ndarray:
     if bboxes.shape[1] != 4:
         raise ValueError("Bounding boxes must be of shape (N, 4).")
 
-    if not all(bboxes[:, :2] <= bboxes[:, 2:]):
+    if not np.all(bboxes[:, :2] <= bboxes[:, 2:]):
         raise ValueError(
             "Bounding box coordinates must be in the format [x_min, y_min, x_max, y_max]."
         )
@@ -112,33 +110,6 @@ def xyxy_to_xywh(bboxes: np.ndarray) -> np.ndarray:
     height = bboxes[:, 3] - bboxes[:, 1]
 
     return np.stack([x_center, y_center, width, height], axis=-1)
-
-
-def xyxy_to_xywh_norm(bbox: np.ndarray, img_shape: Tuple[int, int]) -> np.ndarray:
-    """Converts a single bounding box from [x_min, y_min, x_max, y_max] to normalized
-    [x_center, y_center, width, height] format.
-
-    @param bbox: Bounding box.
-    @type bbox: np.ndarray
-    @param img_shape: Image shape in (height, width) format.
-    @type img_shape: Tuple[int, int]
-    @return: Normalized bounding box.
-    @rtype: np.ndarray
-    """
-    if not isinstance(bbox, np.ndarray):
-        raise ValueError("Bounding box must be a numpy array.")
-    if bbox.shape != (4,):
-        raise ValueError("Bounding box must be of shape (4,).")
-    if len(img_shape) != 2:
-        raise ValueError("Image shape must be a tuple of length 2, (height, width).")
-
-    h, w = img_shape
-    xyxy_bbox = np.copy(bbox)
-    xyxy_bbox[0] = ((bbox[0] + bbox[2]) / 2) / w  # center bbox
-    xyxy_bbox[1] = ((bbox[1] + bbox[3]) / 2) / h  # center xyxy_bbox
-    xyxy_bbox[2] = (bbox[2] - bbox[0]) / w  # width
-    xyxy_bbox[3] = (bbox[3] - bbox[1]) / h  # height
-    return xyxy_bbox
 
 
 def xywh_to_xyxy(bboxes: np.ndarray) -> np.ndarray:
