@@ -297,27 +297,6 @@ class XFeatMonoParser(XFeatBaseParser):
         self.previous_results = None
         self.trigger = False
 
-    def build(
-        self,
-        head_config: Dict[str, Any],
-    ):
-        """Sets the head configuration for the parser.
-
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        XFeatMonoParser
-            Returns the parser object with the head configuration set.
-        """
-
-        super().build(head_config)
-
-        return self
-
     def setTrigger(self):
         """Sets the trigger to set the reference frame."""
         self.trigger = True
@@ -441,27 +420,6 @@ class XFeatStereoParser(XFeatBaseParser):
             input_size,
             max_keypoints,
         )
-
-    def build(
-        self,
-        head_config: Dict[str, Any],
-    ):
-        """Sets the head configuration for the parser.
-
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        XFeatStereoParser
-            Returns the parser object with the head configuration set.
-        """
-
-        super().build(head_config)
-
-        return self
 
     def run(self):
         self.validateParams()
