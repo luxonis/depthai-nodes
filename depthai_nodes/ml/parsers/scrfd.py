@@ -49,7 +49,7 @@ class SCRFDParser(DetectionParser):
         input_size: Tuple[int, int] = (640, 640),
         feat_stride_fpn: Tuple = (8, 16, 32),
         num_anchors: int = 2,
-    ):
+    ) -> None:
         """Initializes the SCRFDParser node.
 
         @param output_layer_names: The name of the output layer(s) from which the scores
@@ -83,30 +83,44 @@ class SCRFDParser(DetectionParser):
         @param output_layer_names: The name of the output layer(s) to be used.
         @type output_layer_names: List[str]
         """
+        if not isinstance(output_layer_names, list):
+            raise ValueError("Output layer names must be a list.")
+        if not all(isinstance(layer, str) for layer in output_layer_names):
+            raise ValueError("Output layer names must be a list of strings.")
         self.output_layer_names = output_layer_names
 
-    def setFeatStrideFPN(self, feat_stride_fpn) -> None:
+    def setFeatStrideFPN(self, feat_stride_fpn: List[int]) -> None:
         """Sets the feature stride of the FPN.
 
         @param feat_stride_fpn: Feature stride of the FPN.
         @type feat_stride_fpn: list
         """
+        if not isinstance(feat_stride_fpn, list):
+            raise ValueError("Feature stride must be a list.")
+        if not all(isinstance(stride, int) for stride in feat_stride_fpn):
+            raise ValueError("Feature stride must be a list of integers.")
         self.feat_stride_fpn = feat_stride_fpn
 
-    def setInputSize(self, input_size) -> None:
+    def setInputSize(self, input_size: Tuple[int, int]) -> None:
         """Sets the input size of the model.
 
         @param input_size: Input size of the model.
         @type input_size: list
         """
+        if not isinstance(input_size, tuple):
+            raise ValueError("Input size must be a tuple.")
+        if not all(isinstance(size, int) for size in input_size):
+            raise ValueError("Input size must be a tuple of integers.")
         self.input_size = input_size
 
-    def setNumAnchors(self, num_anchors) -> None:
+    def setNumAnchors(self, num_anchors: int) -> None:
         """Sets the number of anchors.
 
         @param num_anchors: Number of anchors.
         @type num_anchors: int
         """
+        if not isinstance(num_anchors, int):
+            raise ValueError("Number of anchors must be an integer.")
         self.num_anchors = num_anchors
 
     def build(
