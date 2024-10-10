@@ -2,7 +2,8 @@ from pathlib import Path
 
 import depthai as dai
 
-from .ml.parsers import BaseParser, ParserGenerator
+from .ml.parsers import BaseParser
+from .parser_generator import ParserGenerator
 
 
 class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
@@ -38,15 +39,20 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         self._parsers: dict[int, BaseParser] = {}
 
     def build(
-        self, input: dai.Node.Output, nnArchive: dai.NNArchive
+        self, input: dai.Node.Output, modelDescription: dai.NNModelDescription, fps: int = None
     ) -> "ParsingNeuralNetwork":
         """Builds the underlying NeuralNetwork node.
 
         Creates parser nodes for each model head according to passed NNArchive.
         """
-        self._nn_archive = nnArchive
-        self._nn.build(input, nnArchive)
-        self._updateParsers(nnArchive)
+
+        if not modelDescription.platform: # automatically detect the platform if missing
+            modelDescription.platform = self.getParentPipeline().getDefaultDevice().getPlatformAsString() 
+        archivePath = dai.getModelFromZoo(modelDescription) 
+        self._nn_archive = dai.NNArchive(archivePath)
+
+        self._nn.build(input, modelDescription, fps=fps) if fps else self._nn.build(input, self._nn_archive)
+        self._updateParsers(self._nn_archive)
         return self
 
     def _updateParsers(self, nnArchive: dai.NNArchive) -> None:
