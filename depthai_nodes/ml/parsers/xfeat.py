@@ -123,52 +123,70 @@ class XFeatBaseParser(BaseParser):
 
         return self
 
-    def setOutputLayerFeats(self, output_layer_feats):
+    def setOutputLayerFeats(self, output_layer_feats: str):
         """Sets the output layer containing features.
 
         @param output_layer_feats: Name of the output layer containing features.
         @type output_layer_feats: str
         """
+        if not isinstance(output_layer_feats, str):
+            raise ValueError("Output layer containing features must be a string!")
         self.output_layer_feats = output_layer_feats
 
-    def setOutputLayerKeypoints(self, output_layer_keypoints):
+    def setOutputLayerKeypoints(self, output_layer_keypoints: str):
         """Sets the output layer containing keypoints.
 
         @param output_layer_keypoints: Name of the output layer containing keypoints.
         @type output_layer_keypoints: str
         """
+        if not isinstance(output_layer_keypoints, str):
+            raise ValueError("Output layer containing keypoints must be a string!")
         self.output_layer_keypoints = output_layer_keypoints
 
-    def setOutputLayerHeatmaps(self, output_layer_heatmaps):
+    def setOutputLayerHeatmaps(self, output_layer_heatmaps: str):
         """Sets the output layer containing heatmaps.
 
         @param output_layer_heatmaps: Name of the output layer containing heatmaps.
         @type output_layer_heatmaps: str
         """
+        if not isinstance(output_layer_heatmaps, str):
+            raise ValueError("Output layer containing heatmaps must be a string!")
         self.output_layer_heatmaps = output_layer_heatmaps
 
-    def setOriginalSize(self, original_size):
+    def setOriginalSize(self, original_size: Tuple[int, int]):
         """Sets the original image size.
 
         @param original_size: Original image size.
-        @type original_size: Tuple[float, float]
+        @type original_size: Tuple[int, int]
         """
+        if not isinstance(original_size, tuple) or len(original_size) != 2:
+            raise ValueError("Original image size must be a tuple of two ints!")
+        for size in original_size:
+            if not isinstance(size, int):
+                raise ValueError("Original image size must be a tuple of two ints!")
         self.original_size = original_size
 
-    def setInputSize(self, input_size):
+    def setInputSize(self, input_size: Tuple[int, int]):
         """Sets the input image size.
 
         @param input_size: Input image size.
-        @type input_size: Tuple[float, float]
+        @type input_size: Tuple[int, int]
         """
+        if not isinstance(input_size, tuple) or len(input_size) != 2:
+            raise ValueError("Input image size must be a tuple of two ints!")
+        for size in input_size:
+            if not isinstance(size, int):
+                raise ValueError("Input image size must be a tuple of two ints!")
         self.input_size = input_size
 
-    def setMaxKeypoints(self, max_keypoints):
+    def setMaxKeypoints(self, max_keypoints: int):
         """Sets the maximum number of keypoints to keep.
 
         @param max_keypoints: Maximum number of keypoints.
         @type max_keypoints: int
         """
+        if not isinstance(max_keypoints, int):
+            raise ValueError("Maximum number of keypoints must be an int!")
         self.max_keypoints = max_keypoints
 
     def validateParams(self):
