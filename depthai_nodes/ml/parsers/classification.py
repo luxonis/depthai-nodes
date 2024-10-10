@@ -36,7 +36,7 @@ class ClassificationParser(BaseParser):
     def __init__(
         self,
         output_layer_name: str = "",
-        classes: List = None,
+        classes: List[str] = None,
         is_softmax: bool = True,
     ) -> None:
         super().__init__()
@@ -80,6 +80,11 @@ class ClassificationParser(BaseParser):
         @param classes: List of class names to be used for linking with their respective
             scores.
         """
+        if not isinstance(classes, list):
+            raise ValueError("classes must be a list.")
+        for class_name in classes:
+            if not isinstance(class_name, str):
+                raise ValueError("Each class name must be a string.")
         self.classes = classes if classes is not None else []
         self.n_classes = len(self.classes)
 
@@ -89,6 +94,8 @@ class ClassificationParser(BaseParser):
         @param is_softmax: If False, the parser will convert the scores to probabilities
             using softmax function.
         """
+        if not isinstance(is_softmax, bool):
+            raise ValueError("is_softmax must be a boolean.")
         self.is_softmax = is_softmax
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
@@ -97,6 +104,8 @@ class ClassificationParser(BaseParser):
         @param output_layer_name: The name of the output layer.
         @type output_layer_name: str
         """
+        if not isinstance(output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
         self.output_layer_name = output_layer_name
 
     def run(self):

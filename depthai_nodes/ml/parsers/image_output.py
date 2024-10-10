@@ -35,7 +35,9 @@ class ImageOutputParser(BaseParser):
     **ValueError**: If the number of output layers is not 1.
     """
 
-    def __init__(self, output_layer_name: str = "", output_is_bgr=False):
+    def __init__(
+        self, output_layer_name: str = "", output_is_bgr: bool = False
+    ) -> None:
         """Initializes ImageOutputParser node.
 
         @param output_is_bgr: Flag indicating if the output image is in BGR.
@@ -48,7 +50,7 @@ class ImageOutputParser(BaseParser):
     def build(
         self,
         head_config: Dict[str, Any],
-    ):
+    ) -> "ImageOutputParser":
         """Sets the head configuration for the parser.
 
         Attributes
@@ -72,7 +74,7 @@ class ImageOutputParser(BaseParser):
 
         return self
 
-    def setBGROutput(self):
+    def setBGROutput(self) -> None:
         """Sets the flag indicating that output image is in BGR."""
         self.output_is_bgr = True
 

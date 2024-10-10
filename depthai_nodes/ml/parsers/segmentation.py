@@ -34,7 +34,9 @@ class SegmentationParser(BaseParser):
     **ValueError**: If the number of dimensions of the output tensor is not E{3}.
     """
 
-    def __init__(self, output_layer_name: str = "", background_class=False):
+    def __init__(
+        self, output_layer_name: str = "", background_class: bool = False
+    ) -> None:
         """Initializes the SegmentationParser node.
 
         @param output_layer_name: Name of the output layer from which the scores are
@@ -50,7 +52,7 @@ class SegmentationParser(BaseParser):
     def build(
         self,
         head_config: Dict[str, Any],
-    ):
+    ) -> "SegmentationParser":
         """Sets the head configuration for the parser.
 
         Attributes
@@ -74,20 +76,24 @@ class SegmentationParser(BaseParser):
 
         return self
 
-    def setOutputLayerName(self, output_layer_name: str):
+    def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
 
         @param output_layer_name: The name of the output layer.
         @type output_layer_name: str
         """
+        if not isinstance(output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
         self.output_layer_name = output_layer_name
 
-    def setBackgroundClass(self, background_class):
+    def setBackgroundClass(self, background_class: bool) -> None:
         """Sets the background class.
 
         @param background_class: Whether to add additional layer for background.
         @type background_class: bool
         """
+        if not isinstance(background_class, bool):
+            raise ValueError("Background class must be a boolean.")
         self.background_class = background_class
 
     def run(self):

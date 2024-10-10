@@ -43,9 +43,9 @@ class KeypointParser(BaseParser):
     def __init__(
         self,
         output_layer_name: str = "",
-        scale_factor=1,
-        n_keypoints=None,
-    ):
+        scale_factor: float = 1.0,
+        n_keypoints: int = None,
+    ) -> None:
         """Initializes KeypointParser node.
 
         @param output_layer_name: Name of the output layer from which the keypoints are
@@ -64,7 +64,7 @@ class KeypointParser(BaseParser):
     def build(
         self,
         head_config: Dict[str, Any],
-    ):
+    ) -> "KeypointParser":
         """Sets the head configuration for the parser.
 
         Attributes
@@ -89,28 +89,34 @@ class KeypointParser(BaseParser):
 
         return self
 
-    def setOutputLayerName(self, output_layer_name: str):
+    def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
 
         @param output_layer_name: The name of the output layer.
         @type output_layer_name: str
         """
+        if not isinstance(output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
         self.output_layer_name = output_layer_name
 
-    def setScaleFactor(self, scale_factor):
+    def setScaleFactor(self, scale_factor: float) -> None:
         """Sets the scale factor to divide the keypoints by.
 
         @param scale_factor: Scale factor to divide the keypoints by.
         @type scale_factor: float
         """
+        if not isinstance(scale_factor, float):
+            raise ValueError("Scale factor must be a float.")
         self.scale_factor = scale_factor
 
-    def setNumKeypoints(self, n_keypoints):
+    def setNumKeypoints(self, n_keypoints: int) -> None:
         """Sets the number of keypoints.
 
         @param n_keypoints: Number of keypoints.
         @type n_keypoints: int
         """
+        if not isinstance(n_keypoints, int):
+            raise ValueError("Number of keypoints must be an integer.")
         self.n_keypoints = n_keypoints
 
     def run(self):

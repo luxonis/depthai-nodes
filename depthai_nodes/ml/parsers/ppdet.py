@@ -63,6 +63,8 @@ class PPTextDetectionParser(DetectionParser):
         @param threshold: The threshold for the mask.
         @type threshold: float
         """
+        if not isinstance(mask_threshold, float):
+            raise ValueError("Mask threshold must be a float.")
         self.mask_threshold = mask_threshold
 
     def build(self, head_config: Dict[str, Any]) -> "PPTextDetectionParser":

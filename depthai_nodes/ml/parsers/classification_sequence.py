@@ -77,6 +77,8 @@ class ClassificationSequenceParser(ClassificationParser):
         @param remove_duplicates: If True, removes consecutive duplicates from the
             sequence.
         """
+        if not isinstance(remove_duplicates, bool):
+            raise ValueError("remove_duplicates must be a boolean.")
         self.remove_duplicates = remove_duplicates
 
     def setIgnoredIndexes(self, ignored_indexes: List[int]) -> None:
@@ -85,6 +87,10 @@ class ClassificationSequenceParser(ClassificationParser):
         @param ignored_indexes: A list of indexes to ignore during classification
             generation.
         """
+        if not isinstance(ignored_indexes, list):
+            raise ValueError("Ignored indexes must be a list.")
+        if not all(isinstance(index, int) for index in ignored_indexes):
+            raise ValueError("All ignored indexes must be integers.")
         self.ignored_indexes = ignored_indexes
 
     def setConcatenateClasses(self, concatenate_classes: bool) -> None:
@@ -93,6 +99,8 @@ class ClassificationSequenceParser(ClassificationParser):
         @param concatenate_classes: If True, concatenates consecutive classes into a
             single string. Used mostly for text processing.
         """
+        if not isinstance(concatenate_classes, bool):
+            raise ValueError("concatenate_classes must be a boolean.")
         self.concatenate_classes = concatenate_classes
 
     def build(self, head_config: Dict[str, Any]) -> "ClassificationSequenceParser":

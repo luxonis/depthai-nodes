@@ -39,12 +39,12 @@ class MLSDParser(BaseParser):
 
     def __init__(
         self,
-        output_layer_tpmap="",
-        output_layer_heat="",
-        topk_n=200,
-        score_thr=0.10,
-        dist_thr=20.0,
-    ):
+        output_layer_tpmap: str = "",
+        output_layer_heat: str = "",
+        topk_n: int = 200,
+        score_thr: float = 0.10,
+        dist_thr: float = 20.0,
+    ) -> None:
         """Initializes the MLSDParser node.
 
         @param topk_n: Number of top candidates to keep.
@@ -65,7 +65,7 @@ class MLSDParser(BaseParser):
     def build(
         self,
         head_config: Dict[str, Any],
-    ):
+    ) -> "MLSDParser":
         """Sets the head configuration for the parser.
 
         Attributes
@@ -95,44 +95,54 @@ class MLSDParser(BaseParser):
 
         return self
 
-    def setOutputLayerTPMap(self, output_layer_tpmap):
+    def setOutputLayerTPMap(self, output_layer_tpmap: str) -> None:
         """Sets the name of the output layer containing the tpMap tensor.
 
         @param output_layer_tpmap: Name of the output layer containing the tpMap tensor.
         @type output_layer_tpmap: str
         """
+        if not isinstance(output_layer_tpmap, str):
+            raise ValueError("Output layer name must be a string.")
         self.output_layer_tpmap = output_layer_tpmap
 
-    def setOutputLayerHeat(self, output_layer_heat):
+    def setOutputLayerHeat(self, output_layer_heat: str) -> None:
         """Sets the name of the output layer containing the heat tensor.
 
         @param output_layer_heat: Name of the output layer containing the heat tensor.
         @type output_layer_heat: str
         """
+        if not isinstance(output_layer_heat, str):
+            raise ValueError("Output layer name must be a string.")
         self.output_layer_heat = output_layer_heat
 
-    def setTopK(self, topk_n):
+    def setTopK(self, topk_n: int) -> None:
         """Sets the number of top candidates to keep.
 
         @param topk_n: Number of top candidates to keep.
         @type topk_n: int
         """
+        if not isinstance(topk_n, int):
+            raise ValueError("topk_n must be an integer.")
         self.topk_n = topk_n
 
-    def setScoreThreshold(self, score_thr):
+    def setScoreThreshold(self, score_thr: float) -> None:
         """Sets the confidence score threshold for detected lines.
 
         @param score_thr: Confidence score threshold for detected lines.
         @type score_thr: float
         """
+        if not isinstance(score_thr, float):
+            raise ValueError("score_thr must be a float.")
         self.score_thr = score_thr
 
-    def setDistanceThreshold(self, dist_thr):
+    def setDistanceThreshold(self, dist_thr: float) -> None:
         """Sets the distance threshold for merging lines.
 
         @param dist_thr: Distance threshold for merging lines.
         @type dist_thr: float
         """
+        if not isinstance(dist_thr, float):
+            raise ValueError("dist_thr must be a float.")
         self.dist_thr = dist_thr
 
     def run(self):

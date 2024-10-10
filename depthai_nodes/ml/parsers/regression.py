@@ -30,7 +30,7 @@ class RegressionParser(BaseParser):
     def __init__(
         self,
         output_layer_name: str = "",
-    ):
+    ) -> None:
         """Initializes the RegressionParser node.
 
         @param output_layer_name: Name of the output layer relevant to the parser.
@@ -42,7 +42,7 @@ class RegressionParser(BaseParser):
     def build(
         self,
         head_config: Dict[str, Any],
-    ):
+    ) -> "RegressionParser":
         """Sets the head configuration for the parser.
 
         Attributes
@@ -70,6 +70,8 @@ class RegressionParser(BaseParser):
         @param output_layer_name: Name of the output layer relevant to the parser.
         @type output_layer_name: str
         """
+        if not isinstance(output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
         self.output_layer_name = output_layer_name
 
     def run(self):
