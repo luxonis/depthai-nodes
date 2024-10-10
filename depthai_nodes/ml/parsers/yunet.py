@@ -1,6 +1,7 @@
 from typing import Any, Dict, Tuple
 
 import depthai as dai
+import numpy as np
 
 from ..messages.creators import create_detection_message
 from .detection import DetectionParser
@@ -100,32 +101,6 @@ class YuNetParser(DetectionParser):
             self.iou_output_layer_name = output_layer if "iou" in output_layer else None
 
         return self
-
-    def setInputShape(self, width, height):
-        """Sets the input shape.
-
-        @param height: Height of the input image.
-        @type height: int
-        @param width: Width of the input image.
-        @type width: int
-        """
-        self.input_shape = (width, height)
-
-    def setOutputLayerNames(
-        self, loc_output_layer_name, conf_output_layer_name, iou_output_layer_name
-    ):
-        """Sets the output layers.
-
-        @param loc_output_layer_name: Output layer name for the location predictions.
-        @type loc_output_layer_name: str
-        @param conf_output_layer_name: Output layer name for the confidence predictions.
-        @type conf_output_layer_name: str
-        @param iou_output_layer_name: Output layer name for the IoU predictions.
-        @type iou_output_layer_name: str
-        """
-        self.loc_output_layer_name = loc_output_layer_name
-        self.conf_output_layer_name = conf_output_layer_name
-        self.iou_output_layer_name = iou_output_layer_name
 
     def setInputShape(self, width, height):
         """Sets the input shape.

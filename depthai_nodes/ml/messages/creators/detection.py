@@ -4,8 +4,6 @@ import numpy as np
 from ...messages import (
     ImgDetectionExtended,
     ImgDetectionsExtended,
-    Keypoint,
-    Keypoints,
     Line,
     Lines,
 )

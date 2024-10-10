@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import cv2
 import depthai as dai
@@ -6,13 +6,8 @@ import numpy as np
 
 from ..messages.creators import create_detection_message
 from .base_parser import BaseParser
-from .utils.yolo import (
-    YOLOVersion,
-    decode_yolo_output,
-    parse_kpts,
-    process_single_mask,
-    xyxy2xywhn,
-)
+from .utils.bbox_format_converters import xyxy_to_xywh_norm
+from .utils.yolo import YOLOVersion, decode_yolo_output, parse_kpts, process_single_mask
 
 
 class YOLOExtendedParser(BaseParser):
@@ -147,7 +142,7 @@ class YOLOExtendedParser(BaseParser):
                 ) from err
         return self
 
-    def setConfidenceThreshold(self, threshold):
+    def setConfidenceThreshold(self, threshold: float) -> None:
         """Sets the confidence score threshold for detected faces.
 
         @param threshold: Confidence score threshold for detected faces.
@@ -155,7 +150,7 @@ class YOLOExtendedParser(BaseParser):
         """
         self.conf_threshold = threshold
 
-    def setNumClasses(self, n_classes):
+    def setNumClasses(self, n_classes: int) -> None:
         """Sets the number of classes in the model.
 
         @param numClasses: The number of classes in the model.
@@ -163,7 +158,7 @@ class YOLOExtendedParser(BaseParser):
         """
         self.n_classes = n_classes
 
-    def setIouThreshold(self, iou_threshold):
+    def setIouThreshold(self, iou_threshold: float) -> None:
         """Sets the intersection over union threshold.
 
         @param iou_threshold: The intersection over union threshold.
@@ -171,7 +166,7 @@ class YOLOExtendedParser(BaseParser):
         """
         self.iou_threshold = iou_threshold
 
-    def setMaskConfidence(self, mask_conf):
+    def setMaskConfidence(self, mask_conf: float) -> None:
         """Sets the mask confidence threshold.
 
         @param mask_conf: The mask confidence threshold.
@@ -179,7 +174,7 @@ class YOLOExtendedParser(BaseParser):
         """
         self.mask_conf = mask_conf
 
-    def setNumKeypoints(self, n_keypoints):
+    def setNumKeypoints(self, n_keypoints: int) -> None:
         """Sets the number of keypoints in the model.
 
         @param n_keypoints: The number of keypoints in the model.
@@ -187,7 +182,7 @@ class YOLOExtendedParser(BaseParser):
         """
         self.n_keypoints = n_keypoints
 
-    def setAnchors(self, anchors):
+    def setAnchors(self, anchors: List[np.ndarray]) -> None:
         """Sets the anchors for the YOLO model.
 
         @param anchors: The anchors for the YOLO model.
@@ -195,7 +190,7 @@ class YOLOExtendedParser(BaseParser):
         """
         self.anchors = anchors
 
-    def setYoloVersion(self, yolo_version):
+    def setYoloVersion(self, yolo_version: str) -> None:
         """Sets the version of the YOLO model.
 
         @param yolo_version: The version of the YOLO model.
@@ -208,7 +203,7 @@ class YOLOExtendedParser(BaseParser):
                 f"Invalid YOLO version {yolo_version}. Supported YOLO versions are {[e.value for e in YOLOVersion][:-1]}."
             ) from err
 
-    def setOutputLayerNames(self, output_layer_names):
+    def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
         """Sets the output layer names for the parser.
 
         @param output_layer_names: The output layer names for the parser.
@@ -216,7 +211,9 @@ class YOLOExtendedParser(BaseParser):
         """
         self.output_layer_names = output_layer_names
 
-    def _get_segmentation_outputs(self, output):
+    def _get_segmentation_outputs(
+        self, output: dai.NNData
+    ) -> Tuple[List[np.ndarray], np.ndarray, int]:
         """Get the segmentation outputs from the Neural Network data."""
         # Get all the layer names
         layer_names = self.output_layer_names or output.getAllLayerNames()
@@ -231,7 +228,12 @@ class YOLOExtendedParser(BaseParser):
         protos_len = protos_output.shape[1]
         return masks_outputs_values, protos_output, protos_len
 
-    def _reshape_seg_outputs(self, protos_output, protos_len, masks_outputs_values):
+    def _reshape_seg_outputs(
+        self,
+        protos_output: np.ndarray,
+        protos_len: int,
+        masks_outputs_values: List[np.ndarray],
+    ) -> Tuple[np.ndarray, int, List[np.ndarray]]:
         """Reshape the segmentation outputs."""
         protos_output = protos_output.transpose((0, 3, 1, 2))
         protos_len = protos_output.shape[1]
@@ -331,7 +333,7 @@ class YOLOExtendedParser(BaseParser):
                     results[i, 6:],
                 )
 
-                bbox = xyxy2xywhn(bbox, input_shape)
+                bbox = xyxy_to_xywh_norm(bbox, input_shape)
                 bboxes.append(bbox)
                 labels.append(int(label))
                 scores.append(conf)

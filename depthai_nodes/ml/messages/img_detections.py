@@ -227,7 +227,7 @@ class ImgDetectionExtended(dai.Buffer):
         self._keypoints = keypoints
 
 
-class ImgDetectionsExtended(dai.ImgDetections):
+class ImgDetectionsExtended(dai.Buffer):
     """ImgDetectionsExtended class for storing image detections with keypoints.
 
     Attributes

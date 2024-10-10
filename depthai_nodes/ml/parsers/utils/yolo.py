@@ -4,6 +4,7 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 
+from .bbox_format_converters import xywh_to_xyxy
 from .nms import nms
 
 
@@ -41,41 +42,6 @@ def make_grid_numpy(ny: int, nx: int, na: int) -> np.ndarray:
     """
     yv, xv = np.meshgrid(np.arange(ny), np.arange(nx), indexing="ij")
     return np.stack((xv, yv), 2).reshape(1, na, ny, nx, 2)
-
-
-def xywh2xyxy(x: np.ndarray) -> np.ndarray:
-    """Converts (center x, center y, width, height) to (x1, y1, x2, y2).
-
-    @param x: Bounding box.
-    @type x: np.ndarray
-    @return: Converted bounding box.
-    @rtype: np.ndarray
-    """
-    y = np.copy(x)
-    y[:, 0] = x[:, 0] - x[:, 2] / 2  # top left x
-    y[:, 1] = x[:, 1] - x[:, 3] / 2  # top left y
-    y[:, 2] = x[:, 0] + x[:, 2] / 2  # bottom right x
-    y[:, 3] = x[:, 1] + x[:, 3] / 2  # bottom right y
-    return y
-
-
-def xyxy2xywhn(x: np.ndarray, img_shape: Tuple[int, int]) -> np.ndarray:
-    """Converts (x1, y1, x2, y2) to normalized (center x, center y, width, height).
-
-    @param x: Bounding box.
-    @type x: np.ndarray
-    @param img_shape: Image shape in (height, width) format.
-    @type img_shape: Tuple[int, int]
-    @return: Normalized bounding box.
-    @rtype: np.ndarray
-    """
-    h, w = img_shape
-    y = np.copy(x)
-    y[0] = ((x[0] + x[2]) / 2) / w  # center x
-    y[1] = ((x[1] + x[3]) / 2) / h  # center y
-    y[2] = (x[2] - x[0]) / w  # width
-    y[3] = (x[3] - x[1]) / h  # height
-    return y
 
 
 def non_max_suppression(
@@ -165,7 +131,7 @@ def non_max_suppression(
             continue
 
         # (center x, center y, width, height) to (x1, y1, x2, y2)
-        box = xywh2xyxy(x[:, :4])
+        box = xywh_to_xyxy(x[:, :4])
         cls = x[:, 5 : 5 + num_classes]
         other = x[:, 5 + num_classes :]  # Either kpts or pos
 
@@ -430,7 +396,8 @@ def process_single_mask(
     @type mask_coeff: np.ndarray
     @param mask_conf: Mask confidence.
     @type mask_conf: float
-    @param bbox: A numpy array of bbox coordinates in (x1, y1, x2, y2) format.
+    @param bbox: A numpy array of bbox coordinates in (x_center, y_center, width,
+        height) format.
     @type bbox: np.ndarray
     @return: Processed mask.
     @rtype: np.ndarray
