@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Union
 
 import depthai as dai
 
@@ -39,19 +40,51 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         self._parsers: dict[int, BaseParser] = {}
 
     def build(
-        self, input: dai.Node.Output, modelDescription: dai.NNModelDescription, fps: int = None
+        self,
+        input: dai.Node.Output,
+        nn_source: Union[dai.NNModelDescription, dai.NNArchive],
+        fps: int = None,
     ) -> "ParsingNeuralNetwork":
-        """Builds the underlying NeuralNetwork node.
+        """Builds the underlying NeuralNetwork node and creates parser nodes for each
+        model head.
 
-        Creates parser nodes for each model head according to passed NNArchive.
+        Attributes
+        ----------
+
+        input : Node.Input
+            Node's input. It is a linking point to which the NeuralNetwork is linked. It accepts the output of a Camera node.
+        nn_source : Union[dai.NNModelDescription, dai.NNArchive]
+            NNModelDescription object containing the HubAI model descriptors, or NNArchive object of the model.
+        fps_limit : int
+            FPS limit for the model runtime.
+
+        Returns
+        -------
+        ParsingNeuralNetwork
+            Returns the ParsingNeuralNetwork object.
+
+        Raises
+        ------
+        ValueError
+            If the nn_source is not a NNModelDescription or NNArchive object.
         """
 
-        if not modelDescription.platform: # automatically detect the platform if missing
-            modelDescription.platform = self.getParentPipeline().getDefaultDevice().getPlatformAsString() 
-        archivePath = dai.getModelFromZoo(modelDescription) 
-        self._nn_archive = dai.NNArchive(archivePath)
+        if isinstance(nn_source, dai.NNModelDescription):
+            if not nn_source.platform:
+                nn_source.platform = (
+                    self.getParentPipeline().getDefaultDevice().getPlatformAsString()
+                )
+            self._nn_archive = dai.NNArchive(dai.getModelFromZoo(nn_source))
+        elif isinstance(nn_source, dai.NNArchive):
+            self._nn_archive = nn_source
+        else:
+            raise ValueError(
+                "nn_source must be either a NNModelDescription or NNArchive"
+            )
 
-        self._nn.build(input, modelDescription, fps=fps) if fps else self._nn.build(input, self._nn_archive)
+        kwargs = {"fps": fps} if fps else {}
+        self._nn.build(input, nn_source, **kwargs)
+
         self._updateParsers(self._nn_archive)
         return self
 

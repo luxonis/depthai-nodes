@@ -44,8 +44,6 @@ class ParserGenerator(dai.node.ThreadedHostNode):
         parsers = {}
         pipeline = self.getParentPipeline()
 
-        
-
         for index, head in zip(indexes, heads):
             parser_name = head.parser
             parser = globals().get(parser_name)
