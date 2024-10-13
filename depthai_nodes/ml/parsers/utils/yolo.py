@@ -189,7 +189,7 @@ def non_max_suppression(
 def parse_yolo_outputs(
     outputs: List[np.ndarray],
     strides: List[int],
-    no: int,
+    num_outputs: int,
     anchors: Optional[List[np.ndarray]] = None,
     kpts: Optional[List[np.ndarray]] = None,
     det_mode: bool = False,
@@ -201,8 +201,8 @@ def parse_yolo_outputs(
     @type outputs: List[np.ndarray]
     @param strides: List of strides.
     @type strides: List[int]
-    @param no: Number of outputs of the model.
-    @type no: int
+    @param num_outputs: Number of outputs of the model.
+    @type num_outputs: int
     @param anchors: An optional list of anchors.
     @type anchors: Optional[List[np.ndarray]]
     @param kpts: An optional list of keypoints for each output.
@@ -222,7 +222,7 @@ def parse_yolo_outputs(
         out = parse_yolo_output(
             out_head,
             stride,
-            no,
+            num_outputs,
             anchors_head,
             head_id=i,
             kpts=kpt,
@@ -237,7 +237,7 @@ def parse_yolo_outputs(
 def parse_yolo_output(
     out: np.ndarray,
     stride: int,
-    no: int,
+    num_outputs: int,
     anchors: Optional[np.ndarray] = None,
     head_id: int = -1,
     kpts: Optional[np.ndarray] = None,
@@ -250,8 +250,8 @@ def parse_yolo_output(
     @type out: np.ndarray
     @param stride: Stride.
     @type stride: int
-    @param no: Number of outputs of the model.
-    @type no: int
+    @param num_outputs: Number of outputs of the model.
+    @type num_outputs: int
     @param anchors: Anchors for the given head.
     @type anchors: Optional[np.ndarray]
     @param head_id: Head ID.
@@ -282,7 +282,7 @@ def parse_yolo_output(
     else:
         grid = make_grid_numpy(ny, nx, na)
 
-    out = out.reshape(bs, na, no, ny, nx).transpose((0, 1, 3, 4, 2))
+    out = out.reshape(bs, na, num_outputs, ny, nx).transpose((0, 1, 3, 4, 2))
 
     if anchors is not None:
         if isinstance(anchors, np.ndarray):
@@ -318,7 +318,7 @@ def parse_yolo_output(
 
     if det_mode:
         # Detection
-        out = out.reshape(bs, -1, no)
+        out = out.reshape(bs, -1, num_outputs)
     elif kpts is None:
         # Segmentation
         x_coors = np.tile(np.arange(0, nx), (ny, 1))
@@ -407,9 +407,9 @@ def decode_yolo_output(
     @return: NMS output.
     @rtype: np.ndarray
     """
-    no = num_classes + 5
+    num_outputs = num_classes + 5
     output = parse_yolo_outputs(
-        yolo_outputs, strides, no, anchors, kpts, det_mode, yolo_version
+        yolo_outputs, strides, num_outputs, anchors, kpts, det_mode, yolo_version
     )
     output_nms = non_max_suppression(
         output,
