@@ -10,7 +10,6 @@ from .lane_detection import LaneDetectionParser
 from .map_output import MapOutputParser
 from .mediapipe_palm_detection import MPPalmDetectionParser
 from .mlsd import MLSDParser
-from .parser_generator import ParserGenerator
 from .ppdet import PPTextDetectionParser
 from .regression import RegressionParser
 from .scrfd import SCRFDParser
@@ -40,7 +39,6 @@ __all__ = [
     "MapOutputParser",
     "ClassificationSequenceParser",
     "LaneDetectionParser",
-    "ParserGenerator",
     "BaseParser",
     "DetectionParser",
 ]

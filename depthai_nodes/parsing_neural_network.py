@@ -1,8 +1,10 @@
 from pathlib import Path
+from typing import overload
 
 import depthai as dai
 
-from .ml.parsers import BaseParser, ParserGenerator
+from .ml.parsers import BaseParser
+from .parser_generator import ParserGenerator
 
 
 class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
@@ -37,16 +39,65 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         self._nn = self._pipeline.create(dai.node.NeuralNetwork)
         self._parsers: dict[int, BaseParser] = {}
 
-    def build(
-        self, input: dai.Node.Output, nnArchive: dai.NNArchive
+    @overload
+    def method(
+        self, input: dai.Node.Output, nn_source: dai.NNModelDescription, fps: int
     ) -> "ParsingNeuralNetwork":
-        """Builds the underlying NeuralNetwork node.
+        ...
 
-        Creates parser nodes for each model head according to passed NNArchive.
+    @overload
+    def method(
+        self, input: dai.Node.Output, nn_source: dai.NNArchive, fps: int
+    ) -> "ParsingNeuralNetwork":
+        ...
+
+    def build(
+        self,
+        input: dai.Node.Output,
+        nn_source,
+        fps: int = None,
+    ) -> "ParsingNeuralNetwork":
+        """Builds the underlying NeuralNetwork node and creates parser nodes for each
+        model head.
+
+        Attributes
+        ----------
+
+        input : Node.Input
+            Node's input. It is a linking point to which the NeuralNetwork is linked. It accepts the output of a Camera node.
+        nn_source : Union[dai.NNModelDescription, dai.NNArchive]
+            NNModelDescription object containing the HubAI model descriptors, or NNArchive object of the model.
+        fps_limit : int
+            FPS limit for the model runtime.
+
+        Returns
+        -------
+        ParsingNeuralNetwork
+            Returns the ParsingNeuralNetwork object.
+
+        Raises
+        ------
+        ValueError
+            If the nn_source is not a NNModelDescription or NNArchive object.
         """
-        self._nn_archive = nnArchive
-        self._nn.build(input, nnArchive)
-        self._updateParsers(nnArchive)
+
+        if isinstance(nn_source, dai.NNModelDescription):
+            if not nn_source.platform:
+                nn_source.platform = (
+                    self.getParentPipeline().getDefaultDevice().getPlatformAsString()
+                )
+            self._nn_archive = dai.NNArchive(dai.getModelFromZoo(nn_source))
+        elif isinstance(nn_source, dai.NNArchive):
+            self._nn_archive = nn_source
+        else:
+            raise ValueError(
+                "nn_source must be either a NNModelDescription or NNArchive"
+            )
+
+        kwargs = {"fps": fps} if fps else {}
+        self._nn.build(input, nn_source, **kwargs)
+
+        self._updateParsers(self._nn_archive)
         return self
 
     def _updateParsers(self, nnArchive: dai.NNArchive) -> None:
