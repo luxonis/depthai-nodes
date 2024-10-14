@@ -54,7 +54,7 @@ class XFeatBaseParser(BaseParser):
         original_size: Tuple[float, float] = None,
         input_size: Tuple[float, float] = (640, 352),
         max_keypoints: int = 4096,
-    ):
+    ) -> None:
         """Initializes the XFeatBaseParser node."""
         super().__init__()
         self._target_input = self.createInput()  # used in stereo mode
@@ -89,7 +89,7 @@ class XFeatBaseParser(BaseParser):
     def build(
         self,
         head_config: Dict[str, Any],
-    ):
+    ) -> "XFeatBaseParser":
         """Sets the head configuration for the parser.
 
         Attributes
@@ -123,7 +123,7 @@ class XFeatBaseParser(BaseParser):
 
         return self
 
-    def setOutputLayerFeats(self, output_layer_feats: str):
+    def setOutputLayerFeats(self, output_layer_feats: str) -> None:
         """Sets the output layer containing features.
 
         @param output_layer_feats: Name of the output layer containing features.
@@ -133,7 +133,7 @@ class XFeatBaseParser(BaseParser):
             raise ValueError("Output layer containing features must be a string!")
         self.output_layer_feats = output_layer_feats
 
-    def setOutputLayerKeypoints(self, output_layer_keypoints: str):
+    def setOutputLayerKeypoints(self, output_layer_keypoints: str) -> None:
         """Sets the output layer containing keypoints.
 
         @param output_layer_keypoints: Name of the output layer containing keypoints.
@@ -143,7 +143,7 @@ class XFeatBaseParser(BaseParser):
             raise ValueError("Output layer containing keypoints must be a string!")
         self.output_layer_keypoints = output_layer_keypoints
 
-    def setOutputLayerHeatmaps(self, output_layer_heatmaps: str):
+    def setOutputLayerHeatmaps(self, output_layer_heatmaps: str) -> None:
         """Sets the output layer containing heatmaps.
 
         @param output_layer_heatmaps: Name of the output layer containing heatmaps.
@@ -153,7 +153,7 @@ class XFeatBaseParser(BaseParser):
             raise ValueError("Output layer containing heatmaps must be a string!")
         self.output_layer_heatmaps = output_layer_heatmaps
 
-    def setOriginalSize(self, original_size: Tuple[int, int]):
+    def setOriginalSize(self, original_size: Tuple[int, int]) -> None:
         """Sets the original image size.
 
         @param original_size: Original image size.
@@ -166,7 +166,7 @@ class XFeatBaseParser(BaseParser):
                 raise ValueError("Original image size must be a tuple of two ints!")
         self.original_size = original_size
 
-    def setInputSize(self, input_size: Tuple[int, int]):
+    def setInputSize(self, input_size: Tuple[int, int]) -> None:
         """Sets the input image size.
 
         @param input_size: Input image size.
@@ -179,7 +179,7 @@ class XFeatBaseParser(BaseParser):
                 raise ValueError("Input image size must be a tuple of two ints!")
         self.input_size = input_size
 
-    def setMaxKeypoints(self, max_keypoints: int):
+    def setMaxKeypoints(self, max_keypoints: int) -> None:
         """Sets the maximum number of keypoints to keep.
 
         @param max_keypoints: Maximum number of keypoints.
@@ -189,7 +189,7 @@ class XFeatBaseParser(BaseParser):
             raise ValueError("Maximum number of keypoints must be an int!")
         self.max_keypoints = max_keypoints
 
-    def validateParams(self):
+    def validateParams(self) -> None:
         """Validates the parameters."""
         if self.original_size is None:
             raise ValueError("Original image size must be specified!")
@@ -281,13 +281,13 @@ class XFeatMonoParser(XFeatBaseParser):
 
     def __init__(
         self,
-        output_layer_feats="feats",
-        output_layer_keypoints="keypoints",
-        output_layer_heatmaps="heatmaps",
+        output_layer_feats: str = "feats",
+        output_layer_keypoints: str = "keypoints",
+        output_layer_heatmaps: str = "heatmaps",
         original_size: Tuple[float, float] = None,
         input_size: Tuple[float, float] = (640, 352),
         max_keypoints: int = 4096,
-    ):
+    ) -> None:
         """Initializes the XFeatParser node.
 
         @param output_layer_feats: Name of the output layer containing features.
@@ -315,7 +315,7 @@ class XFeatMonoParser(XFeatBaseParser):
         self.previous_results = None
         self.trigger = False
 
-    def setTrigger(self):
+    def setTrigger(self) -> None:
         """Sets the trigger to set the reference frame."""
         self.trigger = True
 
@@ -408,13 +408,13 @@ class XFeatStereoParser(XFeatBaseParser):
 
     def __init__(
         self,
-        output_layer_feats="feats",
-        output_layer_keypoints="keypoints",
-        output_layer_heatmaps="heatmaps",
+        output_layer_feats: str = "feats",
+        output_layer_keypoints: str = "keypoints",
+        output_layer_heatmaps: str = "heatmaps",
         original_size: Tuple[float, float] = None,
         input_size: Tuple[float, float] = (640, 352),
         max_keypoints: int = 4096,
-    ):
+    ) -> None:
         """Initializes the XFeatParser node.
 
         @param output_layer_feats: Name of the output layer containing features.

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 import depthai as dai
 import numpy as np
@@ -44,12 +44,12 @@ class LaneDetectionParser(BaseParser):
 
     def __init__(
         self,
-        output_layer_name="",
-        row_anchors=None,
-        griding_num=None,
-        cls_num_per_lane=None,
-        input_shape=(288, 800),
-    ):
+        output_layer_name: str = "",
+        row_anchors: List[int] = None,
+        griding_num: int = None,
+        cls_num_per_lane: int = None,
+        input_shape: Tuple[int, int] = (288, 800),
+    ) -> None:
         """Initializes the lane detection parser node.
 
         @param output_layer_name: Name of the output layer from which the results are
@@ -75,7 +75,7 @@ class LaneDetectionParser(BaseParser):
     def build(
         self,
         head_config: Dict[str, Any],
-    ):
+    ) -> "LaneDetectionParser":
         """Sets the head configuration for the parser.
 
         Attributes
@@ -101,44 +101,60 @@ class LaneDetectionParser(BaseParser):
 
         return self
 
-    def setOutputLayerName(self, output_layer_name):
+    def setOutputLayerName(self, output_layer_name: str) -> None:
         """Set the output layer name for the lane detection model.
 
         @param output_layer_name: Name of the output layer.
         @type output_layer_name: str
         """
+        if not isinstance(output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
         self.output_layer_name = output_layer_name
 
-    def setRowAnchors(self, row_anchors):
+    def setRowAnchors(self, row_anchors: List[int]) -> None:
         """Set the row anchors for the lane detection model.
 
         @param row_anchors: List of row anchors.
         @type row_anchors: List[int]
         """
+        if not isinstance(row_anchors, list):
+            raise ValueError("Row anchors must be a list.")
+        if not all(isinstance(anchor, int) for anchor in row_anchors):
+            raise ValueError("Row anchors must be a list of integers.")
         self.row_anchors = row_anchors
 
-    def setGridingNum(self, griding_num):
+    def setGridingNum(self, griding_num: int) -> None:
         """Set the griding number for the lane detection model.
 
         @param griding_num: Griding number.
         @type griding_num: int
         """
+        if not isinstance(griding_num, int):
+            raise ValueError("Griding number must be an integer.")
         self.griding_num = griding_num
 
-    def setClsNumPerLane(self, cls_num_per_lane):
+    def setClsNumPerLane(self, cls_num_per_lane: int) -> None:
         """Set the number of points per lane for the lane detection model.
 
         @param cls_num_per_lane: Number of classes per lane.
         @type cls_num_per_lane: int
         """
+        if not isinstance(cls_num_per_lane, int):
+            raise ValueError("Number of points per lane must be an integer.")
         self.cls_num_per_lane = cls_num_per_lane
 
-    def setInputShape(self, input_shape):
+    def setInputShape(self, input_shape: Tuple[int, int]) -> None:
         """Set the input shape for the lane detection model.
 
         @param input_shape: Input shape.
         @type input_shape: Tuple[int, int]
         """
+        if not isinstance(input_shape, tuple):
+            raise ValueError("Input shape must be a tuple.")
+        if len(input_shape) != 2:
+            raise ValueError("Input shape must be a tuple of two integers.")
+        if not all(isinstance(size, int) for size in input_shape):
+            raise ValueError("Input shape must be a tuple of integers.")
         self.input_shape = input_shape
 
     def run(self):

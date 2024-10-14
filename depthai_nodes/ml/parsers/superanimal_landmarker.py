@@ -35,11 +35,11 @@ class SuperAnimalParser(KeypointParser):
 
     def __init__(
         self,
-        output_layer_name="",
-        n_keypoints=39,
-        score_threshold=0.5,
-        scale_factor=256,
-    ):
+        output_layer_name: str = "",
+        n_keypoints: int = 39,
+        score_threshold: float = 0.5,
+        scale_factor: float = 256.0,
+    ) -> None:
         """Initializes the SuperAnimalParser node.
 
         @param output_layer_name: Name of the output layer from which the keypoints are
@@ -60,7 +60,7 @@ class SuperAnimalParser(KeypointParser):
     def build(
         self,
         head_config: Dict[str, Any],
-    ):
+    ) -> "SuperAnimalParser":
         """Sets the head configuration for the parser.
 
         Attributes
@@ -79,12 +79,14 @@ class SuperAnimalParser(KeypointParser):
 
         return self
 
-    def setScoreThreshold(self, threshold):
+    def setScoreThreshold(self, threshold: float) -> None:
         """Sets the confidence score threshold for detected keypoints.
 
         @param threshold: Confidence score threshold for detected keypoints.
         @type threshold: float
         """
+        if not isinstance(threshold, float):
+            raise ValueError("Score threshold must be a float.")
         self.score_threshold = threshold
 
     def run(self):
