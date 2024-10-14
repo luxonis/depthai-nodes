@@ -40,10 +40,16 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         self._parsers: dict[int, BaseParser] = {}
 
     @overload
-    def method(self, input: dai.Node.Output, nn_source: dai.NNModelDescription, fps: int) -> "ParsingNeuralNetwork": ...
-    
+    def method(
+        self, input: dai.Node.Output, nn_source: dai.NNModelDescription, fps: int
+    ) -> "ParsingNeuralNetwork":
+        ...
+
     @overload
-    def method(self, input: dai.Node.Output, nn_source: dai.NNArchive, fps: int) -> "ParsingNeuralNetwork": ...
+    def method(
+        self, input: dai.Node.Output, nn_source: dai.NNArchive, fps: int
+    ) -> "ParsingNeuralNetwork":
+        ...
 
     def build(
         self,
