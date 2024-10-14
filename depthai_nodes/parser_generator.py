@@ -2,9 +2,9 @@ from typing import Dict
 
 import depthai as dai
 
-from . import *
-from .base_parser import BaseParser
-from .utils import decode_head
+from .ml.parsers import *
+from .ml.parsers.base_parser import BaseParser
+from .ml.parsers.utils import decode_head
 
 
 class ParserGenerator(dai.node.ThreadedHostNode):
@@ -31,7 +31,7 @@ class ParserGenerator(dai.node.ThreadedHostNode):
         parsers: Dict[int : BaseParser]
             A dictionary of instantiated parsers.
         """
-        heads = nn_archive.getConfig().getConfigV1().model.heads
+        heads = nn_archive.getConfig().model.heads
         indexes = range(len(heads))
 
         if len(heads) == 0:
