@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import cv2
 import depthai as dai
@@ -7,8 +7,14 @@ import numpy as np
 from ..messages.creators import create_detection_message
 from .base_parser import BaseParser
 from .utils.bbox_format_converters import normalize_bboxes, xyxy_to_xywh
-from .utils.yolo import YOLOVersion, decode_yolo_output, parse_kpts
 from .utils.masks_utils import process_single_mask
+from .utils.yolo import (
+    YOLOVersion,
+    decode_yolo_output,
+    get_segmentation_outputs,
+    parse_kpts,
+    reshape_seg_outputs,
+)
 
 
 class YOLOExtendedParser(BaseParser):
@@ -212,35 +218,6 @@ class YOLOExtendedParser(BaseParser):
         """
         self.output_layer_names = output_layer_names
 
-    def _get_segmentation_outputs(
-        self, output: dai.NNData
-    ) -> Tuple[List[np.ndarray], np.ndarray, int]:
-        """Get the segmentation outputs from the Neural Network data."""
-        # Get all the layer names
-        layer_names = self.output_layer_names or output.getAllLayerNames()
-        mask_outputs = sorted([name for name in layer_names if "_masks" in name])
-        masks_outputs_values = [
-            output.getTensor(o, dequantize=True).astype(np.float32)
-            for o in mask_outputs
-        ]
-        protos_output = output.getTensor("protos_output", dequantize=True).astype(
-            np.float32
-        )
-        protos_len = protos_output.shape[1]
-        return masks_outputs_values, protos_output, protos_len
-
-    def _reshape_seg_outputs(
-        self,
-        protos_output: np.ndarray,
-        protos_len: int,
-        masks_outputs_values: List[np.ndarray],
-    ) -> Tuple[np.ndarray, int, List[np.ndarray]]:
-        """Reshape the segmentation outputs."""
-        protos_output = protos_output.transpose((0, 3, 1, 2))
-        protos_len = protos_output.shape[1]
-        masks_outputs_values = [o.transpose((0, 3, 1, 2)) for o in masks_outputs_values]
-        return protos_output, protos_len, masks_outputs_values
-
     def run(self):
         while self.isRunning():
             try:
@@ -281,7 +258,7 @@ class YOLOExtendedParser(BaseParser):
                     masks_outputs_values,
                     protos_output,
                     protos_len,
-                ) = self._get_segmentation_outputs(output)
+                ) = get_segmentation_outputs(output)
             else:
                 mode = self._DET_MODE
 
@@ -296,7 +273,7 @@ class YOLOExtendedParser(BaseParser):
                         protos_output,
                         protos_len,
                         masks_outputs_values,
-                    ) = self._reshape_seg_outputs(
+                    ) = reshape_seg_outputs(
                         protos_output, protos_len, masks_outputs_values
                     )
 
@@ -364,11 +341,19 @@ class YOLOExtendedParser(BaseParser):
                     final_mask[resized_mask > 0] = i
 
             if mode == self._KPTS_MODE:
+                additional_output = np.array(additional_output)
+                keypoints = np.array([])
+                keypoints_scores = np.array([])
+                if additional_output.size > 0:
+                    keypoints = additional_output[:, :, :2]
+                    keypoints_scores = additional_output[:, :, 2]
+
                 detections_message = create_detection_message(
                     bboxes=np.array(bboxes),
                     scores=np.array(scores),
                     labels=np.array(labels),
-                    keypoints=np.array(additional_output),
+                    keypoints=keypoints,
+                    keypoints_scores=keypoints_scores,
                 )
             elif mode == self._SEG_MODE:
                 detections_message = create_detection_message(

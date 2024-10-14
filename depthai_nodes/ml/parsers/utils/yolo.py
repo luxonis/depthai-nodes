@@ -2,6 +2,7 @@ import time
 from enum import Enum
 from typing import List, Optional, Tuple
 
+import depthai as dai
 import numpy as np
 
 from .bbox_format_converters import xywh_to_xyxy
@@ -421,3 +422,32 @@ def decode_yolo_output(
     )[0]
 
     return output_nms
+
+
+def get_segmentation_outputs(
+    output: dai.NNData, output_layer_names: Optional[List[str]] = None
+) -> Tuple[List[np.ndarray], np.ndarray, int]:
+    """Get the segmentation outputs from the Neural Network data."""
+    # Get all the layer names
+    layer_names = output_layer_names or output.getAllLayerNames()
+    mask_outputs = sorted([name for name in layer_names if "_masks" in name])
+    masks_outputs_values = [
+        output.getTensor(o, dequantize=True).astype(np.float32) for o in mask_outputs
+    ]
+    protos_output = output.getTensor("protos_output", dequantize=True).astype(
+        np.float32
+    )
+    protos_len = protos_output.shape[1]
+    return masks_outputs_values, protos_output, protos_len
+
+
+def reshape_seg_outputs(
+    protos_output: np.ndarray,
+    protos_len: int,
+    masks_outputs_values: List[np.ndarray],
+) -> Tuple[np.ndarray, int, List[np.ndarray]]:
+    """Reshape the segmentation outputs."""
+    protos_output = protos_output.transpose((0, 3, 1, 2))
+    protos_len = protos_output.shape[1]
+    masks_outputs_values = [o.transpose((0, 3, 1, 2)) for o in masks_outputs_values]
+    return protos_output, protos_len, masks_outputs_values
