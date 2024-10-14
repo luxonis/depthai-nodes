@@ -102,7 +102,7 @@ class YuNetParser(DetectionParser):
 
         return self
 
-    def setInputShape(self, width, height):
+    def setInputShape(self, width: int, height: int) -> None:
         """Sets the input shape.
 
         @param height: Height of the input image.
@@ -110,11 +110,16 @@ class YuNetParser(DetectionParser):
         @param width: Width of the input image.
         @type width: int
         """
+        if not isinstance(width, int) or not isinstance(height, int):
+            raise ValueError("Width and height must be integers.")
         self.input_shape = (width, height)
 
     def setOutputLayerNames(
-        self, loc_output_layer_name, conf_output_layer_name, iou_output_layer_name
-    ):
+        self,
+        loc_output_layer_name: str,
+        conf_output_layer_name: str,
+        iou_output_layer_name: str,
+    ) -> None:
         """Sets the output layers.
 
         @param loc_output_layer_name: Output layer name for the location predictions.
@@ -124,6 +129,15 @@ class YuNetParser(DetectionParser):
         @param iou_output_layer_name: Output layer name for the IoU predictions.
         @type iou_output_layer_name: str
         """
+        if not all(
+            isinstance(layer_name, str)
+            for layer_name in [
+                loc_output_layer_name,
+                conf_output_layer_name,
+                iou_output_layer_name,
+            ]
+        ):
+            raise ValueError("Output layer names must be strings.")
         self.loc_output_layer_name = loc_output_layer_name
         self.conf_output_layer_name = conf_output_layer_name
         self.iou_output_layer_name = iou_output_layer_name

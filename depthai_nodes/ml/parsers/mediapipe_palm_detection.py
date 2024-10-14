@@ -43,11 +43,11 @@ class MPPalmDetectionParser(DetectionParser):
 
     def __init__(
         self,
-        output_layer_names=None,
-        conf_threshold=0.5,
-        iou_threshold=0.5,
-        max_det=100,
-        scale=192,
+        output_layer_names: List[str] = None,
+        conf_threshold: float = 0.5,
+        iou_threshold: float = 0.5,
+        max_det: int = 100,
+        scale: int = 192,
     ) -> None:
         """Initializes the MPPalmDetectionParser node.
 
@@ -59,6 +59,8 @@ class MPPalmDetectionParser(DetectionParser):
         @type iou_threshold: float
         @param max_det: Maximum number of detections to keep.
         @type max_det: int
+        @param scale: Scale of the input image.
+        @type scale: int
         """
         super().__init__()
         self.output_layer_names = (
@@ -103,6 +105,10 @@ class MPPalmDetectionParser(DetectionParser):
             are extracted.
         @type output_layer_names: List[str]
         """
+        if not isinstance(output_layer_names, list):
+            raise ValueError("Output layer name must be a list.")
+        if not all(isinstance(layer_name, str) for layer_name in output_layer_names):
+            raise ValueError("Each output layer name must be a string.")
         if len(output_layer_names) != 2:
             raise ValueError(
                 f"Only two output layers are supported for MPPalmDetectionParser, got {len(output_layer_names)} layers."
@@ -115,6 +121,8 @@ class MPPalmDetectionParser(DetectionParser):
         @param scale: Scale of the input image.
         @type scale: int
         """
+        if not isinstance(scale, int):
+            raise ValueError("Scale must be an integer.")
         self.scale = scale
 
     def run(self):
