@@ -99,7 +99,7 @@ def xyxy_to_xywh(bboxes: np.ndarray) -> np.ndarray:
     if bboxes.shape[1] != 4:
         raise ValueError("Bounding boxes must be of shape (N, 4).")
 
-    if not all(bboxes[:, :2] <= bboxes[:, 2:]):
+    if not np.all(bboxes[:, :2] <= bboxes[:, 2:]):
         raise ValueError(
             "Bounding box coordinates must be in the format [x_min, y_min, x_max, y_max]."
         )
