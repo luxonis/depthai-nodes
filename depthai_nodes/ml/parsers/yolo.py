@@ -7,7 +7,8 @@ import numpy as np
 from ..messages.creators import create_detection_message
 from .base_parser import BaseParser
 from .utils.bbox_format_converters import normalize_bboxes, xyxy_to_xywh
-from .utils.yolo import YOLOVersion, decode_yolo_output, parse_kpts, process_single_mask
+from .utils.yolo import YOLOVersion, decode_yolo_output, parse_kpts
+from .utils.masks_utils import process_single_mask
 
 
 class YOLOExtendedParser(BaseParser):

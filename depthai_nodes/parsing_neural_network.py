@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import overload
+from typing import Union, overload
 
 import depthai as dai
 
@@ -40,13 +40,13 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         self._parsers: dict[int, BaseParser] = {}
 
     @overload
-    def method(
+    def build(
         self, input: dai.Node.Output, nn_source: dai.NNModelDescription, fps: int
     ) -> "ParsingNeuralNetwork":
         ...
 
     @overload
-    def method(
+    def build(
         self, input: dai.Node.Output, nn_source: dai.NNArchive, fps: int
     ) -> "ParsingNeuralNetwork":
         ...
@@ -54,7 +54,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
     def build(
         self,
         input: dai.Node.Output,
-        nn_source,
+        nn_source: Union[dai.NNModelDescription, dai.NNArchive],
         fps: int = None,
     ) -> "ParsingNeuralNetwork":
         """Builds the underlying NeuralNetwork node and creates parser nodes for each
@@ -67,7 +67,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
             Node's input. It is a linking point to which the NeuralNetwork is linked. It accepts the output of a Camera node.
         nn_source : Union[dai.NNModelDescription, dai.NNArchive]
             NNModelDescription object containing the HubAI model descriptors, or NNArchive object of the model.
-        fps_limit : int
+        fps : int
             FPS limit for the model runtime.
 
         Returns
