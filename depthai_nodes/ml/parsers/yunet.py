@@ -258,8 +258,8 @@ class YuNetParser(DetectionParser):
 
             # run nms
             keep_indices = nms_cv2(
-                bboxes=np.array(bboxes),
-                scores=np.array(scores),
+                bboxes=bboxes,
+                scores=scores,
                 conf_threshold=self.conf_threshold,
                 iou_threshold=self.iou_threshold,
                 max_det=self.max_det,
