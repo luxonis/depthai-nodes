@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Union
+from typing import overload
 
 import depthai as dai
 
@@ -39,10 +39,16 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         self._nn = self._pipeline.create(dai.node.NeuralNetwork)
         self._parsers: dict[int, BaseParser] = {}
 
+    @overload
+    def method(self, input: dai.Node.Output, nn_source: dai.NNModelDescription, fps: int) -> "ParsingNeuralNetwork": ...
+    
+    @overload
+    def method(self, input: dai.Node.Output, nn_source: dai.NNArchive, fps: int) -> "ParsingNeuralNetwork": ...
+
     def build(
         self,
         input: dai.Node.Output,
-        nn_source: Union[dai.NNModelDescription, dai.NNArchive],
+        nn_source,
         fps: int = None,
     ) -> "ParsingNeuralNetwork":
         """Builds the underlying NeuralNetwork node and creates parser nodes for each
