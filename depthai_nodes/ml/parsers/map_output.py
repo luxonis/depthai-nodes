@@ -41,7 +41,7 @@ class MapOutputParser(BaseParser):
     def build(
         self,
         head_config: Dict[str, Any],
-    ):
+    ) -> "MapOutputParser":
         """Sets the head configuration for the parser.
 
         Attributes
@@ -65,12 +65,14 @@ class MapOutputParser(BaseParser):
 
         return self
 
-    def setMinMaxScaling(self, min_max_scaling: bool):
+    def setMinMaxScaling(self, min_max_scaling: bool) -> None:
         """Sets the min_max_scaling flag.
 
         @param min_max_scaling: If True, the map is scaled to the range [0, 1].
         @type min_max_scaling: bool
         """
+        if not isinstance(min_max_scaling, bool):
+            raise ValueError("min_max_scaling must be a boolean.")
         self.min_max_scaling = min_max_scaling
 
     def run(self):

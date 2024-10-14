@@ -52,6 +52,8 @@ class DetectionParser(BaseParser):
             are extracted.
         @type output_layer_name: Union[str, List[str]]
         """
+        if not isinstance(output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
         self.output_layer_name = output_layer_name
 
     def setConfidenceThreshold(self, threshold: float) -> None:
@@ -60,6 +62,8 @@ class DetectionParser(BaseParser):
         @param threshold: Confidence score threshold for detected objects.
         @type threshold: float
         """
+        if not isinstance(threshold, float):
+            raise ValueError("Confidence threshold must be a float.")
         self.conf_threshold = threshold
 
     def setIOUThreshold(self, threshold: float) -> None:
@@ -68,6 +72,8 @@ class DetectionParser(BaseParser):
         @param threshold: Non-maximum suppression threshold.
         @type threshold: float
         """
+        if not isinstance(threshold, float):
+            raise ValueError("IOU threshold must be a float.")
         self.iou_threshold = threshold
 
     def setMaxDetections(self, max_det: int) -> None:
@@ -76,6 +82,8 @@ class DetectionParser(BaseParser):
         @param max_det: Maximum number of detections to keep.
         @type max_det: int
         """
+        if not isinstance(max_det, int):
+            raise ValueError("Max detections must be an integer.")
         self.max_det = max_det
 
     def build(self, head_config) -> "DetectionParser":

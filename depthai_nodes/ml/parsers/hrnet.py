@@ -28,7 +28,9 @@ class HRNetParser(KeypointParser):
     **Description**: Keypoints message containing detected body keypoints.
     """
 
-    def __init__(self, output_layer_name="heatmaps", score_threshold=0.5):
+    def __init__(
+        self, output_layer_name: str = "heatmaps", score_threshold: float = 0.5
+    ) -> None:
         """Initializes the HRNetParser node.
 
         @param score_threshold: Confidence score threshold for detected keypoints.
@@ -40,7 +42,7 @@ class HRNetParser(KeypointParser):
     def build(
         self,
         head_config: Dict[str, Any],
-    ):
+    ) -> "HRNetParser":
         """Sets the head configuration for the parser.
 
         Attributes
@@ -59,12 +61,14 @@ class HRNetParser(KeypointParser):
 
         return self
 
-    def setScoreThreshold(self, threshold):
+    def setScoreThreshold(self, threshold: float) -> None:
         """Sets the confidence score threshold for the detected body keypoints.
 
         @param threshold: Confidence score threshold for detected keypoints.
         @type threshold: float
         """
+        if not isinstance(threshold, float):
+            raise ValueError("Confidence threshold must be a float.")
         self.score_threshold = threshold
 
     def run(self):
