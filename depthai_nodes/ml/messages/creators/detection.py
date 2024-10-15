@@ -17,6 +17,7 @@ def create_detection_message(
     labels: np.ndarray = None,
     keypoints: np.ndarray = None,
     masks: np.ndarray = None,
+    keypoints_scores: np.ndarray = None,
 ) -> ImgDetectionsExtended:
     """Create a DepthAI message for object detection. The message contains the bounding
     boxes in X_center, Y_center, Width, Height format with optional angles, labels and
@@ -31,10 +32,14 @@ def create_detection_message(
     @type angles: Optional[np.ndarray]
     @param labels: Labels of detected objects of shape (N,).
     @type labels: Optional[np.ndarray]
-    @param keypoints: Keypoints of detected objects of shape (N,2) or (N,3).
+    @param keypoints: Keypoints of detected objects of shape (N, n_keypoints, dim) where
+        dim is 2 or 3.
     @type keypoints: Optional[np.array]
     @param masks: Masks of detected objects of shape (N, H, W).
     @type masks: Optional[np.ndarray]
+    @param keypoints_scores: Confidence scores of detected keypoints of shape (N,
+        n_keypoints, 1).
+    @type keypoints_scores: Optional[np.ndarray]
     @return: Message containing the bounding boxes, labels, confidence scores, and
         keypoints of detected objects.
     @rtype: ImgDetectionsExtended
@@ -51,6 +56,11 @@ def create_detection_message(
     @raise ValueError: If the masks are not a 3D numpy array of shape (img_height,
         img_width, N) or (N, img_height, img_width).
     @raise ValueError: If the masks are not in the range [0, 1].
+    @raise ValueError: If the keypoints scores are not a numpy array.
+    @raise ValueError: If the keypoints scores are not of shape [n_detections,
+        n_keypoints, 1].
+    @raise ValueError: If the keypoints scores do not have the same length as keypoints.
+    @raise ValueError: If the keypoints scores are not between 0 and 1.
     """
 
     if not isinstance(bboxes, np.ndarray):
@@ -118,6 +128,30 @@ def create_detection_message(
                 f"Keypoints should be of dimension 2 or 3 e.g. [x, y] or [x, y, z], got {dim} dimensions."
             )
 
+    if keypoints_scores is not None:
+        if keypoints is None:
+            raise ValueError(
+                "Keypoints scores should be provided only if keypoints are provided."
+            )
+        if not isinstance(keypoints_scores, np.ndarray):
+            raise ValueError(
+                f"Keypoints scores should be a numpy array, got {type(keypoints_scores)}."
+            )
+
+        n_detections, n_keypoints, _ = keypoints.shape
+        if keypoints_scores.shape[0] != n_detections:
+            raise ValueError(
+                f"Keypoints scores should have same length as keypoints, got {len(keypoints_scores)} and {n_detections}."
+            )
+
+        if keypoints_scores.shape[1] != n_keypoints:
+            raise ValueError(
+                f"Number of keypoints scores per detection should be the same as number of keypoints per detection, got {keypoints_scores.shape[1]} and {n_keypoints}."
+            )
+
+        if not all(0 <= score <= 1 for score in keypoints_scores.flatten()):
+            raise ValueError("Keypoints scores should be between 0 and 1.")
+
     detections = []
     for detection_idx in range(n_bboxes):
         detection = ImgDetectionExtended()
@@ -133,7 +167,12 @@ def create_detection_message(
         if labels is not None:
             detection.label = labels[detection_idx].item()
         if keypoints is not None:
-            detection.keypoints = transform_to_keypoints(keypoints[detection_idx])
+            if keypoints_scores is not None:
+                detection.keypoints = transform_to_keypoints(
+                    keypoints[detection_idx], keypoints_scores[detection_idx]
+                )
+            else:
+                detection.keypoints = transform_to_keypoints(keypoints[detection_idx])
 
         detections.append(detection)
 

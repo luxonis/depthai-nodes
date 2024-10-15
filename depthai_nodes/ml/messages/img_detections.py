@@ -298,7 +298,7 @@ class ImgDetectionsExtended(dai.Buffer):
         if not isinstance(masks, np.ndarray):
             raise TypeError("Mask must be a numpy array")
 
-        if not np.all(masks >= 0 or masks <= 1):
-            raise ValueError(f"Masks should be in range [0, 1], got {masks}.")
+        # if not np.all(masks >= 0 or masks <= 1):
+        # raise ValueError(f"Masks should be in range [0, 1], got {masks}.")
 
         self._masks = masks
