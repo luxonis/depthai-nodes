@@ -9,7 +9,7 @@ from .masks_utils import sigmoid
 from .nms import nms
 
 
-class YOLOVersion(str, Enum):
+class YOLOSubtype(str, Enum):
     V3 = "yolov3"
     V3T = "yolov3-tiny"
     V3U = "yolov3-u"
@@ -193,7 +193,7 @@ def parse_yolo_outputs(
     anchors: Optional[List[np.ndarray]] = None,
     kpts: Optional[List[np.ndarray]] = None,
     det_mode: bool = False,
-    yolo_version: YOLOVersion = YOLOVersion.DEFAULT,
+    subtype: YOLOSubtype = YOLOSubtype.DEFAULT,
 ) -> np.ndarray:
     """Parse all outputs of an YOLO model (all channels).
 
@@ -209,8 +209,8 @@ def parse_yolo_outputs(
     @type kpts: Optional[List[np.ndarray]]
     @param det_mode: Detection only mode.
     @type det_mode: bool
-    @param yolo_version: YOLO version.
-    @type yolo_version: YOLOVersion
+    @param subtype: YOLO version.
+    @type subtype: YOLOSubtype
     @return: Parsed output.
     @rtype: np.ndarray
     """
@@ -227,7 +227,7 @@ def parse_yolo_outputs(
             head_id=i,
             kpts=kpt,
             det_mode=det_mode,
-            yolo_version=yolo_version,
+            subtype=subtype,
         )
         output = out if output is None else np.concatenate((output, out), axis=1)
 
@@ -242,7 +242,7 @@ def parse_yolo_output(
     head_id: int = -1,
     kpts: Optional[np.ndarray] = None,
     det_mode: bool = False,
-    yolo_version: YOLOVersion = YOLOVersion.DEFAULT,
+    subtype: YOLOSubtype = YOLOSubtype.DEFAULT,
 ) -> np.ndarray:
     """Parse a single channel output of an YOLO model.
 
@@ -260,23 +260,23 @@ def parse_yolo_output(
     @type kpts: Optional[np.ndarray]
     @param det_mode: Detection only mode.
     @type det_mode: bool
-    @param yolo_version: YOLO version.
-    @type yolo_version: YOLOVersion
+    @param subtype: YOLO version.
+    @type subtype: YOLOSubtype
     @return: Parsed output.
     @rtype: np.ndarray
     """
     na = len(anchors) // 2 if anchors else 1  # number of anchors per head
     bs, _, ny, nx = out.shape  # bs - batch size, ny|nx - y and x of grid cells
 
-    if yolo_version in [
-        YOLOVersion.P,
-        YOLOVersion.V5,
-        YOLOVersion.V5U,
-        YOLOVersion.V7,
-        YOLOVersion.V3,
-        YOLOVersion.V3T,
-        YOLOVersion.V4,
-        YOLOVersion.V4T,
+    if subtype in [
+        YOLOSubtype.P,
+        YOLOSubtype.V5,
+        YOLOSubtype.V5U,
+        YOLOSubtype.V7,
+        YOLOSubtype.V3,
+        YOLOSubtype.V3T,
+        YOLOSubtype.V4,
+        YOLOSubtype.V4T,
     ]:
         grid = make_grid_numpy(ny, nx, 1)
     else:
@@ -293,10 +293,10 @@ def parse_yolo_output(
             anchors.shape[1] == na
         ), f"Anchor shape mismatch at dimension 1: {anchors.shape[1]} vs {na}"
 
-        if yolo_version in [YOLOVersion.V3, YOLOVersion.V3T]:
+        if subtype in [YOLOSubtype.V3, YOLOSubtype.V3T]:
             c_xy = out[..., 0:2] + grid
             wh = np.exp(out[..., 2:4])
-        elif yolo_version in [YOLOVersion.V4, YOLOVersion.V4T]:
+        elif subtype in [YOLOSubtype.V4, YOLOSubtype.V4T]:
             raise NotImplementedError("YOLOv4 is not supported yet")
         else:
             c_xy = out[..., 0:2] * 2 - 0.5 + grid
@@ -305,7 +305,7 @@ def parse_yolo_output(
         out[..., 0:2] = c_xy * stride
         out[..., 2:4] = wh * anchors
     else:
-        if yolo_version == YOLOVersion.V6R1:
+        if subtype == YOLOSubtype.V6R1:
             c_xy = out[..., 0:2] + grid
             wh = np.exp(out[..., 2:4])
         else:
@@ -381,7 +381,7 @@ def decode_yolo_output(
     iou_thres: float = 0.45,
     num_classes: int = 1,
     det_mode: bool = False,
-    yolo_version: YOLOVersion = YOLOVersion.DEFAULT,
+    subtype: YOLOSubtype = YOLOSubtype.DEFAULT,
 ) -> np.ndarray:
     """Decode the output of an YOLO instance segmentation or pose estimation model.
 
@@ -402,14 +402,14 @@ def decode_yolo_output(
     @param det_mode: Detection only mode. If True, the output will only contain bbox
         detections.
     @type det_mode: bool
-    @param yolo_version: YOLO version.
-    @type yolo_version: YOLOVersion
+    @param subtype: YOLO version.
+    @type subtype: YOLOSubtype
     @return: NMS output.
     @rtype: np.ndarray
     """
     num_outputs = num_classes + 5
     output = parse_yolo_outputs(
-        yolo_outputs, strides, num_outputs, anchors, kpts, det_mode, yolo_version
+        yolo_outputs, strides, num_outputs, anchors, kpts, det_mode, subtype
     )
     output_nms = non_max_suppression(
         output,

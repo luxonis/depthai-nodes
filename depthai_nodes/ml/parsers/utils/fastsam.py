@@ -245,7 +245,9 @@ def decode_fastsam_output(
     @return: NMS output
     @rtype: np.ndarray
     """
-    output = parse_yolo_outputs(outputs, strides, anchors, kpts=None)
+    output = parse_yolo_outputs(
+        outputs=outputs, strides=strides, num_outputs=6, anchors=anchors, kpts=None
+    )
     output_nms = non_max_suppression(
         output,
         conf_thres=conf_thres,

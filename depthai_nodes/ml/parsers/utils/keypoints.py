@@ -89,7 +89,7 @@ def transform_to_keypoints(
 
         if dim == 3:
             kp.z = keypoint[2]
-        if confidences:
+        if confidences is not None:
             kp.confidence = confidences[i]
 
         keypoints_list.append(kp)
