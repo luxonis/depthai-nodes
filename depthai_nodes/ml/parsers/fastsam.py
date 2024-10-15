@@ -149,9 +149,9 @@ class FastSAMParser(BaseParser):
         return self
 
     def setConfidenceThreshold(self, threshold: float) -> None:
-        """Sets the confidence score threshold for detected faces.
+        """Sets the confidence score threshold.
 
-        @param threshold: Confidence score threshold for detected faces.
+        @param threshold: Confidence score threshold.
         @type threshold: float
         """
         if not isinstance(threshold, float):
