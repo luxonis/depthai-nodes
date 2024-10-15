@@ -131,22 +131,35 @@ class YOLOExtendedParser(BaseParser):
 
         self.output_layer_names = bbox_layer_names + kps_layer_names + masks_layer_names
 
-        metadata = head_config["metadata"]
-        self.conf_threshold = metadata["conf_threshold"]
-        self.n_classes = metadata["n_classes"]
-        self.iou_threshold = metadata["iou_threshold"]
-        self.anchors = metadata["anchors"]
-        if "mask_conf" in metadata:
-            self.mask_conf = metadata["mask_conf"]
-        if "n_keypoints" in metadata:
-            self.n_keypoints = metadata["n_keypoints"]
-        if "yolo_version" in metadata:
-            try:
-                self.yolo_version = YOLOVersion(metadata["yolo_version"].lower())
-            except ValueError as err:
-                raise ValueError(
-                    f"Invalid YOLO version {metadata['yolo_version']}. Supported YOLO versions are {[e.value for e in YOLOVersion][:-1]}."
-                ) from err
+        # metadata = head_config["metadata"]
+        self.conf_threshold = head_config.get("conf_threshold", self.conf_threshold)
+        self.n_classes = head_config.get("n_classes", self.n_classes)
+        self.iou_threshold = head_config.get("iou_threshold", self.iou_threshold)
+        self.mask_conf = head_config.get("mask_conf", self.mask_conf)
+        self.anchors = head_config.get("anchors", self.anchors)
+        self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
+        yolo_version = head_config.get("yolo_version", self.yolo_version)
+        try:
+            self.yolo_version = YOLOVersion(yolo_version.lower())
+        except ValueError as err:
+            raise ValueError(
+                f"Invalid YOLO version {yolo_version}. Supported YOLO versions are {[e.value for e in YOLOVersion][:-1]}."
+            ) from err
+        # self.conf_threshold = metadata["conf_threshold"]
+        # self.n_classes = metadata["n_classes"]
+        # self.iou_threshold = metadata["iou_threshold"]
+        # self.anchors = metadata["anchors"]
+        # if "mask_conf" in metadata:
+        #     self.mask_conf = metadata["mask_conf"]
+        # if "n_keypoints" in metadata:
+        #     self.n_keypoints = metadata["n_keypoints"]
+        # if "yolo_version" in metadata:
+        #     try:
+        #         self.yolo_version = YOLOVersion(metadata["yolo_version"].lower())
+        #     except ValueError as err:
+        #         raise ValueError(
+        #             f"Invalid YOLO version {metadata['yolo_version']}. Supported YOLO versions are {[e.value for e in YOLOVersion][:-1]}."
+        #         ) from err
         return self
 
     def setConfidenceThreshold(self, threshold: float) -> None:
