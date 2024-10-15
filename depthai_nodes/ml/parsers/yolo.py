@@ -207,7 +207,7 @@ class YOLOExtendedParser(BaseParser):
             self.subtype = YOLOSubtype(subtype.lower())
         except ValueError as err:
             raise ValueError(
-                f"Invalid YOLO version {subtype}. Supported YOLO versions are {[e.value for e in YOLOSubtype][:-1]}."
+                f"Invalid YOLO subtype {subtype}. Supported YOLO subtypes are {[e.value for e in YOLOSubtype][:-1]}."
             ) from err
 
     def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
