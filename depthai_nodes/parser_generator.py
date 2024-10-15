@@ -23,7 +23,7 @@ class ParserGenerator(dai.node.ThreadedHostNode):
         ----------
         nn_archive: dai.NNArchive
             NN Archive of the model.
-        head__index: int
+        head_index: int
             Index of the head to be used for parsing. If not provided, each head will instantiate a separate parser.
 
         Returns
