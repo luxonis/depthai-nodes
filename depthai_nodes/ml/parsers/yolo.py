@@ -200,7 +200,7 @@ class YOLOExtendedParser(BaseParser):
     def setSubtype(self, subtype: str) -> None:
         """Sets the subtype of the YOLO model.
 
-        @param subtype: The version of the YOLO model.
+        @param subtype: The subtype of the YOLO model.
         @type subtype: YOLOSubtype
         """
         try:
