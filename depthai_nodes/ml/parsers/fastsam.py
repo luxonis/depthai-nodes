@@ -66,12 +66,8 @@ class FastSAMParser(BaseParser):
         points: Optional[Tuple[int, int]] = None,
         point_label: Optional[int] = None,
         bbox: Optional[Tuple[int, int, int, int]] = None,
-        yolo_outputs: List[str] = (
-            "output1_yolov8",
-            "output2_yolov8",
-            "output3_yolov8",
-        ),
-        mask_outputs: List[str] = ("output1_masks", "output2_masks", "output3_masks"),
+        yolo_outputs: List[str] = None,
+        mask_outputs: List[str] = None,
         protos_output: str = "protos_output",
     ) -> None:
         """Initialize the FastSAMParser node.
@@ -108,8 +104,16 @@ class FastSAMParser(BaseParser):
         self.points = points
         self.point_label = point_label
         self.bbox = bbox
-        self.yolo_outputs = yolo_outputs
-        self.mask_outputs = mask_outputs
+        self.yolo_outputs = (
+            ["output1_yolov8", "output2_yolov8", "output3_yolov8"]
+            if yolo_outputs is None
+            else yolo_outputs
+        )
+        self.mask_outputs = (
+            ["output1_masks", "output2_masks", "output3_masks"]
+            if mask_outputs is None
+            else mask_outputs
+        )
         self.protos_output = protos_output
 
     def build(self, head_config: Dict[str, Any]) -> "FastSAMParser":
