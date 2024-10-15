@@ -198,7 +198,7 @@ class YOLOExtendedParser(BaseParser):
         self.anchors = anchors
 
     def setSubtype(self, subtype: str) -> None:
-        """Sets the version of the YOLO model.
+        """Sets the subtype of the YOLO model.
 
         @param subtype: The version of the YOLO model.
         @type subtype: YOLOSubtype
