@@ -32,11 +32,13 @@ def create_detection_message(
     @type angles: Optional[np.ndarray]
     @param labels: Labels of detected objects of shape (N,).
     @type labels: Optional[np.ndarray]
-    @param keypoints: Keypoints of detected objects of shape (N,2) or (N,3).
+    @param keypoints: Keypoints of detected objects of shape (N, n_keypoints, dim) where
+        dim is 2 or 3.
     @type keypoints: Optional[np.array]
     @param masks: Masks of detected objects of shape (N, H, W).
     @type masks: Optional[np.ndarray]
-    @param keypoints_scores: Confidence scores of detected keypoints of shape (N,).
+    @param keypoints_scores: Confidence scores of detected keypoints of shape (N,
+        n_keypoints, 1).
     @type keypoints_scores: Optional[np.ndarray]
     @return: Message containing the bounding boxes, labels, confidence scores, and
         keypoints of detected objects.
