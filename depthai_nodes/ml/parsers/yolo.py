@@ -13,7 +13,7 @@ from .utils.masks_utils import (
     reshape_seg_outputs,
 )
 from .utils.yolo import (
-    YOLOVersion,
+    YOLOSubtype,
     decode_yolo_output,
     parse_kpts,
 )
@@ -41,7 +41,7 @@ class YOLOExtendedParser(BaseParser):
         Number of keypoints in the model.
     anchors : Optional[List[np.ndarray]]
         Anchors for the YOLO model (optional).
-    yolo_version : str
+    subtype : str
         Version of the YOLO model.
 
 
@@ -64,7 +64,7 @@ class YOLOExtendedParser(BaseParser):
         mask_conf: float = 0.5,
         n_keypoints: int = 17,
         anchors: Optional[List[np.ndarray]] = None,
-        yolo_version: str = "",
+        subtype: str = "",
     ):
         """Initialize the YOLOExtendedParser node.
 
@@ -80,8 +80,8 @@ class YOLOExtendedParser(BaseParser):
         @type n_keypoints: int
         @param anchors: The anchors for the YOLO model
         @type anchors: Optional[List[np.ndarray]]
-        @param yolo_version: The version of the YOLO model
-        @type yolo_version: str
+        @param subtype: The version of the YOLO model
+        @type subtype: str
         """
         super().__init__()
 
@@ -93,10 +93,10 @@ class YOLOExtendedParser(BaseParser):
         self.n_keypoints = n_keypoints
         self.anchors = anchors
         try:
-            self.yolo_version = YOLOVersion(yolo_version.lower())
+            self.subtype = YOLOSubtype(subtype.lower())
         except ValueError as err:
             raise ValueError(
-                f"Invalid YOLO version {yolo_version}. Supported YOLO versions are {[e.value for e in YOLOVersion][:-1]}."
+                f"Invalid YOLO version {subtype}. Supported YOLO versions are {[e.value for e in YOLOSubtype][:-1]}."
             ) from err
 
     def build(
@@ -139,12 +139,12 @@ class YOLOExtendedParser(BaseParser):
         self.mask_conf = head_config.get("mask_conf", self.mask_conf)
         self.anchors = head_config.get("anchors", self.anchors)
         self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
-        yolo_version = head_config.get("subtype", self.yolo_version)
+        subtype = head_config.get("subtype", self.subtype)
         try:
-            self.yolo_version = YOLOVersion(yolo_version.lower())
+            self.subtype = YOLOSubtype(subtype.lower())
         except ValueError as err:
             raise ValueError(
-                f"Invalid YOLO version {yolo_version}. Supported YOLO versions are {[e.value for e in YOLOVersion][:-1]}."
+                f"Invalid YOLO version {subtype}. Supported YOLO versions are {[e.value for e in YOLOSubtype][:-1]}."
             ) from err
 
         return self
@@ -197,17 +197,17 @@ class YOLOExtendedParser(BaseParser):
         """
         self.anchors = anchors
 
-    def setYoloVersion(self, yolo_version: str) -> None:
+    def setSubtype(self, subtype: str) -> None:
         """Sets the version of the YOLO model.
 
-        @param yolo_version: The version of the YOLO model.
-        @type yolo_version: YOLOVersion
+        @param subtype: The version of the YOLO model.
+        @type subtype: YOLOSubtype
         """
         try:
-            self.yolo_version = YOLOVersion(yolo_version.lower())
+            self.subtype = YOLOSubtype(subtype.lower())
         except ValueError as err:
             raise ValueError(
-                f"Invalid YOLO version {yolo_version}. Supported YOLO versions are {[e.value for e in YOLOVersion][:-1]}."
+                f"Invalid YOLO version {subtype}. Supported YOLO versions are {[e.value for e in YOLOSubtype][:-1]}."
             ) from err
 
     def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
@@ -237,7 +237,7 @@ class YOLOExtendedParser(BaseParser):
 
             if (
                 any("kpt_output" in name for name in layer_names)
-                and self.yolo_version != YOLOVersion.P
+                and self.subtype != YOLOSubtype.P
             ):
                 mode = self._KPTS_MODE
                 # Get the keypoint outputs
@@ -250,7 +250,7 @@ class YOLOExtendedParser(BaseParser):
                 ]
             elif (
                 any("_masks" in name for name in layer_names)
-                and self.yolo_version != YOLOVersion.P
+                and self.subtype != YOLOSubtype.P
             ):
                 mode = self._SEG_MODE
                 # Get the segmentation outputs
@@ -280,8 +280,8 @@ class YOLOExtendedParser(BaseParser):
             # Get the model's input shape
             strides = (
                 [8, 16, 32]
-                if self.yolo_version
-                not in [YOLOVersion.V3UT, YOLOVersion.V3T, YOLOVersion.V4T]
+                if self.subtype
+                not in [YOLOSubtype.V3UT, YOLOSubtype.V3T, YOLOSubtype.V4T]
                 else [16, 32]
             )
             input_shape = tuple(
@@ -298,7 +298,7 @@ class YOLOExtendedParser(BaseParser):
                 iou_thres=self.iou_threshold,
                 num_classes=self.n_classes,
                 det_mode=mode == self._DET_MODE,
-                yolo_version=self.yolo_version,
+                subtype=self.subtype,
             )
 
             bboxes, labels, scores, additional_output = [], [], [], []
