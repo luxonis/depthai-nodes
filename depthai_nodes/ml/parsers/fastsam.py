@@ -1,19 +1,20 @@
-from typing import Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import depthai as dai
 import numpy as np
 
 from ..messages.creators import create_sam_message
+from .base_parser import BaseParser
 from .utils.fastsam import (
     box_prompt,
     decode_fastsam_output,
     point_prompt,
     process_single_mask,
 )
-from .yolo import YOLOExtendedParser
+from .utils.yolo import get_segmentation_outputs, reshape_seg_outputs
 
 
-class FastSAMParser(YOLOExtendedParser):
+class FastSAMParser(BaseParser):
     """Parser class for parsing the output of the FastSAM model.
 
     Attributes
@@ -30,8 +31,6 @@ class FastSAMParser(YOLOExtendedParser):
         Non-maximum suppression threshold.
     mask_conf : float
         Mask confidence threshold.
-    input_shape : Tuple[int, int]
-        Shape of the input image.
     prompt : str
         Prompt type.
     points : Tuple[int, int]
@@ -40,6 +39,12 @@ class FastSAMParser(YOLOExtendedParser):
         Point label.
     bbox : Tuple[int, int, int, int]
         Bounding box.
+    yolo_outputs : List[str]
+        Names of the YOLO outputs.
+    mask_outputs : List[str]
+        Names of the mask outputs.
+    protos_output : str
+        Name of the protos output.
 
     Output Message/s
     ----------------
@@ -57,12 +62,18 @@ class FastSAMParser(YOLOExtendedParser):
         n_classes: int = 1,
         iou_threshold: int = 0.5,
         mask_conf: float = 0.5,
-        input_shape: Tuple[int, int] = (640, 640),
         prompt: str = "everything",
         points: Optional[Tuple[int, int]] = None,
         point_label: Optional[int] = None,
         bbox: Optional[Tuple[int, int, int, int]] = None,
-    ):
+        yolo_outputs: List[str] = (
+            "output1_yolov8",
+            "output2_yolov8",
+            "output3_yolov8",
+        ),
+        mask_outputs: List[str] = ("output1_masks", "output2_masks", "output3_masks"),
+        protos_output: str = "protos_output",
+    ) -> None:
         """Initialize the FastSAMParser node.
 
         @param conf_threshold: The confidence threshold for the detections
@@ -73,8 +84,6 @@ class FastSAMParser(YOLOExtendedParser):
         @type iou_threshold: float
         @param mask_conf: The mask confidence threshold
         @type mask_conf: float
-        @param input_shape: The shape of the input image
-        @type input_shape: Tuple[int, int]
         @param prompt: The prompt type
         @type prompt: str
         @param points: The points
@@ -83,57 +92,191 @@ class FastSAMParser(YOLOExtendedParser):
         @type point_label: Optional[int]
         @param bbox: The bounding box
         @type bbox: Optional[Tuple[int, int, int, int]]
+        @param yolo_outputs: The YOLO outputs
+        @type yolo_outputs: List[str]
+        @param mask_outputs: The mask outputs
+        @type mask_outputs: List[str]
+        @param protos_output: The protos output
+        @type protos_output: str
         """
-        YOLOExtendedParser.__init__(
-            self, conf_threshold, n_classes, iou_threshold, mask_conf
-        )
-        self.input_shape = input_shape
+        super().__init__()
+        self.conf_threshold = conf_threshold
+        self.n_classes = n_classes
+        self.iou_threshold = iou_threshold
+        self.mask_conf = mask_conf
         self.prompt = prompt
         self.points = points
         self.point_label = point_label
         self.bbox = bbox
+        self.yolo_outputs = yolo_outputs
+        self.mask_outputs = mask_outputs
+        self.protos_output = protos_output
 
-    def setInputImageSize(self, width, height):
-        """Sets the input image size.
+    def build(self, head_config: Dict[str, Any]) -> "FastSAMParser":
+        """Sets the head configuration for the parser.
 
-        @param width: The width of the input image
-        @type width: int
-        @param height: The height of the input image
-        @type height: int
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        FastSAMParser
+            Returns the parser object with the head configuration set.
         """
-        self.input_shape = (width, height)
 
-    def setPrompt(self, prompt):
+        output_layers = head_config["outputs"]
+        yolo_outputs = [name for name in output_layers if "_yolo" in name]
+        if len(yolo_outputs) != 0:
+            self.yolo_outputs = yolo_outputs
+
+        mask_outputs = [name for name in output_layers if "_masks" in name]
+        if len(mask_outputs) != 0:
+            self.mask_outputs = mask_outputs
+
+        self.protos_output = head_config.get("protos_output", self.protos_output)
+
+        self.conf_threshold = head_config.get("conf_threshold", self.conf_threshold)
+        self.n_classes = head_config.get("n_classes", self.n_classes)
+        self.iou_threshold = head_config.get("iou_threshold", self.iou_threshold)
+        self.mask_conf = head_config.get("mask_conf", self.mask_conf)
+        self.prompt = head_config.get("prompt", self.prompt)
+        self.points = head_config.get("points", self.points)
+        self.point_label = head_config.get("point_label", self.point_label)
+        self.bbox = head_config.get("bbox", self.bbox)
+
+        return self
+
+    def setConfidenceThreshold(self, threshold: float) -> None:
+        """Sets the confidence score threshold for detected faces.
+
+        @param threshold: Confidence score threshold for detected faces.
+        @type threshold: float
+        """
+        if not isinstance(threshold, float):
+            raise ValueError("Confidence threshold must be a float.")
+        if threshold < 0 or threshold > 1:
+            raise ValueError("Confidence threshold must be between 0 and 1.")
+        self.conf_threshold = threshold
+
+    def setNumClasses(self, n_classes: int) -> None:
+        """Sets the number of classes in the model.
+
+        @param numClasses: The number of classes in the model.
+        @type numClasses: int
+        """
+        if not isinstance(n_classes, int):
+            raise ValueError("Number of classes must be an integer.")
+        self.n_classes = n_classes
+
+    def setIouThreshold(self, iou_threshold: float) -> None:
+        """Sets the intersection over union threshold.
+
+        @param iou_threshold: The intersection over union threshold.
+        @type iou_threshold: float
+        """
+        if not isinstance(iou_threshold, float):
+            raise ValueError("IOU threshold must be a float.")
+        if iou_threshold < 0 or iou_threshold > 1:
+            raise ValueError("IOU threshold must be between 0 and 1.")
+        self.iou_threshold = iou_threshold
+
+    def setMaskConfidence(self, mask_conf: float) -> None:
+        """Sets the mask confidence threshold.
+
+        @param mask_conf: The mask confidence threshold.
+        @type mask_conf: float
+        """
+        if not isinstance(mask_conf, float):
+            raise ValueError("Mask confidence must be a float.")
+        if mask_conf < 0 or mask_conf > 1:
+            raise ValueError("Mask confidence must be between 0 and 1.")
+        self.mask_conf = mask_conf
+
+    def setPrompt(self, prompt: str) -> None:
         """Sets the prompt type.
 
         @param prompt: The prompt type
         @type prompt: str
         """
+        if not isinstance(prompt, str):
+            raise ValueError("Prompt must be a string.")
+        if prompt not in ["everything", "bbox", "point"]:
+            raise ValueError("Prompt must be one of 'everything', 'bbox', or 'point'")
         self.prompt = prompt
 
-    def setPoints(self, points):
+    def setPoints(self, points: Tuple[int, int]) -> None:
         """Sets the points.
 
         @param points: The points
         @type points: Tuple[int, int]
         """
+        if not isinstance(points, tuple):
+            raise ValueError("Points must be a tuple.")
+        if len(points) != 2:
+            raise ValueError("Points must be a tuple of length 2.")
+        if not all(isinstance(p, int) for p in points):
+            raise ValueError("Point elements must be integers.")
         self.points = points
 
-    def setPointLabel(self, point_label):
+    def setPointLabel(self, point_label: int) -> None:
         """Sets the point label.
 
         @param point_label: The point label
         @type point_label: int
         """
+        if not isinstance(point_label, int):
+            raise ValueError("Point label must be an integer.")
         self.point_label = point_label
 
-    def setBoundingBox(self, bbox):
+    def setBoundingBox(self, bbox: Tuple[int, int, int, int]) -> None:
         """Sets the bounding box.
 
         @param bbox: The bounding box
         @type bbox: Tuple[int, int, int, int]
         """
+        if not isinstance(bbox, tuple):
+            raise ValueError("Bounding box must be a tuple.")
+        if len(bbox) != 4:
+            raise ValueError("Bounding box must be a tuple of length 4.")
+        if not all(isinstance(b, int) for b in bbox):
+            raise ValueError("Bounding box elements must be integers.")
         self.bbox = bbox
+
+    def setYoloOutputs(self, yolo_outputs: List[str]) -> None:
+        """Sets the YOLO outputs.
+
+        @param yolo_outputs: The YOLO outputs
+        @type yolo_outputs: List[str]
+        """
+        if not isinstance(yolo_outputs, list):
+            raise ValueError("YOLO outputs must be a list.")
+        if not all(isinstance(o, str) for o in yolo_outputs):
+            raise ValueError("YOLO outputs must be a list of strings.")
+        self.yolo_outputs = yolo_outputs
+
+    def setMaskOutputs(self, mask_outputs: List[str]) -> None:
+        """Sets the mask outputs.
+
+        @param mask_outputs: The mask outputs
+        @type mask_outputs: List[str]
+        """
+        if not isinstance(mask_outputs, list):
+            raise ValueError("Mask outputs must be a list.")
+        if not all(isinstance(o, str) for o in mask_outputs):
+            raise ValueError("Mask outputs must be a list of strings.")
+        self.mask_outputs = mask_outputs
+
+    def setProtosOutput(self, protos_output: str) -> None:
+        """Sets the protos output.
+
+        @param protos_output: The protos output
+        @type protos_output: str
+        """
+        if not isinstance(protos_output, str):
+            raise ValueError("Protos output must be a string.")
+        self.protos_output = protos_output
 
     def run(self):
         if self.prompt not in ["everything", "bbox", "point"]:
@@ -144,10 +287,8 @@ class FastSAMParser(YOLOExtendedParser):
                 output: dai.NNData = self.input.get()
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped, no more data
-            # Get all the layer names
-            layer_names = output.getAllLayerNames()
 
-            outputs_names = sorted([name for name in layer_names if "_yolo" in name])
+            outputs_names = sorted([name for name in self.yolo_outputs])
             outputs_values = [
                 output.getTensor(o, dequantize=True).astype(np.float32)
                 for o in outputs_names
@@ -157,7 +298,7 @@ class FastSAMParser(YOLOExtendedParser):
                 masks_outputs_values,
                 protos_output,
                 protos_len,
-            ) = self._get_segmentation_outputs(output)
+            ) = get_segmentation_outputs(output, self.mask_outputs, self.protos_output)
 
             if (
                 len(outputs_values[0].shape) == 4
@@ -169,16 +310,19 @@ class FastSAMParser(YOLOExtendedParser):
                     protos_output,
                     protos_len,
                     masks_outputs_values,
-                ) = self._reshape_seg_outputs(
-                    protos_output, protos_len, masks_outputs_values
-                )
+                ) = reshape_seg_outputs(protos_output, protos_len, masks_outputs_values)
+
+            # determine the input shape of the model from the first output
+            width = outputs_values[0].shape[3] * 8
+            height = outputs_values[0].shape[2] * 8
+            input_shape = (width, height)
 
             # Decode the outputs
             results = decode_fastsam_output(
                 outputs_values,
                 [8, 16, 32],
                 [None, None, None],
-                img_shape=self.input_shape[::-1],
+                img_shape=input_shape[::-1],
                 conf_thres=self.conf_threshold,
                 iou_thres=self.iou_threshold,
                 num_classes=self.n_classes,
@@ -198,7 +342,7 @@ class FastSAMParser(YOLOExtendedParser):
                     0, ai * protos_len : (ai + 1) * protos_len, yi, xi
                 ]
                 mask = process_single_mask(
-                    protos_output[0], mask_coeff, self.mask_conf, self.input_shape, bbox
+                    protos_output[0], mask_coeff, self.mask_conf, input_shape, bbox
                 )
                 masks.append(mask)
 
@@ -207,7 +351,7 @@ class FastSAMParser(YOLOExtendedParser):
 
             if self.prompt == "bbox":
                 results_masks = box_prompt(
-                    results_masks, bbox=self.bbox, orig_shape=self.input_shape[::-1]
+                    results_masks, bbox=self.bbox, orig_shape=input_shape[::-1]
                 )
             elif self.prompt == "point":
                 results_masks = point_prompt(
@@ -215,7 +359,7 @@ class FastSAMParser(YOLOExtendedParser):
                     results_masks,
                     points=self.points,
                     pointlabel=self.point_label,
-                    orig_shape=self.input_shape[::-1],
+                    orig_shape=input_shape[::-1],
                 )
 
             segmentation_message = create_sam_message(results_masks)

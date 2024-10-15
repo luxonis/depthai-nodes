@@ -425,18 +425,20 @@ def decode_yolo_output(
 
 
 def get_segmentation_outputs(
-    output: dai.NNData, output_layer_names: Optional[List[str]] = None
+    output: dai.NNData,
+    mask_output_layer_names: Optional[List[str]] = None,
+    protos_output_layer_name: Optional[str] = None,
 ) -> Tuple[List[np.ndarray], np.ndarray, int]:
     """Get the segmentation outputs from the Neural Network data."""
     # Get all the layer names
-    layer_names = output_layer_names or output.getAllLayerNames()
-    mask_outputs = sorted([name for name in layer_names if "_masks" in name])
+    layer_names = mask_output_layer_names or output.getAllLayerNames()
+    mask_outputs = sorted([name for name in layer_names if "mask" in name])
     masks_outputs_values = [
         output.getTensor(o, dequantize=True).astype(np.float32) for o in mask_outputs
     ]
-    protos_output = output.getTensor("protos_output", dequantize=True).astype(
-        np.float32
-    )
+    protos_output = output.getTensor(
+        protos_output_layer_name or "protos_output", dequantize=True
+    ).astype(np.float32)
     protos_len = protos_output.shape[1]
     return masks_outputs_values, protos_output, protos_len
 
