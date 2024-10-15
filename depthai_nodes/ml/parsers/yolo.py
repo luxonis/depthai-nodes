@@ -7,13 +7,15 @@ import numpy as np
 from ..messages.creators import create_detection_message
 from .base_parser import BaseParser
 from .utils.bbox_format_converters import normalize_bboxes, xyxy_to_xywh
-from .utils.masks_utils import process_single_mask
+from .utils.masks_utils import (
+    get_segmentation_outputs,
+    process_single_mask,
+    reshape_seg_outputs,
+)
 from .utils.yolo import (
     YOLOVersion,
     decode_yolo_output,
-    get_segmentation_outputs,
     parse_kpts,
-    reshape_seg_outputs,
 )
 
 

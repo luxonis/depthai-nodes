@@ -11,7 +11,7 @@ from .utils.fastsam import (
     point_prompt,
     process_single_mask,
 )
-from .utils.yolo import get_segmentation_outputs, reshape_seg_outputs
+from .utils.masks_utils import get_segmentation_outputs, reshape_seg_outputs
 
 
 class FastSAMParser(BaseParser):
