@@ -138,7 +138,7 @@ class YOLOExtendedParser(BaseParser):
         self.mask_conf = head_config.get("mask_conf", self.mask_conf)
         self.anchors = head_config.get("anchors", self.anchors)
         self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
-        yolo_version = head_config.get("yolo_version", self.yolo_version)
+        yolo_version = head_config.get("subtype", self.yolo_version)
         try:
             self.yolo_version = YOLOVersion(yolo_version.lower())
         except ValueError as err:
