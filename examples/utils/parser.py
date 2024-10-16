@@ -160,7 +160,7 @@ def setup_parser(parser: dai.ThreadedNode, nn_archive: dai.NNArchive, parser_nam
     """Setup the parser with the NN archive."""
 
     extraParams = (
-        nn_archive.getConfig().getConfigV1().model.heads[0].metadata.extraParams
+        nn_archive.getConfig().model.heads[0].metadata.extraParams
     )
 
     if parser_name == "SCRFDParser":
