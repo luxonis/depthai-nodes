@@ -83,7 +83,7 @@ with dai.Pipeline() as pipeline:
         message = parser_queue.get()
 
         extraParams = (
-            nn_archive.getConfig().getConfigV1().model.heads[0].metadata.extraParams
+            nn_archive.getConfig().model.heads[0].metadata.extraParams
         )
         if visualize(frame, message, parser_name, extraParams):
             pipeline.stop()
