@@ -59,7 +59,7 @@ class HRNetParser(dai.node.ThreadedHostNode):
             _, map_h, map_w = heatmaps.shape
 
             scores = np.array([np.max(heatmap) for heatmap in heatmaps])
-            scores = np.clip(scores, 0, 1) # TODO: check why scores are sometimes >1
+            scores = np.clip(scores, 0, 1)  # TODO: check why scores are sometimes >1
 
             keypoints = np.array(
                 [
