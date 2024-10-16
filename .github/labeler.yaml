@@ -29,5 +29,3 @@ fix:
     - 'issue/*'
     - 'bugfix/*'
     - 'patch/*'
-release:
-  - base-branch: 'main'
