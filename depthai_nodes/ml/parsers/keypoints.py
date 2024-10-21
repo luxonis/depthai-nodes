@@ -20,6 +20,8 @@ class KeypointParser(BaseParser):
         Scale factor to divide the keypoints by.
     n_keypoints : int
         Number of keypoints the model detects.
+    score_threshold : float
+        Confidence score threshold for detected keypoints.
 
     Output Message/s
     ----------------
@@ -41,6 +43,7 @@ class KeypointParser(BaseParser):
         output_layer_name: str = "",
         scale_factor: float = 1.0,
         n_keypoints: int = None,
+        score_threshold: float = None
     ) -> None:
         """Initializes the parser node.
 
@@ -55,6 +58,7 @@ class KeypointParser(BaseParser):
         self.output_layer_name = output_layer_name
         self.scale_factor = scale_factor
         self.n_keypoints = n_keypoints
+        self.score_threshold = score_threshold
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
@@ -86,6 +90,16 @@ class KeypointParser(BaseParser):
             raise ValueError("Number of keypoints must be an integer.")
         self.n_keypoints = n_keypoints
 
+    def setScoreThreshold(self, threshold: float) -> None:
+        """Sets the confidence score threshold for the detected body keypoints.
+
+        @param threshold: Confidence score threshold for detected keypoints.
+        @type threshold: float
+        """
+        if not isinstance(threshold, float):
+            raise ValueError("Confidence threshold must be a float.")
+        self.score_threshold = threshold
+
     def build(
         self,
         head_config: Dict[str, Any],
@@ -111,6 +125,7 @@ class KeypointParser(BaseParser):
         self.output_layer_name = output_layers[0]
         self.scale_factor = head_config.get("scale_factor", self.scale_factor)
         self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
+        self.score_threshold = head_config.get("score_threshold", self.score_threshold)
 
         return self
 
