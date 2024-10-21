@@ -53,6 +53,16 @@ class PPTextDetectionParser(DetectionParser):
         )
         self.mask_threshold = mask_threshold
 
+    def setOutputLayerName(self, output_layer_name: str) -> None:
+        """Sets the name of the output layer.
+
+        @param output_layer_name: The name of the output layer.
+        @type output_layer_name: str
+        """
+        if not isinstance(output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
+        self.output_layer_name = output_layer_name
+
     def setMaskThreshold(self, mask_threshold: float = 0.25) -> None:
         """Sets the mask threshold for creating the mask from model output
         probabilities.

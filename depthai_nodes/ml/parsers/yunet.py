@@ -20,8 +20,8 @@ class YuNetParser(DetectionParser):
         Non-maximum suppression threshold.
     max_det : int
         Maximum number of detections to keep.
-    input_shape : Tuple[int, int]
-        Input shape.
+    input_size : Tuple[int, int]
+        Input size.
     loc_output_layer_name: str
         Name of the output layer containing the location predictions.
     conf_output_layer_name: str
@@ -41,7 +41,7 @@ class YuNetParser(DetectionParser):
         conf_threshold: float = 0.8,
         iou_threshold: float = 0.3,
         max_det: int = 5000,
-        input_shape: Tuple[int, int] = None,
+        input_size: Tuple[int, int] = None,
         loc_output_layer_name: str = None,
         conf_output_layer_name: str = None,
         iou_output_layer_name: str = None,
@@ -54,8 +54,8 @@ class YuNetParser(DetectionParser):
         @type iou_threshold: float
         @param max_det: Maximum number of detections to keep.
         @type max_det: int
-        @param input_shape: Input shape of the model (width, height).
-        @type input_shape: Tuple[int, int]
+        @param input_size: Input shape of the model (width, height).
+        @type input_size: Tuple[int, int]
         @param loc_output_layer_name: Output layer name for the location predictions.
         @type loc_output_layer_name: str
         @param conf_output_layer_name: Output layer name for the confidence predictions.
@@ -72,46 +72,48 @@ class YuNetParser(DetectionParser):
         self.loc_output_layer_name = loc_output_layer_name
         self.conf_output_layer_name = conf_output_layer_name
         self.iou_output_layer_name = iou_output_layer_name
-        self.input_shape = input_shape
+        self.input_size = input_size
 
-    def setInputShape(self, width: int, height: int) -> None:
-        """Sets the input shape.
+    def setInputSize(self, input_size: Tuple[int, int]) -> None:
+        """Sets the input size of the model.
 
-        @param height: Height of the input image.
-        @type height: int
-        @param width: Width of the input image.
-        @type width: int
+        @param input_size: Input size of the model (width, height).
+        @type input_size: list
         """
-        if not isinstance(width, int) or not isinstance(height, int):
-            raise ValueError("Width and height must be integers.")
-        self.input_shape = (width, height)
+        if not isinstance(input_size, tuple):
+            raise ValueError("Input size must be a tuple.")
+        if not all(isinstance(size, int) for size in input_size):
+            raise ValueError("Input size must be a tuple of integers.")
+        self.input_size = input_size
 
-    def setOutputLayerNames(
-        self,
-        loc_output_layer_name: str,
-        conf_output_layer_name: str,
-        iou_output_layer_name: str,
-    ) -> None:
-        """Sets the output layers.
+    def setOutputLayerLoc(self, loc_output_layer_name: str) -> None:
+        """Sets the name of the output layer containing the location predictions.
 
-        @param loc_output_layer_name: Output layer name for the location predictions.
+        @param loc_output_layer_name: Output layer name for the loc tensor.
         @type loc_output_layer_name: str
-        @param conf_output_layer_name: Output layer name for the confidence predictions.
+        """
+        if not isinstance(loc_output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
+        self.loc_output_layer_name = loc_output_layer_name
+
+    def setOutputLayerConf(self, conf_output_layer_name: str) -> None:
+        """Sets the name of the output layer containing the confidence predictions.
+
+        @param conf_output_layer_name: Output layer name for the conf tensor.
         @type conf_output_layer_name: str
-        @param iou_output_layer_name: Output layer name for the IoU predictions.
+        """
+        if not isinstance(conf_output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
+        self.conf_output_layer_name = conf_output_layer_name
+
+    def setOutputLayerIou(self, iou_output_layer_name: str) -> None:
+        """Sets the name of the output layer containing the IoU predictions.
+
+        @param iou_output_layer_name: Output layer name for the IoU tensor.
         @type iou_output_layer_name: str
         """
-        if not all(
-            isinstance(layer_name, str)
-            for layer_name in [
-                loc_output_layer_name,
-                conf_output_layer_name,
-                iou_output_layer_name,
-            ]
-        ):
-            raise ValueError("Output layer names must be strings.")
-        self.loc_output_layer_name = loc_output_layer_name
-        self.conf_output_layer_name = conf_output_layer_name
+        if not isinstance(iou_output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
         self.iou_output_layer_name = iou_output_layer_name
 
     def build(
@@ -237,7 +239,7 @@ class YuNetParser(DetectionParser):
 
             # decode detections
             bboxes, keypoints, scores = decode_detections(
-                input_shape=self.input_shape,
+                input_shape=self.input_size,
                 loc=loc,
                 conf=conf,
                 iou=iou,
@@ -256,7 +258,7 @@ class YuNetParser(DetectionParser):
                 bboxes=bboxes,
                 keypoints=keypoints,
                 scores=scores,
-                input_shape=self.input_shape,
+                input_shape=self.input_size,
             )
 
             # run nms

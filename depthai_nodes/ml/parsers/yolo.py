@@ -95,6 +95,14 @@ class YOLOExtendedParser(BaseParser):
                 f"Invalid YOLO version {subtype}. Supported YOLO versions are {[e.value for e in YOLOSubtype][:-1]}."
             ) from err
 
+    def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
+        """Sets the output layer names for the parser.
+
+        @param output_layer_names: The output layer names for the parser.
+        @type output_layer_names: List[str]
+        """
+        self.output_layer_names = output_layer_names
+
     def setConfidenceThreshold(self, threshold: float) -> None:
         """Sets the confidence score threshold for detected faces.
 
@@ -155,14 +163,6 @@ class YOLOExtendedParser(BaseParser):
             raise ValueError(
                 f"Invalid YOLO subtype {subtype}. Supported YOLO subtypes are {[e.value for e in YOLOSubtype][:-1]}."
             ) from err
-
-    def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
-        """Sets the output layer names for the parser.
-
-        @param output_layer_names: The output layer names for the parser.
-        @type output_layer_names: List[str]
-        """
-        self.output_layer_names = output_layer_names
 
     def build(
         self,

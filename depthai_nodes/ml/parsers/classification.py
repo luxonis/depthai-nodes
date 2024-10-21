@@ -52,6 +52,16 @@ class ClassificationParser(BaseParser):
         self.n_classes = len(self.classes)
         self.is_softmax = is_softmax
 
+    def setOutputLayerName(self, output_layer_name: str) -> None:
+        """Sets the name of the output layer.
+
+        @param output_layer_name: The name of the output layer.
+        @type output_layer_name: str
+        """
+        if not isinstance(output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
+        self.output_layer_name = output_layer_name
+
     def setClasses(self, classes: List[str]) -> None:
         """Sets the class names for the classification model.
 
@@ -77,16 +87,6 @@ class ClassificationParser(BaseParser):
         if not isinstance(is_softmax, bool):
             raise ValueError("is_softmax must be a boolean.")
         self.is_softmax = is_softmax
-
-    def setOutputLayerName(self, output_layer_name: str) -> None:
-        """Sets the name of the output layer.
-
-        @param output_layer_name: The name of the output layer.
-        @type output_layer_name: str
-        """
-        if not isinstance(output_layer_name, str):
-            raise ValueError("Output layer name must be a string.")
-        self.output_layer_name = output_layer_name
 
     def build(
         self,

@@ -84,18 +84,6 @@ class SCRFDParser(DetectionParser):
             raise ValueError("Output layer names must be a list of strings.")
         self.output_layer_names = output_layer_names
 
-    def setFeatStrideFPN(self, feat_stride_fpn: List[int]) -> None:
-        """Sets the feature stride of the FPN.
-
-        @param feat_stride_fpn: Feature stride of the FPN.
-        @type feat_stride_fpn: list
-        """
-        if not isinstance(feat_stride_fpn, list):
-            raise ValueError("Feature stride must be a list.")
-        if not all(isinstance(stride, int) for stride in feat_stride_fpn):
-            raise ValueError("Feature stride must be a list of integers.")
-        self.feat_stride_fpn = feat_stride_fpn
-
     def setInputSize(self, input_size: Tuple[int, int]) -> None:
         """Sets the input size of the model.
 
@@ -107,6 +95,18 @@ class SCRFDParser(DetectionParser):
         if not all(isinstance(size, int) for size in input_size):
             raise ValueError("Input size must be a tuple of integers.")
         self.input_size = input_size
+
+    def setFeatStrideFPN(self, feat_stride_fpn: List[int]) -> None:
+        """Sets the feature stride of the FPN.
+
+        @param feat_stride_fpn: Feature stride of the FPN.
+        @type feat_stride_fpn: list
+        """
+        if not isinstance(feat_stride_fpn, list):
+            raise ValueError("Feature stride must be a list.")
+        if not all(isinstance(stride, int) for stride in feat_stride_fpn):
+            raise ValueError("Feature stride must be a list of integers.")
+        self.feat_stride_fpn = feat_stride_fpn
 
     def setNumAnchors(self, num_anchors: int) -> None:
         """Sets the number of anchors.
