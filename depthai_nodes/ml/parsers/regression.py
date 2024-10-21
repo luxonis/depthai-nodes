@@ -61,7 +61,7 @@ class RegressionParser(BaseParser):
         RegressionParser
             Returns the parser object with the head configuration set.
         """
-        output_layers = head_config["outputs"]
+        output_layers = head_config.get("outputs", [])
         if len(output_layers) != 1:
             raise ValueError(
                 f"Only one output layer supported for Regression, got {output_layers} layers."

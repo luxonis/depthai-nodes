@@ -21,7 +21,7 @@ class SuperAnimalParser(KeypointParser):
         Number of keypoints.
     score_threshold : float
         Confidence score threshold for detected keypoints.
-    
+
     Output Message/s
     ----------------
     **Type**: Keypoints
@@ -47,7 +47,12 @@ class SuperAnimalParser(KeypointParser):
         @param scale_factor: Scale factor to divide the keypoints by.
         @type scale_factor: float
         """
-        super().__init__(output_layer_name, scale_factor=scale_factor, n_keypoints=n_keypoints, score_threshold=score_threshold)
+        super().__init__(
+            output_layer_name,
+            scale_factor=scale_factor,
+            n_keypoints=n_keypoints,
+            score_threshold=score_threshold,
+        )
 
     def build(
         self,

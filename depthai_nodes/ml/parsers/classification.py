@@ -105,15 +105,15 @@ class ClassificationParser(BaseParser):
             Returns the parser object with the head configuration set.
         """
 
-        output_layers = head_config["outputs"]
+        output_layers = head_config.get("outputs", [])
         if len(output_layers) != 1:
             raise ValueError(
                 f"Only one output layer supported for Classification, got {output_layers} layers."
             )
         self.output_layer_name = output_layers[0]
-        self.classes = head_config["classes"]
-        self.n_classes = head_config["n_classes"]
-        self.is_softmax = head_config["is_softmax"]
+        self.classes = head_config.get("classes", self.classes)
+        self.n_classes = head_config.get("n_classes", self.n_classes)
+        self.is_softmax = head_config.get("is_softmax", self.is_softmax)
 
         return self
 
@@ -125,7 +125,6 @@ class ClassificationParser(BaseParser):
                 break
 
             layers = output.getAllLayerNames()
-
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":

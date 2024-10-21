@@ -43,7 +43,7 @@ class KeypointParser(BaseParser):
         output_layer_name: str = "",
         scale_factor: float = 1.0,
         n_keypoints: int = None,
-        score_threshold: float = None
+        score_threshold: float = None,
     ) -> None:
         """Initializes the parser node.
 

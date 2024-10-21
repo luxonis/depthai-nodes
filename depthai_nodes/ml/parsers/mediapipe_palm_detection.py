@@ -113,13 +113,13 @@ class MPPalmDetectionParser(DetectionParser):
             Returns the parser object with the head configuration set.
         """
         super().build(head_config)
-        output_layers = head_config["outputs"]
+        output_layers = head_config.get("outputs", [])
         if len(output_layers) != 2:
             raise ValueError(
                 f"Only two output layers are supported for MPPalmDetectionParser, got {len(output_layers)} layers."
             )
         self.output_layer_names = output_layers
-        self.scale = head_config["scale"]
+        self.scale = head_config.get("scale", self.scale)
 
         return self
 

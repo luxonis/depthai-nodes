@@ -125,7 +125,7 @@ class MLSDParser(BaseParser):
             Returns the parser object with the head configuration set.
         """
 
-        output_layers = head_config["outputs"]
+        output_layers = head_config.get("outputs", [])
         if len(output_layers) != 2:
             raise ValueError(
                 f"Only two output layers are supported for MLSDParser, got {len(output_layers)} layers."
@@ -135,9 +135,9 @@ class MLSDParser(BaseParser):
                 self.output_layer_tpmap = layer
             elif "heat" in layer:
                 self.output_layer_heat = layer
-        self.topk_n = head_config["topk_n"]
-        self.score_thr = head_config["score_thr"]
-        self.dist_thr = head_config["dist_thr"]
+        self.topk_n = head_config.get("topk_n", self.topk_n)
+        self.score_thr = head_config.get("score_thr", self.score_thr)
+        self.dist_thr = head_config.get("dist_thr", self.dist_thr)
 
         return self
 

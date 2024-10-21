@@ -133,17 +133,22 @@ class YuNetParser(DetectionParser):
             Returns the parser object with the head configuration set.
         """
         super().build(head_config)
-        output_layers = head_config["outputs"]
+        output_layers = head_config.get("outputs", [])
         if len(output_layers) != 3:
             raise ValueError(
                 f"YuNetParser expects exactly 3 output layers, got {output_layers} layers."
             )
         for output_layer in output_layers:
-            self.loc_output_layer_name = output_layer if "loc" in output_layer else None
-            self.conf_output_layer_name = (
-                output_layer if "conf" in output_layer else None
-            )
-            self.iou_output_layer_name = output_layer if "iou" in output_layer else None
+            if "loc" in output_layer:
+                self.loc_output_layer_name = output_layer
+            elif "conf" in output_layer:
+                self.conf_output_layer_name = output_layer
+            elif "iou" in output_layer:
+                self.iou_output_layer_name = output_layer
+            else:
+                raise ValueError(
+                    f"Unexpected output layer {output_layer}. Only loc, conf, and iou output layers are supported."
+                )
 
         return self
 

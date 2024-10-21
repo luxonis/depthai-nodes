@@ -124,8 +124,12 @@ class ClassificationSequenceParser(ClassificationParser):
         """
         super().build(head_config)
         self.ignored_indexes = head_config.get("ignored_indexes", [])
-        self.remove_duplicates = head_config.get("remove_duplicates", False)
-        self.concatenate_classes = head_config.get("concatenate_classes", False)
+        self.remove_duplicates = head_config.get(
+            "remove_duplicates", self.remove_duplicates
+        )
+        self.concatenate_classes = head_config.get(
+            "concatenate_classes", self.concatenate_classes
+        )
 
         return self
 

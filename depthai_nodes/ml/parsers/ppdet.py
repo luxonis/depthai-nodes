@@ -88,7 +88,7 @@ class PPTextDetectionParser(DetectionParser):
             Returns the parser object with the head configuration set.
         """
         super().build(head_config)
-        self.mask_threshold = head_config.get("mask_threshold", 0.25)
+        self.mask_threshold = head_config.get("mask_threshold", self.mask_threshold)
 
         return self
 

@@ -136,7 +136,7 @@ class SCRFDParser(DetectionParser):
         """
         super().build(head_config)
 
-        output_layers = head_config["outputs"]
+        output_layers = head_config.get("outputs", [])
         score_layer_names = [layer for layer in output_layers if "score" in layer]
         bbox_layer_names = [layer for layer in output_layers if "bbox" in layer]
         kps_layer_names = [layer for layer in output_layers if "kps" in layer]

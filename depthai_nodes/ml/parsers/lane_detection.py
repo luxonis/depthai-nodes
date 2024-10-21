@@ -140,15 +140,17 @@ class LaneDetectionParser(BaseParser):
             Returns the parser object with the head configuration set.
         """
 
-        output_layers = head_config["outputs"]
+        output_layers = head_config.get("outputs", [])
         if len(output_layers) != 1:
             raise ValueError(
                 f"Only one output layer supported for LaneDetectionParser, got {len(output_layers)} layers."
             )
         self.output_layer_name = output_layers[0]
-        self.row_anchors = head_config["row_anchors"]
-        self.griding_num = head_config["griding_num"]
-        self.cls_num_per_lane = head_config["cls_num_per_lane"]
+        self.row_anchors = head_config.get("row_anchors", self.row_anchors)
+        self.griding_num = head_config.get("griding_num", self.griding_num)
+        self.cls_num_per_lane = head_config.get(
+            "cls_num_per_lane", self.cls_num_per_lane
+        )
 
         return self
 

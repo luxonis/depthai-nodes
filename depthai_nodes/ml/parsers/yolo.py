@@ -180,7 +180,7 @@ class YOLOExtendedParser(BaseParser):
             Returns the parser object with the head configuration set.
         """
 
-        output_layers = head_config["outputs"]
+        output_layers = head_config.get("outputs", [])
         bbox_layer_names = [name for name in output_layers if "_yolo" in name]
         kps_layer_names = [name for name in output_layers if "kpt_output" in name]
         masks_layer_names = [name for name in output_layers if "_masks" in name]
