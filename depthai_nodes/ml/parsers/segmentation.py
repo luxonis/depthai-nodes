@@ -18,8 +18,8 @@ class SegmentationParser(BaseParser):
         Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_name: str
         Name of the output layer from which the scores are extracted.
-    background_class : bool
-        Whether to add additional layer for background.
+    classes_in_one_layer : bool
+        Whether all classes are in one layer in the multi-class segmentation model. Default is False. If True, the parser will use np.max instead of np.argmax to get the class map.
 
     Output Message/s
     ----------------
@@ -35,7 +35,7 @@ class SegmentationParser(BaseParser):
     """
 
     def __init__(
-        self, output_layer_name: str = "", background_class: bool = False
+        self, output_layer_name: str = "", classes_in_one_layer: bool = False
     ) -> None:
         """Initializes the SegmentationParser node.
 
@@ -47,7 +47,7 @@ class SegmentationParser(BaseParser):
         """
         super().__init__()
         self.output_layer_name = output_layer_name
-        self.background_class = background_class
+        self.classes_in_one_layer = classes_in_one_layer
 
     def build(
         self,
@@ -72,7 +72,9 @@ class SegmentationParser(BaseParser):
                 f"Only one output layer supported for Segmentation, got {output_layers} layers."
             )
         self.output_layer_name = output_layers[0]
-        self.background_class = head_config["background_class"]
+        self.classes_in_one_layer = head_config.get(
+            "classes_in_one_layer", self.classes_in_one_layer
+        )
 
         return self
 
@@ -86,15 +88,15 @@ class SegmentationParser(BaseParser):
             raise ValueError("Output layer name must be a string.")
         self.output_layer_name = output_layer_name
 
-    def setBackgroundClass(self, background_class: bool) -> None:
-        """Sets the background class.
+    def setClassesInOneLayer(self, classes_in_one_layer: bool) -> None:
+        """Sets the flag indicating whether all classes are in one layer.
 
-        @param background_class: Whether to add additional layer for background.
-        @type background_class: bool
+        @param classes_in_one_layer: Whether all classes are in one layer.
+        @type classes_in_one_layer: bool
         """
-        if not isinstance(background_class, bool):
-            raise ValueError("Background class must be a boolean.")
-        self.background_class = background_class
+        if not isinstance(classes_in_one_layer, bool):
+            raise ValueError("classes_in_one_layer must be a boolean.")
+        self.classes_in_one_layer = classes_in_one_layer
 
     def run(self):
         while self.isRunning():
@@ -123,22 +125,33 @@ class SegmentationParser(BaseParser):
                     f"Expected 3D output tensor, got {len(segmentation_mask.shape)}D."
                 )
 
+            np_function = np.argmax
             mask_shape = segmentation_mask.shape
             min_dim = np.argmin(mask_shape)
             if min_dim == len(mask_shape) - 1:
                 segmentation_mask = segmentation_mask.transpose(2, 0, 1)
-            if self.background_class:
-                segmentation_mask = np.vstack(
-                    (
-                        np.zeros(
-                            (1, segmentation_mask.shape[1], segmentation_mask.shape[2]),
-                            dtype=np.float32,
-                        ),
-                        segmentation_mask,
+            if segmentation_mask.shape[0] == 1:
+                # shape is (1, H, W)
+                if self.classes_in_one_layer:
+                    np_function = np.max
+                else:
+                    # If there is only one class, add a background class
+                    segmentation_mask = np.vstack(
+                        (
+                            np.zeros(
+                                (
+                                    1,
+                                    segmentation_mask.shape[1],
+                                    segmentation_mask.shape[2],
+                                ),
+                                dtype=np.float32,
+                            ),
+                            segmentation_mask,
+                        )
                     )
-                )
+
             class_map = (
-                np.argmax(segmentation_mask, axis=0)
+                np_function(segmentation_mask, axis=0)
                 .reshape(segmentation_mask.shape[1], segmentation_mask.shape[2], 1)
                 .astype(np.uint8)
             )
