@@ -12,12 +12,8 @@ class HRNetParser(KeypointParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_name: str
-        Name of the output layer from which the keypoints are extracted.
+        Name of the output layer relevant to the parser.
     score_threshold : float
         Confidence score threshold for detected keypoints.
 
@@ -31,8 +27,10 @@ class HRNetParser(KeypointParser):
     def __init__(
         self, output_layer_name: str = "heatmaps", score_threshold: float = 0.5
     ) -> None:
-        """Initializes the HRNetParser node.
+        """Initializes the parser node.
 
+        @param output_layer_name: Name of the output layer relevant to the parser.
+        @type output_layer_name: str
         @param score_threshold: Confidence score threshold for detected keypoints.
         @type score_threshold: float
         """
@@ -43,7 +41,7 @@ class HRNetParser(KeypointParser):
         self,
         head_config: Dict[str, Any],
     ) -> "HRNetParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------
@@ -95,7 +93,7 @@ class HRNetParser(KeypointParser):
             self.n_keypoints, map_h, map_w = heatmaps.shape
 
             scores = np.array([np.max(heatmap) for heatmap in heatmaps])
-            scores = np.clip(scores, 0, 1) # TODO: check why scores are sometimes >1
+            scores = np.clip(scores, 0, 1)  # TODO: check why scores are sometimes >1
 
             keypoints = np.array(
                 [

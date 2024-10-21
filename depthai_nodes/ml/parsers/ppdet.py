@@ -13,10 +13,8 @@ class PPTextDetectionParser(DetectionParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
+    output_layer_name: str
+        Name of the output layer relevant to the parser.
     mask_threshold : float
         The threshold for the mask.
     bbox_threshold : float
@@ -37,10 +35,9 @@ class PPTextDetectionParser(DetectionParser):
         mask_threshold: float = 0.25,
         max_det: int = 100,
     ) -> None:
-        """Initializes the PPTextDetectionParser node.
+        """Initializes the parser node.
 
-        @param output_layer_name: The name of the output layer from which the scores are
-            extracted.
+        @param output_layer_name: Name of the output layer relevant to the parser.
         @type output_layer_name: str
         @param mask_threshold: The threshold for the mask.
         @type mask_threshold: float
@@ -68,8 +65,7 @@ class PPTextDetectionParser(DetectionParser):
         self.mask_threshold = mask_threshold
 
     def build(self, head_config: Dict[str, Any]) -> "PPTextDetectionParser":
-        """Sets the head configuration for the parser. If any configuration parameters
-        are missing, default values are used.
+        """Configures the parser.
 
         Attributes
         ----------

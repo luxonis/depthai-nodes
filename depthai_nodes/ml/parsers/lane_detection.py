@@ -15,12 +15,8 @@ class LaneDetectionParser(BaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_name: str
-        Name of the output layer from which the scores are extracted.
+        Name of the output layer relevant to the parser.
     row_anchors : List[int]
         List of row anchors.
     griding_num : int
@@ -52,8 +48,7 @@ class LaneDetectionParser(BaseParser):
     ) -> None:
         """Initializes the lane detection parser node.
 
-        @param output_layer_name: Name of the output layer from which the results are
-            extracted.
+        @param output_layer_name: Name of the output layer relevant to the parser.
         @type output_layer_name: str
         @param row_anchors: List of row anchors.
         @type row_anchors: List[int]
@@ -76,7 +71,7 @@ class LaneDetectionParser(BaseParser):
         self,
         head_config: Dict[str, Any],
     ) -> "LaneDetectionParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------

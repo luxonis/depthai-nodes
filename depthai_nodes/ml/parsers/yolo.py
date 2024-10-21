@@ -25,10 +25,6 @@ class YOLOExtendedParser(BaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     conf_threshold : float
         Confidence score threshold for detected faces.
     n_classes : int
@@ -66,7 +62,7 @@ class YOLOExtendedParser(BaseParser):
         anchors: Optional[List[np.ndarray]] = None,
         subtype: str = "",
     ):
-        """Initialize the YOLOExtendedParser node.
+        """Initialize the parser node.
 
         @param conf_threshold: The confidence threshold for the detections
         @type conf_threshold: float
@@ -103,7 +99,7 @@ class YOLOExtendedParser(BaseParser):
         self,
         head_config: Dict[str, Any],
     ):
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------

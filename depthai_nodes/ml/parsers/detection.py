@@ -6,6 +6,30 @@ from .base_parser import BaseParser
 
 
 class DetectionParser(BaseParser):
+    """Parser class for parsing the output of a detection model. The parser expects the
+    output of the model to be in the (x_min, y_min, x_max, y_max, confidence) format. As
+    the result, the node sends out the detected objects in the form of a message
+    containing bounding boxes and confidence scores.
+
+    Attributes
+    ----------
+    output_layer_name: str
+        Name of the output layer relevant to the parser.
+    conf_threshold : float
+        Confidence score threshold of detected bounding boxes.
+    iou_threshold : float
+        Non-maximum suppression threshold.
+    max_det : int
+        Maximum number of detections to keep.
+
+    Output Message/s
+        -------
+        **Type**: ImgDetectionsExtended
+
+        **Description**: ImgDetectionsExtended message containing bounding boxes and confidence scores of detected objects.
+    ----------------
+    """
+
     def __init__(
         self,
         output_layer_name: str = "",
@@ -13,31 +37,16 @@ class DetectionParser(BaseParser):
         iou_threshold: float = 0.5,
         max_det: int = 100,
     ) -> None:
-        """Parser class for parsing the output of a detection model. The parser expects
-        the output of the model to be in the (x_min, y_min, x_max, y_max, confidence)
-        format. As the result, the node sends out the detected objects in the form of a
-        message containing bounding boxes and confidence scores.
+        """Initializes the parser node.
 
-        Attributes
-        ----------
-        input : Node.Input
-            Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-        out : Node.Output
-            Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.Parser sends the processed network results to this output in form of messages. It is a linking point from which the processed network results are retrieved.
-        @param output_layer_name: The name of the output layer(s) from which the scores are extracted.
-        @type output_layer_name: Union[str, List[str]]
+        @param output_layer_name: Name of the output layer relevant to the parser.
+        @type output_layer_name: str
         @param conf_threshold: Confidence score threshold of detected bounding boxes.
         @type conf_threshold: float
         @param iou_threshold: Non-maximum suppression threshold.
         @type iou_threshold: float
         @param max_det: Maximum number of detections to keep.
         @type max_det: int
-
-        Output Message/s
-        -------
-        **Type**: ImgDetectionsExtended
-
-        **Description**: ImgDetectionsExtended message containing bounding boxes and confidence scores of detected objects.
         """
         super().__init__()
         self.output_layer_name = output_layer_name
@@ -50,7 +59,7 @@ class DetectionParser(BaseParser):
 
         @param output_layer_name: The name of the output layer(s) from which the scores
             are extracted.
-        @type output_layer_name: Union[str, List[str]]
+        @type output_layer_name: str
         """
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
@@ -87,7 +96,7 @@ class DetectionParser(BaseParser):
         self.max_det = max_det
 
     def build(self, head_config) -> "DetectionParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------

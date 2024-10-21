@@ -14,12 +14,8 @@ class KeypointParser(BaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_name: str
-        Name of the output layer from which the scores are extracted.
+        Name of the output layer relevant to the parser.
     scale_factor : float
         Scale factor to divide the keypoints by.
     n_keypoints : int
@@ -46,10 +42,9 @@ class KeypointParser(BaseParser):
         scale_factor: float = 1.0,
         n_keypoints: int = None,
     ) -> None:
-        """Initializes KeypointParser node.
+        """Initializes the parser node.
 
-        @param output_layer_name: Name of the output layer from which the keypoints are
-            extracted.
+        @param output_layer_name: Name of the output layer relevant to the parser.
         @type output_layer_name: str
         @param scale_factor: Scale factor to divide the keypoints by.
         @type scale_factor: float
@@ -65,7 +60,7 @@ class KeypointParser(BaseParser):
         self,
         head_config: Dict[str, Any],
     ) -> "KeypointParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------

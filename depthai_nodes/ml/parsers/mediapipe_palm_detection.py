@@ -16,10 +16,8 @@ class MPPalmDetectionParser(DetectionParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.Parser sends the processed network results to this output in form of messages. It is a linking point from which the processed network results are retrieved.
+    output_layer_names: List[str]
+        Names of the output layers relevant to the parser.
     conf_threshold : float
         Confidence score threshold for detected hands.
     iou_threshold : float
@@ -49,9 +47,9 @@ class MPPalmDetectionParser(DetectionParser):
         max_det: int = 100,
         scale: int = 192,
     ) -> None:
-        """Initializes the MPPalmDetectionParser node.
+        """Initializes the parser node.
 
-        @param output_layer_names: The name of the output layers for the parser.
+        @param output_layer_names: Names of the output layers relevant to the parser.
         @type output_layer_names: List[str]
         @param conf_threshold: Confidence score threshold for detected hands.
         @type conf_threshold: float
@@ -75,7 +73,7 @@ class MPPalmDetectionParser(DetectionParser):
         self,
         head_config: Dict[str, Any],
     ) -> "MPPalmDetectionParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------

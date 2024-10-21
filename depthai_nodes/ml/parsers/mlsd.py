@@ -15,10 +15,6 @@ class MLSDParser(BaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_tpmap : str
         Name of the output layer containing the tpMap tensor.
     output_layer_heat : str
@@ -45,7 +41,7 @@ class MLSDParser(BaseParser):
         score_thr: float = 0.10,
         dist_thr: float = 20.0,
     ) -> None:
-        """Initializes the MLSDParser node.
+        """Initializes the parser node.
 
         @param topk_n: Number of top candidates to keep.
         @type topk_n: int
@@ -66,7 +62,7 @@ class MLSDParser(BaseParser):
         self,
         head_config: Dict[str, Any],
     ) -> "MLSDParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------

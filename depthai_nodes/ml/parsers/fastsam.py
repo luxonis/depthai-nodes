@@ -19,10 +19,6 @@ class FastSAMParser(BaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     conf_threshold : float
         Confidence score threshold for detected faces.
     n_classes : int
@@ -70,7 +66,7 @@ class FastSAMParser(BaseParser):
         mask_outputs: List[str] = None,
         protos_output: str = "protos_output",
     ) -> None:
-        """Initialize the FastSAMParser node.
+        """Initializes the parser node.
 
         @param conf_threshold: The confidence threshold for the detections
         @type conf_threshold: float
@@ -117,7 +113,7 @@ class FastSAMParser(BaseParser):
         self.protos_output = protos_output
 
     def build(self, head_config: Dict[str, Any]) -> "FastSAMParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------

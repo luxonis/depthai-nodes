@@ -1,7 +1,6 @@
 from typing import Any, Dict, Tuple
 
 import depthai as dai
-import numpy as np
 
 from ..messages.creators import create_detection_message
 from .detection import DetectionParser
@@ -15,16 +14,20 @@ class YuNetParser(DetectionParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     conf_threshold : float
         Confidence score threshold for detected faces.
     iou_threshold : float
         Non-maximum suppression threshold.
     max_det : int
         Maximum number of detections to keep.
+    input_shape : Tuple[int, int]
+        Input shape.
+    loc_output_layer_name: str
+        Name of the output layer containing the location predictions.
+    conf_output_layer_name: str
+        Name of the output layer containing the confidence predictions.
+    iou_output_layer_name: str
+        Name of the output layer containing the IoU predictions.
 
     Output Message/s
     ----------------
@@ -43,7 +46,7 @@ class YuNetParser(DetectionParser):
         conf_output_layer_name: str = None,
         iou_output_layer_name: str = None,
     ) -> None:
-        """Initializes the YuNetParser node.
+        """Initializes the parser node.
 
         @param conf_threshold: Confidence score threshold for detected faces.
         @type conf_threshold: float
@@ -75,7 +78,7 @@ class YuNetParser(DetectionParser):
         self,
         head_config: Dict[str, Any],
     ) -> "YuNetParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------

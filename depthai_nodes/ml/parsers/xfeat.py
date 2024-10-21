@@ -14,14 +14,10 @@ class XFeatBaseParser(BaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input used in mono mode. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
     reference_input : Node.Input
         Reference input for stereo mode. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
     target_input : Node.Input
         Target input for stereo mode. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_feats : str
         Name of the output layer containing features.
     output_layer_keypoints : str
@@ -55,7 +51,7 @@ class XFeatBaseParser(BaseParser):
         input_size: Tuple[float, float] = (640, 352),
         max_keypoints: int = 4096,
     ) -> None:
-        """Initializes the XFeatBaseParser node."""
+        """Initializes the parser node."""
         super().__init__()
         self._target_input = self.createInput()  # used in stereo mode
 
@@ -90,7 +86,7 @@ class XFeatBaseParser(BaseParser):
         self,
         head_config: Dict[str, Any],
     ) -> "XFeatBaseParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------
@@ -242,10 +238,6 @@ class XFeatMonoParser(XFeatBaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_feats : str
         Name of the output layer containing features.
     output_layer_keypoints : str

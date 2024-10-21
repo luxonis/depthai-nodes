@@ -12,12 +12,8 @@ class SegmentationParser(BaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_name: str
-        Name of the output layer from which the scores are extracted.
+        Name of the output layer relevant to the parser.
     classes_in_one_layer : bool
         Whether all classes are in one layer in the multi-class segmentation model. Default is False. If True, the parser will use np.max instead of np.argmax to get the class map.
 
@@ -37,13 +33,14 @@ class SegmentationParser(BaseParser):
     def __init__(
         self, output_layer_name: str = "", classes_in_one_layer: bool = False
     ) -> None:
-        """Initializes the SegmentationParser node.
+        """Initializes the parser node.
 
-        @param output_layer_name: Name of the output layer from which the scores are
-            extracted.
+        @param output_layer_name: Name of the output layer relevant to the parser.
         @type output_layer_name: str
-        @param background_class: Whether to add additional layer for background.
-        @type background_class: bool
+        @param classes_in_one_layer: Whether all classes are in one layer in the multi-
+            class segmentation model. Default is False. If True, the parser will use
+            np.max instead of np.argmax to get the class map.
+        @type classes_in_one_layer: bool
         """
         super().__init__()
         self.output_layer_name = output_layer_name
@@ -53,7 +50,7 @@ class SegmentationParser(BaseParser):
         self,
         head_config: Dict[str, Any],
     ) -> "SegmentationParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------

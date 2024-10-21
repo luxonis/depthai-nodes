@@ -13,12 +13,8 @@ class SuperAnimalParser(KeypointParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_name: str
-        Name of the output layer from which the scores are extracted.
+        Name of the output layer relevant to the parser.
     n_keypoints : int
         Number of keypoints.
     score_threshold : float
@@ -40,10 +36,9 @@ class SuperAnimalParser(KeypointParser):
         score_threshold: float = 0.5,
         scale_factor: float = 256.0,
     ) -> None:
-        """Initializes the SuperAnimalParser node.
+        """Initializes the parser node.
 
-        @param output_layer_name: Name of the output layer from which the keypoints are
-            extracted.
+        @param output_layer_name: Name of the output layer relevant to the parser.
         @type output_layer_name: str
         @param n_keypoints: Number of keypoints.
         @type n_keypoints: int
@@ -61,7 +56,7 @@ class SuperAnimalParser(KeypointParser):
         self,
         head_config: Dict[str, Any],
     ) -> "SuperAnimalParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------

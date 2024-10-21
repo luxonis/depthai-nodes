@@ -13,12 +13,8 @@ class ImageOutputParser(BaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_name: str
-        Name of the output layer from which the image output is extracted.
+        Name of the output layer relevant to the parser.
     output_is_bgr : bool
         Flag indicating if the output image is in BGR (Blue-Green-Red) format.
 
@@ -38,8 +34,10 @@ class ImageOutputParser(BaseParser):
     def __init__(
         self, output_layer_name: str = "", output_is_bgr: bool = False
     ) -> None:
-        """Initializes ImageOutputParser node.
+        """Initializes the parser node.
 
+        param output_layer_name: Name of the output layer relevant to the parser.
+        type output_layer_name: str
         @param output_is_bgr: Flag indicating if the output image is in BGR.
         @type output_is_bgr: bool
         """
@@ -51,7 +49,7 @@ class ImageOutputParser(BaseParser):
         self,
         head_config: Dict[str, Any],
     ) -> "ImageOutputParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------

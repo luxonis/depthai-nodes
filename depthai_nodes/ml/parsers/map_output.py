@@ -12,12 +12,8 @@ class MapOutputParser(BaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_name: str
-        Name of the output layer from which the map output is extracted.
+        Name of the output layer relevant to the parser.
     min_max_scaling : bool
         If True, the map is scaled to the range [0, 1].
 
@@ -33,7 +29,13 @@ class MapOutputParser(BaseParser):
         output_layer_name: str = "",
         min_max_scaling: bool = False,
     ) -> None:
-        """Initializes the MapOutputParser node."""
+        """Initializes the parser node.
+
+        @param output_layer_name: Name of the output layer relevant to the parser.
+        @type output_layer_name: str
+        @param min_max_scaling: If True, the map is scaled to the range [0, 1].
+        @type min_max_scaling: bool
+        """
         super().__init__()
         self.min_max_scaling = min_max_scaling
         self.output_layer_name = output_layer_name
@@ -42,7 +44,7 @@ class MapOutputParser(BaseParser):
         self,
         head_config: Dict[str, Any],
     ) -> "MapOutputParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------
