@@ -74,6 +74,14 @@ class HRNetParser(KeypointParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
+            layers = output.getAllLayerNames()
+            if len(layers) == 1 and self.output_layer_name == "":
+                self.output_layer_name = layers[0]
+            elif len(layers) != 1 and self.output_layer_name == "":
+                raise ValueError(
+                    f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
+                )
+
             heatmaps = output.getTensor(
                 self.output_layer_name,
                 dai.TensorInfo.StorageOrder.NCHW,  # this signals DAI to return output as NCHW

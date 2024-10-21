@@ -103,7 +103,6 @@ class SegmentationParser(BaseParser):
                 break  # Pipeline was stopped
 
             layers = output.getAllLayerNames()
-
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":
