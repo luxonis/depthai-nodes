@@ -95,6 +95,7 @@ class HRNetParser(KeypointParser):
             self.n_keypoints, map_h, map_w = heatmaps.shape
 
             scores = np.array([np.max(heatmap) for heatmap in heatmaps])
+            scores = np.clip(scores, 0, 1) # TODO: check why scores are sometimes >1
 
             keypoints = np.array(
                 [
