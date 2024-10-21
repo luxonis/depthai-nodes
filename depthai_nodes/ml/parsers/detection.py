@@ -28,9 +28,9 @@ class DetectionParser(BaseParser):
 
     def __init__(
         self,
-        conf_threshold: float = 0.5,
-        iou_threshold: float = 0.5,
-        max_det: int = 100,
+        conf_threshold: float,
+        iou_threshold: float,
+        max_det: int,
     ) -> None:
         """Initializes the parser node.
 
