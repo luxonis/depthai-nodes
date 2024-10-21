@@ -25,7 +25,7 @@ class HRNetParser(KeypointParser):
     """
 
     def __init__(
-        self, output_layer_name: str = "heatmaps", score_threshold: float = 0.5
+        self, output_layer_name: str = "", score_threshold: float = 0.5
     ) -> None:
         """Initializes the parser node.
 
