@@ -227,4 +227,4 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         return self._getConfig().model.metadata.name
 
     def _getConfig(self):
-        return self._nn_archive.getConfig().getConfigV1()
+        return self._nn_archive.getConfig()
