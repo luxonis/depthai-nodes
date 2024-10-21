@@ -74,37 +74,6 @@ class YuNetParser(DetectionParser):
         self.iou_output_layer_name = iou_output_layer_name
         self.input_shape = input_shape
 
-    def build(
-        self,
-        head_config: Dict[str, Any],
-    ) -> "YuNetParser":
-        """Configures the parser.
-
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        YuNetParser
-            Returns the parser object with the head configuration set.
-        """
-        super().build(head_config)
-        output_layers = head_config["outputs"]
-        if len(output_layers) != 3:
-            raise ValueError(
-                f"YuNetParser expects exactly 3 output layers, got {output_layers} layers."
-            )
-        for output_layer in output_layers:
-            self.loc_output_layer_name = output_layer if "loc" in output_layer else None
-            self.conf_output_layer_name = (
-                output_layer if "conf" in output_layer else None
-            )
-            self.iou_output_layer_name = output_layer if "iou" in output_layer else None
-
-        return self
-
     def setInputShape(self, width: int, height: int) -> None:
         """Sets the input shape.
 
@@ -144,6 +113,37 @@ class YuNetParser(DetectionParser):
         self.loc_output_layer_name = loc_output_layer_name
         self.conf_output_layer_name = conf_output_layer_name
         self.iou_output_layer_name = iou_output_layer_name
+
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ) -> "YuNetParser":
+        """Configures the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        YuNetParser
+            Returns the parser object with the head configuration set.
+        """
+        super().build(head_config)
+        output_layers = head_config["outputs"]
+        if len(output_layers) != 3:
+            raise ValueError(
+                f"YuNetParser expects exactly 3 output layers, got {output_layers} layers."
+            )
+        for output_layer in output_layers:
+            self.loc_output_layer_name = output_layer if "loc" in output_layer else None
+            self.conf_output_layer_name = (
+                output_layer if "conf" in output_layer else None
+            )
+            self.iou_output_layer_name = output_layer if "iou" in output_layer else None
+
+        return self
 
     def run(self):
         while self.isRunning():

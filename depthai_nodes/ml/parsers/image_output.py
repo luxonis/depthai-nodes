@@ -45,6 +45,10 @@ class ImageOutputParser(BaseParser):
         self.output_layer_name = output_layer_name
         self.output_is_bgr = output_is_bgr
 
+    def setBGROutput(self) -> None:
+        """Sets the flag indicating that output image is in BGR."""
+        self.output_is_bgr = True
+
     def build(
         self,
         head_config: Dict[str, Any],
@@ -71,10 +75,6 @@ class ImageOutputParser(BaseParser):
         self.output_is_bgr = head_config.get("output_is_bgr", self.output_is_bgr)
 
         return self
-
-    def setBGROutput(self) -> None:
-        """Sets the flag indicating that output image is in BGR."""
-        self.output_is_bgr = True
 
     def run(self):
         while self.isRunning():

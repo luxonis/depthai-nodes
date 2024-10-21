@@ -37,6 +37,16 @@ class HRNetParser(KeypointParser):
         super().__init__(output_layer_name)
         self.score_threshold = score_threshold
 
+    def setScoreThreshold(self, threshold: float) -> None:
+        """Sets the confidence score threshold for the detected body keypoints.
+
+        @param threshold: Confidence score threshold for detected keypoints.
+        @type threshold: float
+        """
+        if not isinstance(threshold, float):
+            raise ValueError("Confidence threshold must be a float.")
+        self.score_threshold = threshold
+
     def build(
         self,
         head_config: Dict[str, Any],
@@ -58,16 +68,6 @@ class HRNetParser(KeypointParser):
         self.score_threshold = head_config.get("score_threshold", self.score_threshold)
 
         return self
-
-    def setScoreThreshold(self, threshold: float) -> None:
-        """Sets the confidence score threshold for the detected body keypoints.
-
-        @param threshold: Confidence score threshold for detected keypoints.
-        @type threshold: float
-        """
-        if not isinstance(threshold, float):
-            raise ValueError("Confidence threshold must be a float.")
-        self.score_threshold = threshold
 
     def run(self):
         while self.isRunning():

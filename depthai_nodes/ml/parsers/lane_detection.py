@@ -67,35 +67,6 @@ class LaneDetectionParser(BaseParser):
         self.cls_num_per_lane = cls_num_per_lane
         self.input_shape = input_shape
 
-    def build(
-        self,
-        head_config: Dict[str, Any],
-    ) -> "LaneDetectionParser":
-        """Configures the parser.
-
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        LaneDetectionParser
-            Returns the parser object with the head configuration set.
-        """
-
-        output_layers = head_config["outputs"]
-        if len(output_layers) != 1:
-            raise ValueError(
-                f"Only one output layer supported for LaneDetectionParser, got {len(output_layers)} layers."
-            )
-        self.output_layer_name = output_layers[0]
-        self.row_anchors = head_config["row_anchors"]
-        self.griding_num = head_config["griding_num"]
-        self.cls_num_per_lane = head_config["cls_num_per_lane"]
-
-        return self
-
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Set the output layer name for the lane detection model.
 
@@ -151,6 +122,35 @@ class LaneDetectionParser(BaseParser):
         if not all(isinstance(size, int) for size in input_shape):
             raise ValueError("Input shape must be a tuple of integers.")
         self.input_shape = input_shape
+
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ) -> "LaneDetectionParser":
+        """Configures the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        LaneDetectionParser
+            Returns the parser object with the head configuration set.
+        """
+
+        output_layers = head_config["outputs"]
+        if len(output_layers) != 1:
+            raise ValueError(
+                f"Only one output layer supported for LaneDetectionParser, got {len(output_layers)} layers."
+            )
+        self.output_layer_name = output_layers[0]
+        self.row_anchors = head_config["row_anchors"]
+        self.griding_num = head_config["griding_num"]
+        self.cls_num_per_lane = head_config["cls_num_per_lane"]
+
+        return self
 
     def run(self):
         if self.row_anchors is None:

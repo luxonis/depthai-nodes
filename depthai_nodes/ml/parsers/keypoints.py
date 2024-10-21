@@ -56,34 +56,6 @@ class KeypointParser(BaseParser):
         self.scale_factor = scale_factor
         self.n_keypoints = n_keypoints
 
-    def build(
-        self,
-        head_config: Dict[str, Any],
-    ) -> "KeypointParser":
-        """Configures the parser.
-
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        KeypointParser
-            Returns the parser object with the head configuration set.
-        """
-
-        output_layers = head_config["outputs"]
-        if len(output_layers) != 1:
-            raise ValueError(
-                f"Only one output layer supported for Keypoint, got {output_layers} layers."
-            )
-        self.output_layer_name = output_layers[0]
-        self.scale_factor = head_config.get("scale_factor", self.scale_factor)
-        self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
-
-        return self
-
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
 
@@ -113,6 +85,34 @@ class KeypointParser(BaseParser):
         if not isinstance(n_keypoints, int):
             raise ValueError("Number of keypoints must be an integer.")
         self.n_keypoints = n_keypoints
+
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ) -> "KeypointParser":
+        """Configures the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        KeypointParser
+            Returns the parser object with the head configuration set.
+        """
+
+        output_layers = head_config["outputs"]
+        if len(output_layers) != 1:
+            raise ValueError(
+                f"Only one output layer supported for Keypoint, got {output_layers} layers."
+            )
+        self.output_layer_name = output_layers[0]
+        self.scale_factor = head_config.get("scale_factor", self.scale_factor)
+        self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
+
+        return self
 
     def run(self):
         if self.n_keypoints is None:

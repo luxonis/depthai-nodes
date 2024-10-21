@@ -46,6 +46,26 @@ class SegmentationParser(BaseParser):
         self.output_layer_name = output_layer_name
         self.classes_in_one_layer = classes_in_one_layer
 
+    def setOutputLayerName(self, output_layer_name: str) -> None:
+        """Sets the name of the output layer.
+
+        @param output_layer_name: The name of the output layer.
+        @type output_layer_name: str
+        """
+        if not isinstance(output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
+        self.output_layer_name = output_layer_name
+
+    def setClassesInOneLayer(self, classes_in_one_layer: bool) -> None:
+        """Sets the flag indicating whether all classes are in one layer.
+
+        @param classes_in_one_layer: Whether all classes are in one layer.
+        @type classes_in_one_layer: bool
+        """
+        if not isinstance(classes_in_one_layer, bool):
+            raise ValueError("classes_in_one_layer must be a boolean.")
+        self.classes_in_one_layer = classes_in_one_layer
+
     def build(
         self,
         head_config: Dict[str, Any],
@@ -74,26 +94,6 @@ class SegmentationParser(BaseParser):
         )
 
         return self
-
-    def setOutputLayerName(self, output_layer_name: str) -> None:
-        """Sets the name of the output layer.
-
-        @param output_layer_name: The name of the output layer.
-        @type output_layer_name: str
-        """
-        if not isinstance(output_layer_name, str):
-            raise ValueError("Output layer name must be a string.")
-        self.output_layer_name = output_layer_name
-
-    def setClassesInOneLayer(self, classes_in_one_layer: bool) -> None:
-        """Sets the flag indicating whether all classes are in one layer.
-
-        @param classes_in_one_layer: Whether all classes are in one layer.
-        @type classes_in_one_layer: bool
-        """
-        if not isinstance(classes_in_one_layer, bool):
-            raise ValueError("classes_in_one_layer must be a boolean.")
-        self.classes_in_one_layer = classes_in_one_layer
 
     def run(self):
         while self.isRunning():

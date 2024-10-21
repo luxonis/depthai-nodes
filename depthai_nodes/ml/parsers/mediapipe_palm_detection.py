@@ -69,33 +69,6 @@ class MPPalmDetectionParser(DetectionParser):
         self.max_det = max_det
         self.scale = scale
 
-    def build(
-        self,
-        head_config: Dict[str, Any],
-    ) -> "MPPalmDetectionParser":
-        """Configures the parser.
-
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        MPPalmDetectionParser
-            Returns the parser object with the head configuration set.
-        """
-        super().build(head_config)
-        output_layers = head_config["outputs"]
-        if len(output_layers) != 2:
-            raise ValueError(
-                f"Only two output layers are supported for MPPalmDetectionParser, got {len(output_layers)} layers."
-            )
-        self.output_layer_names = output_layers
-        self.scale = head_config["scale"]
-
-        return self
-
     def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
         """Sets the output layer name(s) for the parser.
 
@@ -122,6 +95,33 @@ class MPPalmDetectionParser(DetectionParser):
         if not isinstance(scale, int):
             raise ValueError("Scale must be an integer.")
         self.scale = scale
+
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ) -> "MPPalmDetectionParser":
+        """Configures the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        MPPalmDetectionParser
+            Returns the parser object with the head configuration set.
+        """
+        super().build(head_config)
+        output_layers = head_config["outputs"]
+        if len(output_layers) != 2:
+            raise ValueError(
+                f"Only two output layers are supported for MPPalmDetectionParser, got {len(output_layers)} layers."
+            )
+        self.output_layer_names = output_layers
+        self.scale = head_config["scale"]
+
+        return self
 
     def run(self):
         while self.isRunning():

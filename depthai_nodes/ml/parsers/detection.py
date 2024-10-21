@@ -1,7 +1,3 @@
-import depthai as dai
-import numpy as np
-
-from ..messages.creators import create_detection_message
 from .base_parser import BaseParser
 
 

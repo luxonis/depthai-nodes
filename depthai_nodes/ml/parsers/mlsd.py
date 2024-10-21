@@ -58,39 +58,6 @@ class MLSDParser(BaseParser):
         self.score_thr = score_thr
         self.dist_thr = dist_thr
 
-    def build(
-        self,
-        head_config: Dict[str, Any],
-    ) -> "MLSDParser":
-        """Configures the parser.
-
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        MLSDParser
-            Returns the parser object with the head configuration set.
-        """
-
-        output_layers = head_config["outputs"]
-        if len(output_layers) != 2:
-            raise ValueError(
-                f"Only two output layers are supported for MLSDParser, got {len(output_layers)} layers."
-            )
-        for layer in output_layers:
-            if "tpMap" in layer:
-                self.output_layer_tpmap = layer
-            elif "heat" in layer:
-                self.output_layer_heat = layer
-        self.topk_n = head_config["topk_n"]
-        self.score_thr = head_config["score_thr"]
-        self.dist_thr = head_config["dist_thr"]
-
-        return self
-
     def setOutputLayerTPMap(self, output_layer_tpmap: str) -> None:
         """Sets the name of the output layer containing the tpMap tensor.
 
@@ -140,6 +107,39 @@ class MLSDParser(BaseParser):
         if not isinstance(dist_thr, float):
             raise ValueError("dist_thr must be a float.")
         self.dist_thr = dist_thr
+
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ) -> "MLSDParser":
+        """Configures the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        MLSDParser
+            Returns the parser object with the head configuration set.
+        """
+
+        output_layers = head_config["outputs"]
+        if len(output_layers) != 2:
+            raise ValueError(
+                f"Only two output layers are supported for MLSDParser, got {len(output_layers)} layers."
+            )
+        for layer in output_layers:
+            if "tpMap" in layer:
+                self.output_layer_tpmap = layer
+            elif "heat" in layer:
+                self.output_layer_heat = layer
+        self.topk_n = head_config["topk_n"]
+        self.score_thr = head_config["score_thr"]
+        self.dist_thr = head_config["dist_thr"]
+
+        return self
 
     def run(self):
         if self.output_layer_tpmap == "":

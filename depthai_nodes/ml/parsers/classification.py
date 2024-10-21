@@ -52,35 +52,6 @@ class ClassificationParser(BaseParser):
         self.n_classes = len(self.classes)
         self.is_softmax = is_softmax
 
-    def build(
-        self,
-        head_config: Dict[str, Any],
-    ) -> "ClassificationParser":
-        """Configures the parser.
-
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        ClassificationParser
-            Returns the parser object with the head configuration set.
-        """
-
-        output_layers = head_config["outputs"]
-        if len(output_layers) != 1:
-            raise ValueError(
-                f"Only one output layer supported for Classification, got {output_layers} layers."
-            )
-        self.output_layer_name = output_layers[0]
-        self.classes = head_config["classes"]
-        self.n_classes = head_config["n_classes"]
-        self.is_softmax = head_config["is_softmax"]
-
-        return self
-
     def setClasses(self, classes: List[str]) -> None:
         """Sets the class names for the classification model.
 
@@ -116,6 +87,35 @@ class ClassificationParser(BaseParser):
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
         self.output_layer_name = output_layer_name
+
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ) -> "ClassificationParser":
+        """Configures the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        ClassificationParser
+            Returns the parser object with the head configuration set.
+        """
+
+        output_layers = head_config["outputs"]
+        if len(output_layers) != 1:
+            raise ValueError(
+                f"Only one output layer supported for Classification, got {output_layers} layers."
+            )
+        self.output_layer_name = output_layers[0]
+        self.classes = head_config["classes"]
+        self.n_classes = head_config["n_classes"]
+        self.is_softmax = head_config["is_softmax"]
+
+        return self
 
     def run(self):
         while self.isRunning():

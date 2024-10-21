@@ -35,6 +35,16 @@ class RegressionParser(BaseParser):
         super().__init__()
         self.output_layer_name = output_layer_name
 
+    def setOutputLayerName(self, output_layer_name: str):
+        """Sets the name of the output layer.
+
+        @param output_layer_name: Name of the output layer relevant to the parser.
+        @type output_layer_name: str
+        """
+        if not isinstance(output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
+        self.output_layer_name = output_layer_name
+
     def build(
         self,
         head_config: Dict[str, Any],
@@ -59,16 +69,6 @@ class RegressionParser(BaseParser):
         self.output_layer_name = output_layers[0]
 
         return self
-
-    def setOutputLayerName(self, output_layer_name: str):
-        """Sets the name of the output layer.
-
-        @param output_layer_name: Name of the output layer relevant to the parser.
-        @type output_layer_name: str
-        """
-        if not isinstance(output_layer_name, str):
-            raise ValueError("Output layer name must be a string.")
-        self.output_layer_name = output_layer_name
 
     def run(self):
         while self.isRunning():

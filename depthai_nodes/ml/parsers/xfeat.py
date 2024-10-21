@@ -82,43 +82,6 @@ class XFeatBaseParser(BaseParser):
         """Sets the target input."""
         self._target_input = target_input
 
-    def build(
-        self,
-        head_config: Dict[str, Any],
-    ) -> "XFeatBaseParser":
-        """Configures the parser.
-
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        XFeatBaseParser
-            Returns the parser object with the head configuration set.
-        """
-
-        output_layers = head_config["outputs"]
-        if len(output_layers) != 3:
-            raise ValueError(
-                f"Only three output layers supported for XFeat, got {len(output_layers)} layers."
-            )
-
-        for layer in output_layers:
-            if "feats" in layer:
-                self.output_layer_feats = layer
-            elif "keypoints" in layer:
-                self.output_layer_keypoints = layer
-            elif "heatmaps" in layer:
-                self.output_layer_heatmaps = layer
-
-        self.original_size = head_config.get("original_size", self.original_size)
-        self.input_size = head_config.get("input_size", self.input_size)
-        self.max_keypoints = head_config.get("max_keypoints", self.max_keypoints)
-
-        return self
-
     def setOutputLayerFeats(self, output_layer_feats: str) -> None:
         """Sets the output layer containing features.
 
@@ -184,6 +147,43 @@ class XFeatBaseParser(BaseParser):
         if not isinstance(max_keypoints, int):
             raise ValueError("Maximum number of keypoints must be an int!")
         self.max_keypoints = max_keypoints
+
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ) -> "XFeatBaseParser":
+        """Configures the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        XFeatBaseParser
+            Returns the parser object with the head configuration set.
+        """
+
+        output_layers = head_config["outputs"]
+        if len(output_layers) != 3:
+            raise ValueError(
+                f"Only three output layers supported for XFeat, got {len(output_layers)} layers."
+            )
+
+        for layer in output_layers:
+            if "feats" in layer:
+                self.output_layer_feats = layer
+            elif "keypoints" in layer:
+                self.output_layer_keypoints = layer
+            elif "heatmaps" in layer:
+                self.output_layer_heatmaps = layer
+
+        self.original_size = head_config.get("original_size", self.original_size)
+        self.input_size = head_config.get("input_size", self.input_size)
+        self.max_keypoints = head_config.get("max_keypoints", self.max_keypoints)
+
+        return self
 
     def validateParams(self) -> None:
         """Validates the parameters."""

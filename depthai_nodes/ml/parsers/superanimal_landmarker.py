@@ -52,6 +52,16 @@ class SuperAnimalParser(KeypointParser):
 
         self.score_threshold = score_threshold
 
+    def setScoreThreshold(self, threshold: float) -> None:
+        """Sets the confidence score threshold for detected keypoints.
+
+        @param threshold: Confidence score threshold for detected keypoints.
+        @type threshold: float
+        """
+        if not isinstance(threshold, float):
+            raise ValueError("Score threshold must be a float.")
+        self.score_threshold = threshold
+
     def build(
         self,
         head_config: Dict[str, Any],
@@ -73,16 +83,6 @@ class SuperAnimalParser(KeypointParser):
         self.score_threshold = head_config["score_threshold"]
 
         return self
-
-    def setScoreThreshold(self, threshold: float) -> None:
-        """Sets the confidence score threshold for detected keypoints.
-
-        @param threshold: Confidence score threshold for detected keypoints.
-        @type threshold: float
-        """
-        if not isinstance(threshold, float):
-            raise ValueError("Score threshold must be a float.")
-        self.score_threshold = threshold
 
     def run(self):
         while self.isRunning():

@@ -112,42 +112,6 @@ class FastSAMParser(BaseParser):
         )
         self.protos_output = protos_output
 
-    def build(self, head_config: Dict[str, Any]) -> "FastSAMParser":
-        """Configures the parser.
-
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        FastSAMParser
-            Returns the parser object with the head configuration set.
-        """
-
-        output_layers = head_config["outputs"]
-        yolo_outputs = [name for name in output_layers if "_yolo" in name]
-        if len(yolo_outputs) != 0:
-            self.yolo_outputs = yolo_outputs
-
-        mask_outputs = [name for name in output_layers if "_masks" in name]
-        if len(mask_outputs) != 0:
-            self.mask_outputs = mask_outputs
-
-        self.protos_output = head_config.get("protos_output", self.protos_output)
-
-        self.conf_threshold = head_config.get("conf_threshold", self.conf_threshold)
-        self.n_classes = head_config.get("n_classes", self.n_classes)
-        self.iou_threshold = head_config.get("iou_threshold", self.iou_threshold)
-        self.mask_conf = head_config.get("mask_conf", self.mask_conf)
-        self.prompt = head_config.get("prompt", self.prompt)
-        self.points = head_config.get("points", self.points)
-        self.point_label = head_config.get("point_label", self.point_label)
-        self.bbox = head_config.get("bbox", self.bbox)
-
-        return self
-
     def setConfidenceThreshold(self, threshold: float) -> None:
         """Sets the confidence score threshold.
 
@@ -277,6 +241,42 @@ class FastSAMParser(BaseParser):
         if not isinstance(protos_output, str):
             raise ValueError("Protos output must be a string.")
         self.protos_output = protos_output
+
+    def build(self, head_config: Dict[str, Any]) -> "FastSAMParser":
+        """Configures the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        FastSAMParser
+            Returns the parser object with the head configuration set.
+        """
+
+        output_layers = head_config["outputs"]
+        yolo_outputs = [name for name in output_layers if "_yolo" in name]
+        if len(yolo_outputs) != 0:
+            self.yolo_outputs = yolo_outputs
+
+        mask_outputs = [name for name in output_layers if "_masks" in name]
+        if len(mask_outputs) != 0:
+            self.mask_outputs = mask_outputs
+
+        self.protos_output = head_config.get("protos_output", self.protos_output)
+
+        self.conf_threshold = head_config.get("conf_threshold", self.conf_threshold)
+        self.n_classes = head_config.get("n_classes", self.n_classes)
+        self.iou_threshold = head_config.get("iou_threshold", self.iou_threshold)
+        self.mask_conf = head_config.get("mask_conf", self.mask_conf)
+        self.prompt = head_config.get("prompt", self.prompt)
+        self.points = head_config.get("points", self.points)
+        self.point_label = head_config.get("point_label", self.point_label)
+        self.bbox = head_config.get("bbox", self.bbox)
+
+        return self
 
     def run(self):
         if self.prompt not in ["everything", "bbox", "point"]:
