@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import depthai as dai
 
@@ -42,6 +42,14 @@ class EmbeddingsParser(BaseParser):
         ), "Embeddings head should have only one output layer"
 
         return self
+
+    def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
+        """Sets the output layer names for the parser.
+
+        @param output_layer_names: The output layer names for the parser.
+        @type output_layer_names: List[str]
+        """
+        self.output_layer_names = output_layer_names
 
     def run(self):
         while self.isRunning():
