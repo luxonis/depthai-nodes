@@ -1,7 +1,9 @@
-import depthai as dai
 import argparse
-from depthai_nodes.parsing_neural_network import ParsingNeuralNetwork
 from typing import Tuple
+
+import depthai as dai
+
+from depthai_nodes.parsing_neural_network import ParsingNeuralNetwork
 
 
 def parse_model_slug(full_slug) -> Tuple[str, str]:

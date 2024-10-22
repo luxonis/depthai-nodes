@@ -1,48 +1,74 @@
-from typing import Sequence
+from typing import List
 
 import depthai as dai
+import numpy as np
+from numpy.typing import NDArray
 
 
 class Classifications(dai.Buffer):
-    """Classification class for storing the class names and their respective scores.
+    """Classification class for storing the classes and their respective scores.
 
     Attributes
     ----------
     classes : list[str]
         A list of classes.
-    scores : list[float]
-        A list of corresponding probability scores.
+    scores : NDArray[np.float32]
+        Corresponding probability scores.
     """
 
     def __init__(self):
-        """Initializes the Classifications object and sets the classes and scores to
-        empty lists."""
+        """Initializes the Classifications object."""
         dai.Buffer.__init__(self)
-        self._classes: Sequence[str] = []
-        self._scores: Sequence[float] = []
+        self._classes: List[str] = []
+        self._scores: NDArray[np.float32] = np.array([])
 
     @property
-    def classes(self) -> Sequence:
-        """Returns the list of classes."""
+    def classes(self) -> List:
+        """Returns the list of classes.
+
+        @return: List of classes.
+        @rtype: List[str]
+        """
         return self._classes
 
+    @classes.setter
+    def classes(self, value: List[str]):
+        """Sets the classes.
+
+        @param value: A list of class names.
+        @type value: List[str]
+        @raise TypeError: If value is not a list.
+        @raise ValueError: If each element is not of type string.
+        """
+        if not isinstance(value, List):
+            raise TypeError(f"Classes must be a list, instead got {type(value)}.")
+        if not all(isinstance(class_name, str) for class_name in value):
+            raise ValueError("Classes must be a list of strings.")
+        self._classes = value
+
     @property
-    def scores(self) -> Sequence:
-        """Returns the list of scores."""
+    def scores(self) -> NDArray:
+        """Returns the list of scores.
+
+        @return: List of scores.
+        @rtype: NDArray[np.float32]
+        """
         return self._scores
 
-    @classes.setter
-    def classes(self, class_names: Sequence[str]):
-        """Sets the list of classes.
-
-        @param classes: A list of class names.
-        """
-        self._classes = class_names
-
     @scores.setter
-    def scores(self, scores: Sequence[float]):
-        """Sets the list of scores.
+    def scores(self, value: NDArray[np.float32]):
+        """Sets the scores.
 
-        @param scores: A list of scores.
+        @param value: A list of scores.
+        @type value: NDArray[np.float32]
+        @raise TypeError: If value is not a numpy array.
+        @raise ValueError: If value is not a 1D numpy array.
+        @raise ValueError: If each element is not of type float.
         """
-        self._scores = scores
+        if not isinstance(value, np.ndarray):
+            raise TypeError(f"Scores must be a np.ndarray, instead got {type(value)}.")
+        if value.ndim != 1:
+            raise ValueError("Scores must be a 1D a np.ndarray.")
+        if value.dtype != np.float32:
+            raise ValueError("Scores must be a np.ndarray of floats.")
+        self._scores = value

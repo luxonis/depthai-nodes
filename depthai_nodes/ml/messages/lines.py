@@ -38,11 +38,11 @@ class Line(dai.Buffer):
 
         @param value: Start point of the line.
         @type value: dai.Point2f
-        @raise TypeError: If the start point is not of type dai.Point2f.
+        @raise TypeError: If value is not of type dai.Point2f.
         """
         if not isinstance(value, dai.Point2f):
             raise TypeError(
-                f"start_point must be of type Point2f, instead got {type(value)}."
+                f"Start Point must be of type Point2f, instead got {type(value)}."
             )
         self._start_point = value
 
@@ -61,11 +61,11 @@ class Line(dai.Buffer):
 
         @param value: End point of the line.
         @type value: dai.Point2f
-        @raise TypeError: If the end point is not of type dai.Point2f.
+        @raise TypeError: If value is not of type dai.Point2f.
         """
         if not isinstance(value, dai.Point2f):
             raise TypeError(
-                f"end_point must be of type Point2f, instead got {type(value)}."
+                f"End Point must be of type Point2f, instead got {type(value)}."
             )
         self._end_point = value
 
@@ -84,11 +84,11 @@ class Line(dai.Buffer):
 
         @param value: Confidence of the line.
         @type value: float
-        @raise TypeError: If the confidence is not of type float.
+        @raise TypeError: If value is not of type float.
         """
         if not isinstance(value, float):
             raise TypeError(
-                f"confidence must be of type float, instead got {type(value)}."
+                f"Confidence must be of type float, instead got {type(value)}."
             )
         self._confidence = value
 
@@ -122,16 +122,11 @@ class Lines(dai.Buffer):
 
         @param value: List of lines.
         @type value: List[Line]
-        @raise TypeError: If the lines are not a list.
-        @raise TypeError: If each line is not of type Line.
+        @raise TypeError: If value is not a list.
+        @raise TypeError: If each element is not of type Line.
         """
         if not isinstance(value, List):
-            raise TypeError(
-                f"lines must be of type List[Line], instead got {type(value)}."
-            )
-        for line in value:
-            if not isinstance(line, Line):
-                raise TypeError(
-                    f"lines must be of type List[Line], instead got {type(value)}."
-                )
+            raise TypeError(f"lines must be a list, instead got {type(value)}.")
+        if not all(isinstance(item, Line) for item in value):
+            raise ValueError("Lines must be a list of Line objects.")
         self._lines = value

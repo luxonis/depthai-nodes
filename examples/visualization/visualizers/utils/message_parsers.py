@@ -9,7 +9,7 @@ from depthai_nodes.ml.messages import (
     Keypoints,
     Lines,
     Map2D,
-    SegmentationMasks,
+    SegmentationMasksSAM,
 )
 
 
@@ -85,7 +85,7 @@ def parse_cluster_message(message: Clusters):
     return clusters
 
 
-def parse_fast_sam_message(message: SegmentationMasks):
+def parse_fast_sam_message(message: SegmentationMasksSAM):
     """Parses the fast sam message and returns the masks."""
     masks = message.masks
     return masks
