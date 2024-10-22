@@ -2,6 +2,7 @@ from .base_parser import BaseParser
 from .classification import ClassificationParser
 from .classification_sequence import ClassificationSequenceParser
 from .detection import DetectionParser
+from .embeddings import EmbeddingsParser
 from .fastsam import FastSAMParser
 from .hrnet import HRNetParser
 from .image_output import ImageOutputParser
@@ -41,4 +42,5 @@ __all__ = [
     "LaneDetectionParser",
     "BaseParser",
     "DetectionParser",
+    "EmbeddingsParser",
 ]
