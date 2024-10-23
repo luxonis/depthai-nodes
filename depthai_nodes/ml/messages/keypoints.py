@@ -9,9 +9,9 @@ class Keypoint(dai.Buffer):
     Attributes
     ----------
     x: float
-        X coordinate of the keypoint.
+        X coordinate of the keypoint, relative to the input height.
     y: float
-        Y coordinate of the keypoint.
+        Y coordinate of the keypoint, relative to the input width.
     z: Optional[float]
         Z coordinate of the keypoint.
     confidence: Optional[float]
@@ -42,9 +42,12 @@ class Keypoint(dai.Buffer):
         @param value: X coordinate of the keypoint.
         @type value: float
         @raise TypeError: If value is not a float.
+        @raise ValueError: If value is not between 0 and 1.
         """
         if not isinstance(value, float):
             raise TypeError("x must be a float.")
+        if 0 <= value <= 1:
+            raise ValueError("x must be between 0 and 1.")
         self._x = value
 
     @property
@@ -63,9 +66,12 @@ class Keypoint(dai.Buffer):
         @param value: Y coordinate of the keypoint.
         @type value: float
         @raise TypeError: If value is not a float.
+        @raise ValueError: If value is not between 0 and 1.
         """
         if not isinstance(value, float):
             raise TypeError("y must be a float.")
+        if 0 <= value <= 1:
+            raise ValueError("y must be between 0 and 1.")
         self._y = value
 
     @property
@@ -105,12 +111,12 @@ class Keypoint(dai.Buffer):
         @param value: Confidence of the keypoint.
         @type value: float
         @raise TypeError: If value is not a float.
-        @raise ValueError: If value is not between 0.0 and 1.0.
+        @raise ValueError: If value is not between 0 and 1.
         """
         if not isinstance(value, float):
             raise TypeError("confidence must be a float.")
-        if value < 0.0 or value > 1.0:
-            raise ValueError("confidence must be between 0.0 and 1.0.")
+        if 0 <= value <= 1:
+            raise ValueError("confidence must be between 0 and 1.")
         self._confidence = value
 
 

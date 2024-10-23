@@ -14,13 +14,13 @@ class ImgDetectionExtended(dai.Buffer):
     Attributes
     ----------
     x_center: float
-        The X coordinate of the center of the bounding box.
+        The X coordinate of the center of the bounding box, relative to the input width.
     y_center: float
-        The Y coordinate of the center of the bounding box.
+        The Y coordinate of the center of the bounding box, relative to the input height.
     width: float
-        The width of the bounding box.
+        The width of the bounding box, relative to the input width.
     height: float
-        The height of the bounding box.
+        The height of the bounding box, relative to the input height.
     angle: float
         The angle of the bounding box expressed in degrees.
     confidence: float
@@ -60,9 +60,12 @@ class ImgDetectionExtended(dai.Buffer):
         @param value: X coordinate of the center of the bounding box.
         @type value: float
         @raise TypeError: If value is not a float.
+        @raise ValueError: If value is not between 0 and 1.
         """
         if not isinstance(value, float):
             raise TypeError("X center must be a float.")
+        if 0 <= value <= 1:
+            raise ValueError("X center must be between 0 and 1.")
         self._x_center = value
 
     @property
@@ -81,9 +84,12 @@ class ImgDetectionExtended(dai.Buffer):
         @param value: Y coordinate of the center of the bounding box.
         @type value: float
         @raise TypeError: If value is not a float.
+        @raise ValueError: If value is not between 0 and 1.
         """
         if not isinstance(value, float):
             raise TypeError("Y center must be a float.")
+        if 0 <= value <= 1:
+            raise ValueError("Y center must be between 0 and 1.")
         self._y_center = value
 
     @property
@@ -102,9 +108,12 @@ class ImgDetectionExtended(dai.Buffer):
         @param value: Width of the bounding box.
         @type value: float
         @raise TypeError: If value is not a float.
+        @raise ValueError: If value is not between 0 and 1.
         """
         if not isinstance(value, float):
             raise TypeError("Width must be a float.")
+        if 0 <= value <= 1:
+            raise ValueError("Width must be between 0 and 1.")
 
         self._width = value
 
@@ -124,9 +133,12 @@ class ImgDetectionExtended(dai.Buffer):
         @param value: Height of the bounding box.
         @type value: float
         @raise TypeError: If value is not a float.
+        @raise ValueError: If value is not between 0 and 1.
         """
         if not isinstance(value, float):
             raise TypeError("Height must be a float.")
+        if 0 <= value <= 1:
+            raise ValueError("Height must be between 0 and 1.")
         self._height = value
 
     @property
@@ -169,9 +181,12 @@ class ImgDetectionExtended(dai.Buffer):
         @param value: Confidence of the detection.
         @type value: float
         @raise TypeError: If value is not a float.
+        @raise ValueError: If value is not between 0 and 1.
         """
         if not isinstance(value, float):
             raise TypeError("Confidence must be a float.")
+        if 0 <= value <= 1:
+            raise ValueError("Confidence must be between 0 and 1.")
         self._confidence = value
 
     @property
