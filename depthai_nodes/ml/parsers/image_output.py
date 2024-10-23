@@ -76,7 +76,7 @@ class ImageOutputParser(BaseParser):
             Returns the parser object with the head configuration set.
         """
 
-        output_layers = head_config["outputs"]
+        output_layers = head_config.get("outputs", [])
         if len(output_layers) != 1:
             raise ValueError(
                 f"MapOutputParser expects exactly 1 output layers, got {output_layers} layers."
