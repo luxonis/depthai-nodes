@@ -1,5 +1,5 @@
-import pytest
 import numpy as np
+import pytest
 
 from depthai_nodes.ml.messages import Classifications
 from depthai_nodes.ml.messages.creators.classification import (
@@ -123,7 +123,9 @@ def test_very_small_scores():
 
     assert isinstance(message, Classifications)
     assert message.classes == ["bird", "cat", "dog"]
-    assert np.all(message.scores == np.array([1 - 2e-10, 1e-10, 1e-10], dtype=np.float32))
+    assert np.all(
+        message.scores == np.array([1 - 2e-10, 1e-10, 1e-10], dtype=np.float32)
+    )
 
 
 def test_identical_scores():

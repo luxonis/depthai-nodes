@@ -4,8 +4,9 @@ from numpy.typing import NDArray
 
 
 class SegmentationMasks(dai.Buffer):
-    """SegmentationMasks class for storing a single or multiple segmentation masks. 
-    Background (-1) and multiple foreground classes (ints >= 1) can be represented on a single array.
+    """SegmentationMasks class for storing a single or multiple segmentation masks.
+    Background (-1) and multiple foreground classes (ints >= 1) can be represented on a
+    single array.
 
     Attributes
     ----------
@@ -45,9 +46,7 @@ class SegmentationMasks(dai.Buffer):
         if value.dtype != np.int8:
             raise ValueError("Masks must be an array of int8.")
         if np.any((value < -1)):
-            raise ValueError(
-                "Masks must be an array values larger or equal to -1."
-            )
+            raise ValueError("Masks must be an array values larger or equal to -1.")
         self._masks = value
 
 

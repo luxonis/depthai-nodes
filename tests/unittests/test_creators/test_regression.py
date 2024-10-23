@@ -1,21 +1,26 @@
-import pytest
 import numpy as np
+import pytest
 
-from depthai_nodes.ml.messages.creators.regression import create_regression_message
 from depthai_nodes.ml.messages import Predictions
+from depthai_nodes.ml.messages.creators.regression import create_regression_message
 
 np.random.seed(0)
 
 
 def test_not_list_predictions():
     predictions = 10
-    with pytest.raises(ValueError, match=f"Predictions should be list, got <class 'int'>."):
+    with pytest.raises(
+        ValueError, match="Predictions should be list, got <class 'int'>."
+    ):
         create_regression_message(predictions)
 
 
 def test_not_float_predictions():
-    predictions = np.random.randint(0,10,5).tolist()
-    with pytest.raises(ValueError, match=f"Each prediction should be a float, got <class 'int'> instead."):
+    predictions = np.random.randint(0, 10, 5).tolist()
+    with pytest.raises(
+        ValueError,
+        match="Each prediction should be a float, got <class 'int'> instead.",
+    ):
         create_regression_message(predictions)
 
 

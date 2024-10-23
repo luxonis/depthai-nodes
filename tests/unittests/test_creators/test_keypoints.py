@@ -35,18 +35,28 @@ def test_non_float_scores():
 
 
 def test_higher_than_one_scores():
-    with pytest.raises(ValueError, match="Scores should only contain values between 0 and 1."):
+    with pytest.raises(
+        ValueError, match="Scores should only contain values between 0 and 1."
+    ):
         create_keypoints_message(keypoints=np.array([[1.0, 2.0, 3.0]]), scores=[1.5])
 
+
 def test_negative_scores():
-    with pytest.raises(ValueError, match="Scores should only contain values between 0 and 1."):
+    with pytest.raises(
+        ValueError, match="Scores should only contain values between 0 and 1."
+    ):
         create_keypoints_message(keypoints=np.array([[1.0, 2.0, 3.0]]), scores=[-1.5])
+
 
 def test_confidence_threshold_not_float():
     with pytest.raises(
         ValueError, match="The confidence_threshold should be float, got <class 'str'>."
     ):
-        create_keypoints_message(keypoints=np.array([[1.0, 2.0, 3.0]]), scores=[0.5], confidence_threshold="0.8")
+        create_keypoints_message(
+            keypoints=np.array([[1.0, 2.0, 3.0]]),
+            scores=[0.5],
+            confidence_threshold="0.8",
+        )
 
 
 def test_confidence_threshold_between_0_and_1():
@@ -54,7 +64,11 @@ def test_confidence_threshold_between_0_and_1():
         ValueError,
         match="The confidence_threshold should be between 0 and 1, got confidence_threshold 1.5",
     ):
-        create_keypoints_message(keypoints=np.array([[1.0, 2.0, 3.0]]), scores=[0.5], confidence_threshold=1.5)
+        create_keypoints_message(
+            keypoints=np.array([[1.0, 2.0, 3.0]]),
+            scores=[0.5],
+            confidence_threshold=1.5,
+        )
 
 
 def test_1d_keypoint():
@@ -81,9 +95,7 @@ def test_nonlist_keypoint():
         ValueError,
         match="Keypoints should be list of lists or np.array, got list of <class 'str'>.",
     ):
-        create_keypoints_message(
-            keypoints=[[1.0, 2.0, 3.0],"1.0"]
-        )
+        create_keypoints_message(keypoints=[[1.0, 2.0, 3.0], "1.0"])
 
 
 def test_nonfloat_keypoint():
@@ -91,9 +103,7 @@ def test_nonfloat_keypoint():
         ValueError,
         match="Keypoints inner list should contain only float, got <class 'str'>.",
     ):
-        create_keypoints_message(
-            keypoints=[["1.0", 2.0, 3.0]]
-        )
+        create_keypoints_message(keypoints=[["1.0", 2.0, 3.0]])
 
 
 def test_keypoints_shape():
