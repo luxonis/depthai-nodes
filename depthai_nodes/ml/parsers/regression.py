@@ -13,10 +13,6 @@ class RegressionParser(BaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_name : str
         Name of the output layer relevant to the parser.
 
@@ -31,7 +27,7 @@ class RegressionParser(BaseParser):
         self,
         output_layer_name: str = "",
     ) -> None:
-        """Initializes the RegressionParser node.
+        """Initializes the parser node.
 
         @param output_layer_name: Name of the output layer relevant to the parser.
         @type output_layer_name : str
@@ -39,11 +35,21 @@ class RegressionParser(BaseParser):
         super().__init__()
         self.output_layer_name = output_layer_name
 
+    def setOutputLayerName(self, output_layer_name: str):
+        """Sets the name of the output layer.
+
+        @param output_layer_name: Name of the output layer relevant to the parser.
+        @type output_layer_name: str
+        """
+        if not isinstance(output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
+        self.output_layer_name = output_layer_name
+
     def build(
         self,
         head_config: Dict[str, Any],
     ) -> "RegressionParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------
@@ -55,7 +61,7 @@ class RegressionParser(BaseParser):
         RegressionParser
             Returns the parser object with the head configuration set.
         """
-        output_layers = head_config["outputs"]
+        output_layers = head_config.get("outputs", [])
         if len(output_layers) != 1:
             raise ValueError(
                 f"Only one output layer supported for Regression, got {output_layers} layers."
@@ -63,16 +69,6 @@ class RegressionParser(BaseParser):
         self.output_layer_name = output_layers[0]
 
         return self
-
-    def setOutputLayerName(self, output_layer_name: str):
-        """Sets the name of the output layer.
-
-        @param output_layer_name: Name of the output layer relevant to the parser.
-        @type output_layer_name: str
-        """
-        if not isinstance(output_layer_name, str):
-            raise ValueError("Output layer name must be a string.")
-        self.output_layer_name = output_layer_name
 
     def run(self):
         while self.isRunning():

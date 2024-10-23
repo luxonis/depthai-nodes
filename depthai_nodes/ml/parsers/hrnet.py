@@ -12,12 +12,8 @@ class HRNetParser(KeypointParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_name: str
-        Name of the output layer from which the keypoints are extracted.
+        Name of the output layer relevant to the parser.
     score_threshold : float
         Confidence score threshold for detected keypoints.
 
@@ -29,21 +25,32 @@ class HRNetParser(KeypointParser):
     """
 
     def __init__(
-        self, output_layer_name: str = "heatmaps", score_threshold: float = 0.5
+        self, output_layer_name: str = "", score_threshold: float = 0.5
     ) -> None:
-        """Initializes the HRNetParser node.
+        """Initializes the parser node.
 
+        @param output_layer_name: Name of the output layer relevant to the parser.
+        @type output_layer_name: str
         @param score_threshold: Confidence score threshold for detected keypoints.
         @type score_threshold: float
         """
-        super().__init__(output_layer_name)
-        self.score_threshold = score_threshold
+        super().__init__(output_layer_name, score_threshold=score_threshold)
+
+    def setOutputLayerName(self, output_layer_name: str) -> None:
+        """Sets the name of the output layer.
+
+        @param output_layer_name: The name of the output layer.
+        @type output_layer_name: str
+        """
+        if not isinstance(output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
+        self.output_layer_name = output_layer_name
 
     def build(
         self,
         head_config: Dict[str, Any],
     ) -> "HRNetParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------
@@ -57,19 +64,8 @@ class HRNetParser(KeypointParser):
         """
 
         super().build(head_config)
-        self.score_threshold = head_config.get("score_threshold", self.score_threshold)
 
         return self
-
-    def setScoreThreshold(self, threshold: float) -> None:
-        """Sets the confidence score threshold for the detected body keypoints.
-
-        @param threshold: Confidence score threshold for detected keypoints.
-        @type threshold: float
-        """
-        if not isinstance(threshold, float):
-            raise ValueError("Confidence threshold must be a float.")
-        self.score_threshold = threshold
 
     def run(self):
         while self.isRunning():
@@ -77,6 +73,14 @@ class HRNetParser(KeypointParser):
                 output: dai.NNData = self.input.get()
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
+
+            layers = output.getAllLayerNames()
+            if len(layers) == 1 and self.output_layer_name == "":
+                self.output_layer_name = layers[0]
+            elif len(layers) != 1 and self.output_layer_name == "":
+                raise ValueError(
+                    f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
+                )
 
             heatmaps = output.getTensor(
                 self.output_layer_name,
@@ -95,6 +99,7 @@ class HRNetParser(KeypointParser):
             self.n_keypoints, map_h, map_w = heatmaps.shape
 
             scores = np.array([np.max(heatmap) for heatmap in heatmaps])
+            scores = np.clip(scores, 0, 1)  # TODO: check why scores are sometimes >1
 
             keypoints = np.array(
                 [

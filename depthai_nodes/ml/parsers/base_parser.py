@@ -52,7 +52,7 @@ class BaseParser(dai.node.ThreadedHostNode, metaclass=BaseMeta):
 
     @abstractmethod
     def build(self, head_config: Dict[str, Any]) -> "BaseParser":
-        """Sets the head configuration for the specified head.
+        """Configures the parser based on the specified head configuration.
 
         Attributes
         ----------

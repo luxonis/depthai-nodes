@@ -1,8 +1,10 @@
+from typing import Tuple
+
 import cv2
 import numpy as np
 
 
-def to_planar(arr: np.ndarray, shape: tuple) -> np.ndarray:
+def to_planar(arr: np.ndarray, shape: Tuple) -> np.ndarray:
     """Converts the input image `arr` (NumPy array) to the planar format expected by
     depthai. The image is resized to the dimensions specified in `shape`.
 

@@ -32,11 +32,11 @@ class Prediction(dai.Buffer):
 
         @param value: The predicted value.
         @type value: float
-        @raise TypeError: If the predicted value is not of type float.
+        @raise TypeError: If value is not of type float.
         """
         if not isinstance(value, float):
             raise TypeError(
-                f"prediction must be of type float, instead got {type(value)}."
+                f"Prediction must be of type float, instead got {type(value)}."
             )
         self._prediction = value
 
@@ -46,7 +46,7 @@ class Predictions(dai.Buffer):
 
     Attributes
     ----------
-    lines : List[Prediction]
+    predictions : List[Prediction]
         List of predictions.
     """
 
@@ -65,21 +65,18 @@ class Predictions(dai.Buffer):
         return self._predictions
 
     @predictions.setter
-    def predictions(self, values: List[Prediction]):
+    def predictions(self, value: List[Prediction]):
         """Sets the predictions.
 
         @param value: List of predicted values.
         @type value: List[Prediction]
-        @raise TypeError: If the predicted values are not a list.
-        @raise TypeError: If each predicted value is not of type Prediction.
+        @raise TypeError: If value is not a list.
+        @raise ValueError: If each element is not of type Prediction.
         """
-        if not isinstance(values, List):
+        if not isinstance(value, List):
             raise TypeError(
-                f"Predictions must be of type List[Prediction], instead got {type(values)}."
+                f"Predictions must be of type list, instead got {type(value)}."
             )
-        for value in values:
-            if not isinstance(value, Prediction):
-                raise TypeError(
-                    f"Each prediction must be of type Prediction, instead got {type(value)}."
-                )
-        self._predictions = values
+        if not all(isinstance(item, Prediction) for item in value):
+            raise ValueError("Predictions must be a list of Prediction objects.")
+        self._predictions = value

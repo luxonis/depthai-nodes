@@ -1,3 +1,5 @@
+from typing import List
+
 import depthai as dai
 
 from .tiling import Tiling
@@ -92,7 +94,7 @@ class TilesPatcher(dai.node.HostNode):
         self.current_timestamp = timestamp
         tile_index = nn_output.getSequenceNum()
 
-        bboxes: list[dai.ImgDetection] = nn_output.detections
+        bboxes: List[dai.ImgDetection] = nn_output.detections
         mapped_bboxes = self._map_bboxes_to_global_frame(bboxes, tile_index)
         self.tile_buffer.append(mapped_bboxes)
 
@@ -101,7 +103,7 @@ class TilesPatcher(dai.node.HostNode):
             self.tile_buffer = []
 
     def _map_bboxes_to_global_frame(
-        self, bboxes: list[dai.ImgDetection], tile_index: int
+        self, bboxes: List[dai.ImgDetection], tile_index: int
     ):
         """Maps bounding boxes from their local tile coordinates back to the global
         frame of the full image.
@@ -207,7 +209,7 @@ class TilesPatcher(dai.node.HostNode):
         @param timestamp: The timestamp of the frame.
         @param device_timestamp: The timestamp of the frame on the device.
         """
-        combined_bboxes: list[dai.ImgDetection] = []
+        combined_bboxes: List[dai.ImgDetection] = []
         for bboxes in self.tile_buffer:
             combined_bboxes.extend(bboxes)
 

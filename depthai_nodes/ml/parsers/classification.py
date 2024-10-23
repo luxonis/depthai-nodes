@@ -14,23 +14,18 @@ class ClassificationParser(BaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_name: str
-        Name of the output layer from which the scores are extracted.
+        Name of the output layer relevant to the parser.
     classes : List[str]
-        List of class names to be used for linking with their respective scores. Expected to be in the same order as Neural Network's output. If not provided, the message will only return sorted scores.
-    n_classes : int = len(classes)
-        Number of provided classes. This variable is set automatically based on provided classes.
+        List of class names to be used for linking with their respective scores.
+        Expected to be in the same order as Neural Network's output. If not provided, the message will only return sorted scores.
     is_softmax : bool = True
         If False, the scores are converted to probabilities using softmax function.
 
     Output Message/s
     ----------------
     **Type** : Classifications(dai.Buffer):
-         An object with attributes `classes` and `scores`. `classes` is a list of classes, sorted in descending order of scores. `scores` is a list of corresponding scores.
+        An object with attributes `classes` and `scores`. `classes` is a list of classes, sorted in descending order of scores. `scores` is a list of corresponding scores.
     """
 
     def __init__(
@@ -39,46 +34,40 @@ class ClassificationParser(BaseParser):
         classes: List[str] = None,
         is_softmax: bool = True,
     ) -> None:
+        """Initializes the parser node.
+
+        @param output_layer_name: Name of the output layer relevant to the parser.
+        @type output_layer_name: str
+        @param classes: List of class names to be used for linking with their respective
+            scores. Expected to be in the same order as Neural Network's output. If not
+            provided, the message will only return sorted scores.
+        @type classes: List[str]
+        @param is_softmax: If False, the scores are converted to probabilities using
+            softmax function.
+        @type is_softmax: bool
+        """
         super().__init__()
         self.output_layer_name = output_layer_name
         self.classes = classes or []
         self.n_classes = len(self.classes)
         self.is_softmax = is_softmax
 
-    def build(
-        self,
-        head_config: Dict[str, Any],
-    ) -> "ClassificationParser":
-        """Sets the head configuration for the parser.
+    def setOutputLayerName(self, output_layer_name: str) -> None:
+        """Sets the name of the output layer.
 
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        ClassificationParser
-            Returns the parser object with the head configuration set.
+        @param output_layer_name: The name of the output layer.
+        @type output_layer_name: str
         """
-
-        output_layers = head_config["outputs"]
-        if len(output_layers) != 1:
-            raise ValueError(
-                f"Only one output layer supported for Classification, got {output_layers} layers."
-            )
-        self.output_layer_name = output_layers[0]
-        self.classes = head_config["classes"]
-        self.n_classes = head_config["n_classes"]
-        self.is_softmax = head_config["is_softmax"]
-
-        return self
+        if not isinstance(output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
+        self.output_layer_name = output_layer_name
 
     def setClasses(self, classes: List[str]) -> None:
         """Sets the class names for the classification model.
 
         @param classes: List of class names to be used for linking with their respective
             scores.
+        @type classes: List[str]
         """
         if not isinstance(classes, list):
             raise ValueError("classes must be a list.")
@@ -93,20 +82,40 @@ class ClassificationParser(BaseParser):
 
         @param is_softmax: If False, the parser will convert the scores to probabilities
             using softmax function.
+        @type is_softmax: bool
         """
         if not isinstance(is_softmax, bool):
             raise ValueError("is_softmax must be a boolean.")
         self.is_softmax = is_softmax
 
-    def setOutputLayerName(self, output_layer_name: str) -> None:
-        """Sets the name of the output layer.
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ) -> "ClassificationParser":
+        """Configures the parser.
 
-        @param output_layer_name: The name of the output layer.
-        @type output_layer_name: str
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        ClassificationParser
+            Returns the parser object with the head configuration set.
         """
-        if not isinstance(output_layer_name, str):
-            raise ValueError("Output layer name must be a string.")
-        self.output_layer_name = output_layer_name
+
+        output_layers = head_config.get("outputs", [])
+        if len(output_layers) != 1:
+            raise ValueError(
+                f"Only one output layer supported for Classification, got {output_layers} layers."
+            )
+        self.output_layer_name = output_layers[0]
+        self.classes = head_config.get("classes", self.classes)
+        self.n_classes = head_config.get("n_classes", self.n_classes)
+        self.is_softmax = head_config.get("is_softmax", self.is_softmax)
+
+        return self
 
     def run(self):
         while self.isRunning():
@@ -116,7 +125,6 @@ class ClassificationParser(BaseParser):
                 break
 
             layers = output.getAllLayerNames()
-
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":

@@ -82,9 +82,7 @@ with dai.Pipeline() as pipeline:
         frame: dai.ImgFrame = camera_queue.get().getCvFrame()
         message = parser_queue.get()
 
-        extraParams = (
-            nn_archive.getConfig().getConfigV1().model.heads[0].metadata.extraParams
-        )
+        extraParams = nn_archive.getConfig().model.heads[0].metadata.extraParams
         if visualize(frame, message, parser_name, extraParams):
             pipeline.stop()
             break

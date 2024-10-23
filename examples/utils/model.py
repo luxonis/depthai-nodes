@@ -23,7 +23,7 @@ def get_model_from_hub(model_slug: str, model_version_slug: str) -> dai.NNArchiv
 def get_parser_from_archive(nn_archive: dai.NNArchive) -> str:
     """Get the required parser from the NN archive."""
     try:
-        required_parser = nn_archive.getConfig().getConfigV1().model.heads[0].parser
+        required_parser = nn_archive.getConfig().model.heads[0].parser
     except AttributeError:
         print(
             "This NN archive does not have a parser. Please use NN archives that have parsers."
@@ -55,7 +55,7 @@ def get_parser(nn_archive: dai.NNArchive) -> Tuple[dai.ThreadedNode, str]:
 def get_inputs_from_archive(nn_archive: dai.NNArchive) -> List:
     """Get all inputs from NN archive."""
     try:
-        inputs = nn_archive.getConfig().getConfigV1().model.inputs
+        inputs = nn_archive.getConfig().model.inputs
     except AttributeError:
         print(
             "This NN archive does not have an input shape. Please use NN archives that have input shapes."

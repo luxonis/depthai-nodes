@@ -35,10 +35,10 @@ class Cluster(dai.Buffer):
 
         @param value: Label of the cluster.
         @type value: int
-        @raise TypeError: If the label is not an integer.
+        @raise TypeError: If value is not an int.
         """
         if not isinstance(value, int):
-            raise TypeError(f"label must be of type int, instead got {type(value)}.")
+            raise TypeError(f"Label must be of type int, instead got {type(value)}.")
         self._label = value
 
     @property
@@ -56,14 +56,13 @@ class Cluster(dai.Buffer):
 
         @param value: List of points in the cluster.
         @type value: List[dai.Point2f]
-        @raise TypeError: If the points are not a list.
-        @raise TypeError: If each point is not of type dai.Point2f.
+        @raise TypeError: If value is not a list.
+        @raise TypeError: If each element is not of type dai.Point2f.
         """
         if not isinstance(value, List):
-            raise TypeError("points must be a list.")
-        for point in value:
-            if not isinstance(point, dai.Point2f):
-                raise TypeError("All items in points must be of type dai.Point2f.")
+            raise TypeError(f"Points must be a list, instead got {type(value)}.")
+        if not all(isinstance(point, dai.Point2f) for point in value):
+            raise ValueError("Points must be a list of dai.Point2f objects")
         self._points = value
 
 
@@ -96,12 +95,11 @@ class Clusters(dai.Buffer):
 
         @param value: List of clusters.
         @type value: List[Cluster]
-        @raise TypeError: If the clusters are not a list.
-        @raise TypeError: If each cluster is not of type Cluster.
+        @raise TypeError: If value is not a list.
+        @raise ValueError: If each element is not of type Cluster.
         """
         if not isinstance(value, List):
-            raise TypeError("clusters must be a list.")
-        for cluster in value:
-            if not isinstance(cluster, Cluster):
-                raise TypeError("All items in clusters must be of type Cluster.")
+            raise TypeError("Clusters must be a list.")
+        if not all(isinstance(cluster, Cluster) for cluster in value):
+            raise ValueError("Clusters must be a list of Cluster objects.")
         self._clusters = value
