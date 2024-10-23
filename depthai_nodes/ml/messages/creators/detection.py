@@ -6,7 +6,7 @@ from ...messages import (
     ImgDetectionsExtended,
     Line,
     Lines,
-    SegmentationMasks,
+    SegmentationMask,
 )
 from ...parsers.utils import transform_to_keypoints
 
@@ -189,8 +189,8 @@ def create_detection_message(
     detections_msg.detections = detections
 
     if masks is not None:
-        masks_msg = SegmentationMasks()
-        masks_msg.masks = masks
+        masks_msg = SegmentationMask()
+        masks_msg.mask = masks
         detections_msg.masks = masks_msg
 
     return detections_msg

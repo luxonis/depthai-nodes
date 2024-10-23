@@ -3,36 +3,36 @@ import numpy as np
 from numpy.typing import NDArray
 
 
-class SegmentationMasks(dai.Buffer):
-    """SegmentationMasks class for storing a single or multiple segmentation masks.
-    Background (-1) and multiple foreground classes (ints >= 1) can be represented on a
-    single array.
+class SegmentationMask(dai.Buffer):
+    """SegmentationMask class for a single- or multi-object segmentation mask.
+    Background is represented with "-1" and foreground classes with non-negative
+    integers.
 
     Attributes
     ----------
-    masks: NDArray[np.int8]
-        Segmentation masks.
+    mask: NDArray[np.int8]
+        Segmentation mask.
     """
 
     def __init__(self):
         """Initializes the SegmentationMask object."""
         super().__init__()
-        self._masks: NDArray[np.int8] = np.array([])
+        self._mask: NDArray[np.int8] = np.array([])
 
     @property
-    def masks(self) -> NDArray[np.int8]:
-        """Returns the segmentation masks.
+    def mask(self) -> NDArray[np.int8]:
+        """Returns the segmentation mask.
 
-        @return: Segmentation masks.
+        @return: Segmentation mask.
         @rtype: NDArray[np.int8]
         """
-        return self._masks
+        return self._mask
 
-    @masks.setter
-    def masks(self, value: NDArray[np.int8]):
-        """Sets the segmentation masks.
+    @mask.setter
+    def mask(self, value: NDArray[np.int8]):
+        """Sets the segmentation mask.
 
-        @param value: Segmentation masks.
+        @param value: Segmentation mask.
         @type value: NDArray[np.int8])
         @raise TypeError: If value is not a numpy array.
         @raise ValueError: If value is not a 2D numpy array.
@@ -40,14 +40,14 @@ class SegmentationMasks(dai.Buffer):
         @raise ValueError: If each element is larger or equal to -1.
         """
         if not isinstance(value, np.ndarray):
-            raise TypeError("Masks must be a numpy array.")
+            raise TypeError("Mask must be a numpy array.")
         if value.ndim != 2:
-            raise ValueError("Masks must be 2D.")
+            raise ValueError("Mask must be 2D.")
         if value.dtype != np.int8:
-            raise ValueError("Masks must be an array of int8.")
+            raise ValueError("Mask must be an array of int8.")
         if np.any((value < -1)):
-            raise ValueError("Masks must be an array values larger or equal to -1.")
-        self._masks = value
+            raise ValueError("Mask must be an array values larger or equal to -1.")
+        self._mask = value
 
 
 class SegmentationMasksSAM(dai.Buffer):
