@@ -63,7 +63,7 @@ class SCRFDParser(DetectionParser):
         @param num_anchors: Number of anchors.
         @type num_anchors: int
         """
-        super().__init__("", conf_threshold, iou_threshold, max_det)
+        super().__init__(conf_threshold, iou_threshold, max_det)
         self.output_layer_names = (
             [] if output_layer_names is None else output_layer_names
         )
