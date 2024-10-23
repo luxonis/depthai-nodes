@@ -165,6 +165,9 @@ class SCRFDParser(DetectionParser):
             bboxes_concatenated = []
             kps_concatenated = []
 
+            if len(self.output_layer_names) == 0:
+                self.output_layer_names = output.getAllLayerNames()
+
             for stride in self.feat_stride_fpn:
                 score_layer_name = f"score_{stride}"
                 bbox_layer_name = f"bbox_{stride}"
