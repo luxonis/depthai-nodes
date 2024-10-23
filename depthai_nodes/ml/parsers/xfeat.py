@@ -14,14 +14,10 @@ class XFeatBaseParser(BaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input used in mono mode. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
     reference_input : Node.Input
         Reference input for stereo mode. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
     target_input : Node.Input
         Target input for stereo mode. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_feats : str
         Name of the output layer containing features.
     output_layer_keypoints : str
@@ -55,7 +51,7 @@ class XFeatBaseParser(BaseParser):
         input_size: Tuple[float, float] = (640, 352),
         max_keypoints: int = 4096,
     ) -> None:
-        """Initializes the XFeatBaseParser node."""
+        """Initializes the parser node."""
         super().__init__()
         self._target_input = self.createInput()  # used in stereo mode
 
@@ -85,43 +81,6 @@ class XFeatBaseParser(BaseParser):
     def target_input(self, target_input: Optional[dai.Node.Input]):
         """Sets the target input."""
         self._target_input = target_input
-
-    def build(
-        self,
-        head_config: Dict[str, Any],
-    ) -> "XFeatBaseParser":
-        """Sets the head configuration for the parser.
-
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        XFeatBaseParser
-            Returns the parser object with the head configuration set.
-        """
-
-        output_layers = head_config["outputs"]
-        if len(output_layers) != 3:
-            raise ValueError(
-                f"Only three output layers supported for XFeat, got {len(output_layers)} layers."
-            )
-
-        for layer in output_layers:
-            if "feats" in layer:
-                self.output_layer_feats = layer
-            elif "keypoints" in layer:
-                self.output_layer_keypoints = layer
-            elif "heatmaps" in layer:
-                self.output_layer_heatmaps = layer
-
-        self.original_size = head_config.get("original_size", self.original_size)
-        self.input_size = head_config.get("input_size", self.input_size)
-        self.max_keypoints = head_config.get("max_keypoints", self.max_keypoints)
-
-        return self
 
     def setOutputLayerFeats(self, output_layer_feats: str) -> None:
         """Sets the output layer containing features.
@@ -189,6 +148,43 @@ class XFeatBaseParser(BaseParser):
             raise ValueError("Maximum number of keypoints must be an int!")
         self.max_keypoints = max_keypoints
 
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ) -> "XFeatBaseParser":
+        """Configures the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        XFeatBaseParser
+            Returns the parser object with the head configuration set.
+        """
+
+        output_layers = head_config.get("outputs", [])
+        if len(output_layers) != 3:
+            raise ValueError(
+                f"Only three output layers supported for XFeat, got {len(output_layers)} layers."
+            )
+
+        for layer in output_layers:
+            if "feats" in layer:
+                self.output_layer_feats = layer
+            elif "keypoints" in layer:
+                self.output_layer_keypoints = layer
+            elif "heatmaps" in layer:
+                self.output_layer_heatmaps = layer
+
+        self.original_size = head_config.get("original_size", self.original_size)
+        self.input_size = head_config.get("input_size", self.input_size)
+        self.max_keypoints = head_config.get("max_keypoints", self.max_keypoints)
+
+        return self
+
     def validateParams(self) -> None:
         """Validates the parameters."""
         if self.original_size is None:
@@ -242,10 +238,6 @@ class XFeatMonoParser(XFeatBaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_feats : str
         Name of the output layer containing features.
     output_layer_keypoints : str

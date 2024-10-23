@@ -159,9 +159,7 @@ def setup_palm_detection_parser(parser: MPPalmDetectionParser, params: dict):
 def setup_parser(parser: dai.ThreadedNode, nn_archive: dai.NNArchive, parser_name: str):
     """Setup the parser with the NN archive."""
 
-    extraParams = (
-        nn_archive.getConfig().getConfigV1().model.heads[0].metadata.extraParams
-    )
+    extraParams = nn_archive.getConfig().model.heads[0].metadata.extraParams
 
     if parser_name == "SCRFDParser":
         setup_scrfd_parser(parser, extraParams)

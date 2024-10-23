@@ -14,16 +14,14 @@ class KeypointParser(BaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_name: str
-        Name of the output layer from which the scores are extracted.
+        Name of the output layer relevant to the parser.
     scale_factor : float
         Scale factor to divide the keypoints by.
     n_keypoints : int
         Number of keypoints the model detects.
+    score_threshold : float
+        Confidence score threshold for detected keypoints.
 
     Output Message/s
     ----------------
@@ -45,11 +43,11 @@ class KeypointParser(BaseParser):
         output_layer_name: str = "",
         scale_factor: float = 1.0,
         n_keypoints: int = None,
+        score_threshold: float = None,
     ) -> None:
-        """Initializes KeypointParser node.
+        """Initializes the parser node.
 
-        @param output_layer_name: Name of the output layer from which the keypoints are
-            extracted.
+        @param output_layer_name: Name of the output layer relevant to the parser.
         @type output_layer_name: str
         @param scale_factor: Scale factor to divide the keypoints by.
         @type scale_factor: float
@@ -60,34 +58,7 @@ class KeypointParser(BaseParser):
         self.output_layer_name = output_layer_name
         self.scale_factor = scale_factor
         self.n_keypoints = n_keypoints
-
-    def build(
-        self,
-        head_config: Dict[str, Any],
-    ) -> "KeypointParser":
-        """Sets the head configuration for the parser.
-
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        KeypointParser
-            Returns the parser object with the head configuration set.
-        """
-
-        output_layers = head_config["outputs"]
-        if len(output_layers) != 1:
-            raise ValueError(
-                f"Only one output layer supported for Keypoint, got {output_layers} layers."
-            )
-        self.output_layer_name = output_layers[0]
-        self.scale_factor = head_config.get("scale_factor", self.scale_factor)
-        self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
-
-        return self
+        self.score_threshold = score_threshold
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
@@ -119,6 +90,45 @@ class KeypointParser(BaseParser):
             raise ValueError("Number of keypoints must be an integer.")
         self.n_keypoints = n_keypoints
 
+    def setScoreThreshold(self, threshold: float) -> None:
+        """Sets the confidence score threshold for the detected body keypoints.
+
+        @param threshold: Confidence score threshold for detected keypoints.
+        @type threshold: float
+        """
+        if not isinstance(threshold, float):
+            raise ValueError("Confidence threshold must be a float.")
+        self.score_threshold = threshold
+
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ) -> "KeypointParser":
+        """Configures the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        KeypointParser
+            Returns the parser object with the head configuration set.
+        """
+
+        output_layers = head_config["outputs"]
+        if len(output_layers) != 1:
+            raise ValueError(
+                f"Only one output layer supported for Keypoint, got {output_layers} layers."
+            )
+        self.output_layer_name = output_layers[0]
+        self.scale_factor = head_config.get("scale_factor", self.scale_factor)
+        self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
+        self.score_threshold = head_config.get("score_threshold", self.score_threshold)
+
+        return self
+
     def run(self):
         if self.n_keypoints is None:
             raise ValueError("Number of keypoints must be specified!")
@@ -130,7 +140,6 @@ class KeypointParser(BaseParser):
                 break  # Pipeline was stopped
 
             layers = output.getAllLayerNames()
-
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":

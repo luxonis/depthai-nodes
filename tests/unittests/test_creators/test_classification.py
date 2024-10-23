@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from depthai_nodes.ml.messages import Classifications
@@ -100,9 +101,9 @@ def test_correct_input():
 
     assert isinstance(message, Classifications)
     assert message.classes == correct_classes
-    assert message.scores == correct_scores
+    assert np.all(message.scores == np.array(correct_scores, dtype=np.float32))
     assert isinstance(message.classes, list)
-    assert isinstance(message.scores, list)
+    assert isinstance(message.scores, np.ndarray)
 
 
 def test_single_class_and_score():
@@ -114,22 +115,6 @@ def test_single_class_and_score():
     assert message.scores == [1.0]
 
 
-def test_correct_input_with_mixed_classes():
-    classes = ["cat", 1, None]
-    scores = [0.2, 0.5, 0.3]
-
-    correct_classes = [1, None, "cat"]
-    correct_scores = [0.5, 0.3, 0.2]
-
-    message = create_classification_message(classes, scores)
-
-    assert isinstance(message, Classifications)
-    assert message.classes == correct_classes
-    assert message.scores == correct_scores
-    assert isinstance(message.classes, list)
-    assert isinstance(message.scores, list)
-
-
 def test_very_small_scores():
     classes = ["cat", "dog", "bird"]
     scores = [1e-10, 1e-10, 1 - 2e-10]
@@ -138,7 +123,9 @@ def test_very_small_scores():
 
     assert isinstance(message, Classifications)
     assert message.classes == ["bird", "cat", "dog"]
-    assert message.scores == [1 - 2e-10, 1e-10, 1e-10]
+    assert np.all(
+        message.scores == np.array([1 - 2e-10, 1e-10, 1e-10], dtype=np.float32)
+    )
 
 
 def test_identical_scores():
@@ -148,7 +135,7 @@ def test_identical_scores():
     message = create_classification_message(classes, scores)
 
     assert message.classes == classes
-    assert message.scores == scores
+    assert np.all(message.scores == np.array(scores, dtype=np.float32))
 
 
 def test_duplicate_scores():
@@ -161,7 +148,7 @@ def test_duplicate_scores():
     message = create_classification_message(classes, scores)
 
     assert message.classes == correct_classes
-    assert message.scores == correct_scores
+    assert np.all(message.scores == np.array(correct_scores, dtype=np.float32))
 
 
 if __name__ == "__main__":

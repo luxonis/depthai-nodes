@@ -107,7 +107,7 @@ def test_remove_duplicates():
         remove_duplicates=True,
     )
     assert res.classes == ["cat"]
-    assert res.scores == [0.5]
+    assert np.all(res.scores == np.array([0.5], dtype=np.float32))
 
 
 def test_ignored_indexes():
@@ -115,7 +115,7 @@ def test_ignored_indexes():
         ["cat", "dog", "bird"], [[0.5, 0.2, 0.3], [0.1, 0.6, 0.3]], ignored_indexes=[1]
     )
     assert res.classes == ["cat"]
-    assert res.scores == [0.5]
+    assert np.all(res.scores == np.array([0.5], dtype=np.float32))
 
 
 def test_all_ignored_indexes():
@@ -124,8 +124,8 @@ def test_all_ignored_indexes():
         [[0.5, 0.2, 0.3], [0.1, 0.6, 0.3]],
         ignored_indexes=[0, 1, 2],
     )
-    assert res.classes == []
-    assert res.scores == []
+    assert len(res.classes) == 0
+    assert len(res.scores) == 0
 
 
 def test_two_ignored_indexes():
@@ -135,14 +135,14 @@ def test_two_ignored_indexes():
         ignored_indexes=[0, 2],
     )
     assert res.classes == ["dog"]
-    assert res.scores == [0.6]
+    assert np.all(res.scores == np.array([0.6], dtype=np.float32))
 
 
 def test_concatenate_chars_nospace():
     res = create_classification_sequence_message(
         ["c", "a", "t"],
         [[0.5, 0.2, 0.3], [0.3, 0.5, 0.2], [0.2, 0.1, 0.7]],
-        concatenate_text=True,
+        concatenate_classes=True,
     )
     assert res.classes == ["cat"]
     assert np.allclose(res.scores, [0.5666666])
@@ -157,7 +157,7 @@ def test_concatenate_chars_space():
         [0.2, 0.1, 0.1, 0.1, 0.5],
     ]
     res = create_classification_sequence_message(
-        ["c", "a", "t", " ", "d"], probs, concatenate_text=True
+        ["c", "a", "t", " ", "d"], probs, concatenate_classes=True
     )
     assert res.classes == ["cat", "d"]
     assert np.allclose(res.scores, [0.5, 0.5])
@@ -174,7 +174,7 @@ def test_concatenate_multiple_spaces():
         [0.1, 0.1, 0.1, 0.5, 0.2],
     ]
     res = create_classification_sequence_message(
-        ["c", "a", "t", " ", "d"], probs, concatenate_text=True
+        ["c", "a", "t", " ", "d"], probs, concatenate_classes=True
     )
     assert res.classes == ["cat", "d"]
     assert np.allclose(res.scores, [0.5, 0.5])
@@ -190,7 +190,7 @@ def test_concatenate_words():
     ]
 
     res = create_classification_sequence_message(
-        ["Quick", "brown", "fox", "jumps", "over"], probs, concatenate_text=True
+        ["Quick", "brown", "fox", "jumps", "over"], probs, concatenate_classes=True
     )
     assert res.classes == ["Quick brown fox jumps over"]
     assert np.allclose(res.scores, [0.5])
@@ -208,7 +208,7 @@ def test_concatenate_words_ignore_first():
     res = create_classification_sequence_message(
         ["Slow", "Quick", "brown", "fox", "jumps"],
         probs,
-        concatenate_text=True,
+        concatenate_classes=True,
         ignored_indexes=[0],
     )
     assert res.classes == ["Quick brown fox jumps"]
@@ -225,7 +225,7 @@ def test_concatenate_mixed_words():
     ]
 
     res = create_classification_sequence_message(
-        ["Quick", "b", "fox", "jumps", "o"], probs, concatenate_text=True
+        ["Quick", "b", "fox", "jumps", "o"], probs, concatenate_classes=True
     )
     assert res.classes == ["Quick b fox jumps o"]
     assert np.allclose(res.scores, [0.5])

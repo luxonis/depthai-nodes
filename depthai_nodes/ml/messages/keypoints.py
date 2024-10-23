@@ -9,9 +9,9 @@ class Keypoint(dai.Buffer):
     Attributes
     ----------
     x: float
-        X coordinate of the keypoint.
+        X coordinate of the keypoint, relative to the input height.
     y: float
-        Y coordinate of the keypoint.
+        Y coordinate of the keypoint, relative to the input width.
     z: Optional[float]
         Z coordinate of the keypoint.
     confidence: Optional[float]
@@ -41,10 +41,13 @@ class Keypoint(dai.Buffer):
 
         @param value: X coordinate of the keypoint.
         @type value: float
-        @raise TypeError: If the X coordinate is not a float.
+        @raise TypeError: If value is not a float.
+        @raise ValueError: If value is not between 0 and 1.
         """
         if not isinstance(value, float):
             raise TypeError("x must be a float.")
+        if value < 0 or value > 1:
+            raise ValueError("x must be between 0 and 1.")
         self._x = value
 
     @property
@@ -62,10 +65,13 @@ class Keypoint(dai.Buffer):
 
         @param value: Y coordinate of the keypoint.
         @type value: float
-        @raise TypeError: If the Y coordinate is not a float.
+        @raise TypeError: If value is not a float.
+        @raise ValueError: If value is not between 0 and 1.
         """
         if not isinstance(value, float):
             raise TypeError("y must be a float.")
+        if value < 0 or value > 1:
+            raise ValueError("y must be between 0 and 1.")
         self._y = value
 
     @property
@@ -83,7 +89,7 @@ class Keypoint(dai.Buffer):
 
         @param value: Z coordinate of the keypoint.
         @type value: float
-        @raise TypeError: If the Z coordinate is not a float.
+        @raise TypeError: If value is not a float.
         """
         if not isinstance(value, float):
             raise TypeError("z must be a float.")
@@ -104,13 +110,13 @@ class Keypoint(dai.Buffer):
 
         @param value: Confidence of the keypoint.
         @type value: float
-        @raise TypeError: If the confidence is not a float.
-        @raise ValueError: If the confidence is not between 0.0 and 1.0.
+        @raise TypeError: If value is not a float.
+        @raise ValueError: If value is not between 0 and 1.
         """
         if not isinstance(value, float):
             raise TypeError("confidence must be a float.")
-        if value < 0.0 or value > 1.0:
-            raise ValueError("confidence must be between 0.0 and 1.0.")
+        if value < 0 or value > 1:
+            raise ValueError("confidence must be between 0 and 1.")
         self._confidence = value
 
 
@@ -119,8 +125,8 @@ class Keypoints(dai.Buffer):
 
     Attributes
     ----------
-    keypoints: List[dai.Keypoint]
-        List of Keypoint, each representing a keypoint.
+    keypoints: List[Keypoint]
+        List of Keypoint objects, each representing a keypoint.
     """
 
     def __init__(self):
@@ -133,7 +139,7 @@ class Keypoints(dai.Buffer):
         """Returns the keypoints.
 
         @return: List of keypoints.
-        @rtype: List[dai.Keypoint]
+        @rtype: List[Keypoint]
         """
         return self._keypoints
 
@@ -142,13 +148,12 @@ class Keypoints(dai.Buffer):
         """Sets the keypoints.
 
         @param value: List of keypoints.
-        @type value: List[dai.Keypoint]
-        @raise TypeError: If the keypoints are not a list.
-        @raise TypeError: If each keypoint is not of type dai.Keypoint.
+        @type value: List[Keypoint]
+        @raise TypeError: If value is not a list.
+        @raise TypeError: If each each element is not of type Keypoint.
         """
         if not isinstance(value, list):
             raise TypeError("keypoints must be a list.")
-        for item in value:
-            if not isinstance(item, Keypoint):
-                raise TypeError("All items in keypoints must be of type dai.Keypoint.")
+        if not all(isinstance(item, Keypoint) for item in value):
+            raise ValueError("keypoints must be a list of Keypoint objects.")
         self._keypoints = value

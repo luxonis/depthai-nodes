@@ -14,24 +14,20 @@ class SCRFDParser(DetectionParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
-    output_layer_name: str
-        Name of the output layer from which the scores are extracted.
+    output_layer_name: List[str]
+        Names of the output layers relevant to the parser.
     conf_threshold : float
         Confidence score threshold for detected faces.
     iou_threshold : float
         Non-maximum suppression threshold.
     max_det : int
         Maximum number of detections to keep.
+    input_size : tuple
+        Input size of the model.
     feat_stride_fpn : tuple
         Tuple of the feature strides.
     num_anchors : int
         Number of anchors.
-    input_size : tuple
-        Input size of the model.
 
     Output Message/s
     ----------------
@@ -50,10 +46,9 @@ class SCRFDParser(DetectionParser):
         feat_stride_fpn: Tuple = (8, 16, 32),
         num_anchors: int = 2,
     ) -> None:
-        """Initializes the SCRFDParser node.
+        """Initializes the parser node.
 
-        @param output_layer_names: The name of the output layer(s) from which the scores
-            are extracted.
+        @param output_layer_names: Names of the output layers relevant to the parser.
         @type output_layer_names: List[str]
         @param conf_threshold: Confidence score threshold for detected faces.
         @type conf_threshold: float
@@ -61,14 +56,14 @@ class SCRFDParser(DetectionParser):
         @type iou_threshold: float
         @param max_det: Maximum number of detections to keep.
         @type max_det: int
+        @param input_size: Input size of the model.
+        @type input_size: tuple
         @param feat_stride_fpn: List of the feature strides.
         @type feat_stride_fpn: tuple
         @param num_anchors: Number of anchors.
         @type num_anchors: int
-        @param input_size: Input size of the model.
-        @type input_size: tuple
         """
-        super().__init__("", conf_threshold, iou_threshold, max_det)
+        super().__init__(conf_threshold, iou_threshold, max_det)
         self.output_layer_names = (
             [] if output_layer_names is None else output_layer_names
         )
@@ -89,18 +84,6 @@ class SCRFDParser(DetectionParser):
             raise ValueError("Output layer names must be a list of strings.")
         self.output_layer_names = output_layer_names
 
-    def setFeatStrideFPN(self, feat_stride_fpn: List[int]) -> None:
-        """Sets the feature stride of the FPN.
-
-        @param feat_stride_fpn: Feature stride of the FPN.
-        @type feat_stride_fpn: list
-        """
-        if not isinstance(feat_stride_fpn, list):
-            raise ValueError("Feature stride must be a list.")
-        if not all(isinstance(stride, int) for stride in feat_stride_fpn):
-            raise ValueError("Feature stride must be a list of integers.")
-        self.feat_stride_fpn = feat_stride_fpn
-
     def setInputSize(self, input_size: Tuple[int, int]) -> None:
         """Sets the input size of the model.
 
@@ -112,6 +95,18 @@ class SCRFDParser(DetectionParser):
         if not all(isinstance(size, int) for size in input_size):
             raise ValueError("Input size must be a tuple of integers.")
         self.input_size = input_size
+
+    def setFeatStrideFPN(self, feat_stride_fpn: List[int]) -> None:
+        """Sets the feature stride of the FPN.
+
+        @param feat_stride_fpn: Feature stride of the FPN.
+        @type feat_stride_fpn: list
+        """
+        if not isinstance(feat_stride_fpn, list):
+            raise ValueError("Feature stride must be a list.")
+        if not all(isinstance(stride, int) for stride in feat_stride_fpn):
+            raise ValueError("Feature stride must be a list of integers.")
+        self.feat_stride_fpn = feat_stride_fpn
 
     def setNumAnchors(self, num_anchors: int) -> None:
         """Sets the number of anchors.
@@ -127,7 +122,7 @@ class SCRFDParser(DetectionParser):
         self,
         head_config: Dict[str, Any],
     ) -> "SCRFDParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------
@@ -141,7 +136,7 @@ class SCRFDParser(DetectionParser):
         """
         super().build(head_config)
 
-        output_layers = head_config["outputs"]
+        output_layers = head_config.get("outputs", [])
         score_layer_names = [layer for layer in output_layers if "score" in layer]
         bbox_layer_names = [layer for layer in output_layers if "bbox" in layer]
         kps_layer_names = [layer for layer in output_layers if "kps" in layer]
@@ -169,6 +164,9 @@ class SCRFDParser(DetectionParser):
             scores_concatenated = []
             bboxes_concatenated = []
             kps_concatenated = []
+
+            if len(self.output_layer_names) == 0:
+                self.output_layer_names = output.getAllLayerNames()
 
             for stride in self.feat_stride_fpn:
                 score_layer_name = f"score_{stride}"

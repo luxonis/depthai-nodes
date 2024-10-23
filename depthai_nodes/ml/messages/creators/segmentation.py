@@ -3,7 +3,7 @@ from typing import List, Union
 import depthai as dai
 import numpy as np
 
-from ...messages import SegmentationMasks
+from ...messages import SegmentationMasksSAM
 
 
 def create_segmentation_message(x: np.ndarray) -> dai.ImgFrame:
@@ -37,7 +37,7 @@ def create_segmentation_message(x: np.ndarray) -> dai.ImgFrame:
     return imgFrame
 
 
-def create_sam_message(x: Union[np.ndarray, List[np.ndarray]]) -> SegmentationMasks:
+def create_sam_message(x: Union[np.ndarray, List[np.ndarray]]) -> SegmentationMasksSAM:
     """Create a DepthAI message for segmentation masks.
 
     @param x: List of segmentation map arrays of the shape (N, H, W).
@@ -55,7 +55,7 @@ def create_sam_message(x: Union[np.ndarray, List[np.ndarray]]) -> SegmentationMa
         if len(mask.shape) != 2:
             raise ValueError(f"Expected 2D input, got {len(mask.shape)}D input.")
 
-    masks_msg = SegmentationMasks()
+    masks_msg = SegmentationMasksSAM()
     if len(x) != 0:
         masks_msg.masks = x if isinstance(x, np.ndarray) else np.array(x)
     return masks_msg

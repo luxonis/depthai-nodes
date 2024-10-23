@@ -5,14 +5,14 @@ import pytest
 from depthai_nodes.ml.messages.creators.segmentation import create_segmentation_message
 
 
-def test_empty_array():
-    with pytest.raises(ValueError, match="Expected 3D input, got 1D input."):
-        create_segmentation_message(np.array([]))
-
-
 def test_wrong_instance():
     with pytest.raises(ValueError, match="Expected numpy array, got <class 'int'>."):
         create_segmentation_message(1)
+
+
+def test_empty_array():
+    with pytest.raises(ValueError, match="Expected 3D input, got 1D input."):
+        create_segmentation_message(np.array([]))
 
 
 def test_wrong_dimension():

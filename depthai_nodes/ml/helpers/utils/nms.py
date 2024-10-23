@@ -1,8 +1,10 @@
+from typing import List
+
 import depthai as dai
 import numpy as np
 
 
-def nms_detections(detections: list[dai.ImgDetection], conf_thresh=0.3, iou_thresh=0.4):
+def nms_detections(detections: List[dai.ImgDetection], conf_thresh=0.3, iou_thresh=0.4):
     """Applies Non-Maximum Suppression (NMS) on a list of dai.ImgDetection objects.
 
     @param detections: List of dai.ImgDetection objects. @type

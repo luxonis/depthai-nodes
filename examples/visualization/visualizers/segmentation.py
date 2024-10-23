@@ -2,7 +2,7 @@ import cv2
 import depthai as dai
 import numpy as np
 
-from depthai_nodes.ml.messages import SegmentationMasks
+from depthai_nodes.ml.messages import SegmentationMasksSAM
 
 from .utils.colors import get_adas_colors, get_ewasr_colors, get_selfie_colors
 from .utils.message_parsers import parse_fast_sam_message, parse_segmentation_message
@@ -70,7 +70,7 @@ def _fastsam_show_masks(
 
 
 def visualize_fastsam(
-    frame: dai.ImgFrame, message: SegmentationMasks, extraParams: dict
+    frame: dai.ImgFrame, message: SegmentationMasksSAM, extraParams: dict
 ):
     masks = parse_fast_sam_message(message)
 
