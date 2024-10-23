@@ -15,12 +15,12 @@ def create_regression_message(predictions: List[float]) -> Predictions:
     """
 
     if not isinstance(predictions, list):
-        raise ValueError(f"Predictions should be List[float], got {type(predictions)}.")
+        raise ValueError(f"Predictions should be list, got {type(predictions)}.")
 
     for prediction in predictions:
         if not isinstance(prediction, float):
             raise ValueError(
-                f"Each predictions should be a float, got {type(prediction)} instead."
+                f"Each prediction should be a float, got {type(prediction)} instead."
             )
 
     prediction_objects_list = []

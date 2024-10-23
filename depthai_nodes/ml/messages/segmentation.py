@@ -90,9 +90,9 @@ class SegmentationMasks(dai.Buffer):
             raise ValueError("Masks must be 2D.")
         if value.dtype != np.int8:
             raise ValueError("Masks must be an array of int8.")
-        if np.any((value < 0)) or np.any((value > 1)):
+        if np.any((value < 0)):
             raise ValueError(
-                "Masks must be an array of int8 with values in the range [0, 1]."
+                "Masks must be an array of non-negative values."
             )
         self._masks = value
 
