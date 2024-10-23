@@ -60,7 +60,7 @@ class MPPalmDetectionParser(DetectionParser):
         @param scale: Scale of the input image.
         @type scale: int
         """
-        super().__init__()
+        super().__init__(conf_threshold, iou_threshold, max_det)
         self.output_layer_names = (
             [] if output_layer_names is None else output_layer_names
         )
