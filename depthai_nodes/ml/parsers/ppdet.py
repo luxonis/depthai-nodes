@@ -15,10 +15,10 @@ class PPTextDetectionParser(DetectionParser):
     ----------
     output_layer_name: str
         Name of the output layer relevant to the parser.
+    conf_threshold : float
+        The threshold for bounding boxes.
     mask_threshold : float
         The threshold for the mask.
-    bbox_threshold : float
-        The threshold for bounding boxes.
     max_det : int
         The maximum number of candidate bounding boxes.
 
@@ -39,10 +39,10 @@ class PPTextDetectionParser(DetectionParser):
 
         @param output_layer_name: Name of the output layer relevant to the parser.
         @type output_layer_name: str
-        @param mask_threshold: The threshold for the mask.
-        @type mask_threshold: float
         @param conf_threshold: The threshold for bounding boxes.
         @type conf_threshold: float
+        @param mask_threshold: The threshold for the mask.
+        @type mask_threshold: float
         @param max_det: The maximum number of candidate bounding boxes.
         @type max_det:
         """
