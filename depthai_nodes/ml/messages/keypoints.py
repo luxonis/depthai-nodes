@@ -46,7 +46,7 @@ class Keypoint(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("x must be a float.")
-        if 0 <= value <= 1:
+        if value <= 0 or value >= 1:
             raise ValueError("x must be between 0 and 1.")
         self._x = value
 
@@ -70,7 +70,7 @@ class Keypoint(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("y must be a float.")
-        if 0 <= value <= 1:
+        if value <= 0 or value >= 1:
             raise ValueError("y must be between 0 and 1.")
         self._y = value
 
@@ -115,7 +115,7 @@ class Keypoint(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("confidence must be a float.")
-        if 0 <= value <= 1:
+        if value <= 0 or value >= 1:
             raise ValueError("confidence must be between 0 and 1.")
         self._confidence = value
 

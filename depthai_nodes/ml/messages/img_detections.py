@@ -4,7 +4,7 @@ import depthai as dai
 import numpy as np
 
 from .keypoints import Keypoint
-from .segmentation import SegmentationMasks
+from .segmentation import SegmentationMask
 
 
 class ImgDetectionExtended(dai.Buffer):
@@ -64,7 +64,7 @@ class ImgDetectionExtended(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("X center must be a float.")
-        if 0 <= value <= 1:
+        if value <= 0 or value >= 1:
             raise ValueError("X center must be between 0 and 1.")
         self._x_center = value
 
@@ -88,7 +88,7 @@ class ImgDetectionExtended(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("Y center must be a float.")
-        if 0 <= value <= 1:
+        if value <= 0 or value >= 1:
             raise ValueError("Y center must be between 0 and 1.")
         self._y_center = value
 
@@ -112,7 +112,7 @@ class ImgDetectionExtended(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("Width must be a float.")
-        if 0 <= value <= 1:
+        if value <= 0 or value >= 1:
             raise ValueError("Width must be between 0 and 1.")
 
         self._width = value
@@ -137,7 +137,7 @@ class ImgDetectionExtended(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("Height must be a float.")
-        if 0 <= value <= 1:
+        if value <= 0 or value >= 1:
             raise ValueError("Height must be between 0 and 1.")
         self._height = value
 
@@ -185,7 +185,7 @@ class ImgDetectionExtended(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("Confidence must be a float.")
-        if 0 <= value <= 1:
+        if value <= 0 or value >= 1:
             raise ValueError("Confidence must be between 0 and 1.")
         self._confidence = value
 
@@ -258,12 +258,12 @@ class ImgDetectionsExtended(dai.Buffer):
         ----------
         detections: List[ImgDetectionExtended]
             Image detections with keypoints.
-        masks: SegmentationMasks
-            The segmentation masks of the image. All masks are stored in a single numpy array.
+        masks: SegmentationMask
+            The segmentation masks of the image stored in a single numpy array.
         """
         super().__init__()
         self._detections: List[ImgDetectionExtended] = []
-        self._masks: SegmentationMasks = np.array([])
+        self._masks: SegmentationMask = np.array([])
 
     @property
     def detections(self) -> List[ImgDetectionExtended]:
@@ -292,22 +292,22 @@ class ImgDetectionsExtended(dai.Buffer):
         self._detections = value
 
     @property
-    def masks(self) -> SegmentationMasks:
+    def masks(self) -> SegmentationMask:
         """Returns the segmentation masks stored in a single numpy array.
 
         @return: Segmentation masks.
-        @rtype: SegmentationMasks
+        @rtype: SegmentationMask
         """
         return self._masks
 
     @masks.setter
-    def masks(self, value: SegmentationMasks):
+    def masks(self, value: SegmentationMask):
         """Sets the masks of the image.
 
         @param masks: Mask coefficients.
-        @type value: SegmentationMasks
-        @raise TypeError: If value is not of type SegmentationMasks.
+        @type value: SegmentationMask
+        @raise TypeError: If value is not of type SegmentationMask.
         """
-        if not isinstance(value, SegmentationMasks):
-            raise TypeError("Mask must be a SegmentationMasks object")
+        if not isinstance(value, SegmentationMask):
+            raise TypeError("Mask must be a SegmentationMask object")
         self._masks = value
