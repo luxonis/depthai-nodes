@@ -63,7 +63,7 @@ class YuNetParser(DetectionParser):
         @param iou_output_layer_name: Output layer name for the IoU predictions.
         @type iou_output_layer_name: str
         """
-        super().__init__("", conf_threshold, iou_threshold, max_det)
+        super().__init__(conf_threshold, iou_threshold, max_det)
         self._out = self.createOutput(
             possibleDatatypes=[
                 dai.Node.DatatypeHierarchy(dai.DatatypeEnum.ImgDetections, True)
@@ -134,6 +134,7 @@ class YuNetParser(DetectionParser):
         """
         super().build(head_config)
         output_layers = head_config.get("outputs", [])
+        self.input_size = head_config.get("input_size", self.input_size)
         if len(output_layers) != 3:
             raise ValueError(
                 f"YuNetParser expects exactly 3 output layers, got {output_layers} layers."
