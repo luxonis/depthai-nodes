@@ -2,6 +2,7 @@ from typing import List
 
 import depthai as dai
 import numpy as np
+from numpy.typing import NDArray
 
 from .keypoints import Keypoint
 from .segmentation import SegmentationMask
@@ -292,22 +293,33 @@ class ImgDetectionsExtended(dai.Buffer):
         self._detections = value
 
     @property
-    def masks(self) -> SegmentationMask:
+    def masks(self) -> NDArray[np.int8]:
         """Returns the segmentation masks stored in a single numpy array.
 
         @return: Segmentation masks.
         @rtype: SegmentationMask
         """
-        return self._masks
+        return self._masks.mask
 
     @masks.setter
-    def masks(self, value: SegmentationMask):
-        """Sets the masks of the image.
+    def masks(self, value: NDArray[np.int8]):
+        """Sets the segmentation mask.
 
-        @param masks: Mask coefficients.
-        @type value: SegmentationMask
-        @raise TypeError: If value is not of type SegmentationMask.
+        @param value: Segmentation mask.
+        @type value: NDArray[np.int8])
+        @raise TypeError: If value is not a numpy array.
+        @raise ValueError: If value is not a 2D numpy array.
+        @raise ValueError: If each element is not of type int8.
+        @raise ValueError: If each element is larger or equal to -1.
         """
-        if not isinstance(value, SegmentationMask):
-            raise TypeError("Mask must be a SegmentationMask object")
-        self._masks = value
+        if not isinstance(value, np.ndarray):
+            raise TypeError("Mask must be a numpy array.")
+        if value.ndim != 2:
+            raise ValueError("Mask must be 2D.")
+        if value.dtype != np.int8:
+            raise ValueError("Mask must be an array of int8.")
+        if np.any((value < -1)):
+            raise ValueError("Mask must be an array values larger or equal to -1.")
+        masks_msg = SegmentationMask()
+        masks_msg.mask = value
+        self._masks = masks_msg

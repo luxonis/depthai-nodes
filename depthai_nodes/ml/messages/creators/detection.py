@@ -192,9 +192,7 @@ def create_detection_message(
     detections_msg.detections = detections
 
     if masks is not None:
-        masks_msg = SegmentationMask()
-        masks_msg.mask = masks
-        detections_msg.masks = masks_msg
+        detections_msg.masks = masks
 
     return detections_msg
 
