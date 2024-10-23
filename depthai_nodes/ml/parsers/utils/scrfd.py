@@ -136,5 +136,6 @@ def decode_scrfd(
 
     keypoints = kpss / np.tile([width, height], (5, 1))
     keypoints = keypoints.reshape(-1, 5, 2)
+    keypoints = np.clip(keypoints, 0, 1)
 
     return bboxes, scores, keypoints

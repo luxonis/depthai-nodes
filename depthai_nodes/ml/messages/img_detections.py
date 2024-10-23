@@ -64,7 +64,7 @@ class ImgDetectionExtended(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("X center must be a float.")
-        if value <= 0 or value >= 1:
+        if value < 0 or value > 1:
             raise ValueError("X center must be between 0 and 1.")
         self._x_center = value
 
@@ -88,7 +88,7 @@ class ImgDetectionExtended(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("Y center must be a float.")
-        if value <= 0 or value >= 1:
+        if value < 0 or value > 1:
             raise ValueError("Y center must be between 0 and 1.")
         self._y_center = value
 
@@ -112,7 +112,7 @@ class ImgDetectionExtended(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("Width must be a float.")
-        if value <= 0 or value >= 1:
+        if value < 0 or value > 1:
             raise ValueError("Width must be between 0 and 1.")
 
         self._width = value
@@ -137,7 +137,7 @@ class ImgDetectionExtended(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("Height must be a float.")
-        if value <= 0 or value >= 1:
+        if value < 0 or value > 1:
             raise ValueError("Height must be between 0 and 1.")
         self._height = value
 
@@ -185,7 +185,7 @@ class ImgDetectionExtended(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("Confidence must be a float.")
-        if value <= 0 or value >= 1:
+        if value < 0 or value > 1:
             raise ValueError("Confidence must be between 0 and 1.")
         self._confidence = value
 
