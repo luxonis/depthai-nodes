@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Union, overload
+from typing import Dict, Union, overload
 
 import depthai as dai
 
@@ -37,7 +37,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         super().__init__(*args, **kwargs)
         self._pipeline = self.getParentPipeline()
         self._nn = self._pipeline.create(dai.node.NeuralNetwork)
-        self._parsers: dict[int, BaseParser] = {}
+        self._parsers: Dict[int, BaseParser] = {}
 
     @overload
     def build(
@@ -108,7 +108,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         for parser in self._parsers.values():
             self._pipeline.remove(parser)
 
-    def _getParserNodes(self, nnArchive: dai.NNArchive) -> dict[int, BaseParser]:
+    def _getParserNodes(self, nnArchive: dai.NNArchive) -> Dict[int, BaseParser]:
         parser_generator = self._pipeline.create(ParserGenerator)
         parsers = parser_generator.build(nnArchive)
         for parser in parsers.values():
@@ -126,11 +126,11 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         """Sets the backend of the NeuralNetwork node."""
         self._nn.setBackend(setBackend)
 
-    def setBackendProperties(self, setBackendProperties: dict[str, str]) -> None:
+    def setBackendProperties(self, setBackendProperties: Dict[str, str]) -> None:
         """Sets the backend properties of the NeuralNetwork node."""
         self._nn.setBackendProperties(setBackendProperties)
 
-    def setBlob(self, blob: Path | dai.OpenVINO.Blob) -> None:
+    def setBlob(self, blob: Union[Path, dai.OpenVINO.Blob]) -> None:
         """Sets the blob of the NeuralNetwork node."""
         self._nn.setBlob(blob)
 
