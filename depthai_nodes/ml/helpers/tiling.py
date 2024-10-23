@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import cv2
 import depthai as dai
 import numpy as np
@@ -46,9 +48,9 @@ class Tiling(dai.node.HostNode):
         self,
         overlap: float,
         img_output: dai.Node.Output,
-        grid_size: tuple,
-        img_shape: tuple,
-        nn_shape: tuple,
+        grid_size: Tuple,
+        img_shape: Tuple,
+        nn_shape: Tuple,
         global_detection: bool = False,
         grid_matrix=None,
     ) -> "Tiling":

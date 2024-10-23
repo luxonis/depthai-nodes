@@ -1,7 +1,6 @@
 from typing import Any, Dict, Tuple
 
 import depthai as dai
-import numpy as np
 
 from ..messages.creators import create_detection_message
 from .detection import DetectionParser
@@ -15,16 +14,20 @@ class YuNetParser(DetectionParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     conf_threshold : float
         Confidence score threshold for detected faces.
     iou_threshold : float
         Non-maximum suppression threshold.
     max_det : int
         Maximum number of detections to keep.
+    input_size : Tuple[int, int]
+        Input size.
+    loc_output_layer_name: str
+        Name of the output layer containing the location predictions.
+    conf_output_layer_name: str
+        Name of the output layer containing the confidence predictions.
+    iou_output_layer_name: str
+        Name of the output layer containing the IoU predictions.
 
     Output Message/s
     ----------------
@@ -38,12 +41,12 @@ class YuNetParser(DetectionParser):
         conf_threshold: float = 0.8,
         iou_threshold: float = 0.3,
         max_det: int = 5000,
-        input_shape: Tuple[int, int] = None,
+        input_size: Tuple[int, int] = None,
         loc_output_layer_name: str = None,
         conf_output_layer_name: str = None,
         iou_output_layer_name: str = None,
     ) -> None:
-        """Initializes the YuNetParser node.
+        """Initializes the parser node.
 
         @param conf_threshold: Confidence score threshold for detected faces.
         @type conf_threshold: float
@@ -51,8 +54,8 @@ class YuNetParser(DetectionParser):
         @type iou_threshold: float
         @param max_det: Maximum number of detections to keep.
         @type max_det: int
-        @param input_shape: Input shape of the model (width, height).
-        @type input_shape: Tuple[int, int]
+        @param input_size: Input shape of the model (width, height).
+        @type input_size: Tuple[int, int]
         @param loc_output_layer_name: Output layer name for the location predictions.
         @type loc_output_layer_name: str
         @param conf_output_layer_name: Output layer name for the confidence predictions.
@@ -60,7 +63,7 @@ class YuNetParser(DetectionParser):
         @param iou_output_layer_name: Output layer name for the IoU predictions.
         @type iou_output_layer_name: str
         """
-        super().__init__("", conf_threshold, iou_threshold, max_det)
+        super().__init__(conf_threshold, iou_threshold, max_det)
         self._out = self.createOutput(
             possibleDatatypes=[
                 dai.Node.DatatypeHierarchy(dai.DatatypeEnum.ImgDetections, True)
@@ -69,13 +72,55 @@ class YuNetParser(DetectionParser):
         self.loc_output_layer_name = loc_output_layer_name
         self.conf_output_layer_name = conf_output_layer_name
         self.iou_output_layer_name = iou_output_layer_name
-        self.input_shape = input_shape
+        self.input_size = input_size
+
+    def setInputSize(self, input_size: Tuple[int, int]) -> None:
+        """Sets the input size of the model.
+
+        @param input_size: Input size of the model (width, height).
+        @type input_size: list
+        """
+        if not isinstance(input_size, tuple):
+            raise ValueError("Input size must be a tuple.")
+        if not all(isinstance(size, int) for size in input_size):
+            raise ValueError("Input size must be a tuple of integers.")
+        self.input_size = input_size
+
+    def setOutputLayerLoc(self, loc_output_layer_name: str) -> None:
+        """Sets the name of the output layer containing the location predictions.
+
+        @param loc_output_layer_name: Output layer name for the loc tensor.
+        @type loc_output_layer_name: str
+        """
+        if not isinstance(loc_output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
+        self.loc_output_layer_name = loc_output_layer_name
+
+    def setOutputLayerConf(self, conf_output_layer_name: str) -> None:
+        """Sets the name of the output layer containing the confidence predictions.
+
+        @param conf_output_layer_name: Output layer name for the conf tensor.
+        @type conf_output_layer_name: str
+        """
+        if not isinstance(conf_output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
+        self.conf_output_layer_name = conf_output_layer_name
+
+    def setOutputLayerIou(self, iou_output_layer_name: str) -> None:
+        """Sets the name of the output layer containing the IoU predictions.
+
+        @param iou_output_layer_name: Output layer name for the IoU tensor.
+        @type iou_output_layer_name: str
+        """
+        if not isinstance(iou_output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
+        self.iou_output_layer_name = iou_output_layer_name
 
     def build(
         self,
         head_config: Dict[str, Any],
     ) -> "YuNetParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------
@@ -88,59 +133,25 @@ class YuNetParser(DetectionParser):
             Returns the parser object with the head configuration set.
         """
         super().build(head_config)
-        output_layers = head_config["outputs"]
+        output_layers = head_config.get("outputs", [])
+        self.input_size = head_config.get("input_size", self.input_size)
         if len(output_layers) != 3:
             raise ValueError(
                 f"YuNetParser expects exactly 3 output layers, got {output_layers} layers."
             )
         for output_layer in output_layers:
-            self.loc_output_layer_name = output_layer if "loc" in output_layer else None
-            self.conf_output_layer_name = (
-                output_layer if "conf" in output_layer else None
-            )
-            self.iou_output_layer_name = output_layer if "iou" in output_layer else None
+            if "loc" in output_layer:
+                self.loc_output_layer_name = output_layer
+            elif "conf" in output_layer:
+                self.conf_output_layer_name = output_layer
+            elif "iou" in output_layer:
+                self.iou_output_layer_name = output_layer
+            else:
+                raise ValueError(
+                    f"Unexpected output layer {output_layer}. Only loc, conf, and iou output layers are supported."
+                )
 
         return self
-
-    def setInputShape(self, width: int, height: int) -> None:
-        """Sets the input shape.
-
-        @param height: Height of the input image.
-        @type height: int
-        @param width: Width of the input image.
-        @type width: int
-        """
-        if not isinstance(width, int) or not isinstance(height, int):
-            raise ValueError("Width and height must be integers.")
-        self.input_shape = (width, height)
-
-    def setOutputLayerNames(
-        self,
-        loc_output_layer_name: str,
-        conf_output_layer_name: str,
-        iou_output_layer_name: str,
-    ) -> None:
-        """Sets the output layers.
-
-        @param loc_output_layer_name: Output layer name for the location predictions.
-        @type loc_output_layer_name: str
-        @param conf_output_layer_name: Output layer name for the confidence predictions.
-        @type conf_output_layer_name: str
-        @param iou_output_layer_name: Output layer name for the IoU predictions.
-        @type iou_output_layer_name: str
-        """
-        if not all(
-            isinstance(layer_name, str)
-            for layer_name in [
-                loc_output_layer_name,
-                conf_output_layer_name,
-                iou_output_layer_name,
-            ]
-        ):
-            raise ValueError("Output layer names must be strings.")
-        self.loc_output_layer_name = loc_output_layer_name
-        self.conf_output_layer_name = conf_output_layer_name
-        self.iou_output_layer_name = iou_output_layer_name
 
     def run(self):
         while self.isRunning():
@@ -234,7 +245,7 @@ class YuNetParser(DetectionParser):
 
             # decode detections
             bboxes, keypoints, scores = decode_detections(
-                input_shape=self.input_shape,
+                input_shape=self.input_size,
                 loc=loc,
                 conf=conf,
                 iou=iou,
@@ -253,7 +264,7 @@ class YuNetParser(DetectionParser):
                 bboxes=bboxes,
                 keypoints=keypoints,
                 scores=scores,
-                input_shape=self.input_shape,
+                input_shape=self.input_size,
             )
 
             # run nms

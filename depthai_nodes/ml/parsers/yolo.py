@@ -25,10 +25,6 @@ class YOLOExtendedParser(BaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     conf_threshold : float
         Confidence score threshold for detected faces.
     n_classes : int
@@ -66,7 +62,7 @@ class YOLOExtendedParser(BaseParser):
         anchors: Optional[List[np.ndarray]] = None,
         subtype: str = "",
     ):
-        """Initialize the YOLOExtendedParser node.
+        """Initialize the parser node.
 
         @param conf_threshold: The confidence threshold for the detections
         @type conf_threshold: float
@@ -99,55 +95,13 @@ class YOLOExtendedParser(BaseParser):
                 f"Invalid YOLO version {subtype}. Supported YOLO versions are {[e.value for e in YOLOSubtype][:-1]}."
             ) from err
 
-    def build(
-        self,
-        head_config: Dict[str, Any],
-    ):
-        """Sets the head configuration for the parser.
+    def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
+        """Sets the output layer names for the parser.
 
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-        Returns
-        -------
-        YOLOExtendedParser
-            Returns the parser object with the head configuration set.
+        @param output_layer_names: The output layer names for the parser.
+        @type output_layer_names: List[str]
         """
-
-        output_layers = head_config["outputs"]
-        bbox_layer_names = [name for name in output_layers if "_yolo" in name]
-        kps_layer_names = [name for name in output_layers if "kpt_output" in name]
-        masks_layer_names = [name for name in output_layers if "_masks" in name]
-
-        if not bbox_layer_names:
-            raise ValueError(
-                "YOLOExtendedParser requires the output layers of the bounding boxes detection head."
-            )
-        if (kps_layer_names and masks_layer_names) or (
-            not bbox_layer_names and (kps_layer_names or masks_layer_names)
-        ):
-            raise ValueError(
-                "YOLOExtendedParser requires either the output layers of the keypoints detection head or the output layers of the masks detection head along with the output layers of the bounding boxes detection head but not both."
-            )
-
-        self.output_layer_names = bbox_layer_names + kps_layer_names + masks_layer_names
-
-        self.conf_threshold = head_config.get("conf_threshold", self.conf_threshold)
-        self.n_classes = head_config.get("n_classes", self.n_classes)
-        self.iou_threshold = head_config.get("iou_threshold", self.iou_threshold)
-        self.mask_conf = head_config.get("mask_conf", self.mask_conf)
-        self.anchors = head_config.get("anchors", self.anchors)
-        self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
-        subtype = head_config.get("subtype", self.subtype)
-        try:
-            self.subtype = YOLOSubtype(subtype.lower())
-        except ValueError as err:
-            raise ValueError(
-                f"Invalid YOLO subtype {subtype}. Supported YOLO subtypes are {[e.value for e in YOLOSubtype][:-1]}."
-            ) from err
-
-        return self
+        self.output_layer_names = output_layer_names
 
     def setConfidenceThreshold(self, threshold: float) -> None:
         """Sets the confidence score threshold for detected faces.
@@ -210,13 +164,55 @@ class YOLOExtendedParser(BaseParser):
                 f"Invalid YOLO subtype {subtype}. Supported YOLO subtypes are {[e.value for e in YOLOSubtype][:-1]}."
             ) from err
 
-    def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
-        """Sets the output layer names for the parser.
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ):
+        """Configures the parser.
 
-        @param output_layer_names: The output layer names for the parser.
-        @type output_layer_names: List[str]
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+        Returns
+        -------
+        YOLOExtendedParser
+            Returns the parser object with the head configuration set.
         """
-        self.output_layer_names = output_layer_names
+
+        output_layers = head_config.get("outputs", [])
+        bbox_layer_names = [name for name in output_layers if "_yolo" in name]
+        kps_layer_names = [name for name in output_layers if "kpt_output" in name]
+        masks_layer_names = [name for name in output_layers if "_masks" in name]
+
+        if not bbox_layer_names:
+            raise ValueError(
+                "YOLOExtendedParser requires the output layers of the bounding boxes detection head."
+            )
+        if (kps_layer_names and masks_layer_names) or (
+            not bbox_layer_names and (kps_layer_names or masks_layer_names)
+        ):
+            raise ValueError(
+                "YOLOExtendedParser requires either the output layers of the keypoints detection head or the output layers of the masks detection head along with the output layers of the bounding boxes detection head but not both."
+            )
+
+        self.output_layer_names = bbox_layer_names + kps_layer_names + masks_layer_names
+
+        self.conf_threshold = head_config.get("conf_threshold", self.conf_threshold)
+        self.n_classes = head_config.get("n_classes", self.n_classes)
+        self.iou_threshold = head_config.get("iou_threshold", self.iou_threshold)
+        self.mask_conf = head_config.get("mask_conf", self.mask_conf)
+        self.anchors = head_config.get("anchors", self.anchors)
+        self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
+        subtype = head_config.get("subtype", self.subtype)
+        try:
+            self.subtype = YOLOSubtype(subtype.lower())
+        except ValueError as err:
+            raise ValueError(
+                f"Invalid YOLO subtype {subtype}. Supported YOLO subtypes are {[e.value for e in YOLOSubtype][:-1]}."
+            ) from err
+
+        return self
 
     def run(self):
         while self.isRunning():

@@ -15,12 +15,8 @@ class LaneDetectionParser(BaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_name: str
-        Name of the output layer from which the scores are extracted.
+        Name of the output layer relevant to the parser.
     row_anchors : List[int]
         List of row anchors.
     griding_num : int
@@ -52,8 +48,7 @@ class LaneDetectionParser(BaseParser):
     ) -> None:
         """Initializes the lane detection parser node.
 
-        @param output_layer_name: Name of the output layer from which the results are
-            extracted.
+        @param output_layer_name: Name of the output layer relevant to the parser.
         @type output_layer_name: str
         @param row_anchors: List of row anchors.
         @type row_anchors: List[int]
@@ -71,35 +66,6 @@ class LaneDetectionParser(BaseParser):
         self.griding_num = griding_num
         self.cls_num_per_lane = cls_num_per_lane
         self.input_shape = input_shape
-
-    def build(
-        self,
-        head_config: Dict[str, Any],
-    ) -> "LaneDetectionParser":
-        """Sets the head configuration for the parser.
-
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        LaneDetectionParser
-            Returns the parser object with the head configuration set.
-        """
-
-        output_layers = head_config["outputs"]
-        if len(output_layers) != 1:
-            raise ValueError(
-                f"Only one output layer supported for LaneDetectionParser, got {len(output_layers)} layers."
-            )
-        self.output_layer_name = output_layers[0]
-        self.row_anchors = head_config["row_anchors"]
-        self.griding_num = head_config["griding_num"]
-        self.cls_num_per_lane = head_config["cls_num_per_lane"]
-
-        return self
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Set the output layer name for the lane detection model.
@@ -157,6 +123,37 @@ class LaneDetectionParser(BaseParser):
             raise ValueError("Input shape must be a tuple of integers.")
         self.input_shape = input_shape
 
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ) -> "LaneDetectionParser":
+        """Configures the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        LaneDetectionParser
+            Returns the parser object with the head configuration set.
+        """
+
+        output_layers = head_config.get("outputs", [])
+        if len(output_layers) != 1:
+            raise ValueError(
+                f"Only one output layer supported for LaneDetectionParser, got {len(output_layers)} layers."
+            )
+        self.output_layer_name = output_layers[0]
+        self.row_anchors = head_config.get("row_anchors", self.row_anchors)
+        self.griding_num = head_config.get("griding_num", self.griding_num)
+        self.cls_num_per_lane = head_config.get(
+            "cls_num_per_lane", self.cls_num_per_lane
+        )
+
+        return self
+
     def run(self):
         if self.row_anchors is None:
             raise ValueError("Row anchors must be specified!")
@@ -172,7 +169,6 @@ class LaneDetectionParser(BaseParser):
                 break  # Pipeline was stopped
 
             layers = output.getAllLayerNames()
-
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":

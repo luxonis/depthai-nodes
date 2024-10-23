@@ -12,12 +12,8 @@ class MapOutputParser(BaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_name: str
-        Name of the output layer from which the map output is extracted.
+        Name of the output layer relevant to the parser.
     min_max_scaling : bool
         If True, the map is scaled to the range [0, 1].
 
@@ -33,16 +29,42 @@ class MapOutputParser(BaseParser):
         output_layer_name: str = "",
         min_max_scaling: bool = False,
     ) -> None:
-        """Initializes the MapOutputParser node."""
+        """Initializes the parser node.
+
+        @param output_layer_name: Name of the output layer relevant to the parser.
+        @type output_layer_name: str
+        @param min_max_scaling: If True, the map is scaled to the range [0, 1].
+        @type min_max_scaling: bool
+        """
         super().__init__()
         self.min_max_scaling = min_max_scaling
         self.output_layer_name = output_layer_name
+
+    def setOutputLayerName(self, output_layer_name: str) -> None:
+        """Sets the name of the output layer.
+
+        @param output_layer_name: The name of the output layer.
+        @type output_layer_name: str
+        """
+        if not isinstance(output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
+        self.output_layer_name = output_layer_name
+
+    def setMinMaxScaling(self, min_max_scaling: bool) -> None:
+        """Sets the min_max_scaling flag.
+
+        @param min_max_scaling: If True, the map is scaled to the range [0, 1].
+        @type min_max_scaling: bool
+        """
+        if not isinstance(min_max_scaling, bool):
+            raise ValueError("min_max_scaling must be a boolean.")
+        self.min_max_scaling = min_max_scaling
 
     def build(
         self,
         head_config: Dict[str, Any],
     ) -> "MapOutputParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------
@@ -55,7 +77,7 @@ class MapOutputParser(BaseParser):
             Returns the parser object with the head configuration set.
         """
 
-        output_layers = head_config["outputs"]
+        output_layers = head_config.get("outputs", [])
         if len(output_layers) != 1:
             raise ValueError(
                 f"MapOutputParser expects exactly 1 output layers, got {output_layers} layers."
@@ -65,22 +87,20 @@ class MapOutputParser(BaseParser):
 
         return self
 
-    def setMinMaxScaling(self, min_max_scaling: bool) -> None:
-        """Sets the min_max_scaling flag.
-
-        @param min_max_scaling: If True, the map is scaled to the range [0, 1].
-        @type min_max_scaling: bool
-        """
-        if not isinstance(min_max_scaling, bool):
-            raise ValueError("min_max_scaling must be a boolean.")
-        self.min_max_scaling = min_max_scaling
-
     def run(self):
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
+
+            layers = output.getAllLayerNames()
+            if len(layers) == 1 and self.output_layer_name == "":
+                self.output_layer_name = layers[0]
+            elif len(layers) != 1 and self.output_layer_name == "":
+                raise ValueError(
+                    f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
+                )
 
             map = output.getTensor(self.output_layer_name, dequantize=True)
 
@@ -90,5 +110,5 @@ class MapOutputParser(BaseParser):
             map_message = create_map_message(
                 map=map, min_max_scaling=self.min_max_scaling
             )
-
+            map_message.setTimestamp(output.getTimestamp())
             self.out.send(map_message)

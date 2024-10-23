@@ -13,18 +13,14 @@ class SuperAnimalParser(KeypointParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_name: str
-        Name of the output layer from which the scores are extracted.
+        Name of the output layer relevant to the parser.
+    scale_factor : float
+        Scale factor to divide the keypoints by.
     n_keypoints : int
         Number of keypoints.
     score_threshold : float
         Confidence score threshold for detected keypoints.
-    scale_factor : float
-        Scale factor to divide the keypoints by.
 
     Output Message/s
     ----------------
@@ -36,14 +32,13 @@ class SuperAnimalParser(KeypointParser):
     def __init__(
         self,
         output_layer_name: str = "",
+        scale_factor: float = 256.0,
         n_keypoints: int = 39,
         score_threshold: float = 0.5,
-        scale_factor: float = 256.0,
     ) -> None:
-        """Initializes the SuperAnimalParser node.
+        """Initializes the parser node.
 
-        @param output_layer_name: Name of the output layer from which the keypoints are
-            extracted.
+        @param output_layer_name: Name of the output layer relevant to the parser.
         @type output_layer_name: str
         @param n_keypoints: Number of keypoints.
         @type n_keypoints: int
@@ -52,16 +47,18 @@ class SuperAnimalParser(KeypointParser):
         @param scale_factor: Scale factor to divide the keypoints by.
         @type scale_factor: float
         """
-        super().__init__(output_layer_name, scale_factor, n_keypoints=n_keypoints)
-        self.output_layer_name = output_layer_name
-
-        self.score_threshold = score_threshold
+        super().__init__(
+            output_layer_name,
+            scale_factor=scale_factor,
+            n_keypoints=n_keypoints,
+            score_threshold=score_threshold,
+        )
 
     def build(
         self,
         head_config: Dict[str, Any],
     ) -> "SuperAnimalParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------
@@ -75,19 +72,8 @@ class SuperAnimalParser(KeypointParser):
         """
 
         super().build(head_config)
-        self.score_threshold = head_config["score_threshold"]
 
         return self
-
-    def setScoreThreshold(self, threshold: float) -> None:
-        """Sets the confidence score threshold for detected keypoints.
-
-        @param threshold: Confidence score threshold for detected keypoints.
-        @type threshold: float
-        """
-        if not isinstance(threshold, float):
-            raise ValueError("Score threshold must be a float.")
-        self.score_threshold = threshold
 
     def run(self):
         while self.isRunning():
@@ -97,7 +83,6 @@ class SuperAnimalParser(KeypointParser):
                 break  # Pipeline was stopped
 
             layers = output.getAllLayerNames()
-
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":

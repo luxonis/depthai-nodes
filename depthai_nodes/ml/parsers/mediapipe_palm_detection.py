@@ -16,10 +16,8 @@ class MPPalmDetectionParser(DetectionParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.Parser sends the processed network results to this output in form of messages. It is a linking point from which the processed network results are retrieved.
+    output_layer_names: List[str]
+        Names of the output layers relevant to the parser.
     conf_threshold : float
         Confidence score threshold for detected hands.
     iou_threshold : float
@@ -49,9 +47,9 @@ class MPPalmDetectionParser(DetectionParser):
         max_det: int = 100,
         scale: int = 192,
     ) -> None:
-        """Initializes the MPPalmDetectionParser node.
+        """Initializes the parser node.
 
-        @param output_layer_names: The name of the output layers for the parser.
+        @param output_layer_names: Names of the output layers relevant to the parser.
         @type output_layer_names: List[str]
         @param conf_threshold: Confidence score threshold for detected hands.
         @type conf_threshold: float
@@ -62,7 +60,7 @@ class MPPalmDetectionParser(DetectionParser):
         @param scale: Scale of the input image.
         @type scale: int
         """
-        super().__init__()
+        super().__init__(conf_threshold, iou_threshold, max_det)
         self.output_layer_names = (
             [] if output_layer_names is None else output_layer_names
         )
@@ -70,33 +68,6 @@ class MPPalmDetectionParser(DetectionParser):
         self.iou_threshold = iou_threshold
         self.max_det = max_det
         self.scale = scale
-
-    def build(
-        self,
-        head_config: Dict[str, Any],
-    ) -> "MPPalmDetectionParser":
-        """Sets the head configuration for the parser.
-
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        MPPalmDetectionParser
-            Returns the parser object with the head configuration set.
-        """
-        super().build(head_config)
-        output_layers = head_config["outputs"]
-        if len(output_layers) != 2:
-            raise ValueError(
-                f"Only two output layers are supported for MPPalmDetectionParser, got {len(output_layers)} layers."
-            )
-        self.output_layer_names = output_layers
-        self.scale = head_config["scale"]
-
-        return self
 
     def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
         """Sets the output layer name(s) for the parser.
@@ -124,6 +95,33 @@ class MPPalmDetectionParser(DetectionParser):
         if not isinstance(scale, int):
             raise ValueError("Scale must be an integer.")
         self.scale = scale
+
+    def build(
+        self,
+        head_config: Dict[str, Any],
+    ) -> "MPPalmDetectionParser":
+        """Configures the parser.
+
+        Attributes
+        ----------
+        head_config : Dict
+            The head configuration for the parser.
+
+        Returns
+        -------
+        MPPalmDetectionParser
+            Returns the parser object with the head configuration set.
+        """
+        super().build(head_config)
+        output_layers = head_config.get("outputs", [])
+        if len(output_layers) != 2:
+            raise ValueError(
+                f"Only two output layers are supported for MPPalmDetectionParser, got {len(output_layers)} layers."
+            )
+        self.output_layer_names = output_layers
+        self.scale = head_config.get("scale", self.scale)
+
+        return self
 
     def run(self):
         while self.isRunning():

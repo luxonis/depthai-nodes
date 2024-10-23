@@ -13,14 +13,12 @@ class PPTextDetectionParser(DetectionParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
+    output_layer_name: str
+        Name of the output layer relevant to the parser.
+    conf_threshold : float
+        The threshold for bounding boxes.
     mask_threshold : float
         The threshold for the mask.
-    bbox_threshold : float
-        The threshold for bounding boxes.
     max_det : int
         The maximum number of candidate bounding boxes.
 
@@ -37,24 +35,34 @@ class PPTextDetectionParser(DetectionParser):
         mask_threshold: float = 0.25,
         max_det: int = 100,
     ) -> None:
-        """Initializes the PPTextDetectionParser node.
+        """Initializes the parser node.
 
-        @param output_layer_name: The name of the output layer from which the scores are
-            extracted.
+        @param output_layer_name: Name of the output layer relevant to the parser.
         @type output_layer_name: str
-        @param mask_threshold: The threshold for the mask.
-        @type mask_threshold: float
         @param conf_threshold: The threshold for bounding boxes.
         @type conf_threshold: float
+        @param mask_threshold: The threshold for the mask.
+        @type mask_threshold: float
         @param max_det: The maximum number of candidate bounding boxes.
         @type max_det:
         """
         super().__init__(
-            output_layer_name=output_layer_name,
             conf_threshold=conf_threshold,
+            iou_threshold=0.5,
             max_det=max_det,
         )
         self.mask_threshold = mask_threshold
+        self.output_layer_name = output_layer_name
+
+    def setOutputLayerName(self, output_layer_name: str) -> None:
+        """Sets the name of the output layer.
+
+        @param output_layer_name: The name of the output layer.
+        @type output_layer_name: str
+        """
+        if not isinstance(output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
+        self.output_layer_name = output_layer_name
 
     def setMaskThreshold(self, mask_threshold: float = 0.25) -> None:
         """Sets the mask threshold for creating the mask from model output
@@ -68,8 +76,7 @@ class PPTextDetectionParser(DetectionParser):
         self.mask_threshold = mask_threshold
 
     def build(self, head_config: Dict[str, Any]) -> "PPTextDetectionParser":
-        """Sets the head configuration for the parser. If any configuration parameters
-        are missing, default values are used.
+        """Configures the parser.
 
         Attributes
         ----------
@@ -82,7 +89,7 @@ class PPTextDetectionParser(DetectionParser):
             Returns the parser object with the head configuration set.
         """
         super().build(head_config)
-        self.mask_threshold = head_config.get("mask_threshold", 0.25)
+        self.mask_threshold = head_config.get("mask_threshold", self.mask_threshold)
 
         return self
 
@@ -94,7 +101,6 @@ class PPTextDetectionParser(DetectionParser):
                 break  # Pipeline was stopped
 
             layers = output.getAllLayerNames()
-
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":

@@ -11,12 +11,12 @@ np.random.seed(0)
 
 def test_not_numpy_array():
     with pytest.raises(ValueError, match="Expected numpy array, got <class 'list'>."):
-        create_map_message([1, 2, 3], "relative")
+        create_map_message([1, 2, 3])
 
 
-def test_not_3d_input():
+def test_not_2d_or_3d_input():
     with pytest.raises(ValueError, match="Expected 2D or 3D input, got 1D input."):
-        create_map_message(np.array([1, 2, 3]), "relative")
+        create_map_message(np.array([1, 2, 3]))
 
 
 def test_wrong_input_shape():

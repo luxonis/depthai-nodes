@@ -61,6 +61,8 @@ def create_classification_message(
     if not np.issubdtype(scores.dtype, np.floating):
         raise ValueError(f"Scores should be of type float, got {scores.dtype}.")
 
+    scores = scores.astype(np.float32)
+
     if any([value < 0 or value > 1 for value in scores]):
         raise ValueError(
             f"Scores list must contain probabilities between 0 and 1, instead got {scores}."
@@ -79,7 +81,7 @@ def create_classification_message(
     scores = scores[sorted_args]
 
     classification_msg.classes = [classes[i] for i in sorted_args]
-    classification_msg.scores = scores.tolist()
+    classification_msg.scores = scores
 
     return classification_msg
 
@@ -136,6 +138,8 @@ def create_classification_sequence_message(
     if np.any(~np.isclose(scores.sum(axis=1), 1.0, atol=1e-2)):
         raise ValueError("Each row of scores should sum to 1.")
 
+    scores = scores.astype(np.float32)
+
     if ignored_indexes is not None:
         if not isinstance(ignored_indexes, List):
             raise ValueError(
@@ -186,11 +190,12 @@ def create_classification_sequence_message(
         and any(len(word) >= 2 for word in class_list)
     ):
         class_list = [" ".join(class_list)]
-        score_list = np.mean(score_list)
+        mean_score = np.mean(score_list)
+        score_list = np.array([mean_score])
 
     classification_msg = Classifications()
 
     classification_msg.classes = class_list
-    classification_msg.scores = score_list.tolist()
+    classification_msg.scores = score_list
 
     return classification_msg

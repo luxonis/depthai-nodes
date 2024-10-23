@@ -13,12 +13,8 @@ class ImageOutputParser(BaseParser):
 
     Attributes
     ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
     output_layer_name: str
-        Name of the output layer from which the image output is extracted.
+        Name of the output layer relevant to the parser.
     output_is_bgr : bool
         Flag indicating if the output image is in BGR (Blue-Green-Red) format.
 
@@ -38,8 +34,10 @@ class ImageOutputParser(BaseParser):
     def __init__(
         self, output_layer_name: str = "", output_is_bgr: bool = False
     ) -> None:
-        """Initializes ImageOutputParser node.
+        """Initializes the parser node.
 
+        param output_layer_name: Name of the output layer relevant to the parser.
+        type output_layer_name: str
         @param output_is_bgr: Flag indicating if the output image is in BGR.
         @type output_is_bgr: bool
         """
@@ -47,11 +45,25 @@ class ImageOutputParser(BaseParser):
         self.output_layer_name = output_layer_name
         self.output_is_bgr = output_is_bgr
 
+    def setOutputLayerName(self, output_layer_name: str) -> None:
+        """Sets the name of the output layer.
+
+        @param output_layer_name: The name of the output layer.
+        @type output_layer_name: str
+        """
+        if not isinstance(output_layer_name, str):
+            raise ValueError("Output layer name must be a string.")
+        self.output_layer_name = output_layer_name
+
+    def setBGROutput(self) -> None:
+        """Sets the flag indicating that output image is in BGR."""
+        self.output_is_bgr = True
+
     def build(
         self,
         head_config: Dict[str, Any],
     ) -> "ImageOutputParser":
-        """Sets the head configuration for the parser.
+        """Configures the parser.
 
         Attributes
         ----------
@@ -64,7 +76,7 @@ class ImageOutputParser(BaseParser):
             Returns the parser object with the head configuration set.
         """
 
-        output_layers = head_config["outputs"]
+        output_layers = head_config.get("outputs", [])
         if len(output_layers) != 1:
             raise ValueError(
                 f"MapOutputParser expects exactly 1 output layers, got {output_layers} layers."
@@ -74,16 +86,20 @@ class ImageOutputParser(BaseParser):
 
         return self
 
-    def setBGROutput(self) -> None:
-        """Sets the flag indicating that output image is in BGR."""
-        self.output_is_bgr = True
-
     def run(self):
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
+
+            layers = output.getAllLayerNames()
+            if len(layers) == 1 and self.output_layer_name == "":
+                self.output_layer_name = layers[0]
+            elif len(layers) != 1 and self.output_layer_name == "":
+                raise ValueError(
+                    f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
+                )
 
             output_image = output.getTensor(self.output_layer_name, dequantize=True)
 

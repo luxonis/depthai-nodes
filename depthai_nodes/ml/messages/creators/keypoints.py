@@ -105,7 +105,7 @@ def create_keypoints_message(
     keypoints_msg = Keypoints()
     points = []
     for i, keypoint in enumerate(keypoints):
-        if scores is not None:
+        if scores is not None and confidence_threshold is not None:
             if scores[i] < confidence_threshold:
                 continue
         pt = Keypoint()
