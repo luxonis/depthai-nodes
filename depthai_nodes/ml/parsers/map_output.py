@@ -110,5 +110,5 @@ class MapOutputParser(BaseParser):
             map_message = create_map_message(
                 map=map, min_max_scaling=self.min_max_scaling
             )
-
+            map_message.setTimestamp(output.getTimestamp())
             self.out.send(map_message)
