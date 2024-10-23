@@ -47,11 +47,12 @@ class PPTextDetectionParser(DetectionParser):
         @type max_det:
         """
         super().__init__(
-            output_layer_name=output_layer_name,
             conf_threshold=conf_threshold,
+            iou_threshold=0.5,
             max_det=max_det,
         )
         self.mask_threshold = mask_threshold
+        self.output_layer_name = output_layer_name
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
