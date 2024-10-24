@@ -17,15 +17,13 @@ class ParserGenerator(dai.node.ThreadedHostNode):
         super().__init__()
 
     def build(self, nn_archive: dai.NNArchive, head_index: int = None) -> Dict:
-        """
-        Instantiates parsers based on the provided model archive.
+        """Instantiates parsers based on the provided model archive.
 
         @param nn_archive: NN Archive of the model.
         @type nn_archive: dai.NNArchive
-
-        @param head_index: Index of the head to be used for parsing. If not provided, each head will instantiate a separate parser.
+        @param head_index: Index of the head to be used for parsing. If not provided,
+            each head will instantiate a separate parser.
         @type head_index: int
-
         @return: A dictionary of instantiated parsers.
         @rtype: Dict[int, BaseParser]
         """

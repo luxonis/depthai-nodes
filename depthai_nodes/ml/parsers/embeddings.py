@@ -24,12 +24,10 @@ class EmbeddingsParser(BaseParser):
         self.output_layer_names = None
 
     def build(self, head_config: Dict[str, Any]):
-        """
-        Sets the head configuration for the parser.
+        """Sets the head configuration for the parser.
 
         @param head_config: The head configuration for the parser.
         @type head_config: Dict[str, Any]
-
         @return: The parser object with the head configuration set.
         @rtype: EmbeddingsParser
         """
