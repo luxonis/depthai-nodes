@@ -124,6 +124,8 @@ def parse_paddle_detection_outputs(
     mask_threshold: float = 0.25,
     bbox_threshold: float = 0.5,
     max_detections: int = 100,
+    width: int = None,
+    height: int = None,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Parse the output of a PaddlePaddle Text Detection model from a mask of text
     probabilities into rotated bounding boxes with additional corners saved as
@@ -192,4 +194,11 @@ def parse_paddle_detection_outputs(
         scores.append(score)
         angles.append(box[4])
 
-    return np.array(boxes), np.array(angles), np.array(corners_array), np.array(scores)
+    boxes = np.array(boxes)
+    boxes[:, 0] /= width
+    boxes[:, 1] /= height
+    boxes[:, 2] /= width
+    boxes[:, 3] /= height
+    corners = np.clip(corners, 0, 1)
+
+    return boxes, np.array(angles), np.array(corners_array), np.array(scores)
