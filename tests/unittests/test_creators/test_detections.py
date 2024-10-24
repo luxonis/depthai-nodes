@@ -31,14 +31,14 @@ def test_bbox_dim_4():
         ValueError,
         match=re.escape("Bounding boxes should be of shape (n, 4), got (1, 3)."),
     ):
-        create_detection_message(bboxes=np.array([[1.0, 2.0, 3.0]]), scores=1)
+        create_detection_message(bboxes=np.array([[0.25, 0.25, 0.25]]), scores=1)
 
 
 def test_scores_not_numpy_array():
     with pytest.raises(
         ValueError, match="Scores should be a numpy array, got <class 'int'>."
     ):
-        create_detection_message(bboxes=np.array([[1.0, 2.0, 3.0, 4.0]]), scores=1)
+        create_detection_message(bboxes=np.array([[0.25, 0.25, 0.25, 0.25]]), scores=1)
 
 
 def test_scores_shape():
@@ -47,7 +47,7 @@ def test_scores_shape():
         match=re.escape("Scores should be of shape (N,), got (1, 1)."),
     ):
         create_detection_message(
-            bboxes=np.array([[1.0, 2.0, 3.0, 4.0]]), scores=np.array([[0.1]])
+            bboxes=np.array([[0.25, 0.25, 0.25, 0.25]]), scores=np.array([[0.1]])
         )
 
 
@@ -59,7 +59,7 @@ def test_scores_length():
         ),
     ):
         create_detection_message(
-            bboxes=np.array([[1.0, 2.0, 3.0, 4.0]]), scores=np.array([0.1, 0.2])
+            bboxes=np.array([[0.25, 0.25, 0.25, 0.25]]), scores=np.array([0.1, 0.2])
         )
 
 
@@ -68,7 +68,7 @@ def test_labels_list():
         ValueError, match="Labels should be a numpy array, got <class 'int'>."
     ):
         create_detection_message(
-            bboxes=np.array([[1.0, 2.0, 3.0, 4.0]]), scores=np.array([0.1]), labels=1
+            bboxes=np.array([[0.25, 0.25, 0.25, 0.25]]), scores=np.array([0.1]), labels=1
         )
 
 
@@ -78,7 +78,7 @@ def test_labels_bbox_lengths():
         match="Labels should have same length as bboxes, got 2 labels and 1 bounding boxes.",
     ):
         create_detection_message(
-            bboxes=np.array([[1.0, 2.0, 3.0, 4.0]]),
+            bboxes=np.array([[0.25, 0.25, 0.25, 0.25]]),
             scores=np.array([0.1]),
             labels=np.array([0.1, 0.2]),
         )
@@ -89,7 +89,7 @@ def test_angles_list():
         ValueError, match="Angles should be a numpy array, got <class 'int'>."
     ):
         create_detection_message(
-            bboxes=np.array([[1.0, 2.0, 3.0, 4.0]]), scores=np.array([0.1]), angles=1
+            bboxes=np.array([[0.25, 0.25, 0.25, 0.25]]), scores=np.array([0.1]), angles=1
         )
 
 
@@ -99,7 +99,7 @@ def test_angles_bbox_lengths():
         match="Angles should have same length as bboxes, got 2 angles and 1 bounding boxes.",
     ):
         create_detection_message(
-            bboxes=np.array([[1.0, 2.0, 3.0, 4.0]]),
+            bboxes=np.array([[0.25, 0.25, 0.25, 0.25]]),
             scores=np.array([0.1]),
             angles=np.array([0.1, 0.2]),
         )
@@ -110,7 +110,7 @@ def test_angles_values():
         ValueError, match="Angles should be between -360 and 360, got 999."
     ):
         create_detection_message(
-            bboxes=np.array([[1.0, 2.0, 3.0, 4.0]]),
+            bboxes=np.array([[0.25, 0.25, 0.25, 0.25]]),
             scores=np.array([0.1]),
             angles=np.array([999]),
         )
@@ -121,7 +121,7 @@ def test_keypoints_list():
         ValueError, match="Keypoints should be a numpy array, got <class 'int'>."
     ):
         create_detection_message(
-            bboxes=np.array([[1.0, 2.0, 3.0, 4.0]]), scores=np.array([0.1]), keypoints=1
+            bboxes=np.array([[0.25, 0.25, 0.25, 0.25]]), scores=np.array([0.1]), keypoints=1
         )
 
 
@@ -133,7 +133,7 @@ def test_keypoints_shape():
         ),
     ):
         create_detection_message(
-            bboxes=np.array([[1.0, 2.0, 3.0, 4.0]]),
+            bboxes=np.array([[0.25, 0.25, 0.25, 0.25]]),
             scores=np.array([0.1]),
             keypoints=np.array([[1.0, 2.0, 3.0]]),
         )
@@ -145,7 +145,7 @@ def test_keypoints_bbox_lengths():
         match="Keypoints should have same length as bboxes, got 2 keypoints and 1 bounding boxes",
     ):
         create_detection_message(
-            bboxes=np.array([[1.0, 2.0, 3.0, 4.0]]),
+            bboxes=np.array([[0.25, 0.25, 0.25, 0.25]]),
             scores=np.array([0.1]),
             keypoints=np.array([[[1.0, 2.0, 3.0]], [[1.0, 2.0, 3.0]]]),
         )
@@ -157,7 +157,7 @@ def test_keypoints_scores_without_keypoints():
         match="Keypoints scores should be provided only if keypoints are provided.",
     ):
         create_detection_message(
-            bboxes=np.array([[1.0, 2.0, 3.0, 4.0]]),
+            bboxes=np.array([[0.25, 0.25, 0.25, 0.25]]),
             scores=np.array([0.1]),
             keypoints_scores=1,
         )
@@ -168,7 +168,7 @@ def test_keypoints_scores_list():
         ValueError, match="Keypoints scores should be a numpy array, got <class 'int'>."
     ):
         create_detection_message(
-            bboxes=np.array([[1.0, 2.0, 3.0, 4.0]]),
+            bboxes=np.array([[0.25, 0.25, 0.25, 0.25]]),
             scores=np.array([0.1]),
             keypoints=np.array([[[1.0, 2.0, 3.0]]]),
             keypoints_scores=1,
@@ -181,7 +181,7 @@ def test_keypoints_scores_lengths():
         match="Keypoints scores should have same length as keypoints, got 2 keypoints scores and 1 keypoints.",
     ):
         create_detection_message(
-            bboxes=np.array([[1.0, 2.0, 3.0, 4.0]]),
+            bboxes=np.array([[0.25, 0.25, 0.25, 0.25]]),
             scores=np.array([0.1]),
             keypoints=np.array([[[1.0, 2.0, 3.0]]]),
             keypoints_scores=np.array([[0.1], [0.2]]),
@@ -194,7 +194,7 @@ def test_number_of_keypoints_scores_per_detection():
         match="Number of keypoints scores per detection should be the same as number of keypoints per detection, got 2 keypoints scores and 1 keypoints.",
     ):
         create_detection_message(
-            bboxes=np.array([[1.0, 2.0, 3.0, 4.0]]),
+            bboxes=np.array([[0.25, 0.25, 0.25, 0.25]]),
             scores=np.array([0.1]),
             keypoints=np.array([[[1.0, 2.0, 3.0]]]),
             keypoints_scores=np.array([[0.1, 0.2]]),
@@ -204,7 +204,7 @@ def test_number_of_keypoints_scores_per_detection():
 def test_keypoints_scores_values():
     with pytest.raises(ValueError, match="Keypoints scores should be between 0 and 1."):
         create_detection_message(
-            bboxes=np.array([[1.0, 2.0, 3.0, 4.0]]),
+            bboxes=np.array([[0.25, 0.25, 0.25, 0.25]]),
             scores=np.array([0.1]),
             keypoints=np.array([[[1.0, 2.0, 3.0]]]),
             keypoints_scores=np.array([[-0.1]]),
@@ -216,25 +216,25 @@ def test_masks_list():
         ValueError, match="Masks should be a numpy array, got <class 'int'>."
     ):
         create_detection_message(
-            bboxes=np.array([[1.0, 2.0, 3.0, 4.0]]), scores=np.array([0.1]), masks=1
+            bboxes=np.array([[0.25, 0.25, 0.25, 0.25]]), scores=np.array([0.1]), masks=1
         )
 
 
 def test_masks_shape():
     with pytest.raises(
         ValueError,
-        match=re.escape("Masks should be of shape (H, W), got (1, 3)."),
+        match=re.escape("Masks should be of shape (H, W), got (3,)."),
     ):
         create_detection_message(
-            bboxes=np.array([[1.0, 2.0, 3.0, 4.0]]),
+            bboxes=np.array([[0.25, 0.25, 0.25, 0.25]]),
             scores=np.array([0.1]),
-            masks=np.array([[1.0, 2.0, 3.0]]),
+            masks=np.array([1, 2, 3]),
         )
 
 
 def test_only_bboxes_scores():
     bboxes = np.array(
-        [[20.0, 20.0, 40.0, 40.0], [50.0, 50.0, 100.0, 100.0], [10.0, 10.0, 20.0, 20.0]]
+        [[0.2, 0.2, 0.4, 0.4], [0.5, 0.5, 0.1, 0.1], [0.1, 0.1, 0.2, 0.2]]
     )
     scores = np.array([0.1, 0.2, 0.3])
 
@@ -252,7 +252,7 @@ def test_only_bboxes_scores():
 
 def test_bboxes_scores_labels():
     bboxes = np.array(
-        [[20.0, 20.0, 40.0, 40.0], [50.0, 50.0, 100.0, 100.0], [10.0, 10.0, 20.0, 20.0]]
+        [[0.2, 0.2, 0.4, 0.4], [0.5, 0.5, 0.1, 0.1], [0.1, 0.1, 0.2, 0.2]]
     )
     scores = np.array([0.1, 0.2, 0.3])
     labels = np.array([1, 2, 3])
@@ -265,10 +265,10 @@ def test_bboxes_scores_labels():
 
 def test_bboxes_scores_keypoints():
     bboxes = np.array(
-        [[20.0, 20.0, 40.0, 40.0], [50.0, 50.0, 100.0, 100.0], [10.0, 10.0, 20.0, 20.0]]
+        [[0.2, 0.2, 0.4, 0.4], [0.5, 0.5, 0.1, 0.1], [0.1, 0.1, 0.2, 0.2]]
     )
     scores = np.array([0.1, 0.2, 0.3])
-    keypoints = np.array([[(0, 0), (1, 1)], [(2, 2), (3, 3)], [(4, 4), (5, 5)]])
+    keypoints = np.array([[(0.0, 0.0), (0.1, 0.1)], [(0.2, 0.2), (0.3, 0.3)], [(0.4, 0.4), (0.5, 0.5)]])
 
     message = create_detection_message(
         bboxes=bboxes, scores=scores, keypoints=keypoints

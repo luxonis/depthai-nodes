@@ -130,9 +130,9 @@ def test_all_scores_below_thr():
 
 
 def test_all_scores_above_thr():
-    message = create_keypoints_message([[1.0, 2.0, 3.0]], [0.8], 0.6)
+    message = create_keypoints_message([[0.1, 0.2, 0.3]], [0.8], 0.6)
 
-    true_pt = np.array([1.0, 2.0, 3.0])
+    true_pt = np.array([0.1, 0.2, 0.3])
 
     assert len(message.keypoints) == 1
     assert isinstance(message, Keypoints)
@@ -143,11 +143,11 @@ def test_all_scores_above_thr():
 
 
 def test_2d_keypoints():
-    message = create_keypoints_message([[1.0, 2.0], [3.0, 4.0]], [0.8, 0.5], 0.6)
+    message = create_keypoints_message([[0.1, 0.2], [0.3, 0.4]], [0.8, 0.5], 0.6)
 
     assert len(message.keypoints) == 1
-    assert message.keypoints[0].x == 1.0
-    assert message.keypoints[0].y == 2.0
+    assert message.keypoints[0].x == 0.1
+    assert message.keypoints[0].y == 0.2
     assert message.keypoints[0].z == 0.0
 
 
