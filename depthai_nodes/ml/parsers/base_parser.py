@@ -54,10 +54,8 @@ class BaseParser(dai.node.ThreadedHostNode, metaclass=BaseMeta):
     def build(self, head_config: Dict[str, Any]) -> "BaseParser":
         """Configures the parser based on the specified head configuration.
 
-        Attributes
-        ----------
-        head_config : Dict
-            A dictionary containing configuration details relevant to the parser, including parameters and settings required for output parsing.
+        @param head_config: A dictionary containing configuration details relevant to the parser, including parameters and settings required for output parsing.
+        @type head_config: Dict[str, Any]
         """
         pass
 
@@ -67,9 +65,10 @@ class BaseParser(dai.node.ThreadedHostNode, metaclass=BaseMeta):
 
         This method should be overridden by subclasses to implement the specific parsing logic.
         It accepts arbitrary keyword arguments for flexibility.
-        Args:
-            **kwargs: Arbitrary keyword arguments for the parsing process.
-        Returns:
-            The parsed output message, as defined by the logic in the subclass.
+
+        @param kwargs: Arbitrary keyword arguments for the parsing process.
+        @type kwargs: Any
+        @return message: The parsed output message, as defined by the logic in the subclass.
+        @rtype message: Any
         """
         pass

@@ -253,15 +253,7 @@ class ImgDetectionsExtended(dai.Buffer):
     """
 
     def __init__(self) -> None:
-        """Initializes the ImgDetectionsExtended object.
-
-        Attributes
-        ----------
-        detections: List[ImgDetectionExtended]
-            Image detections with keypoints.
-        masks: SegmentationMask
-            The segmentation masks of the image stored in a single numpy array.
-        """
+        """Initializes the ImgDetectionsExtended object."""
         super().__init__()
         self._detections: List[ImgDetectionExtended] = []
         self._masks: SegmentationMask = np.array([])

@@ -112,17 +112,14 @@ class MLSDParser(BaseParser):
         self,
         head_config: Dict[str, Any],
     ) -> "MLSDParser":
-        """Configures the parser.
+        """
+        Configures the parser.
 
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
+        @param head_config: The head configuration for the parser.
+        @type head_config: Dict[str, Any]
 
-        Returns
-        -------
-        MLSDParser
-            Returns the parser object with the head configuration set.
+        @return: The parser object with the head configuration set.
+        @rtype: MLSDParser
         """
 
         output_layers = head_config.get("outputs", [])

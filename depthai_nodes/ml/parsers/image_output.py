@@ -63,17 +63,14 @@ class ImageOutputParser(BaseParser):
         self,
         head_config: Dict[str, Any],
     ) -> "ImageOutputParser":
-        """Configures the parser.
+        """
+        Configures the parser.
 
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
+        @param head_config: The head configuration for the parser.
+        @type head_config: Dict[str, Any]
 
-        Returns
-        -------
-        ImageOutputParser
-            Returns the parser object with the head configuration set.
+        @return: The parser object with the head configuration set.
+        @rtype: ImageOutputParser
         """
 
         output_layers = head_config.get("outputs", [])

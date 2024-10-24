@@ -104,17 +104,14 @@ class KeypointParser(BaseParser):
         self,
         head_config: Dict[str, Any],
     ) -> "KeypointParser":
-        """Configures the parser.
+        """
+        Configures the parser.
 
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
+        @param head_config: The head configuration for the parser.
+        @type head_config: Dict[str, Any]
 
-        Returns
-        -------
-        KeypointParser
-            Returns the parser object with the head configuration set.
+        @return: The parser object with the head configuration set.
+        @rtype: KeypointParser
         """
 
         output_layers = head_config["outputs"]

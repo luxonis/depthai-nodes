@@ -50,17 +50,14 @@ class HRNetParser(KeypointParser):
         self,
         head_config: Dict[str, Any],
     ) -> "HRNetParser":
-        """Configures the parser.
+        """
+        Configures the parser.
 
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
+        @param head_config: The head configuration for the parser.
+        @type head_config: Dict[str, Any]
 
-        Returns
-        -------
-        HRNetParser
-            Returns the parser object with the head configuration set.
+        @return: The parser object with the head configuration set.
+        @rtype: HRNetParser
         """
 
         super().build(head_config)
