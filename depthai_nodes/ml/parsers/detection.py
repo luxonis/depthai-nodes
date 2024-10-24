@@ -77,17 +77,14 @@ class DetectionParser(BaseParser):
         self.max_det = max_det
 
     def build(self, head_config) -> "DetectionParser":
-        """Configures the parser.
+        """
+        Configures the parser.
 
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
+        @param head_config: The head configuration for the parser.
+        @type head_config: Dict[str, Any]
 
-        Returns
-        -------
-        DetectionParser
-            Returns the parser object with the head configuration set.
+        @return: The parser object with the head configuration set.
+        @rtype: DetectionParser
         """
 
         self.conf_threshold = head_config.get("conf_threshold", self.conf_threshold)

@@ -111,16 +111,12 @@ class ClassificationSequenceParser(ClassificationParser):
     def build(self, head_config: Dict[str, Any]) -> "ClassificationSequenceParser":
         """Configures the parser.
 
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser. The required keys are `classes`, `n_classes`, and `is_softmax`.
-            In addition to these, there are three optional keys that are mostly used for text processing: `ignored_indexes`, `remove_duplicates` and `concatenate_classes`.
+        @param head_config: The head configuration for the parser. The required keys are `classes`, `n_classes`, and `is_softmax`.
+        In addition to these, there are three optional keys that are mostly used for text processing: `ignored_indexes`, `remove_duplicates` and `concatenate_classes`.
+        @type head_config: Dict[str, Any]
 
-        Returns
-        -------
-        ClassificationParser
-            Returns the instantiated parser with the correct configuration.
+        @return: Returns the instantiated parser with the correct configuration.
+        @rtype: ClassificationParser
         """
         super().build(head_config)
         self.ignored_indexes = head_config.get("ignored_indexes", [])

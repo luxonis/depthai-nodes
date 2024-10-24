@@ -49,18 +49,16 @@ class RegressionParser(BaseParser):
         self,
         head_config: Dict[str, Any],
     ) -> "RegressionParser":
-        """Configures the parser.
-
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        RegressionParser
-            Returns the parser object with the head configuration set.
         """
+        Configures the parser.
+
+        @param head_config: The head configuration for the parser.
+        @type head_config: Dict[str, Any]
+
+        @return: The parser object with the head configuration set.
+        @rtype: RegressionParser
+        """
+
         output_layers = head_config.get("outputs", [])
         if len(output_layers) != 1:
             raise ValueError(

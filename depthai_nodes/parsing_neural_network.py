@@ -42,14 +42,12 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
     @overload
     def build(
         self, input: dai.Node.Output, nn_source: dai.NNModelDescription, fps: int
-    ) -> "ParsingNeuralNetwork":
-        ...
+    ) -> "ParsingNeuralNetwork": ...
 
     @overload
     def build(
         self, input: dai.Node.Output, nn_source: dai.NNArchive, fps: int
-    ) -> "ParsingNeuralNetwork":
-        ...
+    ) -> "ParsingNeuralNetwork": ...
 
     def build(
         self,
@@ -57,28 +55,23 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         nn_source: Union[dai.NNModelDescription, dai.NNArchive],
         fps: int = None,
     ) -> "ParsingNeuralNetwork":
-        """Builds the underlying NeuralNetwork node and creates parser nodes for each
+        """
+        Builds the underlying NeuralNetwork node and creates parser nodes for each
         model head.
 
-        Attributes
-        ----------
+        @param input: Node's input. It is a linking point to which the NeuralNetwork is linked. It accepts the output of a Camera node.
+        @type input: Node.Input
 
-        input : Node.Input
-            Node's input. It is a linking point to which the NeuralNetwork is linked. It accepts the output of a Camera node.
-        nn_source : Union[dai.NNModelDescription, dai.NNArchive]
-            NNModelDescription object containing the HubAI model descriptors, or NNArchive object of the model.
-        fps : int
-            FPS limit for the model runtime.
+        @param nn_source: NNModelDescription object containing the HubAI model descriptors, or NNArchive object of the model.
+        @type nn_source: Union[dai.NNModelDescription, dai.NNArchive]
 
-        Returns
-        -------
-        ParsingNeuralNetwork
-            Returns the ParsingNeuralNetwork object.
+        @param fps: FPS limit for the model runtime.
+        @type fps: int
 
-        Raises
-        ------
-        ValueError
-            If the nn_source is not a NNModelDescription or NNArchive object.
+        @return: Returns the ParsingNeuralNetwork object.
+        @rtype: ParsingNeuralNetwork
+
+        @raise ValueError: If the nn_source is not a NNModelDescription or NNArchive object.
         """
 
         if isinstance(nn_source, dai.NNModelDescription):

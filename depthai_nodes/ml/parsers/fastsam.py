@@ -243,17 +243,14 @@ class FastSAMParser(BaseParser):
         self.protos_output = protos_output
 
     def build(self, head_config: Dict[str, Any]) -> "FastSAMParser":
-        """Configures the parser.
+        """
+        Configures the parser.
 
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
+        @param head_config: The head configuration for the parser.
+        @type head_config: Dict[str, Any]
 
-        Returns
-        -------
-        FastSAMParser
-            Returns the parser object with the head configuration set.
+        @return: The parser object with the head configuration set.
+        @rtype: FastSAMParser
         """
 
         output_layers = head_config["outputs"]

@@ -168,16 +168,14 @@ class YOLOExtendedParser(BaseParser):
         self,
         head_config: Dict[str, Any],
     ):
-        """Configures the parser.
+        """
+        Configures the parser.
 
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-        Returns
-        -------
-        YOLOExtendedParser
-            Returns the parser object with the head configuration set.
+        @param head_config: The head configuration for the parser.
+        @type head_config: Dict[str, Any]
+
+        @return: The parser object with the head configuration set.
+        @rtype: YOLOExtendedParser
         """
 
         output_layers = head_config.get("outputs", [])

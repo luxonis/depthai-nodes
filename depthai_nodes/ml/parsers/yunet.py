@@ -120,18 +120,16 @@ class YuNetParser(DetectionParser):
         self,
         head_config: Dict[str, Any],
     ) -> "YuNetParser":
-        """Configures the parser.
-
-        Attributes
-        ----------
-        head_config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        YuNetParser
-            Returns the parser object with the head configuration set.
         """
+        Configures the parser.
+
+        @param head_config: The head configuration for the parser.
+        @type head_config: Dict[str, Any]
+
+        @return: The parser object with the head configuration set.
+        @rtype: YuNetParser
+        """
+
         super().build(head_config)
         output_layers = head_config.get("outputs", [])
         self.input_size = head_config.get("input_size", self.input_size)

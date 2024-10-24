@@ -76,18 +76,16 @@ class PPTextDetectionParser(DetectionParser):
         self.mask_threshold = mask_threshold
 
     def build(self, head_config: Dict[str, Any]) -> "PPTextDetectionParser":
-        """Configures the parser.
-
-        Attributes
-        ----------
-        config : Dict
-            The head configuration for the parser.
-
-        Returns
-        -------
-        PPTextDetectionParser
-            Returns the parser object with the head configuration set.
         """
+        Configures the parser.
+
+        @param config: The head configuration for the parser.
+        @type config: Dict[str, Any]
+
+        @return: The parser object with the head configuration set.
+        @rtype: PPTextDetectionParser
+        """
+
         super().build(head_config)
         self.mask_threshold = head_config.get("mask_threshold", self.mask_threshold)
 
