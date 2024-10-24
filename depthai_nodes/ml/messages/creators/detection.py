@@ -6,7 +6,6 @@ from ...messages import (
     ImgDetectionsExtended,
     Line,
     Lines,
-    SegmentationMask,
 )
 from ...parsers.utils import transform_to_keypoints
 
