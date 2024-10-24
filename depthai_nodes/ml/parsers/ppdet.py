@@ -109,19 +109,25 @@ class PPTextDetectionParser(DetectionParser):
                 )
 
             predictions = np.array(
-                output.getTensor(self.output_layer_name, dequantize=True)
+                output.getTensor(
+                    self.output_layer_name,
+                    dequantize=True,
+                    storageOrder=dai.TensorInfo.StorageOrder.NCHW,
+                )
             )
+
+            _, _, height, width = predictions.shape
 
             bboxes, angles, corners, scores = parse_paddle_detection_outputs(
                 predictions,
                 self.mask_threshold,
                 self.conf_threshold,
                 self.max_det,
+                width=width,
+                height=height,
             )
 
-            message = create_detection_message(
-                bboxes, scores, angles=angles, keypoints=corners
-            )
+            message = create_detection_message(bboxes, scores, angles=angles)
             message.setTimestamp(output.getTimestamp())
 
             self.out.send(message)
