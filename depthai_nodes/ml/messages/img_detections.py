@@ -256,7 +256,7 @@ class ImgDetectionsExtended(dai.Buffer):
         """Initializes the ImgDetectionsExtended object."""
         super().__init__()
         self._detections: List[ImgDetectionExtended] = []
-        self._masks: SegmentationMask = np.array([])
+        self._masks: SegmentationMask = SegmentationMask()
 
     @property
     def detections(self) -> List[ImgDetectionExtended]:
