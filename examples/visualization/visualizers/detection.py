@@ -266,11 +266,11 @@ def visualize_lane_detections(
 ):
     """Visualizes the lines on the frame."""
     clusters = parse_cluster_message(message)
-
+    h, w, _ = frame.shape
     for cluster in clusters:
         for point in cluster.points:
-            x = int(point.x)
-            y = int(point.y)
+            x = int(point.x * w)
+            y = int(point.y * h)
             cv2.circle(frame, (x, y), 3, (0, 255, 0), -1)
 
     # draw lines between points
@@ -278,8 +278,8 @@ def visualize_lane_detections(
         for i in range(len(cluster.points) - 1):
             cv2.line(
                 frame,
-                (int(cluster.points[i].x), int(cluster.points[i].y)),
-                (int(cluster.points[i + 1].x), int(cluster.points[i + 1].y)),
+                (int(cluster.points[i].x * w), int(cluster.points[i].y * h)),
+                (int(cluster.points[i + 1].x * w), int(cluster.points[i + 1].y * h)),
                 (0, 255, 0),
                 2,
             )
