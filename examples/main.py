@@ -1,9 +1,10 @@
 import depthai as dai
 from utils.arguments import initialize_argparser, parse_fps_limit, parse_model_slug
 from utils.model import get_input_shape, get_model_from_hub, get_parser
-from utils.parser import setup_parser
 from utils.xfeat import xfeat_mono, xfeat_stereo
 from visualization.visualize import visualize
+
+from depthai_nodes.parser_generator import ParserGenerator
 
 # Initialize the argument parser
 arg_parser, args = initialize_argparser()
@@ -66,8 +67,15 @@ with dai.Pipeline() as pipeline:
                 nn_archive,
             )
 
-        parser = pipeline.create(parser_class)
-        setup_parser(parser, nn_archive, parser_name)
+        parsers = pipeline.create(ParserGenerator).build(nn_archive)
+
+        if len(parsers) == 0:
+            raise ValueError("No parsers were generated.")
+
+        if len(parsers) > 1:
+            raise ValueError("Only models with one parser are supported.")
+
+        parser = parsers[0]
 
         # Linking
         network.out.link(parser.input)

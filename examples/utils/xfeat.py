@@ -27,8 +27,8 @@ def xfeat_mono(nn_archive: dai.NNArchive, input_shape: List[int], fps_limit: int
 
         # Set up parser
         parser = XFeatMonoParser()
-        parser.setOriginalSize(input_shape)
-        parser.setInputSize(input_shape)
+        parser.setOriginalSize(tuple(input_shape))
+        parser.setInputSize(tuple(input_shape))
         parser.setMaxKeypoints(2048)
 
         # Linking
@@ -105,8 +105,8 @@ def xfeat_stereo(nn_archive: dai.NNArchive, input_shape: List[int], fps_limit: i
         right_network.setNumInferenceThreads(2)
 
         parser = pipeline.create(XFeatStereoParser)
-        parser.setOriginalSize(input_shape)
-        parser.setInputSize(input_shape)
+        parser.setOriginalSize(tuple(input_shape))
+        parser.setInputSize(tuple(input_shape))
         parser.setMaxKeypoints(512)
 
         left_network.out.link(parser.reference_input)
