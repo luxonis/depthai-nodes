@@ -19,7 +19,7 @@ Here are the custom message types that we introduce in this package. They are us
 - [SegmentationMask](#segmentationmask)
 - [SegmentationMaskSAM](#segmentationmaskssam)
 
-## Classification
+## Classifications
 
 Classification class for storing the classes and their respective scores.
 
