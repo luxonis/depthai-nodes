@@ -332,6 +332,9 @@ class YOLOExtendedParser(BaseParser):
                     # Fill the final mask with the instance values
                     final_mask[resized_mask > 0] = i
 
+            bboxes = np.array(bboxes)
+            bboxes = np.clip(bboxes, 0, 1)
+
             if mode == self._KPTS_MODE:
                 additional_output = np.array(additional_output)
                 keypoints = np.array([])
@@ -340,8 +343,9 @@ class YOLOExtendedParser(BaseParser):
                     keypoints = additional_output[:, :, :2]
                     keypoints_scores = additional_output[:, :, 2]
 
+                keypoints = np.clip(keypoints, 0, 1)
                 detections_message = create_detection_message(
-                    bboxes=np.array(bboxes),
+                    bboxes=bboxes,
                     scores=np.array(scores),
                     labels=np.array(labels),
                     keypoints=keypoints,
@@ -349,14 +353,14 @@ class YOLOExtendedParser(BaseParser):
                 )
             elif mode == self._SEG_MODE:
                 detections_message = create_detection_message(
-                    bboxes=np.array(bboxes),
+                    bboxes=bboxes,
                     scores=np.array(scores),
                     labels=np.array(labels),
                     masks=final_mask,
                 )
             else:
                 detections_message = create_detection_message(
-                    bboxes=np.array(bboxes),
+                    bboxes=bboxes,
                     scores=np.array(scores),
                     labels=np.array(labels),
                 )

@@ -1,6 +1,7 @@
 from typing import Any, Dict, Tuple
 
 import depthai as dai
+import numpy as np
 
 from ..messages.creators import create_detection_message
 from .detection import DetectionParser
@@ -276,6 +277,9 @@ class YuNetParser(DetectionParser):
             bboxes = top_left_wh_to_xywh(bboxes)
             keypoints = keypoints[keep_indices]
             scores = scores[keep_indices]
+
+            bboxes = np.clip(bboxes, 0, 1)
+            keypoints = np.clip(keypoints, 0, 1)
 
             detections_message = create_detection_message(
                 bboxes=bboxes, scores=scores, keypoints=keypoints

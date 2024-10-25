@@ -212,6 +212,7 @@ class SCRFDParser(DetectionParser):
                 nms_threshold=self.iou_threshold,
             )
             bboxes = xyxy_to_xywh(bboxes)
+            bboxes = np.clip(bboxes, 0, 1)
             detection_msg = create_detection_message(
                 bboxes=bboxes, scores=scores, keypoints=keypoints
             )
