@@ -47,6 +47,8 @@ def _fastsam_show_masks(
     annotation,
     image,
 ):
+    if len(annotation) == 0:
+        return image
     n, h, w = annotation.shape  # batch, height, width
     areas = np.sum(annotation, axis=(1, 2))
     annotation = annotation[np.argsort(areas)]

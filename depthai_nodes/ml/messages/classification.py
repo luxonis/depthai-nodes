@@ -69,6 +69,6 @@ class Classifications(dai.Buffer):
             raise TypeError(f"Scores must be a np.ndarray, instead got {type(value)}.")
         if value.ndim != 1:
             raise ValueError("Scores must be a 1D a np.ndarray.")
-        if value.dtype != np.float32:
+        if value.size > 0 and value.dtype != np.float32:
             raise ValueError("Scores must be a np.ndarray of floats.")
         self._scores = value

@@ -195,10 +195,11 @@ def parse_paddle_detection_outputs(
         angles.append(box[4])
 
     boxes = np.array(boxes)
-    boxes[:, 0] /= width
-    boxes[:, 1] /= height
-    boxes[:, 2] /= width
-    boxes[:, 3] /= height
-    corners = np.clip(corners, 0, 1)
+    if boxes.size > 0:
+        boxes[:, 0] /= width
+        boxes[:, 1] /= height
+        boxes[:, 2] /= width
+        boxes[:, 3] /= height
+        corners = np.clip(corners, 0, 1)
 
     return boxes, np.array(angles), np.array(corners_array), np.array(scores)

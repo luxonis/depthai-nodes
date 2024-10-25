@@ -156,6 +156,8 @@ class KeypointParser(BaseParser):
 
             keypoints /= self.scale_factor
 
+            keypoints = np.clip(keypoints, 0, 1)
+
             msg = create_keypoints_message(keypoints)
             msg.setTimestamp(output.getTimestamp())
 

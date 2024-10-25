@@ -3,8 +3,6 @@ import depthai as dai
 from depthai_nodes.ml.messages import (
     Classifications,
     Clusters,
-    CompositeMessage,
-    CornerDetections,
     ImgDetectionsExtended,
     Keypoints,
     Lines,
@@ -45,32 +43,10 @@ def parse_classification_message(message: Classifications):
     return classes, scores
 
 
-def parse_multi_classification_message(message: CompositeMessage):
-    """Parses the multi classification message and returns the classification."""
-    message = message.getData()
-    result = {}
-    for key in message:
-        classes = message[key].classes
-        scores = message[key].scores
-        result[key] = {"classes": classes, "scores": scores}
-    return result
-
-
 def parse_image_message(message: dai.ImgFrame):
     """Parses the image message and returns the image."""
     image = message.getFrame()
     return image
-
-
-def parser_age_gender_message(message: CompositeMessage):
-    """Parses the age-gender message and return the age and scores for all genders."""
-    message = message.getData()
-    age = message["age"]
-    gender = message["gender"]
-    gender_scores = gender.scores
-    gender_classes = gender.classes
-
-    return age, gender_classes, gender_scores
 
 
 def parse_yolo_kpts_message(message: ImgDetectionsExtended):
@@ -95,9 +71,3 @@ def parse_map_message(message: Map2D):
     """Parses the map message and returns the map."""
     map = message.map
     return map
-
-
-def parse_corner_detection_message(message: CornerDetections):
-    """Parses the corner detection message and returns the corners."""
-    detections = message.detections
-    return detections

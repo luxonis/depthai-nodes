@@ -189,6 +189,9 @@ class MPPalmDetectionParser(DetectionParser):
             points = points.astype(float) / self.scale
             bboxes = bboxes.astype(float) / self.scale
 
+            bboxes = np.clip(bboxes, 0, 1)
+            points = np.clip(points, 0, 1)
+
             detections_msg = create_detection_message(
                 bboxes=bboxes, scores=scores, angles=angles, keypoints=points
             )
