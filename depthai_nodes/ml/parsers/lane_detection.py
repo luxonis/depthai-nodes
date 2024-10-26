@@ -180,8 +180,8 @@ class LaneDetectionParser(BaseParser):
                 anchors=self.row_anchors,
                 griding_num=self.griding_num,
                 cls_num_per_lane=self.cls_num_per_lane,
-                INPUT_WIDTH=self.input_shape[1],
-                INPUT_HEIGHT=self.input_shape[0],
+                input_width=self.input_shape[1],
+                input_height=self.input_shape[0],
                 y=y,
             )
 
