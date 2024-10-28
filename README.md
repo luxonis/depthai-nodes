@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-![CI](https://github.com/luxonis/depthai-nodes/actions/workflows/ci.yaml/badge.svg)
+![CI](https://github.com/luxonis/depthai-nodes/actions/workflows/ci.yaml/badge.svg?event=pull_request)
 ![Coverage](https://github.com/luxonis/depthai-nodes/blob/dev/media/coverage_badge.svg)
 
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
@@ -25,7 +25,7 @@ The `depthai_nodes` package requires Python 3.8 or later and `depthai v3` instal
 While the `depthai v3` is not yet released on PyPI, you can install it with the following command:
 
 ```bash
-pip install --extra-index-url https://artifacts.luxonis.com/artifactory/luxonis-python-release-local/ depthai==3.0.0a4
+pip install --extra-index-url https://artifacts.luxonis.com/artifactory/luxonis-python-release-local/  depthai==3.0.0a5
 ```
 
 The `depthai_nodes` package is hosted on PyPI, so you can install it with `pip`.
@@ -49,8 +49,6 @@ and then inside the directory run:
 ```bash
 pip install .
 ```
-
-Note: You'll still need to manually install `depthai v3`.
 
 Note: You'll still need to manually install `depthai v3`.
 
