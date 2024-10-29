@@ -35,7 +35,7 @@ class YOLOExtendedParser(BaseParser):
         Mask confidence threshold.
     n_keypoints : int
         Number of keypoints in the model.
-    anchors : Optional[List[np.ndarray]]
+    anchors : Optional[List[List[List[float]]]]
         Anchors for the YOLO model (optional).
     subtype : str
         Version of the YOLO model.
@@ -59,7 +59,7 @@ class YOLOExtendedParser(BaseParser):
         iou_threshold: float = 0.5,
         mask_conf: float = 0.5,
         n_keypoints: int = 17,
-        anchors: Optional[List[np.ndarray]] = None,
+        anchors: Optional[List[List[List[float]]]] = None,
         subtype: str = "",
     ):
         """Initialize the parser node.
@@ -75,7 +75,7 @@ class YOLOExtendedParser(BaseParser):
         @param n_keypoints: The number of keypoints in the model
         @type n_keypoints: int
         @param anchors: The anchors for the YOLO model
-        @type anchors: Optional[List[np.ndarray]]
+        @type anchors: Optional[List[List[List[float]]]]
         @param subtype: The version of the YOLO model
         @type subtype: str
         """
@@ -143,11 +143,11 @@ class YOLOExtendedParser(BaseParser):
         """
         self.n_keypoints = n_keypoints
 
-    def setAnchors(self, anchors: List[np.ndarray]) -> None:
+    def setAnchors(self, anchors: List[List[List[float]]]) -> None:
         """Sets the anchors for the YOLO model.
 
         @param anchors: The anchors for the YOLO model.
-        @type anchors: List[np.ndarray]
+        @type anchors: List[List[List[float]]]
         """
         self.anchors = anchors
 
@@ -279,6 +279,10 @@ class YOLOExtendedParser(BaseParser):
             input_shape = tuple(
                 dim * strides[0] for dim in outputs_values[0].shape[2:4]
             )
+
+            # Reshape the anchors based on the model's output heads
+            if self.anchors is not None:
+                self.anchors = np.array(self.anchors).reshape(len(strides), -1)
 
             # Decode the outputs
             results = decode_yolo_output(
