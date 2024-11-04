@@ -1,0 +1,28 @@
+SLUGS = [
+    "scrfd-face-detection:10g-640x640",
+    "yunet:new-240x320",
+    "yunet:new-960x1280",
+    "yolov8-instance-segmentation-nano:coco-512x288",
+    "paddle-text-recognition:160x48",
+    "paddle-text-recognition:320x48",
+    "mediapipe-face-landmarker:192x192",
+    "mediapipe-selfie-segmentation:144x256",
+    "dncnn3:321x481",
+    "zero-dce:400x600",
+    "yolov8-nano-pose-estimation:coco-512x288",
+    "yolov8-large-pose-estimation:coco-640x352",
+    "paddle-text-detection:256x256",
+    "emotion-recognition:260x260",
+    "lite-hrnet:30-coco-256x192",
+    "deeplab-v3-plus:256x256",
+    # "deeplab-v3-plus:513x513",  # only support even numbers
+    "fastsam-s:512x288",
+    "superanimal-landmarker:256x256",
+    "mediapipe-hand-landmarker:224x224",
+    "mediapipe-palm-detection:128x128",
+    "mediapipe-palm-detection:192x192",
+    # "head-pose-estimation:60x60" # too smal input size
+    "depth-anything-v2:vit-s-mde-outdoors-252x336",
+    "midas-v2-1:small-192x256",
+    "objectron:chair-224x224",
+]
