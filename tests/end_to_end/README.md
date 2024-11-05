@@ -5,34 +5,35 @@ The tests check if the device is able to run a model with neural network node an
 
 ## Running the tests
 
-Currently, you must specify the device IP address in the ENV variables: `RVC2_IP` and `RVC4_IP`. If the ENV variable is empty the script will take the connected device via USB.
-For running the tests locally you can use `manual.py` script. You can specify the model slugs to test the models from ZOO or specify the path to the local NN archive paths. If you want to test all available models you can use `--all` flag and for testing specific parser on an models you can use `--parser` or `-p` flag.
+Currently, you must specify the device IP address in the ENV variables: `RVC2_IP` and `RVC4_IP`. If the ENV variable is empty the script will take the connected device via USB. For downloading the NN archives from the HubAI you also need to specify `HUBAI_TEAM_ID` ENV variable.
+For running the tests locally you can use `main.py` script. You can specify the model slugs to test the models from ZOO or specify the path to the local NN archive paths. If you want to test all available models you can use `--all` flag and for testing specific parser on all models you can use `--parser` or `-p` flag.
 
 Test all public models on ZOO:
 
 ```bash
-python manual.py --all
+python main.py --all
 ```
 
 Test specific models on ZOO given the slugs:
 
 ```bash
-python manual.py -s <slug_1> <slug_2> ...
+python main.py -s <slug_1> <slug_2> ...
 ```
 
 Test local NN archives:
 
 ```bash
-python manual.py -nn <path_to_archive_1> <path_to_archive_2> ...
+python main.py -nn <path_to_archive_1> <path_to_archive_2> ...
 ```
 
 Test specific parser on all models:
 
 ```bash
-python manual.py -p <parser_name>
+python main.py -p <parser_name>
 ```
+
+You can also run `manual.py` with `-s` or `-nn` if want to debug parser quickly (without pytest).
 
 ## Limitations
 
 - The test does not yet connect to the testbed. It will be added soon.
-- The test does not yet get all the models from HubAI via API call. It will be added soon.

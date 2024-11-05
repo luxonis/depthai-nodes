@@ -1,4 +1,5 @@
 import ast
+import multiprocessing
 import os
 import time
 from typing import List, Tuple
@@ -65,8 +66,17 @@ def pytest_generate_tests(metafunc):
 
 
 def test_pipelines(IP: str, ip_platform: str, nn_archive_path, slug):
-    time.sleep(3)
-    pipeline_test(IP, nn_archive_path, slug)
+    time.sleep(2)
+    subprocess = multiprocessing.Process(
+        target=pipeline_test, args=[IP, nn_archive_path, slug]
+    )
+    subprocess.start()
+    subprocess.join()
+    if subprocess.exitcode != 0:
+        if subprocess.exitcode == 5:
+            pytest.skip(f"Model not supported on {ip_platform}.")
+        else:
+            raise RuntimeError("Pipeline crashed.")
 
 
 def pipeline_test(IP: str, nn_archive_path: str = None, slug: str = None):
@@ -87,7 +97,7 @@ def pipeline_test(IP: str, nn_archive_path: str = None, slug: str = None):
             nn_archive_path = dai.getModelFromZoo(nn_archive)
         except Exception:
             device.close()
-            pytest.skip(f"Model not found on HubAI for {device_platform}")
+            exit(5)
 
     nn_archive = dai.NNArchive(nn_archive_path)
 
@@ -95,7 +105,7 @@ def pipeline_test(IP: str, nn_archive_path: str = None, slug: str = None):
 
     if device_platform not in model_platforms:
         device.close()
-        pytest.skip(f"Model not supported on {device_platform}")
+        exit(5)
 
     with dai.Pipeline(device) as pipeline:
         camera_node = pipeline.create(dai.node.Camera).build()
