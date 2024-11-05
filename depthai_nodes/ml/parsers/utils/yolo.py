@@ -49,7 +49,7 @@ def non_max_suppression(
     prediction: np.ndarray,
     conf_thres: float = 0.5,
     iou_thres: float = 0.45,
-    classes: List = None,
+    classes: Optional[List] = None,
     num_classes: int = 1,
     agnostic: bool = False,
     multi_label: bool = False,
@@ -69,7 +69,7 @@ def non_max_suppression(
     @param iou_thres: Intersection over union threshold.
     @type iou_thres: float
     @param classes: For filtering by classes.
-    @type classes: List
+    @type classes: Optional[List]
     @param num_classes: Number of classes.
     @type num_classes: int
     @param agnostic: Runs NMS on all boxes together rather than per class if True.
@@ -190,7 +190,7 @@ def parse_yolo_outputs(
     outputs: List[np.ndarray],
     strides: List[int],
     num_outputs: int,
-    anchors: Optional[List[np.ndarray]] = None,
+    anchors: Optional[np.ndarray] = None,
     kpts: Optional[List[np.ndarray]] = None,
     det_mode: bool = False,
     subtype: YOLOSubtype = YOLOSubtype.DEFAULT,
@@ -203,8 +203,8 @@ def parse_yolo_outputs(
     @type strides: List[int]
     @param num_outputs: Number of outputs of the model.
     @type num_outputs: int
-    @param anchors: An optional list of anchors.
-    @type anchors: Optional[List[np.ndarray]]
+    @param anchors: An optional array of anchors.
+    @type anchors: Optional[np.ndarray]
     @param kpts: An optional list of keypoints for each output.
     @type kpts: Optional[List[np.ndarray]]
     @param det_mode: Detection only mode.
@@ -218,7 +218,7 @@ def parse_yolo_outputs(
 
     for i, (out_head, stride) in enumerate(zip(outputs, strides)):
         kpt = kpts[i] if kpts else None
-        anchors_head = anchors[i] if anchors else None
+        anchors_head = anchors[i] if anchors is not None else None
         out = parse_yolo_output(
             out_head,
             stride,
@@ -265,7 +265,9 @@ def parse_yolo_output(
     @return: Parsed output.
     @rtype: np.ndarray
     """
-    na = len(anchors) // 2 if anchors else 1  # number of anchors per head
+    na = (
+        anchors.shape[0] // 2 if anchors is not None else 1
+    )  # number of anchors per head
     bs, _, ny, nx = out.shape  # bs - batch size, ny|nx - y and x of grid cells
 
     if subtype in [
@@ -375,7 +377,7 @@ def parse_kpts(
 def decode_yolo_output(
     yolo_outputs: List[np.ndarray],
     strides: List[int],
-    anchors: Optional[List[np.ndarray]] = None,
+    anchors: Optional[np.ndarray] = None,
     kpts: Optional[List[np.ndarray]] = None,
     conf_thres: float = 0.5,
     iou_thres: float = 0.45,
@@ -389,8 +391,8 @@ def decode_yolo_output(
     @type yolo_outputs: List[np.ndarray]
     @param strides: List of strides.
     @type strides: List[int]
-    @param anchors: An optional list of anchors.
-    @type anchors: Optional[List[np.ndarray]]
+    @param anchors: An optional array of anchors.
+    @type anchors: Optional[np.ndarray]
     @param kpts: An optional list of keypoints.
     @type kpts: Optional[List[np.ndarray]]
     @param conf_thres: Confidence threshold.
