@@ -1,5 +1,6 @@
 [project]
 name = "depthai-nodes"
+version = "0.1.0"
 description = "Community on-host nodes for DepthAI."
 readme = "README.md"
 requires-python = ">=3.8"
