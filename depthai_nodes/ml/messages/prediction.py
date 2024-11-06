@@ -80,3 +80,12 @@ class Predictions(dai.Buffer):
         if not all(isinstance(item, Prediction) for item in value):
             raise ValueError("Predictions must be a list of Prediction objects.")
         self._predictions = value
+
+    @property
+    def prediction(self) -> float:
+        """Returns the first prediction. Useful for single predictions.
+
+        @return: The predicted value.
+        @rtype: float
+        """
+        return self._predictions[0].prediction
