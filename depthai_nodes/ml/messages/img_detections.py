@@ -241,7 +241,8 @@ class ImgDetectionExtended(dai.Buffer):
         self._keypoints = value
 
     def get_xyxy_bbox_points(self) -> NDArray[np.float32]:
-        """Returns the [x1, y1, x2, y2] bounding box points.
+        """Returns the axis-aligned [x1, y1, x2, y2] bounding box points. It does not
+        take into account the angle of the bounding box.
 
         @return: Bounding box points.
         @rtype: NDArray[np.float32]
