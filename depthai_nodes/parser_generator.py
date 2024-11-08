@@ -43,6 +43,13 @@ class ParserGenerator(dai.node.ThreadedHostNode):
 
         for index, head in zip(indexes, heads):
             parser_name = head.parser
+
+            if parser_name == "YOLO" or parser_name == "SSD":
+                parser = pipeline.create(dai.node.DetectionParser)
+                parser.setNNArchive(nn_archive)
+                parsers[index] = parser
+                continue
+
             parser = globals().get(parser_name)
 
             if parser is None:
