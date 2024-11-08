@@ -22,7 +22,7 @@ class YuNetParser(DetectionParser):
     max_det : int
         Maximum number of detections to keep.
     input_size : Tuple[int, int]
-        Input size.
+        Input size (width, height).
     loc_output_layer_name: str
         Name of the output layer containing the location predictions.
     conf_output_layer_name: str
@@ -246,7 +246,7 @@ class YuNetParser(DetectionParser):
 
             # decode detections
             bboxes, keypoints, scores = decode_detections(
-                input_shape=self.input_size,
+                input_size=self.input_size,
                 loc=loc,
                 conf=conf,
                 iou=iou,
@@ -265,7 +265,7 @@ class YuNetParser(DetectionParser):
                 bboxes=bboxes,
                 keypoints=keypoints,
                 scores=scores,
-                input_shape=self.input_size,
+                input_size=self.input_size,
             )
 
             # run nms

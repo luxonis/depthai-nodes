@@ -20,15 +20,15 @@ def manual_product(*args):
 
 
 def generate_anchors(
-    input_shape: Tuple[int, int],
+    input_size: Tuple[int, int],
     min_sizes: List[List[int]] = None,
     strides: List[int] = None,
 ):
     """Generate a set of default bounding boxes, known as anchors.
     The code is taken from https://github.com/Kazuhito00/YuNet-ONNX-TFLite-Sample/tree/main
 
-    @param input_shape: A tuple representing the width and height of the input image.
-    @type input_shape: Tuple[int, int]
+    @param input_size: A tuple representing the width and height of the input image.
+    @type input_size: Tuple[int, int]
     @param min_sizes: A list of lists, where each inner list contains the minimum sizes of the anchors for different feature maps.
     @type min_sizes List[List[int]]
     @param strides: Strides for each feature map layer.
@@ -36,7 +36,7 @@ def generate_anchors(
     @return: Anchors.
     @rtype: np.ndarray
     """
-    w, h = input_shape
+    w, h = input_size
 
     if min_sizes is None:
         min_sizes = [[10, 16, 24], [32, 48], [64, 96], [128, 192, 256]]
@@ -70,7 +70,7 @@ def generate_anchors(
 
 
 def decode_detections(
-    input_shape: Tuple[int, int],
+    input_size: Tuple[int, int],
     loc: np.ndarray,
     conf: np.ndarray,
     iou: np.ndarray,
@@ -80,8 +80,8 @@ def decode_detections(
     Decodes the output of an object detection model by converting the model's predictions (localization, confidence, and IoU scores) into bounding boxes, keypoints, and scores.
     The code is taken from https://github.com/Kazuhito00/YuNet-ONNX-TFLite-Sample/tree/main
 
-    @param input_shape: The shape of the input image (height, width).
-    @type input_shape: tuple
+    @param input_size: The size of the input image (height, width).
+    @type input_size: tuple
     @param loc: The predicted locations (or offsets) of the bounding boxes.
     @type loc: np.ndarray
     @param conf: The predicted class confidence scores.
@@ -98,12 +98,12 @@ def decode_detections(
 
     """
 
-    w, h = input_shape
+    w, h = input_size
 
     if variance is None:
         variance = [0.1, 0.2]
 
-    anchors = generate_anchors(input_shape)
+    anchors = generate_anchors(input_size)
 
     # Get scores
     cls_scores = conf[:, 1]
@@ -168,7 +168,7 @@ def format_detections(
     bboxes: np.ndarray,
     keypoints: np.ndarray,
     scores: np.ndarray,
-    input_shape: Tuple[int, int],
+    input_size: Tuple[int, int],
 ):
     """Format detections into a list of dictionaries.
 
@@ -178,8 +178,8 @@ def format_detections(
     @type np.ndarray
     @param scores: A numpy array of shape (N,) containing the scores.
     @type np.ndarray
-    @param input_shape: A tuple representing the height and width of the input image.
-    @type input_shape: tuple
+    @param input_size: A tuple representing the height and width of the input image.
+    @type input_size: tuple
     @return: A tuple of bboxes, keypoints, and scores.
         - bboxes: NumPy array of shape (N, 4) containing the decoded bounding boxes in the format [x_min, y_min, width, height].
         - keypoints: A NumPy array of shape (N, 10) containing the decoded keypoint coordinates for each anchor.
@@ -187,7 +187,7 @@ def format_detections(
     @rtype: Tuple[np.ndarray, np.ndarray, np.ndarray]
     """
 
-    w, h = input_shape
+    w, h = input_size
 
     bboxes = normalize_bboxes(bboxes, height=h, width=w)
 
