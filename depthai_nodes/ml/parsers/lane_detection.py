@@ -24,7 +24,7 @@ class LaneDetectionParser(BaseParser):
     cls_num_per_lane : int
         Number of points per lane.
     input_shape : Tuple[int, int]
-        Input shape (height,width).
+        Input shape (width,height).
 
     Output Message/s
     ----------------
@@ -56,7 +56,7 @@ class LaneDetectionParser(BaseParser):
         @type griding_num: int
         @param cls_num_per_lane: Number of points per lane.
         @type cls_num_per_lane: int
-        @param input_shape: Input shape (height,width).
+        @param input_shape: Input shape (width,height).
         @type input_shape: Tuple[int, int]
         """
         super().__init__()
@@ -112,7 +112,7 @@ class LaneDetectionParser(BaseParser):
     def setInputShape(self, input_shape: Tuple[int, int]) -> None:
         """Set the input shape for the lane detection model.
 
-        @param input_shape: Input shape (height,width).
+        @param input_shape: Input shape (width,height).
         @type input_shape: Tuple[int, int]
         """
         if not isinstance(input_shape, tuple):
@@ -126,15 +126,23 @@ class LaneDetectionParser(BaseParser):
     def build(
         self,
         head_config: Dict[str, Any],
+        inputs_size: List[List[int]],
     ) -> "LaneDetectionParser":
         """Configures the parser.
 
         @param head_config: The head configuration for the parser.
         @type head_config: Dict[str, Any]
+        @param inputs_size: Model inputs size.
+        @type inputs_size: List[List[int]]
         @return: The parser object with the head configuration set.
         @rtype: LaneDetectionParser
         """
 
+        if len(inputs_size) != 1:
+            raise ValueError(
+                f"Only one input supported for LaneDetectionParser, got {len(inputs_size)} inputs."
+            )
+        self.input_shape = inputs_size[0]
         output_layers = head_config.get("outputs", [])
         if len(output_layers) != 1:
             raise ValueError(
@@ -180,8 +188,8 @@ class LaneDetectionParser(BaseParser):
                 anchors=self.row_anchors,
                 griding_num=self.griding_num,
                 cls_num_per_lane=self.cls_num_per_lane,
-                input_width=self.input_shape[1],
-                input_height=self.input_shape[0],
+                input_width=self.input_shape[0],
+                input_height=self.input_shape[1],
                 y=y,
             )
 
