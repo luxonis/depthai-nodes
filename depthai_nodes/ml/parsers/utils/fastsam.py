@@ -320,3 +320,23 @@ def process_single_mask(
     mask = cv2.resize(mask, img_shape, interpolation=cv2.INTER_NEAREST)
     mask = crop_mask(mask, np.array(bbox))
     return (mask > mask_conf).astype(np.uint8)
+
+
+def merge_masks(masks: np.ndarray) -> np.ndarray:
+    """Merge masks to from 3D to 2D array where each object is represented by a unique label.
+
+    @param masks: 3D array of masks
+    @type masks: np.ndarray
+    @return: 2D array of masks
+    @rtype: np.ndarray
+    """
+    if masks.ndim == 3:
+        n, height, width = masks.shape
+    else:
+        raise ValueError("Masks must be a 3D array.")
+    
+    labeled_array = np.full((height, width), -1, dtype=np.int8)
+    for i in range(n):
+        labeled_array[masks[i] > 0] = i
+    
+    return labeled_array
