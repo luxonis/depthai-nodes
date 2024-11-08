@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple, List
+from typing import Any, Dict, List, Tuple
 
 import depthai as dai
 import numpy as np

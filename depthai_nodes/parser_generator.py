@@ -1,5 +1,5 @@
-from typing import Dict
 import inspect
+from typing import Dict
 
 import depthai as dai
 
@@ -54,8 +54,8 @@ class ParserGenerator(dai.node.ThreadedHostNode):
                 )
 
             head = decode_head(head)
-            sig = inspect.signature(parser.build) # inspect build() method
-            if 'inputs_size' in sig.parameters:
+            sig = inspect.signature(parser.build)
+            if "inputs_size" in sig.parameters:
                 inputs_size = []
                 for input in nn_archive.getConfig().model.inputs:
                     breakpoint()
@@ -64,8 +64,10 @@ class ParserGenerator(dai.node.ThreadedHostNode):
                     elif input.layout == "NCHW":
                         _, _, height, width = input.shape
                     else:
-                        raise ValueError(f"Input layout {input.layout} not supported for input_size extraction.")
-                    inputs_size.append([width,height])
+                        raise ValueError(
+                            f"Input layout {input.layout} not supported for input_size extraction."
+                        )
+                    inputs_size.append([width, height])
                 parsers[index] = pipeline.create(parser).build(head, inputs_size)
             else:
                 parsers[index] = pipeline.create(parser).build(head)
