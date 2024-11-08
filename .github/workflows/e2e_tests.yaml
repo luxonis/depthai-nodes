@@ -43,7 +43,6 @@ jobs:
       - name: Run Test
         run: |
           CMD="hil --testbed oak4-s --reservation-name 'depthai_nodes_ml_team' --commands 'cd /home/hil/depthai-nodes' 'git pull' 'source venv/bin/activate' 'cd tests/end_to_end' 'ls' 'deactivate'"
-          CMD="$CMD'"
           eval $CMD
 
       - name: Stop WireGuard
