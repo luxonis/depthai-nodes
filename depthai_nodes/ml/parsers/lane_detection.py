@@ -24,7 +24,7 @@ class LaneDetectionParser(BaseParser):
     cls_num_per_lane : int
         Number of points per lane.
     input_shape : Tuple[int, int]
-        Input shape.
+        Input shape (height,width).
 
     Output Message/s
     ----------------
@@ -44,7 +44,7 @@ class LaneDetectionParser(BaseParser):
         row_anchors: List[int] = None,
         griding_num: int = None,
         cls_num_per_lane: int = None,
-        input_shape: Tuple[int, int] = (288, 800),
+        input_shape: Tuple[int, int] = None,
     ) -> None:
         """Initializes the lane detection parser node.
 
@@ -56,7 +56,7 @@ class LaneDetectionParser(BaseParser):
         @type griding_num: int
         @param cls_num_per_lane: Number of points per lane.
         @type cls_num_per_lane: int
-        @param input_shape: Input shape.
+        @param input_shape: Input shape (height,width).
         @type input_shape: Tuple[int, int]
         """
         super().__init__()
@@ -112,7 +112,7 @@ class LaneDetectionParser(BaseParser):
     def setInputShape(self, input_shape: Tuple[int, int]) -> None:
         """Set the input shape for the lane detection model.
 
-        @param input_shape: Input shape.
+        @param input_shape: Input shape (height,width).
         @type input_shape: Tuple[int, int]
         """
         if not isinstance(input_shape, tuple):
