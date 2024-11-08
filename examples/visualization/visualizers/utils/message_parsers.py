@@ -25,8 +25,7 @@ def parse_line_detection_message(message: Lines):
 
 def parse_segmentation_message(message: dai.ImgFrame):
     """Parses the segmentation message and returns the mask."""
-    mask = message.getFrame()
-    mask = mask.reshape(mask.shape[0], mask.shape[1])
+    mask = message.mask
     return mask
 
 

@@ -2,14 +2,14 @@ import cv2
 import depthai as dai
 import numpy as np
 
-from depthai_nodes.ml.messages import SegmentationMasksSAM
+from depthai_nodes.ml.messages import SegmentationMask
 
 from .utils.colors import get_adas_colors, get_ewasr_colors, get_selfie_colors
-from .utils.message_parsers import parse_fast_sam_message, parse_segmentation_message
+from .utils.message_parsers import parse_segmentation_message
 
 
 def visualize_segmentation(
-    frame: dai.ImgFrame, message: dai.ImgFrame, extraParams: dict
+    frame: dai.ImgFrame, message: SegmentationMask, extraParams: dict
 ):
     mask = parse_segmentation_message(message)
     frame = cv2.resize(frame, (mask.shape[1], mask.shape[0]))
@@ -69,27 +69,3 @@ def _fastsam_show_masks(
     overlay[:, :, :3] = overlay[:, :, :3] * (1 - alpha) + show[:, :, :3] * alpha
 
     return overlay.astype(np.uint8)
-
-
-def visualize_fastsam(
-    frame: dai.ImgFrame, message: SegmentationMasksSAM, extraParams: dict
-):
-    masks = parse_fast_sam_message(message)
-
-    if masks is not None:
-        for i, mask in enumerate(masks):
-            masks[i] = cv2.morphologyEx(
-                mask.astype(np.uint8), cv2.MORPH_OPEN, np.ones((8, 8), np.uint8)
-            )
-
-        overlay = _fastsam_show_masks(masks, frame)
-    else:
-        overlay = frame
-
-    cv2.imshow("FastSAM segmentation", overlay)
-
-    if cv2.waitKey(1) == ord("q"):
-        cv2.destroyAllWindows()
-        return True
-
-    return False
