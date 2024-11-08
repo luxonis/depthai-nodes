@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, List
 
 import depthai as dai
 import numpy as np
@@ -55,7 +55,7 @@ class YuNetParser(DetectionParser):
         @type iou_threshold: float
         @param max_det: Maximum number of detections to keep.
         @type max_det: int
-        @param input_size: Input shape of the model (width, height).
+        @param input_size: Input size of the model (width, height).
         @type input_size: Tuple[int, int]
         @param loc_output_layer_name: Output layer name for the location predictions.
         @type loc_output_layer_name: str
@@ -120,22 +120,26 @@ class YuNetParser(DetectionParser):
     def build(
         self,
         head_config: Dict[str, Any],
+        inputs_size: List[List[int]],
     ) -> "YuNetParser":
         """Configures the parser.
 
         @param head_config: The head configuration for the parser.
         @type head_config: Dict[str, Any]
+        @param inputs_size: Model inputs size.
+        @type inputs_size: List[List[int]]
         @return: The parser object with the head configuration set.
         @rtype: YuNetParser
         """
 
         super().build(head_config)
         output_layers = head_config.get("outputs", [])
-        self.input_size = head_config.get("input_size", self.input_size)
-        if len(output_layers) != 3:
+        if len(inputs_size) != 1:
             raise ValueError(
-                f"YuNetParser expects exactly 3 output layers, got {output_layers} layers."
+                f"Only one input supported for LaneDetectionParser, got {len(inputs_size)} inputs."
             )
+        self.input_size = inputs_size[0]
+        print(self.input_size)
         for output_layer in output_layers:
             if "loc" in output_layer:
                 self.loc_output_layer_name = output_layer
