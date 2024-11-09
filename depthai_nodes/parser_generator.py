@@ -58,7 +58,6 @@ class ParserGenerator(dai.node.ThreadedHostNode):
             if "inputs_size" in sig.parameters:
                 inputs_size = []
                 for input in nn_archive.getConfig().model.inputs:
-                    breakpoint()
                     if input.layout == "NHWC":
                         _, height, width, _ = input.shape
                     elif input.layout == "NCHW":

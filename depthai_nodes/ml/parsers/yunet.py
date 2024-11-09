@@ -133,13 +133,12 @@ class YuNetParser(DetectionParser):
         """
 
         super().build(head_config)
-        output_layers = head_config.get("outputs", [])
         if len(inputs_size) != 1:
             raise ValueError(
                 f"Only one input supported for YuNetParser, got {len(inputs_size)} inputs."
             )
         self.input_size = inputs_size[0]
-        print(self.input_size)
+        output_layers = head_config.get("outputs", [])
         for output_layer in output_layers:
             if "loc" in output_layer:
                 self.loc_output_layer_name = output_layer
