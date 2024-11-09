@@ -109,21 +109,11 @@ def main():
     slug = [f"{s}" for s in slug]
 
     if slug:
-        pytest.main(
-            [
-                "test_e2e.py",
-                f"--slug={slug}",
-                "-v",
-            ]
-        )
+        pytest.main(["test_e2e.py", f"--slug={slug}", "-v", "--tb=no"])
         return
 
     pytest.main(
-        [
-            "test_e2e.py",
-            f"--nn_archive_path={nn_archive_path}",
-            "-v",
-        ]
+        ["test_e2e.py", f"--nn_archive_path={nn_archive_path}", "-v", "--tb=no"]
     )
 
 
