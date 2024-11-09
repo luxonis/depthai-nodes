@@ -26,8 +26,6 @@ def create_segmentation_message(mask: np.ndarray) -> SegmentationMask:
         raise ValueError(
             f"Unexpected mask type. Expected an array of integers, got {mask.dtype}."
         )
-    if mask.dtype != np.int8:
-        mask = mask.astype(np.int8)
 
     mask_msg = SegmentationMask()
     mask_msg.mask = mask

@@ -43,8 +43,8 @@ class SegmentationMask(dai.Buffer):
             raise TypeError("Mask must be a numpy array.")
         if value.ndim != 2:
             raise ValueError("Mask must be 2D.")
-        if value.dtype != np.int8:
-            raise ValueError("Mask must be an array of int8.")
+        if value.dtype != np.uint8:
+            raise ValueError("Mask must be an array of uint8.")
         if np.any((value < -1)):
             raise ValueError("Mask must be an array values larger or equal to -1.")
         self._mask = value

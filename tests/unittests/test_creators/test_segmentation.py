@@ -1,7 +1,7 @@
-import depthai as dai
 import numpy as np
 import pytest
 
+from depthai_nodes.ml.messages import SegmentationMask
 from depthai_nodes.ml.messages.creators.segmentation import create_segmentation_message
 
 
@@ -11,33 +11,24 @@ def test_wrong_instance():
 
 
 def test_empty_array():
-    with pytest.raises(ValueError, match="Expected 3D input, got 1D input."):
+    with pytest.raises(ValueError, match="Expected 2D input, got 1D input."):
         create_segmentation_message(np.array([]))
-
-
-def test_wrong_dimension():
-    with pytest.raises(
-        ValueError, match="Expected 1 channel in the third dimension, got 3 channels."
-    ):
-        create_segmentation_message(np.random.rand(10, 10, 3))
-
 
 def test_float_array():
     with pytest.raises(
-        ValueError, match="Expected int type, got <class 'numpy.float64'>."
+        ValueError, match="Unexpected mask type. Expected an array of integers, got float64."
     ):
-        create_segmentation_message(np.random.rand(10, 10, 1))
+        create_segmentation_message(np.random.rand(10, 10))
 
 
 def test_complete_types():
-    x = (np.random.rand(10, 10, 1) * 255).astype(np.uint8)
+    x = (np.random.rand(10, 10) * 255).astype(np.uint8)
     message = create_segmentation_message(x)
 
-    assert isinstance(message, dai.ImgFrame)
-    assert message.getWidth() == x.shape[1]
-    assert message.getHeight() == x.shape[0]
-    assert message.getType() == dai.ImgFrame.Type.RAW8
-    assert np.all(np.isclose(message.getFrame(), x[:, :, 0]))
+    assert isinstance(message, SegmentationMask)
+    assert message.mask.shape[1] == x.shape[1]
+    assert message.mask.shape[0] == x.shape[0]
+    assert np.all(np.isclose(message.mask, x[:, :]))
 
 
 if __name__ == "__main__":
