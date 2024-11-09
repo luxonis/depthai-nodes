@@ -83,7 +83,9 @@ def pipeline_test(IP: str, nn_archive_path: str = None, slug: str = None):
     if not (nn_archive_path or slug):
         raise ValueError("You have to pass either path to NNArchive or model slug")
 
-    device = dai.Device(dai.DeviceInfo(IP))
+    print(IP)
+    print(type(IP))
+    device = dai.Device(dai.DeviceInfo(str(IP)))
     device_platform = device.getPlatform().name
 
     if slug:
