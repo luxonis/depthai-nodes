@@ -336,8 +336,11 @@ def merge_masks(masks: np.ndarray) -> np.ndarray:
     else:
         raise ValueError("Masks must be a 3D array.")
 
-    labeled_array = np.full((height, width), -1, dtype=np.int8)
+    if n >= 255:
+        raise ValueError("Number of masks exceeds 255.")
+    
+    labeled_array = np.zeros((height, width), dtype=np.uint8)
     for i in range(n):
-        labeled_array[masks[i] > 0] = i
-
+        labeled_array[masks[i] > 0] = i + 1
+    
     return labeled_array

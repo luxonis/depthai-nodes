@@ -5,26 +5,25 @@ from numpy.typing import NDArray
 
 class SegmentationMask(dai.Buffer):
     """SegmentationMask class for a single- or multi-object segmentation mask.
-    Background is represented with "-1" and foreground classes with non-negative
-    integers.
+    Background is represented with "0" and foreground classes with positive integers.
 
     Attributes
     ----------
-    mask: NDArray[np.int8]
+    mask: NDArray[np.uint8]
         Segmentation mask.
     """
 
     def __init__(self):
         """Initializes the SegmentationMask object."""
         super().__init__()
-        self._mask: NDArray[np.int8] = np.array([])
+        self._mask: NDArray[np.uint8] = np.array([])
 
     @property
-    def mask(self) -> NDArray[np.int8]:
+    def mask(self) -> NDArray[np.uint8]:
         """Returns the segmentation mask.
 
         @return: Segmentation mask.
-        @rtype: NDArray[np.int8]
+        @rtype: NDArray[np.uint8]
         """
         return self._mask
 
@@ -46,7 +45,7 @@ class SegmentationMask(dai.Buffer):
         if value.dtype != np.uint8:
             raise ValueError("Mask must be an array of uint8.")
         if np.any((value < -1)):
-            raise ValueError("Mask must be an array values larger or equal to -1.")
+            raise ValueError("Mask must be an array of non-negative integers.")
         self._mask = value
 
 
