@@ -83,10 +83,11 @@ def pipeline_test(IP: str, nn_archive_path: str = None, slug: str = None):
     if not (nn_archive_path or slug):
         raise ValueError("You have to pass either path to NNArchive or model slug")
 
-    print(IP)
-    print(type(IP))
-    device = dai.Device(dai.DeviceInfo(str(IP)))
-    device_platform = device.getPlatform().name
+    try:
+        device = dai.Device(dai.DeviceInfo(str(IP)))
+        device_platform = device.getPlatform().name
+    except Exception:
+        pytest.skip(f"Device not found on {IP}")
 
     if slug:
         model_slug, model_version_slug = parse_model_slug(slug)
@@ -109,25 +110,30 @@ def pipeline_test(IP: str, nn_archive_path: str = None, slug: str = None):
         device.close()
         exit(5)
 
-    with dai.Pipeline(device) as pipeline:
-        camera_node = pipeline.create(dai.node.Camera).build()
+    try:
+        with dai.Pipeline(device) as pipeline:
+            camera_node = pipeline.create(dai.node.Camera).build()
 
-        nn_w_parser = pipeline.create(ParsingNeuralNetwork).build(
-            camera_node, nn_archive
-        )
+            nn_w_parser = pipeline.create(ParsingNeuralNetwork).build(
+                camera_node, nn_archive
+            )
 
-        head_indices = nn_w_parser._parsers.keys()
+            head_indices = nn_w_parser._parsers.keys()
 
-        parser_output_queues = {
-            i: nn_w_parser.getOutput(i).createOutputQueue() for i in head_indices
-        }
+            parser_output_queues = {
+                i: nn_w_parser.getOutput(i).createOutputQueue() for i in head_indices
+            }
 
-        pipeline.start()
+            pipeline.start()
 
-        while pipeline.isRunning():
-            for head_id in parser_output_queues:
-                parser_output = parser_output_queues[head_id].get()
-                print(f"{head_id} - {type(parser_output)}")
-            pipeline.stop()
+            while pipeline.isRunning():
+                for head_id in parser_output_queues:
+                    parser_output = parser_output_queues[head_id].get()
+                    print(f"{head_id} - {type(parser_output)}")
+                pipeline.stop()
 
+            device.close()
+    except Exception as e:
+        print(e)
         device.close()
+        exit(1)
