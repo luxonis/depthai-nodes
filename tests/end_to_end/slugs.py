@@ -3,7 +3,6 @@ SLUGS = [
     "osnet:market1501-128x256",
     "arcface:lfw-112x112",
     "mediapipe-hand-landmarker:224x224",
-    "head-pose-estimation:60x60",
     "age-gender-recognition:new-62x62",
     "yunet:new-240x320",
     "yunet:new-480x640",

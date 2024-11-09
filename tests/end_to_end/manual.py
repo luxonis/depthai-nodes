@@ -1,7 +1,7 @@
 import argparse
 
 import depthai as dai
-from utils import parse_model_slug
+from utils import get_input_shape, parse_model_slug
 
 from depthai_nodes.parsing_neural_network import ParsingNeuralNetwork
 
@@ -14,6 +14,10 @@ parser.add_argument(
 )
 parser.add_argument("-ip", type=str, default="", help="IP of the device")
 args = parser.parse_args()
+
+if "xfeat" in args.model_slug:
+    print("XFeat model is not supported in this test.")
+    exit(8)
 
 if not (args.nn_archive or args.model_slug):
     raise ValueError("You have to pass either path to NNArchive or model slug")
@@ -53,6 +57,12 @@ with dai.Pipeline(device) as pipeline:
         print(f"Model not supported on {device.getPlatform().name}.")
         device.close()
         exit(5)
+
+    input_size = get_input_shape(nn_archive)
+    if input_size[0] < 128 and input_size[1] < 128:
+        print("Input size is too small for the device.")
+        device.close()
+        exit(8)
 
     nn_w_parser = pipeline.create(ParsingNeuralNetwork).build(camera_node, nn_archive)
 

@@ -1,11 +1,46 @@
 import os
-from typing import Tuple
+from typing import List, Tuple
 
+import depthai as dai
 import requests
 from slugs import SLUGS
 
 
+def get_inputs_from_archive(nn_archive: dai.NNArchive) -> List:
+    """Get all inputs from NN archive."""
+    try:
+        inputs = nn_archive.getConfig().model.inputs
+    except AttributeError:
+        print(
+            "This NN archive does not have an input shape. Please use NN archives that have input shapes."
+        )
+        exit(1)
+
+    return inputs
+
+
+def get_input_shape(nn_archive: dai.NNArchive) -> Tuple[int, int]:
+    """Get the input shape of the model from the NN archive."""
+    inputs = get_inputs_from_archive(nn_archive)
+
+    if len(inputs) > 1:
+        raise ValueError(
+            "This model has more than one input. Currently, only models with one input are supported."
+        )
+
+    try:
+        input_shape = inputs[0].shape[2:][::-1]
+    except AttributeError:
+        print(
+            "This NN archive does not have an input shape. Please use NN archives that have input shapes."
+        )
+        exit(1)
+
+    return input_shape
+
+
 def parse_model_slug(full_slug) -> Tuple[str, str]:
+    """Parse the model slug into model_slug and model_version_slug."""
     if ":" not in full_slug:
         raise NameError(
             "Please provide the model slug in the format of 'model_slug:model_version_slug'"

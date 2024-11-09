@@ -74,5 +74,9 @@ def test_pipelines(IP: str, ip_platform: str, nn_archive_path, slug):
             pytest.skip(f"Can't connect to the device with IP/mxid: {IP}")
         elif e.returncode == 7:
             pytest.skip(f"Couldn't find model {slug} in the ZOO")
+        elif e.returncode == 8:
+            pytest.skip(
+                "The model is not supported in this test. (small input size, grayscale image, etc.)"
+            )
         else:
             raise RuntimeError("Pipeline crashed.") from e
