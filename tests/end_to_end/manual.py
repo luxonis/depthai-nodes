@@ -1,22 +1,9 @@
 import argparse
-from typing import Tuple
 
 import depthai as dai
+from utils import parse_model_slug
 
 from depthai_nodes.parsing_neural_network import ParsingNeuralNetwork
-
-
-def parse_model_slug(full_slug) -> Tuple[str, str]:
-    if ":" not in full_slug:
-        raise NameError(
-            "Please provide the model slug in the format of 'model_slug:model_version_slug'"
-        )
-    model_slug_parts = full_slug.split(":")
-    model_slug = model_slug_parts[0]
-    model_version_slug = model_slug_parts[1]
-
-    return model_slug, model_version_slug
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -31,20 +18,43 @@ args = parser.parse_args()
 if not (args.nn_archive or args.model_slug):
     raise ValueError("You have to pass either path to NNArchive or model slug")
 
-device = dai.Device(dai.DeviceInfo(args.ip))
+try:
+    device = dai.Device(dai.DeviceInfo(args.ip))
+except Exception:
+    print("Can't connect to the device with IP/mxid: ", args.ip)
+    exit(6)
+
 with dai.Pipeline(device) as pipeline:
     camera_node = pipeline.create(dai.node.Camera).build()
 
     if args.model_slug:
         model_slug, model_version_slug = parse_model_slug(args.model_slug)
-        model = dai.NNModelDescription(
-            modelSlug=model_slug, modelVersionSlug=model_version_slug
+        model_desc = dai.NNModelDescription(
+            modelSlug=model_slug,
+            modelVersionSlug=model_version_slug,
+            platform=device.getPlatform().name,
         )
+        try:
+            nn_archive_path = dai.getModelFromZoo(model_desc)
+            nn_archive = dai.NNArchive(nn_archive_path)
+        except Exception:
+            print(
+                f"Couldn't find model {args.model_slug} for {device.getPlatform().name} in the ZOO"
+            )
+            device.close()
+            exit(7)
 
     else:
-        model = dai.NNArchive(args.nn_archive)
+        nn_archive = dai.NNArchive(args.nn_archive)
 
-    nn_w_parser = pipeline.create(ParsingNeuralNetwork).build(camera_node, model)
+    model_platforms = [platform.name for platform in nn_archive.getSupportedPlatforms()]
+
+    if device.getPlatform().name not in model_platforms:
+        print(f"Model not supported on {device.getPlatform().name}.")
+        device.close()
+        exit(5)
+
+    nn_w_parser = pipeline.create(ParsingNeuralNetwork).build(camera_node, nn_archive)
 
     head_indices = nn_w_parser._parsers.keys()
 
@@ -59,3 +69,5 @@ with dai.Pipeline(device) as pipeline:
             parser_output = parser_output_queues[head_id].get()
             print(f"{head_id} - {type(parser_output)}")
         pipeline.stop()
+
+device.close()

@@ -1,9 +1,26 @@
 import os
+from typing import Tuple
 
 import requests
+from slugs import SLUGS
+
+
+def parse_model_slug(full_slug) -> Tuple[str, str]:
+    if ":" not in full_slug:
+        raise NameError(
+            "Please provide the model slug in the format of 'model_slug:model_version_slug'"
+        )
+    model_slug_parts = full_slug.split(":")
+    model_slug = model_slug_parts[0]
+    model_version_slug = model_slug_parts[1]
+
+    return model_slug, model_version_slug
 
 
 def get_model_slugs_from_zoo():
+    # For now we will use the slugs from the slugs.py file
+    # because the ZOO API changed and DAI is not yet updated
+    return SLUGS
     hubai_team_id = os.getenv("HUBAI_TEAM_ID", None)
     if not hubai_team_id:
         raise ValueError(

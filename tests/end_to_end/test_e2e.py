@@ -1,13 +1,10 @@
 import ast
-import multiprocessing
 import os
+import subprocess
 import time
-from typing import List, Tuple
+from typing import List
 
-import depthai as dai
 import pytest
-
-from depthai_nodes.parsing_neural_network import ParsingNeuralNetwork
 
 
 @pytest.fixture
@@ -18,18 +15,6 @@ def nn_archive_paths(request):
 @pytest.fixture
 def slugs(request):
     return request.config.getoption("--slug")
-
-
-def parse_model_slug(full_slug) -> Tuple[str, str]:
-    if ":" not in full_slug:
-        raise NameError(
-            "Please provide the model slug in the format of 'model_slug:model_version_slug'"
-        )
-    model_slug_parts = full_slug.split(":")
-    model_slug = model_slug_parts[0]
-    model_version_slug = model_slug_parts[1]
-
-    return model_slug, model_version_slug
 
 
 def get_parametrized_values(slugs: List[str], nn_archive_paths: List[str]):
@@ -66,74 +51,28 @@ def pytest_generate_tests(metafunc):
 
 
 def test_pipelines(IP: str, ip_platform: str, nn_archive_path, slug):
-    time.sleep(2)
-    subprocess = multiprocessing.Process(
-        target=pipeline_test, args=[IP, nn_archive_path, slug]
-    )
-    subprocess.start()
-    subprocess.join()
-    if subprocess.exitcode != 0:
-        if subprocess.exitcode == 5:
-            pytest.skip(f"Model not supported on {ip_platform}.")
-        else:
-            raise RuntimeError("Pipeline crashed.")
+    time.sleep(1)
 
-
-def pipeline_test(IP: str, nn_archive_path: str = None, slug: str = None):
     if not (nn_archive_path or slug):
         raise ValueError("You have to pass either path to NNArchive or model slug")
 
     try:
-        device = dai.Device(dai.DeviceInfo(str(IP)))
-        device_platform = device.getPlatform().name
-    except Exception:
-        pytest.skip(f"Device not found on {IP}")
-
-    if slug:
-        model_slug, model_version_slug = parse_model_slug(slug)
-        nn_archive = dai.NNModelDescription(
-            modelSlug=model_slug,
-            modelVersionSlug=model_version_slug,
-            platform=device_platform,
-        )
-        try:
-            nn_archive_path = dai.getModelFromZoo(nn_archive)
-        except Exception:
-            device.close()
-            exit(5)
-
-    nn_archive = dai.NNArchive(nn_archive_path)
-
-    model_platforms = [platform.name for platform in nn_archive.getSupportedPlatforms()]
-
-    if device_platform not in model_platforms:
-        device.close()
-        exit(5)
-
-    try:
-        with dai.Pipeline(device) as pipeline:
-            camera_node = pipeline.create(dai.node.Camera).build()
-
-            nn_w_parser = pipeline.create(ParsingNeuralNetwork).build(
-                camera_node, nn_archive
+        if slug:
+            subprocess.run(
+                f"python manual.py -s {slug} -ip {IP}", shell=True, check=True
             )
-
-            head_indices = nn_w_parser._parsers.keys()
-
-            parser_output_queues = {
-                i: nn_w_parser.getOutput(i).createOutputQueue() for i in head_indices
-            }
-
-            pipeline.start()
-
-            while pipeline.isRunning():
-                for head_id in parser_output_queues:
-                    parser_output = parser_output_queues[head_id].get()
-                    print(f"{head_id} - {type(parser_output)}")
-                pipeline.stop()
-
-            device.close()
-    except Exception as e:
-        print(e)
-        device.close()
-        exit(1)
+        else:
+            subprocess.run(
+                f"python manual.py -nn {nn_archive_path} -ip {IP}",
+                shell=True,
+                check=True,
+            )
+    except subprocess.CalledProcessError as e:
+        if e.returncode == 5:
+            pytest.skip(f"Model not supported on {ip_platform}.")
+        elif e.returncode == 6:
+            pytest.skip(f"Can't connect to the device with IP/mxid: {IP}")
+        elif e.returncode == 7:
+            pytest.skip(f"Couldn't find model {slug} in the ZOO")
+        else:
+            raise RuntimeError("Pipeline crashed.") from e
