@@ -9,8 +9,9 @@ from .utils.message_parsers import parse_segmentation_message
 
 
 def visualize_segmentation(
-    frame: dai.ImgFrame, message: SegmentationMask, extraParams: dict
+    frame: np.ndarray, message: SegmentationMask, extraParams: dict
 ):
+
     mask = parse_segmentation_message(message)
     frame = cv2.resize(frame, (mask.shape[1], mask.shape[0]))
 

@@ -7,7 +7,7 @@ from depthai_nodes.ml.messages import Map2D
 from .utils.message_parsers import parse_map_message
 
 
-def visualize_map(frame: dai.ImgFrame, message: Map2D, extraParams: dict):
+def visualize_map(frame: np.ndarray, message: Map2D, extraParams: dict):
     """Visualizes the map on the frame."""
 
     map = parse_map_message(message)

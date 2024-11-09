@@ -17,7 +17,7 @@ from .utils.message_parsers import (
 
 
 def visualize_detections(
-    frame: dai.ImgFrame, message: ImgDetectionsExtended, extraParams: dict
+    frame: np.ndarray, message: ImgDetectionsExtended, extraParams: dict
 ):
     """Visualizes the detections on the frame. Detections are given in xywh format
     (ImgDetectionsExtended).
