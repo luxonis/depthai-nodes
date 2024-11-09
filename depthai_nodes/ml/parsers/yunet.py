@@ -136,7 +136,7 @@ class YuNetParser(DetectionParser):
         output_layers = head_config.get("outputs", [])
         if len(inputs_size) != 1:
             raise ValueError(
-                f"Only one input supported for LaneDetectionParser, got {len(inputs_size)} inputs."
+                f"Only one input supported for YuNetParser, got {len(inputs_size)} inputs."
             )
         self.input_size = inputs_size[0]
         print(self.input_size)
