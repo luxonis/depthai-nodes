@@ -14,9 +14,11 @@ def test_empty_array():
     with pytest.raises(ValueError, match="Expected 2D input, got 1D input."):
         create_segmentation_message(np.array([]))
 
+
 def test_float_array():
     with pytest.raises(
-        ValueError, match="Unexpected mask type. Expected an array of integers, got float64."
+        ValueError,
+        match="Unexpected mask type. Expected an array of integers, got float64.",
     ):
         create_segmentation_message(np.random.rand(10, 10))
 

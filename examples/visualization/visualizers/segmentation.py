@@ -1,5 +1,4 @@
 import cv2
-import depthai as dai
 import numpy as np
 
 from depthai_nodes.ml.messages import SegmentationMask
@@ -11,7 +10,6 @@ from .utils.message_parsers import parse_segmentation_message
 def visualize_segmentation(
     frame: np.ndarray, message: SegmentationMask, extraParams: dict
 ):
-
     mask = parse_segmentation_message(message)
     frame = cv2.resize(frame, (mask.shape[1], mask.shape[0]))
 

@@ -338,9 +338,9 @@ def merge_masks(masks: np.ndarray) -> np.ndarray:
 
     if n >= 255:
         raise ValueError("Number of masks exceeds 255.")
-    
+
     labeled_array = np.zeros((height, width), dtype=np.uint8)
     for i in range(n):
         labeled_array[masks[i] > 0] = i + 1
-    
+
     return labeled_array
