@@ -3,7 +3,7 @@ from typing import List, Tuple
 
 import depthai as dai
 import requests
-from slugs import SLUGS
+from slugs import PARSERS_SLUGS, SLUGS
 
 
 def get_inputs_from_archive(nn_archive: dai.NNArchive) -> List:
@@ -90,8 +90,63 @@ def get_model_slugs_from_zoo():
     for version in response:
         for model in valid_models:
             if version["model_id"] == model["model_id"]:
-                model["version_slug"] = version["slug"]
+                model["version_slug"] = version["variant_slug"]
                 model_slugs.append(f"{model['slug']}:{model['version_slug']}")
                 break
 
     return model_slugs
+
+
+def find_slugs(parser: str):
+    """The function finds all the slugs that have a specific parser.
+
+    It uses hardcoded PARSERS_SLUGS dictionary.
+    """
+    if parser not in PARSERS_SLUGS:
+        raise ValueError(
+            f"Parser {parser} is not available in the PARSERS_SLUGS dictionary."
+        )
+
+    return PARSERS_SLUGS[parser]
+
+
+def find_slugs_from_zoo(parser: str):
+    """The functions finds all the slugs that have a specific parser in the ZOO.
+
+    It takes some time because it downloads all the models from the ZOO. Alternative
+    option is to use find_slugs function which uses hardcoded PARSERS_SLUGS dictionary.
+    """
+    relevant_slugs = []
+    print("Downloading NN archives from the ZOO")
+    slugs = get_model_slugs_from_zoo()
+    n = len(slugs)
+    for i, slug in enumerate(slugs):
+        print(f"[{i+1}/{n}] Downloading {slug} ...")
+        model_slug, version_slug = parse_model_slug(slug)
+        model_desc = dai.NNModelDescription(
+            modelSlug=model_slug, modelVersionSlug=version_slug, platform="RVC2"
+        )
+        nn_archive_path = None
+        try:
+            nn_archive_path = dai.getModelFromZoo(model_desc)
+        except Exception:
+            model_desc = dai.NNModelDescription(
+                modelSlug=model_slug, modelVersionSlug=version_slug, platform="RVC4"
+            )
+            try:
+                nn_archive_path = dai.getModelFromZoo(model_desc, useCached=True)
+            except Exception as e:
+                raise ValueError(f"Couldn't find model {slug} in the ZOO") from e
+
+        try:
+            nn_archive = dai.NNArchive(nn_archive_path)
+            for head in nn_archive.getConfig().model.heads:
+                if head.parser == parser:
+                    relevant_slugs.append(slug)
+                    break
+        except Exception as e:
+            print(e)
+
+        print(f"[{i+1}/{n}] Successfully downloaded {slug}!")
+
+    return relevant_slugs
