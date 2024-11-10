@@ -15,9 +15,10 @@ parser.add_argument(
 parser.add_argument("-ip", type=str, default="", help="IP of the device")
 args = parser.parse_args()
 
-if "xfeat" in args.model_slug:
-    print("XFeat model is not supported in this test.")
-    exit(8)
+if args.model_slug:
+    if "xfeat" in args.model_slug:
+        print("XFeat model is not supported in this test.")
+        exit(8)
 
 if not (args.nn_archive or args.model_slug):
     raise ValueError("You have to pass either path to NNArchive or model slug")
