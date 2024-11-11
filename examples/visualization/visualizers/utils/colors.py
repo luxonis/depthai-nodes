@@ -1,6 +1,5 @@
 def get_adas_colors():
     colors = [
-        (0, 0, 0),  # class 0 - black
         (128, 0, 0),  # class 1 - maroon
         (0, 128, 0),  # class 2 - green
         (128, 128, 0),  # class 3 - olive
@@ -26,7 +25,7 @@ def get_adas_colors():
 
 
 def get_selfie_colors():
-    colors = [(0, 0, 0), (0, 255, 0)]
+    colors = [(0, 255, 0)]
     return colors
 
 

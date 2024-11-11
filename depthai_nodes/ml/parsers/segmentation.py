@@ -147,6 +147,10 @@ class SegmentationParser(BaseParser):
                 .astype(np.uint16)
             )
 
+            # change background class from 0 to int16 max
+            class_map = class_map - 1
+            class_map[class_map == -1] = np.iinfo(np.uint16).max
+
             mask_message = create_segmentation_message(class_map)
             mask_message.setTimestamp(output.getTimestamp())
             self.out.send(mask_message)
