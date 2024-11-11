@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 ![CI](https://github.com/luxonis/depthai-nodes/actions/workflows/ci.yaml/badge.svg?event=pull_request)
-![Coverage](https://github.com/luxonis/depthai-nodes/blob/dev/media/coverage_badge.svg)
+[![codecov](https://codecov.io/gh/luxonis/depthai-nodes/graph/badge.svg?token=ZG493MZ07B)](https://codecov.io/gh/luxonis/depthai-nodes)
 
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Docformatter](https://img.shields.io/badge/%20formatter-docformatter-fedcba.svg)](https://github.com/PyCQA/docformatter)
