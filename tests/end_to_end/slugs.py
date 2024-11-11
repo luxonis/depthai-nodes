@@ -2,7 +2,6 @@ SLUGS = [
     "yunet:new-240x320",
     "mediapipe-hand-landmarker:224x224",
     "age-gender-recognition:new-62x62",
-    "yunet:new-480x640",
     "xfeat:mono-240x320",
     "paddle-text-recognition:160x48",
     "midas-v2-1:small-192x256",
