@@ -94,7 +94,7 @@ jobs:
       run: pip install -e .[dev]
 
     - name: Run tests
-      run: pytest --cov --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+      run: pytest --cov=depthai_nodes --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
     - name: Upload results to Codecov
       uses: codecov/codecov-action@v4
