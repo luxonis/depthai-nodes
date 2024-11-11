@@ -40,31 +40,3 @@ def visualize_segmentation(
         return True
 
     return False
-
-
-def _fastsam_show_masks(
-    annotation,
-    image,
-):
-    if len(annotation) == 0:
-        return image
-    n, h, w = annotation.shape  # batch, height, width
-    areas = np.sum(annotation, axis=(1, 2))
-    annotation = annotation[np.argsort(areas)]
-
-    index = (annotation != 0).argmax(axis=0)
-    color = np.random.random((n, 1, 1, 3)) * 255
-    transparency = np.ones((n, 1, 1, 1)) * 0.6
-    visual = np.concatenate([color, transparency], axis=-1)
-    mask_image = np.expand_dims(annotation, -1) * visual
-
-    show = np.zeros((h, w, 4), dtype=np.float32)
-    h_indices, w_indices = np.meshgrid(np.arange(h), np.arange(w), indexing="ij")
-    indices = (index[h_indices, w_indices], h_indices, w_indices, slice(None))
-    show[h_indices, w_indices, :] = mask_image[indices]
-
-    overlay = image.astype(np.float32)
-    alpha = show[:, :, 3:4]
-    overlay[:, :, :3] = overlay[:, :, :3] * (1 - alpha) + show[:, :, :3] * alpha
-
-    return overlay.astype(np.uint8)
