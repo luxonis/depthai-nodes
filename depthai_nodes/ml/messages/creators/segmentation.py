@@ -9,7 +9,7 @@ def create_segmentation_message(mask: np.ndarray) -> SegmentationMask:
     @param mask: Segmentation map array of shape (H, W) where each value represents a
         segmented object class.
     @type mask: np.array
-    @return: Segmentaion mask message.
+    @return: Segmentation mask message.
     @rtype: SegmentationMask
     @raise ValueError: If mask is not a numpy array.
     @raise ValueError: If mask is not 2D.
