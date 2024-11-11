@@ -27,15 +27,23 @@ def main():
     arg_parser.add_argument(
         "-p", "--parser", default="", help="Name of the specific parser to test."
     )
+    arg_parser.add_argument(
+        "--platform",
+        type=str,
+        default="",
+        help="RVC platform to run the tests on. Default is both.",
+    )
 
     args = arg_parser.parse_args()
     nn_archive_path = args.nn_archive_path  # it is a list of paths
     slug = args.slug
     run_all = args.all
     parser = args.parser
+    rvc_platform = "both" if args.platform == "" else args.platform
     print(f"Run all tests: {run_all}")
     print(f"RVC2 IP: {os.getenv('RVC2_IP', '')}")
     print(f"RVC4 IP: {os.getenv('RVC4_IP', '')}")
+    print(f"RVC platform: {'RVC2 & RVC4' if rvc_platform == '' else rvc_platform}")
 
     if run_all and (nn_archive_path or slug):
         raise ValueError("You can't pass both -all and -nn_archive_path or -slug")
@@ -56,11 +64,25 @@ def main():
     slug = [f"{s}" for s in slug]
 
     if slug:
-        pytest.main(["test_e2e.py", f"--slug={slug}", "-v", "--tb=no"])
+        pytest.main(
+            [
+                "test_e2e.py",
+                f"--slug={slug}",
+                f"--platform={rvc_platform}",
+                "-v",
+                "--tb=no",
+            ]
+        )
         return
 
     pytest.main(
-        ["test_e2e.py", f"--nn_archive_path={nn_archive_path}", "-v", "--tb=no"]
+        [
+            "test_e2e.py",
+            f"--nn_archive_path={nn_archive_path}",
+            f"--platform={rvc_platform}",
+            "-v",
+            "--tb=no",
+        ]
     )
 
 

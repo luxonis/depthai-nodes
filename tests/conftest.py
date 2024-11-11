@@ -5,3 +5,9 @@ def pytest_addoption(parser):
     parser.addoption(
         "--slug", action="store", default="", help="Model slug from the ZOO."
     )
+    parser.addoption(
+        "--platform",
+        action="store",
+        default="",
+        help="RVC platform to run the tests on.",
+    )

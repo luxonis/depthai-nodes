@@ -17,27 +17,37 @@ def slugs(request):
     return request.config.getoption("--slug")
 
 
-def get_parametrized_values(slugs: List[str], nn_archive_paths: List[str]):
+@pytest.fixture
+def platform(request):
+    return request.config.getoption("--platform")
+
+
+def get_parametrized_values(
+    slugs: List[str], nn_archive_paths: List[str], platform: str
+):
     test_cases = []
     rvc2_ip = os.getenv("RVC2_IP", "")
     rvc4_ip = os.getenv("RVC4_IP", "")
 
+    platform = platform.lower()
+
+    platforms = [(rvc2_ip, "RVC2"), (rvc4_ip, "RVC4")]
+    if platform:
+        if platform == "rvc2":
+            platforms = [(rvc2_ip, "RVC2")]
+        elif platform == "rvc4":
+            platforms = [(rvc4_ip, "RVC4")]
+
     if slugs:
         slugs = ast.literal_eval(slugs)
-        test_cases.extend(
-            [
-                (*IP, None, slug)
-                for slug in slugs
-                for IP in [(rvc2_ip, "RVC2"), (rvc4_ip, "RVC4")]
-            ]
-        )
+        test_cases.extend([(*IP, None, slug) for slug in slugs for IP in platforms])
     if nn_archive_paths:
         nn_archive_paths = ast.literal_eval(nn_archive_paths)
         test_cases.extend(
             [
                 (*IP, nn_archive_path, None)
                 for nn_archive_path in nn_archive_paths
-                for IP in [(rvc2_ip, "RVC2"), (rvc4_ip, "RVC4")]
+                for IP in platforms
             ]
         )
     return test_cases
@@ -46,7 +56,8 @@ def get_parametrized_values(slugs: List[str], nn_archive_paths: List[str]):
 def pytest_generate_tests(metafunc):
     nn_archive_paths = metafunc.config.getoption("nn_archive_path")
     slugs = metafunc.config.getoption("slug")
-    params = get_parametrized_values(slugs, nn_archive_paths)
+    platform = metafunc.config.getoption("platform")
+    params = get_parametrized_values(slugs, nn_archive_paths, platform)
     metafunc.parametrize("IP, ip_platform, nn_archive_path, slug", params)
 
 
@@ -62,14 +73,14 @@ def test_pipelines(IP: str, ip_platform: str, nn_archive_path, slug):
                 f"python manual.py -s {slug} -ip {IP}",
                 shell=True,
                 check=True,
-                timeout=60,
+                timeout=30,
             )
         else:
             subprocess.run(
                 f"python manual.py -nn {nn_archive_path} -ip {IP}",
                 shell=True,
                 check=True,
-                timeout=60,
+                timeout=30,
             )
     except subprocess.CalledProcessError as e:
         if e.returncode == 5:
