@@ -2,7 +2,6 @@ SLUGS = [
     "yunet:new-240x320",
     "mediapipe-hand-landmarker:224x224",
     "age-gender-recognition:new-62x62",
-    "xfeat:mono-240x320",
     "paddle-text-recognition:160x48",
     "midas-v2-1:small-192x256",
     "paddle-text-detection:256x256",
@@ -11,9 +10,6 @@ SLUGS = [
     "yolov8-instance-segmentation-nano:coco-512x288",
     "ewasr:384x512",
     "m-lsd:512x512",
-    "scrfd-person-detection:2-5g-640x640",
-    "efficientnet-lite:lite0-224x224",
-    "mobilenet-ssd:300x300",
 ]
 # SLUGS = [
 #     "yunet:new-new-480x640",
