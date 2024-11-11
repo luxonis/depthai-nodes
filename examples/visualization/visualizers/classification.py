@@ -37,7 +37,7 @@ def visualize_classification(
 
 
 def visualize_text_recognition(
-    frame: dai.ImgFrame, message: Classifications, extraParams: dict
+    frame: np.ndarray, message: Classifications, extraParams: dict
 ):
     """Visualizes the text recognition on the frame."""
 

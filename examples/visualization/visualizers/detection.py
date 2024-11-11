@@ -105,7 +105,7 @@ def visualize_detections(
 
 
 def visualize_detections_xyxy(
-    frame: dai.ImgFrame, message: dai.ImgDetections, extraParams: dict
+    frame: np.ndarray, message: dai.ImgDetections, extraParams: dict
 ):
     """Visualize the detections on the frame.
 
@@ -161,7 +161,7 @@ def visualize_detections_xyxy(
     return False
 
 
-def visualize_line_detections(frame: dai.ImgFrame, message: Lines, extraParams: dict):
+def visualize_line_detections(frame: np.ndarray, message: Lines, extraParams: dict):
     """Visualizes the lines on the frame."""
     lines = parse_line_detection_message(message)
     h, w = frame.shape[:2]
@@ -189,7 +189,7 @@ def visualize_line_detections(frame: dai.ImgFrame, message: Lines, extraParams: 
 
 
 def visualize_yolo_extended(
-    frame: dai.ImgFrame, message: ImgDetectionsExtended, extraParams: dict
+    frame: np.ndarray, message: ImgDetectionsExtended, extraParams: dict
 ):
     """Visualizes the YOLO pose detections or instance segmentation on the frame."""
     detections = parse_yolo_kpts_message(message)
@@ -262,7 +262,7 @@ def visualize_yolo_extended(
 
 
 def visualize_lane_detections(
-    frame: dai.ImgFrame, message: Clusters, extraParams: dict
+    frame: np.ndarray, message: Clusters, extraParams: dict
 ):
     """Visualizes the lines on the frame."""
     clusters = parse_cluster_message(message)
