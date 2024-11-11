@@ -120,24 +120,16 @@ class YuNetParser(DetectionParser):
     def build(
         self,
         head_config: Dict[str, Any],
-        inputs_size: List[List[int]],
     ) -> "YuNetParser":
         """Configures the parser.
 
         @param head_config: The head configuration for the parser.
         @type head_config: Dict[str, Any]
-        @param inputs_size: Model inputs size.
-        @type inputs_size: List[List[int]]
         @return: The parser object with the head configuration set.
         @rtype: YuNetParser
         """
 
         super().build(head_config)
-        if len(inputs_size) != 1:
-            raise ValueError(
-                f"Only one input supported for YuNetParser, got {len(inputs_size)} inputs."
-            )
-        self.input_size = inputs_size[0]
         output_layers = head_config.get("outputs", [])
         for output_layer in output_layers:
             if "loc" in output_layer:
@@ -150,6 +142,19 @@ class YuNetParser(DetectionParser):
                 raise ValueError(
                     f"Unexpected output layer {output_layer}. Only loc, conf, and iou output layers are supported."
                 )
+        inputs = head_config["model"]["inputs"]
+        if len(inputs) != 1:
+            raise ValueError(
+                f"Only one input supported for YuNetParser, got {len(inputs)} inputs."
+            )
+        self.input_shape = inputs[0].get("shape")
+        self.layout = inputs[0].get("layout")
+        if self.layout == "NHWC":
+            self.input_size = [self.input_shape[2], self.input_shape[1]]
+        elif self.layout == "NCHW":
+            self.input_size = [self.input_shape[3], self.input_shape[2]]
+        else:
+            raise ValueError(f"Input layout {self.layout} not supported for input_size extraction.")
 
         return self
 
