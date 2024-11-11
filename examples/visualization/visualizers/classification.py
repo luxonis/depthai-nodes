@@ -1,5 +1,4 @@
 import cv2
-import depthai as dai
 import numpy as np
 
 from depthai_nodes.ml.messages import Classifications

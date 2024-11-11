@@ -261,9 +261,7 @@ def visualize_yolo_extended(
     return False
 
 
-def visualize_lane_detections(
-    frame: np.ndarray, message: Clusters, extraParams: dict
-):
+def visualize_lane_detections(frame: np.ndarray, message: Clusters, extraParams: dict):
     """Visualizes the lines on the frame."""
     clusters = parse_cluster_message(message)
     h, w, _ = frame.shape
