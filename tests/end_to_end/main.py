@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 
 import pytest
 from utils import find_slugs, get_model_slugs_from_zoo
@@ -63,27 +64,25 @@ def main():
 
     slug = [f"{s}" for s in slug]
 
-    if slug:
-        pytest.main(
-            [
-                "test_e2e.py",
-                f"--slug={slug}",
-                f"--platform={rvc_platform}",
-                "-v",
-                "--tb=no",
-            ]
-        )
-        return
+    command = [
+        "test_e2e.py",
+        f"--nn_archive_path={nn_archive_path}",
+        f"--platform={rvc_platform}",
+        "-v",
+        "--tb=no",
+    ]
 
-    pytest.main(
-        [
+    if slug:
+        command = [
             "test_e2e.py",
-            f"--nn_archive_path={nn_archive_path}",
+            f"--slug={slug}",
             f"--platform={rvc_platform}",
             "-v",
             "--tb=no",
         ]
-    )
+
+    exit_code = pytest.main(command)
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":
