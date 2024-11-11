@@ -13,7 +13,7 @@ def create_segmentation_message(mask: np.ndarray) -> SegmentationMask:
     @rtype: SegmentationMask
     @raise ValueError: If mask is not a numpy array.
     @raise ValueError: If mask is not 2D.
-    @raise ValueError: If mask values are not integers.
+    @raise ValueError: If mask is not of type uint16.
     """
 
     if not isinstance(mask, np.ndarray):
@@ -22,10 +22,8 @@ def create_segmentation_message(mask: np.ndarray) -> SegmentationMask:
     if len(mask.shape) != 2:
         raise ValueError(f"Expected 2D input, got {len(mask.shape)}D input.")
 
-    if not np.issubdtype(mask.dtype, np.integer):
-        raise ValueError(
-            f"Unexpected mask type. Expected an array of integers, got {mask.dtype}."
-        )
+    if mask.dtype != np.uint16:
+        raise ValueError(f"Expected uint16 input, got {mask.dtype}.")
 
     mask_msg = SegmentationMask()
     mask_msg.mask = mask

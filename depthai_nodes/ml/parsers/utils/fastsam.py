@@ -323,8 +323,7 @@ def process_single_mask(
 
 
 def merge_masks(masks: np.ndarray) -> np.ndarray:
-    """Merge masks to from 3D to 2D array where each object is represented by a unique
-    label.
+    """Merge masks to a 2D array where each object is represented by a unique label.
 
     @param masks: 3D array of masks
     @type masks: np.ndarray
@@ -336,11 +335,8 @@ def merge_masks(masks: np.ndarray) -> np.ndarray:
     else:
         raise ValueError("Masks must be a 3D array.")
 
-    if n >= 255:
-        raise ValueError("Number of masks exceeds 255.")
-
-    labeled_array = np.zeros((height, width), dtype=np.uint8)
+    merged_masks = np.full((height, width), np.iinfo(np.uint16).max, dtype=np.uint16)
     for i in range(n):
-        labeled_array[masks[i] > 0] = i + 1
+        merged_masks[masks[i] > 0] = i + 1
 
-    return labeled_array
+    return merged_masks

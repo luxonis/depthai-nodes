@@ -144,7 +144,7 @@ class SegmentationParser(BaseParser):
             class_map = (
                 np_function(segmentation_mask, axis=0)
                 .reshape(segmentation_mask.shape[1], segmentation_mask.shape[2])
-                .astype(np.uint8)
+                .astype(np.uint16)
             )
 
             mask_message = create_segmentation_message(class_map)

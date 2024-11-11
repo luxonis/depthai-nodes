@@ -359,7 +359,9 @@ class FastSAMParser(BaseParser):
                 )
 
             if len(results_masks) == 0:
-                results_masks = np.zeros((1, height, width), dtype=np.uint8)
+                results_masks = np.full(
+                    (1, height, width), np.iinfo(np.uint16).max, dtype=np.uint16
+                )
             results_masks = merge_masks(results_masks)
 
             segmentation_message = create_segmentation_message(results_masks)
