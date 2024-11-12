@@ -132,9 +132,10 @@ class MPPalmDetectionParser(DetectionParser):
             scores = None
 
             for tensor_name in all_tensors:
-                tensor = output.getTensor(tensor_name, dequantize=True).astype(
-                    np.float32
+                tensor = np.array(
+                    output.getTensor(tensor_name, dequantize=True), dtype=np.float32
                 )
+
                 if bboxes is None:
                     bboxes = tensor
                     scores = tensor

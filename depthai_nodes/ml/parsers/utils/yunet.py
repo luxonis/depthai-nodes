@@ -97,7 +97,6 @@ def decode_detections(
     @rtype: Tuple[np.ndarray, np.ndarray, np.ndarray]
 
     """
-
     w, h = input_shape
 
     if variance is None:

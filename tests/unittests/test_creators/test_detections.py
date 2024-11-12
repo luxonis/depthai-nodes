@@ -1,5 +1,6 @@
 import re
 
+import depthai as dai
 import numpy as np
 import pytest
 
@@ -249,10 +250,16 @@ def test_only_bboxes_scores():
     assert isinstance(message, ImgDetectionsExtended)
     assert all(detection.label == -1 for detection in message.detections)
     for i, detection in enumerate(message.detections):
-        assert detection.x_center == bboxes[i, 0]
-        assert detection.y_center == bboxes[i, 1]
-        assert detection.width == bboxes[i, 2]
-        assert detection.height == bboxes[i, 3]
+        assert isinstance(detection.rotated_rect, dai.RotatedRect)
+        center = detection.rotated_rect.center
+        size = detection.rotated_rect.size
+        x_center, y_center = center.x, center.y
+        width, height = size.width, size.height
+
+        assert np.isclose(x_center, bboxes[i, 0])
+        assert np.isclose(y_center, bboxes[i, 1])
+        assert np.isclose(width, bboxes[i, 2])
+        assert np.isclose(height, bboxes[i, 3])
         assert np.isclose(detection.confidence, scores[i])
 
 

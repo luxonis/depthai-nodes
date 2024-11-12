@@ -107,7 +107,9 @@ def create_detection_message(
             )
         for angle in angles:
             if not -360 <= angle <= 360:
-                raise ValueError(f"Angles should be between -360 and 360, got {angle}.")
+                raise ValueError(
+                    f"Angles should be between -360 and 360, got {angle}. Make sure you use radians."
+                )
 
     if keypoints is not None:
         if not isinstance(keypoints, np.ndarray):
@@ -167,14 +169,14 @@ def create_detection_message(
     for detection_idx in range(n_bboxes):
         detection = ImgDetectionExtended()
         x_center, y_center, width, height = bboxes[detection_idx]
-        detection.x_center = x_center.item()
-        detection.y_center = y_center.item()
-        detection.width = width.item()
-        detection.height = height.item()
+
+        angle = 0
+        if angles is not None:
+            angle = angles[detection_idx].item()
+
+        detection.rotated_rect = (x_center, y_center, width, height, angle)
         detection.confidence = scores[detection_idx].item()
 
-        if angles is not None:
-            detection.angle = angles[detection_idx].item()
         if labels is not None:
             detection.label = labels[detection_idx].item()
         if keypoints is not None:

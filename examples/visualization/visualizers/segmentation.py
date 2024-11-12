@@ -5,13 +5,13 @@ import numpy as np
 from depthai_nodes.ml.messages import SegmentationMasksSAM
 
 from .utils.colors import get_adas_colors, get_ewasr_colors, get_selfie_colors
-from .utils.message_parsers import parse_fast_sam_message, parse_segmentation_message
 
 
 def visualize_segmentation(
     frame: dai.ImgFrame, message: dai.ImgFrame, extraParams: dict
 ):
-    mask = parse_segmentation_message(message)
+    mask = message.getFrame()
+    mask = mask.reshape(mask.shape[0], mask.shape[1])
     frame = cv2.resize(frame, (mask.shape[1], mask.shape[0]))
 
     n_classes = extraParams.get("n_classes", None)
@@ -74,7 +74,7 @@ def _fastsam_show_masks(
 def visualize_fastsam(
     frame: dai.ImgFrame, message: SegmentationMasksSAM, extraParams: dict
 ):
-    masks = parse_fast_sam_message(message)
+    masks = message.masks
 
     if masks is not None:
         for i, mask in enumerate(masks):

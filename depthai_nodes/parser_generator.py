@@ -29,6 +29,7 @@ class ParserGenerator(dai.node.ThreadedHostNode):
         """
 
         heads = nn_archive.getConfig().model.heads
+
         indexes = range(len(heads))
 
         if len(heads) == 0:
