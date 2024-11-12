@@ -360,7 +360,7 @@ class FastSAMParser(BaseParser):
 
             if len(results_masks) == 0:
                 results_masks = np.full(
-                    (1, height, width), np.iinfo(np.uint16).max, dtype=np.uint16
+                    (1, height, width), -1, dtype=np.int16
                 )
             results_masks = merge_masks(results_masks)
 

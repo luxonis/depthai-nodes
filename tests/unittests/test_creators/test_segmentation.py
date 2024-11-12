@@ -18,13 +18,13 @@ def test_empty_array():
 def test_float_array():
     with pytest.raises(
         ValueError,
-        match="Expected uint16 input, got float64.",
+        match="Expected int16 input, got float64.",
     ):
         create_segmentation_message(np.random.rand(10, 10))
 
 
 def test_complete_types():
-    x = (np.random.rand(10, 10) * 100).astype(np.uint16)
+    x = (np.random.rand(10, 10) * 100).astype(np.int16)
     message = create_segmentation_message(x)
 
     assert isinstance(message, SegmentationMask)

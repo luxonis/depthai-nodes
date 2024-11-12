@@ -21,7 +21,7 @@ class SegmentationParser(BaseParser):
     ----------------
     **Type**: dai.ImgFrame
 
-    **Description**: Segmentation message containing the segmentation mask. Every pixel belongs to exactly one class.
+    **Description**: Segmentation message containing the segmentation mask. Every pixel belongs to exactly one class. Background is represented with "-1" and foreground classes with non-negative integers.
 
     Error Handling
     --------------
@@ -144,12 +144,9 @@ class SegmentationParser(BaseParser):
             class_map = (
                 np_function(segmentation_mask, axis=0)
                 .reshape(segmentation_mask.shape[1], segmentation_mask.shape[2])
-                .astype(np.uint16)
+                .astype(np.int16)
             )
-
-            # change background class from 0 to int16 max
             class_map = class_map - 1
-            class_map[class_map == -1] = np.iinfo(np.uint16).max
 
             mask_message = create_segmentation_message(class_map)
             mask_message.setTimestamp(output.getTimestamp())

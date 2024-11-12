@@ -134,11 +134,11 @@ Predictions class for storing predictions.
 
 ## SegmentationMask
 
-SegmentationMask class for a single- or multi-object segmentation mask. Background is represented with maximum 16-bit integer value (65535) and foreground classes with non-negative integers.
+SegmentationMask class for a single- or multi-object segmentation mask. Background is represented with "-1" and foreground classes with non-negative integers.
 
 ### Attributes
 
-- **mask** (NDArray\[np.uint16\]): Segmentation mask.
+- **mask** (NDArray\[np.int16\]): Segmentation mask.
 
 ## SegmentationMasksSAM
 
