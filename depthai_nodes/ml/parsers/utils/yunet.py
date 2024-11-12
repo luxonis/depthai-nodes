@@ -178,7 +178,7 @@ def format_detections(
     @type np.ndarray
     @param scores: A numpy array of shape (N,) containing the scores.
     @type np.ndarray
-    @param input_size: A tuple representing the height and width of the input image.
+    @param input_size: A tuple representing the width and height of the input image.
     @type input_size: tuple
     @return: A tuple of bboxes, keypoints, and scores.
         - bboxes: NumPy array of shape (N, 4) containing the decoded bounding boxes in the format [x_min, y_min, width, height].

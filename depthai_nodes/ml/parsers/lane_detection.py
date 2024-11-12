@@ -155,11 +155,13 @@ class LaneDetectionParser(BaseParser):
         self.input_shape = inputs[0].get("shape")
         self.layout = inputs[0].get("layout")
         if self.layout == "NHWC":
-            self.input_size = [self.input_shape[2], self.input_shape[1]]
+            self.input_size = (self.input_shape[2], self.input_shape[1])
         elif self.layout == "NCHW":
-            self.input_size = [self.input_shape[3], self.input_shape[2]]
+            self.input_size = (self.input_shape[3], self.input_shape[2])
         else:
-            raise ValueError(f"Input layout {self.layout} not supported for input_size extraction.")
+            raise ValueError(
+                f"Input layout {self.layout} not supported for input_size extraction."
+            )
 
         return self
 

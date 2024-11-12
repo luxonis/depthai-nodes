@@ -1,4 +1,3 @@
-import inspect
 from typing import Dict
 
 import depthai as dai
