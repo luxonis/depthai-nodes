@@ -5,8 +5,8 @@ from numpy.typing import NDArray
 
 class SegmentationMask(dai.Buffer):
     """SegmentationMask class for a single- or multi-object segmentation mask.
-    Foreground classes are represented by non-negative integers. Background should be
-    represented by "-1".
+    Background is represented with "-1" and foreground classes with non-negative
+    integers.
 
     Attributes
     ----------
