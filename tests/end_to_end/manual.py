@@ -40,7 +40,7 @@ with dai.Pipeline(device) as pipeline:
             platform=device.getPlatform().name,
         )
         try:
-            nn_archive_path = dai.getModelFromZoo(model_desc)
+            nn_archive_path = dai.getModelFromZoo(model_desc, useCached=False)
             nn_archive = dai.NNArchive(nn_archive_path)
         except Exception:
             print(
