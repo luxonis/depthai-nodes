@@ -7,6 +7,10 @@ on:
         description: 'Additional parameter: -all or -p <parser_name>. Default: -all. If -p is used: -p <parser_name>'
         required: true
         default: '-all'
+      branch:
+        description: 'Branch to run the tests on. Default: main'
+        required: true
+        default: 'main'
 
 jobs:
   HIL-test:
@@ -46,7 +50,7 @@ jobs:
           
       - name: Run Test
         run: |
-          CMD="hil --testbed oak4-pro --reservation-name 'depthai_nodes_ml_team' --commands 'cd /home/hil/depthai-nodes' 'git pull' 'source venv/bin/activate' 'cd tests/end_to_end' 'source <(python setup_camera_ips.py)' 'python main.py ${{ github.event.inputs.additional-parameter: }}' 'deactivate'"
+          CMD="hil --testbed oak4-pro --reservation-name 'depthai_nodes_ml_team' --commands 'cd /home/hil/depthai-nodes' 'git pull' 'git checkout ${{ github.event.inputs.branch }}' 'source venv/bin/activate' 'cd tests/end_to_end' 'source <(python setup_camera_ips.py)' 'python main.py ${{ github.event.inputs.additional-parameter }}' 'deactivate'"
           eval $CMD
 
       - name: Stop WireGuard
