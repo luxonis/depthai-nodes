@@ -5,7 +5,7 @@ The tests check if the device is able to run a model with neural network node an
 
 ## Running the tests on GitHub Actions
 
-You can manually trigger the Github action to run the HIL tests. The is a workflow parameter `additional-parameter` that can be used to specify the desired test. Default is `-all`. The available options are: `-all`, `-p <parser_name>`, `-s <slug_1> <slug_2> ...`, `-nn <path_to_archive_1> <path_to_archive_2> ...`.
+You can manually trigger the Github action to run the HIL tests. There is a workflow parameter `additional-parameter` that can be used to specify the desired test. Default is `-all`. The available options are: `-all`, `-p <parser_name>`, `-s <slug_1> <slug_2> ...`, `-nn <path_to_archive_1> <path_to_archive_2> ...`.
 
 ## Running the tests locally
 
