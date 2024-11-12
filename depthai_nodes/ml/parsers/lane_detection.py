@@ -147,7 +147,7 @@ class LaneDetectionParser(BaseParser):
             "cls_num_per_lane", self.cls_num_per_lane
         )
 
-        inputs = head_config["model"]["inputs"]
+        inputs = head_config["model_inputs"]
         if len(inputs) != 1:
             raise ValueError(
                 f"Only one input supported for LaneDetectionParser, got {len(inputs)} inputs."

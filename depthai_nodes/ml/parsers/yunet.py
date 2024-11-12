@@ -142,7 +142,7 @@ class YuNetParser(DetectionParser):
                 raise ValueError(
                     f"Unexpected output layer {output_layer}. Only loc, conf, and iou output layers are supported."
                 )
-        inputs = head_config["model"]["inputs"]
+        inputs = head_config["model_inputs"]
         if len(inputs) != 1:
             raise ValueError(
                 f"Only one input supported for YuNetParser, got {len(inputs)} inputs."

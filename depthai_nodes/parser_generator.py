@@ -53,9 +53,9 @@ class ParserGenerator(dai.node.ThreadedHostNode):
                 )
 
             head_config = decode_head(head)
-            head_config["model"] = {"inputs": []}
+            head_config["model_inputs"] = []
             for input in nn_archive.getConfig().model.inputs:
-                head_config["model"]["inputs"].append(
+                head_config["model_inputs"].append(
                     {"shape": input.shape, "layout": input.layout}
                 )
             parsers[index] = pipeline.create(parser).build(head_config)
