@@ -3,7 +3,7 @@ import os
 import sys
 
 import pytest
-from utils import find_slugs, get_model_slugs_from_zoo
+from utils import find_slugs_from_zoo, get_model_slugs_from_zoo
 
 
 def main():
@@ -53,7 +53,7 @@ def main():
         slug = get_model_slugs_from_zoo()
 
     if parser:
-        slug = find_slugs(parser)
+        slug = find_slugs_from_zoo(parser)
         if len(slug) == 0:
             raise ValueError(f"No models found for parser {parser}")
         else:

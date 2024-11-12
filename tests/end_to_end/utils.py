@@ -1,9 +1,24 @@
 import os
-from typing import List, Tuple
+import sys
+from typing import Dict, List, Tuple
 
 import depthai as dai
 import requests
-from slugs import PARSERS_SLUGS, SLUGS
+
+API_KEY = os.getenv("HUBAI_API_KEY", None)
+HUBAI_TEAM_ID = os.getenv("HUBAI_TEAM_ID", None)
+
+if not API_KEY:
+    raise ValueError(
+        "You must specify your HubAI API key in order to get the model config."
+    )
+
+if not HUBAI_TEAM_ID:
+    raise ValueError(
+        "You must specify your HubAI team ID in order to get the model config."
+    )
+
+HEADERS = {"Authorization": f"Bearer {API_KEY}"}
 
 
 def get_inputs_from_archive(nn_archive: dai.NNArchive) -> List:
@@ -29,7 +44,14 @@ def get_input_shape(nn_archive: dai.NNArchive) -> Tuple[int, int]:
         )
 
     try:
-        input_shape = inputs[0].shape[2:][::-1]
+        if inputs[0].layout == "NCHW":
+            input_shape = inputs[0].shape[2:][::-1]
+        elif inputs[0].layout == "NHWC":
+            input_shape = inputs[0].shape[1:3][::-1]
+        else:
+            raise ValueError(
+                "This model has an unsupported layout. Currently, only NCHW and NHWC layouts are supported."
+            )
     except AttributeError:
         print(
             "This NN archive does not have an input shape. Please use NN archives that have input shapes."
@@ -52,19 +74,12 @@ def parse_model_slug(full_slug) -> Tuple[str, str]:
     return model_slug, model_version_slug
 
 
-def get_model_slugs_from_zoo():
-    # For now we will use the slugs from the slugs.py file
-    # because the ZOO API changed and DAI is not yet updated
-    return SLUGS
-    hubai_team_id = os.getenv("HUBAI_TEAM_ID", None)
-    if not hubai_team_id:
-        raise ValueError(
-            "You must specify your HubAI team ID in order to get the models from ZOO."
-        )
-
+def get_models() -> List[Dict]:
+    """Get all the models from the ZOO that correspond to the HubAI team."""
     url = "https://easyml.cloud.luxonis.com/models/api/v1/models?is_public=true&limit=1000"
 
-    response = requests.get(url)
+    response = requests.get(url, headers=HEADERS)
+
     if response.status_code != 200:
         raise ValueError(f"Failed to get models. Status code: {response.status_code}")
     response = response.json()
@@ -72,7 +87,7 @@ def get_model_slugs_from_zoo():
     valid_models = []
 
     for model in response:
-        if model["is_public"] and model["team_id"] == hubai_team_id:
+        if model["is_public"] and model["team_id"] == HUBAI_TEAM_ID:
             model_dict = {
                 "name": model["name"],
                 "slug": model["slug"],
@@ -80,73 +95,133 @@ def get_model_slugs_from_zoo():
             }
             valid_models.append(model_dict)
 
-    # Get version slugs
+    return valid_models
+
+
+def get_model_versions(models: List[Dict]) -> List[Dict]:
+    """Get all the model versions from the ZOO that correspond to given models."""
     url = "https://easyml.cloud.luxonis.com/models/api/v1/modelVersions?is_public=True&limit=1000"
 
-    response = requests.get(url).json()
+    response = requests.get(url, headers=HEADERS)
 
-    model_slugs = []
+    if response.status_code != 200:
+        print(f"Failed to get model versions. Status code: {response.status_code}")
+        return None
+
+    response = response.json()
+
+    model_versions = []
 
     for version in response:
-        for model in valid_models:
+        for model in models:
             if version["model_id"] == model["model_id"]:
-                model["version_slug"] = version["variant_slug"]
-                model_slugs.append(f"{model['slug']}:{model['version_slug']}")
+                model_version = {
+                    "slug": model["slug"],
+                    "version_slug": version["variant_slug"],
+                    "model_id": model["model_id"],
+                    "version_id": version["id"],
+                    "name": model["name"],
+                }
+                model_versions.append(model_version)
                 break
+
+    return model_versions
+
+
+def get_model_instances(model_versions: List[Dict]) -> List[Dict]:
+    """Get all the model instances from the ZOO that correspond to the model
+    versions."""
+    url = "https://easyml.cloud.luxonis.com/models/api/v1/modelInstances?is_public=True&limit=1000"
+    response = requests.get(url, headers=HEADERS)
+
+    if response.status_code != 200:
+        print(f"Failed to get model instances. Status code: {response.status_code}")
+        return None
+
+    response = response.json()
+
+    model_instances = []
+
+    already_checked = []
+
+    for instance in response:
+        for model in model_versions:
+            if instance["model_version_id"] == model["version_id"]:
+                if instance["model_version_id"] in already_checked:
+                    continue
+                model_instance = {
+                    "slug": model["slug"],
+                    "version_slug": model["version_slug"],
+                    "model_id": model["model_id"],
+                    "version_id": model["version_id"],
+                    "instance_id": instance["id"],
+                }
+                model_instances.append(model_instance)
+                already_checked.append(instance["model_version_id"])
+                break
+
+    return model_instances
+
+
+def get_model_config_parser(model_instance_id: str) -> Dict:
+    """Get the model config from the ZOO."""
+    url = f"https://easyml.cloud.luxonis.com/models/api/v1/modelInstances/{model_instance_id}/config"
+    response = requests.get(url, headers=HEADERS)
+
+    if response.status_code != 200:
+        print(f"Failed to get model config. Status code: {response.status_code}")
+        return None
+
+    return response.json()
+
+
+def get_model_slugs_from_zoo() -> List[str]:
+    """Get all the model slugs from the ZOO."""
+    model_slugs = []
+    models = get_models()
+    model_versions = get_model_versions(models)
+
+    for model in model_versions:
+        model_slugs.append(f"{model['slug']}:{model['version_slug']}")
 
     return model_slugs
 
 
-def find_slugs(parser: str):
-    """The function finds all the slugs that have a specific parser.
-
-    It uses hardcoded PARSERS_SLUGS dictionary.
-    """
-    if parser not in PARSERS_SLUGS:
-        raise ValueError(
-            f"Parser {parser} is not available in the PARSERS_SLUGS dictionary."
-        )
-
-    return PARSERS_SLUGS[parser]
-
-
-def find_slugs_from_zoo(parser: str):
-    """The functions finds all the slugs that have a specific parser in the ZOO.
-
-    It takes some time because it downloads all the models from the ZOO. Alternative
-    option is to use find_slugs function which uses hardcoded PARSERS_SLUGS dictionary.
-    """
+def find_slugs_from_zoo(parser: str) -> List[str]:
+    """Find all model slugs that have the required parser."""
+    models = get_models()
+    model_versions = get_model_versions(models)
+    model_instances = get_model_instances(model_versions)
     relevant_slugs = []
-    print("Downloading NN archives from the ZOO")
-    slugs = get_model_slugs_from_zoo()
-    n = len(slugs)
-    for i, slug in enumerate(slugs):
-        print(f"[{i+1}/{n}] Downloading {slug} ...")
-        model_slug, version_slug = parse_model_slug(slug)
-        model_desc = dai.NNModelDescription(
-            modelSlug=model_slug, modelVersionSlug=version_slug, platform="RVC2"
-        )
-        nn_archive_path = None
+    already_checked = []
+
+    for ix, instance in enumerate(model_instances):
+        sys.stdout.write(f"\r[{ix+1}/{len(model_instances)}] Checking model configs...")
+        sys.stdout.flush()
+        model_config = get_model_config_parser(instance["instance_id"])
+        if model_config is None:
+            continue
         try:
-            nn_archive_path = dai.getModelFromZoo(model_desc)
-        except Exception:
-            model_desc = dai.NNModelDescription(
-                modelSlug=model_slug, modelVersionSlug=version_slug, platform="RVC4"
+            heads = model_config["model"]["heads"]
+        except KeyError:
+            print(
+                f"Model {instance['slug']}:{instance['version_slug']} does not have heads."
             )
-            try:
-                nn_archive_path = dai.getModelFromZoo(model_desc, useCached=True)
-            except Exception as e:
-                raise ValueError(f"Couldn't find model {slug} in the ZOO") from e
+            continue
 
         try:
-            nn_archive = dai.NNArchive(nn_archive_path)
-            for head in nn_archive.getConfig().model.heads:
-                if head.parser == parser:
-                    relevant_slugs.append(slug)
-                    break
-        except Exception as e:
-            print(e)
+            parsers = [head["parser"] for head in heads]
+        except KeyError:
+            print(
+                f"Model {instance['slug']}:{instance['version_slug']} does not have a parser."
+            )
+            continue
 
-        print(f"[{i+1}/{n}] Successfully downloaded {slug}!")
+        if parser in parsers:
+            if instance["version_id"] in already_checked:
+                continue
+            relevant_slugs.append(f"{instance['slug']}:{instance['version_slug']}")
+            already_checked.append(instance["version_id"])
 
+    print()
     return relevant_slugs
