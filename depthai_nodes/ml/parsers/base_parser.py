@@ -57,6 +57,8 @@ class BaseParser(dai.node.ThreadedHostNode, metaclass=BaseMeta):
         @param head_config: A dictionary containing configuration details relevant to
             the parser, including parameters and settings required for output parsing.
         @type head_config: Dict[str, Any]
+        @return: The parser object with the head configuration set.
+        @rtype: BaseParser
         """
         pass
 

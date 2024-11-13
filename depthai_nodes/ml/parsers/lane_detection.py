@@ -23,8 +23,8 @@ class LaneDetectionParser(BaseParser):
         Griding number.
     cls_num_per_lane : int
         Number of points per lane.
-    input_shape : Tuple[int, int]
-        Input shape.
+    input_size : Tuple[int, int]
+        Input size (width,height).
 
     Output Message/s
     ----------------
@@ -44,7 +44,7 @@ class LaneDetectionParser(BaseParser):
         row_anchors: List[int] = None,
         griding_num: int = None,
         cls_num_per_lane: int = None,
-        input_shape: Tuple[int, int] = (288, 800),
+        input_size: Tuple[int, int] = None,
     ) -> None:
         """Initializes the lane detection parser node.
 
@@ -56,8 +56,8 @@ class LaneDetectionParser(BaseParser):
         @type griding_num: int
         @param cls_num_per_lane: Number of points per lane.
         @type cls_num_per_lane: int
-        @param input_shape: Input shape.
-        @type input_shape: Tuple[int, int]
+        @param input_size: Input size (width,height).
+        @type input_size: Tuple[int, int]
         """
         super().__init__()
         self.output_layer_name = output_layer_name
@@ -65,7 +65,7 @@ class LaneDetectionParser(BaseParser):
         self.row_anchors = row_anchors
         self.griding_num = griding_num
         self.cls_num_per_lane = cls_num_per_lane
-        self.input_shape = input_shape
+        self.input_size = input_size
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Set the output layer name for the lane detection model.
@@ -109,19 +109,19 @@ class LaneDetectionParser(BaseParser):
             raise ValueError("Number of points per lane must be an integer.")
         self.cls_num_per_lane = cls_num_per_lane
 
-    def setInputShape(self, input_shape: Tuple[int, int]) -> None:
-        """Set the input shape for the lane detection model.
+    def setInputSize(self, input_size: Tuple[int, int]) -> None:
+        """Set the input size for the lane detection model.
 
-        @param input_shape: Input shape.
-        @type input_shape: Tuple[int, int]
+        @param input_size: Input size (width,height).
+        @type input_size: Tuple[int, int]
         """
-        if not isinstance(input_shape, tuple):
-            raise ValueError("Input shape must be a tuple.")
-        if len(input_shape) != 2:
-            raise ValueError("Input shape must be a tuple of two integers.")
-        if not all(isinstance(size, int) for size in input_shape):
-            raise ValueError("Input shape must be a tuple of integers.")
-        self.input_shape = input_shape
+        if not isinstance(input_size, tuple):
+            raise ValueError("Input size must be a tuple.")
+        if len(input_size) != 2:
+            raise ValueError("Input size must be a tuple of two integers.")
+        if not all(isinstance(size, int) for size in input_size):
+            raise ValueError("Input size must be a tuple of integers.")
+        self.input_size = input_size
 
     def build(
         self,
@@ -146,6 +146,22 @@ class LaneDetectionParser(BaseParser):
         self.cls_num_per_lane = head_config.get(
             "cls_num_per_lane", self.cls_num_per_lane
         )
+
+        inputs = head_config["model_inputs"]
+        if len(inputs) != 1:
+            raise ValueError(
+                f"Only one input supported for LaneDetectionParser, got {len(inputs)} inputs."
+            )
+        self.input_shape = inputs[0].get("shape")
+        self.layout = inputs[0].get("layout")
+        if self.layout == "NHWC":
+            self.input_size = (self.input_shape[2], self.input_shape[1])
+        elif self.layout == "NCHW":
+            self.input_size = (self.input_shape[3], self.input_shape[2])
+        else:
+            raise ValueError(
+                f"Input layout {self.layout} not supported for input_size extraction."
+            )
 
         return self
 
@@ -180,8 +196,8 @@ class LaneDetectionParser(BaseParser):
                 anchors=self.row_anchors,
                 griding_num=self.griding_num,
                 cls_num_per_lane=self.cls_num_per_lane,
-                input_width=self.input_shape[1],
-                input_height=self.input_shape[0],
+                input_width=self.input_size[0],
+                input_height=self.input_size[1],
                 y=y,
             )
 
