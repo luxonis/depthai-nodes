@@ -107,9 +107,7 @@ def create_detection_message(
             )
         for angle in angles:
             if not -360 <= angle <= 360:
-                raise ValueError(
-                    f"Angles should be between -360 and 360, got {angle}. Make sure you use radians."
-                )
+                raise ValueError(f"Angles should be between -360 and 360, got {angle}.")
 
     if keypoints is not None:
         if not isinstance(keypoints, np.ndarray):
