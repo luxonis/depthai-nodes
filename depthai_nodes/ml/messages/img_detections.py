@@ -15,7 +15,7 @@ class ImgDetectionExtended(dai.Buffer):
     Attributes
     ----------
     rotated_rect: dai.RotatedRect
-        Rotated rectangle object defined by the center, width, height, and angle in radians.
+        Rotated rectangle object defined by the center, width, height and angle in degrees.
     confidence: float
         Confidence of the detection.
     label: int
