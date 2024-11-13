@@ -7,7 +7,6 @@ from depthai_nodes.ml.messages import (
     Keypoints,
     Lines,
     Map2D,
-    SegmentationMasksSAM,
 )
 
 
@@ -25,8 +24,7 @@ def parse_line_detection_message(message: Lines):
 
 def parse_segmentation_message(message: dai.ImgFrame):
     """Parses the segmentation message and returns the mask."""
-    mask = message.getFrame()
-    mask = mask.reshape(mask.shape[0], mask.shape[1])
+    mask = message.mask
     return mask
 
 
@@ -59,12 +57,6 @@ def parse_cluster_message(message: Clusters):
     """Parses the cluster message and returns the clusters."""
     clusters = message.clusters
     return clusters
-
-
-def parse_fast_sam_message(message: SegmentationMasksSAM):
-    """Parses the fast sam message and returns the masks."""
-    masks = message.masks
-    return masks
 
 
 def parse_map_message(message: Map2D):

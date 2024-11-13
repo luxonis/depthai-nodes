@@ -1,12 +1,12 @@
 import cv2
-import depthai as dai
+import numpy as np
 
 from depthai_nodes.ml.messages import Keypoints
 
 from .utils.message_parsers import parse_keypoints_message
 
 
-def visualize_keypoints(frame: dai.ImgFrame, message: Keypoints, extraParams: dict):
+def visualize_keypoints(frame: np.ndarray, message: Keypoints, extraParams: dict):
     """Visualizes the keypoints on the frame."""
     keypoints = parse_keypoints_message(message)
 

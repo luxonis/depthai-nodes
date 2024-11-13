@@ -12,7 +12,7 @@ from .detection import (
 from .image import visualize_image
 from .keypoints import visualize_keypoints
 from .map import visualize_map
-from .segmentation import visualize_fastsam, visualize_segmentation
+from .segmentation import visualize_segmentation
 from .xfeat import xfeat_visualizer
 
 __all__ = [
