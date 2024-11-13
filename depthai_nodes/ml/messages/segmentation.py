@@ -5,7 +5,7 @@ from numpy.typing import NDArray
 
 class SegmentationMask(dai.Buffer):
     """SegmentationMask class for a single- or multi-object segmentation mask.
-    Background is represented with "-1" and foreground classes with non-negative
+    Unassigned pixels are represented with "-1" and foreground classes with non-negative
     integers.
 
     Attributes
