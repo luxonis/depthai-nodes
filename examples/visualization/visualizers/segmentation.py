@@ -9,7 +9,7 @@ from .utils.colors import get_adas_colors, get_ewasr_colors, get_selfie_colors
 def visualize_segmentation(
     frame: np.ndarray, message: SegmentationMask, extraParams: dict
 ):
-    mask = message.getFrame()
+    mask = message.mask
     mask = mask.reshape(mask.shape[0], mask.shape[1])
     frame = cv2.resize(frame, (mask.shape[1], mask.shape[0]))
 

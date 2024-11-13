@@ -102,6 +102,27 @@ class ImgDetectionExtended(dai.Buffer):
         self._label = value
 
     @property
+    def label_name(self) -> str:
+        """Returns the label name of the detection.
+
+        @return: Label name of the detection.
+        @rtype: str
+        """
+        return self._label_name
+
+    @label_name.setter
+    def label_name(self, value: str):
+        """Sets the label name of the detection.
+
+        @param value: Label name of the detection.
+        @type value: str
+        @raise TypeError: If value is not a string.
+        """
+        if not isinstance(value, str):
+            raise TypeError("Label name must be a string.")
+        self._label_name = value
+
+    @property
     def keypoints(
         self,
     ) -> List[Keypoint]:
@@ -129,45 +150,6 @@ class ImgDetectionExtended(dai.Buffer):
         if not all(isinstance(item, Keypoint) for item in value):
             raise ValueError("Keypoints must be a list of Keypoint objects.")
         self._keypoints = value
-
-    def get_xyxy_bbox_points(self) -> NDArray[np.float32]:
-        """Returns the axis-aligned [x1, y1, x2, y2] bounding box points. It does not
-        take into account the angle of the bounding box.
-
-        @return: Bounding box points.
-        @rtype: NDArray[np.float32]
-        """
-        x1 = self.x_center - self.width / 2
-        y1 = self.y_center - self.height / 2
-        x2 = self.x_center + self.width / 2
-        y2 = self.y_center + self.height / 2
-        return np.array([x1, y1, x2, y2], dtype=np.float32)
-
-    def get_bbox_points(self) -> NDArray[np.float32]:
-        """Returns the bounding box points in the format [[x1,y1], [x2,y2], [x3,y3],
-        [x4,y4]]. Starting from the top-left corner and going clockwise. This is useful
-        for drawing rotated bounding boxes.
-
-        @return: Rotated bounding box points.
-        @rtype: NDArray[np.float32]
-        """
-
-        angle = np.radians(self.angle)
-        x_center, y_center, w, h = self.x_center, self.y_center, self.width, self.height
-
-        w_half, h_half = w / 2, h / 2
-
-        corners = np.array(
-            [[-w_half, -h_half], [w_half, -h_half], [w_half, h_half], [-w_half, h_half]]
-        )
-
-        cos_a, sin_a = np.cos(angle), np.sin(angle)
-        rotation_matrix = np.array([[cos_a, -sin_a], [sin_a, cos_a]])
-        rotated_corners = np.dot(corners, rotation_matrix) + np.array(
-            [x_center, y_center]
-        )
-
-        return rotated_corners
 
 
 class ImgDetectionsExtended(dai.Buffer):
