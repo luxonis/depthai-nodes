@@ -60,8 +60,13 @@ class ParserGenerator(dai.node.ThreadedHostNode):
                     f"Parser {parser_name} does not inherit from BaseParser class."
                 )
 
-            head = decode_head(head)
-            parsers[index] = pipeline.create(parser).build(head)
+            head_config = decode_head(head)
+            head_config["model_inputs"] = []
+            for input in nn_archive.getConfig().model.inputs:
+                head_config["model_inputs"].append(
+                    {"shape": input.shape, "layout": input.layout}
+                )
+            parsers[index] = pipeline.create(parser).build(head_config)
 
         return parsers
 

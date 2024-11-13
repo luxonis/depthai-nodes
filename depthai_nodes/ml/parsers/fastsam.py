@@ -3,11 +3,12 @@ from typing import Any, Dict, List, Optional, Tuple
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_sam_message
+from ..messages.creators import create_segmentation_message
 from .base_parser import BaseParser
 from .utils.fastsam import (
     box_prompt,
     decode_fastsam_output,
+    merge_masks,
     point_prompt,
     process_single_mask,
 )
@@ -357,7 +358,11 @@ class FastSAMParser(BaseParser):
                     orig_shape=input_shape[::-1],
                 )
 
-            segmentation_message = create_sam_message(results_masks)
+            if len(results_masks) == 0:
+                results_masks = np.full((1, height, width), -1, dtype=np.int16)
+            results_masks = merge_masks(results_masks)
+
+            segmentation_message = create_segmentation_message(results_masks)
             segmentation_message.setTimestamp(output.getTimestamp())
 
             self.out.send(segmentation_message)

@@ -1,11 +1,11 @@
 import cv2
-import depthai as dai
+import numpy as np
 
 from depthai_nodes.ml.messages import Classifications
 
 
 def visualize_classification(
-    frame: dai.ImgFrame, message: Classifications, extraParams: dict
+    frame: np.ndarray, message: Classifications, extraParams: dict
 ):
     """Visualizes the classification on the frame."""
     classes = message.classes[:2]
@@ -31,7 +31,7 @@ def visualize_classification(
 
 
 def visualize_text_recognition(
-    frame: dai.ImgFrame, message: Classifications, extraParams: dict
+    frame: np.ndarray, message: Classifications, extraParams: dict
 ):
     """Visualizes the text recognition on the frame."""
 

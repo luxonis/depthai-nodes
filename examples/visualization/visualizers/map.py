@@ -1,11 +1,10 @@
 import cv2
-import depthai as dai
 import numpy as np
 
 from depthai_nodes.ml.messages import Map2D
 
 
-def visualize_map(frame: dai.ImgFrame, message: Map2D, extraParams: dict):
+def visualize_map(frame: np.ndarray, message: Map2D, extraParams: dict):
     """Visualizes the map on the frame."""
 
     map = message.map

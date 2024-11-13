@@ -72,3 +72,21 @@ class Classifications(dai.Buffer):
         if value.size > 0 and value.dtype != np.float32:
             raise ValueError("Scores must be a np.ndarray of floats.")
         self._scores = value
+
+    @property
+    def top_class(self) -> str:
+        """Returns the most probable class.
+
+        @return: The top class.
+        @rtype: str
+        """
+        return self._classes[0]
+
+    @property
+    def top_score(self) -> float:
+        """Returns the probability of the most probable class.
+
+        @return: The top score.
+        @rtype: float
+        """
+        return self._scores[0]

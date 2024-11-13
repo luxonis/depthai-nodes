@@ -22,7 +22,7 @@ class YuNetParser(DetectionParser):
     max_det : int
         Maximum number of detections to keep.
     input_size : Tuple[int, int]
-        Input size.
+        Input size (width, height).
     loc_output_layer_name: str
         Name of the output layer containing the location predictions.
     conf_output_layer_name: str
@@ -55,7 +55,7 @@ class YuNetParser(DetectionParser):
         @type iou_threshold: float
         @param max_det: Maximum number of detections to keep.
         @type max_det: int
-        @param input_size: Input shape of the model (width, height).
+        @param input_size: Input size of the model (width, height).
         @type input_size: Tuple[int, int]
         @param loc_output_layer_name: Output layer name for the location predictions.
         @type loc_output_layer_name: str
@@ -131,11 +131,6 @@ class YuNetParser(DetectionParser):
 
         super().build(head_config)
         output_layers = head_config.get("outputs", [])
-        self.input_size = head_config.get("input_size", self.input_size)
-        if len(output_layers) != 3:
-            raise ValueError(
-                f"YuNetParser expects exactly 3 output layers, got {output_layers} layers."
-            )
         for output_layer in output_layers:
             if "loc" in output_layer:
                 self.loc_output_layer_name = output_layer
@@ -147,6 +142,21 @@ class YuNetParser(DetectionParser):
                 raise ValueError(
                     f"Unexpected output layer {output_layer}. Only loc, conf, and iou output layers are supported."
                 )
+        inputs = head_config["model_inputs"]
+        if len(inputs) != 1:
+            raise ValueError(
+                f"Only one input supported for YuNetParser, got {len(inputs)} inputs."
+            )
+        self.input_shape = inputs[0].get("shape")
+        self.layout = inputs[0].get("layout")
+        if self.layout == "NHWC":
+            self.input_size = (self.input_shape[2], self.input_shape[1])
+        elif self.layout == "NCHW":
+            self.input_size = (self.input_shape[3], self.input_shape[2])
+        else:
+            raise ValueError(
+                f"Input layout {self.layout} not supported for input_size extraction."
+            )
 
         return self
 
@@ -242,7 +252,7 @@ class YuNetParser(DetectionParser):
 
             # decode detections
             bboxes, keypoints, scores = decode_detections(
-                input_shape=self.input_size,
+                input_size=self.input_size,
                 loc=loc,
                 conf=conf,
                 iou=iou,
@@ -261,7 +271,7 @@ class YuNetParser(DetectionParser):
                 bboxes=bboxes,
                 keypoints=keypoints,
                 scores=scores,
-                input_shape=self.input_size,
+                input_size=self.input_size,
             )
 
             # run nms

@@ -1,10 +1,10 @@
 import cv2
-import depthai as dai
+import numpy as np
 
 from depthai_nodes.ml.messages import Keypoints
 
 
-def visualize_keypoints(frame: dai.ImgFrame, message: Keypoints, extraParams: dict):
+def visualize_keypoints(frame: np.ndarray, message: Keypoints, extraParams: dict):
     """Visualizes the keypoints on the frame."""
     keypoints = message.keypoints
 

@@ -138,7 +138,7 @@ SegmentationMask class for a single- or multi-object segmentation mask. Backgrou
 
 ### Attributes
 
-- **mask** (NDArray\[np.int8\]): Segmentation mask.
+- **mask** (NDArray\[np.int16\]): Segmentation mask.
 
 ## SegmentationMasksSAM
 

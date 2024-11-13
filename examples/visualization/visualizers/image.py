@@ -1,8 +1,9 @@
 import cv2
 import depthai as dai
+import numpy as np
 
 
-def visualize_image(frame: dai.ImgFrame, message: dai.ImgFrame, extraParams: dict):
+def visualize_image(frame: np.ndarray, message: dai.ImgFrame, extraParams: dict):
     """Visualizes the image on the frame."""
     image = message.getFrame()
     cv2.imshow("Image", image)

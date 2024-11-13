@@ -8,7 +8,7 @@ from .keypoints import Keypoint, Keypoints
 from .lines import Line, Lines
 from .map import Map2D
 from .prediction import Prediction, Predictions
-from .segmentation import SegmentationMask, SegmentationMasksSAM
+from .segmentation import SegmentationMask
 
 __all__ = [
     "ImgDetectionExtended",
@@ -19,7 +19,6 @@ __all__ = [
     "Lines",
     "Classifications",
     "SegmentationMask",
-    "SegmentationMasksSAM",
     "Map2D",
     "Clusters",
     "Cluster",

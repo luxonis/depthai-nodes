@@ -1,61 +1,89 @@
 import argparse
-from typing import Tuple
+import os
+import sys
 
-import depthai as dai
-
-from depthai_nodes.parsing_neural_network import ParsingNeuralNetwork
-
-
-def parse_model_slug(full_slug) -> Tuple[str, str]:
-    if ":" not in full_slug:
-        raise NameError(
-            "Please provide the model slug in the format of 'model_slug:model_version_slug'"
-        )
-    model_slug_parts = full_slug.split(":")
-    model_slug = model_slug_parts[0]
-    model_version_slug = model_slug_parts[1]
-
-    return model_slug, model_version_slug
+import pytest
+from utils import find_slugs_from_zoo, get_model_slugs_from_zoo
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "-nn", "--nn_archive", type=str, default=None, help="Path to the NNArchive."
-)
-parser.add_argument(
-    "-s", "--model_slug", type=str, default=None, help="Slug of the model from HubAI."
-)
-parser.add_argument("-ip", type=str, default="", help="IP of the device")
-args = parser.parse_args()
+def main():
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument(
+        "-nn",
+        "--nn_archive_path",
+        nargs="+",
+        type=str,
+        default="",
+        help="Path(s) to the NNArchive.",
+    )
+    arg_parser.add_argument(
+        "-s",
+        "--slug",
+        type=str,
+        nargs="+",
+        default="",
+        help="Slug(s) of the model from HubAI.",
+    )
+    arg_parser.add_argument("-all", action="store_true", help="Run all tests")
+    arg_parser.add_argument(
+        "-p", "--parser", default="", help="Name of the specific parser to test."
+    )
+    arg_parser.add_argument(
+        "--platform",
+        type=str,
+        default="",
+        help="RVC platform to run the tests on. Default is both.",
+    )
 
-if not (args.nn_archive or args.model_slug):
-    raise ValueError("You have to pass either path to NNArchive or model slug")
+    args = arg_parser.parse_args()
+    nn_archive_path = args.nn_archive_path  # it is a list of paths
+    slug = args.slug
+    run_all = args.all
+    parser = args.parser
+    rvc_platform = "both" if args.platform == "" else args.platform
+    print(f"Run all tests: {run_all}")
+    print(f"RVC2 IP: {os.getenv('RVC2_IP', '')}")
+    print(f"RVC4 IP: {os.getenv('RVC4_IP', '')}")
+    print(f"RVC platform: {'RVC2 & RVC4' if rvc_platform == '' else rvc_platform}")
 
-device = dai.Device(dai.DeviceInfo(args.ip))
-with dai.Pipeline(device) as pipeline:
-    camera_node = pipeline.create(dai.node.Camera).build()
+    if run_all and (nn_archive_path or slug):
+        raise ValueError("You can't pass both -all and -nn_archive_path or -slug")
 
-    if args.model_slug:
-        model_slug, model_version_slug = parse_model_slug(args.model_slug)
-        model = dai.NNModelDescription(
-            modelSlug=model_slug, modelVersionSlug=model_version_slug
-        )
+    if run_all:
+        slug = get_model_slugs_from_zoo()
 
-    else:
-        model = dai.NNArchive(args.nn_archive)
+    if parser:
+        slug = find_slugs_from_zoo(parser)
+        if len(slug) == 0:
+            raise ValueError(f"No models found for parser {parser}")
+        else:
+            print(f"Found model slugs for parser {parser}: {slug}")
 
-    nn_w_parser = pipeline.create(ParsingNeuralNetwork).build(camera_node, model)
+    if not nn_archive_path and not slug:
+        raise ValueError("You have to pass either path to NNArchive or model slug")
 
-    head_indices = nn_w_parser._parsers.keys()
+    slug = [f"{s}" for s in slug]
 
-    parser_output_queues = {
-        i: nn_w_parser.getOutput(i).createOutputQueue() for i in head_indices
-    }
+    command = [
+        "test_e2e.py",
+        f"--nn_archive_path={nn_archive_path}",
+        f"--platform={rvc_platform}",
+        "-v",
+        "--tb=no",
+    ]
 
-    pipeline.start()
+    if slug:
+        command = [
+            "test_e2e.py",
+            f"--slug={slug}",
+            f"--platform={rvc_platform}",
+            "-v",
+            "--tb=no",
+        ]
 
-    while pipeline.isRunning():
-        for head_id in parser_output_queues:
-            parser_output = parser_output_queues[head_id].get()
-            print(f"{head_id} - {type(parser_output)}")
-        pipeline.stop()
+    exit_code = pytest.main(command)
+    sys.exit(exit_code)
+
+
+if __name__ == "__main__":
+    main()
