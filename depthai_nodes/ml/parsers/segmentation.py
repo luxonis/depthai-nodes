@@ -122,7 +122,7 @@ class SegmentationParser(BaseParser):
             if min_dim == len(mask_shape) - 1:
                 segmentation_mask = segmentation_mask.transpose(2, 0, 1)
             adding_unassigned_class = False
-            if segmentation_mask.shape[0] == 1: # shape is (1, H, W)
+            if segmentation_mask.shape[0] == 1:  # shape is (1, H, W)
                 if self.classes_in_one_layer:
                     np_function = np.max
                 else:
@@ -147,7 +147,7 @@ class SegmentationParser(BaseParser):
                 .reshape(segmentation_mask.shape[1], segmentation_mask.shape[2])
                 .astype(np.int16)
             )
-            
+
             if adding_unassigned_class:
                 class_map = class_map - 1
 
