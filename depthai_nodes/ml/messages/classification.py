@@ -75,7 +75,7 @@ class Classifications(dai.Buffer):
 
     @property
     def top_class(self) -> str:
-        """Returns the most probable class.
+        """Returns the most probable class. Only works if classes are sorted by scores.
 
         @return: The top class.
         @rtype: str
@@ -84,7 +84,8 @@ class Classifications(dai.Buffer):
 
     @property
     def top_score(self) -> float:
-        """Returns the probability of the most probable class.
+        """Returns the probability of the most probable class. Only works if scores are
+        sorted by descending order.
 
         @return: The top score.
         @rtype: float
