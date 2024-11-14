@@ -70,7 +70,7 @@ def main():
         f"--platform={rvc_platform}",
         "-v",
         "--tb=no",
-        "-r sx",
+        "-r a",
         "--log-cli-level=DEBUG",
         "--color=yes",
     ]
@@ -82,7 +82,7 @@ def main():
             f"--platform={rvc_platform}",
             "-v",
             "--tb=no",
-            "-r sx",
+            "-r a",
             "--log-cli-level=DEBUG",
             "--color=yes",
         ]
