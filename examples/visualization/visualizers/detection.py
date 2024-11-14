@@ -21,16 +21,11 @@ def draw_extended_image_detections(
         rect = detection.rotated_rect
         points = rect.getPoints()
 
-        bbox = []
-        for point in points:
-            bbox.append([point.x, point.y])
-        bbox = np.array(bbox)
-
+        bbox = np.array([[point.x, point.y] for point in points])
         if np.any(bbox < 1):
             bbox[:, 0] = bbox[:, 0] * frame.shape[1]
             bbox[:, 1] = bbox[:, 1] * frame.shape[0]
         bbox = bbox.astype(int)
-
         cv2.polylines(frame, [bbox], isClosed=True, color=(255, 0, 0), thickness=2)
 
         try:
