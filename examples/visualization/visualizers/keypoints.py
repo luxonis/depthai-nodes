@@ -3,12 +3,10 @@ import numpy as np
 
 from depthai_nodes.ml.messages import Keypoints
 
-from .utils.message_parsers import parse_keypoints_message
-
 
 def visualize_keypoints(frame: np.ndarray, message: Keypoints, extraParams: dict):
     """Visualizes the keypoints on the frame."""
-    keypoints = parse_keypoints_message(message)
+    keypoints = message.keypoints
 
     for kp in keypoints:
         x = int(kp.x * frame.shape[1])

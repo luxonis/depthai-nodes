@@ -4,20 +4,35 @@ Here are the custom message types that we introduce in this package. They are us
 
 **Table of Contents**
 
-- [Classifications](#classifications)
-- [Cluster](#cluster)
-- [Clusters](#clusters)
-- [ImgDetectionExtended](#imgdetectionextended)
-- [ImgDetectionsExtended](#imgdetectionsextended)
-- [Keypoint](#keypoint)
-- [Keypoints](#keypoints)
-- [Line](#line)
-- [Lines](#lines)
-- [Map2d](#map2d)
-- [Prediction](#prediction)
-- [Predictions](#predictions)
-- [SegmentationMask](#segmentationmask)
-- [SegmentationMaskSAM](#segmentationmaskssam)
+- [Message Types](#message-types)
+  - [Classifications](#classifications)
+    - [Attributes](#attributes)
+  - [Cluster](#cluster)
+    - [Attributes](#attributes-1)
+  - [Clusters](#clusters)
+    - [Attributes](#attributes-2)
+  - [ImgDetectionExtended](#imgdetectionextended)
+    - [Attributes](#attributes-3)
+  - [ImgDetectionsExtended](#imgdetectionsextended)
+    - [Attributes](#attributes-4)
+  - [Keypoint](#keypoint)
+    - [Attributes](#attributes-5)
+  - [Keypoints](#keypoints)
+    - [Attributes](#attributes-6)
+  - [Line](#line)
+    - [Attributes](#attributes-7)
+  - [Lines](#lines)
+    - [Attributes](#attributes-8)
+  - [Map2D](#map2d)
+    - [Attributes](#attributes-9)
+  - [Prediction](#prediction)
+    - [Attributes](#attributes-10)
+  - [Predictions](#predictions)
+    - [Attributes](#attributes-11)
+  - [SegmentationMask](#segmentationmask)
+    - [Attributes](#attributes-12)
+  - [SegmentationMasksSAM](#segmentationmaskssam)
+    - [Attributes](#attributes-13)
 
 ## Classifications
 
@@ -51,11 +66,7 @@ A class for storing image detections in (x_center, y_center, width, height) form
 
 ### Attributes
 
-- **x_center** (float): The X coordinate of the center of the bounding box, relative to the input width.
-- **y_center** (float): The Y coordinate of the center of the bounding box, relative to the input height.
-- **width** (float): The width of the bounding box, relative to the input width.
-- **height** (float): The height of the bounding box, relative to the input height.
-- **angle** (float): The angle of the bounding box expressed in degrees.
+- **rotated_rect** (dai.RotatedRect): A depthai object for storing the roated bounding box information. The bounding box is stored as x_center, y_center, width, height, angle in degrees.
 - **confidence** (float): Confidence of the detection.
 - **label** (int): Label of the detection.
 - **keypoints** (List\[[Keypoint](#keypoint)\]): Keypoints of the detection.

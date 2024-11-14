@@ -3,13 +3,11 @@ import numpy as np
 
 from depthai_nodes.ml.messages import Map2D
 
-from .utils.message_parsers import parse_map_message
-
 
 def visualize_map(frame: np.ndarray, message: Map2D, extraParams: dict):
     """Visualizes the map on the frame."""
 
-    map = parse_map_message(message)
+    map = message.map
 
     # make color representation of the map
     map_normalized = cv2.normalize(map, None, 0, 255, cv2.NORM_MINMAX)

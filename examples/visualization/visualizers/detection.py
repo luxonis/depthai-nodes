@@ -1,69 +1,32 @@
+from typing import List
+
 import cv2
 import depthai as dai
 import numpy as np
 
 from depthai_nodes.ml.messages import (
     Clusters,
+    ImgDetectionExtended,
     ImgDetectionsExtended,
     Lines,
 )
 
-from .utils.message_parsers import (
-    parse_cluster_message,
-    parse_detection_message,
-    parse_line_detection_message,
-    parse_yolo_kpts_message,
-)
 
-
-def visualize_detections(
-    frame: np.ndarray, message: ImgDetectionsExtended, extraParams: dict
+def draw_extended_image_detections(
+    frame: np.ndarray, detections: List[ImgDetectionExtended], labels=None
 ):
-    """Visualizes the detections on the frame. Detections are given in xywh format
-    (ImgDetectionsExtended).
+    """Draws (rotated) bounding boxes on the given frame."""
 
-    Also, checks if there are any keypoints available to visualize.
-    """
-    labels = extraParams.get("classes", None)
-    detections = parse_detection_message(message)
     for detection in detections:
-        x_center, y_center, width, height = (
-            detection.x_center,
-            detection.y_center,
-            detection.width,
-            detection.height,
-        )
-        xmin = x_center - width / 2
-        ymin = y_center - height / 2
-        xmax = x_center + width / 2
-        ymax = y_center + height / 2
+        rect = detection.rotated_rect
+        points = rect.getPoints()
 
-        if xmin > 1 or ymin > 1 or xmax > 1 or ymax > 1:
-            xmin = int(xmin)
-            ymin = int(ymin)
-            xmax = int(xmax)
-            ymax = int(ymax)
-        else:
-            xmin = int(xmin * frame.shape[1])
-            ymin = int(ymin * frame.shape[0])
-            xmax = int(xmax * frame.shape[1])
-            ymax = int(ymax * frame.shape[0])
-
-        if detection.angle == 0:
-            cv2.rectangle(
-                frame, (int(xmin), int(ymin)), (int(xmax), int(ymax)), (255, 0, 0), 2
-            )
-        else:
-            # Rotated rectangle
-            x_center = int(x_center * frame.shape[1])
-            y_center = int(y_center * frame.shape[0])
-            width = int(width * frame.shape[1])
-            height = int(height * frame.shape[0])
-            box = cv2.boxPoints(
-                ((x_center, y_center), (width, height), detection.angle)
-            )
-            box = np.int0(box)
-            cv2.drawContours(frame, [box], 0, (255, 0, 0), 2)
+        bbox = np.array([[point.x, point.y] for point in points])
+        if np.any(bbox < 1):
+            bbox[:, 0] = bbox[:, 0] * frame.shape[1]
+            bbox[:, 1] = bbox[:, 1] * frame.shape[0]
+        bbox = bbox.astype(int)
+        cv2.polylines(frame, [bbox], isClosed=True, color=(255, 0, 0), thickness=2)
 
         try:
             keypoints = detection.keypoints
@@ -78,23 +41,41 @@ def visualize_detections(
         except Exception:
             pass
 
+        outer_points = rect.getOuterRect()
+        xmin = int(outer_points[0] * frame.shape[1])
+        ymin = int(outer_points[1] * frame.shape[0])
         cv2.putText(
             frame,
             f"{detection.confidence * 100:.2f}%",
-            (int(xmin) + 10, int(ymin) + 20),
+            (xmin + 10, ymin + 20),
             cv2.FONT_HERSHEY_TRIPLEX,
             0.5,
-            255,
+            (255, 0, 0),
         )
         if labels is not None:
             cv2.putText(
                 frame,
                 labels[detection.label],
-                (int(xmin) + 10, int(ymin) + 40),
+                (xmin + 10, ymin + 40),
                 cv2.FONT_HERSHEY_TRIPLEX,
                 0.5,
-                255,
+                (255, 0, 0),
             )
+
+    return frame
+
+
+def visualize_detections(
+    frame: np.ndarray, message: ImgDetectionsExtended, extraParams: dict
+):
+    """Visualizes the detections on the frame. Detections are given in x_center, width,
+    height, angle format (ImgDetectionsExtended).
+
+    Also, checks if there are any keypoints available to visualize.
+    """
+    labels = extraParams.get("classes", None)
+    detections = message.detections
+    frame = draw_extended_image_detections(frame, detections, labels)
 
     cv2.imshow("Detections", frame)
     if cv2.waitKey(1) == ord("q"):
@@ -113,7 +94,7 @@ def visualize_detections_xyxy(
     """
 
     labels = extraParams.get("classes", None)
-    detections = parse_detection_message(message)
+    detections = message.detections
     for detection in detections:
         xmin, ymin, xmax, ymax = (
             detection.xmin,
@@ -141,7 +122,7 @@ def visualize_detections_xyxy(
             (int(xmin) + 10, int(ymin) + 20),
             cv2.FONT_HERSHEY_TRIPLEX,
             0.5,
-            255,
+            (255, 0, 0),
         )
         if labels is not None:
             cv2.putText(
@@ -150,7 +131,7 @@ def visualize_detections_xyxy(
                 (int(xmin) + 10, int(ymin) + 40),
                 cv2.FONT_HERSHEY_TRIPLEX,
                 0.5,
-                255,
+                (255, 0, 0),
             )
 
     cv2.imshow("Detections", frame)
@@ -163,7 +144,7 @@ def visualize_detections_xyxy(
 
 def visualize_line_detections(frame: np.ndarray, message: Lines, extraParams: dict):
     """Visualizes the lines on the frame."""
-    lines = parse_line_detection_message(message)
+    lines = message.lines
     h, w = frame.shape[:2]
     for line in lines:
         x1 = line.start_point.x * w
@@ -192,67 +173,23 @@ def visualize_yolo_extended(
     frame: np.ndarray, message: ImgDetectionsExtended, extraParams: dict
 ):
     """Visualizes the YOLO pose detections or instance segmentation on the frame."""
-    detections = parse_yolo_kpts_message(message)
 
+    detections = message.detections
     classes = extraParams.get("classes", None)
+
     if classes is None:
         raise ValueError("Classes are required for visualization.")
     task = extraParams.get("n_keypoints", None)
     if task is None:
         task = "segmentation"
-    else:
-        task = "keypoints"
 
-    for detection in detections:
-        x_center, y_center, width, height = (
-            detection.x_center,
-            detection.y_center,
-            detection.width,
-            detection.height,
-        )
-        xmin = x_center - width / 2
-        ymin = y_center - height / 2
-        xmax = x_center + width / 2
-        ymax = y_center + height / 2
-        cv2.rectangle(
-            frame,
-            (int(xmin * frame.shape[1]), int(ymin * frame.shape[0])),
-            (int(xmax * frame.shape[1]), int(ymax * frame.shape[0])),
-            (255, 0, 0),
-            2,
-        )
-        cv2.putText(
-            frame,
-            f"{detection.confidence * 100:.2f}%",
-            (int(xmin * frame.shape[1]) + 10, int(ymin * frame.shape[0]) + 20),
-            cv2.FONT_HERSHEY_TRIPLEX,
-            0.5,
-            255,
-        )
-        cv2.putText(
-            frame,
-            f"{classes[detection.label]}",
-            (int(xmin * frame.shape[1]) + 10, int(ymin * frame.shape[0]) + 40),
-            cv2.FONT_HERSHEY_TRIPLEX,
-            0.5,
-            255,
-        )
-
-        if task == "keypoints":
-            keypoints = detection.keypoints
-            for keypoint in keypoints:
-                x, y, visibility = (
-                    keypoint.x * frame.shape[1],
-                    keypoint.y * frame.shape[0],
-                    keypoint.confidence,
-                )
-                if visibility > 0.8:
-                    cv2.circle(frame, (int(x), int(y)), 2, (0, 255, 0), -1)
+    frame = draw_extended_image_detections(frame, detections, classes)
 
     if task == "segmentation":
         mask = message.masks
         mask = mask > -0.5
         frame[mask] = frame[mask] * 0.5 + np.array((0, 255, 0)) * 0.5
+
     cv2.imshow("YOLO Pose Estimation", frame)
     if cv2.waitKey(1) == ord("q"):
         cv2.destroyAllWindows()
@@ -263,7 +200,7 @@ def visualize_yolo_extended(
 
 def visualize_lane_detections(frame: np.ndarray, message: Clusters, extraParams: dict):
     """Visualizes the lines on the frame."""
-    clusters = parse_cluster_message(message)
+    clusters = message.clusters
     h, w, _ = frame.shape
     for cluster in clusters:
         for point in cluster.points:

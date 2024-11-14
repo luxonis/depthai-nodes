@@ -4,13 +4,13 @@ import numpy as np
 from depthai_nodes.ml.messages import SegmentationMask
 
 from .utils.colors import get_adas_colors, get_ewasr_colors, get_selfie_colors
-from .utils.message_parsers import parse_segmentation_message
 
 
 def visualize_segmentation(
     frame: np.ndarray, message: SegmentationMask, extraParams: dict
 ):
-    mask = parse_segmentation_message(message)
+    mask = message.mask
+    mask = mask.reshape(mask.shape[0], mask.shape[1])
     frame = cv2.resize(frame, (mask.shape[1], mask.shape[0]))
 
     n_classes = extraParams.get("n_classes", None)
