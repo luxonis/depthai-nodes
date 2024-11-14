@@ -12,7 +12,7 @@ from depthai_nodes.ml.messages import (
 )
 
 
-def draw_bounding_boxes(
+def draw_extended_image_detections(
     frame: np.ndarray, detections: List[ImgDetectionExtended], labels=None
 ):
     """Draws (rotated) bounding boxes on the given frame."""
@@ -80,7 +80,7 @@ def visualize_detections(
     """
     labels = extraParams.get("classes", None)
     detections = message.detections
-    frame = draw_bounding_boxes(frame, detections, labels)
+    frame = draw_extended_image_detections(frame, detections, labels)
 
     cv2.imshow("Detections", frame)
     if cv2.waitKey(1) == ord("q"):
@@ -188,7 +188,7 @@ def visualize_yolo_extended(
     if task is None:
         task = "segmentation"
 
-    frame = draw_bounding_boxes(frame, detections, classes)
+    frame = draw_extended_image_detections(frame, detections, classes)
 
     if task == "segmentation":
         mask = message.masks

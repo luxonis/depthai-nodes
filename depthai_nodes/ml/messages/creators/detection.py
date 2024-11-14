@@ -166,17 +166,22 @@ def create_detection_message(
     detections = []
     for detection_idx in range(n_bboxes):
         detection = ImgDetectionExtended()
-        x_center, y_center, width, height = bboxes[detection_idx]
 
+        x_center, y_center, width, height = bboxes[detection_idx]
         angle = 0
         if angles is not None:
-            angle = angles[detection_idx].item()
-
-        detection.rotated_rect = (x_center, y_center, width, height, angle)
-        detection.confidence = scores[detection_idx].item()
+            angle = float(angles[detection_idx])
+        detection.rotated_rect = (
+            float(x_center),
+            float(y_center),
+            float(width),
+            float(height),
+            angle,
+        )
+        detection.confidence = float(scores[detection_idx])
 
         if labels is not None:
-            detection.label = labels[detection_idx].item()
+            detection.label = int(labels[detection_idx])
         if keypoints is not None:
             if keypoints_scores is not None:
                 detection.keypoints = transform_to_keypoints(
