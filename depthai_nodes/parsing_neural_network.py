@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Union, overload
+from typing import Dict, Union
 
 import depthai as dai
 
@@ -63,7 +63,9 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
 
         if isinstance(slug, str):
             if ":" not in slug:
-                raise ValueError("Slug must be in the format <model_slug>:<model_version_slug>.")
+                raise ValueError(
+                    "Slug must be in the format <model_slug>:<model_version_slug>."
+                )
             model_slug, model_version_slug = slug.split(":")
             model_description = dai.NNModelDescription(
                 modelSlug=model_slug,
