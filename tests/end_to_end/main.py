@@ -70,6 +70,9 @@ def main():
         f"--platform={rvc_platform}",
         "-v",
         "--tb=no",
+        "-r s",
+        "--log-cli-level=DEBUG",
+        "--color=yes",
     ]
 
     if slug:
@@ -79,6 +82,9 @@ def main():
             f"--platform={rvc_platform}",
             "-v",
             "--tb=no",
+            "-r s",
+            "--log-cli-level=DEBUG",
+            "--color=yes",
         ]
 
     exit_code = pytest.main(command)
