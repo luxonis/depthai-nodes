@@ -13,13 +13,13 @@ Prepare the model slug and run:
 
 ```
 cd examples
-python main.py -s <slug_of_your_model>
+python main.py -m <slug_of_your_model>
 ```
 
 For example:
 
 ```
-python main.py -s yolov6-nano:coco-416x416
+python main.py -m yolov6-nano:coco-416x416
 ```
 
 Note that for running the examples you need RVC2 device connected.
@@ -29,7 +29,7 @@ If using OAK-D Lite, make sure to also set the FPS limit under 28.5.
 For example:
 
 ```
-python main.py -s yolov6-nano:coco-416x416 -fps 28
+python main.py -m yolov6-nano:coco-416x416 -fps 28
 ```
 
 Some models have small input sizes and requesting small image size from `Camera` is problematic so we request 4x bigger frame and resize it back down. During visualization image frame is resized back so some image quality is lost - only for visualization.

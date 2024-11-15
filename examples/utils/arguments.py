@@ -11,9 +11,9 @@ def initialize_argparser():
         Currently, only RVC2 devices are supported. If using OAK-D Lite, please set the FPS limit to 28."
 
     parser.add_argument(
-        "-s",
-        "--slug",
-        help="slug of the model in HubAI.",
+        "-m",
+        "--model",
+        help="HubAI model slug.",
         required=True,
         type=str,
     )

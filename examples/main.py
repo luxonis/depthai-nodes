@@ -9,12 +9,12 @@ from depthai_nodes import ParsingNeuralNetwork
 # Initialize the argument parser
 arg_parser, args = initialize_argparser()
 
-# Parse the model slug
-slug = args.slug
+# Parse the arguments
+model = args.model
 fps_limit = args.fps_limit
 
 # Get the parser
-nn_archive = get_nn_archive_from_hub(slug)
+nn_archive = get_nn_archive_from_hub(model)
 _, parser_name = get_parser(nn_archive)
 input_shape = get_input_shape(nn_archive)
 
@@ -30,7 +30,7 @@ with dai.Pipeline() as pipeline:
     cam = pipeline.create(dai.node.Camera).build()
 
     image_type = dai.ImgFrame.Type.BGR888p
-    if "gray" in slug:
+    if "gray" in model:
         image_type = dai.ImgFrame.Type.GRAY8
 
     # YOLO and MobileNet-SSD have native parsers in DAI - no need to create a separate parser
@@ -57,12 +57,12 @@ with dai.Pipeline() as pipeline:
                 manip.inputImage
             )
             nn = pipeline.create(ParsingNeuralNetwork).build(
-                manip.out, slug
+                manip.out, model
             )
         else:
             nn = pipeline.create(ParsingNeuralNetwork).build(
                 cam.requestOutput(input_shape, type=image_type, fps=fps_limit),
-                slug,
+                model,
             )
 
         parser_queue = nn.out.createOutputQueue()

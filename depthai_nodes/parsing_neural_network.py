@@ -42,7 +42,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
     def build(
         self,
         input: dai.Node.Output,
-        slug: str,
+        model: str,
         fps: int = None,
     ) -> "ParsingNeuralNetwork":
         """Builds the underlying NeuralNetwork node and creates parser nodes for each
@@ -51,8 +51,8 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         @param input: Node's input. It is a linking point to which the NeuralNetwork is
             linked. It accepts the output of a Camera node.
         @type input: Node.Input
-        @param slug: HubAI model slug (e.g. <model_slug>:<model_version_slug> or <model_slug>:<model_version_slug>:<model_instance_hash>)
-        @type slug: str
+        @param model: HubAI model slug (e.g. <model_slug>:<model_version_slug> or <model_slug>:<model_version_slug>:<model_instance_hash>)
+        @type model: str
         @param fps: FPS limit for the model runtime.
         @type fps: int
         @return: Returns the ParsingNeuralNetwork object.
@@ -61,11 +61,11 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
             object.
         """
 
-        if not isinstance(slug, str):
-            raise ValueError("Slug must be a string.")
+        if not isinstance(model, str):
+            raise ValueError("Model slug must be a string.")
 
         model_description = dai.NNModelDescription(
-            model=slug,
+            model=model,
         )
         model_description.platform = (
             self.getParentPipeline().getDefaultDevice().getPlatformAsString()

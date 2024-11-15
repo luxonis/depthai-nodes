@@ -5,10 +5,10 @@ import depthai as dai
 from depthai_nodes.ml.parsers import *
 
 
-def get_nn_archive_from_hub(slug: str) -> dai.NNArchive:
-    """Get the model from the HubAI and return the NN archive."""
-    print(f"Downloading model {slug} from HubAI...")
-    modelDescription = dai.NNModelDescription(model=slug, platform="RVC2")
+def get_nn_archive_from_hub(model: str) -> dai.NNArchive:
+    """Get NN archive from the HubAI based on model slug."""
+    print(f"Downloading model {model} from HubAI...")
+    modelDescription = dai.NNModelDescription(model=model, platform="RVC2")
     archivePath = dai.getModelFromZoo(modelDescription)
     print("Download successful!")
     nn_archive = dai.NNArchive(archivePath)
