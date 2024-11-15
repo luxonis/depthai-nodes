@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Union
+from typing import Dict, Union, overload
 
 import depthai as dai
 
@@ -39,10 +39,25 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         self._nn = self._pipeline.create(dai.node.NeuralNetwork)
         self._parsers: Dict[int, BaseParser] = {}
 
+    @overload
+    def build(
+        self, input: dai.Node.Output, nn_source: dai.NNModelDescription, fps: int
+    ) -> "ParsingNeuralNetwork": ...
+
+    @overload
+    def build(
+        self, input: dai.Node.Output, nn_source: dai.NNArchive, fps: int
+    ) -> "ParsingNeuralNetwork": ...
+
+    @overload
+    def build(
+        self, input: dai.Node.Output, nn_source: str, fps: int
+    ) -> "ParsingNeuralNetwork": ...
+
     def build(
         self,
         input: dai.Node.Output,
-        model: str,
+        nn_source: Union[dai.NNModelDescription, dai.NNArchive, str],
         fps: int = None,
     ) -> "ParsingNeuralNetwork":
         """Builds the underlying NeuralNetwork node and creates parser nodes for each
@@ -51,8 +66,9 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         @param input: Node's input. It is a linking point to which the NeuralNetwork is
             linked. It accepts the output of a Camera node.
         @type input: Node.Input
-        @param model: HubAI model slug (e.g. <model_slug>:<model_version_slug> or <model_slug>:<model_version_slug>:<model_instance_hash>)
-        @type model: str
+
+        @param nn_source: NNModelDescription object containing the HubAI model descriptors, NNArchive object of the model, or HubAI model slug in form of <model_slug>:<model_version_slug> or <model_slug>:<model_version_slug>:<model_instance_hash>.
+        @type nn_source: Union[dai.NNModelDescription, dai.NNArchive, str]
         @param fps: FPS limit for the model runtime.
         @type fps: int
         @return: Returns the ParsingNeuralNetwork object.
@@ -61,16 +77,20 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
             object.
         """
 
-        if not isinstance(model, str):
-            raise ValueError("Model slug must be a string.")
+        platform = self.getParentPipeline().getDefaultDevice().getPlatformAsString()
 
-        model_description = dai.NNModelDescription(
-            model=model,
-        )
-        model_description.platform = (
-            self.getParentPipeline().getDefaultDevice().getPlatformAsString()
-        )
-        self._nn_archive = dai.NNArchive(dai.getModelFromZoo(model_description))
+        if isinstance(nn_source, str):
+            nn_source = dai.NNModelDescription(nn_source)
+        if isinstance(nn_source, (dai.NNModelDescription, str)):
+            if not nn_source.platform:
+                nn_source.platform = platform
+            self._nn_archive = dai.NNArchive(dai.getModelFromZoo(nn_source))
+        elif isinstance(nn_source, dai.NNArchive):
+            self._nn_archive = nn_source
+        else:
+            raise ValueError(
+                "nn_source must be either a NNModelDescription, NNArchive, or a string representing HubAI model slug."
+            )
 
         kwargs = {"fps": fps} if fps else {}
         self._nn.build(input, self._nn_archive, **kwargs)
