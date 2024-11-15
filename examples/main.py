@@ -36,9 +36,7 @@ with dai.Pipeline() as pipeline:
     # YOLO and MobileNet-SSD have native parsers in DAI - no need to create a separate parser
     if parser_name == "YOLO" or parser_name == "SSD":
         nn = pipeline.create(dai.node.DetectionNetwork).build(
-            cam.requestOutput(
-                input_shape, type=image_type, fps=fps_limit
-            ),
+            cam.requestOutput(input_shape, type=image_type, fps=fps_limit),
             nn_archive,
         )
         parser_queue = nn.out.createOutputQueue()
@@ -56,9 +54,7 @@ with dai.Pipeline() as pipeline:
             cam.requestOutput(large_input_shape, type=image_type, fps=fps_limit).link(
                 manip.inputImage
             )
-            nn = pipeline.create(ParsingNeuralNetwork).build(
-                manip.out, model
-            )
+            nn = pipeline.create(ParsingNeuralNetwork).build(manip.out, model)
         else:
             nn = pipeline.create(ParsingNeuralNetwork).build(
                 cam.requestOutput(input_shape, type=image_type, fps=fps_limit),

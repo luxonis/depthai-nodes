@@ -1,5 +1,4 @@
 import argparse
-from typing import Tuple
 
 
 def initialize_argparser():
