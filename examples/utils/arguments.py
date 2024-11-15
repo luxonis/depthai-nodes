@@ -12,7 +12,7 @@ def initialize_argparser():
 
     parser.add_argument(
         "-s",
-        "--model_slug",
+        "--slug",
         help="slug of the model in HubAI.",
         required=True,
         type=str,
@@ -30,33 +30,3 @@ def initialize_argparser():
     args = parser.parse_args()
 
     return parser, args
-
-
-def parse_model_slug(args: argparse.Namespace) -> Tuple[str, str]:
-    """Parse the model slug from the arguments.
-
-    Returns the model slug and model version slug.
-    """
-    model_slug = args.model_slug
-
-    # parse the model slug
-    if ":" not in model_slug:
-        raise NameError(
-            "Please provide the model slug in the format of 'model_slug:model_version_slug'"
-        )
-
-    model_slug_parts = model_slug.split(":")
-    model_slug = model_slug_parts[0]
-    model_version_slug = model_slug_parts[1]
-
-    return model_slug, model_version_slug
-
-
-def parse_fps_limit(args: argparse.Namespace) -> int:
-    """Parse the FPS limit from the arguments.
-
-    Returns the FPS limit.
-    """
-    fps_limit = args.fps_limit
-
-    return fps_limit
