@@ -42,17 +42,20 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
     @overload
     def build(
         self, input: dai.Node.Output, nn_source: dai.NNModelDescription, fps: int
-    ) -> "ParsingNeuralNetwork": ...
+    ) -> "ParsingNeuralNetwork":
+        ...
 
     @overload
     def build(
         self, input: dai.Node.Output, nn_source: dai.NNArchive, fps: int
-    ) -> "ParsingNeuralNetwork": ...
+    ) -> "ParsingNeuralNetwork":
+        ...
 
     @overload
     def build(
         self, input: dai.Node.Output, nn_source: str, fps: int
-    ) -> "ParsingNeuralNetwork": ...
+    ) -> "ParsingNeuralNetwork":
+        ...
 
     def build(
         self,
