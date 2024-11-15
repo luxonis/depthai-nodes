@@ -51,7 +51,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         @param input: Node's input. It is a linking point to which the NeuralNetwork is
             linked. It accepts the output of a Camera node.
         @type input: Node.Input
-        @param slug: HubAI model slug.
+        @param slug: HubAI model slug (e.g. <model_slug>:<model_version_slug> or <model_slug>:<model_version_slug>:<model_instance_hash>)
         @type slug: str
         @param fps: FPS limit for the model runtime.
         @type fps: int
@@ -61,28 +61,16 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
             object.
         """
 
-        if isinstance(slug, str):
-            slug_split = slug.split(":")
-            if len(slug_split) == 2:
-                model_slug, model_version_slug = slug_split
-            elif len(slug_split) == 3:
-                model_slug, model_version_slug, model_instance_hash = slug_split
-            else:
-                raise ValueError(
-                    "Slug must be in the format <model_slug>:<model_version_slug> or <model_slug>:<model_version_slug>:<model_instance_hash>."
-                )
-            
-            model_description = dai.NNModelDescription(
-                modelSlug=model_slug,
-                modelVersionSlug=model_version_slug,
-                modelInstanceHash=model_instance_hash,
-            )
-            model_description.platform = (
-                self.getParentPipeline().getDefaultDevice().getPlatformAsString()
-            )
-            self._nn_archive = dai.NNArchive(dai.getModelFromZoo(model_description))
-        else:
+        if not isinstance(slug, str):
             raise ValueError("Slug must be a string.")
+
+        model_description = dai.NNModelDescription(
+            model=slug,
+        )
+        model_description.platform = (
+            self.getParentPipeline().getDefaultDevice().getPlatformAsString()
+        )
+        self._nn_archive = dai.NNArchive(dai.getModelFromZoo(model_description))
 
         kwargs = {"fps": fps} if fps else {}
         self._nn.build(input, self._nn_archive, **kwargs)
