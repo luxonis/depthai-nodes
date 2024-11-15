@@ -62,14 +62,20 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         """
 
         if isinstance(slug, str):
-            if ":" not in slug:
+            slug_split = slug.split(":")
+            if len(slug_split) == 2:
+                model_slug, model_version_slug = slug_split
+            elif len(slug_split) == 3:
+                model_slug, model_version_slug, model_instance_hash = slug_split
+            else:
                 raise ValueError(
-                    "Slug must be in the format <model_slug>:<model_version_slug>."
+                    "Slug must be in the format <model_slug>:<model_version_slug> or <model_slug>:<model_version_slug>:<model_instance_hash>."
                 )
-            model_slug, model_version_slug = slug.split(":")
+            
             model_description = dai.NNModelDescription(
                 modelSlug=model_slug,
                 modelVersionSlug=model_version_slug,
+                modelInstanceHash=model_instance_hash,
             )
             model_description.platform = (
                 self.getParentPipeline().getDefaultDevice().getPlatformAsString()
