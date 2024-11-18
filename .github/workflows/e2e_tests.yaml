@@ -54,7 +54,7 @@ jobs:
           
       - name: Run Test
         run: |
-          CMD="hil --testbed ${{ github.event.inputs.testbed }} --reservation-name 'depthai_nodes_ml_team' --commands 'cd /home/hil/depthai-nodes' 'git checkout main' 'git pull' 'git checkout ${{ github.event.inputs.branch }}' 'source venv/bin/activate' 'cd tests/end_to_end' 'source <(python setup_camera_ips.py)' 'export HUBAI_TEAM_ID=${{ secrets.HUBAI_TEAM_ID }}' 'export HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }}' 'python main.py ${{ github.event.inputs.additional-parameter }}' 'deactivate'"
+          CMD="hil --testbed ${{ github.event.inputs.testbed }} --reservation-name 'depthai_nodes_ml_team' --commands 'cd /home/hil/depthai-nodes' 'git checkout main' 'git pull' 'git checkout ${{ github.event.inputs.branch }}' 'git pull' 'source venv/bin/activate' 'cd tests/end_to_end' 'source <(python setup_camera_ips.py)' 'export HUBAI_TEAM_ID=${{ secrets.HUBAI_TEAM_ID }}' 'export HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }}' 'python main.py ${{ github.event.inputs.additional-parameter }}' 'deactivate'"
           eval $CMD
 
       - name: Stop WireGuard
