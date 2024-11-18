@@ -2,6 +2,9 @@ from typing import List
 
 import depthai as dai
 
+from depthai_nodes.ml.helpers.constants import KEYPOINT_COLOR
+
+from depthai_nodes.ml.helpers.constants import KEYPOINT_COLOR
 
 class Keypoint(dai.Buffer):
     """Keypoint class for storing a keypoint.
@@ -183,3 +186,25 @@ class Keypoints(dai.Buffer):
                 f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
             )
         self._transformation = value
+
+    def getVisualizationMessage(self) -> dai.ImgAnnotations:
+        """Creates a default visualization message for the keypoints."""
+        img_annotations = dai.ImgAnnotations()
+        annotation = dai.ImgAnnotation()
+
+        keypoints = []
+        for keypoint in self.keypoints:
+            keypoint: Keypoint = keypoint
+            keypoints.append(dai.Point2f(keypoint.x, keypoint.y))
+
+        pointsAnnotation = dai.PointsAnnotation()
+        pointsAnnotation.type = dai.PointsAnnotationType.POINTS
+        pointsAnnotation.points = dai.VectorPoint2f(keypoints)
+        pointsAnnotation.outlineColor = KEYPOINT_COLOR
+        pointsAnnotation.fillColor = KEYPOINT_COLOR
+        pointsAnnotation.thickness = 2.0
+        annotation.points.append(pointsAnnotation)
+
+        img_annotations.annotations.append(annotation)
+        img_annotations.setTimestamp(self.getTimestamp())
+        return img_annotations

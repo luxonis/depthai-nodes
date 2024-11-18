@@ -1,3 +1,4 @@
+import cv2
 import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
@@ -51,6 +52,26 @@ class SegmentationMask(dai.Buffer):
         if np.any((value < -1)):
             raise ValueError("Mask must be an array of integers larger or equal to -1.")
         self._mask = value
+
+    def getVisualizationMessage(self) -> dai.ImgFrame:
+        img_frame = dai.ImgFrame()
+        mask = self._mask.copy()
+
+        unique_values = np.unique(mask[mask >= 0])
+        scaled_mask = np.zeros_like(mask, dtype=np.uint8)
+
+        if unique_values.size == 0:
+            print("no classes found")
+            return img_frame.setCvFrame(scaled_mask, dai.ImgFrame.Type.BGR888i)
+
+        min_val, max_val = unique_values.min(), unique_values.max()
+
+        scaled_mask = ((mask - min_val) / (max_val - min_val) * 255).astype(np.uint8)
+        scaled_mask[mask == -1] = 0
+        colored_mask = cv2.applyColorMap(scaled_mask, cv2.COLORMAP_RAINBOW)
+        colored_mask[mask == -1] = [0, 0, 0]
+
+        return img_frame.setCvFrame(colored_mask, dai.ImgFrame.Type.BGR888i)
 
     @property
     def transformation(self) -> dai.ImgTransformation:
