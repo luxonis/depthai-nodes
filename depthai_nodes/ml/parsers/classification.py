@@ -7,6 +7,7 @@ from ..messages.creators import (
     create_classification_message,
 )
 from .base_parser import BaseParser
+from .utils.softmax import softmax
 
 
 class ClassificationParser(BaseParser):
@@ -136,8 +137,7 @@ class ClassificationParser(BaseParser):
                 )
 
             if not self.is_softmax:
-                ex = np.exp(scores)
-                scores = ex / np.sum(ex)
+                scores = softmax(scores)
 
             msg = create_classification_message(self.classes, scores)
             msg.setTimestamp(output.getTimestamp())
