@@ -68,7 +68,8 @@ def create_detection_message(
 
     if len(bboxes) == 0:
         img_detections = ImgDetectionsExtended()
-        img_detections.masks = masks
+        if masks is not None:
+            img_detections.masks = masks
         return img_detections
 
     if len(bboxes.shape) != 2:
