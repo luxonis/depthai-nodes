@@ -76,22 +76,15 @@ def get_segmentation_outputs(
     layer_names = mask_output_layer_names or output.getAllLayerNames()
     mask_outputs = sorted([name for name in layer_names if "mask" in name])
     masks_outputs_values = [
-        output.getTensor(o, dequantize=True).astype(np.float32) for o in mask_outputs
+        output.getTensor(
+            o, dequantize=True, storageOrder=dai.TensorInfo.StorageOrder.NCHW
+        ).astype(np.float32)
+        for o in mask_outputs
     ]
     protos_output = output.getTensor(
-        protos_output_layer_name or "protos_output", dequantize=True
+        protos_output_layer_name or "protos_output",
+        dequantize=True,
+        storageOrder=dai.TensorInfo.StorageOrder.NCHW,
     ).astype(np.float32)
     protos_len = protos_output.shape[1]
     return masks_outputs_values, protos_output, protos_len
-
-
-def reshape_seg_outputs(
-    protos_output: np.ndarray,
-    protos_len: int,
-    masks_outputs_values: List[np.ndarray],
-) -> Tuple[np.ndarray, int, List[np.ndarray]]:
-    """Reshape the segmentation outputs."""
-    protos_output = protos_output.transpose((0, 3, 1, 2))
-    protos_len = protos_output.shape[1]
-    masks_outputs_values = [o.transpose((0, 3, 1, 2)) for o in masks_outputs_values]
-    return protos_output, protos_len, masks_outputs_values

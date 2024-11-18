@@ -12,7 +12,7 @@ from .utils.fastsam import (
     point_prompt,
     process_single_mask,
 )
-from .utils.masks_utils import get_segmentation_outputs, reshape_seg_outputs
+from .utils.masks_utils import get_segmentation_outputs
 
 
 class FastSAMParser(BaseParser):
@@ -286,7 +286,9 @@ class FastSAMParser(BaseParser):
 
             outputs_names = sorted([name for name in self.yolo_outputs])
             outputs_values = [
-                output.getTensor(o, dequantize=True).astype(np.float32)
+                output.getTensor(
+                    o, dequantize=True, storageOrder=dai.TensorInfo.StorageOrder.NCHW
+                ).astype(np.float32)
                 for o in outputs_names
             ]
             # Get the segmentation outputs
@@ -295,18 +297,6 @@ class FastSAMParser(BaseParser):
                 protos_output,
                 protos_len,
             ) = get_segmentation_outputs(output, self.mask_outputs, self.protos_output)
-
-            if (
-                len(outputs_values[0].shape) == 4
-                and outputs_values[0].shape[-1] == outputs_values[1].shape[-1]
-            ):
-                # RVC4
-                outputs_values = [o.transpose((0, 3, 1, 2)) for o in outputs_values]
-                (
-                    protos_output,
-                    protos_len,
-                    masks_outputs_values,
-                ) = reshape_seg_outputs(protos_output, protos_len, masks_outputs_values)
 
             # determine the input shape of the model from the first output
             width = outputs_values[0].shape[3] * 8
