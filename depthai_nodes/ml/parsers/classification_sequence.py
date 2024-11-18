@@ -5,6 +5,7 @@ import numpy as np
 
 from ..messages.creators import create_classification_sequence_message
 from .classification import ClassificationParser
+from .utils.softmax import softmax
 
 
 class ClassificationSequenceParser(ClassificationParser):
@@ -168,7 +169,7 @@ class ClassificationSequenceParser(ClassificationParser):
                     )
 
             if not self.is_softmax:
-                scores = np.exp(scores) / np.sum(np.exp(scores), axis=1, keepdims=True)
+                scores = softmax(scores, axis=1, keep_dims=True)
 
             msg = create_classification_sequence_message(
                 classes=self.classes,
