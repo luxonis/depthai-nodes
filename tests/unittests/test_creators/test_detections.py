@@ -297,5 +297,41 @@ def test_bboxes_scores_keypoints():
             assert keypoint.y == keypoints[i][ii][1]
 
 
+def test_bboxes_masks():
+    bboxes = np.array(
+        [[0.2, 0.2, 0.4, 0.4], [0.5, 0.5, 0.1, 0.1], [0.1, 0.1, 0.2, 0.2]]
+    )
+
+    scores = np.array([0.1, 0.2, 0.3])
+    mask = np.array([[-1, -1, -1], [-1, 0, -1], [-1, -1, -1]], dtype=np.int16)
+
+    message = create_detection_message(bboxes=bboxes, scores=scores, masks=mask)
+
+    assert isinstance(message, ImgDetectionsExtended)
+    assert np.array_equal(message.masks, mask)
+
+
+def test_no_bboxes_masks():
+    bboxes = np.array([])
+    scores = np.array([])
+    mask = np.array([[-1, -1, -1], [-1, 0, -1], [-1, -1, -1]], dtype=np.int16)
+
+    message = create_detection_message(bboxes=bboxes, scores=scores, masks=mask)
+
+    assert isinstance(message, ImgDetectionsExtended)
+    assert np.array_equal(message.masks, mask)
+
+
+def test_no_masks_no_bboxes():
+    bboxes = np.array([])
+    scores = np.array([])
+    mask = np.array([[]], dtype=np.int16)
+
+    message = create_detection_message(bboxes=bboxes, scores=scores, masks=mask)
+
+    assert isinstance(message, ImgDetectionsExtended)
+    assert np.array_equal(message.masks, mask)
+
+
 if __name__ == "__main__":
     pytest.main()
