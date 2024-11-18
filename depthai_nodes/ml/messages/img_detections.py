@@ -205,7 +205,7 @@ class ImgDetectionsExtended(dai.Buffer):
         return self._masks.mask
 
     @masks.setter
-    def masks(self, value: NDArray[np.int8]):
+    def masks(self, value: NDArray[np.int16]):
         """Sets the segmentation mask.
 
         @param value: Segmentation mask.
@@ -219,8 +219,8 @@ class ImgDetectionsExtended(dai.Buffer):
             raise TypeError("Mask must be a numpy array.")
         if value.ndim != 2:
             raise ValueError("Mask must be 2D.")
-        if value.dtype != np.int8:
-            raise ValueError("Mask must be an array of int8.")
+        if value.dtype != np.int16:
+            raise ValueError("Mask must be an array of int16.")
         if np.any((value < -1)):
             raise ValueError("Mask must be an array values larger or equal to -1.")
         masks_msg = SegmentationMask()
