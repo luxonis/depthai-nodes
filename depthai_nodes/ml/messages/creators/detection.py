@@ -67,7 +67,9 @@ def create_detection_message(
         raise ValueError(f"Bounding boxes should be a numpy array, got {type(bboxes)}.")
 
     if len(bboxes) == 0:
-        return ImgDetectionsExtended()
+        img_detections = ImgDetectionsExtended()
+        img_detections.masks = masks
+        return img_detections
 
     if len(bboxes.shape) != 2:
         raise ValueError(
