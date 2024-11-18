@@ -10,7 +10,6 @@ from .utils.bbox_format_converters import normalize_bboxes, xyxy_to_xywh
 from .utils.masks_utils import (
     get_segmentation_outputs,
     process_single_mask,
-    reshape_seg_outputs,
 )
 from .utils.yolo import (
     YOLOSubtype,
@@ -223,7 +222,9 @@ class YOLOExtendedParser(BaseParser):
                 [name for name in layer_names if "_yolo" in name or "yolo-" in name]
             )
             outputs_values = [
-                output.getTensor(o, dequantize=True).astype(np.float32)
+                output.getTensor(
+                    o, dequantize=True, storageOrder=dai.TensorInfo.StorageOrder.NCHW
+                ).astype(np.float32)
                 for o in outputs_names
             ]
 
@@ -253,21 +254,6 @@ class YOLOExtendedParser(BaseParser):
                 ) = get_segmentation_outputs(output)
             else:
                 mode = self._DET_MODE
-
-            if (
-                len(outputs_values[0].shape) == 4
-                and outputs_values[0].shape[-1] == outputs_values[1].shape[-1]
-            ):
-                # RVC4
-                outputs_values = [o.transpose((0, 3, 1, 2)) for o in outputs_values]
-                if mode == self._SEG_MODE:
-                    (
-                        protos_output,
-                        protos_len,
-                        masks_outputs_values,
-                    ) = reshape_seg_outputs(
-                        protos_output, protos_len, masks_outputs_values
-                    )
 
             # Get the model's input shape
             strides = (

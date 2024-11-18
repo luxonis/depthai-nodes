@@ -160,8 +160,8 @@ def create_detection_message(
         if len(masks.shape) != 2:
             raise ValueError(f"Masks should be of shape (H, W), got {masks.shape}.")
 
-        if masks.dtype != np.int8:
-            masks = masks.astype(np.int8)
+        if masks.dtype != np.int16:
+            masks = masks.astype(np.int16)
 
     detections = []
     for detection_idx in range(n_bboxes):

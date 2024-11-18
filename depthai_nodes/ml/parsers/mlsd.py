@@ -152,18 +152,17 @@ class MLSDParser(BaseParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            tpMap = output.getTensor(self.output_layer_tpmap, dequantize=True).astype(
-                np.float32
-            )
+            tpMap = output.getTensor(
+                self.output_layer_tpmap,
+                dequantize=True,
+                storageOrder=dai.TensorInfo.StorageOrder.NCHW,
+            ).astype(np.float32)
             heat_np = output.getTensor(self.output_layer_heat, dequantize=True).astype(
                 np.float32
             )
 
             if len(tpMap.shape) != 4:
                 raise ValueError("Invalid shape of the tpMap tensor. Should be 4D.")
-            if tpMap.shape[3] == 9:
-                # We have NWHC format, transform to NCHW
-                tpMap = np.transpose(tpMap, (0, 3, 1, 2))
 
             pts, pts_score, vmap = decode_scores_and_points(tpMap, heat_np, self.topk_n)
             lines, scores = get_lines(

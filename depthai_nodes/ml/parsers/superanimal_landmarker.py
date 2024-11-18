@@ -88,9 +88,6 @@ class SuperAnimalParser(KeypointParser):
                 np.float32
             )
 
-            if len(heatmaps.shape) == 3:
-                heatmaps = heatmaps.reshape((1,) + heatmaps.shape)
-
             heatmaps_scale_factor = (
                 self.scale_factor / heatmaps.shape[1],
                 self.scale_factor / heatmaps.shape[2],
