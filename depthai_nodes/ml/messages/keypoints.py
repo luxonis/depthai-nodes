@@ -6,6 +6,8 @@ from depthai_nodes.ml.helpers.constants import KEYPOINT_COLOR
 
 from depthai_nodes.ml.helpers.constants import KEYPOINT_COLOR
 
+from depthai_nodes.ml.helpers.constants import KEYPOINT_COLOR
+
 class Keypoint(dai.Buffer):
     """Keypoint class for storing a keypoint.
 
