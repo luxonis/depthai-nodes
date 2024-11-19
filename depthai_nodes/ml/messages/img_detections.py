@@ -241,7 +241,7 @@ class ImgDetectionsExtended(dai.Buffer):
             detection: ImgDetectionExtended = detection
             rotated_rect = detection.rotated_rect
             points = rotated_rect.getPoints()
-
+            print(rotated_rect.getOuterRect())
             pointsAnnotation = dai.PointsAnnotation()
             pointsAnnotation.type = dai.PointsAnnotationType.LINE_STRIP
             pointsAnnotation.points = dai.VectorPoint2f(points)
