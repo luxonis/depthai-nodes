@@ -45,9 +45,9 @@ class FastSAMParser(BaseParser):
 
     Output Message/s
     ----------------
-    **Type**: SegmentationMasksSAM
+    **Type**: SegmentationMask
 
-    **Description**: SegmentationMasksSAM message containing the resulting segmentation masks given the prompt.
+    **Description**: SegmentationMask message containing the resulting segmentation masks given the prompt.
 
     Error Handling
     --------------
@@ -57,7 +57,7 @@ class FastSAMParser(BaseParser):
         self,
         conf_threshold: int = 0.5,
         n_classes: int = 1,
-        iou_threshold: int = 0.5,
+        iou_threshold: float = 0.5,
         mask_conf: float = 0.5,
         prompt: str = "everything",
         points: Optional[Tuple[int, int]] = None,

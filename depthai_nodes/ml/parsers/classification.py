@@ -25,8 +25,9 @@ class ClassificationParser(BaseParser):
 
     Output Message/s
     ----------------
-    **Type** : Classifications(dai.Buffer):
-        An object with attributes `classes` and `scores`. `classes` is a list of classes, sorted in descending order of scores. `scores` is a list of corresponding scores.
+    **Type** : Classifications(dai.Buffer)
+
+    **Description**: An object with attributes `classes` and `scores`. `classes` is a list of classes, sorted in descending order of scores. `scores` is a list of corresponding scores.
     """
 
     def __init__(

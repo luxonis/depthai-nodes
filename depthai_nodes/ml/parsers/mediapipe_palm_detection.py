@@ -29,9 +29,9 @@ class MPPalmDetectionParser(DetectionParser):
 
     Output Message/s
     -------
-    **Type**: dai.ImgDetections
+    **Type**: ImgDetectionsExtended
 
-    **Description**: ImgDetections message containing bounding boxes, labels, and confidence scores of detected hands.
+    **Description**: ImgDetectionsExtended message containing bounding boxes, labels, and confidence scores of detected hands.
 
     See also
     --------
