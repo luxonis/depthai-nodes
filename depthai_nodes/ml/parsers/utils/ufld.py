@@ -2,10 +2,7 @@ from typing import List, Tuple
 
 import numpy as np
 
-
-def softmax(x):
-    ex = np.exp(x)
-    return ex / np.sum(ex, axis=0)
+from .softmax import softmax
 
 
 def decode_ufld(
@@ -21,7 +18,7 @@ def decode_ufld(
 
     out_j = y
     out_j = out_j[:, ::-1, :]
-    prob = softmax(out_j[:-1, :, :])
+    prob = softmax(out_j[:-1, :, :], axis=0)
 
     idx = np.arange(griding_num) + 1
     idx = idx.reshape(-1, 1, 1)
