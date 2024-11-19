@@ -284,7 +284,7 @@ class YOLOExtendedParser(BaseParser):
             )
 
             bboxes, labels, scores, additional_output = [], [], [], []
-            final_mask = np.full(input_shape, -1, dtype=float)
+            final_mask = np.full(input_shape, -1, dtype=np.int16)
             for i in range(results.shape[0]):
                 bbox, conf, label, other = (
                     results[i, :4],
