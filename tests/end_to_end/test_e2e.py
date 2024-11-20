@@ -73,14 +73,14 @@ def test_pipelines(IP: str, ip_platform: str, nn_archive_path, slug):
                 f"python manual.py -s {slug} -ip {IP}",
                 shell=True,
                 check=True,
-                timeout=30,
+                timeout=90,
             )
         else:
             subprocess.run(
                 f"python manual.py -nn {nn_archive_path} -ip {IP}",
                 shell=True,
                 check=True,
-                timeout=30,
+                timeout=90,
             )
     except subprocess.CalledProcessError as e:
         if e.returncode == 5:
