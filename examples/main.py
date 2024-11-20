@@ -29,39 +29,32 @@ elif parser_name == "XFeatStereoParser":
 with dai.Pipeline() as pipeline:
     cam = pipeline.create(dai.node.Camera).build()
 
-    image_type = dai.ImgFrame.Type.BGR888p
     if "gray" in model:
         image_type = dai.ImgFrame.Type.GRAY8
-
-    # YOLO and MobileNet-SSD have native parsers in DAI - no need to create a separate parser
-    if parser_name == "YOLO" or parser_name == "SSD":
-        nn = pipeline.create(dai.node.DetectionNetwork).build(
-            cam.requestOutput(input_shape, type=image_type, fps=fps_limit),
-            nn_archive,
-        )
-        parser_queue = nn.out.createOutputQueue()
     else:
-        if input_shape[0] < 128 or input_shape[1] < 128:
-            print(
-                "Input shape is too small so we are requesting a larger image and resizing it."
-            )
-            print(
-                "During visualization we resize small image back to large, so image quality is lower."
-            )
-            manip = pipeline.create(dai.node.ImageManip)
-            manip.initialConfig.setResize(input_shape)
-            large_input_shape = (input_shape[0] * 4, input_shape[1] * 4)
-            cam.requestOutput(large_input_shape, type=image_type, fps=fps_limit).link(
-                manip.inputImage
-            )
-            nn = pipeline.create(ParsingNeuralNetwork).build(manip.out, model)
-        else:
-            nn = pipeline.create(ParsingNeuralNetwork).build(
-                cam.requestOutput(input_shape, type=image_type, fps=fps_limit),
-                model,
-            )
+        image_type = dai.ImgFrame.Type.BGR888p
 
-        parser_queue = nn.out.createOutputQueue()
+    if input_shape[0] < 128 or input_shape[1] < 128:
+        print(
+            "Input shape is too small so we are requesting a larger image and resizing it."
+        )
+        print(
+            "During visualization we resize small image back to large, so image quality is lower."
+        )
+        manip = pipeline.create(dai.node.ImageManip)
+        manip.initialConfig.setResize(input_shape)
+        large_input_shape = (input_shape[0] * 4, input_shape[1] * 4)
+        cam.requestOutput(large_input_shape, type=image_type, fps=fps_limit).link(
+            manip.inputImage
+        )
+        nn = pipeline.create(ParsingNeuralNetwork).build(manip.out, model)
+    else:
+        nn = pipeline.create(ParsingNeuralNetwork).build(
+            cam.requestOutput(input_shape, type=image_type, fps=fps_limit),
+            model,
+        )
+    
+    parser_queue = nn.out.createOutputQueue()
 
     camera_queue = nn.passthrough.createOutputQueue()
 
