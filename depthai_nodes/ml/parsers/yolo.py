@@ -100,6 +100,11 @@ class YOLOExtendedParser(BaseParser):
         @param output_layer_names: The output layer names for the parser.
         @type output_layer_names: List[str]
         """
+        if not isinstance(output_layer_names, list):
+            raise ValueError("Output layer names must be a list.")
+        if not all(isinstance(layer, str) for layer in output_layer_names):
+            raise ValueError("Output layer names must be a list of strings.")
+
         self.output_layer_names = output_layer_names
 
     def setConfidenceThreshold(self, threshold: float) -> None:
@@ -108,6 +113,9 @@ class YOLOExtendedParser(BaseParser):
         @param threshold: Confidence score threshold for detected faces.
         @type threshold: float
         """
+        if not isinstance(threshold, float):
+            raise ValueError("Confidence score threshold must be a float.")
+
         self.conf_threshold = threshold
 
     def setNumClasses(self, n_classes: int) -> None:
@@ -116,6 +124,11 @@ class YOLOExtendedParser(BaseParser):
         @param numClasses: The number of classes in the model.
         @type numClasses: int
         """
+        if not isinstance(n_classes, int):
+            raise ValueError("Number of classes must be an integer.")
+        if n_classes < 1:
+            raise ValueError("Number of classes must be greater than 0.")
+
         self.n_classes = n_classes
 
     def setIouThreshold(self, iou_threshold: float) -> None:
@@ -124,6 +137,13 @@ class YOLOExtendedParser(BaseParser):
         @param iou_threshold: The intersection over union threshold.
         @type iou_threshold: float
         """
+        if not isinstance(iou_threshold, float):
+            raise ValueError("Intersection over union threshold must be a float.")
+        if iou_threshold < 0 or iou_threshold > 1:
+            raise ValueError(
+                "Intersection over union threshold must be between 0 and 1."
+            )
+
         self.iou_threshold = iou_threshold
 
     def setMaskConfidence(self, mask_conf: float) -> None:
@@ -132,6 +152,11 @@ class YOLOExtendedParser(BaseParser):
         @param mask_conf: The mask confidence threshold.
         @type mask_conf: float
         """
+        if not isinstance(mask_conf, float):
+            raise ValueError("Mask confidence threshold must be a float.")
+        if mask_conf < 0 or mask_conf > 1:
+            raise ValueError("Mask confidence threshold must be between 0 and 1.")
+
         self.mask_conf = mask_conf
 
     def setNumKeypoints(self, n_keypoints: int) -> None:
@@ -140,6 +165,11 @@ class YOLOExtendedParser(BaseParser):
         @param n_keypoints: The number of keypoints in the model.
         @type n_keypoints: int
         """
+        if not isinstance(n_keypoints, int):
+            raise ValueError("Number of keypoints must be an integer.")
+        if n_keypoints < 1:
+            raise ValueError("Number of keypoints must be greater than 0.")
+
         self.n_keypoints = n_keypoints
 
     def setAnchors(self, anchors: List[List[List[float]]]) -> None:
@@ -148,6 +178,14 @@ class YOLOExtendedParser(BaseParser):
         @param anchors: The anchors for the YOLO model.
         @type anchors: List[List[List[float]]]
         """
+        for anchor in anchors:
+            if not isinstance(anchor, list):
+                raise ValueError("Anchors must be a list of lists.")
+            if not all(isinstance(val, list) for val in anchor):
+                raise ValueError("Anchors must be a list of lists of lists.")
+            if not all(isinstance(val, float) for sublist in anchor for val in sublist):
+                raise ValueError("Anchors must be a list of lists of floats.")
+
         self.anchors = anchors
 
     def setSubtype(self, subtype: str) -> None:
@@ -156,6 +194,9 @@ class YOLOExtendedParser(BaseParser):
         @param subtype: The subtype of the YOLO model.
         @type subtype: YOLOSubtype
         """
+        if not isinstance(subtype, str):
+            raise ValueError("Subtype must be a string.")
+
         try:
             self.subtype = YOLOSubtype(subtype.lower())
         except ValueError as err:

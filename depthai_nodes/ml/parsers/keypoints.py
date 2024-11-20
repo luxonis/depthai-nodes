@@ -78,6 +78,10 @@ class KeypointParser(BaseParser):
         """
         if not isinstance(scale_factor, float):
             raise ValueError("Scale factor must be a float.")
+
+        if scale_factor <= 0:
+            raise ValueError("Scale factor must be greater than 0.")
+
         self.scale_factor = scale_factor
 
     def setNumKeypoints(self, n_keypoints: int) -> None:
@@ -88,6 +92,10 @@ class KeypointParser(BaseParser):
         """
         if not isinstance(n_keypoints, int):
             raise ValueError("Number of keypoints must be an integer.")
+
+        if n_keypoints <= 0:
+            raise ValueError("Number of keypoints must be greater than 0.")
+
         self.n_keypoints = n_keypoints
 
     def setScoreThreshold(self, threshold: float) -> None:
@@ -98,6 +106,10 @@ class KeypointParser(BaseParser):
         """
         if not isinstance(threshold, float):
             raise ValueError("Confidence threshold must be a float.")
+
+        if threshold < 0 or threshold > 1:
+            raise ValueError("Confidence threshold must be between 0 and 1.")
+
         self.score_threshold = threshold
 
     def build(
