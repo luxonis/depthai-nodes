@@ -53,7 +53,7 @@ with dai.Pipeline() as pipeline:
             cam.requestOutput(input_shape, type=image_type, fps=fps_limit),
             model,
         )
-    
+
     parser_queue = nn.out.createOutputQueue()
 
     camera_queue = nn.passthrough.createOutputQueue()
