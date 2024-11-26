@@ -165,13 +165,12 @@ class Keypoints(dai.Buffer):
         img_annotations = dai.ImgAnnotations()
         annotation = dai.ImgAnnotation()
 
-        keypoints = []
-        for keypoint in self.keypoints:
-            keypoint: Keypoint = keypoint
-            keypoints.append(dai.Point2f(keypoint.x, keypoint.y))
+        keypoints = [dai.Point2f(keypoint.x, keypoint.y) for keypoint in self.keypoints]
 
         pointsAnnotation = dai.PointsAnnotation()
-        pointsAnnotation.type = dai.PointsAnnotationType.POINTS
+        pointsAnnotation.type = (
+            dai.PointsAnnotationType.LINE_LOOP
+        )  # change when points get adjusted
         pointsAnnotation.points = dai.VectorPoint2f(keypoints)
         pointsAnnotation.outlineColor = KEYPOINT_COLOR
         pointsAnnotation.fillColor = KEYPOINT_COLOR

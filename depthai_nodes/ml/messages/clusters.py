@@ -1,6 +1,8 @@
 from typing import List
 
+import cv2
 import depthai as dai
+import numpy as np
 
 
 class Cluster(dai.Buffer):
@@ -18,7 +20,7 @@ class Cluster(dai.Buffer):
         """Initializes the Cluster object."""
         super().__init__()
         self._label: int = None
-        self.points: List[dai.Point2f] = []
+        self._points: List[dai.Point2f] = []
 
     @property
     def label(self) -> int:
@@ -103,3 +105,29 @@ class Clusters(dai.Buffer):
         if not all(isinstance(cluster, Cluster) for cluster in value):
             raise ValueError("Clusters must be a list of Cluster objects.")
         self._clusters = value
+
+    def getVisualizationMessage(self) -> dai.ImgAnnotations:
+        """Creates a default visualization message for clusters and colors each one
+        separately."""
+        img_annotations = dai.ImgAnnotations()
+        annotation = dai.ImgAnnotation()
+
+        num_clusters = len(self.clusters)
+        color_mask = np.array(range(0, 255, 255 // num_clusters), dtype=np.uint8)
+        color_mask = cv2.applyColorMap(color_mask, cv2.COLORMAP_RAINBOW)
+        color_mask = color_mask / 255
+        color_mask = color_mask.reshape(-1, 3)
+
+        for i, cluster in enumerate(self.clusters):
+            pointsAnnotation = dai.PointsAnnotation()
+            pointsAnnotation.type = dai.PointsAnnotationType.LINE_LOOP
+            pointsAnnotation.points = dai.VectorPoint2f(cluster.points)
+            r, g, b = color_mask[i]
+            color = dai.Color(r, g, b)
+            pointsAnnotation.outlineColor = color
+            pointsAnnotation.thickness = 2.0
+            annotation.points.append(pointsAnnotation)
+
+        img_annotations.annotations.append(annotation)
+        img_annotations.setTimestamp(self.getTimestamp())
+        return img_annotations
