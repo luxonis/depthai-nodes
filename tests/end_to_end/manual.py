@@ -81,19 +81,32 @@ with dai.Pipeline(device) as pipeline:
         device.close()
         exit(8)
 
+    image_type = (
+        dai.ImgFrame.Type.BGR888i
+        if device.getPlatform().name == "RVC4"
+        else dai.ImgFrame.Type.BGR888p
+    )
+    manip = None
+
     if input_size[0] % 2 != 0 or input_size[1] % 2 != 0:
-        print(
-            f"We only support even numbers for resolution sizes. Got {input_size[0]}x{input_size[1]}."
-        )
-        device.close()
-        exit(8)
+        manip = pipeline.create(dai.node.ImageManipV2)
+        manip.initialConfig.addResize(input_size[0], input_size[1])
+        large_input_shape = (input_size[0] * 2, input_size[1] * 2)
 
     if input_size[0] < 128 and input_size[1] < 128:
-        print("Input size is too small for the device.")
-        device.close()
-        exit(8)
+        manip = pipeline.create(dai.node.ImageManipV2)
+        manip.initialConfig.addResize(input_size[0], input_size[1])
+        large_input_shape = (input_size[0] * 4, input_size[1] * 4)
 
-    nn_w_parser = pipeline.create(ParsingNeuralNetwork).build(camera_node, nn_archive)
+    if manip:
+        camera_node.requestOutput(large_input_shape, type=image_type).link(
+            manip.inputImage
+        )
+        nn_w_parser = pipeline.create(ParsingNeuralNetwork).build(manip.out, nn_archive)
+    else:
+        nn_w_parser = pipeline.create(ParsingNeuralNetwork).build(
+            camera_node, nn_archive
+        )
 
     head_indices = nn_w_parser._parsers.keys()
 
