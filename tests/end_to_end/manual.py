@@ -1,7 +1,7 @@
 import argparse
 
 import depthai as dai
-from utils import get_input_shape, parse_model_slug
+from utils import get_input_shape, get_num_inputs, parse_model_slug
 
 from depthai_nodes.parsing_neural_network import ParsingNeuralNetwork
 
@@ -25,7 +25,8 @@ if not (args.nn_archive or args.model_slug):
 
 try:
     device = dai.Device(dai.DeviceInfo(args.ip))
-except Exception:
+except Exception as e:
+    print(e)
     print("Can't connect to the device with IP/mxid: ", args.ip)
     exit(6)
 
@@ -41,13 +42,20 @@ with dai.Pipeline(device) as pipeline:
         )
         try:
             nn_archive_path = dai.getModelFromZoo(model_desc, useCached=False)
-            nn_archive = dai.NNArchive(nn_archive_path)
-        except Exception:
+        except Exception as e:
+            print(e)
             print(
                 f"Couldn't find model {args.model_slug} for {device.getPlatform().name} in the ZOO"
             )
             device.close()
             exit(7)
+        try:
+            nn_archive = dai.NNArchive(nn_archive_path)
+        except Exception as e:
+            print(e)
+            print(f"Couldn't load the model {args.model_slug} from NN archive.")
+            device.close()
+            exit(9)
 
     else:
         nn_archive = dai.NNArchive(args.nn_archive)
@@ -59,7 +67,27 @@ with dai.Pipeline(device) as pipeline:
         device.close()
         exit(5)
 
-    input_size = get_input_shape(nn_archive)
+    if get_num_inputs(nn_archive) > 1:
+        print(
+            "This model has more than one input. Currently, only models with one input are supported."
+        )
+        device.close()
+        exit(8)
+
+    try:
+        input_size = get_input_shape(nn_archive)
+    except Exception as e:
+        print(e)
+        device.close()
+        exit(8)
+
+    if input_size[0] % 2 != 0 or input_size[1] % 2 != 0:
+        print(
+            f"We only support even numbers for resolution sizes. Got {input_size[0]}x{input_size[1]}."
+        )
+        device.close()
+        exit(8)
+
     if input_size[0] < 128 and input_size[1] < 128:
         print("Input size is too small for the device.")
         device.close()
