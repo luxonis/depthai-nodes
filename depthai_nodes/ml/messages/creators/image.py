@@ -51,14 +51,3 @@ def create_image_message(
     imgFrame.setType(img_frame_type)
 
     return imgFrame
-
-
-def getVisualizationMessage(self) -> dai.ImgFrame:
-    img_frame = dai.ImgFrame()
-    mask = self._map.copy()
-    if np.any(mask < 1):
-        mask = mask * 255
-    mask = mask.astype(np.uint8)
-
-    colored_mask = cv2.applyColorMap(mask, cv2.COLORMAP_PLASMA)
-    return img_frame.setCvFrame(colored_mask, dai.ImgFrame.Type.BGR888i)

@@ -72,5 +72,6 @@ class SegmentationMask(dai.Buffer):
         scaled_mask[mask == -1] = 0
         colored_mask = cv2.applyColorMap(scaled_mask, cv2.COLORMAP_RAINBOW)
         colored_mask[mask == -1] = [0, 0, 0]
+        img_frame.setTimestamp(self.getTimestamp())
 
         return img_frame.setCvFrame(colored_mask, dai.ImgFrame.Type.BGR888i)

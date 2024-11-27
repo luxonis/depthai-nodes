@@ -81,6 +81,7 @@ class Map2D(dai.Buffer):
         if np.any(mask < 1):
             mask = mask * 255
         mask = mask.astype(np.uint8)
-
         colored_mask = cv2.applyColorMap(mask, cv2.COLORMAP_PLASMA)
+
+        img_frame.setTimestamp(self.getTimestamp())
         return img_frame.setCvFrame(colored_mask, dai.ImgFrame.Type.BGR888i)
