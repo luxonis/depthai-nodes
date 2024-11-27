@@ -84,15 +84,17 @@ def test_pipelines(IP: str, ip_platform: str, nn_archive_path, slug):
             )
     except subprocess.CalledProcessError as e:
         if e.returncode == 5:
-            pytest.skip(f"Model not supported on {ip_platform}.")
+            pytest.skip(f"Model {slug} not supported on {ip_platform}.")
         elif e.returncode == 6:
             pytest.skip(f"Can't connect to the device with IP/mxid: {IP}")
         elif e.returncode == 7:
             pytest.skip(f"Couldn't find model {slug} in the ZOO")
         elif e.returncode == 8:
             pytest.skip(
-                "The model is not supported in this test. (small input size, grayscale image, etc.)"
+                f"The model {slug} is not supported in this test. (small input size, grayscale image, etc.)"
             )
+        elif e.returncode == 9:
+            pytest.skip(f"Couldn't load the model {slug} from NN archive.")
         else:
             raise RuntimeError("Pipeline crashed.") from e
     except subprocess.TimeoutExpired:

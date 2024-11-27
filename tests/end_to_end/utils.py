@@ -61,6 +61,13 @@ def get_input_shape(nn_archive: dai.NNArchive) -> Tuple[int, int]:
     return input_shape
 
 
+def get_num_inputs(nn_archive: dai.NNArchive) -> int:
+    """Get the number of inputs of the model from the NN archive."""
+    inputs = get_inputs_from_archive(nn_archive)
+
+    return len(inputs)
+
+
 def parse_model_slug(full_slug) -> Tuple[str, str]:
     """Parse the model slug into model_slug and model_version_slug."""
     if ":" not in full_slug:
