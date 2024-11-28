@@ -127,12 +127,15 @@ class Keypoints(dai.Buffer):
     ----------
     keypoints: List[Keypoint]
         List of Keypoint objects, each representing a keypoint.
+    transformation : dai.ImgTransformation
+        Image transformation object.
     """
 
     def __init__(self):
         """Initializes the Keypoints object."""
         super().__init__()
         self._keypoints: List[Keypoint] = []
+        self._transformation: dai.ImgTransformation = None
 
     @property
     def keypoints(self) -> List[Keypoint]:
@@ -157,3 +160,26 @@ class Keypoints(dai.Buffer):
         if not all(isinstance(item, Keypoint) for item in value):
             raise ValueError("keypoints must be a list of Keypoint objects.")
         self._keypoints = value
+
+    @property
+    def transformation(self) -> dai.ImgTransformation:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self._transformation
+
+    @transformation.setter
+    def transformation(self, value: dai.ImgTransformation):
+        """Sets the Image Transformation object.
+
+        @param value: The Image Transformation object.
+        @type value: dai.ImgTransformation
+        @raise TypeError: If value is not a dai.ImgTransformation object.
+        """
+        if not isinstance(value, dai.ImgTransformation):
+            raise TypeError(
+                f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
+            )
+        self._transformation = value

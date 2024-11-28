@@ -213,9 +213,10 @@ class SCRFDParser(DetectionParser):
             )
             bboxes = xyxy_to_xywh(bboxes)
             bboxes = np.clip(bboxes, 0, 1)
-            detection_msg = create_detection_message(
+            message = create_detection_message(
                 bboxes=bboxes, scores=scores, keypoints=keypoints
             )
-            detection_msg.setTimestamp(output.getTimestamp())
+            message.setTimestamp(output.getTimestamp())
+            message.transformation = output.getTransformation()
 
-            self.out.send(detection_msg)
+            self.out.send(message)

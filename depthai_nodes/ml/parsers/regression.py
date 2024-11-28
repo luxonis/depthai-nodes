@@ -88,5 +88,6 @@ class RegressionParser(BaseParser):
 
             regression_message = create_regression_message(predictions=predictions)
             regression_message.setTimestamp(output.getTimestamp())
+            regression_message.transformation = output.getTransformation()
 
             self.out.send(regression_message)

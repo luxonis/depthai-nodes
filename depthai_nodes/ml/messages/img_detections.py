@@ -161,6 +161,8 @@ class ImgDetectionsExtended(dai.Buffer):
         Image detections with keypoints.
     masks: np.ndarray
         The segmentation masks of the image. All masks are stored in a single numpy array.
+    transformation : dai.ImgTransformation
+        Image transformation object.
     """
 
     def __init__(self) -> None:
@@ -168,6 +170,7 @@ class ImgDetectionsExtended(dai.Buffer):
         super().__init__()
         self._detections: List[ImgDetectionExtended] = []
         self._masks: SegmentationMask = SegmentationMask()
+        self._transformation: dai.ImgTransformation = None
 
     @property
     def detections(self) -> List[ImgDetectionExtended]:
@@ -226,3 +229,26 @@ class ImgDetectionsExtended(dai.Buffer):
         masks_msg = SegmentationMask()
         masks_msg.mask = value
         self._masks = masks_msg
+
+    @property
+    def transformation(self) -> dai.ImgTransformation:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self._transformation
+
+    @transformation.setter
+    def transformation(self, value: dai.ImgTransformation):
+        """Sets the Image Transformation object.
+
+        @param value: The Image Transformation object.
+        @type value: dai.ImgTransformation
+        @raise TypeError: If value is not a dai.ImgTransformation object.
+        """
+        if not isinstance(value, dai.ImgTransformation):
+            raise TypeError(
+                f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
+            )
+        self._transformation = value

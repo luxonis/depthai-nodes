@@ -99,5 +99,6 @@ class SuperAnimalParser(KeypointParser):
 
             msg = create_keypoints_message(keypoints, scores, self.score_threshold)
             msg.setTimestamp(output.getTimestamp())
+            msg.transformation = output.getTransformation()
 
             self.out.send(msg)

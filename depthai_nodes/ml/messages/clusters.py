@@ -73,12 +73,15 @@ class Clusters(dai.Buffer):
     ----------
     clusters : List[Cluster]
         List of clusters.
+    transformation : dai.ImgTransformation
+        Image transformation object.
     """
 
     def __init__(self):
         """Initializes the Clusters object."""
         super().__init__()
         self._clusters: List[Cluster] = []
+        self._transformation: dai.ImgTransformation = None
 
     @property
     def clusters(self) -> List[Cluster]:
@@ -103,3 +106,26 @@ class Clusters(dai.Buffer):
         if not all(isinstance(cluster, Cluster) for cluster in value):
             raise ValueError("Clusters must be a list of Cluster objects.")
         self._clusters = value
+
+    @property
+    def transformation(self) -> dai.ImgTransformation:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self._transformation
+
+    @transformation.setter
+    def transformation(self, value: dai.ImgTransformation):
+        """Sets the Image Transformation object.
+
+        @param value: The Image Transformation object.
+        @type value: dai.ImgTransformation
+        @raise TypeError: If value is not a dai.ImgTransformation object.
+        """
+        if not isinstance(value, dai.ImgTransformation):
+            raise TypeError(
+                f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
+            )
+        self._transformation = value
