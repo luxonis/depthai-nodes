@@ -160,13 +160,16 @@ class Lines(dai.Buffer):
         self._transformation = value
 
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
+        """Returns default visualization message for lines.
+
+        The message adds lines to the image.
+        """
         img_annotation = dai.ImgAnnotations()
         annotation = dai.ImgAnnotation()
 
         for line in self.lines:
-            print(line)
             pointsAnnotation = dai.PointsAnnotation()
-            pointsAnnotation.type = dai.PointsAnnotationType.LINE_STRIP
+            pointsAnnotation.type = dai.PointsAnnotationType.LINE_LOOP
             pointsAnnotation.points = dai.VectorPoint2f(
                 [line.start_point, line.end_point]
             )

@@ -206,7 +206,6 @@ class ImgDetectionsExtended(dai.Buffer):
 
     @property
     def masks(self) -> NDArray[np.int16]:
-    def masks(self) -> NDArray[np.int16]:
         """Returns the segmentation masks stored in a single numpy array.
 
         @return: Segmentation masks.
@@ -215,7 +214,6 @@ class ImgDetectionsExtended(dai.Buffer):
         return self._masks.mask
 
     @masks.setter
-    def masks(self, value: NDArray[np.int16]):
     def masks(self, value: NDArray[np.int16]):
         """Sets the segmentation mask.
 
@@ -237,61 +235,6 @@ class ImgDetectionsExtended(dai.Buffer):
         masks_msg = SegmentationMask()
         masks_msg.mask = value
         self._masks = masks_msg
-
-    def getVisualizationMessage(self) -> dai.ImgAnnotations:
-        img_annotations = dai.ImgAnnotations()
-        annotation = dai.ImgAnnotation()
-
-        for detection in self.detections:
-            detection: ImgDetectionExtended = detection
-            rotated_rect = detection.rotated_rect
-            points = rotated_rect.getPoints()
-            pointsAnnotation = dai.PointsAnnotation()
-            pointsAnnotation.type = dai.PointsAnnotationType.LINE_STRIP
-            pointsAnnotation.points = dai.VectorPoint2f(points)
-            pointsAnnotation.outlineColor = OUTLINE_COLOR
-            pointsAnnotation.thickness = 2.0
-            annotation.points.append(pointsAnnotation)
-
-            text = dai.TextAnnotation()
-            text.position = points[0]
-            text.text = f"{detection.label_name} {int(detection.confidence * 100)}%"
-            text.fontSize = 50.5
-            text.textColor = TEXT_COLOR
-            text.backgroundColor = BACKGROUND_COLOR
-            annotation.texts.append(text)
-
-        img_annotations.annotations.append(annotation)
-        img_annotations.setTimestamp(self.getTimestamp())
-        return img_annotations
-
-    def getVisualizationMessage(self) -> dai.ImgAnnotations:
-        img_annotations = dai.ImgAnnotations()
-        annotation = dai.ImgAnnotation()
-
-        for detection in self.detections:
-            detection: ImgDetectionExtended = detection
-            rotated_rect = detection.rotated_rect
-            points = rotated_rect.getPoints()
-
-            pointsAnnotation = dai.PointsAnnotation()
-            pointsAnnotation.type = dai.PointsAnnotationType.LINE_STRIP
-            pointsAnnotation.points = dai.VectorPoint2f(points)
-            pointsAnnotation.outlineColor = OUTLINE_COLOR
-            pointsAnnotation.thickness = 2.0
-            annotation.points.append(pointsAnnotation)
-
-            text = dai.TextAnnotation()
-            text.position = points[0]
-            text.text = f"{detection.label_name} {int(detection.confidence * 100)}%"
-            text.fontSize = 50.5
-            text.textColor = TEXT_COLOR
-            text.backgroundColor = BACKGROUND_COLOR
-            annotation.texts.append(text)
-
-        img_annotations.annotations.append(annotation)
-        img_annotations.setTimestamp(self.getTimestamp())
-        return img_annotations
 
     @property
     def transformation(self) -> dai.ImgTransformation:
@@ -315,3 +258,31 @@ class ImgDetectionsExtended(dai.Buffer):
                 f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
             )
         self._transformation = value
+
+    def getVisualizationMessage(self) -> dai.ImgAnnotations:
+        img_annotations = dai.ImgAnnotations()
+        annotation = dai.ImgAnnotation()
+
+        for detection in self.detections:
+            detection: ImgDetectionExtended = detection
+            rotated_rect = detection.rotated_rect
+            points = rotated_rect.getPoints()
+
+            pointsAnnotation = dai.PointsAnnotation()
+            pointsAnnotation.type = dai.PointsAnnotationType.LINE_STRIP
+            pointsAnnotation.points = dai.VectorPoint2f(points)
+            pointsAnnotation.outlineColor = OUTLINE_COLOR
+            pointsAnnotation.thickness = 2.0
+            annotation.points.append(pointsAnnotation)
+
+            text = dai.TextAnnotation()
+            text.position = points[0]
+            text.text = f"{detection.label_name} {int(detection.confidence * 100)}%"
+            text.fontSize = 50.5
+            text.textColor = TEXT_COLOR
+            text.backgroundColor = BACKGROUND_COLOR
+            annotation.texts.append(text)
+
+        img_annotations.annotations.append(annotation)
+        img_annotations.setTimestamp(self.getTimestamp())
+        return img_annotations
