@@ -53,6 +53,29 @@ class SegmentationMask(dai.Buffer):
             raise ValueError("Mask must be an array of integers larger or equal to -1.")
         self._mask = value
 
+    @property
+    def transformation(self) -> dai.ImgTransformation:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self._transformation
+
+    @transformation.setter
+    def transformation(self, value: dai.ImgTransformation):
+        """Sets the Image Transformation object.
+
+        @param value: The Image Transformation object.
+        @type value: dai.ImgTransformation
+        @raise TypeError: If value is not a dai.ImgTransformation object.
+        """
+        if not isinstance(value, dai.ImgTransformation):
+            raise TypeError(
+                f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
+            )
+        self._transformation = value
+
     def getVisualizationMessage(self) -> dai.ImgFrame:
         """Returns the default visualization message for segmentation masks."""
         img_frame = dai.ImgFrame()
@@ -77,26 +100,3 @@ class SegmentationMask(dai.Buffer):
         colored_mask[mask == -1] = [0, 0, 0]
 
         return img_frame.setCvFrame(colored_mask, dai.ImgFrame.Type.BGR888i)
-
-    @property
-    def transformation(self) -> dai.ImgTransformation:
-        """Returns the Image Transformation object.
-
-        @return: The Image Transformation object.
-        @rtype: dai.ImgTransformation
-        """
-        return self._transformation
-
-    @transformation.setter
-    def transformation(self, value: dai.ImgTransformation):
-        """Sets the Image Transformation object.
-
-        @param value: The Image Transformation object.
-        @type value: dai.ImgTransformation
-        @raise TypeError: If value is not a dai.ImgTransformation object.
-        """
-        if not isinstance(value, dai.ImgTransformation):
-            raise TypeError(
-                f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
-            )
-        self._transformation = value

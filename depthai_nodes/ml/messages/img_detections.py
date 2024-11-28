@@ -6,6 +6,7 @@ from numpy.typing import NDArray
 
 from depthai_nodes.ml.helpers.constants import (
     BACKGROUND_COLOR,
+    KEYPOINT_COLOR,
     OUTLINE_COLOR,
     TEXT_COLOR,
 )
@@ -267,7 +268,6 @@ class ImgDetectionsExtended(dai.Buffer):
             detection: ImgDetectionExtended = detection
             rotated_rect = detection.rotated_rect
             points = rotated_rect.getPoints()
-
             pointsAnnotation = dai.PointsAnnotation()
             pointsAnnotation.type = dai.PointsAnnotationType.LINE_STRIP
             pointsAnnotation.points = dai.VectorPoint2f(points)
@@ -282,6 +282,20 @@ class ImgDetectionsExtended(dai.Buffer):
             text.textColor = TEXT_COLOR
             text.backgroundColor = BACKGROUND_COLOR
             annotation.texts.append(text)
+
+            if len(detection.keypoints) > 0:
+                keypoints = [
+                    dai.Point2f(keypoint.x, keypoint.y)
+                    for keypoint in detection.keypoints
+                ]
+                keypointAnnotation = dai.PointsAnnotation()
+                keypointAnnotation.type = (
+                    dai.PointsAnnotationType.LINE_STRIP
+                )  # change to POINTS when fixed
+                keypointAnnotation.points = dai.VectorPoint2f(keypoints)
+                keypointAnnotation.outlineColor = KEYPOINT_COLOR
+                keypointAnnotation.thickness = 2.0
+                annotation.points.append(keypointAnnotation)
 
         img_annotations.annotations.append(annotation)
         img_annotations.setTimestamp(self.getTimestamp())

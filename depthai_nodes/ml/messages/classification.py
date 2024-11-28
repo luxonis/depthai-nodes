@@ -132,13 +132,10 @@ class Classifications(dai.Buffer):
         img_annotations = dai.ImgAnnotations()
         annotation = dai.ImgAnnotation()
 
-        soritng_indexes = np.argsort(self._scores)[::-1]
-        soritng_indexes = soritng_indexes[:5]
-
-        for i in soritng_indexes:
+        for i in range(len(self._scores)):
             text = dai.TextAnnotation()
             text.position = dai.Point2f(1.05, 0.1 + i * 0.1)
-            text.text = f"{self._classes[i]} {self._scores[i]:.2f}"
+            text.text = f"{self._classes[i]} {self._scores[i] * 100:.0f}%"
             text.fontSize = 15
             text.textColor = TEXT_COLOR
             text.backgroundColor = BACKGROUND_COLOR
