@@ -98,7 +98,7 @@ class Map2D(dai.Buffer):
                 f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
             )
         self._transformation = value
-
+        
     def getVisualizationMessage(self) -> dai.ImgFrame:
         """Returns default visualization message for 2D maps in the form of a
         colormapped image."""
