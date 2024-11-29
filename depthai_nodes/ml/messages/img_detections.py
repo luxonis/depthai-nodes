@@ -263,11 +263,15 @@ class ImgDetectionsExtended(dai.Buffer):
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
         img_annotations = dai.ImgAnnotations()
         annotation = dai.ImgAnnotation()
+        transformation = self.transformation
+        w, h = transformation.getSize()
 
         for detection in self.detections:
             detection: ImgDetectionExtended = detection
             rotated_rect = detection.rotated_rect
+            rotated_rect = rotated_rect.denormalize(w, h)
             points = rotated_rect.getPoints()
+            points = [dai.Point2f(point.x / w, point.y / h) for point in points]
             pointsAnnotation = dai.PointsAnnotation()
             pointsAnnotation.type = dai.PointsAnnotationType.LINE_STRIP
             pointsAnnotation.points = dai.VectorPoint2f(points)
@@ -278,7 +282,7 @@ class ImgDetectionsExtended(dai.Buffer):
             text = dai.TextAnnotation()
             text.position = points[0]
             text.text = f"{detection.label_name} {int(detection.confidence * 100)}%"
-            text.fontSize = 50.5
+            text.fontSize = 20
             text.textColor = TEXT_COLOR
             text.backgroundColor = BACKGROUND_COLOR
             annotation.texts.append(text)
