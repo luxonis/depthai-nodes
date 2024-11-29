@@ -12,12 +12,15 @@ class SegmentationMask(dai.Buffer):
     ----------
     mask: NDArray[np.int16]
         Segmentation mask.
+    transformation : dai.ImgTransformation
+        Image transformation object.
     """
 
     def __init__(self):
         """Initializes the SegmentationMask object."""
         super().__init__()
         self._mask: NDArray[np.int16] = np.array([])
+        self._transformation: dai.ImgTransformation = None
 
     @property
     def mask(self) -> NDArray[np.int16]:
@@ -48,3 +51,26 @@ class SegmentationMask(dai.Buffer):
         if np.any((value < -1)):
             raise ValueError("Mask must be an array of integers larger or equal to -1.")
         self._mask = value
+
+    @property
+    def transformation(self) -> dai.ImgTransformation:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self._transformation
+
+    @transformation.setter
+    def transformation(self, value: dai.ImgTransformation):
+        """Sets the Image Transformation object.
+
+        @param value: The Image Transformation object.
+        @type value: dai.ImgTransformation
+        @raise TypeError: If value is not a dai.ImgTransformation object.
+        """
+        if not isinstance(value, dai.ImgTransformation):
+            raise TypeError(
+                f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
+            )
+        self._transformation = value

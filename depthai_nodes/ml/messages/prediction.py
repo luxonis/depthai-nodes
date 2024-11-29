@@ -48,12 +48,15 @@ class Predictions(dai.Buffer):
     ----------
     predictions : List[Prediction]
         List of predictions.
+    transformation : dai.ImgTransformation
+        Image transformation object.
     """
 
     def __init__(self):
         """Initializes the Predictions object."""
         super().__init__()
         self._predictions: List[Prediction] = []
+        self._transformation: dai.ImgTransformation = None
 
     @property
     def predictions(self) -> List[Prediction]:
@@ -89,3 +92,26 @@ class Predictions(dai.Buffer):
         @rtype: float
         """
         return self._predictions[0].prediction
+
+    @property
+    def transformation(self) -> dai.ImgTransformation:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self._transformation
+
+    @transformation.setter
+    def transformation(self, value: dai.ImgTransformation):
+        """Sets the Image Transformation object.
+
+        @param value: The Image Transformation object.
+        @type value: dai.ImgTransformation
+        @raise TypeError: If value is not a dai.ImgTransformation object.
+        """
+        if not isinstance(value, dai.ImgTransformation):
+            raise TypeError(
+                f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
+            )
+        self._transformation = value

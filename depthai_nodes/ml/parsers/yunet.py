@@ -296,5 +296,6 @@ class YuNetParser(DetectionParser):
             )
 
             detections_message.setTimestamp(output.getTimestamp())
+            detections_message.transformation = output.getTransformation()
 
             self.out.send(detections_message)

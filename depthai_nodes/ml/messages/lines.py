@@ -100,12 +100,15 @@ class Lines(dai.Buffer):
     ----------
     lines : List[Line]
         List of detected lines.
+    transformation : dai.ImgTransformation
+        Image transformation object.
     """
 
     def __init__(self):
         """Initializes the Lines object."""
         super().__init__()
         self._lines: List[Line] = []
+        self._transformation: dai.ImgTransformation = None
 
     @property
     def lines(self) -> List[Line]:
@@ -130,3 +133,26 @@ class Lines(dai.Buffer):
         if not all(isinstance(item, Line) for item in value):
             raise ValueError("Lines must be a list of Line objects.")
         self._lines = value
+
+    @property
+    def transformation(self) -> dai.ImgTransformation:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self._transformation
+
+    @transformation.setter
+    def transformation(self, value: dai.ImgTransformation):
+        """Sets the Image Transformation object.
+
+        @param value: The Image Transformation object.
+        @type value: dai.ImgTransformation
+        @raise TypeError: If value is not a dai.ImgTransformation object.
+        """
+        if not isinstance(value, dai.ImgTransformation):
+            raise TypeError(
+                f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
+            )
+        self._transformation = value

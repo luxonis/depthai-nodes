@@ -113,5 +113,6 @@ class ImageOutputParser(BaseParser):
                 is_bgr=self.output_is_bgr,
             )
             image_message.setTimestamp(output.getTimestamp())
+            image_message.transformation = output.getTransformation()
 
             self.out.send(image_message)

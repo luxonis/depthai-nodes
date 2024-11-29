@@ -172,5 +172,6 @@ class KeypointParser(BaseParser):
 
             msg = create_keypoints_message(keypoints)
             msg.setTimestamp(output.getTimestamp())
+            msg.transformation = output.getTransformation()
 
             self.out.send(msg)
