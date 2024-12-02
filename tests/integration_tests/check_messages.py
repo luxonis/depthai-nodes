@@ -12,6 +12,7 @@ from depthai_nodes.ml.messages import (
     Keypoints,
     Lines,
     Map2D,
+    Predictions,
     SegmentationMask,
 )
 
@@ -278,6 +279,27 @@ def check_line_msg(message: Lines, expected_output: Dict[str, Any]):
         ), f"Expected end_point {expected_line['end_point']}, got {predicted_line['end_point']}."
 
 
+def check_regression_msg(message: Predictions, expected_output: Dict[str, Any]):
+    """
+    Expected output format:
+    {
+        "model": "luxonis/gaze-estimation-adas:60x60:0.0.1",
+        "parser": "RegressionParser",
+        "value": [0.4, 0.2, 0.1]
+    }
+    """
+    predictions = message.predictions
+    predictions = np.array([pred.prediction for pred in predictions])
+    expected_predictions = np.array(expected_output["value"])
+    print(
+        f"Expected predictions shape: {expected_predictions.shape}, predicted predictions shape: {predictions.shape}"
+    )
+    assert (
+        predictions.shape == expected_predictions.shape
+    ), f"The shape of the predictions is different. Expects {expected_predictions.shape}, got {predictions.shape}"
+    np.testing.assert_allclose(predictions, expected_predictions, rtol=1e-2)
+
+
 def test_output(message, model_slug, parser_name):
     expected_output = load_expected_output(model_slug, parser_name)
 
@@ -305,6 +327,8 @@ def test_output(message, model_slug, parser_name):
         check_line_msg(message, expected_output)
     elif expected_output["parser"] == "PPTextDetectionParser":
         check_detection_msg(message, expected_output)
+    elif expected_output["parser"] == "RegressionParser":
+        check_regression_msg(message, expected_output)
     elif expected_output["parser"] == "SCRFDParser":
         check_detection_msg(message, expected_output)
     elif expected_output["parser"] == "SegmentationParser":

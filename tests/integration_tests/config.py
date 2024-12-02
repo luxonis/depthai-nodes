@@ -25,4 +25,5 @@ parsers_slugs = {
         "luxonis/yolov8-nano-pose-estimation:coco-512x288",
     ],
     "YuNetParser": ["luxonis/yunet:new-240x320"],
+    "RegressionParser": ["luxonis/gaze-estimation-adas:60x60"],
 }
