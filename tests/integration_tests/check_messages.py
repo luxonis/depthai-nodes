@@ -87,7 +87,7 @@ def check_embeddings_msg(message: dai.NNData, expected_output: Dict[str, Any]):
     np.testing.assert_allclose(embeddings, expected_embeddings, rtol=1e-2)
 
 
-def check_fastsam_msg(
+def check_segmentation_msg(
     message: SegmentationMask, expected_output: Dict[str, Any], threshold: float = 0.9
 ):
     """
@@ -393,7 +393,7 @@ def test_output(message, model_slug, parser_name):
     elif expected_output["parser"] == "EmbeddingsParser":
         check_embeddings_msg(message, expected_output)
     elif expected_output["parser"] == "FastSAMParser":
-        check_fastsam_msg(message, expected_output)
+        check_segmentation_msg(message, expected_output)
     elif expected_output["parser"] == "HRNetParser":
         check_keypoints_msg(message, expected_output)
     elif expected_output["parser"] == "KeypointParser":
@@ -415,7 +415,7 @@ def test_output(message, model_slug, parser_name):
     elif expected_output["parser"] == "SCRFDParser":
         check_detection_msg(message, expected_output)
     elif expected_output["parser"] == "SegmentationParser":
-        check_fastsam_msg(message, expected_output)
+        check_segmentation_msg(message, expected_output)
     elif expected_output["parser"] == "SuperAnimalParser":
         check_keypoints_msg(message, expected_output)
     elif expected_output["parser"] == "YuNetParser":
