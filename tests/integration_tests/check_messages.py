@@ -33,6 +33,10 @@ def check_classification_msg(message: Classifications, expected_output: Dict[str
         "score": 0.9
     }
     """
+    assert isinstance(
+        message, Classifications
+    ), f"The message is not a Classifications. Got {type(message)}."
+
     print(
         f"Expected top class: {expected_output['class']}, predicted top class: {message.top_class}"
     )
@@ -53,6 +57,10 @@ def check_classification_sequence_msg(
         "parser": "ClassificationSequenceParser",
         "class": ['HELLO']
     """
+    assert isinstance(
+        message, Classifications
+    ), f"The message is not a Classifications. Got {type(message)}."
+
     print(
         f"Expected top class: {expected_output['class']}, predicted top class: {message.classes}"
     )
@@ -74,6 +82,10 @@ def check_embeddings_msg(message: dai.NNData, expected_output: Dict[str, Any]):
         "embeddings": array([[-9.47265625e-02, -1.23901367e-01,...]])
     }
     """
+    assert isinstance(
+        message, dai.NNData
+    ), f"The message is not a dai.NNData. Got {type(message)}."
+
     outputs = message.getAllLayerNames()
     assert len(outputs) == 1, "The number of outputs must be 1."
     embeddings = message.getTensor(outputs[0])
@@ -98,6 +110,10 @@ def check_segmentation_msg(
         "mask": np.array([[0, 0, 0, ..., 0, 0, 0]])
     }
     """
+    assert isinstance(
+        message, SegmentationMask
+    ), f"The message is not a SegmentationMask. Got {type(message)}."
+
     mask = message.mask
 
     expected_mask = expected_output["mask"]
@@ -132,6 +148,10 @@ def check_keypoints_msg(
         "parser": "KeypointParser",
         "keypoints": [[0.1, 0.2], ...]
     """
+    assert isinstance(
+        message, Keypoints
+    ), f"The message is not a Keypoints. Got {type(message)}."
+
     keypoints = [[kp.x, kp.y] for kp in message.keypoints]
     keypoints = np.array(keypoints)
     expected_keypoints = np.array(expected_output["keypoints"])
@@ -164,6 +184,10 @@ def check_image_msg(message: dai.ImgFrame, expected_output: Dict[str, Any]):
         "output": np.array([[0, 0, 0, ..., 0, 0, 0]])
     }
     """
+    assert isinstance(
+        message, dai.ImgFrame
+    ), f"The message is not a dai.ImgFrame. Got {type(message)}."
+
     image = message.getCvFrame()
     expected_image = expected_output["output"]
     print(
@@ -183,6 +207,10 @@ def check_cluster_msg(message: Clusters, expected_output: Dict[str, Any]):
         "parser": "LaneDetectionParser",
         "clusters": [[[0.1, 0.2], ...]]
     """
+    assert isinstance(
+        message, Clusters
+    ), f"The message is not a Clusters. Got {type(message)}."
+
     clusters = message.clusters
     expected_clusters = expected_output["clusters"]
     clusters_list = []
@@ -212,6 +240,10 @@ def check_map_msg(message: Map2D, expected_output: Dict[str, Any]):
         "map": np.array([[0, 0, 0, ..., 0, 0, 0]])
     }
     """
+    assert isinstance(
+        message, Map2D
+    ), f"The message is not a Map2D. Got {type(message)}."
+
     map_tensor = message.map
     expected_map = expected_output["map"]
     print(
@@ -247,6 +279,10 @@ def check_detection_msg(
         ]
     }
     """
+    assert isinstance(
+        message, ImgDetectionsExtended
+    ), f"The message is not a ImgDetectionsExtended. Got {type(message)}."
+
     predicted_detections = []
     expected_detections: List[Dict[str, Any]] = expected_output["detections"]
 
@@ -332,6 +368,10 @@ def check_line_msg(message: Lines, expected_output: Dict[str, Any]):
         ]
     }
     """
+    assert isinstance(
+        message, Lines
+    ), f"The message is not a Lines. Got {type(message)}."
+
     expected_lines: List[Dict[str, Any]] = expected_output["lines"]
     predicted_lines = []
     for line in message.lines:
@@ -371,6 +411,10 @@ def check_regression_msg(message: Predictions, expected_output: Dict[str, Any]):
         "value": [0.4, 0.2, 0.1]
     }
     """
+    assert isinstance(
+        message, Predictions
+    ), f"The message is not a Predictions. Got {type(message)}."
+
     predictions = message.predictions
     predictions = np.array([pred.prediction for pred in predictions])
     expected_predictions = np.array(expected_output["value"])
