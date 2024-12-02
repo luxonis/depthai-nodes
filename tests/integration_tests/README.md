@@ -57,6 +57,8 @@ with open('nn_datas/ClassificationParser/efficientnet-lite_output.pkl', 'wb') as
     pickle.dump(expected_output, f)
 ```
 
+In the end, you should have all the files in the parser-specific directory inside `nn_datas` directory. You need to upload the parser directory to the B2 bucket.
+
 ## Running the tests
 
 To run the tests, you can use the `main.py` script. You can use `--all` flag to test all parsers or test a specific parser with `-p` flag.
