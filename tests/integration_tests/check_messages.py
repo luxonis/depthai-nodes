@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 
 import depthai as dai
 import numpy as np
+from utils import extract_main_slug
 
 from depthai_nodes.ml.messages import (
     Classifications,
@@ -13,10 +14,6 @@ from depthai_nodes.ml.messages import (
     Map2D,
     SegmentationMask,
 )
-
-
-def extract_main_slug(model_slug: str) -> str:
-    return model_slug.split("/")[1].split(":")[0]
 
 
 def load_expected_output(model: str, parser: str) -> Dict[str, Any]:
