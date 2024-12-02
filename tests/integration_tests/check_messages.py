@@ -24,6 +24,15 @@ def load_expected_output(model: str, parser: str) -> Dict[str, Any]:
 
 
 def check_classification_msg(message: Classifications, expected_output: Dict[str, Any]):
+    """
+    Expected output format:
+    {
+        "model": "luxonis/efficientnet-lite:lite0-224x224",
+        "parser": "ClassificationParser",
+        "class": "car",
+        "score": 0.9
+    }
+    """
     print(
         f"Expected top class: {expected_output['class']}, predicted top class: {message.top_class}"
     )
@@ -37,6 +46,13 @@ def check_classification_msg(message: Classifications, expected_output: Dict[str
 def check_classification_sequence_msg(
     message: Classifications, expected_output: Dict[str, Any]
 ):
+    """
+    Expected output format:
+    {
+        "model": "luxonis/efficientnet-lite:lite0-224x224",
+        "parser": "ClassificationSequenceParser",
+        "class": ['HELLO']
+    """
     print(
         f"Expected top class: {expected_output['class']}, predicted top class: {message.classes}"
     )
@@ -50,6 +66,14 @@ def check_classification_sequence_msg(
 
 
 def check_embeddings_msg(message: dai.NNData, expected_output: Dict[str, Any]):
+    """
+    Expected output format:
+    {
+        "model": "luxonis/arcface:lfw-112x112",
+        "parser": "EmbeddingsParser",
+        "embeddings": array([[-9.47265625e-02, -1.23901367e-01,...]])
+    }
+    """
     outputs = message.getAllLayerNames()
     assert len(outputs) == 1, "The number of outputs must be 1."
     embeddings = message.getTensor(outputs[0])
@@ -66,6 +90,14 @@ def check_embeddings_msg(message: dai.NNData, expected_output: Dict[str, Any]):
 def check_fastsam_msg(
     message: SegmentationMask, expected_output: Dict[str, Any], threshold: float = 0.9
 ):
+    """
+    Expected output format:
+    {
+        "model": "luxonis/fastsam-s:512x288",
+        "parser": "FastSAMParser",
+        "mask": np.array([[0, 0, 0, ..., 0, 0, 0]])
+    }
+    """
     mask = message.mask
 
     expected_mask = expected_output["mask"]
@@ -93,6 +125,13 @@ def check_keypoints_msg(
     expected_output: Dict[str, Any],
     distance_threshold: float = 0.001,
 ):
+    """
+    Expected output format:
+    {
+        "model": "luxonis/mediapipe-face-landmarker:192x192",
+        "parser": "KeypointParser",
+        "keypoints": [[0.1, 0.2], ...]
+    """
     keypoints = [[kp.x, kp.y] for kp in message.keypoints]
     keypoints = np.array(keypoints)
     expected_keypoints = np.array(expected_output["keypoints"])
@@ -117,6 +156,14 @@ def check_keypoints_msg(
 
 
 def check_image_msg(message: dai.ImgFrame, expected_output: Dict[str, Any]):
+    """
+    Expected output format:
+    {
+        "model": "luxonis/dncnn3:240x320",
+        "parser": "ImageOutputParser",
+        "output": np.array([[0, 0, 0, ..., 0, 0, 0]])
+    }
+    """
     image = message.getCvFrame()
     expected_image = expected_output["output"]
     print(
@@ -129,6 +176,13 @@ def check_image_msg(message: dai.ImgFrame, expected_output: Dict[str, Any]):
 
 
 def check_cluster_msg(message: Clusters, expected_output: Dict[str, Any]):
+    """
+    Expected output format:
+    {
+        "model": "luxonis/ultra-fast-lane-detection:culane-800x288",
+        "parser": "LaneDetectionParser",
+        "clusters": [[[0.1, 0.2], ...]]
+    """
     clusters = message.clusters
     expected_clusters = expected_output["clusters"]
     clusters_list = []
@@ -150,6 +204,14 @@ def check_cluster_msg(message: Clusters, expected_output: Dict[str, Any]):
 
 
 def check_map_msg(message: Map2D, expected_output: Dict[str, Any]):
+    """
+    Expected output format:
+    {
+        "model": "luxonis/dm-count:sha-144x256",
+        "parser": "MapOutputParser",
+        "map": np.array([[0, 0, 0, ..., 0, 0, 0]])
+    }
+    """
     map_tensor = message.map
     expected_map = expected_output["map"]
     print(
@@ -164,6 +226,27 @@ def check_map_msg(message: Map2D, expected_output: Dict[str, Any]):
 def check_detection_msg(
     message: ImgDetectionsExtended, expected_output: Dict[str, Any]
 ):
+    """
+    Expected output format:
+    {
+        "model": "luxonis/scrfd-face-detection:10g-640x640",
+        "parser": "SCRFDParser",
+        "detections": [
+            {
+                "confidence": 0.9,
+                "label": "person",
+                "x_center": 0.1,
+                "y_center": 0.2,
+                "width": 0.3,
+                "height": 0.4,
+                "angle": 0.5,
+                "keypoints": [[0.1, 0.2, 0.3], ...],
+                "mask": np.array([[0, 0, 0, ..., 0, 0, 0]])
+            },
+            ...
+        ]
+    }
+    """
     predicted_detections = []
     expected_detections: List[Dict[str, Any]] = expected_output["detections"]
 
