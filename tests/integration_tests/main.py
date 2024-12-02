@@ -21,17 +21,24 @@ def main():
     arg_parser.add_argument(
         "-p", "--parser", default="", help="Name of the specific parser to test."
     )
+    arg_parser.add_argument(
+        "-d", "--download", action="store_true", help="Download test files"
+    )
 
     args = arg_parser.parse_args()
     models = args.model
     run_all = args.all
     parser = args.parser
+    download = args.download
 
     if os.path.exists("nn_datas"):
         print()
         print("Folder `nn_datas` with test files already exists. Skipping download.")
         print()
     else:
+        download_test_files()
+
+    if download:
         download_test_files()
 
     print(f"Run all tests: {run_all}")
@@ -61,20 +68,18 @@ def main():
         if model in value
     ]
 
-    for model in models:
-        print(f"Running tests for model {model}")
-        command = [
-            "parser_test.py",
-            f"--models={models}",
-            f"--parsers={parsers}",
-            "-v",
-            "--tb=no",
-            "-r a",
-            "--log-cli-level=DEBUG",
-            "--color=yes",
-        ]
-        exitcode = pytest.main(command)
-        sys.exit(exitcode)
+    command = [
+        "parser_test.py",
+        f"--models={models}",
+        f"--parsers={parsers}",
+        "-v",
+        "--tb=no",
+        "-r a",
+        "--log-cli-level=DEBUG",
+        "--color=yes",
+    ]
+    exitcode = pytest.main(command)
+    sys.exit(exitcode)
 
 
 if __name__ == "__main__":
