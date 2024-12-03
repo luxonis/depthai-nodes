@@ -17,11 +17,18 @@ def get_parametrized_values(models: List[str], parsers: List[str]) -> List[List[
 
     devices = dai.Device.getAllConnectedDevices()
     if not devices:
-        pytest.skip("Couldn't find any devices.")
+        pytest.skip("Couldn't find any connected devices.")
 
     devices = [
         ("RVC2" if "MYRIAD" in device.platform.name else "RVC4", device.getMxId())
         for device in devices
+    ]
+
+    unique_devices = set()
+    devices = [
+        item
+        for item in devices
+        if item[0] not in unique_devices and not unique_devices.add(item[0])
     ]
 
     if models:
