@@ -1,4 +1,4 @@
-name: End-to-End Depthai-nodes tests
+name: Integration tests for parsers.
 
 on:
   workflow_dispatch:
@@ -6,18 +6,18 @@ on:
       additional-parameter:
         description: 'Additional parameter: -all or -p <parser_name>. Default: -all. If -p is used: -p <parser_name>'
         required: true
-        default: '-all'
+        default: '-all --download'
       branch:
         description: 'Branch to run the tests on. Default: main'
         required: true
         default: 'main'
       testbed:
-        description: 'Testbed to run the tests on. Default: oak4-pro'
+        description: 'Testbed to run the tests on. Default: oak4-s'
         required: true
-        default: 'oak4-pro'
+        default: 'oak4-s'
 
 jobs:
-  HIL-test:
+  Integration-test:
     runs-on: ubuntu-latest
 
     strategy:
@@ -54,7 +54,7 @@ jobs:
           
       - name: Run Test
         run: |
-          CMD="hil --testbed ${{ github.event.inputs.testbed }} --reservation-name 'depthai_nodes_ml_team' --commands 'cd /home/hil/depthai-nodes' 'git checkout main' 'git pull' 'git checkout ${{ github.event.inputs.branch }}' 'git pull' 'source venv/bin/activate' 'cd tests/end_to_end' 'source <(python setup_camera_ips.py)' 'export HUBAI_TEAM_ID=${{ secrets.HUBAI_TEAM_ID }}' 'export HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }}' 'python main.py ${{ github.event.inputs.additional-parameter }}' 'deactivate'"
+          CMD="hil --testbed ${{ github.event.inputs.testbed }} --reservation-name 'depthai_nodes_ml_team' --commands 'cd /home/hil/depthai-nodes' 'git checkout main' 'git pull' 'git checkout ${{ github.event.inputs.branch }}' 'git pull' 'source venv/bin/activate' 'cd tests/integration_tests' 'export B2_APPLICATION_KEY=${{ secrets.B2_APPLICATION_KEY }}' 'export B2_APPLICATION_KEY_ID=${{ secrets.B2_APPLICATION_KEY_ID }}' 'python main.py ${{ github.event.inputs.additional-parameter }}' 'deactivate'"
           eval $CMD
 
       - name: Stop WireGuard

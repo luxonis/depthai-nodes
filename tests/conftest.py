@@ -11,3 +11,7 @@ def pytest_addoption(parser):
         default="",
         help="RVC platform to run the tests on.",
     )
+    parser.addoption(
+        "--models", action="store", default="", help="Model slug from the ZOO."
+    )
+    parser.addoption("--parsers", action="store", default="", help="Parsers to test.")
