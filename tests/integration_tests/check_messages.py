@@ -139,7 +139,6 @@ def check_segmentation_msg(
 def check_keypoints_msg(
     message: Keypoints,
     expected_output: Dict[str, Any],
-    distance_threshold: float = 0.001,
 ):
     """
     Expected output format:
@@ -164,15 +163,7 @@ def check_keypoints_msg(
         keypoints.shape == expected_keypoints.shape
     ), f"The shape of the keypoints is different. Expects {expected_keypoints.shape}, got {keypoints.shape}"
 
-    for gt_kpt in expected_keypoints:
-        min_dist = float("inf")
-        for pred_kpt in keypoints:
-            dist = (gt_kpt[0] - pred_kpt[0]) ** 2 + (gt_kpt[1] - pred_kpt[1]) ** 2
-            if dist < min_dist:
-                min_dist = dist
-        assert (
-            min_dist < distance_threshold
-        ), f"Expected min distance < {distance_threshold}, got {min_dist}"
+    np.testing.assert_allclose(keypoints, expected_keypoints, rtol=1e-2)
 
 
 def check_image_msg(message: dai.ImgFrame, expected_output: Dict[str, Any]):
