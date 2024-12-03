@@ -6,7 +6,7 @@ on:
       additional-parameter:
         description: 'Additional parameter: -all or -p <parser_name>. Default: -all. If -p is used: -p <parser_name>'
         required: true
-        default: '-all'
+        default: '-all --download'
       branch:
         description: 'Branch to run the tests on. Default: main'
         required: true
@@ -42,8 +42,8 @@ jobs:
       - name: Setup HIL Tools
         run: |
           cd hil_framework
-          sudo chmod +x setup_hil_tools.sh 
-          ./setup_hil_tools.sh -ga
+          sudo chmod +x ./setup/setup_hil_tools.sh 
+          ./setup/setup_hil_tools.sh -ga
           
       - name: Add HIL Tools to Path
         run: |
