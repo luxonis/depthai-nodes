@@ -42,13 +42,15 @@ device_platform = device.getPlatform().name
 
 # Get the model from the HubAI
 try:
-    model_description = dai.NNModelDescription(
-        model=model_slug, platform=device_platform
-    )
+    model_description = dai.NNModelDescription(model=model_slug, platform="RVC2")
     archive_path = dai.getModelFromZoo(model_description)
-except Exception as e:
-    print(f"Error: {e}")
-    exit(7)
+except Exception:
+    try:
+        model_description = dai.NNModelDescription(model=model_slug, platform="RVC4")
+        archive_path = dai.getModelFromZoo(model_description)
+    except Exception as e:
+        print(f"Error: {e}")
+        exit(7)
 
 try:
     nn_archive = dai.NNArchive(archive_path)

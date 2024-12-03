@@ -3,6 +3,7 @@ import subprocess
 import time
 from typing import List
 
+import depthai as dai
 import pytest
 
 
@@ -14,10 +15,25 @@ def models(request):
 def get_parametrized_values(models: List[str], parsers: List[str]) -> List[List[str]]:
     test_cases = []
 
+    devices = dai.Device.getAllConnectedDevices()
+    if not devices:
+        pytest.skip("Couldn't find any devices.")
+
+    devices = [
+        ("RVC2" if "MYRIAD" in device.platform.name else "RVC4", device.getMxId())
+        for device in devices
+    ]
+
     if models:
         models = ast.literal_eval(models)
         parsers = ast.literal_eval(parsers)
-        test_cases.extend([(model, parsers[i]) for i, model in enumerate(models)])
+        test_cases.extend(
+            [
+                (model, parsers[i], platform, mxid)
+                for i, model in enumerate(models)
+                for (platform, mxid) in devices
+            ]
+        )
 
     return test_cases
 
@@ -26,10 +42,10 @@ def pytest_generate_tests(metafunc):
     models = metafunc.config.getoption("models")
     parsers = metafunc.config.getoption("parsers")
     params = get_parametrized_values(models, parsers)
-    metafunc.parametrize("models, parsers", params)
+    metafunc.parametrize("models, parsers, platform, mxid", params)
 
 
-def test_parser(models, parsers):
+def test_parser(models, parsers, platform, mxid):
     time.sleep(5)  # device needs some time to finish previous pipeline
     if not models:
         raise ValueError("You have to pass models")
@@ -37,7 +53,7 @@ def test_parser(models, parsers):
     try:
         if models:
             subprocess.run(
-                f"python manual.py -m {models}",
+                f"python manual.py -m {models} -ip {mxid}",
                 shell=True,
                 check=True,
                 timeout=90,
