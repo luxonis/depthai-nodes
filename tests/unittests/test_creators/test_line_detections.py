@@ -66,7 +66,9 @@ def test_invalid_scores_value_type():
     with pytest.raises(
         ValueError, match="Scores should be of type float, got <class 'numpy.int64'>."
     ):
-        create_line_detection_message(np.array([[0.1, 0.2, 0.3, 0.4]]), np.array([1]))
+        create_line_detection_message(
+            np.array([[0.1, 0.2, 0.3, 0.4]]), np.array([1], dtype=np.int64)
+        )
 
 
 def test_mismatched_lines_scores_length():
