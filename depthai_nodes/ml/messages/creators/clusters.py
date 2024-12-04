@@ -25,7 +25,7 @@ def create_cluster_message(clusters: List[List[List[Union[float, int]]]]) -> Clu
         if not isinstance(cluster, list):
             raise TypeError(f"All clusters must be of type List, got {type(cluster)}")
         for point in cluster:
-            if isinstance(point, list):
+            if not isinstance(point, list):
                 raise TypeError(
                     f"All points in clusters must be of type List, got {type(point)}"
                 )
