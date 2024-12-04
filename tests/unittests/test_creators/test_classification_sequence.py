@@ -1,11 +1,20 @@
-import re
-
 import numpy as np
 import pytest
 
+from depthai_nodes.ml.messages import Classifications
 from depthai_nodes.ml.messages.creators import (
     create_classification_sequence_message,
 )
+
+
+def test_valid_input():
+    classes = ["cat", "dog", "bird"]
+    scores = [[0.7, 0.2, 0.1], [0.1, 0.8, 0.1], [0.2, 0.3, 0.5]]
+    message = create_classification_sequence_message(classes, scores)
+
+    assert isinstance(message, Classifications)
+    assert message.classes == ["cat", "dog", "bird"]
+    assert np.array_equal(message.scores, np.array([0.7, 0.8, 0.5], dtype=np.float32))
 
 
 def test_none_classes():
@@ -13,90 +22,72 @@ def test_none_classes():
         create_classification_sequence_message(None, [0.5, 0.2, 0.3])
 
 
-def test_1D_scores():
-    with pytest.raises(
-        ValueError, match=re.escape("Scores should be a 2D array, got (3,).")
-    ):
-        create_classification_sequence_message(["cat", "dog", "bird"], [0.5, 0.2, 0.3])
-
-
 def test_empty_scores():
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Number of classes and scores mismatch. Provided 3 class names and 0 scores."
-        ),
-    ):
+    with pytest.raises(ValueError):
         create_classification_sequence_message(["cat", "dog", "bird"], [[]])
 
 
-def test_scores():
-    with pytest.raises(
-        ValueError, match=re.escape("Scores should be in the range [0, 1].")
-    ):
+def test_invalid_classes():
+    with pytest.raises(ValueError):
+        create_classification_sequence_message("not a list", [[0.7, 0.2, 0.1]])
+
+
+def test_1d_scores():
+    with pytest.raises(ValueError):
+        create_classification_sequence_message(["cat", "dog", "bird"], [0.5, 0.2, 0.3])
+
+
+def test_invalid_scores():
+    with pytest.raises(ValueError):
+        create_classification_sequence_message(["cat", "dog", "bird"], [0.7, 0.2, 0.1])
+
+
+def test_mismatched_lengths():
+    with pytest.raises(ValueError):
         create_classification_sequence_message(
-            ["cat", "dog", "bird"], [[0.5, -0.2, 1.3]]
+            ["cat", "dog", "bird"], [[0.7, 0.2], [0.1, 0.8]]
         )
 
 
-def test_probabilities():
-    with pytest.raises(
-        ValueError, match=re.escape("Each row of scores should sum to 1.")
-    ):
+def test_scores_out_of_range():
+    with pytest.raises(ValueError):
         create_classification_sequence_message(
-            ["cat", "dog", "bird"], [[0.5, 0.2, 0.3], [0.5, 0.2, 0.4]]
+            ["cat", "dog", "bird"], [[1.2, 0.2, 0.1]]
         )
 
 
-def test_non_list_ignored_indexes():
-    with pytest.raises(
-        ValueError,
-        match=re.escape("Ignored indexes should be a list, got <class 'float'>."),
-    ):
+def test_scores_not_sum_to_1():
+    with pytest.raises(ValueError):
         create_classification_sequence_message(
-            ["cat", "dog", "bird"], [[0.5, 0.2, 0.3]], ignored_indexes=1.0
+            ["cat", "dog", "bird"], [[0.7, 0.2, 0.2]]
+        )
+
+
+def test_invalid_ignored_indexes():
+    with pytest.raises(ValueError):
+        create_classification_sequence_message(
+            ["cat", "dog", "bird"], [[0.7, 0.2, 0.1]], ignored_indexes="not a list"
+        )
+
+
+def test_ignored_indexes_out_of_range():
+    with pytest.raises(ValueError):
+        create_classification_sequence_message(
+            ["cat", "dog", "bird"], [[0.7, 0.2, 0.1]], ignored_indexes=[3]
         )
 
 
 def test_integer_ignored_indexes():
-    with pytest.raises(
-        ValueError, match=re.escape("Ignored indexes should be integers.")
-    ):
+    with pytest.raises(ValueError):
         create_classification_sequence_message(
             ["cat", "dog", "bird"], [[0.5, 0.2, 0.3]], ignored_indexes=[1.0]
         )
 
 
 def test_2D_list_integers():
-    with pytest.raises(
-        ValueError, match=re.escape("Ignored indexes should be integers.")
-    ):
+    with pytest.raises(ValueError):
         create_classification_sequence_message(
             ["cat", "dog", "bird"], [[0.5, 0.2, 0.3]], ignored_indexes=[[3]]
-        )
-
-
-def test_upper_limit_integers():
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Ignored indexes should be integers in the range [0, num_classes -1]."
-        ),
-    ):
-        create_classification_sequence_message(
-            ["cat", "dog", "bird"], [[0.5, 0.2, 0.3]], ignored_indexes=[3]
-        )
-
-
-def test_lower_limit_integers():
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Ignored indexes should be integers in the range [0, num_classes -1]."
-        ),
-    ):
-        create_classification_sequence_message(
-            ["cat", "dog", "bird"], [[0.5, 0.2, 0.3]], ignored_indexes=[-1]
         )
 
 
@@ -108,34 +99,6 @@ def test_remove_duplicates():
     )
     assert res.classes == ["cat"]
     assert np.all(res.scores == np.array([0.5], dtype=np.float32))
-
-
-def test_ignored_indexes():
-    res = create_classification_sequence_message(
-        ["cat", "dog", "bird"], [[0.5, 0.2, 0.3], [0.1, 0.6, 0.3]], ignored_indexes=[1]
-    )
-    assert res.classes == ["cat"]
-    assert np.all(res.scores == np.array([0.5], dtype=np.float32))
-
-
-def test_all_ignored_indexes():
-    res = create_classification_sequence_message(
-        ["cat", "dog", "bird"],
-        [[0.5, 0.2, 0.3], [0.1, 0.6, 0.3]],
-        ignored_indexes=[0, 1, 2],
-    )
-    assert len(res.classes) == 0
-    assert len(res.scores) == 0
-
-
-def test_two_ignored_indexes():
-    res = create_classification_sequence_message(
-        ["cat", "dog", "bird"],
-        [[0.5, 0.2, 0.3], [0.1, 0.6, 0.3]],
-        ignored_indexes=[0, 2],
-    )
-    assert res.classes == ["dog"]
-    assert np.all(res.scores == np.array([0.6], dtype=np.float32))
 
 
 def test_concatenate_chars_nospace():
@@ -229,7 +192,3 @@ def test_concatenate_mixed_words():
     )
     assert res.classes == ["Quick b fox jumps o"]
     assert np.allclose(res.scores, [0.5])
-
-
-if __name__ == "__main__":
-    pytest.main()

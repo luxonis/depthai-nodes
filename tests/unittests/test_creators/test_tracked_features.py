@@ -1,5 +1,3 @@
-import re
-
 import depthai as dai
 import numpy as np
 import pytest
@@ -9,91 +7,86 @@ from depthai_nodes.ml.messages.creators.tracked_features import (
 )
 
 
-def test_reference_point_shape():
+def test_valid_input():
+    reference_points = np.array([[0.1, 0.2], [0.3, 0.4]])
+    target_points = np.array([[0.5, 0.6], [0.7, 0.8]])
+    message = create_tracked_features_message(reference_points, target_points)
+
+    assert isinstance(message, dai.TrackedFeatures)
+    assert len(message.trackedFeatures) == 4
+    assert all(
+        isinstance(feature, dai.TrackedFeature) for feature in message.trackedFeatures
+    )
+
+    expected_values = [
+        (0.1, 0.2, 0, 0),
+        (0.5, 0.6, 0, 1),
+        (0.3, 0.4, 1, 0),
+        (0.7, 0.8, 1, 1),
+    ]
+
+    for feature, (expected_x, expected_y, expected_id, expected_age) in zip(
+        message.trackedFeatures, expected_values
+    ):
+        assert np.allclose(feature.position.x, expected_x, atol=1e-3)
+        assert np.allclose(feature.position.y, expected_y, atol=1e-3)
+        assert np.allclose(feature.id, expected_id, atol=1e-3)
+        assert np.allclose(feature.age, expected_age, atol=1e-3)
+
+
+def test_invalid_reference_points_type():
+    target_points = np.array([[0.5, 0.6], [0.7, 0.8]])
+    with pytest.raises(
+        ValueError, match="reference_points should be numpy array, got <class 'list'>."
+    ):
+        create_tracked_features_message([[0.1, 0.2], [0.3, 0.4]], target_points)
+
+
+def test_invalid_reference_points_shape():
+    reference_points = np.array([0.1, 0.2, 0.3, 0.4])
+    target_points = np.array([[0.5, 0.6], [0.7, 0.8]])
+    with pytest.raises(ValueError, match="reference_points should be of shape"):
+        create_tracked_features_message(reference_points, target_points)
+
+
+def test_invalid_reference_points_dimension():
+    reference_points = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+    target_points = np.array([[0.5, 0.6], [0.7, 0.8]])
+    with pytest.raises(
+        ValueError, match="reference_points 2nd dimension should be of size 2"
+    ):
+        create_tracked_features_message(reference_points, target_points)
+
+
+def test_invalid_target_points_type():
+    reference_points = np.array([[0.1, 0.2], [0.3, 0.4]])
+    with pytest.raises(
+        ValueError, match="target_points should be numpy array, got <class 'list'>."
+    ):
+        create_tracked_features_message(reference_points, [[0.5, 0.6], [0.7, 0.8]])
+
+
+def test_invalid_target_points_shape():
+    reference_points = np.array([[0.1, 0.2], [0.3, 0.4]])
+    target_points = np.array([0.5, 0.6, 0.7, 0.8])
+    with pytest.raises(ValueError, match="target_points should be of shape"):
+        create_tracked_features_message(reference_points, target_points)
+
+
+def test_invalid_target_points_dimension():
+    reference_points = np.array([[0.1, 0.2], [0.3, 0.4]])
+    target_points = np.array([[0.5, 0.6, 0.7], [0.8, 0.9, 1.0]])
+    with pytest.raises(
+        ValueError, match="target_points 2nd dimension should be of size 2"
+    ):
+        create_tracked_features_message(reference_points, target_points)
+
+
+def test_mismatched_points_length():
+    reference_points = np.array([[0.1, 0.2], [0.3, 0.4]])
+    target_points = np.array([[0.5, 0.6]])
     with pytest.raises(
         ValueError,
-        match=re.escape(
-            "reference_points should be of shape (N,2) meaning [...,[x, y],...], got (3,)."
-        ),
+        match="The number of reference points and target points should be the same.",
     ):
-        create_tracked_features_message(
-            np.array([0.7, 0.3, 0.5]), target_points=np.array([[1, 2], [3, 4]])
-        )
-
-
-def test_reference_point_size():
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "reference_points 2nd dimension should be of size 2 e.g. [x, y], got 1."
-        ),
-    ):
-        create_tracked_features_message(
-            np.array([[0.7], [0.8]]), target_points=np.array([[1, 2], [3, 4]])
-        )
-
-
-def test_target_point_shape():
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "target_points should be of shape (N,2) meaning [...,[x, y],...], got (3,)."
-        ),
-    ):
-        create_tracked_features_message(
-            np.array([[0.7, 0.3], [0.5, 0.6]]), target_points=np.array([0.7, 0.3, 0.5])
-        )
-
-
-def test_target_point_size():
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "target_points 2nd dimension should be of size 2 e.g. [x, y], got 1."
-        ),
-    ):
-        create_tracked_features_message(
-            np.array([[0.7, 0.3], [0.5, 0.6]]), target_points=np.array([[1], [2]])
-        )
-
-
-def test_same_length():
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "The number of reference points and target points should be the same."
-        ),
-    ):
-        create_tracked_features_message(
-            np.array([[0.7, 0.3], [0.5, 0.6], [0.5, 0.5], [0.6, 0.5]]),
-            target_points=np.array([[1, 2], [3, 4]]),
-        )
-
-
-def test_return():
-    reference_points = np.array([[0.7, 0.3], [0.5, 0.6], [0.5, 0.5], [0.6, 0.5]])
-    target_points = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
-
-    msg = create_tracked_features_message(reference_points, target_points)
-
-    assert isinstance(msg, dai.TrackedFeatures)
-    assert len(msg.trackedFeatures) == 8
-    for i in range(4):
-        assert isinstance(msg.trackedFeatures[2 * i], dai.TrackedFeature)
-        assert np.isclose(msg.trackedFeatures[2 * i].position.x, reference_points[i][0])
-        assert np.isclose(msg.trackedFeatures[2 * i].position.y, reference_points[i][1])
-        assert msg.trackedFeatures[2 * i].id == i
-        assert msg.trackedFeatures[2 * i].age == 0
-        assert isinstance(msg.trackedFeatures[2 * i + 1], dai.TrackedFeature)
-        assert np.isclose(
-            msg.trackedFeatures[2 * i + 1].position.x, target_points[i][0]
-        )
-        assert np.isclose(
-            msg.trackedFeatures[2 * i + 1].position.y, target_points[i][1]
-        )
-        assert msg.trackedFeatures[2 * i + 1].id == i
-        assert msg.trackedFeatures[2 * i + 1].age == 1
-
-
-if __name__ == "__main__":
-    pytest.main()
+        create_tracked_features_message(reference_points, target_points)
