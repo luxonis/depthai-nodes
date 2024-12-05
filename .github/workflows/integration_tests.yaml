@@ -22,8 +22,6 @@ on:
   pull_request:
     branches:
       - main
-    types:
-      - ready_for_review
     paths:
       - 'depthai_nodes/**'
       - 'tests/integration_tests/**'
