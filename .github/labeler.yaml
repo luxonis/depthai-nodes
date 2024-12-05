@@ -1,7 +1,13 @@
 DevOps:
+  - head-branch:
+    - 'devops/*'
+    - 'ci/*'
   - changed-files:
     - any-glob-to-any-file: ".github/*"
 documentation:
+  - head-branch:
+    - 'documentation/*'
+    - 'docs/*'
   - changed-files:
     - any-glob-to-any-file: "docs/*"
 examples:
@@ -14,6 +20,8 @@ parsers:
   - changed-files:
     - any-glob-to-any-file: "depthai_nodes/ml/parsers/*"
 tests:
+  - head-branch:
+    - 'tests/*'
   - changed-files:
     - any-glob-to-any-file: "tests/*"
 enhancement:
