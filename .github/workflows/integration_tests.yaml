@@ -27,6 +27,7 @@ on:
     paths:
       - 'depthai_nodes/**'
       - 'tests/integration_tests/**'
+      - .github/workflows/integration_tests.yaml
 
 jobs:
   Integration-test:
