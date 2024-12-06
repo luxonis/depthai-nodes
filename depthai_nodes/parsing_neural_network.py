@@ -129,9 +129,10 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
 
     def getParser(self, parserID: int = 0) -> BaseParser:
         """Returns the parser node for the specified model head."""
-        assert (
-            parserID in self._parsers
-        ), f"Parser with ID {parserID} not found. Available parser IDs: {list(self._parsers.keys())}"
+        if parserID not in self._parsers:
+            raise KeyError(
+                f"Parser with ID {parserID} not found. Available parser IDs: {list(self._parsers.keys())}"
+            )
         return self._parsers[parserID]
 
     def setBackendProperties(self, setBackendProperties: Dict[str, str]) -> None:
