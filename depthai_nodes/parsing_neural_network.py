@@ -127,13 +127,16 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         """Sets the backend of the NeuralNetwork node."""
         self._nn.setBackend(setBackend)
 
-    def getParser(self, parserID: int = 0) -> BaseParser:
-        """Returns the parser node for the specified model head."""
-        if parserID not in self._parsers:
+    def getParser(self, index: int = 0) -> BaseParser:
+        """Returns the parser node for the given model head index.
+
+        If index is not provided, the first parser node is returned by default.
+        """
+        if index not in self._parsers:
             raise KeyError(
-                f"Parser with ID {parserID} not found. Available parser IDs: {list(self._parsers.keys())}"
+                f"Parser with ID {index} not found. Available parser IDs: {list(self._parsers.keys())}"
             )
-        return self._parsers[parserID]
+        return self._parsers[index]
 
     def setBackendProperties(self, setBackendProperties: Dict[str, str]) -> None:
         """Sets the backend properties of the NeuralNetwork node."""
