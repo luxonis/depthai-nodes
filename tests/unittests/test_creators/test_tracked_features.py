@@ -6,11 +6,12 @@ from depthai_nodes.ml.messages.creators.tracked_features import (
     create_tracked_features_message,
 )
 
+REFERENCE_POINTS = np.array([[0.1, 0.2], [0.3, 0.4]])
+TARGET_POINTS = np.array([[0.5, 0.6], [0.7, 0.8]])
+
 
 def test_valid_input():
-    reference_points = np.array([[0.1, 0.2], [0.3, 0.4]])
-    target_points = np.array([[0.5, 0.6], [0.7, 0.8]])
-    message = create_tracked_features_message(reference_points, target_points)
+    message = create_tracked_features_message(REFERENCE_POINTS, TARGET_POINTS)
 
     assert isinstance(message, dai.TrackedFeatures)
     assert len(message.trackedFeatures) == 4
@@ -35,58 +36,49 @@ def test_valid_input():
 
 
 def test_invalid_reference_points_type():
-    target_points = np.array([[0.5, 0.6], [0.7, 0.8]])
     with pytest.raises(
         ValueError, match="reference_points should be numpy array, got <class 'list'>."
     ):
-        create_tracked_features_message([[0.1, 0.2], [0.3, 0.4]], target_points)
+        create_tracked_features_message(REFERENCE_POINTS.tolist(), TARGET_POINTS)
 
 
 def test_invalid_reference_points_shape():
-    reference_points = np.array([0.1, 0.2, 0.3, 0.4])
-    target_points = np.array([[0.5, 0.6], [0.7, 0.8]])
     with pytest.raises(ValueError, match="reference_points should be of shape"):
-        create_tracked_features_message(reference_points, target_points)
+        create_tracked_features_message(REFERENCE_POINTS.flatten(), TARGET_POINTS)
 
 
 def test_invalid_reference_points_dimension():
     reference_points = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
-    target_points = np.array([[0.5, 0.6], [0.7, 0.8]])
     with pytest.raises(
         ValueError, match="reference_points 2nd dimension should be of size 2"
     ):
-        create_tracked_features_message(reference_points, target_points)
+        create_tracked_features_message(reference_points, TARGET_POINTS)
 
 
 def test_invalid_target_points_type():
-    reference_points = np.array([[0.1, 0.2], [0.3, 0.4]])
     with pytest.raises(
         ValueError, match="target_points should be numpy array, got <class 'list'>."
     ):
-        create_tracked_features_message(reference_points, [[0.5, 0.6], [0.7, 0.8]])
+        create_tracked_features_message(REFERENCE_POINTS, TARGET_POINTS.tolist())
 
 
 def test_invalid_target_points_shape():
-    reference_points = np.array([[0.1, 0.2], [0.3, 0.4]])
-    target_points = np.array([0.5, 0.6, 0.7, 0.8])
     with pytest.raises(ValueError, match="target_points should be of shape"):
-        create_tracked_features_message(reference_points, target_points)
+        create_tracked_features_message(REFERENCE_POINTS, TARGET_POINTS.flatten())
 
 
 def test_invalid_target_points_dimension():
-    reference_points = np.array([[0.1, 0.2], [0.3, 0.4]])
     target_points = np.array([[0.5, 0.6, 0.7], [0.8, 0.9, 1.0]])
     with pytest.raises(
         ValueError, match="target_points 2nd dimension should be of size 2"
     ):
-        create_tracked_features_message(reference_points, target_points)
+        create_tracked_features_message(REFERENCE_POINTS, target_points)
 
 
 def test_mismatched_points_length():
-    reference_points = np.array([[0.1, 0.2], [0.3, 0.4]])
     target_points = np.array([[0.5, 0.6]])
     with pytest.raises(
         ValueError,
         match="The number of reference points and target points should be the same.",
     ):
-        create_tracked_features_message(reference_points, target_points)
+        create_tracked_features_message(REFERENCE_POINTS, target_points)

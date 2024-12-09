@@ -4,51 +4,50 @@ import pytest
 from depthai_nodes.ml.messages import Map2D
 from depthai_nodes.ml.messages.creators.map import create_map_message
 
+MAP_ARRAY = np.random.rand(1, 480, 640).astype(np.float32)
+
 
 def test_valid_2d_input():
-    map_array = np.random.rand(480, 640).astype(np.float32)
-    message = create_map_message(map_array)
+    message = create_map_message(MAP_ARRAY[0])
 
     assert isinstance(message, Map2D)
     assert message.map.shape == (480, 640)
     assert message.map.dtype == np.float32
-    assert np.allclose(message.map, map_array)
+    assert np.allclose(message.map, MAP_ARRAY[0])
 
 
 def test_valid_3d_input_nhw():
-    map_array = np.random.rand(1, 480, 640).astype(np.float32)
-    message = create_map_message(map_array)
+    message = create_map_message(MAP_ARRAY)
 
     assert isinstance(message, Map2D)
     assert message.map.shape == (480, 640)
     assert message.map.dtype == np.float32
-    assert np.allclose(message.map, map_array[0])
+    assert np.allclose(message.map, MAP_ARRAY[0])
 
 
 def test_valid_3d_input_hwn():
-    map_array = np.random.rand(480, 640, 1).astype(np.float32)
-    message = create_map_message(map_array)
+    message = create_map_message(MAP_ARRAY.transpose(1, 2, 0))
 
     assert isinstance(message, Map2D)
     assert message.map.shape == (480, 640)
     assert message.map.dtype == np.float32
-    assert np.allclose(message.map, map_array[:, :, 0])
+    assert np.allclose(message.map, MAP_ARRAY[0])
 
 
 def test_min_max_scaling():
-    map_array = np.random.rand(480, 640).astype(np.float32) * 100
+    map_array = MAP_ARRAY[0] * 100
     message = create_map_message(map_array, min_max_scaling=True)
 
     assert isinstance(message, Map2D)
     assert message.map.shape == (480, 640)
     assert message.map.dtype == np.float32
     assert np.all(message.map >= 0) and np.all(message.map <= 1)
-    assert np.allclose(message.map, map_array / 100, atol=1e-3)
+    assert np.allclose(message.map, MAP_ARRAY[0], atol=1e-3)
 
 
 def test_invalid_type():
     with pytest.raises(ValueError, match="Expected numpy array, got <class 'list'>."):
-        create_map_message([[0.1, 0.2], [0.3, 0.4]])
+        create_map_message(MAP_ARRAY.tolist())
 
 
 def test_invalid_shape():

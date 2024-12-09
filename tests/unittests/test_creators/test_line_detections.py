@@ -4,6 +4,9 @@ import pytest
 from depthai_nodes.ml.messages import Line, Lines
 from depthai_nodes.ml.messages.creators.detection import create_line_detection_message
 
+LINE = np.array([[0.1, 0.2, 0.3, 0.4]])
+SCORE = np.array([0.9])
+
 
 def test_valid_input():
     lines = np.array([[0.1, 0.2, 0.3, 0.4], [0.5, 0.6, 0.7, 0.8]])
@@ -35,44 +38,38 @@ def test_invalid_lines_type():
     with pytest.raises(
         ValueError, match="Lines should be numpy array, got <class 'list'>."
     ):
-        create_line_detection_message([[0.1, 0.2, 0.3, 0.4]], np.array([0.9]))
+        create_line_detection_message(LINE.tolist(), SCORE)
 
 
 def test_invalid_lines_shape():
     with pytest.raises(ValueError, match="Lines should be of shape"):
-        create_line_detection_message(np.array([0.1, 0.2, 0.3, 0.4]), np.array([0.9]))
+        create_line_detection_message(LINE[0], SCORE)
 
 
 def test_invalid_lines_dimension():
     with pytest.raises(ValueError, match="Lines 2nd dimension should be of size 4"):
-        create_line_detection_message(np.array([[0.1, 0.2, 0.3]]), np.array([0.9]))
+        create_line_detection_message(LINE[:, :3], SCORE)
 
 
 def test_invalid_scores_type():
     with pytest.raises(
         ValueError, match="Scores should be numpy array, got <class 'list'>."
     ):
-        create_line_detection_message(np.array([[0.1, 0.2, 0.3, 0.4]]), [0.9])
+        create_line_detection_message(LINE, SCORE.tolist())
 
 
 def test_invalid_scores_shape():
     with pytest.raises(ValueError, match="Scores should be of shape"):
-        create_line_detection_message(
-            np.array([[0.1, 0.2, 0.3, 0.4]]), np.array([[0.9]])
-        )
+        create_line_detection_message(LINE, np.array([SCORE]))
 
 
 def test_invalid_scores_value_type():
     with pytest.raises(
         ValueError, match="Scores should be of type float, got <class 'numpy.int64'>."
     ):
-        create_line_detection_message(
-            np.array([[0.1, 0.2, 0.3, 0.4]]), np.array([1], dtype=np.int64)
-        )
+        create_line_detection_message(LINE, np.array([1], dtype=np.int64))
 
 
 def test_mismatched_lines_scores_length():
     with pytest.raises(ValueError, match="Scores should have same length as lines"):
-        create_line_detection_message(
-            np.array([[0.1, 0.2, 0.3, 0.4]]), np.array([0.9, 0.8])
-        )
+        create_line_detection_message(LINE, np.array([0.9, 0.8]))

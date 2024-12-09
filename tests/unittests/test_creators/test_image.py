@@ -6,10 +6,12 @@ from depthai_nodes.ml.messages.creators import (
     create_image_message,
 )
 
+IMAGE = np.random.randint(0, 256, (480, 640, 3), dtype=np.uint8)
+IMAGE_GRAY = np.random.randint(0, 256, (480, 640, 1), dtype=np.uint8)
+
 
 def test_valid_hwc_bgr():
-    image = np.random.randint(0, 256, (480, 640, 3), dtype=np.uint8)
-    img_frame = create_image_message(image, is_bgr=True)
+    img_frame = create_image_message(IMAGE, is_bgr=True)
 
     assert isinstance(img_frame, dai.ImgFrame)
     assert img_frame.getWidth() == 640
@@ -18,8 +20,7 @@ def test_valid_hwc_bgr():
 
 
 def test_valid_hwc_rgb():
-    image = np.random.randint(0, 256, (480, 640, 3), dtype=np.uint8)
-    img_frame = create_image_message(image, is_bgr=False)
+    img_frame = create_image_message(IMAGE, is_bgr=False)
 
     assert isinstance(img_frame, dai.ImgFrame)
     assert img_frame.getWidth() == 640
@@ -28,7 +29,7 @@ def test_valid_hwc_rgb():
 
 
 def test_valid_chw_bgr():
-    image = np.random.randint(0, 256, (3, 480, 640), dtype=np.uint8)
+    image = IMAGE.transpose(2, 0, 1)
     img_frame = create_image_message(image, is_bgr=True)
 
     assert isinstance(img_frame, dai.ImgFrame)
@@ -38,7 +39,7 @@ def test_valid_chw_bgr():
 
 
 def test_valid_chw_rgb():
-    image = np.random.randint(0, 256, (3, 480, 640), dtype=np.uint8)
+    image = IMAGE.transpose(2, 0, 1)
     img_frame = create_image_message(image, is_bgr=False)
 
     assert isinstance(img_frame, dai.ImgFrame)
@@ -48,8 +49,7 @@ def test_valid_chw_rgb():
 
 
 def test_valid_hwc_grayscale():
-    image = np.random.randint(0, 256, (480, 640, 1), dtype=np.uint8)
-    img_frame = create_image_message(image, is_bgr=True)
+    img_frame = create_image_message(IMAGE_GRAY, is_bgr=True)
 
     assert isinstance(img_frame, dai.ImgFrame)
     assert img_frame.getWidth() == 640
@@ -58,7 +58,7 @@ def test_valid_hwc_grayscale():
 
 
 def test_valid_chw_grayscale():
-    image = np.random.randint(0, 256, (1, 480, 640), dtype=np.uint8)
+    image = IMAGE_GRAY.transpose(2, 0, 1)
     img_frame = create_image_message(image, is_bgr=True)
 
     assert isinstance(img_frame, dai.ImgFrame)
@@ -74,7 +74,7 @@ def test_invalid_shape():
 
 
 def test_invalid_dtype():
-    image = np.random.rand(480, 640, 3).astype(np.float32)
+    image = IMAGE.astype(np.float32)
     with pytest.raises(
         ValueError, match="Expected int type, got <class 'numpy.float32'>."
     ):
