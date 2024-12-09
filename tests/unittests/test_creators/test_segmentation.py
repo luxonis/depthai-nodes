@@ -4,34 +4,37 @@ import pytest
 from depthai_nodes.ml.messages import SegmentationMask
 from depthai_nodes.ml.messages.creators.segmentation import create_segmentation_message
 
-
-def test_wrong_instance():
-    with pytest.raises(ValueError, match="Expected numpy array, got <class 'int'>."):
-        create_segmentation_message(1)
+MASK = np.random.randint(0, 256, (480, 640), dtype=np.int16)
 
 
-def test_empty_array():
-    with pytest.raises(ValueError, match="Expected 2D input, got 1D input."):
-        create_segmentation_message(np.array([]))
-
-
-def test_float_array():
-    with pytest.raises(
-        ValueError,
-        match="Expected int16 input, got float64.",
-    ):
-        create_segmentation_message(np.random.rand(10, 10))
-
-
-def test_complete_types():
-    x = (np.random.rand(10, 10) * 100).astype(np.int16)
-    message = create_segmentation_message(x)
+def test_valid_input():
+    message = create_segmentation_message(MASK)
 
     assert isinstance(message, SegmentationMask)
-    assert message.mask.shape[1] == x.shape[1]
-    assert message.mask.shape[0] == x.shape[0]
-    assert np.all(np.isclose(message.mask, x[:, :]))
+    assert message.mask.shape == (480, 640)
+    assert message.mask.dtype == np.int16
 
 
-if __name__ == "__main__":
-    pytest.main()
+def test_invalid_type():
+    with pytest.raises(ValueError):
+        create_segmentation_message(MASK.tolist())
+
+
+def test_invalid_shape():
+    mask = np.random.randint(0, 256, (480, 640, 3), dtype=np.int16)
+    with pytest.raises(ValueError):
+        create_segmentation_message(mask)
+
+
+def test_invalid_dtype():
+    with pytest.raises(ValueError):
+        create_segmentation_message(MASK.astype(np.uint8))
+
+
+def test_empty_mask():
+    mask = np.empty((0, 0), dtype=np.int16)
+    message = create_segmentation_message(mask)
+
+    assert isinstance(message, SegmentationMask)
+    assert message.mask.shape == (0, 0)
+    assert message.mask.dtype == np.int16

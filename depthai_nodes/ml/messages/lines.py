@@ -153,10 +153,12 @@ class Lines(dai.Buffer):
         @type value: dai.ImgTransformation
         @raise TypeError: If value is not a dai.ImgTransformation object.
         """
-        if not isinstance(value, dai.ImgTransformation):
-            raise TypeError(
-                f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
-            )
+
+        if value is not None:
+            if not isinstance(value, dai.ImgTransformation):
+                raise TypeError(
+                    f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
+                )
         self._transformation = value
 
     def getVisualizationMessage(self) -> dai.ImgAnnotations:

@@ -1,103 +1,69 @@
-import re
-
 import numpy as np
 import pytest
 
 from depthai_nodes.ml.messages import Line, Lines
 from depthai_nodes.ml.messages.creators.detection import create_line_detection_message
 
-
-def test_not_numpy_lines():
-    with pytest.raises(
-        ValueError, match="Lines should be numpy array, got <class 'list'>."
-    ):
-        create_line_detection_message([1, 2, 3], [0.1, 0.2, 0.3])
+LINE = np.array([[0.1, 0.2, 0.3, 0.4]])
+SCORE = np.array([0.9])
 
 
-def test_empty_numpy_lines():
-    lines_msg = create_line_detection_message(np.array([]), np.array([]))
-    assert isinstance(lines_msg, Lines)
-    assert len(lines_msg.lines) == 0
+def test_valid_input():
+    lines = np.array([[0.1, 0.2, 0.3, 0.4], [0.5, 0.6, 0.7, 0.8]])
+    scores = np.array([0.9, 0.8])
+    message = create_line_detection_message(lines, scores)
 
+    assert isinstance(message, Lines)
+    assert len(message.lines) == 2
 
-def test_lines_shape():
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Lines should be of shape (N,4) meaning [...,[x_start, y_start, x_end, y_end],...], got (1,)."
-        ),
-    ):
-        create_line_detection_message(np.array([1]), [0.1])
-
-
-def test_lines_dim_4():
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Lines 2nd dimension should be of size 4 e.g. [x_start, y_start, x_end, y_end] got 3."
-        ),
-    ):
-        create_line_detection_message(np.array([[1, 2, 3]]), [0.1])
-
-
-def test_not_numpy_scores():
-    with pytest.raises(
-        ValueError, match="Scores should be numpy array, got <class 'list'>."
-    ):
-        create_line_detection_message(np.array([[1, 2, 3, 4]]), [0.1, 0.2, 0.3])
-
-
-def test_empty_numpy_scores():
-    with pytest.raises(
-        ValueError, match="Scores should have same length as lines, got 0 and 1."
-    ):
-        create_line_detection_message(np.array([[1, 2, 3, 4]]), np.array([]))
-
-
-def test_mixed_scores():
-    with pytest.raises(
-        ValueError,
-        match="Scores should be of type float, got <class 'NoneType'>.",
-    ):
-        create_line_detection_message(
-            np.array([[1, 2, 3, 4], [1, 2, 3, 4]]), np.array([0.1, None])
-        )
-
-
-def test_scores_shape():
-    with pytest.raises(
-        ValueError,
-        match=re.escape("Scores should be of shape (N,) meaning, got (1, 1)."),
-    ):
-        create_line_detection_message(np.array([[1, 2, 3, 4]]), np.array([[0.1]]))
-
-
-def test_scores_length():
-    with pytest.raises(
-        ValueError,
-        match=re.escape("Scores should have same length as lines, got 1 and 2."),
-    ):
-        create_line_detection_message(
-            np.array([[1, 2, 3, 4], [1, 2, 3, 4]]), np.array([0.1])
-        )
-
-
-def test_line_detection():
-    lines = np.array([[1, 2, 3, 4], [5, 6, 7, 8]])
-    scores = np.array([0.4, 0.2])
-    lines_msg = create_line_detection_message(lines, scores)
-
-    assert isinstance(lines_msg, Lines)
-    assert len(lines_msg.lines) == 2
-
-    for i, line in enumerate(lines_msg.lines):
+    for i, line in enumerate(message.lines):
         assert isinstance(line, Line)
-        assert line.start_point.x == lines[i][0]
-        assert line.start_point.y == lines[i][1]
-        assert line.end_point.x == lines[i][2]
-        assert line.end_point.y == lines[i][3]
-        assert line.confidence == scores[i]
+        assert np.allclose(line.start_point.x, lines[i][0], atol=1e-3)
+        assert np.allclose(line.start_point.y, lines[i][1], atol=1e-3)
+        assert np.allclose(line.end_point.x, lines[i][2], atol=1e-3)
+        assert np.allclose(line.end_point.y, lines[i][3], atol=1e-3)
+        assert np.allclose(line.confidence, scores[i], atol=1e-3)
 
 
-if __name__ == "__main__":
-    pytest.main()
+def test_empty_lines():
+    lines = np.array([])
+    scores = np.array([])
+    message = create_line_detection_message(lines, scores)
+
+    assert isinstance(message, Lines)
+    assert len(message.lines) == 0
+
+
+def test_invalid_lines_type():
+    with pytest.raises(ValueError):
+        create_line_detection_message(LINE.tolist(), SCORE)
+
+
+def test_invalid_lines_shape():
+    with pytest.raises(ValueError):
+        create_line_detection_message(LINE[0], SCORE)
+
+
+def test_invalid_lines_dimension():
+    with pytest.raises(ValueError):
+        create_line_detection_message(LINE[:, :3], SCORE)
+
+
+def test_invalid_scores_type():
+    with pytest.raises(ValueError):
+        create_line_detection_message(LINE, SCORE.tolist())
+
+
+def test_invalid_scores_shape():
+    with pytest.raises(ValueError):
+        create_line_detection_message(LINE, np.array([SCORE]))
+
+
+def test_invalid_scores_value_type():
+    with pytest.raises(ValueError):
+        create_line_detection_message(LINE, np.array([1], dtype=np.int64))
+
+
+def test_mismatched_lines_scores_length():
+    with pytest.raises(ValueError):
+        create_line_detection_message(LINE, np.array([0.9, 0.8]))

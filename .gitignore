@@ -167,3 +167,5 @@ cython_debug/
 
 #VS Code
 .vscode/
+
+/tests/integration_tests/nn_datas

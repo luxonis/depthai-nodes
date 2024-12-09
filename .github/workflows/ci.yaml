@@ -2,12 +2,11 @@ name: CI
 
 on:
   pull_request:
-    branches: [ dev, main ]
+    branches: [ main ]
     paths:
       - 'depthai_nodes/**'
       - 'tests/**'
       - 'examples/**'
-      - 'docs/**'
       - .github/workflows/ci.yaml
 
 permissions:
@@ -16,25 +15,6 @@ permissions:
   checks: write
 
 jobs:
-  assigner:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Auto-assign
-        uses: toshimaru/auto-author-assign@v2.1.1
-
-  labeler:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-
-      - name: Labeler
-        uses: actions/labeler@v5
-        with:
-          configuration-path: .github/labeler.yaml
-
   pre-commit:
     runs-on: ubuntu-latest
     steps:
@@ -90,7 +70,6 @@ jobs:
     - name: Install depthai
       run: pip install --extra-index-url https://artifacts.luxonis.com/artifactory/luxonis-python-release-local/ depthai==3.0.0a6
 
-
     - name: Install package
       run: pip install -e .[dev]
 
@@ -107,3 +86,11 @@ jobs:
       uses: codecov/test-results-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: Upload coverage as artifact
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: coverage.xml
+        overwrite: true
