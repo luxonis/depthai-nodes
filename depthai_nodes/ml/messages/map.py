@@ -1,3 +1,4 @@
+import cv2
 import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
@@ -92,10 +93,22 @@ class Map2D(dai.Buffer):
         @type value: dai.ImgTransformation
         @raise TypeError: If value is not a dai.ImgTransformation object.
         """
-
         if value is not None:
             if not isinstance(value, dai.ImgTransformation):
                 raise TypeError(
                     f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
                 )
+
         self._transformation = value
+
+    def getVisualizationMessage(self) -> dai.ImgFrame:
+        """Returns default visualization message for 2D maps in the form of a
+        colormapped image."""
+        img_frame = dai.ImgFrame()
+        mask = self._map.copy()
+        if np.any(mask < 1):
+            mask = mask * 255
+        mask = mask.astype(np.uint8)
+
+        colored_mask = cv2.applyColorMap(mask, cv2.COLORMAP_PLASMA)
+        return img_frame.setCvFrame(colored_mask, dai.ImgFrame.Type.BGR888i)
