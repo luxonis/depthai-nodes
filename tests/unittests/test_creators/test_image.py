@@ -2,50 +2,59 @@ import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes.ml.messages.creators.image import create_image_message
+from depthai_nodes.ml.messages.creators import (
+    create_image_message,
+)
+
+IMAGE = np.random.randint(0, 256, (480, 640, 3), dtype=np.uint8)
+IMAGE_GRAY = np.random.randint(0, 256, (480, 640, 1), dtype=np.uint8)
 
 
-def test_wrong_shape():
-    img = np.random.random((10, 1, 10))
-    with pytest.raises(
-        ValueError, match="Unexpected image shape. Expected CHW or HWC, got"
-    ):
-        create_image_message(img)
+def test_valid_hwc_bgr():
+    img_frame = create_image_message(IMAGE, is_bgr=True)
 
-
-def test_grayscale():
-    img = (np.random.random((1, 100, 100)) * 255).astype(np.uint8)
-    img_frame = create_image_message(img)
-
-    assert img_frame.getType() == dai.ImgFrame.Type.GRAY8
-    assert img_frame.getWidth() == 100
-    assert img_frame.getHeight() == 100
-    assert np.all(np.isclose(img_frame.getFrame(), img[0, :, :]))
-
-
-def test_float_array():
-    img = np.array([[[0.5, 0.5, 0.5]]])
-    with pytest.raises(
-        ValueError, match="Expected int type, got <class 'numpy.float64'>."
-    ):
-        create_image_message(img)
-
-
-def test_bgr():
-    img = (np.random.random((3, 100, 100)) * 255).astype(np.uint8)
-    img_frame = create_image_message(img, False)
-
+    assert isinstance(img_frame, dai.ImgFrame)
+    assert img_frame.getWidth() == 640
+    assert img_frame.getHeight() == 480
     assert img_frame.getType() == dai.ImgFrame.Type.BGR888i
-    assert img_frame.getWidth() == 100
-    assert img_frame.getHeight() == 100
-    img = np.transpose(img, (1, 2, 0))
-    img_r = img[:, :, 0]
-    img_g = img[:, :, 1]
-    img_b = img[:, :, 2]
-    img = np.stack([img_b, img_g, img_r], axis=2)
-
-    assert np.all(np.isclose(img_frame.getFrame(), img))
+    assert np.array_equal(img_frame.getCvFrame(), IMAGE)
 
 
-if __name__ == "__main__":
-    pytest.main()
+def test_valid_hwc_rgb():
+    create_image_message(IMAGE, is_bgr=False)
+
+
+def test_valid_chw_bgr():
+    image = IMAGE.transpose(2, 0, 1)
+    create_image_message(image, is_bgr=True)
+
+
+def test_valid_chw_rgb():
+    image = IMAGE.transpose(2, 0, 1)
+    create_image_message(image, is_bgr=False)
+
+
+def test_valid_hwc_grayscale():
+    img_frame = create_image_message(IMAGE_GRAY, is_bgr=True)
+
+    assert isinstance(img_frame, dai.ImgFrame)
+    assert img_frame.getWidth() == 640
+    assert img_frame.getHeight() == 480
+    assert img_frame.getType() == dai.ImgFrame.Type.GRAY8
+
+
+def test_valid_chw_grayscale():
+    image = IMAGE_GRAY.transpose(2, 0, 1)
+    create_image_message(image, is_bgr=True)
+
+
+def test_invalid_shape():
+    image = np.random.randint(0, 256, (480, 640, 4), dtype=np.uint8)
+    with pytest.raises(ValueError):
+        create_image_message(image, is_bgr=True)
+
+
+def test_invalid_dtype():
+    image = IMAGE.astype(np.float32)
+    with pytest.raises(ValueError):
+        create_image_message(image, is_bgr=True)

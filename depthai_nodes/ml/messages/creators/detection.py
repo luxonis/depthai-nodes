@@ -55,7 +55,6 @@ def create_detection_message(
     @raise ValueError: If the keypoints are not a numpy array of shape (N, M, 2 or 3).
     @raise ValueError: If the masks are not a 3D numpy array of shape (img_height,
         img_width, N) or (N, img_height, img_width).
-    @raise ValueError: If the masks are not in the range [0, 1].
     @raise ValueError: If the keypoints scores are not a numpy array.
     @raise ValueError: If the keypoints scores are not of shape [n_detections,
         n_keypoints, 1].

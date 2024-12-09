@@ -1,37 +1,35 @@
-import numpy as np
 import pytest
 
-from depthai_nodes.ml.messages import Predictions
+from depthai_nodes.ml.messages import Prediction, Predictions
 from depthai_nodes.ml.messages.creators.regression import create_regression_message
 
-np.random.seed(0)
 
-
-def test_not_list_predictions():
-    predictions = 10
-    with pytest.raises(
-        ValueError, match="Predictions should be list, got <class 'int'>."
-    ):
-        create_regression_message(predictions)
-
-
-def test_not_float_predictions():
-    predictions = np.random.randint(0, 10, 5).tolist()
-    with pytest.raises(
-        ValueError,
-        match="Each prediction should be a float, got <class 'int'> instead.",
-    ):
-        create_regression_message(predictions)
-
-
-def test_predictions_object():
-    predictions = np.random.rand(10).tolist()
-
+def test_valid_input():
+    predictions = [0.1, 0.2, 0.3]
     message = create_regression_message(predictions)
 
     assert isinstance(message, Predictions)
-    assert predictions[0] == message.predictions[0].prediction
+    assert len(message.predictions) == 3
+    assert all(isinstance(pred, Prediction) for pred in message.predictions)
+    assert message.predictions[0].prediction == 0.1
+    assert message.predictions[1].prediction == 0.2
+    assert message.predictions[2].prediction == 0.3
 
 
-if __name__ == "__main__":
-    pytest.main()
+def test_empty_list():
+    predictions = []
+    message = create_regression_message(predictions)
+
+    assert isinstance(message, Predictions)
+    assert len(message.predictions) == 0
+
+
+def test_invalid_type():
+    with pytest.raises(ValueError):
+        create_regression_message("not a list")
+
+
+def test_invalid_prediction_type():
+    predictions = [0.1, "not a float", 0.3]
+    with pytest.raises(ValueError):
+        create_regression_message(predictions)
