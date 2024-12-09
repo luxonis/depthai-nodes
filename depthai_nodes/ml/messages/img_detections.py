@@ -264,7 +264,9 @@ class ImgDetectionsExtended(dai.Buffer):
         img_annotations = dai.ImgAnnotations()
         annotation = dai.ImgAnnotation()
         transformation = self.transformation
-        w, h = transformation.getSize()
+        w, h = 1, 1
+        if transformation is not None:  # remove once RVC2 supports ImgTransformation
+            w, h = transformation.getSize()
 
         for detection in self.detections:
             detection: ImgDetectionExtended = detection
@@ -273,7 +275,7 @@ class ImgDetectionsExtended(dai.Buffer):
             points = rotated_rect.getPoints()
             points = [dai.Point2f(point.x / w, point.y / h) for point in points]
             pointsAnnotation = dai.PointsAnnotation()
-            pointsAnnotation.type = dai.PointsAnnotationType.LINE_STRIP
+            pointsAnnotation.type = dai.PointsAnnotationType.LINE_LOOP
             pointsAnnotation.points = dai.VectorPoint2f(points)
             pointsAnnotation.outlineColor = OUTLINE_COLOR
             pointsAnnotation.thickness = 2.0
@@ -282,7 +284,7 @@ class ImgDetectionsExtended(dai.Buffer):
             text = dai.TextAnnotation()
             text.position = points[0]
             text.text = f"{detection.label_name} {int(detection.confidence * 100)}%"
-            text.fontSize = 20
+            text.fontSize = 15
             text.textColor = TEXT_COLOR
             text.backgroundColor = BACKGROUND_COLOR
             annotation.texts.append(text)
@@ -293,12 +295,11 @@ class ImgDetectionsExtended(dai.Buffer):
                     for keypoint in detection.keypoints
                 ]
                 keypointAnnotation = dai.PointsAnnotation()
-                keypointAnnotation.type = (
-                    dai.PointsAnnotationType.LINE_STRIP
-                )  # change to POINTS when fixed
+                keypointAnnotation.type = dai.PointsAnnotationType.POINTS
                 keypointAnnotation.points = dai.VectorPoint2f(keypoints)
                 keypointAnnotation.outlineColor = KEYPOINT_COLOR
-                keypointAnnotation.thickness = 2.0
+                keypointAnnotation.fillColor = KEYPOINT_COLOR
+                keypointAnnotation.thickness = 2
                 annotation.points.append(keypointAnnotation)
 
         img_annotations.annotations.append(annotation)

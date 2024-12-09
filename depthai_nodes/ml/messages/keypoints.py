@@ -190,17 +190,13 @@ class Keypoints(dai.Buffer):
         """Creates a default visualization message for the keypoints."""
         img_annotations = dai.ImgAnnotations()
         annotation = dai.ImgAnnotation()
-
         keypoints = [dai.Point2f(keypoint.x, keypoint.y) for keypoint in self.keypoints]
-
         pointsAnnotation = dai.PointsAnnotation()
-        pointsAnnotation.type = (
-            dai.PointsAnnotationType.LINE_LOOP
-        )  # change when points get adjusted
+        pointsAnnotation.type = dai.PointsAnnotationType.POINTS
         pointsAnnotation.points = dai.VectorPoint2f(keypoints)
         pointsAnnotation.outlineColor = KEYPOINT_COLOR
         pointsAnnotation.fillColor = KEYPOINT_COLOR
-        pointsAnnotation.thickness = 2.0
+        pointsAnnotation.thickness = 2
         annotation.points.append(pointsAnnotation)
 
         img_annotations.annotations.append(annotation)

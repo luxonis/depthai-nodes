@@ -146,11 +146,12 @@ class Clusters(dai.Buffer):
 
         for i, cluster in enumerate(self.clusters):
             pointsAnnotation = dai.PointsAnnotation()
-            pointsAnnotation.type = dai.PointsAnnotationType.LINE_LOOP
+            pointsAnnotation.type = dai.PointsAnnotationType.POINTS
             pointsAnnotation.points = dai.VectorPoint2f(cluster.points)
             r, g, b = color_mask[i]
             color = dai.Color(r, g, b)
             pointsAnnotation.outlineColor = color
+            pointsAnnotation.fillColor = color
             pointsAnnotation.thickness = 2.0
             annotation.points.append(pointsAnnotation)
 

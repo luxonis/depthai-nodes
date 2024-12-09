@@ -169,7 +169,7 @@ class Lines(dai.Buffer):
 
         for line in self.lines:
             pointsAnnotation = dai.PointsAnnotation()
-            pointsAnnotation.type = dai.PointsAnnotationType.LINE_LOOP
+            pointsAnnotation.type = dai.PointsAnnotationType.LINE_STRIP
             pointsAnnotation.points = dai.VectorPoint2f(
                 [line.start_point, line.end_point]
             )
