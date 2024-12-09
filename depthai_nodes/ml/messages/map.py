@@ -98,7 +98,7 @@ class Map2D(dai.Buffer):
                 raise TypeError(
                     f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
                 )
-                
+
         self._transformation = value
 
     def getVisualizationMessage(self) -> dai.ImgFrame:
