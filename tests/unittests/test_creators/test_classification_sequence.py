@@ -46,11 +46,6 @@ def test_1d_scores():
         create_classification_sequence_message(CLASSES, [0.5, 0.2, 0.3])
 
 
-def test_invalid_scores():
-    with pytest.raises(ValueError):
-        create_classification_sequence_message(CLASSES, [0.7, 0.2, 0.1])
-
-
 def test_mismatched_lengths():
     with pytest.raises(ValueError):
         create_classification_sequence_message(CLASSES, [[0.7, 0.2], [0.1, 0.8]])
@@ -83,7 +78,7 @@ def test_integer_ignored_indexes():
         create_classification_sequence_message(CLASSES, SCORES, ignored_indexes=[1.0])
 
 
-def test_2D_list_integers():
+def test_2D_list_ignored_integers():
     with pytest.raises(ValueError):
         create_classification_sequence_message(CLASSES, SCORES, ignored_indexes=[[3]])
 

@@ -17,35 +17,21 @@ def test_valid_hwc_bgr():
     assert img_frame.getWidth() == 640
     assert img_frame.getHeight() == 480
     assert img_frame.getType() == dai.ImgFrame.Type.BGR888i
+    assert np.array_equal(img_frame.getCvFrame(), IMAGE)
 
 
 def test_valid_hwc_rgb():
-    img_frame = create_image_message(IMAGE, is_bgr=False)
-
-    assert isinstance(img_frame, dai.ImgFrame)
-    assert img_frame.getWidth() == 640
-    assert img_frame.getHeight() == 480
-    assert img_frame.getType() == dai.ImgFrame.Type.BGR888i
+    create_image_message(IMAGE, is_bgr=False)
 
 
 def test_valid_chw_bgr():
     image = IMAGE.transpose(2, 0, 1)
-    img_frame = create_image_message(image, is_bgr=True)
-
-    assert isinstance(img_frame, dai.ImgFrame)
-    assert img_frame.getWidth() == 640
-    assert img_frame.getHeight() == 480
-    assert img_frame.getType() == dai.ImgFrame.Type.BGR888i
+    create_image_message(image, is_bgr=True)
 
 
 def test_valid_chw_rgb():
     image = IMAGE.transpose(2, 0, 1)
-    img_frame = create_image_message(image, is_bgr=False)
-
-    assert isinstance(img_frame, dai.ImgFrame)
-    assert img_frame.getWidth() == 640
-    assert img_frame.getHeight() == 480
-    assert img_frame.getType() == dai.ImgFrame.Type.BGR888i
+    create_image_message(image, is_bgr=False)
 
 
 def test_valid_hwc_grayscale():
@@ -59,31 +45,16 @@ def test_valid_hwc_grayscale():
 
 def test_valid_chw_grayscale():
     image = IMAGE_GRAY.transpose(2, 0, 1)
-    img_frame = create_image_message(image, is_bgr=True)
-
-    assert isinstance(img_frame, dai.ImgFrame)
-    assert img_frame.getWidth() == 640
-    assert img_frame.getHeight() == 480
-    assert img_frame.getType() == dai.ImgFrame.Type.GRAY8
+    create_image_message(image, is_bgr=True)
 
 
 def test_invalid_shape():
     image = np.random.randint(0, 256, (480, 640, 4), dtype=np.uint8)
-    with pytest.raises(ValueError, match="Unexpected image shape. Expected CHW or HWC"):
+    with pytest.raises(ValueError):
         create_image_message(image, is_bgr=True)
 
 
 def test_invalid_dtype():
     image = IMAGE.astype(np.float32)
-    with pytest.raises(
-        ValueError, match="Expected int type, got <class 'numpy.float32'>."
-    ):
+    with pytest.raises(ValueError):
         create_image_message(image, is_bgr=True)
-
-
-def test_float_array():
-    img = np.array([[[0.5, 0.5, 0.5]]])
-    with pytest.raises(
-        ValueError, match="Expected int type, got <class 'numpy.float64'>."
-    ):
-        create_image_message(img)

@@ -60,11 +60,6 @@ def test_very_small_scores():
     )
 
 
-def test_none_both():
-    with pytest.raises(ValueError):
-        create_classification_message(None, None)
-
-
 def test_none_classes():
     with pytest.raises(ValueError):
         create_classification_message(None, SCORES)

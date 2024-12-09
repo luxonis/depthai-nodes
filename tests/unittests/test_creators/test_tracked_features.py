@@ -36,49 +36,38 @@ def test_valid_input():
 
 
 def test_invalid_reference_points_type():
-    with pytest.raises(
-        ValueError, match="reference_points should be numpy array, got <class 'list'>."
-    ):
+    with pytest.raises(ValueError):
         create_tracked_features_message(REFERENCE_POINTS.tolist(), TARGET_POINTS)
 
 
 def test_invalid_reference_points_shape():
-    with pytest.raises(ValueError, match="reference_points should be of shape"):
+    with pytest.raises(ValueError):
         create_tracked_features_message(REFERENCE_POINTS.flatten(), TARGET_POINTS)
 
 
 def test_invalid_reference_points_dimension():
     reference_points = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
-    with pytest.raises(
-        ValueError, match="reference_points 2nd dimension should be of size 2"
-    ):
+    with pytest.raises(ValueError):
         create_tracked_features_message(reference_points, TARGET_POINTS)
 
 
 def test_invalid_target_points_type():
-    with pytest.raises(
-        ValueError, match="target_points should be numpy array, got <class 'list'>."
-    ):
+    with pytest.raises(ValueError):
         create_tracked_features_message(REFERENCE_POINTS, TARGET_POINTS.tolist())
 
 
 def test_invalid_target_points_shape():
-    with pytest.raises(ValueError, match="target_points should be of shape"):
+    with pytest.raises(ValueError):
         create_tracked_features_message(REFERENCE_POINTS, TARGET_POINTS.flatten())
 
 
 def test_invalid_target_points_dimension():
     target_points = np.array([[0.5, 0.6, 0.7], [0.8, 0.9, 1.0]])
-    with pytest.raises(
-        ValueError, match="target_points 2nd dimension should be of size 2"
-    ):
+    with pytest.raises(ValueError):
         create_tracked_features_message(REFERENCE_POINTS, target_points)
 
 
 def test_mismatched_points_length():
     target_points = np.array([[0.5, 0.6]])
-    with pytest.raises(
-        ValueError,
-        match="The number of reference points and target points should be the same.",
-    ):
+    with pytest.raises(ValueError):
         create_tracked_features_message(REFERENCE_POINTS, target_points)

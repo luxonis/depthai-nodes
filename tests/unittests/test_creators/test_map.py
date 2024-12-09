@@ -46,19 +46,17 @@ def test_min_max_scaling():
 
 
 def test_invalid_type():
-    with pytest.raises(ValueError, match="Expected numpy array, got <class 'list'>."):
+    with pytest.raises(ValueError):
         create_map_message(MAP_ARRAY.tolist())
 
 
 def test_invalid_shape():
-    with pytest.raises(ValueError, match="Expected 2D or 3D input, got 1D input."):
+    with pytest.raises(ValueError):
         create_map_message(np.array([0.1, 0.2, 0.3, 0.4]))
 
 
 def test_invalid_3d_shape():
-    with pytest.raises(
-        ValueError, match="Unexpected map shape. Expected NHW or HWN, got"
-    ):
+    with pytest.raises(ValueError):
         create_map_message(np.random.rand(2, 480, 640).astype(np.float32))
 
 

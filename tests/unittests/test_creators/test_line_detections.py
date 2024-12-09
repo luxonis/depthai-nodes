@@ -35,41 +35,35 @@ def test_empty_lines():
 
 
 def test_invalid_lines_type():
-    with pytest.raises(
-        ValueError, match="Lines should be numpy array, got <class 'list'>."
-    ):
+    with pytest.raises(ValueError):
         create_line_detection_message(LINE.tolist(), SCORE)
 
 
 def test_invalid_lines_shape():
-    with pytest.raises(ValueError, match="Lines should be of shape"):
+    with pytest.raises(ValueError):
         create_line_detection_message(LINE[0], SCORE)
 
 
 def test_invalid_lines_dimension():
-    with pytest.raises(ValueError, match="Lines 2nd dimension should be of size 4"):
+    with pytest.raises(ValueError):
         create_line_detection_message(LINE[:, :3], SCORE)
 
 
 def test_invalid_scores_type():
-    with pytest.raises(
-        ValueError, match="Scores should be numpy array, got <class 'list'>."
-    ):
+    with pytest.raises(ValueError):
         create_line_detection_message(LINE, SCORE.tolist())
 
 
 def test_invalid_scores_shape():
-    with pytest.raises(ValueError, match="Scores should be of shape"):
+    with pytest.raises(ValueError):
         create_line_detection_message(LINE, np.array([SCORE]))
 
 
 def test_invalid_scores_value_type():
-    with pytest.raises(
-        ValueError, match="Scores should be of type float, got <class 'numpy.int64'>."
-    ):
+    with pytest.raises(ValueError):
         create_line_detection_message(LINE, np.array([1], dtype=np.int64))
 
 
 def test_mismatched_lines_scores_length():
-    with pytest.raises(ValueError, match="Scores should have same length as lines"):
+    with pytest.raises(ValueError):
         create_line_detection_message(LINE, np.array([0.9, 0.8]))

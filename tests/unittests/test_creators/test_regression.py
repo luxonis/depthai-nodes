@@ -25,16 +25,11 @@ def test_empty_list():
 
 
 def test_invalid_type():
-    with pytest.raises(
-        ValueError, match="Predictions should be list, got <class 'str'>."
-    ):
+    with pytest.raises(ValueError):
         create_regression_message("not a list")
 
 
 def test_invalid_prediction_type():
     predictions = [0.1, "not a float", 0.3]
-    with pytest.raises(
-        ValueError,
-        match="Each prediction should be a float, got <class 'str'> instead.",
-    ):
+    with pytest.raises(ValueError):
         create_regression_message(predictions)

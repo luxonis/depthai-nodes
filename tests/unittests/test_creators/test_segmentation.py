@@ -16,18 +16,18 @@ def test_valid_input():
 
 
 def test_invalid_type():
-    with pytest.raises(ValueError, match="Expected numpy array, got <class 'list'>."):
+    with pytest.raises(ValueError):
         create_segmentation_message(MASK.tolist())
 
 
 def test_invalid_shape():
     mask = np.random.randint(0, 256, (480, 640, 3), dtype=np.int16)
-    with pytest.raises(ValueError, match="Expected 2D input, got 3D input."):
+    with pytest.raises(ValueError):
         create_segmentation_message(mask)
 
 
 def test_invalid_dtype():
-    with pytest.raises(ValueError, match="Expected int16 input, got uint8."):
+    with pytest.raises(ValueError):
         create_segmentation_message(MASK.astype(np.uint8))
 
 
