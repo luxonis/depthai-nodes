@@ -195,7 +195,7 @@ class MPPalmDetectionParser(DetectionParser):
             angles = np.round(angles, 0)
 
             detections_msg = create_detection_message(
-                bboxes=bboxes, scores=scores, angles=angles
+                bboxes=bboxes, scores=scores, angles=angles, keypoints=points
             )
             detections_msg.setTimestamp(output.getTimestamp())
             detections_msg.transformation = output.getTransformation()

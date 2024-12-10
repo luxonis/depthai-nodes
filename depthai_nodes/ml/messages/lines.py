@@ -2,6 +2,8 @@ from typing import List
 
 import depthai as dai
 
+from depthai_nodes.ml.helpers.constants import OUTLINE_COLOR
+
 
 class Line(dai.Buffer):
     """Line class for storing a line.
@@ -158,3 +160,25 @@ class Lines(dai.Buffer):
                     f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
                 )
         self._transformation = value
+
+    def getVisualizationMessage(self) -> dai.ImgAnnotations:
+        """Returns default visualization message for lines.
+
+        The message adds lines to the image.
+        """
+        img_annotation = dai.ImgAnnotations()
+        annotation = dai.ImgAnnotation()
+
+        for line in self.lines:
+            pointsAnnotation = dai.PointsAnnotation()
+            pointsAnnotation.type = dai.PointsAnnotationType.LINE_STRIP
+            pointsAnnotation.points = dai.VectorPoint2f(
+                [line.start_point, line.end_point]
+            )
+            pointsAnnotation.outlineColor = OUTLINE_COLOR
+            pointsAnnotation.thickness = 2.0
+            annotation.points.append(pointsAnnotation)
+
+        img_annotation.annotations.append(annotation)
+        img_annotation.setTimestamp(self.getTimestamp())
+        return img_annotation

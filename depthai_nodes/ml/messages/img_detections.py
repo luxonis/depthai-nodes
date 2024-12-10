@@ -4,6 +4,13 @@ import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
 
+from depthai_nodes.ml.helpers.constants import (
+    BACKGROUND_COLOR,
+    KEYPOINT_COLOR,
+    OUTLINE_COLOR,
+    TEXT_COLOR,
+)
+
 from .keypoints import Keypoint
 from .segmentation import SegmentationMask
 
@@ -199,7 +206,7 @@ class ImgDetectionsExtended(dai.Buffer):
         self._detections = value
 
     @property
-    def masks(self) -> NDArray[np.int8]:
+    def masks(self) -> NDArray[np.int16]:
         """Returns the segmentation masks stored in a single numpy array.
 
         @return: Segmentation masks.
@@ -253,3 +260,49 @@ class ImgDetectionsExtended(dai.Buffer):
                     f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
                 )
         self._transformation = value
+
+    def getVisualizationMessage(self) -> dai.ImgAnnotations:
+        img_annotations = dai.ImgAnnotations()
+        annotation = dai.ImgAnnotation()
+        transformation = self.transformation
+        w, h = 1, 1
+        if transformation is not None:  # remove once RVC2 supports ImgTransformation
+            w, h = transformation.getSize()
+
+        for detection in self.detections:
+            detection: ImgDetectionExtended = detection
+            rotated_rect = detection.rotated_rect
+            rotated_rect = rotated_rect.denormalize(w, h)
+            points = rotated_rect.getPoints()
+            points = [dai.Point2f(point.x / w, point.y / h) for point in points]
+            pointsAnnotation = dai.PointsAnnotation()
+            pointsAnnotation.type = dai.PointsAnnotationType.LINE_LOOP
+            pointsAnnotation.points = dai.VectorPoint2f(points)
+            pointsAnnotation.outlineColor = OUTLINE_COLOR
+            pointsAnnotation.thickness = 2.0
+            annotation.points.append(pointsAnnotation)
+
+            text = dai.TextAnnotation()
+            text.position = points[0]
+            text.text = f"{detection.label_name} {int(detection.confidence * 100)}%"
+            text.fontSize = 15
+            text.textColor = TEXT_COLOR
+            text.backgroundColor = BACKGROUND_COLOR
+            annotation.texts.append(text)
+
+            if len(detection.keypoints) > 0:
+                keypoints = [
+                    dai.Point2f(keypoint.x, keypoint.y)
+                    for keypoint in detection.keypoints
+                ]
+                keypointAnnotation = dai.PointsAnnotation()
+                keypointAnnotation.type = dai.PointsAnnotationType.POINTS
+                keypointAnnotation.points = dai.VectorPoint2f(keypoints)
+                keypointAnnotation.outlineColor = KEYPOINT_COLOR
+                keypointAnnotation.fillColor = KEYPOINT_COLOR
+                keypointAnnotation.thickness = 2
+                annotation.points.append(keypointAnnotation)
+
+        img_annotations.annotations.append(annotation)
+        img_annotations.setTimestamp(self.getTimestamp())
+        return img_annotations
