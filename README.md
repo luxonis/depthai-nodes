@@ -25,7 +25,7 @@ The `depthai_nodes` package requires Python 3.8 or later and `depthai v3` instal
 While the `depthai v3` is not yet released on PyPI, you can install it with the following command:
 
 ```bash
-pip install --extra-index-url https://artifacts.luxonis.com/artifactory/luxonis-python-release-local/  depthai==3.0.0a5
+pip install --extra-index-url https://artifacts.luxonis.com/artifactory/luxonis-python-release-local/  depthai==3.0.0a10
 ```
 
 The `depthai_nodes` package is hosted on PyPI, so you can install it with `pip`.
