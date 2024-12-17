@@ -206,22 +206,21 @@ class XFeatBaseParser(BaseParser):
         @return: Tuple of features, keypoints, and heatmaps.
         @rtype: Tuple[np.ndarray, np.ndarray, np.ndarray]
         """
-        feats = output.getTensor(self.output_layer_feats, dequantize=True).astype(
-            np.float32
-        )
-        keypoints = output.getTensor(
-            self.output_layer_keypoints, dequantize=True
+        feats = output.getTensor(
+            self.output_layer_feats,
+            dequantize=True,
+            storageOrder=dai.TensorInfo.StorageOrder.NCHW,
         ).astype(np.float32)
-        heatmaps = output.getTensor(self.output_layer_heatmaps, dequantize=True).astype(
-            np.float32
-        )
-
-        if len(feats.shape) == 3:
-            feats = feats.reshape((1,) + feats.shape).transpose(0, 3, 1, 2)
-        if len(keypoints.shape) == 3:
-            keypoints = keypoints.reshape((1,) + keypoints.shape).transpose(0, 3, 1, 2)
-        if len(heatmaps.shape) == 3:
-            heatmaps = heatmaps.reshape((1,) + heatmaps.shape).transpose(0, 3, 1, 2)
+        keypoints = output.getTensor(
+            self.output_layer_keypoints,
+            dequantize=True,
+            storageOrder=dai.TensorInfo.StorageOrder.NCHW,
+        ).astype(np.float32)
+        heatmaps = output.getTensor(
+            self.output_layer_heatmaps,
+            dequantize=True,
+            storageOrder=dai.TensorInfo.StorageOrder.NCHW,
+        ).astype(np.float32)
 
         return feats, keypoints, heatmaps
 
