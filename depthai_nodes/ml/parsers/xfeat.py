@@ -199,7 +199,8 @@ class XFeatBaseParser(BaseParser):
         self, output: dai.NNData
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Extracts the tensors from the output. It returns the features, keypoints, and
-        heatmaps. It also handles the reshaping of the tensors.
+        heatmaps. It also handles the reshaping of the tensors by requesting the NCHW
+        storage order.
 
         @param output: Output from the Neural Network node.
         @type output: dai.NNData
