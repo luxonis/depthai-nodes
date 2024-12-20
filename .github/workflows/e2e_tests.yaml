@@ -12,7 +12,7 @@ on:
         required: true
         default: 'main'
       testbed:
-        description: 'Testbed to run the tests on. Available: oak4-pro, oak4-s'.
+        description: 'Testbed to run the tests on. Available: oak4-pro, oak4-s'
         required: true
         default: 'oak4-pro'
       depthai-version:
