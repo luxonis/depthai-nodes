@@ -13,7 +13,13 @@ def unnormalize_image(image, normalize=True):
     """
     # Normalize the image tensor to the range [0, 1]
     if normalize:
-        image = (image - image.min()) / (image.max() - image.min())
+        min_val = image.min()
+        max_val = image.max()
+        if max_val != min_val:
+            image = (image - min_val) / (max_val - min_val)
+        else:
+            # Handle the case where all values in the image are the same
+            image = image - min_val
 
     # Scale to [0, 255] and clip the values to be in the proper range
     image = image * 255.0
