@@ -59,7 +59,16 @@ with open('nn_datas/ClassificationParser/efficientnet-lite_output.pkl', 'wb') as
 
 In the end, you should have all the files in the parser-specific directory inside `nn_datas` directory. You need to upload the parser directory to the B2 bucket.
 
-## Running the tests
+## Running the tests locally
 
 To run the tests, you can use the `main.py` script. You can use `--all` flag to test all parsers or test a specific parser with `-p` flag.
 You would need the B2 credentials to download the tests from the bucket and set it in the ENV variables `B2_APPLICATION_KEY_ID` and `B2_APPLICATION_KEY`.
+
+## Running the tests in the CI
+
+The integration tests are triggered in every PR. But you can also trigger them manually. Required parameters are:
+
+- `additional-parameter`: The parameter that specifies the desired test. Default is `-all` which runs tests on all parsers. The available options are: `-all`, `-p <parser_name>`.
+- `branch`: The branch on which the tests will be run. Default is `main`.
+- `testbed`: The testbed on which the tests will be run. Default is `oak4-s`. Available: `oak4-pro`, `oak4-s`.
+- `depthai-version`: The version of the DepthAI that will be used for the tests. Default is `3.0.0a6`.
