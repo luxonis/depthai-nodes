@@ -16,11 +16,8 @@ The project is in an alpha state, so it may be missing some critical features or
 
 ## Table of Contents
 
-- [DepthAI Nodes](#depthai-nodes)
-  - [Table of Contents](#table-of-contents)
-  - [Installation](#installation)
-    - [Manual installation](#manual-installation)
-  - [Contributing](#contributing)
+- [Installation](#installation)
+- [Contributing](#contributing)
 
 ## Installation
 
