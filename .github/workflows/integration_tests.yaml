@@ -18,7 +18,7 @@ on:
       depthai-version:
         description: 'Version of depthai to install. Default: alpha6'
         required: true
-        default: '3.0.0a6'
+        default: '3.0.0a11'
   pull_request:
     branches:
       - main
@@ -49,26 +49,26 @@ jobs:
       - name: Clone HIL Framework
         run: |
           git clone https://oauth2:${{secrets.GITLAB_TOKEN}}@gitlab.luxonis.com/luxonis/hil_lab/hil_framework.git --recursive
-      
+
       - name: Setup HIL Tools
         run: |
           cd hil_framework
-          sudo chmod +x ./setup/setup_hil_tools.sh 
+          sudo chmod +x ./setup/setup_hil_tools.sh
           ./setup/setup_hil_tools.sh -ga
-          
+
       - name: Add HIL Tools to Path
         run: |
           cd hil_framework
           echo "$(pwd)/lib_testbed/tools" >> $GITHUB_PATH
           echo "PYTHONPATH="$PYTHONPATH:$(pwd)"" >> $GITHUB_ENV
           echo "HIL_FRAMEWORK_PATH="$(pwd)"" >> $GITHUB_ENV
-          
+
       - name: Run Test
         run: |
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             CMD="hil --testbed ${{ github.event.inputs.testbed }} --wait --reservation-name 'depthai_nodes_ml_team' --commands 'cd /home/hil/depthai-nodes' 'git checkout main' 'git pull' 'git checkout ${{ github.event.inputs.branch }}' 'git pull' 'source venv/bin/activate' 'pip install --extra-index-url ${{secrets.LUXONIS_EXTRA_INDEX_URL}}  depthai==${{ github.event.inputs.depthai-version }}' 'cd tests/integration_tests' 'export B2_APPLICATION_KEY=${{ secrets.B2_APPLICATION_KEY }}' 'export B2_APPLICATION_KEY_ID=${{ secrets.B2_APPLICATION_KEY_ID }}' 'python main.py ${{ github.event.inputs.additional-parameter }}' 'deactivate'"
           else
-            CMD="hil --testbed oak4-s --wait --reservation-name 'depthai_nodes_ml_team' --commands 'cd /home/hil/depthai-nodes' 'git checkout main' 'git pull' 'git checkout ${{ github.head_ref }}' 'git pull' 'source venv/bin/activate' 'pip install --extra-index-url ${{secrets.LUXONIS_EXTRA_INDEX_URL}}  depthai==3.0.0a6' 'cd tests/integration_tests' 'export B2_APPLICATION_KEY=${{ secrets.B2_APPLICATION_KEY }}' 'export B2_APPLICATION_KEY_ID=${{ secrets.B2_APPLICATION_KEY_ID }}' 'python main.py -all --download' 'deactivate'"
+            CMD="hil --testbed oak4-s --wait --reservation-name 'depthai_nodes_ml_team' --commands 'cd /home/hil/depthai-nodes' 'git checkout main' 'git pull' 'git checkout ${{ github.head_ref }}' 'git pull' 'source venv/bin/activate' 'pip install --extra-index-url ${{secrets.LUXONIS_EXTRA_INDEX_URL}}  depthai==3.0.0a11' 'cd tests/integration_tests' 'export B2_APPLICATION_KEY=${{ secrets.B2_APPLICATION_KEY }}' 'export B2_APPLICATION_KEY_ID=${{ secrets.B2_APPLICATION_KEY_ID }}' 'python main.py -all --download' 'deactivate'"
           fi
           eval $CMD
 
