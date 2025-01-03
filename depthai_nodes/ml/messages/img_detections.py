@@ -58,11 +58,8 @@ class ImgDetectionExtended(dai.Buffer):
         @param value: Tuple of (x_center, y_center, width, height, angle).
         @type value: tuple[float, float, float, float, float]
         """
-        rectangle = [max(0, min(1 - 1e-6, value)) for value in rectangle[:-1]] + [
-            rectangle[-1]
-        ]
-        center = dai.Point2f(rectangle[0], rectangle[1])
-        size = dai.Size2f(rectangle[2], rectangle[3])
+        center = dai.Point2f(rectangle[0], rectangle[1], normalized=True)
+        size = dai.Size2f(rectangle[2], rectangle[3], normalized=True)
 
         self._rotated_rect = dai.RotatedRect(center, size, rectangle[4])
 
