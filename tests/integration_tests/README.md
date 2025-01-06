@@ -18,9 +18,9 @@ We are storing tests in the B2 bucket. In the beginning, we download the tests f
 ```
 nn_datas
 ├── <parser_name>
-│   ├── <model-slug.pkl> # Contains the NNData
-│   └── <model-slug_output.pkl> # Contains the expected message
-│   └── <model-slug.png> # Contains the input image
+│   ├── <model.pkl> # Contains the NNData
+│   └── <model_output.pkl> # Contains the expected message
+│   └── <model.png> # Contains the input image
 ```
 
 for example:
@@ -39,7 +39,7 @@ nn_datas
 
 ## Test generation
 
-To generate a new test for the parser, you can use `extract_nn_data.py` script. The script will extract the `NNData` from the neural network output and store it in the pickle file. The script requires the following arguments: `-m` for the model slug, `-img` for the input image, and optional `-ip` for the device IP or mxid.
+To generate a new test for the parser, you can use `extract_nn_data.py` script. The script will extract the `NNData` from the neural network output and store it in the pickle file. The script requires the following arguments: `-m` for the model, `-img` for the input image, and optional `-ip` for the device IP or mxid.
 
 The script does not generate the expected message because each parser has its own message format and DAI messages can not be dumped in the pickle file.
 
