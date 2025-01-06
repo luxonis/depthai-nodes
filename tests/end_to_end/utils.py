@@ -6,14 +6,14 @@ import depthai as dai
 import requests
 
 API_KEY = os.getenv("HUBAI_API_KEY", None)
-HUBAI_TEAM_ID = os.getenv("HUBAI_TEAM_ID", None)
+HUBAI_TEAM_SLUG = os.getenv("HUBAI_TEAM_SLUG", None)
 
 if not API_KEY:
     raise ValueError(
         "You must specify your HubAI API key in order to get the model config."
     )
 
-if not HUBAI_TEAM_ID:
+if not HUBAI_TEAM_SLUG:
     raise ValueError(
         "You must specify your HubAI team ID in order to get the model config."
     )
@@ -94,7 +94,7 @@ def get_models() -> List[Dict]:
     valid_models = []
 
     for model in response:
-        if model["is_public"] and model["team_id"] == HUBAI_TEAM_ID:
+        if model["is_public"] and model["team_slug"] == HUBAI_TEAM_SLUG:
             model_dict = {
                 "name": model["name"],
                 "slug": model["slug"],
