@@ -70,14 +70,14 @@ def test_pipelines(IP: str, ip_platform: str, nn_archive_path, slug):
     try:
         if slug:
             subprocess.run(
-                f"python manual.py -s {slug} -ip {IP}",
+                f"python manual.py -s {slug} {'-ip' if IP else ''} {IP}",
                 shell=True,
                 check=True,
                 timeout=90,
             )
         else:
             subprocess.run(
-                f"python manual.py -nn {nn_archive_path} -ip {IP}",
+                f"python manual.py -nn {nn_archive_path} {'-ip' if IP else ''} {IP}",
                 shell=True,
                 check=True,
                 timeout=90,
