@@ -18,7 +18,14 @@ on:
       depthai-version:
         description: 'Version of depthai to install. Default: alpha6'
         required: true
-        default: '3.0.0a6'
+        default: '3.0.0a11'
+  push:
+    branches:
+      - main
+    paths:
+      - 'depthai_nodes/**'
+      - 'tests/end_to_end/**'
+      - .github/workflows/e2e_tests.yaml
 
 jobs:
   HIL-test:
@@ -58,7 +65,12 @@ jobs:
           
       - name: Run Test
         run: |
-          CMD="hil --testbed ${{ github.event.inputs.testbed }} --wait --reservation-name 'depthai_nodes_ml_team' --commands 'cd /home/hil/depthai-nodes' 'git checkout main' 'git pull' 'git checkout ${{ github.event.inputs.branch }}' 'git pull' 'source venv/bin/activate' 'pip install --extra-index-url ${{secrets.LUXONIS_EXTRA_INDEX_URL}}  depthai==${{ github.event.inputs.depthai-version }}' 'cd tests/end_to_end' 'source <(python setup_camera_ips.py)' 'export HUBAI_TEAM_ID=${{ secrets.HUBAI_TEAM_ID }}' 'export HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }}' 'python main.py ${{ github.event.inputs.additional-parameter }}' 'deactivate'"
+          export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#${{ matrix.python-version}}"
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            CMD="hil --testbed ${{ github.event.inputs.testbed }} --wait --reservation-name $RESERVATION_NAME --commands 'cd /home/hil/depthai-nodes' 'git checkout main' 'git pull' 'git checkout ${{ github.event.inputs.branch }}' 'git pull' 'source venv/bin/activate' 'pip install --extra-index-url ${{secrets.LUXONIS_EXTRA_INDEX_URL}}  depthai==${{ github.event.inputs.depthai-version }}' 'cd tests/end_to_end' 'source <(python setup_camera_ips.py)' 'export HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }}' 'export HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }}' 'python main.py ${{ github.event.inputs.additional-parameter }}' 'deactivate'"
+          else
+            CMD="hil --testbed oak4-pro --wait --reservation-name $RESERVATION_NAME --commands 'cd /home/hil/depthai-nodes' 'git checkout main' 'git pull' 'source venv/bin/activate' 'pip install --extra-index-url ${{secrets.LUXONIS_EXTRA_INDEX_URL}}  depthai==3.0.0a11' 'cd tests/end_to_end' 'source <(python setup_camera_ips.py)' 'export HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }}' 'export HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }}' 'python main.py -all' 'deactivate'"
+          fi
           eval $CMD
 
       - name: Stop WireGuard
