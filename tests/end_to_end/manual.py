@@ -86,12 +86,12 @@ with dai.Pipeline(device) as pipeline:
 
     if input_size[0] % 2 != 0 or input_size[1] % 2 != 0:
         manip = pipeline.create(dai.node.ImageManipV2)
-        manip.initialConfig.addResize(input_size[0], input_size[1])
+        manip.initialConfig.setOutputSize(input_size[0], input_size[1])
         large_input_shape = (input_size[0] * 2, input_size[1] * 2)
 
     if input_size[0] < 128 and input_size[1] < 128:
         manip = pipeline.create(dai.node.ImageManipV2)
-        manip.initialConfig.addResize(input_size[0], input_size[1])
+        manip.initialConfig.setOutputSize(input_size[0], input_size[1])
         large_input_shape = (input_size[0] * 4, input_size[1] * 4)
 
     if manip:
