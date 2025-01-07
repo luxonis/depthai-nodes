@@ -21,13 +21,13 @@ There are 4 required parameters that need to be set when triggering the Github a
 Currently, you must specify the device IP address in the ENV variables: `RVC2_IP` and `RVC4_IP`. If the ENV variable is empty the script will take the connected device via USB. For sending requests to HubAI you also need to specify `HUBAI_TEAM_ID` and `HUBAI_API_KEY` ENV variables.
 For running the tests locally you can use `main.py` script. You can specify the models from ZOO or specify the path to the local NN archive paths. If you want to test all available models you can use `--all` flag and for testing specific parser on all models you can use `--parser` or `-p` flag.
 
-Test all public models from ZOO:
+Test all public models from the ZOO:
 
 ```bash
 python main.py --all
 ```
 
-Test specific models from ZOO:
+Test specific models from the ZOO:
 
 ```bash
 python main.py -m <model_1> <model_2> ...
