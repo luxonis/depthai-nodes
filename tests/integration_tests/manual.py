@@ -11,7 +11,7 @@ argparser = argparse.ArgumentParser()
 argparser.add_argument(
     "-m",
     "--model",
-    help="The model slug from which the parser is built",
+    help="The model from which the parser is built",
     required=True,
     type=str,
 )

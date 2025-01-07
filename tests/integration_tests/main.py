@@ -15,7 +15,7 @@ def main():
         type=str,
         nargs="+",
         default="",
-        help="Model slug from HubAI.",
+        help="Model from HubAI.",
     )
     arg_parser.add_argument("-all", action="store_true", help="Run all tests")
     arg_parser.add_argument(
@@ -55,7 +55,7 @@ def main():
         if not models:
             raise ValueError(f"No models found for parser {parser}")
         else:
-            print(f"Found model slugs for parser {parser}: {models}")
+            print(f"Found models for parser {parser}: {models}")
 
     if not models:
         raise ValueError("No models provided")

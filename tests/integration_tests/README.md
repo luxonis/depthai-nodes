@@ -18,9 +18,9 @@ We are storing tests in the B2 bucket. In the beginning, we download the tests f
 ```
 nn_datas
 ├── <parser_name>
-│   ├── <model-slug.pkl> # Contains the NNData
-│   └── <model-slug_output.pkl> # Contains the expected message
-│   └── <model-slug.png> # Contains the input image
+│   ├── <model.pkl> # Contains the NNData
+│   └── <model_output.pkl> # Contains the expected message
+│   └── <model.png> # Contains the input image
 ```
 
 for example:
@@ -39,7 +39,7 @@ nn_datas
 
 ## Test generation
 
-To generate a new test for the parser, you can use `extract_nn_data.py` script. The script will extract the `NNData` from the neural network output and store it in the pickle file. The script requires the following arguments: `-m` for the model slug, `-img` for the input image, and optional `-ip` for the device IP or mxid.
+To generate a new test for the parser, you can use `extract_nn_data.py` script. The script will extract the `NNData` from the neural network output and store it in the pickle file. The script requires the following arguments: `-m` for the model, `-img` for the input image, and optional `-ip` for the device IP or mxid.
 
 The script does not generate the expected message because each parser has its own message format and DAI messages can not be dumped in the pickle file.
 
@@ -59,7 +59,16 @@ with open('nn_datas/ClassificationParser/efficientnet-lite_output.pkl', 'wb') as
 
 In the end, you should have all the files in the parser-specific directory inside `nn_datas` directory. You need to upload the parser directory to the B2 bucket.
 
-## Running the tests
+## Running the tests locally
 
 To run the tests, you can use the `main.py` script. You can use `--all` flag to test all parsers or test a specific parser with `-p` flag.
 You would need the B2 credentials to download the tests from the bucket and set it in the ENV variables `B2_APPLICATION_KEY_ID` and `B2_APPLICATION_KEY`.
+
+## Running the tests in the CI
+
+The integration tests are triggered in every PR. But you can also trigger them manually. Required parameters are:
+
+- `additional-parameter`: The parameter that specifies the desired test. Default is `-all` which runs tests on all parsers. The available options are: `-all`, `-p <parser_name>`.
+- `branch`: The branch on which the tests will be run. Default is `main`.
+- `testbed`: The testbed on which the tests will be run. Default is `oak4-s`. Available: `oak4-pro`, `oak4-s`.
+- `depthai-version`: The version of the DepthAI that will be used for the tests. Default is `3.0.0a6`.

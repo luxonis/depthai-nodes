@@ -12,13 +12,13 @@ argparser.add_argument(
     "-img", "--img_path", help="Path to the input image", required=True, type=str
 )
 argparser.add_argument(
-    "-m", "--model_slug", help="Slug of the model from HubAI", required=True, type=str
+    "-m", "--model", help="Model from HubAI", required=True, type=str
 )
 
 args = argparser.parse_args()
 IP_mxid = args.ip
 img_path = args.img_path
-model: str = args.model_slug
+model: str = args.model
 
 device = dai.Device(dai.DeviceInfo(IP_mxid))
 device_platform = device.getPlatform().name
