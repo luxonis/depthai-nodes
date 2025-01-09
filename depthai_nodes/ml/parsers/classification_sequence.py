@@ -180,5 +180,6 @@ class ClassificationSequenceParser(ClassificationParser):
             )
             msg.transformation = output.getTransformation()
             msg.setTimestamp(output.getTimestamp())
+            msg.setSequenceNum(output.getSequenceNum())
 
             self.out.send(msg)

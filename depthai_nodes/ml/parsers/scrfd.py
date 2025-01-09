@@ -218,5 +218,6 @@ class SCRFDParser(DetectionParser):
             )
             message.setTimestamp(output.getTimestamp())
             message.transformation = output.getTransformation()
+            message.setSequenceNum(output.getSequenceNum())
 
             self.out.send(message)

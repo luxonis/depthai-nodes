@@ -81,7 +81,7 @@ def _box_score(predictions: np.ndarray, _corners: np.ndarray) -> float:
 
 def _unclip(
     box: np.ndarray,
-    unclip_ratio: float = 3,
+    unclip_ratio: float = 2,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Internal function to dilate the bounding box area by a specified ratio.
 
@@ -94,7 +94,7 @@ def _unclip(
     """
 
     box[2] = box[2] * np.sqrt(unclip_ratio)
-    box[3] = box[3] * unclip_ratio
+    box[3] = box[3] * np.sqrt(unclip_ratio)
 
     return box
 

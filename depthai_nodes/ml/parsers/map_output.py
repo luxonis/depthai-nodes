@@ -107,5 +107,6 @@ class MapOutputParser(BaseParser):
             )
             map_message.setTimestamp(output.getTimestamp())
             map_message.transformation = output.getTransformation()
+            map_message.setSequenceNum(output.getSequenceNum())
 
             self.out.send(map_message)
