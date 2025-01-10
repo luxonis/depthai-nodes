@@ -88,7 +88,7 @@ def test_pipelines(IP: str, ip_platform: str, nn_archive_path, model):
         elif e.returncode == 6:
             pytest.skip(f"Can't connect to the device with IP/mxid: {IP}")
         elif e.returncode == 7:
-            pytest.skip(f"Couldn't find model {model} in the ZOO")
+            pytest.skip(f"Couldn't find model {model} for {ip_platform} in the ZOO")
         elif e.returncode == 8:
             pytest.skip(
                 f"The model {model} is not supported in this test. (small input size, grayscale image, etc.)"
