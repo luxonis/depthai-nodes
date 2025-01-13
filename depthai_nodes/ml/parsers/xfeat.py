@@ -335,6 +335,7 @@ class XFeatMonoParser(XFeatBaseParser):
             else:
                 matched_points = dai.TrackedFeatures()
                 matched_points.setTimestamp(output.getTimestamp())
+                matched_points.setSequenceNum(output.getSequenceNum())
                 self.out.send(matched_points)
                 continue
 
@@ -342,10 +343,14 @@ class XFeatMonoParser(XFeatBaseParser):
                 mkpts0, mkpts1 = match(self.previous_results, result)
                 matched_points = create_tracked_features_message(mkpts0, mkpts1)
                 matched_points.setTimestamp(output.getTimestamp())
+                matched_points.setSequenceNum(output.getSequenceNum())
+
                 self.out.send(matched_points)
             else:
                 matched_points = dai.TrackedFeatures()
                 matched_points.setTimestamp(output.getTimestamp())
+                matched_points.setSequenceNum(output.getSequenceNum())
+
                 self.out.send(matched_points)
 
             if self.trigger:
@@ -473,6 +478,8 @@ class XFeatStereoParser(XFeatBaseParser):
             else:
                 matched_points = dai.TrackedFeatures()
                 matched_points.setTimestamp(reference_output.getTimestamp())
+                matched_points.setSequenceNum(reference_output.getSequenceNum())
+
                 self.out.send(matched_points)
                 continue
 
@@ -481,10 +488,14 @@ class XFeatStereoParser(XFeatBaseParser):
             else:
                 matched_points = dai.TrackedFeatures()
                 matched_points.setTimestamp(target_output.getTimestamp())
+                matched_points.setSequenceNum(reference_output.getSequenceNum())
+
                 self.out.send(matched_points)
                 continue
 
             mkpts0, mkpts1 = match(reference_result, target_result)
             matched_points = create_tracked_features_message(mkpts0, mkpts1)
             matched_points.setTimestamp(target_output.getTimestamp())
+            matched_points.setSequenceNum(reference_output.getSequenceNum())
+
             self.out.send(matched_points)

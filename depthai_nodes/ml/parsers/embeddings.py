@@ -64,5 +64,6 @@ class EmbeddingsParser(BaseParser):
             assert (
                 len(output_names) == 1
             ), "Embeddings head should have only one output layer"
+            output.setSequenceNum(output.getSequenceNum())
 
             self.out.send(output)

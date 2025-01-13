@@ -115,5 +115,6 @@ class ImageOutputParser(BaseParser):
             image_message.setTimestamp(output.getTimestamp())
             if output.getTransformation():
                 image_message.setTransformation(output.getTransformation())
+            image_message.setSequenceNum(output.getSequenceNum())
 
             self.out.send(image_message)

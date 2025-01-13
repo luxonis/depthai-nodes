@@ -355,4 +355,6 @@ class FastSAMParser(BaseParser):
             segmentation_message = create_segmentation_message(results_masks)
             segmentation_message.transformation = output.getTransformation()
             segmentation_message.setTimestamp(output.getTimestamp())
+            segmentation_message.setSequenceNum(output.getSequenceNum())
+
             self.out.send(segmentation_message)
