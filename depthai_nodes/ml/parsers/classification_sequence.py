@@ -5,6 +5,7 @@ import numpy as np
 
 from ..messages.creators import create_classification_sequence_message
 from .classification import ClassificationParser
+from .configuration import BoolParameter, IntListParameter
 from .utils.softmax import softmax
 
 
@@ -73,6 +74,11 @@ class ClassificationSequenceParser(ClassificationParser):
         self.ignored_indexes = ignored_indexes if ignored_indexes is not None else []
         self.remove_duplicates = remove_duplicates
         self.concatenate_classes = concatenate_classes
+        self._configurable_parameters.add(
+            BoolParameter(self.getRemoveDuplicates, self.setRemoveDuplicates)
+        ).add(IntListParameter(self.getIgnoredIndexes, self.setIgnoredIndexes)).add(
+            BoolParameter(self.getConcatenateClasses, self.setConcatenateClasses)
+        )
 
     def getRemoveDuplicates(self) -> bool:
         """Gets the remove_duplicates flag for the classification sequence model.
