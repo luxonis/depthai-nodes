@@ -103,6 +103,10 @@ class ClassificationParser(BaseParser):
         """
 
         output_layers = head_config.get("outputs", [])
+        if not isinstance(output_layers, list):
+            raise TypeError(
+                f"Outputs config must be a list. Got {type(output_layers).__name__} instead."
+            )
         if len(output_layers) != 1:
             raise ValueError(
                 f"Only one output layer supported for Classification, got {output_layers} layers."
