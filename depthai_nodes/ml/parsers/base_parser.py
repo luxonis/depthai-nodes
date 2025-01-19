@@ -1,7 +1,10 @@
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import depthai as dai
+
+from ..messages.configuration_change import ConfigurationChange
+from .configuration import Configuration, RuntimeParameters
 
 
 class BaseMeta(ABCMeta, type(dai.node.ThreadedHostNode)):
@@ -28,6 +31,32 @@ class BaseParser(dai.node.ThreadedHostNode, metaclass=BaseMeta):
         super().__init__()
         self._input = self.createInput()
         self._out = self.createOutput()
+        self._configuration_input = self.createInput()
+        self._configuration_input.addCallback(self.configuration_changed)
+        self._configurable_parameters = RuntimeParameters()
+
+    def configuration_changed(self, configuration: ConfigurationChange) -> None:
+        parameter = self._configurable_parameters.get(configuration.parameter)
+        parameter.set_from_string(configuration.value_as_string)
+
+    @property
+    def configuration(self) -> List[Configuration]:
+        configurations: List[Configuration] = []
+        for parameter_name in self._configurable_parameters.get_names():
+            parameter = self._configurable_parameters.get(parameter_name)
+            configurations.append(
+                Configuration(
+                    parameter=parameter.name,
+                    string_value=parameter.get_as_string(),
+                    type_name=parameter.get_type_name(),
+                    description=parameter.description,
+                )
+            )
+        return configurations
+
+    @property
+    def configuration_input(self) -> dai.Node.Input:
+        return self._configuration_input
 
     @property
     @abstractmethod
