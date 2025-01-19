@@ -74,6 +74,14 @@ class ClassificationSequenceParser(ClassificationParser):
         self.remove_duplicates = remove_duplicates
         self.concatenate_classes = concatenate_classes
 
+    def getRemoveDuplicates(self) -> bool:
+        """Gets the remove_duplicates flag for the classification sequence model.
+
+        @return: Returns the remove_duplicates flag.
+        @rtype: bool
+        """
+        return self.remove_duplicates
+
     def setRemoveDuplicates(self, remove_duplicates: bool) -> None:
         """Sets the remove_duplicates flag for the classification sequence model.
 
@@ -84,6 +92,14 @@ class ClassificationSequenceParser(ClassificationParser):
         if not isinstance(remove_duplicates, bool):
             raise ValueError("remove_duplicates must be a boolean.")
         self.remove_duplicates = remove_duplicates
+
+    def getIgnoredIndexes(self) -> List[int]:
+        """Gets the ignored_indexes for the classification sequence model.
+
+        @return: Returns the ignored_indexes list.
+        @rtype: List[int]
+        """
+        return self.ignored_indexes
 
     def setIgnoredIndexes(self, ignored_indexes: List[int]) -> None:
         """Sets the ignored_indexes for the classification sequence model.
@@ -97,6 +113,14 @@ class ClassificationSequenceParser(ClassificationParser):
         if not all(isinstance(index, int) for index in ignored_indexes):
             raise ValueError("All ignored indexes must be integers.")
         self.ignored_indexes = ignored_indexes
+
+    def getConcatenateClasses(self) -> bool:
+        """Gets the concatenate_classes flag for the classification sequence model.
+
+        @return: Returns the concatenate_classes flag.
+        @rtype: bool
+        """
+        return self.concatenate_classes
 
     def setConcatenateClasses(self, concatenate_classes: bool) -> None:
         """Sets the concatenate_classes flag for the classification sequence model.
