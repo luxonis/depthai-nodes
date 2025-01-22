@@ -36,19 +36,23 @@ jobs:
         python-version: [3.12]
 
     steps:
-      - name: Clone HIL Framework
-        run: |
-          git clone https://oauth2:${{secrets.GITLAB_TOKEN}}@gitlab.luxonis.com/luxonis/hil_lab/hil_framework.git --recursive
+      # - name: Clone HIL Framework
+      #   run: |
+      #     git clone https://oauth2:${{secrets.GITLAB_TOKEN}}@gitlab.luxonis.com/luxonis/hil_lab/hil_framework.git --recursive
 
-      - name: Setup HIL Tools
+      # - name: Setup HIL Tools
+      #   run: |
+      #     cd hil_framework
+      #     sudo chmod +x ./setup/setup_hil_tools.sh
+      #     ./setup/setup_hil_tools.sh -ga
+
+      - name: Update HIL
         run: |
-          cd hil_framework
-          sudo chmod +x ./setup/setup_hil_tools.sh
-          ./setup/setup_hil_tools.sh -ga
+          cd /home/$USER/hil_framework
+          git pull https://oauth2:${{ secrets.GITLAB_TOKEN }}@gitlab.luxonis.com/luxonis/hil_lab/hil_framework.git
 
       - name: Add HIL Tools to Path
         run: |
-          cd hil_framework
           echo "$(pwd)/lib_testbed/tools" >> $GITHUB_PATH
           echo "PYTHONPATH="$PYTHONPATH:$(pwd)"" >> $GITHUB_ENV
           echo "HIL_FRAMEWORK_PATH="$(pwd)"" >> $GITHUB_ENV
