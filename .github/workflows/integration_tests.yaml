@@ -54,6 +54,7 @@ jobs:
 
       - name: Add HIL Tools to Path
         run: |
+          cd /home/$USER/hil_framework
           echo "$(pwd)/lib_testbed/tools" >> $GITHUB_PATH
           echo "PYTHONPATH="$PYTHONPATH:$(pwd)"" >> $GITHUB_ENV
           echo "HIL_FRAMEWORK_PATH="$(pwd)"" >> $GITHUB_ENV
