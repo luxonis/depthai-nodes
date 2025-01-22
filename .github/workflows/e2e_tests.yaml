@@ -16,7 +16,7 @@ on:
         required: true
         default: 'oak4-pro'
       depthai-version:
-        description: 'Version of depthai to install. Default: alpha6'
+        description: 'Version of depthai to install. Default: alpha11'
         required: true
         default: '3.0.0a11'
   push:
@@ -36,19 +36,15 @@ jobs:
         python-version: [3.12]
 
     steps:
-      - name: Clone HIL Framework
+      - name: Update HIL
         run: |
-          git clone https://oauth2:${{secrets.GITLAB_TOKEN}}@gitlab.luxonis.com/luxonis/hil_lab/hil_framework.git --recursive
-      
-      - name: Setup HIL Tools
-        run: |
-          cd hil_framework
-          sudo chmod +x ./setup/setup_hil_tools.sh 
-          ./setup/setup_hil_tools.sh -ga
-          
+          cd /home/$USER/hil_framework
+          git pull
+          git submodule update --init --recursive
+
       - name: Add HIL Tools to Path
         run: |
-          cd hil_framework
+          cd /home/$USER/hil_framework
           echo "$(pwd)/lib_testbed/tools" >> $GITHUB_PATH
           echo "PYTHONPATH="$PYTHONPATH:$(pwd)"" >> $GITHUB_ENV
           echo "HIL_FRAMEWORK_PATH="$(pwd)"" >> $GITHUB_ENV
@@ -57,8 +53,7 @@ jobs:
         run: |
           export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#${{ matrix.python-version}}"
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            CMD="hil --testbed ${{ github.event.inputs.testbed }} --wait --reservation-name $RESERVATION_NAME --commands 'cd /home/hil/depthai-nodes' 'git checkout main' 'git pull' 'git checkout ${{ github.event.inputs.branch }}' 'git pull' 'source venv/bin/activate' 'pip install --extra-index-url ${{secrets.LUXONIS_EXTRA_INDEX_URL}}  depthai==${{ github.event.inputs.depthai-version }}' 'cd tests/end_to_end' 'source <(python setup_camera_ips.py)' 'export HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }}' 'export HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }}' 'python main.py ${{ github.event.inputs.additional-parameter }}' 'deactivate'"
+            hil --testbed ${{ github.event.inputs.testbed }} --wait --reservation-name $RESERVATION_NAME --commands "cd /home/hil/depthai-nodes" "git checkout main" "git pull" "git checkout ${{ github.event.inputs.branch }}" "git pull" "source venv/bin/activate" "pip install --extra-index-url ${{secrets.LUXONIS_EXTRA_INDEX_URL}}  depthai==${{ github.event.inputs.depthai-version }}" "cd tests/end_to_end" "source <(python setup_camera_ips.py)" "export HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }}" "export HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }}" "python main.py ${{ github.event.inputs.additional-parameter }}" "deactivate"
           else
-            CMD="hil --testbed oak4-pro --wait --reservation-name $RESERVATION_NAME --commands 'cd /home/hil/depthai-nodes' 'git checkout main' 'git pull' 'source venv/bin/activate' 'pip install --extra-index-url ${{secrets.LUXONIS_EXTRA_INDEX_URL}}  depthai==3.0.0a11' 'cd tests/end_to_end' 'source <(python setup_camera_ips.py)' 'export HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }}' 'export HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }}' 'python main.py -all' 'deactivate'"
+            hil --testbed oak4-pro --wait --reservation-name $RESERVATION_NAME --commands "cd /home/hil/depthai-nodes" "git checkout main" "git pull" "source venv/bin/activate" "pip install --extra-index-url ${{secrets.LUXONIS_EXTRA_INDEX_URL}}  depthai==3.0.0a11" "cd tests/end_to_end" "source <(python setup_camera_ips.py)" "export HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }}" "export HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }}" "python main.py -all" "deactivate"
           fi
-          exec $CMD
