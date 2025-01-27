@@ -83,7 +83,8 @@ class ImgDetectionExtended(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("Confidence must be a float.")
-        if value < 0 or value > 1:
+        eps = 1e-3
+        if not (0 - eps <= value <= 1 + eps):
             raise ValueError("Confidence must be between 0 and 1.")
         self._confidence = value
 
