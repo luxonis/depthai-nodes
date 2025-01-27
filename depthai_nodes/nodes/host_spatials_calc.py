@@ -1,6 +1,3 @@
-# HostSpatialsCalc implementation taken from here:
-# https://github.com/luxonis/depthai-experiments/blob/d10736715bef1663d984196f8528610a614e4b75/gen2-calc-spatials-on-host/calc.py
-
 from typing import Dict, List
 
 import depthai as dai
@@ -18,17 +15,11 @@ class HostSpatialsCalc:
     depth_alignment_socket : dai.CameraBoardSocket
         The camera socket used for depth alignment.
     DELTA : int
-        The delta value for ROI calculation.
+        The delta value for ROI calculation. Default is 5 - means 10x10 depth pixels around point for depth averaging.
     THRESH_LOW : int
-        The lower threshold for depth values.
+        The lower threshold for depth values. Default is 200 - means 20cm.
     THRESH_HIGH : int
-        The upper threshold for depth values.
-
-        setLowerThreshold(threshold_low): Sets the lower threshold for depth values.
-        setUpperThreshold(threshold_high): Sets the upper threshold for depth values.
-        setDeltaRoi(delta): Sets the delta value for ROI calculation.
-        _check_input(roi, frame): Checks if the input is ROI or point and converts point to ROI if necessary.
-        calc_spatials(depthData, roi, averaging_method): Calculates spatial coordinates from depth data within the specified ROI.
+        The upper threshold for depth values. Default is 30000 - means 30m.
     """
 
     # We need device object to get calibration data
@@ -36,14 +27,16 @@ class HostSpatialsCalc:
         self,
         calib_data: dai.CalibrationHandler,
         depth_alignment_socket: dai.CameraBoardSocket = dai.CameraBoardSocket.CAM_A,
+        delta: int = 5,
+        thresh_low: int = 200,
+        thresh_high: int = 30000,
     ):
         self.calibData = calib_data
         self.depth_alignment_socket = depth_alignment_socket
 
-        # Values
-        self.DELTA = 5  # Take 10x10 depth pixels around point for depth averaging
-        self.THRESH_LOW = 200  # 20cm
-        self.THRESH_HIGH = 30000  # 30m
+        self.delta = delta
+        self.thresh_low = thresh_low
+        self.thresh_high = thresh_high
 
     def setLowerThreshold(self, threshold_low: int) -> None:
         """Sets the lower threshold for depth values.
@@ -60,7 +53,7 @@ class HostSpatialsCalc:
                         type(threshold_low)
                     )
                 )
-        self.THRESH_LOW = threshold_low
+        self.thresh_low = threshold_low
 
     def setUpperThreshold(self, threshold_high: int) -> None:
         """Sets the upper threshold for depth values.
@@ -77,7 +70,7 @@ class HostSpatialsCalc:
                         type(threshold_high)
                     )
                 )
-        self.THRESH_HIGH = threshold_high
+        self.thresh_high = threshold_high
 
     def setDeltaRoi(self, delta: int) -> None:
         """Sets the delta value for ROI calculation.
@@ -92,7 +85,7 @@ class HostSpatialsCalc:
                 raise TypeError(
                     "Delta has to be an integer or float! Got {}".format(type(delta))
                 )
-        self.DELTA = delta
+        self.delta = delta
 
     def _check_input(self, roi: List[int], frame: np.ndarray) -> List[int]:
         """Checks if the input is ROI or point and converts point to ROI if necessary.
@@ -111,9 +104,9 @@ class HostSpatialsCalc:
                 "You have to pass either ROI (4 values) or point (2 values)!"
             )
         # Limit the point so ROI won't be outside the frame
-        x = min(max(roi[0], self.DELTA), frame.shape[1] - self.DELTA)
-        y = min(max(roi[1], self.DELTA), frame.shape[0] - self.DELTA)
-        return (x - self.DELTA, y - self.DELTA, x + self.DELTA, y + self.DELTA)
+        x = min(max(roi[0], self.delta), frame.shape[1] - self.delta)
+        y = min(max(roi[1], self.delta), frame.shape[0] - self.delta)
+        return (x - self.delta, y - self.delta, x + self.delta, y + self.delta)
 
     # roi has to be list of ints
     def calc_spatials(
@@ -142,7 +135,7 @@ class HostSpatialsCalc:
 
         # Calculate the average depth in the ROI.
         depthROI = depthFrame[ymin:ymax, xmin:xmax]
-        inRange = (self.THRESH_LOW <= depthROI) & (depthROI <= self.THRESH_HIGH)
+        inRange = (self.thresh_low <= depthROI) & (depthROI <= self.thresh_high)
 
         averageDepth = averaging_method(depthROI[inRange])
 

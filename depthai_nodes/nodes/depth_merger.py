@@ -15,6 +15,8 @@ class DepthMerger(dai.node.HostNode):
     ----------
     output : dai.Node.Output
         The output of the DepthMerger node containing dai.SpatialImgDetections.
+    shrinking_factor : float
+        The shrinking factor for the bounding box. 0 means no shrinking. The factor means the percentage of the bounding box to shrink from each side.
 
     Usage
     -----
@@ -24,7 +26,7 @@ class DepthMerger(dai.node.HostNode):
     )
     """
 
-    def __init__(self) -> None:
+    def __init__(self, shrinking_factor: float = 0) -> None:
         super().__init__()
 
         self.output = self.createOutput(
@@ -33,7 +35,7 @@ class DepthMerger(dai.node.HostNode):
             ]
         )
 
-        self.shrinking_factor = 0
+        self.shrinking_factor = shrinking_factor
 
     def build(
         self,
