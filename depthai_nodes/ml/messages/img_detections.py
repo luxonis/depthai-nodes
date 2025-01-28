@@ -1,6 +1,5 @@
-from typing import List, Tuple
-
 import logging
+from typing import List, Tuple
 
 import depthai as dai
 import numpy as np
@@ -87,12 +86,12 @@ class ImgDetectionExtended(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("Confidence must be a float.")
-        if value < -0.1 or value > 1.1:  
+        if value < -0.1 or value > 1.1:
             raise ValueError("Confidence must be between 0 and 1.")
         if not (0 <= value <= 1):
             value = max(0, min(1, value))
             logging.warning("Confidence value was clipped to [0, 1].")
-            
+
         self._confidence = value
 
     @property
