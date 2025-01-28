@@ -49,11 +49,19 @@ jobs:
           echo "PYTHONPATH="$PYTHONPATH:$(pwd)"" >> $GITHUB_ENV
           echo "HIL_FRAMEWORK_PATH="$(pwd)"" >> $GITHUB_ENV
 
+      # - name: Run Test
+      #   run: |
+      #     export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#${{ matrix.python-version}}"
+      #     if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+      #       hil --testbed ${{ github.event.inputs.testbed }} --wait --reservation-name $RESERVATION_NAME --commands "cd /home/hil/depthai-nodes" "git checkout main" "git pull" "git checkout ${{ github.event.inputs.branch }}" "git pull" "source venv/bin/activate" "pip install --extra-index-url ${{secrets.LUXONIS_EXTRA_INDEX_URL}}  depthai==${{ github.event.inputs.depthai-version }}" "cd tests/integration_tests" "export B2_APPLICATION_KEY=${{ secrets.B2_APPLICATION_KEY }}" "export B2_APPLICATION_KEY_ID=${{ secrets.B2_APPLICATION_KEY_ID }}" "python main.py ${{ github.event.inputs.additional-parameter }}" "deactivate"
+      #     else
+      #       hil --testbed-list oak4-s oak4-pro --wait --reservation-name $RESERVATION_NAME --commands "cd /home/hil/depthai-nodes" "git checkout main" "git pull" "git checkout ${{ github.head_ref }}" "git pull" "source venv/bin/activate" "pip install --extra-index-url ${{secrets.LUXONIS_EXTRA_INDEX_URL}}  depthai==3.0.0a11" "cd tests/integration_tests" "export B2_APPLICATION_KEY=${{ secrets.B2_APPLICATION_KEY }}" "export B2_APPLICATION_KEY_ID=${{ secrets.B2_APPLICATION_KEY_ID }}" "python main.py -all --download" "deactivate"
+      #     fi
       - name: Run Test
         run: |
           export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#${{ matrix.python-version}}"
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            hil --testbed ${{ github.event.inputs.testbed }} --wait --reservation-name $RESERVATION_NAME --commands "cd /home/hil/depthai-nodes" "git checkout main" "git pull" "git checkout ${{ github.event.inputs.branch }}" "git pull" "source venv/bin/activate" "pip install --extra-index-url ${{secrets.LUXONIS_EXTRA_INDEX_URL}}  depthai==${{ github.event.inputs.depthai-version }}" "cd tests/integration_tests" "export B2_APPLICATION_KEY=${{ secrets.B2_APPLICATION_KEY }}" "export B2_APPLICATION_KEY_ID=${{ secrets.B2_APPLICATION_KEY_ID }}" "python main.py ${{ github.event.inputs.additional-parameter }}" "deactivate"
+            hil --capabilities "depthai-core-hil" --wait --reservation-name $RESERVATION_NAME --before-docker-pull "echo ${{secrets.GHCR_PAT}} | docker login ghcr.io -u ${{secrets.GHCR_USER}} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-integration-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=${{ github.event.inputs.depthai-version }} --env B2_APPLICATION_KEY=${{ secrets.B2_APPLICATION_KEY }} --env B2_APPLICATION_KEY_ID=${{ secrets.B2_APPLICATION_KEY_ID }} --env BRANCH=${{ github.event.inputs.branch }} --env FLAGS=\"${{ github.event.inputs.additional-parameter }}\""
           else
-            hil --testbed-list oak4-s oak4-pro --wait --reservation-name $RESERVATION_NAME --commands "cd /home/hil/depthai-nodes" "git checkout main" "git pull" "git checkout ${{ github.head_ref }}" "git pull" "source venv/bin/activate" "pip install --extra-index-url ${{secrets.LUXONIS_EXTRA_INDEX_URL}}  depthai==3.0.0a11" "cd tests/integration_tests" "export B2_APPLICATION_KEY=${{ secrets.B2_APPLICATION_KEY }}" "export B2_APPLICATION_KEY_ID=${{ secrets.B2_APPLICATION_KEY_ID }}" "python main.py -all --download" "deactivate"
+            hil --capabilities "depthai-core-hil" --wait --reservation-name $RESERVATION_NAME --before-docker-pull "echo ${{secrets.GHCR_PAT}} | docker login ghcr.io -u ${{secrets.GHCR_USER}} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-integration-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=${{ github.event.inputs.depthai-version }} --env B2_APPLICATION_KEY=${{ secrets.B2_APPLICATION_KEY }} --env B2_APPLICATION_KEY_ID=${{ secrets.B2_APPLICATION_KEY_ID }} --env BRANCH=${{ github.head_ref }} --env FLAGS=\"-all --download\""
           fi
