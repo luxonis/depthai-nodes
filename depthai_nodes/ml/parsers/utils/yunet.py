@@ -5,8 +5,8 @@ from typing import List, Tuple
 
 import numpy as np
 
-from .bbox_format_converters import normalize_bboxes
-from .keypoints import normalize_keypoints
+from depthai_nodes.ml.parsers.utils.bbox_format_converters import normalize_bboxes
+from depthai_nodes.ml.parsers.utils.keypoints import normalize_keypoints
 
 
 def manual_product(*args):

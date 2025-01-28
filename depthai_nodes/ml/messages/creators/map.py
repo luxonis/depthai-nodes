@@ -1,6 +1,6 @@
 import numpy as np
 
-from ...messages import Map2D
+from depthai_nodes.ml.messages import Map2D
 
 
 def create_map_message(map: np.ndarray, min_max_scaling: bool = False) -> Map2D:

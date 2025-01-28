@@ -3,11 +3,15 @@ from typing import Any, Dict, Tuple
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_detection_message
-from .detection import DetectionParser
-from .utils.bbox_format_converters import top_left_wh_to_xywh
-from .utils.nms import nms_cv2
-from .utils.yunet import decode_detections, format_detections, prune_detections
+from depthai_nodes.ml.messages.creators import create_detection_message
+from depthai_nodes.ml.parsers.detection import DetectionParser
+from depthai_nodes.ml.parsers.utils.bbox_format_converters import top_left_wh_to_xywh
+from depthai_nodes.ml.parsers.utils.nms import nms_cv2
+from depthai_nodes.ml.parsers.utils.yunet import (
+    decode_detections,
+    format_detections,
+    prune_detections,
+)
 
 
 class YuNetParser(DetectionParser):

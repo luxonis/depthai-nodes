@@ -3,7 +3,9 @@ from typing import Tuple
 import cv2
 import numpy as np
 
-from .bbox_format_converters import corners_to_rotated_bbox
+from depthai_nodes.ml.parsers.utils.bbox_format_converters import (
+    corners_to_rotated_bbox,
+)
 
 
 def _get_mini_boxes(contour: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:

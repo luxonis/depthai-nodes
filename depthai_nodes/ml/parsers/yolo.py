@@ -4,14 +4,17 @@ import cv2
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_detection_message
-from .base_parser import BaseParser
-from .utils.bbox_format_converters import normalize_bboxes, xyxy_to_xywh
-from .utils.masks_utils import (
+from depthai_nodes.ml.messages.creators import create_detection_message
+from depthai_nodes.ml.parsers.base_parser import BaseParser
+from depthai_nodes.ml.parsers.utils.bbox_format_converters import (
+    normalize_bboxes,
+    xyxy_to_xywh,
+)
+from depthai_nodes.ml.parsers.utils.masks_utils import (
     get_segmentation_outputs,
     process_single_mask,
 )
-from .utils.yolo import (
+from depthai_nodes.ml.parsers.utils.yolo import (
     YOLOSubtype,
     decode_yolo_output,
     parse_kpts,

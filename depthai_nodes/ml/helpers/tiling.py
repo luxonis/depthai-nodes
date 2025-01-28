@@ -4,7 +4,7 @@ import cv2
 import depthai as dai
 import numpy as np
 
-from .utils.to_planar import to_planar
+from depthai_nodes.ml.helpers.utils.to_planar import to_planar
 
 
 class Tiling(dai.node.HostNode):
