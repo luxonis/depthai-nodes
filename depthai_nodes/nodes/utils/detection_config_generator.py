@@ -10,7 +10,24 @@ def generate_script_content(
 ) -> str:
     """The function generates the script content for the dai.Script node.
 
-    It is used to crop and resize the input image based on the detected object.
+    It is used to crop and resize the input image based on the detected object. It can
+    also work with padding around the detection bounding box and filter detections by
+    labels.
+
+    @param platform: Target platform for the script. Supported values: 'rvc2', 'rvc4'
+    @type platform: str
+    @param resize_width: Target width for the resized image
+    @type resize_width: int
+    @param resize_height: Target height for the resized image
+    @type resize_height: int
+    @param padding: Additional padding around the detection in normalized coordinates
+        (0-1)
+    @type padding: float
+    @param valid_labels: List of valid label indices to filter detections. If None, all
+        detections are processed
+    @type valid_labels: Optional[List[int]]
+    @return: Generated script content as a string
+    @rtype: str
     """
 
     if platform.lower() == "rvc2":
