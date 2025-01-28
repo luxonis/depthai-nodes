@@ -36,7 +36,7 @@ def generate_script_content(
             cfg.setOutputSize({resize_width}, {resize_height})
         """
     else:
-        raise ValueError("Unsupported version")
+        raise ValueError("Unsupported platform")
     validate_label = (
         f"""
             if det.label not in {valid_labels}:
