@@ -1,5 +1,7 @@
 from typing import List, Tuple
 
+import logging
+
 import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
@@ -13,6 +15,8 @@ from depthai_nodes.ml.helpers.constants import (
 
 from .keypoints import Keypoint
 from .segmentation import SegmentationMask
+
+logger = logging.getLogger(__name__)
 
 
 class ImgDetectionExtended(dai.Buffer):
@@ -83,9 +87,12 @@ class ImgDetectionExtended(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("Confidence must be a float.")
-        eps = 1e-3
-        if not (0 - eps <= value <= 1 + eps):
+        if value < -0.1 or value > 1.1:  
             raise ValueError("Confidence must be between 0 and 1.")
+        if not (0 <= value <= 1):
+            value = max(0, min(1, value))
+            logging.warning("Confidence value was clipped to [0, 1].")
+            
         self._confidence = value
 
     @property
