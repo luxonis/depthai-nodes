@@ -3,9 +3,9 @@ from typing import List, Optional
 
 def generate_script_content(
     platform: str,
-    resize_width: int = 224,
-    resize_height: int = 224,
-    padding: float = 0.2,
+    resize_width: int,
+    resize_height: int,
+    padding: float = 0,
     valid_labels: Optional[List[int]] = None,
 ) -> str:
     """The function generates the script content for the dai.Script node.
