@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional, Tuple
 
 import depthai as dai
 
@@ -16,13 +16,13 @@ class Queue:
 
 class Output:
     def __init__(self):
-        self._datatypes: List[tuple[dai.DatatypeEnum, bool]] = []
+        self._datatypes: List[Tuple[dai.DatatypeEnum, bool]] = []
         self._queues: List[Queue] = []
 
-    def setPossibleDatatypes(self, datatypes: List[tuple[dai.DatatypeEnum, bool]]):
+    def setPossibleDatatypes(self, datatypes: List[Tuple[dai.DatatypeEnum, bool]]):
         self._datatypes = datatypes
 
-    def getPossibleDatatypes(self) -> List[tuple[dai.DatatypeEnum, bool]]:
+    def getPossibleDatatypes(self) -> List[Tuple[dai.DatatypeEnum, bool]]:
         return self._datatypes
 
     def send(self, message):
@@ -38,7 +38,7 @@ class Output:
 class HostNodeMock:
     def __init__(self):
         self._output = Output()
-        self._linked_args: tuple[Output]
+        self._linked_args: Optional[Tuple[Output, ...]] = None
 
     def link_args(self, *args):
         for arg in args:
