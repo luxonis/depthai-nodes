@@ -2,8 +2,8 @@ from typing import List
 
 import depthai as dai
 
-from .tiling import Tiling
-from .utils.nms import nms_detections
+from depthai_nodes.ml.helpers.tiling import Tiling
+from depthai_nodes.ml.helpers.utils.nms import nms_detections
 
 
 class TilesPatcher(dai.node.HostNode):

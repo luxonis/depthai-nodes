@@ -10,9 +10,8 @@ from depthai_nodes.ml.helpers.constants import (
     OUTLINE_COLOR,
     TEXT_COLOR,
 )
-
-from .keypoints import Keypoint
-from .segmentation import SegmentationMask
+from depthai_nodes.ml.messages.keypoints import Keypoint
+from depthai_nodes.ml.messages.segmentation import SegmentationMask
 
 
 class ImgDetectionExtended(dai.Buffer):

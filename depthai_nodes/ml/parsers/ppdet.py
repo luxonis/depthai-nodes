@@ -3,9 +3,9 @@ from typing import Any, Dict
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_detection_message
-from .detection import DetectionParser
-from .utils import parse_paddle_detection_outputs
+from depthai_nodes.ml.messages.creators import create_detection_message
+from depthai_nodes.ml.parsers.detection import DetectionParser
+from depthai_nodes.ml.parsers.utils import parse_paddle_detection_outputs
 
 
 class PPTextDetectionParser(DetectionParser):

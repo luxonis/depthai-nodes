@@ -31,8 +31,6 @@ Here are the custom message types that we introduce in this package. They are us
     - [Attributes](#attributes-11)
   - [SegmentationMask](#segmentationmask)
     - [Attributes](#attributes-12)
-  - [SegmentationMasksSAM](#segmentationmaskssam)
-    - [Attributes](#attributes-13)
 
 ## Classifications
 
@@ -150,11 +148,3 @@ SegmentationMask class for a single- or multi-object segmentation mask. Backgrou
 ### Attributes
 
 - **mask** (NDArray\[np.int16\]): Segmentation mask.
-
-## SegmentationMasksSAM
-
-SegmentationMasksSAM class for storing segmentation masks.
-
-### Attributes
-
-- **masks** (np.ndarray): Mask coefficients.

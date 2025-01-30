@@ -2,9 +2,9 @@ from typing import Dict
 
 import depthai as dai
 
-from .ml.parsers import *
-from .ml.parsers.base_parser import BaseParser
-from .ml.parsers.utils import decode_head
+from depthai_nodes.ml.parsers import *
+from depthai_nodes.ml.parsers.base_parser import BaseParser
+from depthai_nodes.ml.parsers.utils import decode_head
 
 
 class ParserGenerator(dai.node.ThreadedHostNode):

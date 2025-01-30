@@ -4,9 +4,9 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 
-from .bbox_format_converters import xywh_to_xyxy
-from .masks_utils import sigmoid
-from .nms import nms
+from depthai_nodes.ml.parsers.utils.bbox_format_converters import xywh_to_xyxy
+from depthai_nodes.ml.parsers.utils.masks_utils import sigmoid
+from depthai_nodes.ml.parsers.utils.nms import nms
 
 
 class YOLOSubtype(str, Enum):

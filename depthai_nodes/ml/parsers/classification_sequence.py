@@ -3,9 +3,9 @@ from typing import Any, Dict, List
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_classification_sequence_message
-from .classification import ClassificationParser
-from .utils.softmax import softmax
+from depthai_nodes.ml.messages.creators import create_classification_sequence_message
+from depthai_nodes.ml.parsers.classification import ClassificationParser
+from depthai_nodes.ml.parsers.utils.softmax import softmax
 
 
 class ClassificationSequenceParser(ClassificationParser):

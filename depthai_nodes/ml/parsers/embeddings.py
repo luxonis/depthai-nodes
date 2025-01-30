@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 import depthai as dai
 
-from .base_parser import BaseParser
+from depthai_nodes.ml.parsers.base_parser import BaseParser
 
 
 class EmbeddingsParser(BaseParser):

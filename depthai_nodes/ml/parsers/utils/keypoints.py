@@ -2,7 +2,7 @@ from typing import List
 
 import numpy as np
 
-from ...messages.creators.keypoints import Keypoint
+from depthai_nodes.ml.messages.creators.keypoints import Keypoint
 
 
 def normalize_keypoints(keypoints: np.ndarray, height: int, width: int) -> np.ndarray:

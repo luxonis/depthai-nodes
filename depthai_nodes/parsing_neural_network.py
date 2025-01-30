@@ -3,8 +3,8 @@ from typing import Dict, Union, overload
 
 import depthai as dai
 
-from .ml.parsers import BaseParser
-from .parser_generator import ParserGenerator
+from depthai_nodes.ml.parsers import BaseParser
+from depthai_nodes.parser_generator import ParserGenerator
 
 
 class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
