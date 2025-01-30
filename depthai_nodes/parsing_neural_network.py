@@ -1,10 +1,12 @@
 from pathlib import Path
-from typing import Dict, Optional, Union, overload
+from typing import Dict, Optional, Type, TypeVar, Union, overload
 
 import depthai as dai
 
 from depthai_nodes.ml.parsers import BaseParser
 from depthai_nodes.parser_generator import ParserGenerator
+
+TParser = TypeVar("TParser")
 
 
 class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
@@ -136,7 +138,9 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         """Sets the backend of the NeuralNetwork node."""
         self._nn.setBackend(setBackend)
 
-    def getParser(self, index: int = 0) -> BaseParser:
+    def getParser(
+        self, index: int = 0, parser_type: Type[TParser] = BaseParser
+    ) -> TParser:
         """Returns the parser node for the given model head index.
 
         If index is not provided, the first parser node is returned by default.
@@ -145,7 +149,12 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
             raise KeyError(
                 f"Parser with ID {index} not found. Available parser IDs: {list(self._parsers.keys())}"
             )
-        return self._parsers[index]
+        parser = self._parsers[index]
+        if not isinstance(parser, parser_type):
+            raise TypeError(
+                f"Parser with ID {index} is of type: {type(parser)}. Requested type: {parser_type}"
+            )
+        return parser
 
     def setBackendProperties(self, setBackendProperties: Dict[str, str]) -> None:
         """Sets the backend properties of the NeuralNetwork node."""
