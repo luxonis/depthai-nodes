@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Union, overload
+from typing import Dict, Optional, Union, overload
 
 import depthai as dai
 
@@ -61,7 +61,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         self,
         input: dai.Node.Output,
         nn_source: Union[dai.NNModelDescription, dai.NNArchive, str],
-        fps: int = None,
+        fps: Optional[int] = None,
     ) -> "ParsingNeuralNetwork":
         """Builds the underlying NeuralNetwork node and creates parser nodes for each
         model head.
@@ -160,13 +160,18 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         """Sets the model path of the NeuralNetwork node."""
         self._nn.setModelPath(modelPath)
 
-    def setNNArchive(self, nnArchive: dai.NNArchive) -> None:
+    def setNNArchive(
+        self, nnArchive: dai.NNArchive, numShaves: Optional[int] = None
+    ) -> None:
         """Sets the NNArchive of the ParsingNeuralNetwork node.
 
         Updates the NeuralNetwork node and parser nodes.
         """
         self._nn_archive = nnArchive
-        self._nn.setNNArchive(nnArchive)
+        if numShaves:
+            self._nn.setNNArchive(nnArchive, numShaves)  # type: ignore
+        else:
+            self._nn.setNNArchive(nnArchive)
         self._updateParsers(nnArchive)
 
     def setNumInferenceThreads(self, numThreads: int) -> None:
