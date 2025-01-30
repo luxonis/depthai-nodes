@@ -1,8 +1,11 @@
+import logging
 from typing import List
 
 import depthai as dai
 
 from depthai_nodes.ml.helpers.constants import KEYPOINT_COLOR
+
+logger = logging.getLogger(__name__)
 
 
 class Keypoint(dai.Buffer):
@@ -48,8 +51,11 @@ class Keypoint(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("x must be a float.")
-        if value < 0 or value > 1:
+        if value < -0.1 or value > 1.1:
             raise ValueError("x must be between 0 and 1.")
+        if not (0 <= value <= 1):
+            value = max(0, min(1, value))
+            logging.warning("x value was clipped to [0, 1].")
         self._x = value
 
     @property
@@ -72,8 +78,11 @@ class Keypoint(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("y must be a float.")
-        if value < 0 or value > 1:
+        if value < -0.1 or value > 1.1:
             raise ValueError("y must be between 0 and 1.")
+        if not (0 <= value <= 1):
+            value = max(0, min(1, value))
+            logging.warning("y value was clipped to [0, 1].")
         self._y = value
 
     @property
@@ -117,8 +126,11 @@ class Keypoint(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("confidence must be a float.")
-        if value < 0 or value > 1:
-            raise ValueError("confidence must be between 0 and 1.")
+        if value < -0.1 or value > 1.1:
+            raise ValueError("Confidence must be between 0 and 1.")
+        if not (0 <= value <= 1):
+            value = max(0, min(1, value))
+            logging.warning("Confidence value was clipped to [0, 1].")
         self._confidence = value
 
 
