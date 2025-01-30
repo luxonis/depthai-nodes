@@ -23,7 +23,7 @@ RUN pip install -e .
 RUN pip install -r requirements-dev.txt
 
 # Set the working directory to the tests directory
-WORKDIR /app/depthai-nodes/tests/integration_tests
+WORKDIR /app/depthai-nodes/tests/end_to_end
 
 # Run the setup script and the tests
-ENTRYPOINT ["bash", "-c", "git checkout main && git pull && git checkout $BRANCH && git pull && pip install --extra-index-url $LUXONIS_EXTRA_INDEX_URL depthai==$DEPTHAI_VERSION && python -u main.py $FLAGS"]
+ENTRYPOINT ["bash", "-c", "git checkout main && git pull && git checkout $BRANCH && git pull && pip install --extra-index-url $LUXONIS_EXTRA_INDEX_URL depthai==$DEPTHAI_VERSION && source <(python setup_camera_ips.py) && python main.py $FLAGS"]
