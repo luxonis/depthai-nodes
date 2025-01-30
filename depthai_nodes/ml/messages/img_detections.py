@@ -90,7 +90,7 @@ class ImgDetectionExtended(dai.Buffer):
             raise ValueError("Confidence must be between 0 and 1.")
         if not (0 <= value <= 1):
             value = max(0, min(1, value))
-            logging.warning("Confidence value was clipped to [0, 1].")
+            logger.info("Confidence value was clipped to [0, 1].")
 
         self._confidence = value
 

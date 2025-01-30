@@ -55,7 +55,7 @@ class Keypoint(dai.Buffer):
             raise ValueError("x must be between 0 and 1.")
         if not (0 <= value <= 1):
             value = max(0, min(1, value))
-            logging.warning("x value was clipped to [0, 1].")
+            logger.info("x value was clipped to [0, 1].")
         self._x = value
 
     @property
@@ -82,7 +82,7 @@ class Keypoint(dai.Buffer):
             raise ValueError("y must be between 0 and 1.")
         if not (0 <= value <= 1):
             value = max(0, min(1, value))
-            logging.warning("y value was clipped to [0, 1].")
+            logger.info("y value was clipped to [0, 1].")
         self._y = value
 
     @property
@@ -130,7 +130,7 @@ class Keypoint(dai.Buffer):
             raise ValueError("Confidence must be between 0 and 1.")
         if not (0 <= value <= 1):
             value = max(0, min(1, value))
-            logging.warning("Confidence value was clipped to [0, 1].")
+            logger.info("Confidence value was clipped to [0, 1].")
         self._confidence = value
 
 

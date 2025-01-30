@@ -1,4 +1,5 @@
 import time
+import logging
 from enum import Enum
 from typing import List, Optional, Tuple
 
@@ -8,6 +9,7 @@ from .bbox_format_converters import xywh_to_xyxy
 from .masks_utils import sigmoid
 from .nms import nms
 
+logger = logging.getLogger(__name__)
 
 class YOLOSubtype(str, Enum):
     V3 = "yolov3"
@@ -180,7 +182,7 @@ def non_max_suppression(
 
         output[img_idx] = x[keep_box_idx]
         if (time.time() - tik) > time_limit:
-            print(f"WARNING: NMS cost time exceed the limited {time_limit}s.")
+            logger.info(f"NMS cost time exceed the limited {time_limit}s.")
             break  # time limit exceeded
 
     return output
