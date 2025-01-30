@@ -1,7 +1,8 @@
-import os
 import logging
-from typing import Optional
+import os
 from enum import Enum
+from typing import Optional
+
 
 class LogLevel(Enum):
     CRITICAL = "CRITICAL"
@@ -11,19 +12,21 @@ class LogLevel(Enum):
     WARN = "WARN"
 
 
-def setup_logging(level: Optional[str]= None, file: Optional[str] = None):
+def setup_logging(level: Optional[str] = None, file: Optional[str] = None):
     """Globally configures logging.
 
     @type level: str or None
-    @param level: Logging level. One of "CRITICAL", "DEBUG", "ERR", "INFO", and "WARN". Can be changed using "DEPTHAI_NODES_LEVEL" env variable. If not set defaults to "DEPTHAI_LEVEL" if set or "WARN".
+    @param level: Logging level. One of "CRITICAL", "DEBUG", "ERR", "INFO", and "WARN".
+        Can be changed using "DEPTHAI_NODES_LEVEL" env variable. If not set defaults to
+        "DEPTHAI_LEVEL" if set or "WARN".
     @type file: str or None
-    @param file: Path to a file where logs will be saved. If None, logs
-        will not be saved. Defaults to None.
+    @param file: Path to a file where logs will be saved. If None, logs will not be
+        saved. Defaults to None.
     """
     passed_level = get_log_level(level)
     env_dai_nodes_level = get_log_level(os.environ.get("DEPTHAI_NODES_LEVEL", None))
     env_dai_level = get_log_level(os.environ.get("DEPTHAI_LEVEL", None))
-    
+
     used_level = passed_level or env_dai_nodes_level or env_dai_level
     if not used_level:
         used_level = LogLevel.WARN
@@ -35,10 +38,8 @@ def setup_logging(level: Optional[str]= None, file: Optional[str] = None):
 
     if file is not None:
         file_handler = logging.FileHandler(file)
-        file_handler.setFormatter(
-            logging.Formatter(file_format, datefmt=datefmt)
-        )
-        handlers.append(file_handler) # type: ignore
+        file_handler.setFormatter(logging.Formatter(file_format, datefmt=datefmt))
+        handlers.append(file_handler)  # type: ignore
 
     logging.basicConfig(
         level=used_level.value, format=format, datefmt=datefmt, handlers=handlers
@@ -51,10 +52,10 @@ def get_log_level(level_str: Optional[str]) -> Optional[LogLevel]:
     try:
         if level_str is None:
             return None
-        
-        level_str = level_str.upper() # type: ignore
+
+        level_str = level_str.upper()  # type: ignore
         # mapping some DepthAI specific levels to python logger levels
-        if level_str in "OFF": 
+        if level_str in "OFF":
             level_str = "WARN"
         elif level_str == "TRACE":
             level_str = "INFO"

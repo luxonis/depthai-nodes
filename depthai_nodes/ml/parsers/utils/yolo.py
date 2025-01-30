@@ -1,5 +1,5 @@
-import time
 import logging
+import time
 from enum import Enum
 from typing import List, Optional, Tuple
 
@@ -10,6 +10,7 @@ from .masks_utils import sigmoid
 from .nms import nms
 
 logger = logging.getLogger(__name__)
+
 
 class YOLOSubtype(str, Enum):
     V3 = "yolov3"
