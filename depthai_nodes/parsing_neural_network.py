@@ -41,27 +41,36 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
 
     @overload
     def build(
-        self, input: dai.Node.Output, nn_source: dai.NNModelDescription, fps: int
+        self, input: dai.Node.Output, nn_source: dai.NNArchive
     ) -> "ParsingNeuralNetwork":
         ...
 
     @overload
     def build(
-        self, input: dai.Node.Output, nn_source: dai.NNArchive, fps: int
+        self,
+        camera: dai.node.Camera,
+        model_description: dai.NNModelDescription,
+        fps: Optional[float],
     ) -> "ParsingNeuralNetwork":
         ...
 
     @overload
     def build(
-        self, input: dai.Node.Output, nn_source: str, fps: int
+        self, camera: dai.node.Camera, nn_archive: dai.NNArchive, fps: Optional[float]
+    ) -> "ParsingNeuralNetwork":
+        ...
+
+    @overload
+    def build(
+        self, camera: dai.node.Camera, model: str, fps: Optional[float]
     ) -> "ParsingNeuralNetwork":
         ...
 
     def build(
         self,
-        input: dai.Node.Output,
+        input: Union[dai.Node.Output, dai.node.Camera],
         nn_source: Union[dai.NNModelDescription, dai.NNArchive, str],
-        fps: Optional[int] = None,
+        fps: Optional[float] = None,
     ) -> "ParsingNeuralNetwork":
         """Builds the underlying NeuralNetwork node and creates parser nodes for each
         model head.
