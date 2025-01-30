@@ -3,11 +3,11 @@ from typing import Any, Dict, List
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import (
+from depthai_nodes.ml.messages.creators import (
     create_classification_message,
 )
-from .base_parser import BaseParser
-from .utils.softmax import softmax
+from depthai_nodes.ml.parsers.base_parser import BaseParser
+from depthai_nodes.ml.parsers.utils.softmax import softmax
 
 
 class ClassificationParser(BaseParser):

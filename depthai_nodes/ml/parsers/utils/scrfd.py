@@ -1,6 +1,6 @@
 import numpy as np
 
-from .nms import nms
+from depthai_nodes.ml.parsers.utils.nms import nms
 
 
 def distance2bbox(points, distance, max_shape=None):

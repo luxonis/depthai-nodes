@@ -3,9 +3,9 @@ from typing import Any, Dict, Optional, Tuple
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_tracked_features_message
-from .base_parser import BaseParser
-from .utils.xfeat import detect_and_compute, match
+from depthai_nodes.ml.messages.creators import create_tracked_features_message
+from depthai_nodes.ml.parsers.base_parser import BaseParser
+from depthai_nodes.ml.parsers.utils.xfeat import detect_and_compute, match
 
 
 class XFeatBaseParser(BaseParser):

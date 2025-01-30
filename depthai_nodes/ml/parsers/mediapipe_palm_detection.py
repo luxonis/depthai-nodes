@@ -4,9 +4,9 @@ import cv2
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_detection_message
-from .detection import DetectionParser
-from .utils import generate_anchors_and_decode
+from depthai_nodes.ml.messages.creators import create_detection_message
+from depthai_nodes.ml.parsers.detection import DetectionParser
+from depthai_nodes.ml.parsers.utils import generate_anchors_and_decode
 
 
 class MPPalmDetectionParser(DetectionParser):

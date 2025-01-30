@@ -3,10 +3,10 @@ from typing import Any, Dict, List, Tuple
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_detection_message
-from .detection import DetectionParser
-from .utils.bbox_format_converters import xyxy_to_xywh
-from .utils.scrfd import decode_scrfd
+from depthai_nodes.ml.messages.creators import create_detection_message
+from depthai_nodes.ml.parsers.detection import DetectionParser
+from depthai_nodes.ml.parsers.utils.bbox_format_converters import xyxy_to_xywh
+from depthai_nodes.ml.parsers.utils.scrfd import decode_scrfd
 
 
 class SCRFDParser(DetectionParser):

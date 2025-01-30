@@ -3,7 +3,11 @@ from typing import Any, Dict, List, Optional, Tuple
 import cv2
 import numpy as np
 
-from .yolo import non_max_suppression, parse_yolo_outputs, sigmoid
+from depthai_nodes.ml.parsers.utils.yolo import (
+    non_max_suppression,
+    parse_yolo_outputs,
+    sigmoid,
+)
 
 
 def box_prompt(
