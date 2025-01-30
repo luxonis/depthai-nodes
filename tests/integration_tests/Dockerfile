@@ -29,5 +29,5 @@ WORKDIR /app/depthai-nodes/tests/integration_tests
 # Run the setup script and the tests
 
 # CMD ["bash"]
-ENTRYPOINT ["bash", "-c", "git checkout main && git pull && git checkout $BRANCH && git pull && pip install --extra-index-url $LUXONIS_EXTRA_INDEX_URL depthai==$DEPTHAI_VERSION && python main.py $FLAGS"]
+ENTRYPOINT ["bash", "-c", "git checkout main && git pull && git checkout $BRANCH && git pull && pip install --extra-index-url $LUXONIS_EXTRA_INDEX_URL depthai==$DEPTHAI_VERSION && python -u main.py $FLAGS"]
 # ENTRYPOINT ["bash", "-c", "git checkout main && git pull && git checkout $BRANCH && git pull && pip install --extra-index-url $LUXONIS_EXTRA_INDEX_URL depthai==$DEPTHAI_VERSION &&  source <(python setup_camera_ips.py) && python main.py -all"]
