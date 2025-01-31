@@ -153,7 +153,9 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
                 f"Parser with ID {index} not found. Available parser IDs: {list(self._parsers.keys())}"
             )
         parser = self._parsers[index]
-        if not isinstance(parser, parser_type):
+        if not isinstance(parser, parser_type) or not isinstance(
+            parser, dai.DeviceNode
+        ):
             raise TypeError(
                 f"Parser with ID {index} is of type: {type(parser)}. Requested type: {parser_type}"
             )
