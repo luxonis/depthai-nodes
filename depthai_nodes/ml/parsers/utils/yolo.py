@@ -1,3 +1,4 @@
+import logging
 import time
 from enum import Enum
 from typing import List, Optional, Tuple
@@ -7,6 +8,8 @@ import numpy as np
 from depthai_nodes.ml.parsers.utils.bbox_format_converters import xywh_to_xyxy
 from depthai_nodes.ml.parsers.utils.masks_utils import sigmoid
 from depthai_nodes.ml.parsers.utils.nms import nms
+
+logger = logging.getLogger(__name__)
 
 
 class YOLOSubtype(str, Enum):
@@ -180,7 +183,7 @@ def non_max_suppression(
 
         output[img_idx] = x[keep_box_idx]
         if (time.time() - tik) > time_limit:
-            print(f"WARNING: NMS cost time exceed the limited {time_limit}s.")
+            logger.info(f"NMS cost time exceed the limited {time_limit}s.")
             break  # time limit exceeded
 
     return output
