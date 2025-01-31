@@ -49,6 +49,17 @@ class HostNodeMock:
     def out(self):
         return self._output
 
+    @property
+    def output(self):
+        return self._output
+
+    @output.setter
+    def output(self, output):
+        self._output = output
+
+    def createOutput(self, possibleDatatypes: List[Tuple[dai.DatatypeEnum, bool]]):
+        return self._output
+
 
 def pytest_configure():
     import depthai as dai
