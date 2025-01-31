@@ -3,15 +3,16 @@ from typing import Any, Dict, List, Optional, Tuple
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_segmentation_message
-from .base_parser import BaseParser
-from .utils.fastsam import (
+from depthai_nodes.ml.messages.creators import create_segmentation_message
+from depthai_nodes.ml.parsers.base_parser import BaseParser
+from depthai_nodes.ml.parsers.utils.fastsam import (
     box_prompt,
     decode_fastsam_output,
     merge_masks,
     point_prompt,
     process_single_mask,
 )
+
 from .utils.masks_utils import get_segmentation_outputs
 
 

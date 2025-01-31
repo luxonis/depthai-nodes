@@ -1,13 +1,13 @@
 import depthai as dai
 import numpy as np
 
-from ...messages import (
+from depthai_nodes.ml.messages import (
     ImgDetectionExtended,
     ImgDetectionsExtended,
     Line,
     Lines,
 )
-from ...parsers.utils import transform_to_keypoints
+from depthai_nodes.ml.parsers.utils import transform_to_keypoints
 
 
 def create_detection_message(

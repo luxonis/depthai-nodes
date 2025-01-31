@@ -3,9 +3,9 @@ from typing import Any, Dict, List, Tuple
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_cluster_message
-from .base_parser import BaseParser
-from .utils.ufld import decode_ufld
+from depthai_nodes.ml.messages.creators import create_cluster_message
+from depthai_nodes.ml.parsers.base_parser import BaseParser
+from depthai_nodes.ml.parsers.utils.ufld import decode_ufld
 
 
 class LaneDetectionParser(BaseParser):

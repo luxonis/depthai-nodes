@@ -2,7 +2,7 @@ from typing import List, Union
 
 import numpy as np
 
-from ...messages import Classifications
+from depthai_nodes.ml.messages import Classifications
 
 
 def create_classification_message(

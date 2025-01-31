@@ -1,6 +1,6 @@
 from typing import List
 
-from ...messages import Prediction, Predictions
+from depthai_nodes.ml.messages import Prediction, Predictions
 
 
 def create_regression_message(predictions: List[float]) -> Predictions:

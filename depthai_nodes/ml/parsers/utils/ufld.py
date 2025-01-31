@@ -2,7 +2,7 @@ from typing import List, Tuple
 
 import numpy as np
 
-from .softmax import softmax
+from depthai_nodes.ml.parsers.utils.softmax import softmax
 
 
 def decode_ufld(

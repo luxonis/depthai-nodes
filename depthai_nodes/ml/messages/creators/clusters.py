@@ -2,7 +2,7 @@ from typing import List, Union
 
 import depthai as dai
 
-from ...messages import Cluster, Clusters
+from depthai_nodes.ml.messages import Cluster, Clusters
 
 
 def create_cluster_message(clusters: List[List[List[Union[float, int]]]]) -> Clusters:

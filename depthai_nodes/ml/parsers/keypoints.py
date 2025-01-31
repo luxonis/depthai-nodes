@@ -3,8 +3,8 @@ from typing import Any, Dict
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_keypoints_message
-from .base_parser import BaseParser
+from depthai_nodes.ml.messages.creators import create_keypoints_message
+from depthai_nodes.ml.parsers.base_parser import BaseParser
 
 
 class KeypointParser(BaseParser):
