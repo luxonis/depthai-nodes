@@ -143,17 +143,43 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
 
     @overload
     def getParser(self, index: int = 0) -> Union[BaseParser, dai.DeviceNode]:
+        """Returns the parser node for the given model head index.
+
+        If index is not provided, the first parser node is returned by default.
+
+        @param index: Index of the model head parser to return.
+        @type index: int
+        @param parser_type: Expected type of the parser. Used for type checking and
+            casting.
+        @type parser_type: Type[TParser]
+        @return: Parser node for the specified model head index, cast to the requested
+            parser_type.
+        @rtype: TParser
+        @raise KeyError: If parser with given index doesn't exist.
+        @raise TypeError: If parser is not of the requested type.
+        """
         ...
 
     @overload
     def getParser(self, parser_type: Type[TParser], index: int = 0) -> TParser:
-        ...
-
-    def getParser(self, *args, **kwargs) -> Union[BaseParser, dai.DeviceNode]:
         """Returns the parser node for the given model head index.
 
         If index is not provided, the first parser node is returned by default.
+
+        @param index: Index of the model head parser to return.
+        @type index: int
+        @param parser_type: Expected type of the parser. Used for type checking and
+            casting.
+        @type parser_type: Type[TParser]
+        @return: Parser node for the specified model head index, cast to the requested
+            parser_type.
+        @rtype: TParser
+        @raise KeyError: If parser with given index doesn't exist.
+        @raise TypeError: If parser is not of the requested type.
         """
+        ...
+
+    def getParser(self, *args, **kwargs) -> Union[BaseParser, dai.DeviceNode]:
         index = 0
         parser_type = None
 
