@@ -240,6 +240,13 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         """Sets the NNArchive of the ParsingNeuralNetwork node.
 
         Updates the NeuralNetwork node and parser nodes.
+
+        @param nnArchive: Neural network archive containing the model and its
+            configuration.
+        @type nnArchive: dai.NNArchive
+        @param numShaves: Optional number of shaves to allocate for the neural network.
+            If not provided, uses default allocation.
+        @type numShaves: Optional[int]
         """
         self._nn_archive = nnArchive
         if numShaves:
