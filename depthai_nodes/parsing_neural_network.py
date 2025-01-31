@@ -6,7 +6,7 @@ import depthai as dai
 from depthai_nodes.ml.parsers import BaseParser
 from depthai_nodes.parser_generator import ParserGenerator
 
-TParser = TypeVar("TParser")
+TParser = TypeVar("TParser", bound=Union[BaseParser, dai.DeviceNode])
 
 
 class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
@@ -141,24 +141,49 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         """Sets the backend of the NeuralNetwork node."""
         self._nn.setBackend(setBackend)
 
-    def getParser(
-        self, index: int = 0, parser_type: Type[TParser] = BaseParser
-    ) -> TParser:
+    @overload
+    def getParser(self, index: int = 0) -> Union[BaseParser, dai.DeviceNode]:
+        ...
+
+    @overload
+    def getParser(self, parser_type: Type[TParser], index: int = 0) -> TParser:
+        ...
+
+    def getParser(self, *args, **kwargs) -> Union[BaseParser, dai.DeviceNode]:
         """Returns the parser node for the given model head index.
 
         If index is not provided, the first parser node is returned by default.
         """
+        index = 0
+        parser_type = None
+
+        # Parse arguments based on the overload patterns
+        if len(args) == 1:
+            if isinstance(args[0], type):  # Case: getParser(parser_type)
+                parser_type = args[0]
+            else:  # Case: getParser(index)
+                index = args[0]
+        elif len(args) == 2:  # Case: getParser(parser_type, index)
+            parser_type = args[0]
+            index = args[1]
+
+        # Handle kwargs
+        if "index" in kwargs:
+            index = kwargs["index"]
+        if "parser_type" in kwargs:
+            parser_type = kwargs["parser_type"]
+
         if index not in self._parsers:
             raise KeyError(
                 f"Parser with ID {index} not found. Available parser IDs: {list(self._parsers.keys())}"
             )
         parser = self._parsers[index]
-        if not isinstance(parser, parser_type) or not isinstance(
-            parser, dai.DeviceNode
-        ):
-            raise TypeError(
-                f"Parser with ID {index} is of type: {type(parser)}. Requested type: {parser_type}"
-            )
+
+        if parser_type:
+            if not isinstance(parser, parser_type):
+                raise TypeError(
+                    f"Parser with ID {index} is of type: {type(parser)}. Requested type: {parser_type}"
+                )
         return parser
 
     def setBackendProperties(self, setBackendProperties: Dict[str, str]) -> None:
