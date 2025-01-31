@@ -52,19 +52,22 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         self,
         camera: dai.node.Camera,
         model_description: dai.NNModelDescription,
-        fps: Optional[float],
+        fps: Optional[float] = ...,
     ) -> "ParsingNeuralNetwork":
         ...
 
     @overload
     def build(
-        self, camera: dai.node.Camera, nn_archive: dai.NNArchive, fps: Optional[float]
+        self,
+        camera: dai.node.Camera,
+        nn_archive: dai.NNArchive,
+        fps: Optional[float] = ...,
     ) -> "ParsingNeuralNetwork":
         ...
 
     @overload
     def build(
-        self, camera: dai.node.Camera, model: str, fps: Optional[float]
+        self, camera: dai.node.Camera, model: str, fps: Optional[float] = ...
     ) -> "ParsingNeuralNetwork":
         ...
 
