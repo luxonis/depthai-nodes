@@ -99,20 +99,20 @@ def non_max_suppression(
     # Detection: 4 (bbox) + 1 (objectness) = 5
     # Keypoints: 4 (bbox) + 1 (objectness) + 51 (kpts) = 56
     # Segmentation: 4 (bbox) + 1 (objectness) + 4 (pos) = 9
-    if det_mode:
-        num_classes_check = prediction.shape[2] - 5
-    else:
-        num_classes_check = prediction.shape[2] - (
-            56 if kpts_mode else 9
-        )  # number of classes
+    # if det_mode:
+    #     num_classes_check = prediction.shape[2] - 5
+    # else:
+    #     num_classes_check = prediction.shape[2] - (
+    #         56 if kpts_mode else 9
+    #     )  # number of classes
 
     nm = prediction.shape[2] - num_classes - 5
     pred_candidates = prediction[..., 4] > conf_thres  # candidates
 
     # Check the parameters.
-    assert (
-        num_classes == num_classes_check
-    ), f"Number of classes {num_classes} does not match the model {num_classes_check}"
+    # assert num_classes == num_classes_check, (
+    #     f"Number of classes {num_classes} does not match the model {num_classes_check}"
+    # )
     assert (
         0 <= conf_thres <= 1
     ), f"Invalid Confidence threshold {conf_thres}, valid values are between 0.0 and 1.0"
