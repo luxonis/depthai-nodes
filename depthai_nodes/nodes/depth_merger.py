@@ -99,15 +99,15 @@ class DepthMerger(dai.node.HostNode):
             if isinstance(detection, ImgDetectionExtended)
             else detection.ymax
         )
-        xmin += (xmax - xmin) * self.shrinking_factor
-        ymin += (ymax - ymin) * self.shrinking_factor
-        xmax -= (xmax - xmin) * self.shrinking_factor
-        ymax -= (ymax - ymin) * self.shrinking_factor
+        xmin_corrected = xmin + (xmax - xmin) * self.shrinking_factor
+        ymin_corrected = ymin + (ymax - ymin) * self.shrinking_factor
+        xmax_corrected = xmax - (xmax - xmin) * self.shrinking_factor
+        ymax_corrected = ymax - (ymax - ymin) * self.shrinking_factor
         roi = [
-            self._get_index(xmin, x_len),
-            self._get_index(ymin, y_len),
-            self._get_index(xmax, x_len),
-            self._get_index(ymax, y_len),
+            self._get_index(xmin_corrected, x_len),
+            self._get_index(ymin_corrected, y_len),
+            self._get_index(xmax_corrected, x_len),
+            self._get_index(ymax_corrected, y_len),
         ]
         spatials = self.host_spatials_calc.calc_spatials(depth, roi)
 
