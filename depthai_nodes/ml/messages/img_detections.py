@@ -1,4 +1,3 @@
-import logging
 from typing import List, Tuple
 
 import depthai as dai
@@ -13,8 +12,7 @@ from depthai_nodes.ml.helpers.constants import (
 )
 from depthai_nodes.ml.messages.keypoints import Keypoint
 from depthai_nodes.ml.messages.segmentation import SegmentationMask
-
-logger = logging.getLogger(__name__)
+from depthai_nodes.utils import get_logger
 
 
 class ImgDetectionExtended(dai.Buffer):
@@ -43,6 +41,7 @@ class ImgDetectionExtended(dai.Buffer):
         self._label: int = -1
         self._label_name: str = ""
         self._keypoints: List[Keypoint] = []
+        self._logger = get_logger(__name__)
 
     @property
     def rotated_rect(self) -> dai.RotatedRect:
@@ -89,7 +88,7 @@ class ImgDetectionExtended(dai.Buffer):
             raise ValueError("Confidence must be between 0 and 1.")
         if not (0 <= value <= 1):
             value = max(0, min(1, value))
-            logger.info("Confidence value was clipped to [0, 1].")
+            self._logger.info("Confidence value was clipped to [0, 1].")
 
         self._confidence = value
 
