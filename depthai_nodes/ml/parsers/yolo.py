@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List, Optional
 
 import cv2
@@ -19,6 +20,8 @@ from depthai_nodes.ml.parsers.utils.yolo import (
     decode_yolo_output,
     parse_kpts,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class YOLOExtendedParser(BaseParser):
@@ -313,6 +316,23 @@ class YOLOExtendedParser(BaseParser):
             # Reshape the anchors based on the model's output heads
             if self.anchors is not None:
                 self.anchors = np.array(self.anchors).reshape(len(strides), -1)
+
+            # Enusre the number of classes is correct
+            num_classes_check = outputs_values[0].shape[1] - 5
+            if num_classes_check != self.n_classes:
+                logger.warning(
+                    f"The provided number of classes {self.n_classes} does not match the model's {num_classes_check}. Updating the number of classes to {num_classes_check}."
+                )
+                self.n_classes = num_classes_check
+
+            # Ensure the number of keypoints is correct
+            if mode == self._KPTS_MODE:
+                num_keypoints_check = kpts_outputs[0].shape[1] // 3
+                if num_keypoints_check != self.n_keypoints:
+                    logger.warning(
+                        f"The provided number of keypoints {self.n_keypoints} does not match the model's {num_keypoints_check}. Updating the number of keypoints to {num_keypoints_check}."
+                    )
+                    self.n_keypoints = num_keypoints_check
 
             # Decode the outputs
             results = decode_yolo_output(
