@@ -1,4 +1,3 @@
-import logging
 import time
 from enum import Enum
 from typing import List, Optional, Tuple
@@ -8,8 +7,9 @@ import numpy as np
 from depthai_nodes.ml.parsers.utils.bbox_format_converters import xywh_to_xyxy
 from depthai_nodes.ml.parsers.utils.masks_utils import sigmoid
 from depthai_nodes.ml.parsers.utils.nms import nms
+from depthai_nodes.utils import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class YOLOSubtype(str, Enum):
