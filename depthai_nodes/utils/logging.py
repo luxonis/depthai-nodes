@@ -12,6 +12,13 @@ class LogLevel(Enum):
     WARN = "WARN"
 
 
+def get_logger(name: Optional[str] = None) -> logging.Logger:
+    logger = logging.getLogger("depthai-nodes")
+    if name:
+        logger = logger.getChild(name)
+    return logger
+
+
 def setup_logging(level: Optional[str] = None, file: Optional[str] = None):
     """Globally configures logging.
 
