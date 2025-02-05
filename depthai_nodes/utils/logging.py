@@ -20,7 +20,7 @@ def get_logger(name: Optional[str] = None) -> logging.Logger:
 
 
 def setup_logging(level: Optional[str] = None, file: Optional[str] = None):
-    """Globally configures logging.
+    """Globally configures logging for depthai_nodes package.
 
     @type level: str or None
     @param level: Logging level. One of "CRITICAL", "DEBUG", "ERR", "INFO", and "WARN".
@@ -30,6 +30,7 @@ def setup_logging(level: Optional[str] = None, file: Optional[str] = None):
     @param file: Path to a file where logs will be saved. If None, logs will not be
         saved. Defaults to None.
     """
+    logger = get_logger()
     passed_level = get_log_level(level)
     env_dai_nodes_level = get_log_level(os.environ.get("DEPTHAI_NODES_LEVEL", None))
     env_dai_level = get_log_level(os.environ.get("DEPTHAI_LEVEL", None))
@@ -41,18 +42,17 @@ def setup_logging(level: Optional[str] = None, file: Optional[str] = None):
     format = file_format = "%(asctime)s [depthai-nodes] [%(levelname)s] %(message)s"
     datefmt = "[%Y-%m-%d %H:%M:%S]"
 
-    handlers = [logging.StreamHandler()]
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(logging.Formatter(format, datefmt=datefmt))
+    logger.addHandler(console_handler)
 
     if file is not None:
         file_handler = logging.FileHandler(file)
         file_handler.setFormatter(logging.Formatter(file_format, datefmt=datefmt))
-        handlers.append(file_handler)  # type: ignore
+        logger.addHandler(file_handler)
 
-    logging.basicConfig(
-        level=used_level.value, format=format, datefmt=datefmt, handlers=handlers
-    )
-
-    logging.info(f"Using log level: {used_level}")
+    logger.setLevel(used_level.value)
+    logger.info(f"Using log level: {used_level}")
 
 
 def get_log_level(level_str: Optional[str]) -> Optional[LogLevel]:
