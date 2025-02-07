@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from depthai_nodes.ml.messages import Classifications
-from depthai_nodes.ml.messages.creators.classification import (
+from depthai_nodes import Classifications
+from depthai_nodes.message.creators import (
     create_classification_message,
 )
 

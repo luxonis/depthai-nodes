@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from depthai_nodes.ml.messages import Line, Lines
-from depthai_nodes.ml.messages.creators.detection import create_line_detection_message
+from depthai_nodes import Line, Lines
+from depthai_nodes.message.creators import create_line_detection_message
 
 LINE = np.array([[0.1, 0.2, 0.3, 0.4]])
 SCORE = np.array([0.9])

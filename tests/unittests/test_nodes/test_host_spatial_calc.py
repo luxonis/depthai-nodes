@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 from utils.calibration_handler import get_calibration_handler
 
-from depthai_nodes.nodes.host_spatials_calc import HostSpatialsCalc
+from depthai_nodes.node.host_spatials_calc import HostSpatialsCalc
 
 
 @pytest.fixture

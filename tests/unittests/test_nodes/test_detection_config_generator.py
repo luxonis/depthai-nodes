@@ -3,7 +3,7 @@ from typing import List, Optional, Union
 import depthai as dai
 import pytest
 
-from depthai_nodes.nodes.utils.detection_config_generator import generate_script_content
+from depthai_nodes.node.utils import generate_script_content
 
 
 @pytest.fixture

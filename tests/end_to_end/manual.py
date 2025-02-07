@@ -3,7 +3,7 @@ import argparse
 import depthai as dai
 from utils import get_input_shape, get_num_inputs
 
-from depthai_nodes.parsing_neural_network import ParsingNeuralNetwork
+from depthai_nodes.node import ParsingNeuralNetwork
 
 parser = argparse.ArgumentParser()
 parser.add_argument(

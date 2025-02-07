@@ -2,7 +2,7 @@ import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes.ml.messages.creators.tracked_features import (
+from depthai_nodes.message.creators import (
     create_tracked_features_message,
 )
 

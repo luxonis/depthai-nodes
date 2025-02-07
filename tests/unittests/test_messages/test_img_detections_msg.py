@@ -2,7 +2,7 @@ import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes.ml.messages import (
+from depthai_nodes import (
     ImgDetectionExtended,
     ImgDetectionsExtended,
     Keypoint,
