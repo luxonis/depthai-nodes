@@ -3,6 +3,9 @@ name: End-to-End Depthai-nodes tests
 on:
   workflow_dispatch:
     inputs:
+      distinct_id:
+        description: 'run identifier'
+        required: false
       additional-parameter:
         description: 'Additional parameter: -all or -p <parser_name>. Default: -all. If -p is used: -p <parser_name>'
         required: true
@@ -24,6 +27,13 @@ on:
       - .github/workflows/e2e_tests.yaml
 
 jobs:
+  id:
+    name: Workflow ID Provider
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: echo distinct ID ${{ github.event.inputs.distinct_id }}
+        run: echo ${{ github.event.inputs.distinct_id }}
   HIL-test:
     runs-on: ['self-hosted', 'testbed-runner']
 
