@@ -1,15 +1,13 @@
 from typing import Optional
 
-import depthai as dai
 import numpy as np
 
 from depthai_nodes import (
     ImgDetectionExtended,
     ImgDetectionsExtended,
-    Line,
-    Lines,
 )
-from depthai_nodes.node.parsers.utils.keypoints import transform_to_keypoints
+
+from .keypoints import create_keypoints_message
 
 
 def create_detection_message(
@@ -187,12 +185,29 @@ def create_detection_message(
         if labels is not None:
             detection.label = int(labels[detection_idx])
         if keypoints is not None:
-            if keypoints_scores is not None:
-                detection.keypoints = transform_to_keypoints(
-                    keypoints[detection_idx], keypoints_scores[detection_idx]
-                )
-            else:
-                detection.keypoints = transform_to_keypoints(keypoints[detection_idx])
+            # if keypoints_scores is not None:
+            #     # detection.keypoints = transform_to_keypoints(
+            #     #     keypoints[detection_idx], keypoints_scores[detection_idx]
+            #     # )
+            #     keypoints_msg = create_keypoints_message(
+            #         keypoints=keypoints[detection_idx],
+            #         scores=keypoints_scores[detection_idx],
+            #     )
+            # else:
+            #     keypoints_msg = create_keypoints_message(
+            #         keypoints=keypoints[detection_idx],
+            #         scores=keypoints_scores[detection_idx]
+            #         if keypoints_scores is not None
+            #         else None,
+            #     )
+            #     detection.keypoints = transform_to_keypoints(keypoints[detection_idx])
+            keypoints_msg = create_keypoints_message(
+                keypoints=keypoints[detection_idx],
+                scores=None
+                if keypoints_scores is None
+                else keypoints_scores[detection_idx],
+            )
+            detection.keypoints = keypoints_msg.keypoints
 
         detections.append(detection)
 
@@ -203,67 +218,3 @@ def create_detection_message(
         detections_msg.masks = masks
 
     return detections_msg
-
-
-def create_line_detection_message(lines: np.ndarray, scores: np.ndarray):
-    """Create a DepthAI message for a line detection.
-
-    @param lines: Detected lines of shape (N,4) meaning [...,[x_start, y_start, x_end, y_end],...].
-    @type lines: np.ndarray
-    @param scores: Confidence scores of detected lines of shape (N,).
-    @type scores: np.ndarray
-
-    @return: Message containing the lines and confidence scores of detected lines.
-    @rtype: Lines
-
-    @raise ValueError: If the lines are not a numpy array.
-    @raise ValueError: If the lines are not of shape (N,4).
-    @raise ValueError: If the lines 2nd dimension is not of size E{4}.
-    @raise ValueError: If the scores are not a numpy array.
-    @raise ValueError: If the scores are not of shape (N,).
-    @raise ValueError: If the scores do not have the same length as lines.
-    """
-
-    # checks for lines
-    if not isinstance(lines, np.ndarray):
-        raise ValueError(f"Lines should be numpy array, got {type(lines)}.")
-    if len(lines) != 0:
-        if len(lines.shape) != 2:
-            raise ValueError(
-                f"Lines should be of shape (N,4) meaning [...,[x_start, y_start, x_end, y_end],...], got {lines.shape}."
-            )
-        if lines.shape[1] != 4:
-            raise ValueError(
-                f"Lines 2nd dimension should be of size 4 e.g. [x_start, y_start, x_end, y_end] got {lines.shape[1]}."
-            )
-
-    # checks for scores
-    if not isinstance(scores, np.ndarray):
-        raise ValueError(f"Scores should be numpy array, got {type(scores)}.")
-
-    if len(scores) != 0:
-        if len(scores.shape) != 1:
-            raise ValueError(
-                f"Scores should be of shape (N,) meaning, got {scores.shape}."
-            )
-
-        for score in scores:
-            if not isinstance(score, (float, np.floating)):
-                raise ValueError(f"Scores should be of type float, got {type(score)}.")
-
-    if scores.shape[0] != lines.shape[0]:
-        raise ValueError(
-            f"Scores should have same length as lines, got {scores.shape[0]} and {lines.shape[0]}."
-        )
-
-    line_detections = []
-    for i, line in enumerate(lines):
-        line_detection = Line()
-        line_detection.start_point = dai.Point2f(line[0], line[1])
-        line_detection.end_point = dai.Point2f(line[2], line[3])
-        line_detection.confidence = float(scores[i])
-        line_detections.append(line_detection)
-
-    lines_msg = Lines()
-    lines_msg.lines = line_detections
-    return lines_msg

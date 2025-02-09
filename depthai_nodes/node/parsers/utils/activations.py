@@ -1,7 +1,11 @@
+from typing import Optional
+
 import numpy as np
 
 
-def softmax(x: np.ndarray, axis: int = None, keep_dims: bool = False) -> np.ndarray:
+def softmax(
+    x: np.ndarray, axis: Optional[int] = None, keep_dims: bool = False
+) -> np.ndarray:
     """Compute the softmax of an array. The softmax function is defined as: softmax(x) =
     exp(x) / sum(exp(x))
 

@@ -5,10 +5,10 @@ from .classification import (
 from .clusters import create_cluster_message
 from .detection import (
     create_detection_message,
-    create_line_detection_message,
 )
 from .image import create_image_message
 from .keypoints import create_keypoints_message
+from .line import create_line_detection_message
 from .map import create_map_message
 from .regression import create_regression_message
 from .segmentation import create_segmentation_message

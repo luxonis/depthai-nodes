@@ -4,7 +4,6 @@ import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
 
-from depthai_nodes import Keypoint, SegmentationMask
 from depthai_nodes.utils import get_logger
 from depthai_nodes.utils.constants import (
     BACKGROUND_COLOR,
@@ -12,6 +11,9 @@ from depthai_nodes.utils.constants import (
     OUTLINE_COLOR,
     TEXT_COLOR,
 )
+
+from .keypoints import Keypoint
+from .segmentation import SegmentationMask
 
 
 class ImgDetectionExtended(dai.Buffer):

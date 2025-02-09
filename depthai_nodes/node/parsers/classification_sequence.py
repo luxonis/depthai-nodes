@@ -4,8 +4,9 @@ import depthai as dai
 import numpy as np
 
 from depthai_nodes.message.creators import create_classification_sequence_message
-from depthai_nodes.node import ClassificationParser
 from depthai_nodes.node.parsers.utils import softmax
+
+from .classification import ClassificationParser
 
 
 class ClassificationSequenceParser(ClassificationParser):
