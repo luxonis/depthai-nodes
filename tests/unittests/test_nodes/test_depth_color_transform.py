@@ -3,7 +3,7 @@ import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes.nodes import DepthColorTransform
+from depthai_nodes.node import DepthColorTransform
 
 
 @pytest.fixture
