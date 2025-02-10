@@ -14,6 +14,10 @@ on:
           description: 'Reservation name - usually usually unique identifier of root CI run'
           required: false
           type: string
+      hold_reservation:
+        description: 'If this is set to true testbed will stay reserved after process is done - reccomended for CI use'
+        required: false
+        type: boolean
       additional-parameter:
         description: 'Additional parameter: -all or -p <parser_name>. Default: -all. If -p is used: -p <parser_name>'
         required: true
@@ -77,8 +81,11 @@ jobs:
               TESTBED_OPTION="--capabilities 'depthai-core-hil'"
               RESERVATION_OPTION="--reservation-name $RESERVATION_NAME"
             fi
+          if [[ "${{ github.event.inputs.hold_reservation }}" == 'true' ]]; then
+            HOLD_RESERVATION="--hold-reservation"
+          fi
 
-            hil --hold-reservation --wait $TESTBED_OPTION $RESERVATION_OPTION  \
+            hil $HOLD_RESERVATION --wait $TESTBED_OPTION $RESERVATION_OPTION  \
               --before-docker-pull "echo ${{ secrets.GHCR_PAT }} | docker login ghcr.io -u ${{ secrets.GHCR_USER }} --password-stdin" \
               --docker-image ghcr.io/luxonis/depthai-nodes-testing \
               --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{ secrets.LUXONIS_EXTRA_INDEX_URL }} \
