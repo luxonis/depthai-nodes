@@ -6,6 +6,14 @@ on:
       distinct_id:
         description: 'run identifier'
         required: false
+      testbed:
+          description: 'On what testbed will tests be run'
+          required: false
+          type: string
+      reservation_name:
+          description: 'Reservation name - usually usually unique identifier of root CI run'
+          required: false
+          type: string
       additional-parameter:
         description: 'Additional parameter: -all or -p <parser_name>. Default: -all. If -p is used: -p <parser_name>'
         required: true
@@ -40,6 +48,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.12]
+   
 
     steps:
       - name: Update HIL
@@ -58,8 +67,34 @@ jobs:
       - name: Run Test
         run: |
           export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#${{ matrix.python-version}}"
+
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            hil --capabilities "depthai-core-hil" --wait --reservation-name $RESERVATION_NAME --before-docker-pull "echo ${{secrets.GHCR_PAT}} | docker login ghcr.io -u ${{secrets.GHCR_USER}} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=${{ github.event.inputs.depthai-version }} --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=${{ github.event.inputs.branch }} --env FLAGS=\"${{ github.event.inputs.additional-parameter }}\""
+            # Assign testbed and reservation name only if both are provided
+            if [[ -n "${{ github.event.inputs.testbed }}" && -n "${{ github.event.inputs.reservation_name }}" ]]; then
+              TESTBED_OPTION="--testbed ${{ github.event.inputs.testbed }}"
+              RESERVATION_OPTION="--reservation-name ${{ github.event.inputs.reservation_name }}"
+            else
+              TESTBED_OPTION="--capabilities 'depthai-core-hil'"
+              RESERVATION_OPTION="--reservation-name $RESERVATION_NAME"
+            fi
+
+            hil --hold-reservation --wait $TESTBED_OPTION $RESERVATION_OPTION  \
+              --before-docker-pull "echo ${{ secrets.GHCR_PAT }} | docker login ghcr.io -u ${{ secrets.GHCR_USER }} --password-stdin" \
+              --docker-image ghcr.io/luxonis/depthai-nodes-testing \
+              --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{ secrets.LUXONIS_EXTRA_INDEX_URL }} \
+                --env DEPTHAI_VERSION=${{ github.event.inputs.depthai-version }} \
+                --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} \
+                --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} \
+                --env BRANCH=${{ github.event.inputs.branch }} \
+                --env FLAGS=\"${{ github.event.inputs.additional-parameter }}\""
           else
-            hil --capabilities "depthai-core-hil" --wait --reservation-name $RESERVATION_NAME --before-docker-pull "echo ${{secrets.GHCR_PAT}} | docker login ghcr.io -u ${{secrets.GHCR_USER}} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=\"3.0.0a11\" --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=\"main\" --env FLAGS=\"-all\""
+            hil --capabilities "depthai-core-hil" --wait --reservation-name $RESERVATION_NAME \
+              --before-docker-pull "echo ${{ secrets.GHCR_PAT }} | docker login ghcr.io -u ${{ secrets.GHCR_USER }} --password-stdin" \
+              --docker-image ghcr.io/luxonis/depthai-nodes-testing \
+              --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{ secrets.LUXONIS_EXTRA_INDEX_URL }} \
+                --env DEPTHAI_VERSION=\"3.0.0a11\" \
+                --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} \
+                --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} \
+                --env BRANCH=\"main\" \
+                --env FLAGS=\"-all\""
           fi
