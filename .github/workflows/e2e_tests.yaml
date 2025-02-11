@@ -80,7 +80,7 @@ jobs:
               TESTBED_OPTION="--testbed ${{ github.event.inputs.testbed }}"
               RESERVATION_OPTION="--reservation-name ${{ github.event.inputs.reservation_name }}"
             else
-              TESTBED_OPTION="--capabilities 'depthai-core-hil'"
+              TESTBED_OPTION="--capabilities depthai-core-hil"
               RESERVATION_OPTION="--reservation-name $RESERVATION_NAME"
             fi
           if [[ "${{ github.event.inputs.hold_reservation }}" == 'true' ]]; then
