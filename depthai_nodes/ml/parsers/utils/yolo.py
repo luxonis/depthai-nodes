@@ -337,9 +337,13 @@ def parse_yolo_output(
         )
     else:
         # Keypoints
-        sigmoid_applied = np.all((kpts[:, 2::3] >= 0) & (kpts[:, 2::3] <= 1))
-        if not sigmoid_applied:
-            kpts[:, 2::3] = sigmoid(kpts[:, 2::3])
+
+        # NOTE: For now we omit "guessing" if sigmoid is applied, should be better handled with flags in NNarchive/Parser 
+        # sigmoid_applied = np.all((kpts[:, 2::3] >= 0) & (kpts[:, 2::3] <= 1))
+        # if not sigmoid_applied:
+        #     kpts[:, 2::3] = sigmoid(kpts[:, 2::3])
+
+        kpts[:, 2::3] = sigmoid(kpts[:, 2::3])
         kpts_out = kpts.transpose(0, 2, 1)
         out = out.reshape(bs, ny * nx, -1)
         out = np.concatenate((out, kpts_out), axis=2)
