@@ -72,7 +72,8 @@ jobs:
       - name: Run Test
         run: |
           export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#${{ matrix.python-version}}"
-
+          git branch
+          cat tests/end_to_end/Dockerfile
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             # Assign testbed and reservation name only if both are provided
             if [[ -n "${{ github.event.inputs.testbed }}" && -n "${{ github.event.inputs.reservation_name }}" ]]; then
