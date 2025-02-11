@@ -96,15 +96,8 @@ def non_max_suppression(
     """
     bs = prediction.shape[0]  # batch size
 
-    # Detection: 4 (bbox) + 1 (objectness) = 5
-    # Keypoints: 4 (bbox) + 1 (objectness) + 51 (kpts) = 56
-    # Segmentation: 4 (bbox) + 1 (objectness) + 4 (pos) = 9
-    if det_mode:
-        num_classes_check = prediction.shape[2] - 5
-    else:
-        num_classes_check = prediction.shape[2] - (
-            56 if kpts_mode else 9
-        )  # number of classes
+    offset = prediction.shape[2] - num_classes
+    num_classes_check = prediction.shape[2] - offset
 
     nm = prediction.shape[2] - num_classes - 5
     pred_candidates = prediction[..., 4] > conf_thres  # candidates
@@ -344,8 +337,13 @@ def parse_yolo_output(
         )
     else:
         # Keypoints
-        if (kpts.shape[1] // 17) == 3:
-            kpts[:, 2::3] = sigmoid(kpts[:, 2::3])
+
+        # NOTE: For now we omit "guessing" if sigmoid is applied, should be better handled with flags in NNarchive/Parser
+        # sigmoid_applied = np.all((kpts[:, 2::3] >= 0) & (kpts[:, 2::3] <= 1))
+        # if not sigmoid_applied:
+        #     kpts[:, 2::3] = sigmoid(kpts[:, 2::3])
+
+        kpts[:, 2::3] = sigmoid(kpts[:, 2::3])
         kpts_out = kpts.transpose(0, 2, 1)
         out = out.reshape(bs, ny * nx, -1)
         out = np.concatenate((out, kpts_out), axis=2)
