@@ -315,7 +315,11 @@ class YOLOExtendedParser(BaseParser):
                 self.anchors = np.array(self.anchors).reshape(len(strides), -1)
 
             # Ensure the number of classes is correct
-            num_classes_check = outputs_values[0].shape[1] - 5
+            num_classes_check = (
+                outputs_values[0].shape[1] - 5
+                if self.anchors is None
+                else (outputs_values[0].shape[1] // self.anchors.shape[0]) - 5
+            )
             if num_classes_check != self.n_classes:
                 raise ValueError(
                     f"The provided number of classes {self.n_classes} does not match the model's {num_classes_check}."
