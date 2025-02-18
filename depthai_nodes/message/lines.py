@@ -2,7 +2,7 @@ from typing import List
 
 import depthai as dai
 
-from depthai_nodes.utils.constants import OUTLINE_COLOR
+from depthai_nodes import OUTLINE_COLOR
 
 
 class Line(dai.Buffer):

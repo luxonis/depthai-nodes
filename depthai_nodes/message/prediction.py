@@ -2,7 +2,7 @@ from typing import List
 
 import depthai as dai
 
-from depthai_nodes.utils.constants import (
+from depthai_nodes import (
     BACKGROUND_COLOR,
     TEXT_COLOR,
 )

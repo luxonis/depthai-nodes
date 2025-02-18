@@ -2,8 +2,8 @@ from typing import List
 
 import depthai as dai
 
-from depthai_nodes.utils import get_logger
-from depthai_nodes.utils.constants import KEYPOINT_COLOR
+from depthai_nodes import KEYPOINT_COLOR
+from depthai_nodes.logging import get_logger
 
 
 class Keypoint(dai.Buffer):

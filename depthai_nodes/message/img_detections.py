@@ -4,13 +4,13 @@ import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
 
-from depthai_nodes.utils import get_logger
-from depthai_nodes.utils.constants import (
+from depthai_nodes import (
     BACKGROUND_COLOR,
     KEYPOINT_COLOR,
     OUTLINE_COLOR,
     TEXT_COLOR,
 )
+from depthai_nodes.logging import get_logger
 
 from .keypoints import Keypoint
 from .segmentation import SegmentationMask
