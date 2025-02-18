@@ -4,9 +4,9 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 
+from depthai_nodes.logging import get_logger
 from depthai_nodes.node.parsers.utils import sigmoid, xywh_to_xyxy
 from depthai_nodes.node.parsers.utils.nms import nms
-from depthai_nodes.utils import get_logger
 
 logger = get_logger(__name__)
 
