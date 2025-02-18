@@ -5,7 +5,7 @@ import depthai as dai
 import numpy as np
 from utils import extract_main_slug
 
-from depthai_nodes.ml.messages import (
+from depthai_nodes import (
     Classifications,
     Clusters,
     ImgDetectionsExtended,

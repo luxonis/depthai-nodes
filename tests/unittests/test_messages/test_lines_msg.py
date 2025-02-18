@@ -2,7 +2,7 @@ import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes.ml.messages import Line, Lines
+from depthai_nodes import Line, Lines
 
 
 @pytest.fixture

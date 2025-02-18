@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 from utils.calibration_handler import get_calibration_handler
 
-from depthai_nodes.nodes.host_spatials_calc import HostSpatialsCalc
+from depthai_nodes.node.host_spatials_calc import HostSpatialsCalc
 
 
 @pytest.fixture
@@ -72,7 +72,7 @@ def test_check_input_point(
 ):
     point = [100, 100]
     result = host_spatials_calc._check_input(point, depth_frame.getFrame())
-    assert result == (95, 95, 105, 105)
+    assert result == [95, 95, 105, 105]
 
 
 def test_check_input_invalid(
@@ -83,7 +83,7 @@ def test_check_input_invalid(
 
 
 def test_calc_spatials(host_spatials_calc: HostSpatialsCalc, depth_frame: dai.ImgFrame):
-    roi = (100, 100, 200, 200)
+    roi = [100, 100, 200, 200]
     spatials = host_spatials_calc.calc_spatials(depth_frame, roi)
     assert "x" in spatials
     assert "y" in spatials

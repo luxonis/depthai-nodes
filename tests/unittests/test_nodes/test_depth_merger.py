@@ -7,9 +7,9 @@ from conftest import Output
 from pytest import FixtureRequest
 from utils.calibration_handler import get_calibration_handler
 
-from depthai_nodes.ml.messages import ImgDetectionExtended, ImgDetectionsExtended
-from depthai_nodes.nodes.depth_merger import DepthMerger
-from depthai_nodes.nodes.host_spatials_calc import HostSpatialsCalc
+from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
+from depthai_nodes.node.depth_merger import DepthMerger
+from depthai_nodes.node.host_spatials_calc import HostSpatialsCalc
 
 
 @pytest.fixture

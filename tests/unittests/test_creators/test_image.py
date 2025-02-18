@@ -2,7 +2,7 @@ import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes.ml.messages.creators import (
+from depthai_nodes.message.creators import (
     create_image_message,
 )
 
