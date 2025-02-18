@@ -95,13 +95,13 @@ with dai.Pipeline(device) as pipeline:
         large_input_shape = (input_size[0] * 4, input_size[1] * 4)
 
     if manip:
-        camera_node.requestOutput(large_input_shape, type=image_type).link(
+        camera_node.requestOutput(large_input_shape, type=image_type, fps=20.0).link(
             manip.inputImage
         )
         nn_w_parser = pipeline.create(ParsingNeuralNetwork).build(manip.out, nn_archive)
     else:
         nn_w_parser = pipeline.create(ParsingNeuralNetwork).build(
-            camera_node, nn_archive
+            camera_node, nn_archive, fps=20.0
         )
 
     head_indices = nn_w_parser._parsers.keys()
