@@ -74,16 +74,20 @@ jobs:
           export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#${{ matrix.python-version}}"
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             # Assign testbed and reservation name only if both are provided
-            if [[ -n "${{ github.event.inputs.testbed }}" && -n "${{ github.event.inputs.reservation_name }}" ]]; then
+            if [[ -n "${{ github.event.inputs.testbed }}" ]]; then
               TESTBED_OPTION="--testbed ${{ github.event.inputs.testbed }}"
-              RESERVATION_OPTION="--reservation-name ${{ github.event.inputs.reservation_name }}"
             else
               TESTBED_OPTION="--capabilities depthai-core-hil"
+            fi
+            if [[ -n "${{ github.event.inputs.reservation_name }}" ]]; then
+              RESERVATION_OPTION="--reservation-name ${{ github.event.inputs.reservation_name }}"
+            else
               RESERVATION_OPTION="--reservation-name $RESERVATION_NAME"
             fi
-          if [[ "${{ github.event.inputs.hold_reservation }}" == 'true' ]]; then
-            HOLD_RESERVATION="--hold-reservation"
-          fi
+            
+            if [[ "${{ github.event.inputs.hold_reservation }}" == 'true' ]]; then
+              HOLD_RESERVATION="--hold-reservation"
+            fi
 
             hil $HOLD_RESERVATION --wait $TESTBED_OPTION $RESERVATION_OPTION  \
               --before-docker-pull "echo ${{ secrets.GHCR_PAT }} | docker login ghcr.io -u ${{ secrets.GHCR_USER }} --password-stdin" \
