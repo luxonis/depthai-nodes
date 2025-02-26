@@ -73,7 +73,7 @@ def main():
         f"--models={models}",
         f"--parsers={parsers}",
         "-v",
-        "--tb=no",
+        "--tb=short",
         "-r a",
         "--log-cli-level=DEBUG",
         "--color=yes",
