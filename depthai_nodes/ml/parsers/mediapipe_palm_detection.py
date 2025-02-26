@@ -68,6 +68,7 @@ class MPPalmDetectionParser(DetectionParser):
         self.iou_threshold = iou_threshold
         self.max_det = max_det
         self.scale = scale
+        self.label_names = ["Palm"]
 
     def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
         """Sets the output layer name(s) for the parser.
@@ -194,8 +195,20 @@ class MPPalmDetectionParser(DetectionParser):
             points = np.clip(points, 0, 1)
             angles = np.round(angles, 0)
 
+            labels = np.array([0] * len(bboxes))
+
+            label_names = (
+                [self.label_names[label] for label in labels]
+                if self.label_names
+                else None
+            )
             detections_msg = create_detection_message(
-                bboxes=bboxes, scores=scores, angles=angles, keypoints=points
+                bboxes=bboxes,
+                scores=scores,
+                angles=angles,
+                keypoints=points,
+                labels=labels,
+                label_names=label_names,
             )
             detections_msg.setTimestamp(output.getTimestamp())
             detections_msg.transformation = output.getTransformation()

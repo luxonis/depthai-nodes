@@ -22,7 +22,13 @@ ONE_SCORE = np.array([0.9])
 
 def test_valid_input():
     message = create_detection_message(
-        BBOXES, SCORES, ANGLES, LABELS, KPTS, KPTS_SCORES, MASKS
+        bboxes=BBOXES,
+        scores=SCORES,
+        labels=LABELS,
+        angles=ANGLES,
+        keypoints=KPTS,
+        keypoints_scores=KPTS_SCORES,
+        masks=MASKS,
     )
 
     assert isinstance(message, ImgDetectionsExtended)

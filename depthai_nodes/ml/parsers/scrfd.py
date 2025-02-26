@@ -71,6 +71,7 @@ class SCRFDParser(DetectionParser):
         self.feat_stride_fpn = feat_stride_fpn
         self.num_anchors = num_anchors
         self.input_size = input_size
+        self.label_names = ["Face"]
 
     def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
         """Sets the output layer name(s) for the parser.
@@ -213,8 +214,20 @@ class SCRFDParser(DetectionParser):
             )
             bboxes = xyxy_to_xywh(bboxes)
             bboxes = np.clip(bboxes, 0, 1)
+
+            labels = np.array([0] * len(bboxes))
+
+            label_names = (
+                [self.label_names[label] for label in labels]
+                if self.label_names
+                else None
+            )
             message = create_detection_message(
-                bboxes=bboxes, scores=scores, keypoints=keypoints
+                bboxes=bboxes,
+                scores=scores,
+                labels=labels,
+                label_names=label_names,
+                keypoints=keypoints,
             )
             message.setTimestamp(output.getTimestamp())
             message.transformation = output.getTransformation()
