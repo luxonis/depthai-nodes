@@ -217,20 +217,18 @@ class SCRFDParser(DetectionParser):
 
             labels = np.array([0] * len(bboxes))
 
-            if self.label_names:
-                label_names = [self.label_names[label] for label in labels]
-                message = create_detection_message(
-                    bboxes=bboxes,
-                    scores=scores,
-                    labels=labels,
-                    label_names=label_names,
-                    keypoints=keypoints,
-                )
-            else:
-                message = create_detection_message(
-                    bboxes=bboxes, scores=scores, keypoints=keypoints, labels=labels
-                )
-
+            label_names = (
+                [self.label_names[label] for label in labels]
+                if self.label_names
+                else None
+            )
+            message = create_detection_message(
+                bboxes=bboxes,
+                scores=scores,
+                labels=labels,
+                label_names=label_names,
+                keypoints=keypoints,
+            )
             message.setTimestamp(output.getTimestamp())
             message.transformation = output.getTransformation()
             message.setSequenceNum(output.getSequenceNum())

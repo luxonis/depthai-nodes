@@ -197,24 +197,19 @@ class MPPalmDetectionParser(DetectionParser):
 
             labels = np.array([0] * len(bboxes))
 
-            if self.label_names:
-                label_names = [self.label_names[label] for label in labels]
-                detections_msg = create_detection_message(
-                    bboxes=bboxes,
-                    scores=scores,
-                    angles=angles,
-                    keypoints=points,
-                    labels=labels,
-                    label_names=label_names,
-                )
-            else:
-                detections_msg = create_detection_message(
-                    bboxes=bboxes,
-                    scores=scores,
-                    angles=angles,
-                    keypoints=points,
-                    labels=labels,
-                )
+            label_names = (
+                [self.label_names[label] for label in labels]
+                if self.label_names
+                else None
+            )
+            detections_msg = create_detection_message(
+                bboxes=bboxes,
+                scores=scores,
+                angles=angles,
+                keypoints=points,
+                labels=labels,
+                label_names=label_names,
+            )
             detections_msg.setTimestamp(output.getTimestamp())
             detections_msg.transformation = output.getTransformation()
             detections_msg.setSequenceNum(output.getSequenceNum())

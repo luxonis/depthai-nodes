@@ -298,20 +298,19 @@ class YuNetParser(DetectionParser):
 
             labels = np.array([0] * len(bboxes))
 
-            if self.label_names:
-                label_names = [self.label_names[label] for label in labels]
+            label_names = (
+                [self.label_names[label] for label in labels]
+                if self.label_names
+                else None
+            )
 
-                detections_message = create_detection_message(
-                    bboxes=bboxes,
-                    scores=scores,
-                    keypoints=keypoints,
-                    labels=labels,
-                    label_names=label_names,
-                )
-            else:
-                detections_message = create_detection_message(
-                    bboxes=bboxes, scores=scores, keypoints=keypoints, labels=labels
-                )
+            detections_message = create_detection_message(
+                bboxes=bboxes,
+                scores=scores,
+                keypoints=keypoints,
+                labels=labels,
+                label_names=label_names,
+            )
 
             detections_message.setTimestamp(output.getTimestamp())
             detections_message.transformation = output.getTransformation()
