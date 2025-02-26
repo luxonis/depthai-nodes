@@ -78,6 +78,7 @@ class YuNetParser(DetectionParser):
         self.conf_output_layer_name = conf_output_layer_name
         self.iou_output_layer_name = iou_output_layer_name
         self.input_size = input_size
+        self.label_names = ["Face"]
 
     def setInputSize(self, input_size: Tuple[int, int]) -> None:
         """Sets the input size of the model.
@@ -295,9 +296,22 @@ class YuNetParser(DetectionParser):
             bboxes = np.clip(bboxes, 0, 1)
             keypoints = np.clip(keypoints, 0, 1)
 
-            detections_message = create_detection_message(
-                bboxes=bboxes, scores=scores, keypoints=keypoints
-            )
+            labels = np.array([0] * len(bboxes))
+
+            if self.label_names:
+                label_names = [self.label_names[label] for label in labels]
+
+                detections_message = create_detection_message(
+                    bboxes=bboxes,
+                    scores=scores,
+                    keypoints=keypoints,
+                    labels=labels,
+                    label_names=label_names,
+                )
+            else:
+                detections_message = create_detection_message(
+                    bboxes=bboxes, scores=scores, keypoints=keypoints, labels=labels
+                )
 
             detections_message.setTimestamp(output.getTimestamp())
             detections_message.transformation = output.getTransformation()

@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 import depthai as dai
 import numpy as np
 
@@ -15,6 +17,7 @@ def create_detection_message(
     scores: np.ndarray,
     angles: np.ndarray = None,
     labels: np.ndarray = None,
+    label_names: Optional[List[str]] = None,
     keypoints: np.ndarray = None,
     keypoints_scores: np.ndarray = None,
     masks: np.ndarray = None,
@@ -32,6 +35,8 @@ def create_detection_message(
     @type angles: Optional[np.ndarray]
     @param labels: Labels of detected objects of shape (N,).
     @type labels: Optional[np.ndarray]
+    @param label_names: Names of the labels (classes)
+    @type label_names: Optional[List[str]]
     @param keypoints: Keypoints of detected objects of shape (N, n_keypoints, dim) where
         dim is 2 or 3.
     @type keypoints: Optional[np.array]
@@ -99,6 +104,12 @@ def create_detection_message(
             raise ValueError(
                 f"Labels should have same length as bboxes, got {len(labels)} labels and {n_bboxes} bounding boxes."
             )
+
+    if label_names is not None:
+        if not isinstance(label_names, list):
+            raise ValueError(f"Label names should be a list, got {type(label_names)}.")
+        if not all(isinstance(label_name, str) for label_name in label_names):
+            raise ValueError(f"Label names should be strings, got {label_names}.")
 
     if angles is not None:
         if not isinstance(angles, np.ndarray):
@@ -184,6 +195,8 @@ def create_detection_message(
 
         if labels is not None:
             detection.label = int(labels[detection_idx])
+            if label_names is not None:
+                detection.label_name = label_names[detection_idx]
         if keypoints is not None:
             if keypoints_scores is not None:
                 detection.keypoints = transform_to_keypoints(
