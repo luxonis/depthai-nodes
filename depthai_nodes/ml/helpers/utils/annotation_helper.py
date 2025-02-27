@@ -1,10 +1,11 @@
 from datetime import timedelta
+from typing import List, Optional, Tuple
 
 import depthai as dai
 import numpy as np
 
-Point = tuple[float, float]
-ColorRGBA = tuple[float, float, float, float]
+Point = Tuple[float, float]
+ColorRGBA = Tuple[float, float, float, float]
 
 
 class AnnotationHelper:
@@ -44,9 +45,9 @@ class AnnotationHelper:
 
     def draw_polyline(
         self,
-        points: list[Point],
+        points: List[Point],
         outline_color: ColorRGBA,
-        fill_color: ColorRGBA | None = None,
+        fill_color: Optional[ColorRGBA] = None,
         thickness: float = 1,
         closed: bool = False,
     ) -> "AnnotationHelper":
@@ -78,7 +79,7 @@ class AnnotationHelper:
         return self
 
     def draw_points(
-        self, points: list[Point], color: ColorRGBA, thickness: float = 2
+        self, points: List[Point], color: ColorRGBA, thickness: float = 2
     ) -> "AnnotationHelper":
         """Draws points.
 
@@ -104,7 +105,7 @@ class AnnotationHelper:
         center: Point,
         radius: float,
         outline_color: ColorRGBA,
-        fill_color: ColorRGBA | None = None,
+        fill_color: Optional[ColorRGBA] = None,
         thickness: float = 1,
     ) -> "AnnotationHelper":
         """Draws a circle.
@@ -137,7 +138,7 @@ class AnnotationHelper:
         top_left: Point,
         bottom_right: Point,
         outline_color: ColorRGBA,
-        fill_color: ColorRGBA | None = None,
+        fill_color: Optional[ColorRGBA] = None,
         thickness: float = 1,
     ) -> "AnnotationHelper":
         """Draws a rectangle.
@@ -169,7 +170,7 @@ class AnnotationHelper:
         text: str,
         position: Point,
         color: ColorRGBA,
-        background_color: ColorRGBA | None = None,
+        background_color: Optional[ColorRGBA] = None,
         size: float = 32,
     ) -> "AnnotationHelper":
         """Draws text.
@@ -201,10 +202,10 @@ class AnnotationHelper:
     def draw_rotated_rect(
         self,
         center: Point,
-        size: tuple[float, float],
+        size: Tuple[float, float],
         angle: float,
         outline_color: ColorRGBA,
-        fill_color: ColorRGBA | None = None,
+        fill_color: Optional[ColorRGBA] = None,
         thickness: float = 1,
     ) -> "AnnotationHelper":
         """Draws a rotated rectangle.
@@ -246,9 +247,9 @@ class AnnotationHelper:
 
     def _create_points_annotation(
         self,
-        points: list[Point],
+        points: List[Point],
         color: ColorRGBA,
-        fill_color: ColorRGBA | None,
+        fill_color: Optional[ColorRGBA],
         type: dai.PointsAnnotationType,
     ) -> dai.PointsAnnotation:
         points_annot = dai.PointsAnnotation()
@@ -268,8 +269,8 @@ class AnnotationHelper:
         return c
 
     def _get_rotated_rect_points(
-        self, center: Point, size: tuple[float, float], angle: float
-    ) -> list[Point]:
+        self, center: Point, size: Tuple[float, float], angle: float
+    ) -> List[Point]:
         cx, cy = center
         width, height = size
         angle_rad = np.radians(angle)
@@ -296,5 +297,5 @@ class AnnotationHelper:
         # Convert to list of tuples
         return translated_corners.tolist()
 
-    def _create_points_vector(self, points: list[Point]) -> dai.VectorPoint2f:
+    def _create_points_vector(self, points: List[Point]) -> dai.VectorPoint2f:
         return dai.VectorPoint2f([dai.Point2f(pt[0], pt[1]) for pt in points])
