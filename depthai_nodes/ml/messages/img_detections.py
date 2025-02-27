@@ -4,8 +4,15 @@ import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
 
-from .keypoints import Keypoint
-from .segmentation import SegmentationMask
+from depthai_nodes.ml.helpers.constants import (
+    BACKGROUND_COLOR,
+    KEYPOINT_COLOR,
+    OUTLINE_COLOR,
+    TEXT_COLOR,
+)
+from depthai_nodes.ml.messages.keypoints import Keypoint
+from depthai_nodes.ml.messages.segmentation import SegmentationMask
+from depthai_nodes.utils import get_logger
 
 
 class ImgDetectionExtended(dai.Buffer):
@@ -34,6 +41,7 @@ class ImgDetectionExtended(dai.Buffer):
         self._label: int = -1
         self._label_name: str = ""
         self._keypoints: List[Keypoint] = []
+        self._logger = get_logger(__name__)
 
     @property
     def rotated_rect(self) -> dai.RotatedRect:
@@ -51,8 +59,8 @@ class ImgDetectionExtended(dai.Buffer):
         @param value: Tuple of (x_center, y_center, width, height, angle).
         @type value: tuple[float, float, float, float, float]
         """
-        center = dai.Point2f(rectangle[0], rectangle[1])
-        size = dai.Size2f(rectangle[2], rectangle[3])
+        center = dai.Point2f(rectangle[0], rectangle[1], normalized=True)
+        size = dai.Size2f(rectangle[2], rectangle[3], normalized=True)
 
         self._rotated_rect = dai.RotatedRect(center, size, rectangle[4])
 
@@ -76,8 +84,12 @@ class ImgDetectionExtended(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("Confidence must be a float.")
-        if value < 0 or value > 1:
+        if value < -0.1 or value > 1.1:
             raise ValueError("Confidence must be between 0 and 1.")
+        if not (0 <= value <= 1):
+            value = max(0, min(1, value))
+            self._logger.info("Confidence value was clipped to [0, 1].")
+
         self._confidence = value
 
     @property
@@ -161,6 +173,8 @@ class ImgDetectionsExtended(dai.Buffer):
         Image detections with keypoints.
     masks: np.ndarray
         The segmentation masks of the image. All masks are stored in a single numpy array.
+    transformation : dai.ImgTransformation
+        Image transformation object.
     """
 
     def __init__(self) -> None:
@@ -168,6 +182,7 @@ class ImgDetectionsExtended(dai.Buffer):
         super().__init__()
         self._detections: List[ImgDetectionExtended] = []
         self._masks: SegmentationMask = SegmentationMask()
+        self._transformation: dai.ImgTransformation = None
 
     @property
     def detections(self) -> List[ImgDetectionExtended]:
@@ -196,7 +211,7 @@ class ImgDetectionsExtended(dai.Buffer):
         self._detections = value
 
     @property
-    def masks(self) -> NDArray[np.int8]:
+    def masks(self) -> NDArray[np.int16]:
         """Returns the segmentation masks stored in a single numpy array.
 
         @return: Segmentation masks.
@@ -226,3 +241,73 @@ class ImgDetectionsExtended(dai.Buffer):
         masks_msg = SegmentationMask()
         masks_msg.mask = value
         self._masks = masks_msg
+
+    @property
+    def transformation(self) -> dai.ImgTransformation:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self._transformation
+
+    @transformation.setter
+    def transformation(self, value: dai.ImgTransformation):
+        """Sets the Image Transformation object.
+
+        @param value: The Image Transformation object.
+        @type value: dai.ImgTransformation
+        @raise TypeError: If value is not a dai.ImgTransformation object.
+        """
+        if value is not None:
+            if not isinstance(value, dai.ImgTransformation):
+                raise TypeError(
+                    f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
+                )
+        self._transformation = value
+
+    def getVisualizationMessage(self) -> dai.ImgAnnotations:
+        img_annotations = dai.ImgAnnotations()
+        annotation = dai.ImgAnnotation()
+        transformation = self.transformation
+        w, h = 1, 1
+        if transformation is not None:  # remove once RVC2 supports ImgTransformation
+            w, h = transformation.getSize()
+
+        for detection in self.detections:
+            detection: ImgDetectionExtended = detection
+            rotated_rect = detection.rotated_rect
+            rotated_rect = rotated_rect.denormalize(w, h)
+            points = rotated_rect.getPoints()
+            points = [dai.Point2f(point.x / w, point.y / h) for point in points]
+            pointsAnnotation = dai.PointsAnnotation()
+            pointsAnnotation.type = dai.PointsAnnotationType.LINE_LOOP
+            pointsAnnotation.points = dai.VectorPoint2f(points)
+            pointsAnnotation.outlineColor = OUTLINE_COLOR
+            pointsAnnotation.thickness = 2.0
+            annotation.points.append(pointsAnnotation)
+
+            text = dai.TextAnnotation()
+            text.position = points[0]
+            text.text = f"{detection.label_name} {int(detection.confidence * 100)}%"
+            text.fontSize = 15
+            text.textColor = TEXT_COLOR
+            text.backgroundColor = BACKGROUND_COLOR
+            annotation.texts.append(text)
+
+            if len(detection.keypoints) > 0:
+                keypoints = [
+                    dai.Point2f(keypoint.x, keypoint.y)
+                    for keypoint in detection.keypoints
+                ]
+                keypointAnnotation = dai.PointsAnnotation()
+                keypointAnnotation.type = dai.PointsAnnotationType.POINTS
+                keypointAnnotation.points = dai.VectorPoint2f(keypoints)
+                keypointAnnotation.outlineColor = KEYPOINT_COLOR
+                keypointAnnotation.fillColor = KEYPOINT_COLOR
+                keypointAnnotation.thickness = 2
+                annotation.points.append(keypointAnnotation)
+
+        img_annotations.annotations.append(annotation)
+        img_annotations.setTimestamp(self.getTimestamp())
+        return img_annotations

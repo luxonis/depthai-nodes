@@ -2,9 +2,9 @@ from typing import Any, Dict
 
 import depthai as dai
 
-from ..messages.creators import create_image_message
-from .base_parser import BaseParser
-from .utils import unnormalize_image
+from depthai_nodes.ml.messages.creators import create_image_message
+from depthai_nodes.ml.parsers.base_parser import BaseParser
+from depthai_nodes.ml.parsers.utils import unnormalize_image
 
 
 class ImageOutputParser(BaseParser):
@@ -113,5 +113,8 @@ class ImageOutputParser(BaseParser):
                 is_bgr=self.output_is_bgr,
             )
             image_message.setTimestamp(output.getTimestamp())
+            if output.getTransformation():
+                image_message.setTransformation(output.getTransformation())
+            image_message.setSequenceNum(output.getSequenceNum())
 
             self.out.send(image_message)

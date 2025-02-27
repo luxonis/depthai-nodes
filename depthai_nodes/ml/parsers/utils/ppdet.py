@@ -3,7 +3,9 @@ from typing import Tuple
 import cv2
 import numpy as np
 
-from .bbox_format_converters import corners_to_rotated_bbox
+from depthai_nodes.ml.parsers.utils.bbox_format_converters import (
+    corners_to_rotated_bbox,
+)
 
 
 def _get_mini_boxes(contour: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -81,42 +83,22 @@ def _box_score(predictions: np.ndarray, _corners: np.ndarray) -> float:
 
 def _unclip(
     box: np.ndarray,
-    corners: np.ndarray,
-    width: int,
-    height: int,
     unclip_ratio: float = 2,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Internal function to dilate the bounding box area by a specified ratio.
 
     @param box: The rotated bounding box.
     @type box: np.ndarray
-    @param corners: The corners of the bounding box.
-    @type corners: np.ndarray
-    @param width: The width of the model output predictions.
-    @type width: int
-    @param height: The height of the model output predictions.
-    @type height: int
     @param unclip_ratio: The ratio to dilate the bounding box area by.
-    @type unclip_ratio: float = 2
+    @type unclip_ratio: float = 3
     @return: The dilated bounding box corners.
     @rtype: np.ndarray
     """
 
-    perimiter = cv2.arcLength(corners, True)
-    area = cv2.contourArea(corners)
-    dilation_pixels = (
-        int(-perimiter / 8 + np.sqrt(perimiter**2 / 64 + area * unclip_ratio / 4)) + 1
-    )
-    corners = _dilate_box(corners, dilation_pixels)
+    box[2] = box[2] * np.sqrt(unclip_ratio)
+    box[3] = box[3] * np.sqrt(unclip_ratio)
 
-    for point in corners:
-        point[0] = min(max(point[0], 0), width - 1)
-        point[1] = min(max(point[1], 0), height - 1)
-
-    box[2] = np.linalg.norm(corners[0] - corners[1])
-    box[3] = np.linalg.norm(corners[1] - corners[2])
-
-    return box, np.array(corners, dtype=float)
+    return box
 
 
 def parse_paddle_detection_outputs(
@@ -161,8 +143,6 @@ def parse_paddle_detection_outputs(
     kernel = np.ones((5, 5), np.uint8)
     mask = cv2.dilate(mask.astype(np.uint8), kernel, iterations=1)
 
-    src_h, src_w = predictions.shape[:2]
-
     outs = cv2.findContours(
         (mask * 255).astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE
     )
@@ -177,7 +157,6 @@ def parse_paddle_detection_outputs(
 
     boxes = []
     scores = []
-    corners_array = []
     angles = []
     for contour in contours[:num_contours]:
         box, corners = _get_mini_boxes(contour)
@@ -188,8 +167,7 @@ def parse_paddle_detection_outputs(
         if score < bbox_threshold:
             continue
 
-        box, corners = _unclip(box, corners, src_w, src_h)
-        corners_array.append(corners)
+        box = _unclip(box)
         boxes.append(box[:4])
         scores.append(score)
         angles.append(box[4])
@@ -200,6 +178,9 @@ def parse_paddle_detection_outputs(
         boxes[:, 1] /= height
         boxes[:, 2] /= width
         boxes[:, 3] /= height
-        corners = np.clip(corners, 0, 1)
 
-    return boxes, np.array(angles), np.array(corners_array), np.array(scores)
+    boxes = np.clip(boxes, 0.0, 1.0)
+    angles = np.array(angles)
+    angles = np.round(angles, 0)
+
+    return boxes, angles, np.array(scores)

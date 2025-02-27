@@ -3,15 +3,16 @@ from typing import Any, Dict, List, Optional, Tuple
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_segmentation_message
-from .base_parser import BaseParser
-from .utils.fastsam import (
+from depthai_nodes.ml.messages.creators import create_segmentation_message
+from depthai_nodes.ml.parsers.base_parser import BaseParser
+from depthai_nodes.ml.parsers.utils.fastsam import (
     box_prompt,
     decode_fastsam_output,
     merge_masks,
     point_prompt,
     process_single_mask,
 )
+
 from .utils.masks_utils import get_segmentation_outputs
 
 
@@ -45,9 +46,9 @@ class FastSAMParser(BaseParser):
 
     Output Message/s
     ----------------
-    **Type**: SegmentationMasksSAM
+    **Type**: SegmentationMask
 
-    **Description**: SegmentationMasksSAM message containing the resulting segmentation masks given the prompt.
+    **Description**: SegmentationMask message containing the resulting segmentation masks given the prompt.
 
     Error Handling
     --------------
@@ -57,7 +58,7 @@ class FastSAMParser(BaseParser):
         self,
         conf_threshold: int = 0.5,
         n_classes: int = 1,
-        iou_threshold: int = 0.5,
+        iou_threshold: float = 0.5,
         mask_conf: float = 0.5,
         prompt: str = "everything",
         points: Optional[Tuple[int, int]] = None,
@@ -353,6 +354,8 @@ class FastSAMParser(BaseParser):
             results_masks = merge_masks(results_masks)
 
             segmentation_message = create_segmentation_message(results_masks)
+            segmentation_message.transformation = output.getTransformation()
             segmentation_message.setTimestamp(output.getTimestamp())
+            segmentation_message.setSequenceNum(output.getSequenceNum())
 
             self.out.send(segmentation_message)

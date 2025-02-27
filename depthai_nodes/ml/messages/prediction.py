@@ -2,6 +2,11 @@ from typing import List
 
 import depthai as dai
 
+from depthai_nodes.ml.helpers.constants import (
+    BACKGROUND_COLOR,
+    TEXT_COLOR,
+)
+
 
 class Prediction(dai.Buffer):
     """Prediction class for storing a prediction.
@@ -48,12 +53,15 @@ class Predictions(dai.Buffer):
     ----------
     predictions : List[Prediction]
         List of predictions.
+    transformation : dai.ImgTransformation
+        Image transformation object.
     """
 
     def __init__(self):
         """Initializes the Predictions object."""
         super().__init__()
         self._predictions: List[Prediction] = []
+        self._transformation: dai.ImgTransformation = None
 
     @property
     def predictions(self) -> List[Prediction]:
@@ -89,3 +97,49 @@ class Predictions(dai.Buffer):
         @rtype: float
         """
         return self._predictions[0].prediction
+
+    @property
+    def transformation(self) -> dai.ImgTransformation:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self._transformation
+
+    @transformation.setter
+    def transformation(self, value: dai.ImgTransformation):
+        """Sets the Image Transformation object.
+
+        @param value: The Image Transformation object.
+        @type value: dai.ImgTransformation
+        @raise TypeError: If value is not a dai.ImgTransformation object.
+        """
+
+        if value is not None:
+            if not isinstance(value, dai.ImgTransformation):
+                raise TypeError(
+                    f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
+                )
+        self._transformation = value
+
+    def getVisualizationMessage(self) -> dai.ImgAnnotations:
+        """Returns the visualization message for the predictions.
+
+        The message adds text representing the predictions to the right of the image.
+        """
+        img_annotations = dai.ImgAnnotations()
+        annotation = dai.ImgAnnotation()
+
+        for i, prediction in enumerate(self.predictions):
+            text = dai.TextAnnotation()
+            text.position = dai.Point2f(1.05, 0.1 + i * 0.1)
+            text.text = f"{prediction.prediction:.2f}"
+            text.fontSize = 15
+            text.textColor = TEXT_COLOR
+            text.backgroundColor = BACKGROUND_COLOR
+            annotation.texts.append(text)
+
+        img_annotations.annotations.append(annotation)
+        img_annotations.setTimestamp(self.getTimestamp())
+        return img_annotations

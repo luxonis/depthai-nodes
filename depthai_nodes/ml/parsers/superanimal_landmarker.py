@@ -3,9 +3,9 @@ from typing import Any, Dict
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_keypoints_message
-from .keypoints import KeypointParser
-from .utils.superanimal import get_pose_prediction
+from depthai_nodes.ml.messages.creators import create_keypoints_message
+from depthai_nodes.ml.parsers.keypoints import KeypointParser
+from depthai_nodes.ml.parsers.utils.superanimal import get_pose_prediction
 
 
 class SuperAnimalParser(KeypointParser):
@@ -99,5 +99,7 @@ class SuperAnimalParser(KeypointParser):
 
             msg = create_keypoints_message(keypoints, scores, self.score_threshold)
             msg.setTimestamp(output.getTimestamp())
+            msg.transformation = output.getTransformation()
+            msg.setSequenceNum(output.getSequenceNum())
 
             self.out.send(msg)

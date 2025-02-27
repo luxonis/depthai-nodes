@@ -2,7 +2,7 @@ from typing import List
 
 import numpy as np
 
-from ...messages.creators.keypoints import Keypoint
+from depthai_nodes.ml.messages.creators.keypoints import Keypoint
 
 
 def normalize_keypoints(keypoints: np.ndarray, height: int, width: int) -> np.ndarray:
@@ -60,11 +60,11 @@ def transform_to_keypoints(
         raise ValueError("Keypoints must be a numpy array.")
     if len(keypoints.shape) != 2:
         raise ValueError(
-            "Keypoints must be of shape (N, 2). Got shape {keypoints.shape}."
+            f"Keypoints must be of shape (N, 2). Got shape {keypoints.shape}."
         )
     if keypoints.shape[1] != 2 and keypoints.shape[1] != 3:
         raise ValueError(
-            "Keypoints must be of shape (N, 2) or (N, 3). Got shape {keypoints.shape}."
+            f"Keypoints must be of shape (N, 2) or (N, 3). Got shape {keypoints.shape}."
         )
 
     if confidences is not None:
@@ -72,11 +72,11 @@ def transform_to_keypoints(
             raise ValueError("Confidences must be a numpy array.")
         if len(confidences.shape) != 1:
             raise ValueError(
-                "Confidences must be of shape (N,). Got shape {confidences.shape}."
+                f"Confidences must be of shape (N,). Got shape {confidences.shape}."
             )
         if len(confidences) != len(keypoints):
             raise ValueError(
-                "Confidences should have same length as keypoints, got {len(confidences)} confidences and {len(keypoints)} keypoints."
+                f"Confidences should have same length as keypoints, got {len(confidences)} confidences and {len(keypoints)} keypoints."
             )
 
     dim = keypoints.shape[1]

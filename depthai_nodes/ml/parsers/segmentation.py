@@ -3,8 +3,8 @@ from typing import Any, Dict
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_segmentation_message
-from .base_parser import BaseParser
+from depthai_nodes.ml.messages.creators import create_segmentation_message
+from depthai_nodes.ml.parsers.base_parser import BaseParser
 
 
 class SegmentationParser(BaseParser):
@@ -153,4 +153,7 @@ class SegmentationParser(BaseParser):
 
             mask_message = create_segmentation_message(class_map)
             mask_message.setTimestamp(output.getTimestamp())
+            mask_message.transformation = output.getTransformation()
+            mask_message.setSequenceNum(output.getSequenceNum())
+
             self.out.send(mask_message)

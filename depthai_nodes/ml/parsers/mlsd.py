@@ -3,9 +3,9 @@ from typing import Any, Dict
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_line_detection_message
-from .base_parser import BaseParser
-from .utils.mlsd import decode_scores_and_points, get_lines
+from depthai_nodes.ml.messages.creators import create_line_detection_message
+from depthai_nodes.ml.parsers.base_parser import BaseParser
+from depthai_nodes.ml.parsers.utils.mlsd import decode_scores_and_points, get_lines
 
 
 class MLSDParser(BaseParser):
@@ -171,4 +171,7 @@ class MLSDParser(BaseParser):
 
             message = create_line_detection_message(lines, np.array(scores))
             message.setTimestamp(output.getTimestamp())
+            message.transformation = output.getTransformation()
+            message.setSequenceNum(output.getSequenceNum())
+
             self.out.send(message)

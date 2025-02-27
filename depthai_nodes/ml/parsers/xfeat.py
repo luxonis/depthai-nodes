@@ -3,9 +3,9 @@ from typing import Any, Dict, Optional, Tuple
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_tracked_features_message
-from .base_parser import BaseParser
-from .utils.xfeat import detect_and_compute, match
+from depthai_nodes.ml.messages.creators import create_tracked_features_message
+from depthai_nodes.ml.parsers.base_parser import BaseParser
+from depthai_nodes.ml.parsers.utils.xfeat import detect_and_compute, match
 
 
 class XFeatBaseParser(BaseParser):
@@ -199,29 +199,29 @@ class XFeatBaseParser(BaseParser):
         self, output: dai.NNData
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Extracts the tensors from the output. It returns the features, keypoints, and
-        heatmaps. It also handles the reshaping of the tensors.
+        heatmaps. It also handles the reshaping of the tensors by requesting the NCHW
+        storage order.
 
         @param output: Output from the Neural Network node.
         @type output: dai.NNData
         @return: Tuple of features, keypoints, and heatmaps.
         @rtype: Tuple[np.ndarray, np.ndarray, np.ndarray]
         """
-        feats = output.getTensor(self.output_layer_feats, dequantize=True).astype(
-            np.float32
-        )
-        keypoints = output.getTensor(
-            self.output_layer_keypoints, dequantize=True
+        feats = output.getTensor(
+            self.output_layer_feats,
+            dequantize=True,
+            storageOrder=dai.TensorInfo.StorageOrder.NCHW,
         ).astype(np.float32)
-        heatmaps = output.getTensor(self.output_layer_heatmaps, dequantize=True).astype(
-            np.float32
-        )
-
-        if len(feats.shape) == 3:
-            feats = feats.reshape((1,) + feats.shape).transpose(0, 3, 1, 2)
-        if len(keypoints.shape) == 3:
-            keypoints = keypoints.reshape((1,) + keypoints.shape).transpose(0, 3, 1, 2)
-        if len(heatmaps.shape) == 3:
-            heatmaps = heatmaps.reshape((1,) + heatmaps.shape).transpose(0, 3, 1, 2)
+        keypoints = output.getTensor(
+            self.output_layer_keypoints,
+            dequantize=True,
+            storageOrder=dai.TensorInfo.StorageOrder.NCHW,
+        ).astype(np.float32)
+        heatmaps = output.getTensor(
+            self.output_layer_heatmaps,
+            dequantize=True,
+            storageOrder=dai.TensorInfo.StorageOrder.NCHW,
+        ).astype(np.float32)
 
         return feats, keypoints, heatmaps
 
@@ -335,6 +335,7 @@ class XFeatMonoParser(XFeatBaseParser):
             else:
                 matched_points = dai.TrackedFeatures()
                 matched_points.setTimestamp(output.getTimestamp())
+                matched_points.setSequenceNum(output.getSequenceNum())
                 self.out.send(matched_points)
                 continue
 
@@ -342,10 +343,14 @@ class XFeatMonoParser(XFeatBaseParser):
                 mkpts0, mkpts1 = match(self.previous_results, result)
                 matched_points = create_tracked_features_message(mkpts0, mkpts1)
                 matched_points.setTimestamp(output.getTimestamp())
+                matched_points.setSequenceNum(output.getSequenceNum())
+
                 self.out.send(matched_points)
             else:
                 matched_points = dai.TrackedFeatures()
                 matched_points.setTimestamp(output.getTimestamp())
+                matched_points.setSequenceNum(output.getSequenceNum())
+
                 self.out.send(matched_points)
 
             if self.trigger:
@@ -473,6 +478,8 @@ class XFeatStereoParser(XFeatBaseParser):
             else:
                 matched_points = dai.TrackedFeatures()
                 matched_points.setTimestamp(reference_output.getTimestamp())
+                matched_points.setSequenceNum(reference_output.getSequenceNum())
+
                 self.out.send(matched_points)
                 continue
 
@@ -481,10 +488,14 @@ class XFeatStereoParser(XFeatBaseParser):
             else:
                 matched_points = dai.TrackedFeatures()
                 matched_points.setTimestamp(target_output.getTimestamp())
+                matched_points.setSequenceNum(reference_output.getSequenceNum())
+
                 self.out.send(matched_points)
                 continue
 
             mkpts0, mkpts1 = match(reference_result, target_result)
             matched_points = create_tracked_features_message(mkpts0, mkpts1)
             matched_points.setTimestamp(target_output.getTimestamp())
+            matched_points.setSequenceNum(reference_output.getSequenceNum())
+
             self.out.send(matched_points)

@@ -3,8 +3,8 @@ from typing import Any, Dict
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_keypoints_message
-from .keypoints import KeypointParser
+from depthai_nodes.ml.messages.creators import create_keypoints_message
+from depthai_nodes.ml.parsers.keypoints import KeypointParser
 
 
 class HRNetParser(KeypointParser):
@@ -113,5 +113,7 @@ class HRNetParser(KeypointParser):
                 confidence_threshold=self.score_threshold,
             )
             keypoints_message.setTimestamp(output.getTimestamp())
+            keypoints_message.transformation = output.getTransformation()
+            keypoints_message.setSequenceNum(output.getSequenceNum())
 
             self.out.send(keypoints_message)

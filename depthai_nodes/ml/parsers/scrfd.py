@@ -3,10 +3,10 @@ from typing import Any, Dict, List, Tuple
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_detection_message
-from .detection import DetectionParser
-from .utils.bbox_format_converters import xyxy_to_xywh
-from .utils.scrfd import decode_scrfd
+from depthai_nodes.ml.messages.creators import create_detection_message
+from depthai_nodes.ml.parsers.detection import DetectionParser
+from depthai_nodes.ml.parsers.utils.bbox_format_converters import xyxy_to_xywh
+from depthai_nodes.ml.parsers.utils.scrfd import decode_scrfd
 
 
 class SCRFDParser(DetectionParser):
@@ -71,6 +71,7 @@ class SCRFDParser(DetectionParser):
         self.feat_stride_fpn = feat_stride_fpn
         self.num_anchors = num_anchors
         self.input_size = input_size
+        self.label_names = ["Face"]
 
     def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
         """Sets the output layer name(s) for the parser.
@@ -213,9 +214,23 @@ class SCRFDParser(DetectionParser):
             )
             bboxes = xyxy_to_xywh(bboxes)
             bboxes = np.clip(bboxes, 0, 1)
-            detection_msg = create_detection_message(
-                bboxes=bboxes, scores=scores, keypoints=keypoints
-            )
-            detection_msg.setTimestamp(output.getTimestamp())
 
-            self.out.send(detection_msg)
+            labels = np.array([0] * len(bboxes))
+
+            label_names = (
+                [self.label_names[label] for label in labels]
+                if self.label_names
+                else None
+            )
+            message = create_detection_message(
+                bboxes=bboxes,
+                scores=scores,
+                labels=labels,
+                label_names=label_names,
+                keypoints=keypoints,
+            )
+            message.setTimestamp(output.getTimestamp())
+            message.transformation = output.getTransformation()
+            message.setSequenceNum(output.getSequenceNum())
+
+            self.out.send(message)

@@ -1,10 +1,12 @@
 from pathlib import Path
-from typing import Dict, Union, overload
+from typing import Dict, Optional, Type, TypeVar, Union, overload
 
 import depthai as dai
 
-from .ml.parsers import BaseParser
-from .parser_generator import ParserGenerator
+from depthai_nodes.ml.parsers import BaseParser
+from depthai_nodes.parser_generator import ParserGenerator
+
+TParser = TypeVar("TParser", bound=Union[BaseParser, dai.DeviceNode])
 
 
 class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
@@ -41,21 +43,39 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
 
     @overload
     def build(
-        self, input: dai.Node.Output, nn_source: dai.NNModelDescription, fps: int
+        self, input: dai.Node.Output, nn_source: dai.NNArchive
     ) -> "ParsingNeuralNetwork":
         ...
 
     @overload
     def build(
-        self, input: dai.Node.Output, nn_source: dai.NNArchive, fps: int
+        self,
+        camera: dai.node.Camera,
+        model_description: dai.NNModelDescription,
+        fps: Optional[float] = ...,
+    ) -> "ParsingNeuralNetwork":
+        ...
+
+    @overload
+    def build(
+        self,
+        camera: dai.node.Camera,
+        nn_archive: dai.NNArchive,
+        fps: Optional[float] = ...,
+    ) -> "ParsingNeuralNetwork":
+        ...
+
+    @overload
+    def build(
+        self, camera: dai.node.Camera, model: str, fps: Optional[float] = ...
     ) -> "ParsingNeuralNetwork":
         ...
 
     def build(
         self,
-        input: dai.Node.Output,
-        nn_source: Union[dai.NNModelDescription, dai.NNArchive],
-        fps: int = None,
+        input: Union[dai.Node.Output, dai.node.Camera],
+        nn_source: Union[dai.NNModelDescription, dai.NNArchive, str],
+        fps: Optional[float] = None,
     ) -> "ParsingNeuralNetwork":
         """Builds the underlying NeuralNetwork node and creates parser nodes for each
         model head.
@@ -63,9 +83,9 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         @param input: Node's input. It is a linking point to which the NeuralNetwork is
             linked. It accepts the output of a Camera node.
         @type input: Node.Input
-        @param nn_source: NNModelDescription object containing the HubAI model
-            descriptors, or NNArchive object of the model.
-        @type nn_source: Union[dai.NNModelDescription, dai.NNArchive]
+
+        @param nn_source: NNModelDescription object containing the HubAI model descriptors, NNArchive object of the model, or HubAI model slug in form of <model_slug>:<model_version_slug> or <model_slug>:<model_version_slug>:<model_instance_hash>.
+        @type nn_source: Union[dai.NNModelDescription, dai.NNArchive, str]
         @param fps: FPS limit for the model runtime.
         @type fps: int
         @return: Returns the ParsingNeuralNetwork object.
@@ -74,21 +94,23 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
             object.
         """
 
-        if isinstance(nn_source, dai.NNModelDescription):
+        platform = self.getParentPipeline().getDefaultDevice().getPlatformAsString()
+
+        if isinstance(nn_source, str):
+            nn_source = dai.NNModelDescription(nn_source)
+        if isinstance(nn_source, (dai.NNModelDescription, str)):
             if not nn_source.platform:
-                nn_source.platform = (
-                    self.getParentPipeline().getDefaultDevice().getPlatformAsString()
-                )
+                nn_source.platform = platform
             self._nn_archive = dai.NNArchive(dai.getModelFromZoo(nn_source))
         elif isinstance(nn_source, dai.NNArchive):
             self._nn_archive = nn_source
         else:
             raise ValueError(
-                "nn_source must be either a NNModelDescription or NNArchive"
+                "nn_source must be either a NNModelDescription, NNArchive, or a string representing HubAI model slug."
             )
 
         kwargs = {"fps": fps} if fps else {}
-        self._nn.build(input, nn_source, **kwargs)
+        self._nn.build(input, self._nn_archive, **kwargs)
 
         self._updateParsers(self._nn_archive)
         return self
@@ -119,6 +141,77 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         """Sets the backend of the NeuralNetwork node."""
         self._nn.setBackend(setBackend)
 
+    @overload
+    def getParser(self, index: int = 0) -> Union[BaseParser, dai.DeviceNode]:
+        """Returns the parser node for the given model head index.
+
+        If index is not provided, the first parser node is returned by default.
+
+        @param index: Index of the model head parser to return.
+        @type index: int
+        @param parser_type: Expected type of the parser. Used for type checking and
+            casting.
+        @type parser_type: Type[TParser]
+        @return: Parser node for the specified model head index, cast to the requested
+            parser_type.
+        @rtype: TParser
+        @raise KeyError: If parser with given index doesn't exist.
+        @raise TypeError: If parser is not of the requested type.
+        """
+        ...
+
+    @overload
+    def getParser(self, parser_type: Type[TParser], index: int = 0) -> TParser:
+        """Returns the parser node for the given model head index.
+
+        If index is not provided, the first parser node is returned by default.
+
+        @param index: Index of the model head parser to return.
+        @type index: int
+        @param parser_type: Expected type of the parser. Used for type checking and
+            casting.
+        @type parser_type: Type[TParser]
+        @return: Parser node for the specified model head index, cast to the requested
+            parser_type.
+        @rtype: TParser
+        @raise KeyError: If parser with given index doesn't exist.
+        @raise TypeError: If parser is not of the requested type.
+        """
+        ...
+
+    def getParser(self, *args, **kwargs) -> Union[BaseParser, dai.DeviceNode]:
+        index = 0
+        parser_type = None
+
+        # Parse arguments based on the overload patterns
+        if len(args) == 1:
+            if isinstance(args[0], type):  # Case: getParser(parser_type)
+                parser_type = args[0]
+            else:  # Case: getParser(index)
+                index = args[0]
+        elif len(args) == 2:  # Case: getParser(parser_type, index)
+            parser_type = args[0]
+            index = args[1]
+
+        # Handle kwargs
+        if "index" in kwargs:
+            index = kwargs["index"]
+        if "parser_type" in kwargs:
+            parser_type = kwargs["parser_type"]
+
+        if index not in self._parsers:
+            raise KeyError(
+                f"Parser with ID {index} not found. Available parser IDs: {list(self._parsers.keys())}"
+            )
+        parser = self._parsers[index]
+
+        if parser_type:
+            if not isinstance(parser, parser_type):
+                raise TypeError(
+                    f"Parser with ID {index} is of type: {type(parser)}. Requested type: {parser_type}"
+                )
+        return parser
+
     def setBackendProperties(self, setBackendProperties: Dict[str, str]) -> None:
         """Sets the backend properties of the NeuralNetwork node."""
         self._nn.setBackendProperties(setBackendProperties)
@@ -141,13 +234,25 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         """Sets the model path of the NeuralNetwork node."""
         self._nn.setModelPath(modelPath)
 
-    def setNNArchive(self, nnArchive: dai.NNArchive) -> None:
+    def setNNArchive(
+        self, nnArchive: dai.NNArchive, numShaves: Optional[int] = None
+    ) -> None:
         """Sets the NNArchive of the ParsingNeuralNetwork node.
 
         Updates the NeuralNetwork node and parser nodes.
+
+        @param nnArchive: Neural network archive containing the model and its
+            configuration.
+        @type nnArchive: dai.NNArchive
+        @param numShaves: Optional number of shaves to allocate for the neural network.
+            If not provided, uses default allocation.
+        @type numShaves: Optional[int]
         """
         self._nn_archive = nnArchive
-        self._nn.setNNArchive(nnArchive)
+        if numShaves:
+            self._nn.setNNArchive(nnArchive, numShaves)  # type: ignore
+        else:
+            self._nn.setNNArchive(nnArchive)
         self._updateParsers(nnArchive)
 
     def setNumInferenceThreads(self, numThreads: int) -> None:
@@ -180,9 +285,15 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         if len(self._parsers) != 1:
             raise RuntimeError(
                 f"Property out is only available when there is exactly one model head. \
-                               The model has {len(self._getModelHeads())} heads. Use {self.getOutput.__name__} method instead."
+                               The model has {self._getModelHeadsLen()} heads. Use {self.getOutput.__name__} method instead."
             )
         return list(self._parsers.values())[0].out
+
+    def _getModelHeadsLen(self):
+        heads = self._getModelHeads()
+        if not heads:
+            return 0
+        return len(heads)
 
     def _getModelHeads(self):
         return self._getConfig().model.heads

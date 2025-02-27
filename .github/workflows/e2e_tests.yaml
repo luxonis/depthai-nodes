@@ -11,54 +11,45 @@ on:
         description: 'Branch to run the tests on. Default: main'
         required: true
         default: 'main'
-      testbed:
-        description: 'Testbed to run the tests on. Default: oak4-pro'
+      depthai-version:
+        description: 'Version of depthai to install. Default: alpha11'
         required: true
-        default: 'oak4-pro'
+        default: '3.0.0a11'
+  push:
+    branches:
+      - main
+    paths:
+      - 'depthai_nodes/**'
+      - 'tests/end_to_end/**'
+      - .github/workflows/e2e_tests.yaml
 
 jobs:
   HIL-test:
-    runs-on: ubuntu-latest
+    runs-on: ['self-hosted', 'testbed-runner']
 
     strategy:
       matrix:
         python-version: [3.12]
 
     steps:
-      - name: Setup WireGuard
+      - name: Update HIL
         run: |
-          sudo apt install wireguard
-          echo "${{ secrets.WIREGUARD_PRIVATE_KEY }}" > privatekey
-          sudo ip link add dev wg0 type wireguard
-          sudo ip address add dev wg0 10.12.99.26 peer 10.12.99.1
-          sudo wg set wg0 listen-port 48123 private-key privatekey peer ${{ secrets.WIREGUARD_PUBLIC_KEY }} allowed-ips 10.12.99.1/32,10.12.99.26/32,10.12.0.0/16 endpoint "${{ secrets.WIREGUARD_PUBLIC_ENDPOINT }}"
-          sudo ip link set up dev wg0
-          sudo ip route add 10.12.0.0/16 dev wg0
+          cd /home/$USER/hil_framework
+          git pull
+          git submodule update --init --recursive
 
-      - name: Clone HIL Framework
-        run: |
-          git clone https://oauth2:${{secrets.GITLAB_TOKEN}}@gitlab.luxonis.com/luxonis/hil_lab/hil_framework.git --recursive
-      
-      - name: Setup HIL Tools
-        run: |
-          cd hil_framework
-          sudo chmod +x setup_hil_tools.sh 
-          ./setup_hil_tools.sh -ga
-          
       - name: Add HIL Tools to Path
         run: |
-          cd hil_framework
+          cd /home/$USER/hil_framework
           echo "$(pwd)/lib_testbed/tools" >> $GITHUB_PATH
           echo "PYTHONPATH="$PYTHONPATH:$(pwd)"" >> $GITHUB_ENV
           echo "HIL_FRAMEWORK_PATH="$(pwd)"" >> $GITHUB_ENV
           
       - name: Run Test
         run: |
-          CMD="hil --testbed ${{ github.event.inputs.testbed }} --reservation-name 'depthai_nodes_ml_team' --commands 'cd /home/hil/depthai-nodes' 'git checkout main' 'git pull' 'git checkout ${{ github.event.inputs.branch }}' 'git pull' 'source venv/bin/activate' 'cd tests/end_to_end' 'source <(python setup_camera_ips.py)' 'export HUBAI_TEAM_ID=${{ secrets.HUBAI_TEAM_ID }}' 'export HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }}' 'python main.py ${{ github.event.inputs.additional-parameter }}' 'deactivate'"
-          eval $CMD
-
-      - name: Stop WireGuard
-        if: always()
-        run: |
-          sudo ip link set down dev wg0
-          sudo ip link delete dev wg0
+          export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#${{ matrix.python-version}}"
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            hil --capabilities "depthai-core-hil" --wait --reservation-name $RESERVATION_NAME --before-docker-pull "echo ${{secrets.GHCR_PAT}} | docker login ghcr.io -u ${{secrets.GHCR_USER}} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=${{ github.event.inputs.depthai-version }} --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=${{ github.event.inputs.branch }} --env FLAGS=\"${{ github.event.inputs.additional-parameter }}\""
+          else
+            hil --capabilities "depthai-core-hil" --wait --reservation-name $RESERVATION_NAME --before-docker-pull "echo ${{secrets.GHCR_PAT}} | docker login ghcr.io -u ${{secrets.GHCR_USER}} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=\"3.0.0a11\" --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=\"main\" --env FLAGS=\"-all\""
+          fi

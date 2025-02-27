@@ -2,7 +2,7 @@ from typing import List, Union
 
 import numpy as np
 
-from ...messages import Keypoint, Keypoints
+from depthai_nodes.ml.messages import Keypoint, Keypoints
 
 
 def create_keypoints_message(

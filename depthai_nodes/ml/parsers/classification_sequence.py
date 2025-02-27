@@ -3,8 +3,9 @@ from typing import Any, Dict, List
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_classification_sequence_message
-from .classification import ClassificationParser
+from depthai_nodes.ml.messages.creators import create_classification_sequence_message
+from depthai_nodes.ml.parsers.classification import ClassificationParser
+from depthai_nodes.ml.parsers.utils.softmax import softmax
 
 
 class ClassificationSequenceParser(ClassificationParser):
@@ -168,7 +169,7 @@ class ClassificationSequenceParser(ClassificationParser):
                     )
 
             if not self.is_softmax:
-                scores = np.exp(scores) / np.sum(np.exp(scores), axis=1, keepdims=True)
+                scores = softmax(scores, axis=1, keep_dims=True)
 
             msg = create_classification_sequence_message(
                 classes=self.classes,
@@ -177,6 +178,8 @@ class ClassificationSequenceParser(ClassificationParser):
                 ignored_indexes=self.ignored_indexes,
                 concatenate_classes=self.concatenate_classes,
             )
+            msg.transformation = output.getTransformation()
             msg.setTimestamp(output.getTimestamp())
+            msg.setSequenceNum(output.getSequenceNum())
 
             self.out.send(msg)

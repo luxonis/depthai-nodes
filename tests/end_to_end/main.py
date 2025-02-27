@@ -17,12 +17,12 @@ def main():
         help="Path(s) to the NNArchive.",
     )
     arg_parser.add_argument(
-        "-s",
-        "--slug",
+        "-m",
+        "--model",
         type=str,
         nargs="+",
         default="",
-        help="Slug(s) of the model from HubAI.",
+        help="Model from HubAI.",
     )
     arg_parser.add_argument("-all", action="store_true", help="Run all tests")
     arg_parser.add_argument(
@@ -37,7 +37,7 @@ def main():
 
     args = arg_parser.parse_args()
     nn_archive_path = args.nn_archive_path  # it is a list of paths
-    slug = args.slug
+    model = args.model
     run_all = args.all
     parser = args.parser
     rvc_platform = "both" if args.platform == "" else args.platform
@@ -46,42 +46,42 @@ def main():
     print(f"RVC4 IP: {os.getenv('RVC4_IP', '')}")
     print(f"RVC platform: {'RVC2 & RVC4' if rvc_platform == '' else rvc_platform}")
 
-    if run_all and (nn_archive_path or slug):
-        raise ValueError("You can't pass both -all and -nn_archive_path or -slug")
+    if run_all and (nn_archive_path or model):
+        raise ValueError("You can't pass both -all and -nn_archive_path or -model")
 
     if run_all:
-        slug = get_model_slugs_from_zoo()
+        model = get_model_slugs_from_zoo()
 
     if parser:
-        slug = find_slugs_from_zoo(parser)
-        if len(slug) == 0:
+        model = find_slugs_from_zoo(parser)
+        if len(model) == 0:
             raise ValueError(f"No models found for parser {parser}")
         else:
-            print(f"Found model slugs for parser {parser}: {slug}")
+            print(f"Found models for parser {parser}: {model}")
 
-    if not nn_archive_path and not slug:
-        raise ValueError("You have to pass either path to NNArchive or model slug")
+    if not nn_archive_path and not model:
+        raise ValueError("You have to pass either path to NNArchive or model")
 
-    slug = [f"{s}" for s in slug]
+    model = [f"{m}" for m in model]
 
     command = [
         "test_e2e.py",
         f"--nn_archive_path={nn_archive_path}",
         f"--platform={rvc_platform}",
         "-v",
-        "--tb=no",
+        "--tb=short",
         "-r a",
         "--log-cli-level=DEBUG",
         "--color=yes",
     ]
 
-    if slug:
+    if model:
         command = [
             "test_e2e.py",
-            f"--slug={slug}",
+            f"--model={model}",
             f"--platform={rvc_platform}",
             "-v",
-            "--tb=no",
+            "--tb=short",
             "-r a",
             "--log-cli-level=DEBUG",
             "--color=yes",

@@ -4,6 +4,11 @@ import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
 
+from depthai_nodes.ml.helpers.constants import (
+    BACKGROUND_COLOR,
+    TEXT_COLOR,
+)
+
 
 class Classifications(dai.Buffer):
     """Classification class for storing the classes and their respective scores.
@@ -14,6 +19,8 @@ class Classifications(dai.Buffer):
         A list of classes.
     scores : NDArray[np.float32]
         Corresponding probability scores.
+    transformation : dai.ImgTransformation
+        Image transformation object.
     """
 
     def __init__(self):
@@ -21,6 +28,7 @@ class Classifications(dai.Buffer):
         dai.Buffer.__init__(self)
         self._classes: List[str] = []
         self._scores: NDArray[np.float32] = np.array([])
+        self._transformation: dai.ImgTransformation = None
 
     @property
     def classes(self) -> List:
@@ -91,3 +99,50 @@ class Classifications(dai.Buffer):
         @rtype: float
         """
         return self._scores[0]
+
+    @property
+    def transformation(self) -> dai.ImgTransformation:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self._transformation
+
+    @transformation.setter
+    def transformation(self, value: dai.ImgTransformation):
+        """Sets the Image Transformation object.
+
+        @param value: The Image Transformation object.
+        @type value: dai.ImgTransformation
+        @raise TypeError: If value is not a dai.ImgTransformation object.
+        """
+
+        if value is not None:
+            if not isinstance(value, dai.ImgTransformation):
+                raise TypeError(
+                    f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
+                )
+        self._transformation = value
+
+    def getVisualizationMessage(self) -> dai.ImgAnnotations:
+        """Returns default visualization message for classification.
+
+        The message adds the top five classes and their scores to the right side of the
+        image.
+        """
+        img_annotations = dai.ImgAnnotations()
+        annotation = dai.ImgAnnotation()
+
+        for i in range(len(self._scores)):
+            text = dai.TextAnnotation()
+            text.position = dai.Point2f(1.05, 0.1 + i * 0.1)
+            text.text = f"{self._classes[i]} {self._scores[i] * 100:.0f}%"
+            text.fontSize = 15
+            text.textColor = TEXT_COLOR
+            text.backgroundColor = BACKGROUND_COLOR
+            annotation.texts.append(text)
+
+        img_annotations.annotations.append(annotation)
+        img_annotations.setTimestamp(self.getTimestamp())
+        return img_annotations

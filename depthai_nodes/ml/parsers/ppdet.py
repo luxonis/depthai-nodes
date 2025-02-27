@@ -3,9 +3,9 @@ from typing import Any, Dict
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_detection_message
-from .detection import DetectionParser
-from .utils import parse_paddle_detection_outputs
+from depthai_nodes.ml.messages.creators import create_detection_message
+from depthai_nodes.ml.parsers.detection import DetectionParser
+from depthai_nodes.ml.parsers.utils import parse_paddle_detection_outputs
 
 
 class PPTextDetectionParser(DetectionParser):
@@ -114,7 +114,7 @@ class PPTextDetectionParser(DetectionParser):
 
             _, _, height, width = predictions.shape
 
-            bboxes, angles, corners, scores = parse_paddle_detection_outputs(
+            bboxes, angles, scores = parse_paddle_detection_outputs(
                 predictions,
                 self.mask_threshold,
                 self.conf_threshold,
@@ -122,8 +122,11 @@ class PPTextDetectionParser(DetectionParser):
                 width=width,
                 height=height,
             )
-
-            message = create_detection_message(bboxes, scores, angles=angles)
+            message = create_detection_message(
+                bboxes=bboxes, scores=scores, angles=angles
+            )
             message.setTimestamp(output.getTimestamp())
+            message.transformation = output.getTransformation()
+            message.setSequenceNum(output.getSequenceNum())
 
             self.out.send(message)

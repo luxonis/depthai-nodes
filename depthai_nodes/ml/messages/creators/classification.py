@@ -2,7 +2,7 @@ from typing import List, Union
 
 import numpy as np
 
-from ...messages import Classifications
+from depthai_nodes.ml.messages import Classifications
 
 
 def create_classification_message(
@@ -136,7 +136,9 @@ def create_classification_sequence_message(
         raise ValueError("Scores should be in the range [0, 1].")
 
     if np.any(~np.isclose(scores.sum(axis=1), 1.0, atol=1e-2)):
-        raise ValueError("Each row of scores should sum to 1.")
+        raise ValueError(
+            f"Each row of scores should sum to 1, got {scores.sum(axis=1)}."
+        )
 
     scores = scores.astype(np.float32)
 

@@ -1,6 +1,6 @@
 import numpy as np
 
-from ...messages import SegmentationMask
+from depthai_nodes.ml.messages import SegmentationMask
 
 
 def create_segmentation_message(mask: np.ndarray) -> SegmentationMask:

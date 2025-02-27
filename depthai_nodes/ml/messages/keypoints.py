@@ -2,6 +2,9 @@ from typing import List
 
 import depthai as dai
 
+from depthai_nodes.ml.helpers.constants import KEYPOINT_COLOR
+from depthai_nodes.utils import get_logger
+
 
 class Keypoint(dai.Buffer):
     """Keypoint class for storing a keypoint.
@@ -25,6 +28,7 @@ class Keypoint(dai.Buffer):
         self._y: float = None
         self._z: float = 0.0
         self._confidence: float = -1.0
+        self._logger = get_logger(__name__)
 
     @property
     def x(self) -> float:
@@ -46,8 +50,11 @@ class Keypoint(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("x must be a float.")
-        if value < 0 or value > 1:
+        if value < -0.1 or value > 1.1:
             raise ValueError("x must be between 0 and 1.")
+        if not (0 <= value <= 1):
+            value = max(0, min(1, value))
+            self._logger.info("x value was clipped to [0, 1].")
         self._x = value
 
     @property
@@ -70,8 +77,11 @@ class Keypoint(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("y must be a float.")
-        if value < 0 or value > 1:
+        if value < -0.1 or value > 1.1:
             raise ValueError("y must be between 0 and 1.")
+        if not (0 <= value <= 1):
+            value = max(0, min(1, value))
+            self._logger.info("y value was clipped to [0, 1].")
         self._y = value
 
     @property
@@ -115,8 +125,11 @@ class Keypoint(dai.Buffer):
         """
         if not isinstance(value, float):
             raise TypeError("confidence must be a float.")
-        if value < 0 or value > 1:
-            raise ValueError("confidence must be between 0 and 1.")
+        if value < -0.1 or value > 1.1:
+            raise ValueError("Confidence must be between 0 and 1.")
+        if not (0 <= value <= 1):
+            value = max(0, min(1, value))
+            self._logger.info("Confidence value was clipped to [0, 1].")
         self._confidence = value
 
 
@@ -127,12 +140,15 @@ class Keypoints(dai.Buffer):
     ----------
     keypoints: List[Keypoint]
         List of Keypoint objects, each representing a keypoint.
+    transformation : dai.ImgTransformation
+        Image transformation object.
     """
 
     def __init__(self):
         """Initializes the Keypoints object."""
         super().__init__()
         self._keypoints: List[Keypoint] = []
+        self._transformation: dai.ImgTransformation = None
 
     @property
     def keypoints(self) -> List[Keypoint]:
@@ -157,3 +173,45 @@ class Keypoints(dai.Buffer):
         if not all(isinstance(item, Keypoint) for item in value):
             raise ValueError("keypoints must be a list of Keypoint objects.")
         self._keypoints = value
+
+    @property
+    def transformation(self) -> dai.ImgTransformation:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self._transformation
+
+    @transformation.setter
+    def transformation(self, value: dai.ImgTransformation):
+        """Sets the Image Transformation object.
+
+        @param value: The Image Transformation object.
+        @type value: dai.ImgTransformation
+        @raise TypeError: If value is not a dai.ImgTransformation object.
+        """
+
+        if value is not None:
+            if not isinstance(value, dai.ImgTransformation):
+                raise TypeError(
+                    f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
+                )
+        self._transformation = value
+
+    def getVisualizationMessage(self) -> dai.ImgAnnotations:
+        """Creates a default visualization message for the keypoints."""
+        img_annotations = dai.ImgAnnotations()
+        annotation = dai.ImgAnnotation()
+        keypoints = [dai.Point2f(keypoint.x, keypoint.y) for keypoint in self.keypoints]
+        pointsAnnotation = dai.PointsAnnotation()
+        pointsAnnotation.type = dai.PointsAnnotationType.POINTS
+        pointsAnnotation.points = dai.VectorPoint2f(keypoints)
+        pointsAnnotation.outlineColor = KEYPOINT_COLOR
+        pointsAnnotation.fillColor = KEYPOINT_COLOR
+        pointsAnnotation.thickness = 2
+        annotation.points.append(pointsAnnotation)
+
+        img_annotations.annotations.append(annotation)
+        img_annotations.setTimestamp(self.getTimestamp())
+        return img_annotations

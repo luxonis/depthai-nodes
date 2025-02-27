@@ -3,8 +3,8 @@ from typing import Any, Dict
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import create_regression_message
-from .base_parser import BaseParser
+from depthai_nodes.ml.messages.creators import create_regression_message
+from depthai_nodes.ml.parsers.base_parser import BaseParser
 
 
 class RegressionParser(BaseParser):
@@ -88,5 +88,7 @@ class RegressionParser(BaseParser):
 
             regression_message = create_regression_message(predictions=predictions)
             regression_message.setTimestamp(output.getTimestamp())
+            regression_message.transformation = output.getTransformation()
+            regression_message.setSequenceNum(output.getSequenceNum())
 
             self.out.send(regression_message)

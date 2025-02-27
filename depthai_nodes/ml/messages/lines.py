@@ -2,6 +2,8 @@ from typing import List
 
 import depthai as dai
 
+from depthai_nodes.ml.helpers.constants import OUTLINE_COLOR
+
 
 class Line(dai.Buffer):
     """Line class for storing a line.
@@ -100,12 +102,15 @@ class Lines(dai.Buffer):
     ----------
     lines : List[Line]
         List of detected lines.
+    transformation : dai.ImgTransformation
+        Image transformation object.
     """
 
     def __init__(self):
         """Initializes the Lines object."""
         super().__init__()
         self._lines: List[Line] = []
+        self._transformation: dai.ImgTransformation = None
 
     @property
     def lines(self) -> List[Line]:
@@ -130,3 +135,50 @@ class Lines(dai.Buffer):
         if not all(isinstance(item, Line) for item in value):
             raise ValueError("Lines must be a list of Line objects.")
         self._lines = value
+
+    @property
+    def transformation(self) -> dai.ImgTransformation:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self._transformation
+
+    @transformation.setter
+    def transformation(self, value: dai.ImgTransformation):
+        """Sets the Image Transformation object.
+
+        @param value: The Image Transformation object.
+        @type value: dai.ImgTransformation
+        @raise TypeError: If value is not a dai.ImgTransformation object.
+        """
+
+        if value is not None:
+            if not isinstance(value, dai.ImgTransformation):
+                raise TypeError(
+                    f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
+                )
+        self._transformation = value
+
+    def getVisualizationMessage(self) -> dai.ImgAnnotations:
+        """Returns default visualization message for lines.
+
+        The message adds lines to the image.
+        """
+        img_annotation = dai.ImgAnnotations()
+        annotation = dai.ImgAnnotation()
+
+        for line in self.lines:
+            pointsAnnotation = dai.PointsAnnotation()
+            pointsAnnotation.type = dai.PointsAnnotationType.LINE_STRIP
+            pointsAnnotation.points = dai.VectorPoint2f(
+                [line.start_point, line.end_point]
+            )
+            pointsAnnotation.outlineColor = OUTLINE_COLOR
+            pointsAnnotation.thickness = 2.0
+            annotation.points.append(pointsAnnotation)
+
+        img_annotation.annotations.append(annotation)
+        img_annotation.setTimestamp(self.getTimestamp())
+        return img_annotation

@@ -3,10 +3,11 @@ from typing import Any, Dict, List
 import depthai as dai
 import numpy as np
 
-from ..messages.creators import (
+from depthai_nodes.ml.messages.creators import (
     create_classification_message,
 )
-from .base_parser import BaseParser
+from depthai_nodes.ml.parsers.base_parser import BaseParser
+from depthai_nodes.ml.parsers.utils.softmax import softmax
 
 
 class ClassificationParser(BaseParser):
@@ -24,8 +25,9 @@ class ClassificationParser(BaseParser):
 
     Output Message/s
     ----------------
-    **Type** : Classifications(dai.Buffer):
-        An object with attributes `classes` and `scores`. `classes` is a list of classes, sorted in descending order of scores. `scores` is a list of corresponding scores.
+    **Type** : Classifications(dai.Buffer)
+
+    **Description**: An object with attributes `classes` and `scores`. `classes` is a list of classes, sorted in descending order of scores. `scores` is a list of corresponding scores.
     """
 
     def __init__(
@@ -136,10 +138,11 @@ class ClassificationParser(BaseParser):
                 )
 
             if not self.is_softmax:
-                ex = np.exp(scores)
-                scores = ex / np.sum(ex)
+                scores = softmax(scores)
 
             msg = create_classification_message(self.classes, scores)
+            msg.transformation = output.getTransformation()
             msg.setTimestamp(output.getTimestamp())
+            msg.setSequenceNum(output.getSequenceNum())
 
             self.out.send(msg)

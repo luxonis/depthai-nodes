@@ -2,8 +2,8 @@ from typing import Any, Dict
 
 import depthai as dai
 
-from ..messages.creators import create_map_message
-from .base_parser import BaseParser
+from depthai_nodes.ml.messages.creators import create_map_message
+from depthai_nodes.ml.parsers.base_parser import BaseParser
 
 
 class MapOutputParser(BaseParser):
@@ -106,4 +106,7 @@ class MapOutputParser(BaseParser):
                 map=map, min_max_scaling=self.min_max_scaling
             )
             map_message.setTimestamp(output.getTimestamp())
+            map_message.transformation = output.getTransformation()
+            map_message.setSequenceNum(output.getSequenceNum())
+
             self.out.send(map_message)

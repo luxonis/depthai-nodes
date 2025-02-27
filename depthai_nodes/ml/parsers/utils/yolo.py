@@ -4,9 +4,12 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 
-from .bbox_format_converters import xywh_to_xyxy
-from .masks_utils import sigmoid
-from .nms import nms
+from depthai_nodes.ml.parsers.utils.bbox_format_converters import xywh_to_xyxy
+from depthai_nodes.ml.parsers.utils.masks_utils import sigmoid
+from depthai_nodes.ml.parsers.utils.nms import nms
+from depthai_nodes.utils import get_logger
+
+logger = get_logger(__name__)
 
 
 class YOLOSubtype(str, Enum):
@@ -93,15 +96,8 @@ def non_max_suppression(
     """
     bs = prediction.shape[0]  # batch size
 
-    # Detection: 4 (bbox) + 1 (objectness) = 5
-    # Keypoints: 4 (bbox) + 1 (objectness) + 51 (kpts) = 56
-    # Segmentation: 4 (bbox) + 1 (objectness) + 4 (pos) = 9
-    if det_mode:
-        num_classes_check = prediction.shape[2] - 5
-    else:
-        num_classes_check = prediction.shape[2] - (
-            56 if kpts_mode else 9
-        )  # number of classes
+    offset = prediction.shape[2] - num_classes
+    num_classes_check = prediction.shape[2] - offset
 
     nm = prediction.shape[2] - num_classes - 5
     pred_candidates = prediction[..., 4] > conf_thres  # candidates
@@ -180,7 +176,7 @@ def non_max_suppression(
 
         output[img_idx] = x[keep_box_idx]
         if (time.time() - tik) > time_limit:
-            print(f"WARNING: NMS cost time exceed the limited {time_limit}s.")
+            logger.info(f"NMS cost time exceed the limited {time_limit}s.")
             break  # time limit exceeded
 
     return output
@@ -341,8 +337,13 @@ def parse_yolo_output(
         )
     else:
         # Keypoints
-        if (kpts.shape[1] // 17) == 3:
-            kpts[:, 2::3] = sigmoid(kpts[:, 2::3])
+
+        # NOTE: For now we omit "guessing" if sigmoid is applied, should be better handled with flags in NNarchive/Parser
+        # sigmoid_applied = np.all((kpts[:, 2::3] >= 0) & (kpts[:, 2::3] <= 1))
+        # if not sigmoid_applied:
+        #     kpts[:, 2::3] = sigmoid(kpts[:, 2::3])
+
+        kpts[:, 2::3] = sigmoid(kpts[:, 2::3])
         kpts_out = kpts.transpose(0, 2, 1)
         out = out.reshape(bs, ny * nx, -1)
         out = np.concatenate((out, kpts_out), axis=2)
