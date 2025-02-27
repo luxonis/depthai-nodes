@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 import numpy as np
 
@@ -13,11 +13,12 @@ from .keypoints import create_keypoints_message
 def create_detection_message(
     bboxes: np.ndarray,
     scores: np.ndarray,
-    angles: Optional[np.ndarray] = None,
-    labels: Optional[np.ndarray] = None,
-    keypoints: Optional[np.ndarray] = None,
-    keypoints_scores: Optional[np.ndarray] = None,
-    masks: Optional[np.ndarray] = None,
+    angles: np.ndarray = None,
+    labels: np.ndarray = None,
+    label_names: Optional[List[str]] = None,
+    keypoints: np.ndarray = None,
+    keypoints_scores: np.ndarray = None,
+    masks: np.ndarray = None,
 ) -> ImgDetectionsExtended:
     """Create a DepthAI message for object detection. The message contains the bounding
     boxes in X_center, Y_center, Width, Height format with optional angles, labels and
@@ -32,6 +33,8 @@ def create_detection_message(
     @type angles: Optional[np.ndarray]
     @param labels: Labels of detected objects of shape (N,). Defaults to None.
     @type labels: Optional[np.ndarray]
+    @param label_names: Names of the labels (classes)
+    @type label_names: Optional[List[str]]
     @param keypoints: Keypoints of detected objects of shape (N, n_keypoints, dim) where
         dim is 2 or 3. Defaults to None.
     @type keypoints: Optional[np.array]
@@ -99,6 +102,12 @@ def create_detection_message(
             raise ValueError(
                 f"Labels should have same length as bboxes, got {len(labels)} labels and {n_bboxes} bounding boxes."
             )
+
+    if label_names is not None:
+        if not isinstance(label_names, list):
+            raise ValueError(f"Label names should be a list, got {type(label_names)}.")
+        if not all(isinstance(label_name, str) for label_name in label_names):
+            raise ValueError(f"Label names should be strings, got {label_names}.")
 
     if angles is not None:
         if not isinstance(angles, np.ndarray):
@@ -184,23 +193,9 @@ def create_detection_message(
 
         if labels is not None:
             detection.label = int(labels[detection_idx])
+            if label_names is not None:
+                detection.label_name = label_names[detection_idx]
         if keypoints is not None:
-            # if keypoints_scores is not None:
-            #     # detection.keypoints = transform_to_keypoints(
-            #     #     keypoints[detection_idx], keypoints_scores[detection_idx]
-            #     # )
-            #     keypoints_msg = create_keypoints_message(
-            #         keypoints=keypoints[detection_idx],
-            #         scores=keypoints_scores[detection_idx],
-            #     )
-            # else:
-            #     keypoints_msg = create_keypoints_message(
-            #         keypoints=keypoints[detection_idx],
-            #         scores=keypoints_scores[detection_idx]
-            #         if keypoints_scores is not None
-            #         else None,
-            #     )
-            #     detection.keypoints = transform_to_keypoints(keypoints[detection_idx])
             keypoints_msg = create_keypoints_message(
                 keypoints=keypoints[detection_idx],
                 scores=None

@@ -31,6 +31,8 @@ class YOLOExtendedParser(BaseParser):
         Confidence score threshold for detected faces.
     n_classes : int
         Number of classes in the model.
+    label_names : Optional[List[str]]
+        Names of the classes.
     iou_threshold : float
         Intersection over union threshold.
     mask_conf : float
@@ -47,7 +49,7 @@ class YOLOExtendedParser(BaseParser):
     ----------------
     **Type**: ImgDetectionsExtended
 
-    **Description**: Message containing bounding boxes, labels, confidence scores, and keypoints or masks and protos of the detected objects.
+    **Description**: Message containing bounding boxes, labels, label names, confidence scores, and keypoints or masks and protos of the detected objects.
     """
 
     _DET_MODE = 0
@@ -58,6 +60,7 @@ class YOLOExtendedParser(BaseParser):
         self,
         conf_threshold: float = 0.5,
         n_classes: int = 1,
+        label_names: Optional[List[str]] = None,
         iou_threshold: float = 0.5,
         mask_conf: float = 0.5,
         n_keypoints: int = 17,
@@ -70,6 +73,8 @@ class YOLOExtendedParser(BaseParser):
         @type conf_threshold: float
         @param n_classes: The number of classes in the model
         @type n_classes: int
+        @param label_names: The names of the classes
+        @type label_names: Optional[List[str]]
         @param iou_threshold: The intersection over union threshold
         @type iou_threshold: float
         @param mask_conf: The mask confidence threshold
@@ -86,6 +91,7 @@ class YOLOExtendedParser(BaseParser):
         self.output_layer_names = []
         self.conf_threshold = conf_threshold
         self.n_classes = n_classes
+        self.label_names = label_names
         self.iou_threshold = iou_threshold
         self.mask_conf = mask_conf
         self.n_keypoints = n_keypoints
@@ -207,6 +213,19 @@ class YOLOExtendedParser(BaseParser):
                 f"Invalid YOLO subtype {subtype}. Supported YOLO subtypes are {[e.value for e in YOLOSubtype][:-1]}."
             ) from err
 
+    def setLabelNames(self, label_names: List[str]) -> None:
+        """Sets the names of the classes.
+
+        @param label_names: The names of the classes.
+        @type label_names: List[str]
+        """
+        if not isinstance(label_names, list):
+            raise ValueError("Label names must be a list.")
+        if not all(isinstance(label, str) for label in label_names):
+            raise ValueError("Label names must be a list of strings.")
+
+        self.label_names = label_names
+
     def build(
         self,
         head_config: Dict[str, Any],
@@ -244,6 +263,7 @@ class YOLOExtendedParser(BaseParser):
         self.anchors = head_config.get("anchors", self.anchors)
         self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
         subtype = head_config.get("subtype", self.subtype)
+        self.label_names = head_config.get("classes", self.label_names)
         try:
             self.subtype = YOLOSubtype(subtype.lower())
         except ValueError as err:
@@ -346,7 +366,7 @@ class YOLOExtendedParser(BaseParser):
                 subtype=self.subtype,
             )
 
-            bboxes, labels, scores, additional_output = [], [], [], []
+            bboxes, labels, label_names, scores, additional_output = [], [], [], [], []
             final_mask = np.full(input_shape, -1, dtype=np.int16)
             for i in range(results.shape[0]):
                 bbox, conf, label, other = (
@@ -362,6 +382,8 @@ class YOLOExtendedParser(BaseParser):
                 )[0]
                 bboxes.append(bbox)
                 labels.append(int(label))
+                if self.label_names:
+                    label_names.append(self.label_names[int(label)])
                 scores.append(conf)
 
                 if mode == self._KPTS_MODE:
@@ -401,6 +423,7 @@ class YOLOExtendedParser(BaseParser):
                     bboxes=bboxes,
                     scores=np.array(scores),
                     labels=np.array(labels),
+                    label_names=label_names,
                     keypoints=keypoints,
                     keypoints_scores=keypoints_scores,
                 )
@@ -409,6 +432,7 @@ class YOLOExtendedParser(BaseParser):
                     bboxes=bboxes,
                     scores=np.array(scores),
                     labels=np.array(labels),
+                    label_names=label_names,
                     masks=final_mask,
                 )
             else:
@@ -416,6 +440,7 @@ class YOLOExtendedParser(BaseParser):
                     bboxes=bboxes,
                     scores=np.array(scores),
                     labels=np.array(labels),
+                    label_names=label_names,
                 )
 
             detections_message.setTimestamp(output.getTimestamp())

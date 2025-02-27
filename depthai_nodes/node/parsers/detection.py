@@ -1,4 +1,6 @@
-from depthai_nodes.node.parsers.base_parser import BaseParser
+from typing import List, Optional
+
+from .base_parser import BaseParser
 
 
 class DetectionParser(BaseParser):
@@ -17,6 +19,8 @@ class DetectionParser(BaseParser):
         Non-maximum suppression threshold.
     max_det : int
         Maximum number of detections to keep.
+    label_names : List[str]
+        List of label names for detected objects.
 
     Output Message/s
         -------
@@ -31,6 +35,7 @@ class DetectionParser(BaseParser):
         conf_threshold: float,
         iou_threshold: float,
         max_det: int,
+        label_names: Optional[List[str]] = None,
     ) -> None:
         """Initializes the parser node.
 
@@ -45,6 +50,7 @@ class DetectionParser(BaseParser):
         self.conf_threshold = conf_threshold
         self.iou_threshold = iou_threshold
         self.max_det = max_det
+        self.label_names = label_names
 
     def setConfidenceThreshold(self, threshold: float) -> None:
         """Sets the confidence score threshold for detected objects.
@@ -76,6 +82,18 @@ class DetectionParser(BaseParser):
             raise ValueError("Max detections must be an integer.")
         self.max_det = max_det
 
+    def setLabelNames(self, label_names: List[str]) -> None:
+        """Sets the label names for detected objects.
+
+        @param label_names: List of label names for detected objects.
+        @type label_names: List[str]
+        """
+        if not isinstance(label_names, list):
+            raise ValueError("Label names must be a list.")
+        if not all(isinstance(label, str) for label in label_names):
+            raise ValueError("Each label name must be a string.")
+        self.label_names = label_names
+
     def build(self, head_config) -> "DetectionParser":
         """Configures the parser.
 
@@ -88,5 +106,6 @@ class DetectionParser(BaseParser):
         self.conf_threshold = head_config.get("conf_threshold", self.conf_threshold)
         self.iou_threshold = head_config.get("iou_threshold", self.iou_threshold)
         self.max_det = head_config.get("max_det", self.max_det)
+        self.label_names = head_config.get("classes", self.label_names)
 
         return self
