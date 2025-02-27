@@ -77,11 +77,25 @@ class AnnotationHelper:
         self.annotation.points.append(points_annot)
         return self
 
-    def draw_points(self, points: list[Point], color: ColorRGBA):
+    def draw_points(
+        self, points: list[Point], color: ColorRGBA, thickness: float = 2
+    ) -> "AnnotationHelper":
+        """Draws points.
+
+        @param points: List of points to draw
+        @type points: list[Point]
+        @param color: Color of the points
+        @type color: ColorRGBA
+        @param thickness: Size of the points, defaults to 2
+        @type thickness: float, optional
+        @return: self
+        @rtype: AnnotationHelper
+        """
         # TODO: Visualizer currently does not show dai.PointsAnnotationType.POINTS
         points_annot = self._create_points_annotation(
             points, color, None, dai.PointsAnnotationType.POINTS
         )
+        points_annot.thickness = thickness
         self.annotation.points.append(points_annot)
         return self
 
