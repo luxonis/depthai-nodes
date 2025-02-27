@@ -7,6 +7,7 @@ from numpy.typing import NDArray
 from depthai_nodes.ml.helpers.constants import (
     KEYPOINT_COLOR,
 )
+from depthai_nodes.ml.helpers.utils.annotation_helper import AnnotationHelper
 from depthai_nodes.ml.messages.keypoints import Keypoint
 from depthai_nodes.ml.messages.segmentation import SegmentationMask
 from depthai_nodes.utils import get_logger
@@ -264,150 +265,90 @@ class ImgDetectionsExtended(dai.Buffer):
         self._transformation = value
 
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
-        img_annotations = dai.ImgAnnotations()
-        annotation = dai.ImgAnnotation()
         transformation = self.transformation
-        w, h = 1, 1
-        if transformation is not None:  # remove once RVC2 supports ImgTransformation
-            w, h = transformation.getSize()
 
+        w, h = transformation.getSize()
         ratio = w / h
-        debug_color = dai.Color(0, 1, 0, 1)
-        item_fill_color = dai.Color(21 / 255, 127 / 255, 88 / 255, 0.1)
-        item_outline_color = dai.Color(21 / 255, 127 / 255, 88 / 255, 1)
         border_thickness = 0.00333 * (h + w)  # TODO: improve
         text_size = 0.014 * (w + h)  # TODO: improve
         highlight_len = 0.035
 
-        def get_base_pts():
-            pts = dai.PointsAnnotation()
-            pts.type = dai.PointsAnnotationType.LINE_LIST
-            pts.thickness = border_thickness
-            pts.outlineColor = item_outline_color
-            pts.fillColor = debug_color
-            return pts
+        debug_color = (0, 1, 0, 1)
+        item_fill_color = (21 / 255, 127 / 255, 88 / 255, 0.1)
+        outline_color = (21 / 255, 127 / 255, 88 / 255, 1)
 
+        annotation_builder = AnnotationHelper()
         for detection in self.detections:
             # TODO: refactor and use constants
             x_min, y_min, x_max, y_max = tuple(detection.rotated_rect.getOuterRect())
             highlight_size_x = min(highlight_len, x_max - x_min)
             highlight_size_y = min(highlight_len * ratio, y_max - y_min)
 
-            detection: ImgDetectionExtended = detection
-            rotated_rect = detection.rotated_rect
-            points = rotated_rect.getPoints()
-            pointsAnnotation = dai.PointsAnnotation()
-            pointsAnnotation.type = dai.PointsAnnotationType.LINE_LOOP
-            pointsAnnotation.points = dai.VectorPoint2f(points)
-            pointsAnnotation.outlineColor = debug_color
-            pointsAnnotation.thickness = 0
-            pointsAnnotation.fillColor = item_fill_color
-            annotation.points.append(pointsAnnotation)
-
-            pointsAnnotation2 = get_base_pts()
-            pointsAnnotation2.points = dai.VectorPoint2f(
-                [
-                    dai.Point2f(x_min, y_min),
-                    dai.Point2f(x_min + highlight_size_x, y_min),
-                ]
+            annotation_builder.draw_rotated_rect(  # Draws the outline
+                center=(
+                    detection.rotated_rect.center.x,
+                    detection.rotated_rect.center.y,
+                ),
+                size=(
+                    detection.rotated_rect.size.width,
+                    detection.rotated_rect.size.height,
+                ),
+                angle=detection.rotated_rect.angle,
+                outline_color=debug_color,
+                fill_color=item_fill_color,
+                thickness=0,
+            ).draw_polyline(  # Draws the top left corner
+                points=[
+                    (x_min, y_min + highlight_size_y),
+                    (x_min, y_min),
+                    (x_min + highlight_size_x, y_min),
+                ],
+                outline_color=outline_color,
+                thickness=border_thickness,
+            ).draw_polyline(  # Draws the top right corner
+                points=[
+                    (x_max - highlight_size_x, y_min),
+                    (x_max, y_min),
+                    (x_max, y_min + highlight_size_y),
+                ],
+                outline_color=outline_color,
+                thickness=border_thickness,
+            ).draw_polyline(  # Draws the bottom right corner
+                points=[
+                    (x_max - highlight_size_x, y_max),
+                    (x_max, y_max),
+                    (x_max, y_max - highlight_size_y),
+                ],
+                outline_color=outline_color,
+                thickness=border_thickness,
+            ).draw_polyline(  # Draws the bottom left corner
+                points=[
+                    (x_min, y_max - highlight_size_y),
+                    (x_min, y_max),
+                    (x_min + highlight_size_x, y_max),
+                ],
+                outline_color=outline_color,
+                thickness=border_thickness,
+            ).draw_text(  # Draws label text
+                text=f"{detection.label_name} {int(detection.confidence * 100)}%",
+                position=(x_min + highlight_len / 2, y_min + highlight_size_y),
+                color=(1, 1, 1, 1),
+                background_color=(0, 0, 0, 0),
+                size=text_size,
             )
-            annotation.points.append(pointsAnnotation2)
-
-            pointsAnnotation3 = get_base_pts()
-            pointsAnnotation3.points = dai.VectorPoint2f(
-                [
-                    dai.Point2f(x_min, y_min),
-                    dai.Point2f(x_min, y_min + highlight_size_y),
-                ]
-            )
-            annotation.points.append(pointsAnnotation3)
-
-            pointsAnnotation4 = get_base_pts()
-            pointsAnnotation4.points = dai.VectorPoint2f(
-                [
-                    dai.Point2f(x_max, y_min),
-                    dai.Point2f(x_max - highlight_size_x, y_min),
-                ]
-            )
-            annotation.points.append(pointsAnnotation4)
-
-            pointsAnnotation5 = get_base_pts()
-            pointsAnnotation5.points = dai.VectorPoint2f(
-                [
-                    dai.Point2f(x_max, y_min),
-                    dai.Point2f(x_max, y_min + highlight_size_y),
-                ]
-            )
-            annotation.points.append(pointsAnnotation5)
-
-            pointsAnnotation6 = get_base_pts()
-            pointsAnnotation6.points = dai.VectorPoint2f(
-                [
-                    dai.Point2f(x_max, y_min),
-                    dai.Point2f(x_max, y_min + highlight_size_y),
-                ]
-            )
-            annotation.points.append(pointsAnnotation6)
-
-            pointsAnnotation7 = get_base_pts()
-            pointsAnnotation7.points = dai.VectorPoint2f(
-                [
-                    dai.Point2f(x_max, y_max),
-                    dai.Point2f(x_max - highlight_size_x, y_max),
-                ]
-            )
-            annotation.points.append(pointsAnnotation7)
-
-            pointsAnnotation8 = get_base_pts()
-            pointsAnnotation8.points = dai.VectorPoint2f(
-                [
-                    dai.Point2f(x_max, y_max),
-                    dai.Point2f(x_max, y_max - highlight_size_y),
-                ]
-            )
-            annotation.points.append(pointsAnnotation8)
-
-            pointsAnnotation9 = get_base_pts()
-            pointsAnnotation9.points = dai.VectorPoint2f(
-                [
-                    dai.Point2f(x_min, y_max),
-                    dai.Point2f(x_min + highlight_size_x, y_max),
-                ]
-            )
-            annotation.points.append(pointsAnnotation9)
-
-            pointsAnnotation10 = get_base_pts()
-            pointsAnnotation10.points = dai.VectorPoint2f(
-                [
-                    dai.Point2f(x_min, y_max),
-                    dai.Point2f(x_min, y_max - highlight_size_y),
-                ]
-            )
-            annotation.points.append(pointsAnnotation10)
-
-            text = dai.TextAnnotation()
-            text.position = dai.Point2f(
-                x_min + highlight_len / 2, y_min + highlight_size_y
-            )
-            text.text = f"{detection.label_name} {int(detection.confidence * 100)}%"
-            text.fontSize = text_size
-            text.textColor = dai.Color(1, 1, 1, 1)
-            text.backgroundColor = dai.Color(0, 0, 0, 0)
-            annotation.texts.append(text)
-
-            if len(detection.keypoints) > 0:
+            if any(detection.keypoints):
                 keypoints = [
-                    dai.Point2f(keypoint.x, keypoint.y)
-                    for keypoint in detection.keypoints
+                    (keypoint.x, keypoint.y) for keypoint in detection.keypoints
                 ]
-                keypointAnnotation = dai.PointsAnnotation()
-                keypointAnnotation.type = dai.PointsAnnotationType.POINTS
-                keypointAnnotation.points = dai.VectorPoint2f(keypoints)
-                keypointAnnotation.outlineColor = KEYPOINT_COLOR
-                keypointAnnotation.fillColor = KEYPOINT_COLOR
-                keypointAnnotation.thickness = 2
-                annotation.points.append(keypointAnnotation)
+                annotation_builder.draw_points(
+                    points=keypoints,
+                    color=(
+                        KEYPOINT_COLOR.r,
+                        KEYPOINT_COLOR.g,
+                        KEYPOINT_COLOR.b,
+                        KEYPOINT_COLOR.a,
+                    ),
+                    thickness=2,
+                )
 
-        img_annotations.annotations.append(annotation)
-        img_annotations.setTimestamp(self.getTimestamp())
-        return img_annotations
+        return annotation_builder.build(self.getTimestamp(), self.getSequenceNum())
