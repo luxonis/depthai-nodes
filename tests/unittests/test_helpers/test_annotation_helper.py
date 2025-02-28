@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import depthai as dai
 
-from depthai_nodes.ml.helpers.utils.annotation_helper import AnnotationHelper
+from depthai_nodes.utils.annotation_helper import AnnotationHelper
 
 
 def test_empty_build():
