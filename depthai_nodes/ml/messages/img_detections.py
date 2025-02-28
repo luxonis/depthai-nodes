@@ -281,7 +281,7 @@ class ImgDetectionsExtended(dai.Buffer):
         for detection in self.detections:
             # TODO: refactor and use constants
             x_min, y_min, x_max, y_max = tuple(detection.rotated_rect.getOuterRect())
-            highlight_size_x = min(highlight_len, x_max - x_min)
+            # highlight_size_x = min(highlight_len, x_max - x_min)
             highlight_size_y = min(highlight_len * ratio, y_max - y_min)
 
             annotation_builder.draw_rotated_rect(  # Draws the outline
@@ -297,45 +297,42 @@ class ImgDetectionsExtended(dai.Buffer):
                 outline_color=debug_color,
                 fill_color=item_fill_color,
                 thickness=0,
-            ).draw_polyline(  # Draws the top left corner
-                points=[
-                    (x_min, y_min + highlight_size_y),
-                    (x_min, y_min),
-                    (x_min + highlight_size_x, y_min),
-                ],
-                outline_color=outline_color,
-                thickness=border_thickness,
-            ).draw_polyline(  # Draws the top right corner
-                points=[
-                    (x_max - highlight_size_x, y_min),
-                    (x_max, y_min),
-                    (x_max, y_min + highlight_size_y),
-                ],
-                outline_color=outline_color,
-                thickness=border_thickness,
-            ).draw_polyline(  # Draws the bottom right corner
-                points=[
-                    (x_max - highlight_size_x, y_max),
-                    (x_max, y_max),
-                    (x_max, y_max - highlight_size_y),
-                ],
-                outline_color=outline_color,
-                thickness=border_thickness,
-            ).draw_polyline(  # Draws the bottom left corner
-                points=[
-                    (x_min, y_max - highlight_size_y),
-                    (x_min, y_max),
-                    (x_min + highlight_size_x, y_max),
-                ],
-                outline_color=outline_color,
-                thickness=border_thickness,
-            ).draw_text(  # Draws label text
+            )
+
+            pts = detection.rotated_rect.getPoints()
+            pts_len = len(pts)
+            for i in range(pts_len):
+                previous_pt = pts[(i - 1) % pts_len]
+                current_pt = pts[i]
+                next_pt = pts[(i + 1) % pts_len]
+                corner_to_previous_pt = self._get_partial_line(
+                    start_point=(current_pt.x, current_pt.y),
+                    direction_point=(previous_pt.x, previous_pt.y),
+                    length=highlight_size_y,  # TODO: improve the calculation
+                )
+                corner_to_next_pt = self._get_partial_line(
+                    start_point=(current_pt.x, current_pt.y),
+                    direction_point=(next_pt.x, next_pt.y),
+                    length=highlight_size_y,  # TODO: improve the calculation
+                )
+                annotation_builder.draw_polyline(
+                    points=[
+                        corner_to_previous_pt,
+                        (current_pt.x, current_pt.y),
+                        corner_to_next_pt,
+                    ],
+                    outline_color=outline_color,
+                    thickness=border_thickness,
+                )
+
+            annotation_builder.draw_text(  # Draws label text
                 text=f"{detection.label_name} {int(detection.confidence * 100)}%",
                 position=(x_min + highlight_len / 2, y_min + highlight_size_y),
                 color=(1, 1, 1, 1),
                 background_color=(0, 0, 0, 0),
                 size=text_size,
             )
+
             if any(detection.keypoints):
                 keypoints = [
                     (keypoint.x, keypoint.y) for keypoint in detection.keypoints
@@ -352,3 +349,41 @@ class ImgDetectionsExtended(dai.Buffer):
                 )
 
         return annotation_builder.build(self.getTimestamp(), self.getSequenceNum())
+
+    # TODO: move the method to AnnotationsBuilder?
+    def _get_partial_line(
+        self,
+        start_point: Tuple[float, float],
+        direction_point: Tuple[float, float],
+        length: float,
+    ) -> Tuple[float, float]:
+        """Calculate endpoint for a line starting at start_point going towards
+        direction_point with specified length.
+
+        Args:
+            start_point: Starting point (x, y)
+            direction_point: Point that defines direction (x, y)
+            length: Desired length of the line
+
+        Returns:
+            Endpoint coordinates (x, y)
+        """
+        # Calculate direction vector
+        dx = direction_point[0] - start_point[0]
+        dy = direction_point[1] - start_point[1]
+
+        # Calculate the total length of the full line
+        total_length = (dx**2 + dy**2) ** 0.5
+
+        # If total_length is 0, return start_point to avoid division by zero
+        if total_length == 0:
+            return start_point
+
+        # Calculate scaling factor
+        scale = length / total_length
+
+        # Calculate the endpoint
+        end_x = start_point[0] + dx * scale
+        end_y = start_point[1] + dy * scale
+
+        return (end_x, end_y)
