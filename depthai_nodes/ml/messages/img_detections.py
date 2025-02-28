@@ -325,9 +325,14 @@ class ImgDetectionsExtended(dai.Buffer):
                     thickness=border_thickness,
                 )
 
+            top_most_point = min(pts, key=lambda pt: pt.y)
+            text_space = text_size / 2 / h  # TODO: abstract to an object
             annotation_builder.draw_text(  # Draws label text
                 text=f"{detection.label_name} {int(detection.confidence * 100)}%",
-                position=(x_min + highlight_len / 2, y_min + highlight_size_y),
+                position=(
+                    top_most_point.x,
+                    top_most_point.y - text_space,
+                ),  # TODO: solve for y = 0
                 color=(1, 1, 1, 1),
                 background_color=(0, 0, 0, 0),
                 size=text_size,
