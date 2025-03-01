@@ -284,6 +284,7 @@ class ImgDetectionsExtended(dai.Buffer):
             # highlight_size_x = min(highlight_len, x_max - x_min)
             highlight_size_y = min(highlight_len * ratio, y_max - y_min)
 
+            # TODO: draw just the visible part
             annotation_builder.draw_rotated_rect(  # Draws the outline
                 center=(
                     detection.rotated_rect.center.x,
@@ -299,12 +300,13 @@ class ImgDetectionsExtended(dai.Buffer):
                 thickness=0,
             )
 
-            pts = detection.rotated_rect.getPoints()
+            pts: List[dai.Point2f] = detection.rotated_rect.getPoints()
             pts_len = len(pts)
             for i in range(pts_len):
                 previous_pt = pts[(i - 1) % pts_len]
                 current_pt = pts[i]
                 next_pt = pts[(i + 1) % pts_len]
+
                 corner_to_previous_pt = self._get_partial_line(
                     start_point=(current_pt.x, current_pt.y),
                     direction_point=(previous_pt.x, previous_pt.y),
