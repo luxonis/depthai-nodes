@@ -3,6 +3,8 @@ from typing import Tuple
 
 
 class LineClipper:
+    """Clips lines to the viewport (0,1)."""
+
     class _PointLocation(Enum):
         INSIDE = 0b0000
         LEFT = 0b0001
