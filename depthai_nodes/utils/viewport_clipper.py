@@ -65,42 +65,44 @@ class ViewportClipper:
         # Compute codes for both points
         x1, y1 = pt1
         x2, y2 = pt2
-        code1 = self._get_location(x1, y1)
-        code2 = self._get_location(x2, y2)
+        location1 = self._get_location(x1, y1)
+        location2 = self._get_location(x2, y2)
 
         while True:
-            # Both points inside viewport
-            if code1 == 0 and code2 == 0:
+            if (
+                location1 == self._PointLocation.INSIDE.value
+                and location2 == self._PointLocation.INSIDE.value
+            ):
                 return (x1, y1), (x2, y2)
 
             # Line completely outside viewport
-            if code1 & code2 != 0:
+            if location1 & location2 != self._PointLocation.INSIDE.value:
                 return None
 
             # Pick an outside point
-            code = code1 if code1 != 0 else code2
+            location = location1 if location1 != 0 else location2
 
             # Find intersection point
-            if code & self._PointLocation.TOP.value:
+            if location & self._PointLocation.TOP.value:
                 x = x1 + (x2 - x1) * (1 - y1) / (y2 - y1)
                 y = self._max_y
-            elif code & self._PointLocation.BOTTOM.value:
+            elif location & self._PointLocation.BOTTOM.value:
                 x = x1 + (x2 - x1) * (0 - y1) / (y2 - y1)
                 y = self._min_y
-            elif code & self._PointLocation.RIGHT.value:
+            elif location & self._PointLocation.RIGHT.value:
                 y = y1 + (y2 - y1) * (1 - x1) / (x2 - x1)
                 x = self._max_x
-            elif code & self._PointLocation.LEFT.value:
+            elif location & self._PointLocation.LEFT.value:
                 y = y1 + (y2 - y1) * (0 - x1) / (x2 - x1)
                 x = self._min_x
 
             # Replace outside point
-            if code == code1:
+            if location == location1:
                 x1, y1 = x, y
-                code1 = self._get_location(x1, y1)
+                location1 = self._get_location(x1, y1)
             else:
                 x2, y2 = x, y
-                code2 = self._get_location(x2, y2)
+                location2 = self._get_location(x2, y2)
 
     def _get_location(self, x: float, y: float) -> int:
         location = self._PointLocation.INSIDE.value
