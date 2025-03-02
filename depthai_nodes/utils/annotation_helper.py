@@ -64,7 +64,6 @@ class AnnotationHelper:
         fill_color: Optional[ColorRGBA] = None,
         thickness: float = 1,
         closed: bool = False,
-        clip_to_viewport: bool = False,
     ) -> "AnnotationHelper":
         """Draws a polyline.
 
@@ -78,13 +77,9 @@ class AnnotationHelper:
         @type thickness: float, optional
         @param closed: Creates polygon, instead of polyline if True, defaults to False
         @type closed: bool, optional
-        @param clip_to_viewport: Indication whether to clip the line to the viewport
-        @type clip_to_viewport: bool
         @return: self
         @rtype: AnnotationHelper
         """
-        if clip_to_viewport:
-            points = self._get_clipped_points(points)
         points_type = (
             dai.PointsAnnotationType.LINE_STRIP
             if not closed
@@ -170,7 +165,6 @@ class AnnotationHelper:
         outline_color: ColorRGBA,
         fill_color: Optional[ColorRGBA] = None,
         thickness: float = 1,
-        clip_to_viewport: bool = False,
     ) -> "AnnotationHelper":
         """Draws a rectangle.
 
@@ -184,8 +178,6 @@ class AnnotationHelper:
         @type fill_color: ColorRGBA | None, optional
         @param thickness: Outline thickness, defaults to 1
         @type thickness: float, optional
-        @param clip_to_viewport: Indication whether to clip the line to the viewport
-        @type clip_to_viewport: bool
         @return: self
         @rtype: AnnotationHelper
         """
@@ -195,14 +187,7 @@ class AnnotationHelper:
             bottom_right,
             (top_left[0], bottom_right[1]),
         ]
-        self.draw_polyline(
-            points,
-            outline_color,
-            fill_color,
-            thickness,
-            closed=True,
-            clip_to_viewport=clip_to_viewport,
-        )
+        self.draw_polyline(points, outline_color, fill_color, thickness, closed=True)
         return self
 
     def draw_text(
@@ -247,7 +232,6 @@ class AnnotationHelper:
         outline_color: ColorRGBA,
         fill_color: Optional[ColorRGBA] = None,
         thickness: float = 1,
-        clip_to_viewport: bool = False,
     ) -> "AnnotationHelper":
         """Draws a rotated rectangle.
 
@@ -263,15 +247,11 @@ class AnnotationHelper:
         @type fill_color: ColorRGBA | None, optional
         @param thickness: Outline thickness, defaults to 1
         @type thickness: float, optional
-        @param clip_to_viewport: Indication whether to clip the line to the viewport
-        @type clip_to_viewport: bool
         @return: self
         @rtype: AnnotationHelper
         """
         points = self._get_rotated_rect_points(center, size, angle)
-        self.draw_polyline(
-            points, outline_color, fill_color, thickness, True, clip_to_viewport
-        )
+        self.draw_polyline(points, outline_color, fill_color, thickness, True)
         return self
 
     def build(self, timestamp: timedelta, sequence_num: int) -> dai.ImgAnnotations:
