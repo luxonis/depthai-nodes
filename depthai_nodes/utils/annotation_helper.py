@@ -165,6 +165,7 @@ class AnnotationHelper:
         outline_color: ColorRGBA,
         fill_color: Optional[ColorRGBA] = None,
         thickness: float = 1,
+        clip_to_viewport: bool = False,
     ) -> "AnnotationHelper":
         """Draws a rectangle.
 
@@ -178,6 +179,8 @@ class AnnotationHelper:
         @type fill_color: ColorRGBA | None, optional
         @param thickness: Outline thickness, defaults to 1
         @type thickness: float, optional
+        @param clip_to_viewport: Indication whether to clip the line to the viewport
+        @type clip_to_viewport: bool
         @return: self
         @rtype: AnnotationHelper
         """
@@ -187,6 +190,8 @@ class AnnotationHelper:
             bottom_right,
             (top_left[0], bottom_right[1]),
         ]
+        if clip_to_viewport:
+            points = ViewportClipper.clip_rect(points)
         self.draw_polyline(points, outline_color, fill_color, thickness, closed=True)
         return self
 
@@ -232,6 +237,7 @@ class AnnotationHelper:
         outline_color: ColorRGBA,
         fill_color: Optional[ColorRGBA] = None,
         thickness: float = 1,
+        clip_to_viewport: bool = False,
     ) -> "AnnotationHelper":
         """Draws a rotated rectangle.
 
@@ -247,10 +253,14 @@ class AnnotationHelper:
         @type fill_color: ColorRGBA | None, optional
         @param thickness: Outline thickness, defaults to 1
         @type thickness: float, optional
+        @param clip_to_viewport: Indication whether to clip the line to the viewport
+        @type clip_to_viewport: bool
         @return: self
         @rtype: AnnotationHelper
         """
         points = self._get_rotated_rect_points(center, size, angle)
+        if clip_to_viewport:
+            points = ViewportClipper.clip_rect(points)
         self.draw_polyline(points, outline_color, fill_color, thickness, True)
         return self
 
