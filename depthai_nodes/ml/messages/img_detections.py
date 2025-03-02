@@ -274,7 +274,7 @@ class ImgDetectionsExtended(dai.Buffer):
         highlight_len = 0.035
 
         debug_color = (0, 1, 0, 1)
-        item_fill_color = (21 / 255, 127 / 255, 88 / 255, 0.1)
+        item_fill_color = (21 / 255, 127 / 255, 88 / 255, 0.2)
         outline_color = (21 / 255, 127 / 255, 88 / 255, 1)
 
         annotation_builder = AnnotationHelper()
@@ -298,6 +298,7 @@ class ImgDetectionsExtended(dai.Buffer):
                 outline_color=debug_color,
                 fill_color=item_fill_color,
                 thickness=0,
+                clip_to_viewport=True,
             )
 
             pts: List[dai.Point2f] = detection.rotated_rect.getPoints()
