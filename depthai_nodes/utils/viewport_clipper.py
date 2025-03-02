@@ -14,6 +14,15 @@ class ViewportClipper:
 
     @staticmethod
     def clip_rect(points: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+        """Clips a rectangle defined by points to viewport (0,1).
+
+        Uses Cohen-Sutherland line clipping algorithm for each edge of the polygon.
+
+        @param points: List of points defining the polygon vertices
+        @type points: List[Tuple[float, float]]
+        @return: List of points defining the clipped polygon vertices
+        @rtype: List[Tuple[float, float]]
+        """
         clipped_points: List[Tuple[float, float]] = []
         points_len = len(points)
         for i in range(points_len):
