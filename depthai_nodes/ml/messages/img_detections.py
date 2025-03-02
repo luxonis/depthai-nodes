@@ -333,14 +333,21 @@ class ImgDetectionsExtended(dai.Buffer):
                     clip_to_viewport=True,
                 )
 
-            top_most_point = min(pts, key=lambda pt: pt.y)
             text_space = text_size / 2 / h  # TODO: abstract to an object
+            text_position = min(pts, key=lambda pt: (pt.y, pt.x))
+            text_position_y = text_position.y - text_space
+            relative_text_size = text_size / h
+            if text_position_y - relative_text_size < 0:
+                text_position = min(pts, key=lambda pt: (-pt.y, pt.x))
+                text_position_y = text_position.y + text_space + relative_text_size
+            text_position_x = max(min(text_position.x, 1), 0)
+
             annotation_builder.draw_text(  # Draws label text
                 text=f"{detection.label_name} {int(detection.confidence * 100)}%",
                 position=(
-                    top_most_point.x,
-                    top_most_point.y - text_space,
-                ),  # TODO: solve for y = 0
+                    text_position_x,
+                    text_position_y,
+                ),
                 color=(1, 1, 1, 1),
                 background_color=(0, 0, 0, 0),
                 size=text_size,
