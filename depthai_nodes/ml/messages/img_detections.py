@@ -7,10 +7,10 @@ from numpy.typing import NDArray
 from depthai_nodes.ml.helpers.constants import (
     KEYPOINT_COLOR,
 )
-from depthai_nodes.ml.helpers.utils.annotation_helper import AnnotationHelper
 from depthai_nodes.ml.messages.keypoints import Keypoint
 from depthai_nodes.ml.messages.segmentation import SegmentationMask
 from depthai_nodes.utils import get_logger
+from depthai_nodes.utils.annotation_helper import AnnotationHelper
 
 
 class ImgDetectionExtended(dai.Buffer):
@@ -317,14 +317,19 @@ class ImgDetectionsExtended(dai.Buffer):
                     direction_point=(next_pt.x, next_pt.y),
                     length=highlight_size_y,  # TODO: improve the calculation
                 )
-                annotation_builder.draw_polyline(
-                    points=[
-                        corner_to_previous_pt,
-                        (current_pt.x, current_pt.y),
-                        corner_to_next_pt,
-                    ],
-                    outline_color=outline_color,
+                annotation_builder.draw_line(
+                    corner_to_previous_pt,
+                    (current_pt.x, current_pt.y),
+                    color=outline_color,
                     thickness=border_thickness,
+                    clip_to_viewport=True,
+                )
+                annotation_builder.draw_line(
+                    (current_pt.x, current_pt.y),
+                    corner_to_next_pt,
+                    color=outline_color,
+                    thickness=border_thickness,
+                    clip_to_viewport=True,
                 )
 
             top_most_point = min(pts, key=lambda pt: pt.y)
