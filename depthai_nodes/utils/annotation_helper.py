@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 import depthai as dai
 import numpy as np
 
-from depthai_nodes.utils.line_clipper import LineClipper
+from depthai_nodes.utils.viewport_clipper import ViewportClipper
 
 Point = Tuple[float, float]
 ColorRGBA = Tuple[float, float, float, float]
@@ -43,7 +43,7 @@ class AnnotationHelper:
         @rtype: AnnotationHelper
         """
         if clip_to_viewport:
-            clipped = LineClipper.clip_line(pt1, pt2)
+            clipped = ViewportClipper.clip_line(pt1, pt2)
             if not clipped:
                 return self
             pt1, pt2 = clipped
@@ -96,7 +96,7 @@ class AnnotationHelper:
         clipped_points = []
         points_len = len(points)
         for i in range(points_len):
-            clipped = LineClipper.clip_line(points[i], points[(i + 1) % points_len])
+            clipped = ViewportClipper.clip_line(points[i], points[(i + 1) % points_len])
             if not clipped:
                 continue
             p1, _ = clipped

@@ -2,8 +2,8 @@ from enum import Enum
 from typing import Tuple
 
 
-class LineClipper:
-    """Clips lines to the viewport (0,1)."""
+class ViewportClipper:
+    """Adjusts coordinates of points so they are not outside of the viewport (0,1)."""
 
     class _PointLocation(Enum):
         INSIDE = 0b0000
@@ -14,15 +14,15 @@ class LineClipper:
 
     @staticmethod
     def _get_location(x: float, y: float) -> int:
-        location = LineClipper._PointLocation.INSIDE.value
+        location = ViewportClipper._PointLocation.INSIDE.value
         if x < 0:
-            location |= LineClipper._PointLocation.LEFT.value
+            location |= ViewportClipper._PointLocation.LEFT.value
         elif x > 1:
-            location |= LineClipper._PointLocation.RIGHT.value
+            location |= ViewportClipper._PointLocation.RIGHT.value
         if y < 0:
-            location |= LineClipper._PointLocation.BOTTOM.value
+            location |= ViewportClipper._PointLocation.BOTTOM.value
         elif y > 1:
-            location |= LineClipper._PointLocation.TOP.value
+            location |= ViewportClipper._PointLocation.TOP.value
         return location
 
     @staticmethod
@@ -43,8 +43,8 @@ class LineClipper:
         # Compute codes for both points
         x1, y1 = pt1
         x2, y2 = pt2
-        code1 = LineClipper._get_location(x1, y1)
-        code2 = LineClipper._get_location(x2, y2)
+        code1 = ViewportClipper._get_location(x1, y1)
+        code2 = ViewportClipper._get_location(x2, y2)
 
         while True:
             # Both points inside viewport
@@ -59,23 +59,23 @@ class LineClipper:
             code = code1 if code1 != 0 else code2
 
             # Find intersection point
-            if code & LineClipper._PointLocation.TOP.value:
+            if code & ViewportClipper._PointLocation.TOP.value:
                 x = x1 + (x2 - x1) * (1 - y1) / (y2 - y1)
                 y = 1.0
-            elif code & LineClipper._PointLocation.BOTTOM.value:
+            elif code & ViewportClipper._PointLocation.BOTTOM.value:
                 x = x1 + (x2 - x1) * (0 - y1) / (y2 - y1)
                 y = 0.0
-            elif code & LineClipper._PointLocation.RIGHT.value:
+            elif code & ViewportClipper._PointLocation.RIGHT.value:
                 y = y1 + (y2 - y1) * (1 - x1) / (x2 - x1)
                 x = 1.0
-            elif code & LineClipper._PointLocation.LEFT.value:
+            elif code & ViewportClipper._PointLocation.LEFT.value:
                 y = y1 + (y2 - y1) * (0 - x1) / (x2 - x1)
                 x = 0.0
 
             # Replace outside point
             if code == code1:
                 x1, y1 = x, y
-                code1 = LineClipper._get_location(x1, y1)
+                code1 = ViewportClipper._get_location(x1, y1)
             else:
                 x2, y2 = x, y
-                code2 = LineClipper._get_location(x2, y2)
+                code2 = ViewportClipper._get_location(x2, y2)
