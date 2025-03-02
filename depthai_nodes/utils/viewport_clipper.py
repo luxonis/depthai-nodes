@@ -3,7 +3,8 @@ from typing import List, Tuple
 
 
 class ViewportClipper:
-    """Adjusts coordinates of points so they are not outside of the viewport (0,1)."""
+    """Adjusts coordinates of points such that they are not outside of a specified
+    viewport."""
 
     class _PointLocation(Enum):
         INSIDE = 0b0000
@@ -12,9 +13,14 @@ class ViewportClipper:
         BOTTOM = 0b0100
         TOP = 0b1000
 
-    @staticmethod
-    def clip_rect(points: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
-        """Clips a rectangle defined by points to viewport (0,1).
+    def __init__(self, min_x: float, max_x: float, min_y: float, max_y: float):
+        self._min_x = min_x
+        self._max_x = max_x
+        self._min_y = min_y
+        self._max_y = max_y
+
+    def clip_rect(self, points: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+        """Clips a rectangle defined by points to viewport.
 
         Uses Cohen-Sutherland line clipping algorithm for each edge of the polygon.
 
@@ -28,7 +34,7 @@ class ViewportClipper:
         for i in range(points_len):
             current_point = points[i]
             next_point = points[(i + 1) % points_len]
-            clipped_line_pts = ViewportClipper.clip_line(current_point, next_point)
+            clipped_line_pts = self.clip_line(current_point, next_point)
             if not clipped_line_pts:
                 continue
             start, end = clipped_line_pts
@@ -42,8 +48,7 @@ class ViewportClipper:
                 clipped_points.append(next_point)
         return clipped_points
 
-    @staticmethod
-    def clip_line(pt1: Tuple[float, float], pt2: Tuple[float, float]):
+    def clip_line(self, pt1: Tuple[float, float], pt2: Tuple[float, float]):
         """Clips a line segment to viewport (0,1).
 
         Uses Cohen-Sutherland line clipping algorithm.
@@ -60,8 +65,8 @@ class ViewportClipper:
         # Compute codes for both points
         x1, y1 = pt1
         x2, y2 = pt2
-        code1 = ViewportClipper._get_location(x1, y1)
-        code2 = ViewportClipper._get_location(x2, y2)
+        code1 = self._get_location(x1, y1)
+        code2 = self._get_location(x2, y2)
 
         while True:
             # Both points inside viewport
@@ -76,36 +81,35 @@ class ViewportClipper:
             code = code1 if code1 != 0 else code2
 
             # Find intersection point
-            if code & ViewportClipper._PointLocation.TOP.value:
+            if code & self._PointLocation.TOP.value:
                 x = x1 + (x2 - x1) * (1 - y1) / (y2 - y1)
-                y = 1.0
-            elif code & ViewportClipper._PointLocation.BOTTOM.value:
+                y = self._max_y
+            elif code & self._PointLocation.BOTTOM.value:
                 x = x1 + (x2 - x1) * (0 - y1) / (y2 - y1)
-                y = 0.0
-            elif code & ViewportClipper._PointLocation.RIGHT.value:
+                y = self._min_y
+            elif code & self._PointLocation.RIGHT.value:
                 y = y1 + (y2 - y1) * (1 - x1) / (x2 - x1)
-                x = 1.0
-            elif code & ViewportClipper._PointLocation.LEFT.value:
+                x = self._max_x
+            elif code & self._PointLocation.LEFT.value:
                 y = y1 + (y2 - y1) * (0 - x1) / (x2 - x1)
-                x = 0.0
+                x = self._min_x
 
             # Replace outside point
             if code == code1:
                 x1, y1 = x, y
-                code1 = ViewportClipper._get_location(x1, y1)
+                code1 = self._get_location(x1, y1)
             else:
                 x2, y2 = x, y
-                code2 = ViewportClipper._get_location(x2, y2)
+                code2 = self._get_location(x2, y2)
 
-    @staticmethod
-    def _get_location(x: float, y: float) -> int:
-        location = ViewportClipper._PointLocation.INSIDE.value
-        if x < 0:
-            location |= ViewportClipper._PointLocation.LEFT.value
-        elif x > 1:
-            location |= ViewportClipper._PointLocation.RIGHT.value
-        if y < 0:
-            location |= ViewportClipper._PointLocation.BOTTOM.value
-        elif y > 1:
-            location |= ViewportClipper._PointLocation.TOP.value
+    def _get_location(self, x: float, y: float) -> int:
+        location = self._PointLocation.INSIDE.value
+        if x < self._min_x:
+            location |= self._PointLocation.LEFT.value
+        elif x > self._max_x:
+            location |= self._PointLocation.RIGHT.value
+        if y < self._min_y:
+            location |= self._PointLocation.BOTTOM.value
+        elif y > self._max_y:
+            location |= self._PointLocation.TOP.value
         return location

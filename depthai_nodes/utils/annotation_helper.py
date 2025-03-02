@@ -18,6 +18,9 @@ class AnnotationHelper:
 
     def __init__(self):
         self.annotation: dai.ImgAnnotation = dai.ImgAnnotation()
+        self._viewport_clipper = ViewportClipper(
+            min_x=0.0, max_x=1.0, min_y=0.0, max_y=1.0
+        )
 
     def draw_line(
         self,
@@ -43,7 +46,7 @@ class AnnotationHelper:
         @rtype: AnnotationHelper
         """
         if clip_to_viewport:
-            clipped = ViewportClipper.clip_line(pt1, pt2)
+            clipped = self._viewport_clipper.clip_line(pt1, pt2)
             if not clipped:
                 return self
             pt1, pt2 = clipped
@@ -96,7 +99,9 @@ class AnnotationHelper:
         clipped_points = []
         points_len = len(points)
         for i in range(points_len):
-            clipped = ViewportClipper.clip_line(points[i], points[(i + 1) % points_len])
+            clipped = self._viewport_clipper.clip_line(
+                points[i], points[(i + 1) % points_len]
+            )
             if not clipped:
                 continue
             p1, _ = clipped
@@ -191,7 +196,7 @@ class AnnotationHelper:
             (top_left[0], bottom_right[1]),
         ]
         if clip_to_viewport:
-            points = ViewportClipper.clip_rect(points)
+            points = self._viewport_clipper.clip_rect(points)
         self.draw_polyline(points, outline_color, fill_color, thickness, closed=True)
         return self
 
@@ -260,7 +265,7 @@ class AnnotationHelper:
         """
         points = self._get_rotated_rect_points(center, size, angle)
         if clip_to_viewport:
-            points = ViewportClipper.clip_rect(points)
+            points = self._viewport_clipper.clip_rect(points)
         self.draw_polyline(points, outline_color, fill_color, thickness, True)
         return self
 
