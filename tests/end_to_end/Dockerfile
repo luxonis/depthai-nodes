@@ -26,4 +26,4 @@ RUN pip install -r requirements-dev.txt
 WORKDIR /app/depthai-nodes/tests/end_to_end
 
 # Run the setup script and the tests
-ENTRYPOINT ["bash", "-c", "git checkout main && git pull && git checkout $BRANCH && PYTHONPATH=PYTHONPATH:/tmp/depthai-core/build/bindings/python && source <(python setup_camera_ips.py) && python main.py $FLAGS"]
+ENTRYPOINT ["bash", "-c", "git checkout main && git pull && git checkout $BRANCH && export PYTHONPATH=PYTHONPATH:/tmp/depthai-core/build/bindings/python && source <(python setup_camera_ips.py) && python main.py $FLAGS"]
