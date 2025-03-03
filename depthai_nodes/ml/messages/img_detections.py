@@ -265,13 +265,11 @@ class ImgDetectionsExtended(dai.Buffer):
         self._transformation = value
 
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
-        transformation = self.transformation
-
-        w, h = transformation.getSize()
+        w, h = self.transformation.getSize()
         ratio = w / h
-        border_thickness = 0.00333 * (h + w)  # TODO: improve
-        text_size = 0.014 * (w + h)  # TODO: improve
-        highlight_len = 0.035
+        border_thickness = (1 / 300) * (h + w)
+        text_size = (1 / 30) * h
+        detection_corner_size = 0.04
 
         debug_color = (0, 1, 0, 1)
         item_fill_color = (21 / 255, 127 / 255, 88 / 255, 0.2)
@@ -280,11 +278,6 @@ class ImgDetectionsExtended(dai.Buffer):
         annotation_builder = AnnotationHelper()
         for detection in self.detections:
             # TODO: refactor and use constants
-            x_min, y_min, x_max, y_max = tuple(detection.rotated_rect.getOuterRect())
-            # highlight_size_x = min(highlight_len, x_max - x_min)
-            highlight_size_y = min(highlight_len * ratio, y_max - y_min)
-
-            # TODO: draw just the visible part
             annotation_builder.draw_rotated_rect(  # Draws the outline
                 center=(
                     detection.rotated_rect.center.x,
@@ -308,15 +301,34 @@ class ImgDetectionsExtended(dai.Buffer):
                 current_pt = pts[i]
                 next_pt = pts[(i + 1) % pts_len]
 
+                corner_size_to_previous = min(
+                    detection_corner_size,
+                    self._calculate_distance(
+                        (current_pt.x, current_pt.y), (previous_pt.x, previous_pt.y)
+                    ),
+                )
+                corner_size_to_previous *= self._scale_to_aspect(
+                    (current_pt.x, current_pt.y), (previous_pt.x, previous_pt.y), ratio
+                )
                 corner_to_previous_pt = self._get_partial_line(
                     start_point=(current_pt.x, current_pt.y),
                     direction_point=(previous_pt.x, previous_pt.y),
-                    length=highlight_size_y,  # TODO: improve the calculation
+                    length=corner_size_to_previous,
+                )
+
+                corner_size_to_next = min(
+                    detection_corner_size,
+                    self._calculate_distance(
+                        (current_pt.x, current_pt.y), (next_pt.x, next_pt.y)
+                    ),
+                )
+                corner_size_to_next *= self._scale_to_aspect(
+                    (current_pt.x, current_pt.y), (next_pt.x, next_pt.y), ratio
                 )
                 corner_to_next_pt = self._get_partial_line(
                     start_point=(current_pt.x, current_pt.y),
                     direction_point=(next_pt.x, next_pt.y),
-                    length=highlight_size_y,  # TODO: improve the calculation
+                    length=corner_size_to_next,
                 )
                 annotation_builder.draw_line(
                     corner_to_previous_pt,
@@ -365,7 +377,7 @@ class ImgDetectionsExtended(dai.Buffer):
                         KEYPOINT_COLOR.b,
                         KEYPOINT_COLOR.a,
                     ),
-                    thickness=2,
+                    thickness=2,  # TODO: scale with resolution
                 )
 
         return annotation_builder.build(self.getTimestamp(), self.getSequenceNum())
@@ -377,17 +389,6 @@ class ImgDetectionsExtended(dai.Buffer):
         direction_point: Tuple[float, float],
         length: float,
     ) -> Tuple[float, float]:
-        """Calculate endpoint for a line starting at start_point going towards
-        direction_point with specified length.
-
-        Args:
-            start_point: Starting point (x, y)
-            direction_point: Point that defines direction (x, y)
-            length: Desired length of the line
-
-        Returns:
-            Endpoint coordinates (x, y)
-        """
         # Calculate direction vector
         dx = direction_point[0] - start_point[0]
         dy = direction_point[1] - start_point[1]
@@ -407,3 +408,16 @@ class ImgDetectionsExtended(dai.Buffer):
         end_y = start_point[1] + dy * scale
 
         return (end_x, end_y)
+
+    def _calculate_distance(
+        self, point1: Tuple[float, float], point2: Tuple[float, float]
+    ) -> float:
+        x1, y1 = point1
+        x2, y2 = point2
+        return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
+
+    def _scale_to_aspect(
+        self, pt1: Tuple[float, float], pt2: Tuple[float, float], aspect_ratio: float
+    ) -> float:
+        angle = np.arctan2(pt2[1] - pt1[1], pt2[0] - pt1[0])
+        return 1.0 + (aspect_ratio - 1.0) * abs(np.sin(angle))
