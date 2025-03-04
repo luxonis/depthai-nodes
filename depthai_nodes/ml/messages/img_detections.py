@@ -268,6 +268,7 @@ class ImgDetectionsExtended(dai.Buffer):
         w, h = self.transformation.getSize()
         ratio = w / h
         border_thickness = (1 / 300) * (h + w)
+        keypoint_thickness = (1 / 300) * (h + w)
         text_size = (1 / 30) * h
         detection_corner_size = 0.04
 
@@ -377,7 +378,7 @@ class ImgDetectionsExtended(dai.Buffer):
                         KEYPOINT_COLOR.b,
                         KEYPOINT_COLOR.a,
                     ),
-                    thickness=2,  # TODO: scale with resolution
+                    thickness=keypoint_thickness,
                 )
 
         return annotation_builder.build(self.getTimestamp(), self.getSequenceNum())
