@@ -335,7 +335,7 @@ class AnnotationHelper:
         translated_corners = rotated_corners + np.array([cx, cy])
 
         # Convert to list of tuples
-        return translated_corners.tolist()
+        return [tuple(corner) for corner in translated_corners.tolist()]
 
     def _create_points_vector(self, points: List[Point]) -> dai.VectorPoint2f:
         return dai.VectorPoint2f([dai.Point2f(pt[0], pt[1]) for pt in points])
