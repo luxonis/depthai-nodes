@@ -25,3 +25,7 @@ class AnnotationSizes:
     @property
     def text_space(self):
         return self.text_size / 2 / self._height
+
+    @property
+    def aspect_ratio(self):
+        return self._width / self._height
