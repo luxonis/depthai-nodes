@@ -276,104 +276,132 @@ class ImgDetectionsExtended(dai.Buffer):
         annotation_sizes = AnnotationSizes(w, h)
         annotation_builder = AnnotationHelper()
         for detection in self.detections:
-            # TODO: refactor
-            annotation_builder.draw_rotated_rect(  # Draws the outline
-                center=detection.rotated_rect.center,
-                size=detection.rotated_rect.size,
-                angle=detection.rotated_rect.angle,
-                outline_color=OUTLINE_COLOR,
-                fill_color=DETECTION_FILL_COLOR,
-                thickness=0,
+            self._draw_overlay(annotation_builder, detection)
+            self._draw_corners(annotation_sizes, annotation_builder, detection)
+            self._draw_label(annotation_sizes, annotation_builder, detection)
+            if any(detection.keypoints):
+                self._draw_keypoints(annotation_sizes, annotation_builder, detection)
+
+        return annotation_builder.build(self.getTimestamp(), self.getSequenceNum())
+
+    def _draw_overlay(
+        self, annotation_builder: AnnotationHelper, detection: ImgDetectionExtended
+    ) -> None:
+        annotation_builder.draw_rotated_rect(
+            center=detection.rotated_rect.center,
+            size=detection.rotated_rect.size,
+            angle=detection.rotated_rect.angle,
+            outline_color=OUTLINE_COLOR,
+            fill_color=DETECTION_FILL_COLOR,
+            thickness=0,
+            clip_to_viewport=True,
+        )
+
+    def _draw_corners(
+        self,
+        annotation_sizes: AnnotationSizes,
+        annotation_builder: AnnotationHelper,
+        detection: ImgDetectionExtended,
+    ) -> None:
+        pts = self._get_points(detection)
+        pts_len = len(pts)
+        for i in range(pts_len):
+            previous_pt = pts[(i - 1) % pts_len]
+            current_pt = pts[i]
+            next_pt = pts[(i + 1) % pts_len]
+
+            corner_size_to_previous = min(
+                DETECTION_CORNER_SIZE,
+                self._calculate_distance(
+                    (current_pt.x, current_pt.y), (previous_pt.x, previous_pt.y)
+                ),
+            )
+            corner_size_to_previous *= self._scale_to_aspect(
+                (current_pt.x, current_pt.y),
+                (previous_pt.x, previous_pt.y),
+                annotation_sizes.aspect_ratio,
+            )
+            corner_to_previous_pt = self._get_partial_line(
+                start_point=(current_pt.x, current_pt.y),
+                direction_point=(previous_pt.x, previous_pt.y),
+                length=corner_size_to_previous,
+            )
+
+            corner_size_to_next = min(
+                DETECTION_CORNER_SIZE,
+                self._calculate_distance(
+                    (current_pt.x, current_pt.y), (next_pt.x, next_pt.y)
+                ),
+            )
+            corner_size_to_next *= self._scale_to_aspect(
+                (current_pt.x, current_pt.y),
+                (next_pt.x, next_pt.y),
+                annotation_sizes.aspect_ratio,
+            )
+            corner_to_next_pt = self._get_partial_line(
+                start_point=(current_pt.x, current_pt.y),
+                direction_point=(next_pt.x, next_pt.y),
+                length=corner_size_to_next,
+            )
+            annotation_builder.draw_line(
+                corner_to_previous_pt,
+                current_pt,
+                color=DETECTION_CORNER_COLOR,
+                thickness=annotation_sizes.border_thickness,
+                clip_to_viewport=True,
+            )
+            annotation_builder.draw_line(
+                current_pt,
+                corner_to_next_pt,
+                color=DETECTION_CORNER_COLOR,
+                thickness=annotation_sizes.border_thickness,
                 clip_to_viewport=True,
             )
 
-            pts: List[dai.Point2f] = detection.rotated_rect.getPoints()
-            pts_len = len(pts)
-            for i in range(pts_len):
-                previous_pt = pts[(i - 1) % pts_len]
-                current_pt = pts[i]
-                next_pt = pts[(i + 1) % pts_len]
-
-                corner_size_to_previous = min(
-                    DETECTION_CORNER_SIZE,
-                    self._calculate_distance(
-                        (current_pt.x, current_pt.y), (previous_pt.x, previous_pt.y)
-                    ),
-                )
-                corner_size_to_previous *= self._scale_to_aspect(
-                    (current_pt.x, current_pt.y),
-                    (previous_pt.x, previous_pt.y),
-                    annotation_sizes.aspect_ratio,
-                )
-                corner_to_previous_pt = self._get_partial_line(
-                    start_point=(current_pt.x, current_pt.y),
-                    direction_point=(previous_pt.x, previous_pt.y),
-                    length=corner_size_to_previous,
-                )
-
-                corner_size_to_next = min(
-                    DETECTION_CORNER_SIZE,
-                    self._calculate_distance(
-                        (current_pt.x, current_pt.y), (next_pt.x, next_pt.y)
-                    ),
-                )
-                corner_size_to_next *= self._scale_to_aspect(
-                    (current_pt.x, current_pt.y),
-                    (next_pt.x, next_pt.y),
-                    annotation_sizes.aspect_ratio,
-                )
-                corner_to_next_pt = self._get_partial_line(
-                    start_point=(current_pt.x, current_pt.y),
-                    direction_point=(next_pt.x, next_pt.y),
-                    length=corner_size_to_next,
-                )
-                annotation_builder.draw_line(
-                    corner_to_previous_pt,
-                    current_pt,
-                    color=DETECTION_CORNER_COLOR,
-                    thickness=annotation_sizes.border_thickness,
-                    clip_to_viewport=True,
-                )
-                annotation_builder.draw_line(
-                    current_pt,
-                    corner_to_next_pt,
-                    color=DETECTION_CORNER_COLOR,
-                    thickness=annotation_sizes.border_thickness,
-                    clip_to_viewport=True,
-                )
-
-            text_position = min(pts, key=lambda pt: (pt.y, pt.x))
-            text_position_y = text_position.y - annotation_sizes.text_space
-            relative_text_size = annotation_sizes.text_size / h
-            if text_position_y - relative_text_size < 0:
-                text_position = min(pts, key=lambda pt: (-pt.y, pt.x))
-                text_position_y = (
-                    text_position.y + annotation_sizes.text_space + relative_text_size
-                )
-            text_position_x = max(min(text_position.x, 1), 0)
-
-            annotation_builder.draw_text(  # Draws label text
-                text=f"{detection.label_name} {int(detection.confidence * 100)}%",
-                position=(
-                    text_position_x,
-                    text_position_y,
-                ),
-                color=TEXT_COLOR,
-                background_color=TEXT_BACKGROUND_COLOR,
-                size=annotation_sizes.text_size,
+    def _draw_label(
+        self,
+        annotation_sizes: AnnotationSizes,
+        annotation_builder: AnnotationHelper,
+        detection: ImgDetectionExtended,
+    ) -> None:
+        pts = self._get_points(detection)
+        text_position = min(pts, key=lambda pt: (pt.y, pt.x))
+        text_position_y = text_position.y - annotation_sizes.text_space
+        if text_position_y - annotation_sizes.relative_text_size < 0:
+            text_position = min(pts, key=lambda pt: (-pt.y, pt.x))
+            text_position_y = (
+                text_position.y
+                + annotation_sizes.text_space
+                + annotation_sizes.relative_text_size
             )
+        text_position_x = max(min(text_position.x, 1), 0)
 
-            if any(detection.keypoints):
-                keypoints = [
-                    (keypoint.x, keypoint.y) for keypoint in detection.keypoints
-                ]
-                annotation_builder.draw_points(
-                    points=keypoints,
-                    color=KEYPOINT_COLOR,
-                    thickness=annotation_sizes.keypoint_thickness,
-                )
+        annotation_builder.draw_text(
+            text=f"{detection.label_name} {int(detection.confidence * 100)}%",
+            position=(
+                text_position_x,
+                text_position_y,
+            ),
+            color=TEXT_COLOR,
+            background_color=TEXT_BACKGROUND_COLOR,
+            size=annotation_sizes.text_size,
+        )
 
-        return annotation_builder.build(self.getTimestamp(), self.getSequenceNum())
+    def _get_points(self, detection: ImgDetectionExtended) -> List[dai.Point2f]:
+        return detection.rotated_rect.getPoints()
+
+    def _draw_keypoints(
+        self,
+        annotation_sizes: AnnotationSizes,
+        annotation_builder: AnnotationHelper,
+        detection: ImgDetectionExtended,
+    ) -> None:
+        keypoints = [(keypoint.x, keypoint.y) for keypoint in detection.keypoints]
+        annotation_builder.draw_points(
+            points=keypoints,
+            color=KEYPOINT_COLOR,
+            thickness=annotation_sizes.keypoint_thickness,
+        )
 
     # TODO: move the method to AnnotationsBuilder?
     def _get_partial_line(
