@@ -366,15 +366,24 @@ class ImgDetectionsExtended(dai.Buffer):
     ) -> None:
         pts = self._get_points(detection)
         text_position = min(pts, key=lambda pt: (pt.y, pt.x))
-        text_position_y = text_position.y - annotation_sizes.text_space
-        if text_position_y - annotation_sizes.relative_text_size < 0:
-            text_position = min(pts, key=lambda pt: (-pt.y, pt.x))
+        if detection.rotated_rect.angle == 0:
+            text_position_x = text_position.x + annotation_sizes.text_space
             text_position_y = (
                 text_position.y
                 + annotation_sizes.text_space
                 + annotation_sizes.relative_text_size
             )
-        text_position_x = max(min(text_position.x, 1), 0)
+        else:
+            text_position_x = text_position.x
+            text_position_y = text_position.y - annotation_sizes.text_space
+            if text_position_y - annotation_sizes.relative_text_size < 0:
+                text_position = min(pts, key=lambda pt: (-pt.y, pt.x))
+                text_position_y = (
+                    text_position.y
+                    + annotation_sizes.text_space
+                    + annotation_sizes.relative_text_size
+                )
+        text_position_x = max(min(text_position_x, 1), 0)
 
         annotation_builder.draw_text(
             text=f"{detection.label_name} {int(detection.confidence * 100)}%",
