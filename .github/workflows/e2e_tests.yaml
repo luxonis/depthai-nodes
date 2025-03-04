@@ -94,16 +94,8 @@ jobs:
               DEPTHAI_PY_PATH="/tmp/depthai-core/build/bindings/python"
             fi
 
-            exec hil $HOLD_RESERVATION --wait $TESTBED_OPTION $RESERVATION_OPTION  \
-              --before-docker-pull "echo ${{ secrets.GHCR_PAT }} | docker login ghcr.io -u ${{ secrets.GHCR_USER }} --password-stdin" \
-              --dockerfile tests/end_to_end/Dockerfile \
-              --docker-run-args "$VOLUME_DEPTHAI --env LUXONIS_EXTRA_INDEX_URL=${{ secrets.LUXONIS_EXTRA_INDEX_URL }} \
-                --env DEPTHAI_VERSION=${{ github.event.inputs.depthai-version }} \
-                --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} \
-                --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} \
-                --env BRANCH=${{ github.event.inputs.branch }} \
-                --env FLAGS=\"${{ github.event.inputs.additional-parameter }}\"" \
-              --commands "git checkout main && git pull && git checkout $BRANCH && export PYTHONPATH=$PYTHONPATH:$DEPTHAI_PY_PATH && source <(python setup_camera_ips.py) && python main.py $FLAGS"
+            exec hil $HOLD_RESERVATION --wait $TESTBED_OPTION $RESERVATION_OPTION \
+              --commands "cd /tmp/depthai-nodes && ./tests/end_to_end/run_e2e_tests.sh ${{ github.event.inputs.depthai-version }} ${{ secrets.HUBAI_TEAM_SLUG }} ${{ secrets.HUBAI_API_KEY }} -all"
           else
             exec hil --capabilities "depthai-core-hil" --wait --reservation-name $RESERVATION_NAME \
               --before-docker-pull "echo ${{ secrets.GHCR_PAT }} | docker login ghcr.io -u ${{ secrets.GHCR_USER }} --password-stdin" \
