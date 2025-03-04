@@ -18,6 +18,7 @@ if [[ "$DEPTHAI_VERSION" == *"experimental"* ]]; then
     export PYTHONPATH=$PYTHONPATH:/tmp/depthai-core/build/bindings/python && echo $PYTHONPATH && hostname
     echo "DEPTHAI_VERSION is experimental. Skipping installation and setting EXPERIMENTAL_DEPTHAI=true."
 else
+    LUXONIS_EXTRA_INDEX_URL=$4
     pip install --extra-index-url "$LUXONIS_EXTRA_INDEX_URL" depthai=="$DEPTHAI_VERSION"
 fi
 
