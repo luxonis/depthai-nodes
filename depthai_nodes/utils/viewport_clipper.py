@@ -44,8 +44,6 @@ class ViewportClipper:
                 clipped_points.append(current_point)
             if end != next_point:
                 clipped_points.append(end)
-            else:
-                clipped_points.append(next_point)
         return clipped_points
 
     def clip_line(self, pt1: Tuple[float, float], pt2: Tuple[float, float]):
