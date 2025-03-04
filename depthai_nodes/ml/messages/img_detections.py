@@ -8,17 +8,15 @@ from depthai_nodes.ml.messages.keypoints import Keypoint
 from depthai_nodes.ml.messages.segmentation import SegmentationMask
 from depthai_nodes.utils import get_logger
 from depthai_nodes.utils.annotation_helper import AnnotationHelper
+from depthai_nodes.utils.annotation_sizes import AnnotationSizes
 from depthai_nodes.utils.constants import (
-    DETECTION_BORDER_THICKNESS_PER_RESOLUTION,
     DETECTION_CORNER_COLOR,
     DETECTION_CORNER_SIZE,
     DETECTION_FILL_COLOR,
     KEYPOINT_COLOR,
-    KEYPOINT_THICKNESS_PER_RESOLUTION,
     OUTLINE_COLOR,
     TEXT_BACKGROUND_COLOR,
     TEXT_COLOR,
-    TEXT_SIZE_PER_HEIGHT,
 )
 
 
@@ -275,10 +273,7 @@ class ImgDetectionsExtended(dai.Buffer):
 
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
         w, h = self.transformation.getSize()
-        ratio = w / h
-        border_thickness = DETECTION_BORDER_THICKNESS_PER_RESOLUTION * (h + w)
-        keypoint_thickness = KEYPOINT_THICKNESS_PER_RESOLUTION * (h + w)
-        text_size = TEXT_SIZE_PER_HEIGHT * h
+        annotation_sizes = AnnotationSizes(w, h)
         corner_color = (
             DETECTION_CORNER_COLOR.r,
             DETECTION_CORNER_COLOR.g,
@@ -328,7 +323,9 @@ class ImgDetectionsExtended(dai.Buffer):
                     ),
                 )
                 corner_size_to_previous *= self._scale_to_aspect(
-                    (current_pt.x, current_pt.y), (previous_pt.x, previous_pt.y), ratio
+                    (current_pt.x, current_pt.y),
+                    (previous_pt.x, previous_pt.y),
+                    annotation_sizes.aspect_ratio,
                 )
                 corner_to_previous_pt = self._get_partial_line(
                     start_point=(current_pt.x, current_pt.y),
@@ -343,7 +340,9 @@ class ImgDetectionsExtended(dai.Buffer):
                     ),
                 )
                 corner_size_to_next *= self._scale_to_aspect(
-                    (current_pt.x, current_pt.y), (next_pt.x, next_pt.y), ratio
+                    (current_pt.x, current_pt.y),
+                    (next_pt.x, next_pt.y),
+                    annotation_sizes.aspect_ratio,
                 )
                 corner_to_next_pt = self._get_partial_line(
                     start_point=(current_pt.x, current_pt.y),
@@ -354,24 +353,25 @@ class ImgDetectionsExtended(dai.Buffer):
                     corner_to_previous_pt,
                     (current_pt.x, current_pt.y),
                     color=corner_color,
-                    thickness=border_thickness,
+                    thickness=annotation_sizes.border_thickness,
                     clip_to_viewport=True,
                 )
                 annotation_builder.draw_line(
                     (current_pt.x, current_pt.y),
                     corner_to_next_pt,
                     color=corner_color,
-                    thickness=border_thickness,
+                    thickness=annotation_sizes.border_thickness,
                     clip_to_viewport=True,
                 )
 
-            text_space = text_size / 2 / h  # TODO: abstract to an object
             text_position = min(pts, key=lambda pt: (pt.y, pt.x))
-            text_position_y = text_position.y - text_space
-            relative_text_size = text_size / h
+            text_position_y = text_position.y - annotation_sizes.text_space
+            relative_text_size = annotation_sizes.text_size / h
             if text_position_y - relative_text_size < 0:
                 text_position = min(pts, key=lambda pt: (-pt.y, pt.x))
-                text_position_y = text_position.y + text_space + relative_text_size
+                text_position_y = (
+                    text_position.y + annotation_sizes.text_space + relative_text_size
+                )
             text_position_x = max(min(text_position.x, 1), 0)
 
             annotation_builder.draw_text(  # Draws label text
@@ -387,7 +387,7 @@ class ImgDetectionsExtended(dai.Buffer):
                     TEXT_BACKGROUND_COLOR.b,
                     TEXT_BACKGROUND_COLOR.a,
                 ),
-                size=text_size,
+                size=annotation_sizes.text_size,
             )
 
             if any(detection.keypoints):
@@ -402,7 +402,7 @@ class ImgDetectionsExtended(dai.Buffer):
                         KEYPOINT_COLOR.b,
                         KEYPOINT_COLOR.a,
                     ),
-                    thickness=keypoint_thickness,
+                    thickness=annotation_sizes.keypoint_thickness,
                 )
 
         return annotation_builder.build(self.getTimestamp(), self.getSequenceNum())
