@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import depthai as dai
 import numpy as np
@@ -24,20 +24,20 @@ class AnnotationHelper:
 
     def draw_line(
         self,
-        pt1: Point,
-        pt2: Point,
-        color: ColorRGBA,
+        pt1: Union[Point, dai.Point2f],
+        pt2: Union[Point, dai.Point2f],
+        color: Union[ColorRGBA, dai.Color],
         thickness: float,
         clip_to_viewport: bool = False,
     ) -> "AnnotationHelper":
         """Draws a line between two points.
 
         @param pt1: Start of the line
-        @type pt1: Point
+        @type pt1: Point | dai.Point2f
         @param pt2: End of the line
-        @type pt2: Point
+        @type pt2: Point | dai.Point2f
         @param color: Line color
-        @type color: ColorRGBA
+        @type color: ColorRGBA | dai.Color
         @param thickness: Line thickness
         @type thickness: float
         @param clip_to_viewport: Indication whether to clip the line to the viewport
@@ -45,15 +45,21 @@ class AnnotationHelper:
         @return: self
         @rtype: AnnotationHelper
         """
+        if not isinstance(pt1, dai.Point2f):
+            pt1 = self._create_point(pt1)
+        if not isinstance(pt2, dai.Point2f):
+            pt2 = self._create_point(pt2)
         if clip_to_viewport:
-            clipped = self._viewport_clipper.clip_line(pt1, pt2)
+            clipped = self._viewport_clipper.clip_line((pt1.x, pt1.y), (pt2.x, pt2.y))
             if not clipped:
                 return self
-            pt1, pt2 = clipped
+            pt1 = self._create_point(clipped[0])
+            pt2 = self._create_point(clipped[1])
         line = dai.PointsAnnotation()
-        c = self._create_color(color)
-        line.fillColor = c
-        line.outlineColor = c
+        if not isinstance(color, dai.Color):
+            color = self._create_color(color)
+        line.fillColor = color
+        line.outlineColor = color
         line.thickness = thickness
         line.type = dai.PointsAnnotationType.LINE_STRIP
         line.points = self._create_points_vector([pt1, pt2])
@@ -62,24 +68,24 @@ class AnnotationHelper:
 
     def draw_polyline(
         self,
-        points: List[Point],
-        outline_color: ColorRGBA,
-        fill_color: Optional[ColorRGBA] = None,
+        points: Union[List[Point], List[dai.Point2f]],
+        outline_color: Union[ColorRGBA, dai.Color],
+        fill_color: Union[Optional[ColorRGBA], Optional[dai.Color]] = None,
         thickness: float = 1,
         closed: bool = False,
     ) -> "AnnotationHelper":
         """Draws a polyline.
 
         @param points: List of points of the polyline
-        @type points: list[Point]
+        @type points: List[Point] | List[dai.Point2f]
         @param outline_color: Outline color
-        @type outline_color: ColorRGBA
-        @param fill_color: Fill color (None for no fill), defaults to None
-        @type fill_color: ColorRGBA | None, optional
-        @param thickness: Line thickness, defaults to 1
-        @type thickness: float, optional
-        @param closed: Creates polygon, instead of polyline if True, defaults to False
-        @type closed: bool, optional
+        @type outline_color: ColorRGBA | dai.Color
+        @param fill_color: Fill color (None for no fill)
+        @type fill_color: ColorRGBA | dai.Color | None
+        @param thickness: Line thickness
+        @type thickness: float
+        @param closed: Creates polygon, instead of polyline if True
+        @type closed: bool
         @return: self
         @rtype: AnnotationHelper
         """
@@ -88,6 +94,13 @@ class AnnotationHelper:
             if not closed
             else dai.PointsAnnotationType.LINE_LOOP
         )
+        if not all(isinstance(pt, dai.Point2f) for pt in points):
+            points = [self._create_point(pt) for pt in points]
+        if not isinstance(outline_color, dai.Color):
+            outline_color = self._create_color(outline_color)
+        if fill_color and not isinstance(fill_color, dai.Color):
+            fill_color = self._create_color(fill_color)
+
         points_annot = self._create_points_annotation(
             points, outline_color, fill_color, points_type
         )
@@ -96,20 +109,27 @@ class AnnotationHelper:
         return self
 
     def draw_points(
-        self, points: List[Point], color: ColorRGBA, thickness: float = 2
+        self,
+        points: Union[List[Point], List[dai.Point2f]],
+        color: Union[ColorRGBA, dai.Color],
+        thickness: float = 2,
     ) -> "AnnotationHelper":
         """Draws points.
 
         @param points: List of points to draw
-        @type points: list[Point]
+        @type points: List[Point] | List[dai.Point2f]
         @param color: Color of the points
-        @type color: ColorRGBA
-        @param thickness: Size of the points, defaults to 2
-        @type thickness: float, optional
+        @type color: ColorRGBA | dai.Color
+        @param thickness: Size of the points
+        @type thickness: float
         @return: self
         @rtype: AnnotationHelper
         """
         # TODO: Visualizer currently does not show dai.PointsAnnotationType.POINTS
+        if not all(isinstance(pt, dai.Point2f) for pt in points):
+            points = [self._create_point(pt) for pt in points]
+        if not isinstance(color, dai.Color):
+            color = self._create_color(color)
         points_annot = self._create_points_annotation(
             points, color, None, dai.PointsAnnotationType.POINTS
         )
@@ -119,63 +139,74 @@ class AnnotationHelper:
 
     def draw_circle(
         self,
-        center: Point,
+        center: Union[Point, dai.Point2f],
         radius: float,
-        outline_color: ColorRGBA,
-        fill_color: Optional[ColorRGBA] = None,
+        outline_color: Union[ColorRGBA, dai.Color],
+        fill_color: Union[Optional[ColorRGBA], Optional[dai.Color]] = None,
         thickness: float = 1,
     ) -> "AnnotationHelper":
         """Draws a circle.
 
         @param center: Center of the circle
-        @type center: Point
+        @type center: Point | dai.Point2f
         @param radius: Radius of the circle
         @type radius: float
         @param outline_color: Outline color
-        @type outline_color: ColorRGBA
-        @param fill_color: Fill color (None for no fill), defaults to None
-        @type fill_color: ColorRGBA | None, optional
-        @param thickness: Outline thickness, defaults to 1
-        @type thickness: float, optional
+        @type outline_color: ColorRGBA | dai.Color
+        @param fill_color: Fill color (None for no fill)
+        @type fill_color: ColorRGBA | dai.Color | None
+        @param thickness: Outline thickness
+        @type thickness: float
         @return: self
         @rtype: AnnotationHelper
         """
         circle = dai.CircleAnnotation()
-        circle.outlineColor = self._create_color(outline_color)
+        if not isinstance(outline_color, dai.Color):
+            outline_color = self._create_color(outline_color)
+        circle.outlineColor = outline_color
         if fill_color is not None:
-            circle.fillColor = self._create_color(fill_color)
+            if not isinstance(fill_color, dai.Color):
+                fill_color = self._create_color(fill_color)
+            circle.fillColor = fill_color
         circle.thickness = thickness
         circle.diameter = radius * 2
-        circle.position = dai.Point2f(center[0], center[1])
+        if not isinstance(center, dai.Point2f):
+            center = self._create_point(center)
+        circle.position = center
         self.annotation.circles.append(circle)
         return self
 
     def draw_rectangle(
         self,
-        top_left: Point,
-        bottom_right: Point,
-        outline_color: ColorRGBA,
-        fill_color: Optional[ColorRGBA] = None,
+        top_left: Union[Point, dai.Point2f],
+        bottom_right: Union[Point, dai.Point2f],
+        outline_color: Union[ColorRGBA, dai.Color],
+        fill_color: Union[Optional[ColorRGBA], Optional[dai.Color]] = None,
         thickness: float = 1,
         clip_to_viewport: bool = False,
     ) -> "AnnotationHelper":
         """Draws a rectangle.
 
         @param top_left: Top left corner of the rectangle
-        @type top_left: Point
+        @type top_left: Point | dai.Point2f
         @param bottom_right: Bottom right corner of the rectangle
-        @type bottom_right: Point
+        @type bottom_right: Point | dai.Point2f
         @param outline_color: Outline color
-        @type outline_color: ColorRGBA
-        @param fill_color: Fill color (None for no fill), defaults to None
-        @type fill_color: ColorRGBA | None, optional
-        @param thickness: Outline thickness, defaults to 1
-        @type thickness: float, optional
+        @type outline_color: ColorRGBA | dai.Color
+        @param fill_color: Fill color (None for no fill)
+        @type fill_color: ColorRGBA | dai.Color | None
+        @param thickness: Outline thickness
+        @type thickness: float
         @param clip_to_viewport: Indication whether to clip the line to the viewport
         @type clip_to_viewport: bool
         @return: self
         @rtype: AnnotationHelper
         """
+        if isinstance(top_left, dai.Point2f):
+            top_left = (top_left.x, top_left.y)
+        if isinstance(bottom_right, dai.Point2f):
+            bottom_right = (bottom_right.x, bottom_right.y)
+
         points = [
             top_left,
             (bottom_right[0], top_left[1]),
@@ -190,9 +221,9 @@ class AnnotationHelper:
     def draw_text(
         self,
         text: str,
-        position: Point,
-        color: ColorRGBA,
-        background_color: Optional[ColorRGBA] = None,
+        position: Union[Point, dai.Point2f],
+        color: Union[ColorRGBA, dai.Color],
+        background_color: Union[Optional[ColorRGBA], Optional[dai.Color]] = None,
         size: float = 32,
     ) -> "AnnotationHelper":
         """Draws text.
@@ -200,56 +231,63 @@ class AnnotationHelper:
         @param text: Text string
         @type text: str
         @param position: Text position
-        @type position: Point
+        @type position: Point | dai.Point2f
         @param color: Text color
-        @type color: ColorRGBA
-        @param background_color: Background color (None for no background), defaults to
-            None
-        @type background_color: ColorRGBA | None, optional
-        @param size: Text size, defaults to 32
-        @type size: float, optional
+        @type color: ColorRGBA | dai.Color
+        @param background_color: Background color (None for no background)
+        @type background_color: ColorRGBA | dai.Color | None
+        @param size: Text size
+        @type size: float
         @return: self
         @rtype: AnnotationHelper
         """
         text_annot = dai.TextAnnotation()
-        text_annot.position = dai.Point2f(position[0], position[1])
+        if not isinstance(position, dai.Point2f):
+            position = self._create_point(position)
+        text_annot.position = position
         text_annot.text = text
-        text_annot.textColor = self._create_color(color)
+        if not isinstance(color, dai.Color):
+            color = self._create_color(color)
+        text_annot.textColor = color
         text_annot.fontSize = size
         if background_color is not None:
-            text_annot.backgroundColor = self._create_color(background_color)
+            if not isinstance(background_color, dai.Color):
+                background_color = self._create_color(background_color)
+            text_annot.backgroundColor = background_color
         self.annotation.texts.append(text_annot)
         return self
 
     def draw_rotated_rect(
         self,
-        center: Point,
+        center: Union[Point, dai.Point2f],
         size: Tuple[float, float],
         angle: float,
-        outline_color: ColorRGBA,
-        fill_color: Optional[ColorRGBA] = None,
+        outline_color: Union[ColorRGBA, dai.Color],
+        fill_color: Union[Optional[ColorRGBA], Optional[dai.Color]] = None,
         thickness: float = 1,
         clip_to_viewport: bool = False,
     ) -> "AnnotationHelper":
         """Draws a rotated rectangle.
 
         @param center: Center of the rectangle
-        @type center: Point
+        @type center: Point | dai.Point2f
         @param size: Size of the rectangle (width, height)
-        @type size: tuple[float, float]
+        @type size: Tuple[float, float]
         @param angle: Angle of rotation in degrees
         @type angle: float
         @param outline_color: Outline color
-        @type outline_color: ColorRGBA
-        @param fill_color: Fill color (None for no fill), defaults to None
-        @type fill_color: ColorRGBA | None, optional
-        @param thickness: Outline thickness, defaults to 1
-        @type thickness: float, optional
+        @type outline_color: ColorRGBA | dai.Color
+        @param fill_color: Fill color (None for no fill)
+        @type fill_color: ColorRGBA | dai.Color | None
+        @param thickness: Outline thickness
+        @type thickness: float
         @param clip_to_viewport: Indication whether to clip the line to the viewport
         @type clip_to_viewport: bool
         @return: self
         @rtype: AnnotationHelper
         """
+        if isinstance(center, dai.Point2f):
+            center = (center.x, center.y)
         points = self._get_rotated_rect_points(center, size, angle)
         if clip_to_viewport:
             points = self._viewport_clipper.clip_rect(points)
@@ -272,17 +310,20 @@ class AnnotationHelper:
         annotations_msg.setSequenceNum(sequence_num)
         return annotations_msg
 
+    def _create_point(self, point: Point) -> dai.Point2f:
+        return dai.Point2f(point[0], point[1])
+
     def _create_points_annotation(
         self,
-        points: List[Point],
-        color: ColorRGBA,
-        fill_color: Optional[ColorRGBA],
+        points: List[dai.Point2f],
+        color: dai.Color,
+        fill_color: Optional[dai.Color],
         type: dai.PointsAnnotationType,
     ) -> dai.PointsAnnotation:
         points_annot = dai.PointsAnnotation()
-        points_annot.outlineColor = self._create_color(color)
+        points_annot.outlineColor = color
         if fill_color is not None:
-            points_annot.fillColor = self._create_color(fill_color)
+            points_annot.fillColor = fill_color
         points_annot.type = type
         points_annot.points = self._create_points_vector(points)
         return points_annot
@@ -324,5 +365,5 @@ class AnnotationHelper:
         # Convert to list of tuples
         return [tuple(corner) for corner in translated_corners.tolist()]
 
-    def _create_points_vector(self, points: List[Point]) -> dai.VectorPoint2f:
-        return dai.VectorPoint2f([dai.Point2f(pt[0], pt[1]) for pt in points])
+    def _create_points_vector(self, points: List[dai.Point2f]) -> dai.VectorPoint2f:
+        return dai.VectorPoint2f(points)
