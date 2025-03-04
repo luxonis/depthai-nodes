@@ -4,7 +4,11 @@ import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
 
-from depthai_nodes.ml.helpers.constants import (
+from depthai_nodes.ml.messages.keypoints import Keypoint
+from depthai_nodes.ml.messages.segmentation import SegmentationMask
+from depthai_nodes.utils import get_logger
+from depthai_nodes.utils.annotation_helper import AnnotationHelper
+from depthai_nodes.utils.constants import (
     DETECTION_BORDER_THICKNESS_PER_RESOLUTION,
     DETECTION_CORNER_COLOR,
     DETECTION_CORNER_SIZE,
@@ -16,10 +20,6 @@ from depthai_nodes.ml.helpers.constants import (
     TEXT_COLOR,
     TEXT_SIZE_PER_HEIGHT,
 )
-from depthai_nodes.ml.messages.keypoints import Keypoint
-from depthai_nodes.ml.messages.segmentation import SegmentationMask
-from depthai_nodes.utils import get_logger
-from depthai_nodes.utils.annotation_helper import AnnotationHelper
 
 
 class ImgDetectionExtended(dai.Buffer):

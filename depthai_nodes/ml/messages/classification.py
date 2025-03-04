@@ -4,7 +4,7 @@ import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
 
-from depthai_nodes.ml.helpers.constants import (
+from depthai_nodes.utils.constants import (
     TEXT_BACKGROUND_COLOR,
     TEXT_COLOR,
 )
