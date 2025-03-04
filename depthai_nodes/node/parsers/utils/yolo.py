@@ -21,7 +21,8 @@ class YOLOSubtype(str, Enum):
     V5 = "yolov5"
     V5U = "yolov5-u"
     V6 = "yolov6"
-    V6R1 = "yolov6-r1"
+    V6R1 = "yolov6r1"
+    V6R2 = "yolov6r2"  # NOTE: used by DAI but internally same as V6
     V7 = "yolov7"
     V8 = "yolov8"
     V9 = "yolov9"

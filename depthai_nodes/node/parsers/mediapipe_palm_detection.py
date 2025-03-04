@@ -159,7 +159,6 @@ class MPPalmDetectionParser(DetectionParser):
 
             bboxes = []
             scores = []
-            points = []
             angles = []
             for hand in decoded_bboxes:
                 extended_points = np.array(hand.rect_points)
@@ -172,7 +171,6 @@ class MPPalmDetectionParser(DetectionParser):
                 width = np.linalg.norm(extended_points[0] - extended_points[3])
                 height = np.linalg.norm(extended_points[0] - extended_points[1])
 
-                points.append(extended_points)
                 bboxes.append([x_center, y_center, width, height])
                 angles.append(angle)
                 scores.append(hand.pd_score)
@@ -186,13 +184,10 @@ class MPPalmDetectionParser(DetectionParser):
             )
             bboxes = np.array(bboxes)[indices]
             scores = np.array(scores)[indices]
-            points = np.array(points)[indices]
             angles = np.array(angles)[indices]
-            points = points.astype(float) / self.scale
             bboxes = bboxes.astype(float) / self.scale
 
             bboxes = np.clip(bboxes, 0, 1)
-            points = np.clip(points, 0, 1)
             angles = np.round(angles, 0)
 
             labels = np.array([0] * len(bboxes))
@@ -206,7 +201,6 @@ class MPPalmDetectionParser(DetectionParser):
                 bboxes=bboxes,
                 scores=scores,
                 angles=angles,
-                keypoints=points,
                 labels=labels,
                 label_names=label_names,
             )
