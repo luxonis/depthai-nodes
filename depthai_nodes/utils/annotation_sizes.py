@@ -23,6 +23,10 @@ class AnnotationSizes:
         return TEXT_SIZE_PER_HEIGHT * self._height
 
     @property
+    def relative_text_size(self):
+        return self.text_size / self._height
+
+    @property
     def text_space(self):
         return self.text_size / 2 / self._height
 
