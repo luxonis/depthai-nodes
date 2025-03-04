@@ -260,7 +260,7 @@ class AnnotationHelper:
     def draw_rotated_rect(
         self,
         center: Union[Point, dai.Point2f],
-        size: Tuple[float, float],
+        size: Union[Tuple[float, float], dai.Size2f],
         angle: float,
         outline_color: Union[ColorRGBA, dai.Color],
         fill_color: Union[Optional[ColorRGBA], Optional[dai.Color]] = None,
@@ -272,7 +272,7 @@ class AnnotationHelper:
         @param center: Center of the rectangle
         @type center: Point | dai.Point2f
         @param size: Size of the rectangle (width, height)
-        @type size: Tuple[float, float]
+        @type size: Tuple[float, float] | dai.Size2f
         @param angle: Angle of rotation in degrees
         @type angle: float
         @param outline_color: Outline color
@@ -286,8 +286,10 @@ class AnnotationHelper:
         @return: self
         @rtype: AnnotationHelper
         """
-        if isinstance(center, dai.Point2f):
-            center = (center.x, center.y)
+        if not isinstance(center, dai.Point2f):
+            center = self._create_point(center)
+        if not isinstance(size, dai.Size2f):
+            size = self._create_size(size)
         points = self._get_rotated_rect_points(center, size, angle)
         if clip_to_viewport:
             points = self._viewport_clipper.clip_rect(points)
@@ -337,15 +339,13 @@ class AnnotationHelper:
         return c
 
     def _get_rotated_rect_points(
-        self, center: Point, size: Tuple[float, float], angle: float
+        self, center: dai.Point2f, size: dai.Size2f, angle: float
     ) -> List[Point]:
-        cx, cy = center
-        width, height = size
         angle_rad = np.radians(angle)
 
         # Half-dimensions
-        dx = width / 2
-        dy = height / 2
+        dx = size.width / 2
+        dy = size.height / 2
 
         # Define the corners relative to the center
         corners = np.array([[-dx, -dy], [dx, -dy], [dx, dy], [-dx, dy]])
@@ -360,10 +360,13 @@ class AnnotationHelper:
 
         # Rotate and translate the corners
         rotated_corners = corners @ rotation_matrix.T
-        translated_corners = rotated_corners + np.array([cx, cy])
+        translated_corners = rotated_corners + np.array([center.x, center.y])
 
         # Convert to list of tuples
         return [tuple(corner) for corner in translated_corners.tolist()]
 
     def _create_points_vector(self, points: List[dai.Point2f]) -> dai.VectorPoint2f:
         return dai.VectorPoint2f(points)
+
+    def _create_size(self, size: Tuple[float, float]):
+        return dai.Size2f(size[0], size[1])
