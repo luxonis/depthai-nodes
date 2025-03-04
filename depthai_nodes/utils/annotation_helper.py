@@ -95,19 +95,6 @@ class AnnotationHelper:
         self.annotation.points.append(points_annot)
         return self
 
-    def _get_clipped_points(self, points: list[Point]):
-        clipped_points = []
-        points_len = len(points)
-        for i in range(points_len):
-            clipped = self._viewport_clipper.clip_line(
-                points[i], points[(i + 1) % points_len]
-            )
-            if not clipped:
-                continue
-            p1, _ = clipped
-            clipped_points.append(p1)
-        return clipped_points
-
     def draw_points(
         self, points: List[Point], color: ColorRGBA, thickness: float = 2
     ) -> "AnnotationHelper":
