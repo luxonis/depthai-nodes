@@ -274,37 +274,15 @@ class ImgDetectionsExtended(dai.Buffer):
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
         w, h = self.transformation.getSize()
         annotation_sizes = AnnotationSizes(w, h)
-        corner_color = (
-            DETECTION_CORNER_COLOR.r,
-            DETECTION_CORNER_COLOR.g,
-            DETECTION_CORNER_COLOR.b,
-            DETECTION_CORNER_COLOR.a,
-        )
         annotation_builder = AnnotationHelper()
         for detection in self.detections:
             # TODO: refactor
             annotation_builder.draw_rotated_rect(  # Draws the outline
-                center=(
-                    detection.rotated_rect.center.x,
-                    detection.rotated_rect.center.y,
-                ),
-                size=(
-                    detection.rotated_rect.size.width,
-                    detection.rotated_rect.size.height,
-                ),
+                center=detection.rotated_rect.center,
+                size=detection.rotated_rect.size,
                 angle=detection.rotated_rect.angle,
-                outline_color=(
-                    OUTLINE_COLOR.r,
-                    OUTLINE_COLOR.g,
-                    OUTLINE_COLOR.b,
-                    OUTLINE_COLOR.a,
-                ),
-                fill_color=(
-                    DETECTION_FILL_COLOR.r,
-                    DETECTION_FILL_COLOR.g,
-                    DETECTION_FILL_COLOR.b,
-                    DETECTION_FILL_COLOR.a,
-                ),
+                outline_color=OUTLINE_COLOR,
+                fill_color=DETECTION_FILL_COLOR,
                 thickness=0,
                 clip_to_viewport=True,
             )
@@ -351,15 +329,15 @@ class ImgDetectionsExtended(dai.Buffer):
                 )
                 annotation_builder.draw_line(
                     corner_to_previous_pt,
-                    (current_pt.x, current_pt.y),
-                    color=corner_color,
+                    current_pt,
+                    color=DETECTION_CORNER_COLOR,
                     thickness=annotation_sizes.border_thickness,
                     clip_to_viewport=True,
                 )
                 annotation_builder.draw_line(
-                    (current_pt.x, current_pt.y),
+                    current_pt,
                     corner_to_next_pt,
-                    color=corner_color,
+                    color=DETECTION_CORNER_COLOR,
                     thickness=annotation_sizes.border_thickness,
                     clip_to_viewport=True,
                 )
@@ -380,13 +358,8 @@ class ImgDetectionsExtended(dai.Buffer):
                     text_position_x,
                     text_position_y,
                 ),
-                color=(TEXT_COLOR.r, TEXT_COLOR.g, TEXT_COLOR.b, TEXT_COLOR.a),
-                background_color=(
-                    TEXT_BACKGROUND_COLOR.r,
-                    TEXT_BACKGROUND_COLOR.g,
-                    TEXT_BACKGROUND_COLOR.b,
-                    TEXT_BACKGROUND_COLOR.a,
-                ),
+                color=TEXT_COLOR,
+                background_color=TEXT_BACKGROUND_COLOR,
                 size=annotation_sizes.text_size,
             )
 
@@ -396,12 +369,7 @@ class ImgDetectionsExtended(dai.Buffer):
                 ]
                 annotation_builder.draw_points(
                     points=keypoints,
-                    color=(
-                        KEYPOINT_COLOR.r,
-                        KEYPOINT_COLOR.g,
-                        KEYPOINT_COLOR.b,
-                        KEYPOINT_COLOR.a,
-                    ),
+                    color=KEYPOINT_COLOR,
                     thickness=annotation_sizes.keypoint_thickness,
                 )
 
