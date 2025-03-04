@@ -5,7 +5,16 @@ import numpy as np
 from numpy.typing import NDArray
 
 from depthai_nodes.ml.helpers.constants import (
+    DETECTION_BORDER_THICKNESS_PER_RESOLUTION,
+    DETECTION_CORNER_COLOR,
+    DETECTION_CORNER_SIZE,
+    DETECTION_FILL_COLOR,
     KEYPOINT_COLOR,
+    KEYPOINT_THICKNESS_PER_RESOLUTION,
+    OUTLINE_COLOR,
+    TEXT_BACKGROUND_COLOR,
+    TEXT_COLOR,
+    TEXT_SIZE_PER_HEIGHT,
 )
 from depthai_nodes.ml.messages.keypoints import Keypoint
 from depthai_nodes.ml.messages.segmentation import SegmentationMask
@@ -267,18 +276,18 @@ class ImgDetectionsExtended(dai.Buffer):
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
         w, h = self.transformation.getSize()
         ratio = w / h
-        border_thickness = (1 / 300) * (h + w)
-        keypoint_thickness = (1 / 300) * (h + w)
-        text_size = (1 / 30) * h
-        detection_corner_size = 0.04
-
-        debug_color = (0, 1, 0, 1)
-        item_fill_color = (21 / 255, 127 / 255, 88 / 255, 0.2)
-        outline_color = (21 / 255, 127 / 255, 88 / 255, 1)
-
+        border_thickness = DETECTION_BORDER_THICKNESS_PER_RESOLUTION * (h + w)
+        keypoint_thickness = KEYPOINT_THICKNESS_PER_RESOLUTION * (h + w)
+        text_size = TEXT_SIZE_PER_HEIGHT * h
+        corner_color = (
+            DETECTION_CORNER_COLOR.r,
+            DETECTION_CORNER_COLOR.g,
+            DETECTION_CORNER_COLOR.b,
+            DETECTION_CORNER_COLOR.a,
+        )
         annotation_builder = AnnotationHelper()
         for detection in self.detections:
-            # TODO: refactor and use constants
+            # TODO: refactor
             annotation_builder.draw_rotated_rect(  # Draws the outline
                 center=(
                     detection.rotated_rect.center.x,
@@ -289,8 +298,18 @@ class ImgDetectionsExtended(dai.Buffer):
                     detection.rotated_rect.size.height,
                 ),
                 angle=detection.rotated_rect.angle,
-                outline_color=debug_color,
-                fill_color=item_fill_color,
+                outline_color=(
+                    OUTLINE_COLOR.r,
+                    OUTLINE_COLOR.g,
+                    OUTLINE_COLOR.b,
+                    OUTLINE_COLOR.a,
+                ),
+                fill_color=(
+                    DETECTION_FILL_COLOR.r,
+                    DETECTION_FILL_COLOR.g,
+                    DETECTION_FILL_COLOR.b,
+                    DETECTION_FILL_COLOR.a,
+                ),
                 thickness=0,
                 clip_to_viewport=True,
             )
@@ -303,7 +322,7 @@ class ImgDetectionsExtended(dai.Buffer):
                 next_pt = pts[(i + 1) % pts_len]
 
                 corner_size_to_previous = min(
-                    detection_corner_size,
+                    DETECTION_CORNER_SIZE,
                     self._calculate_distance(
                         (current_pt.x, current_pt.y), (previous_pt.x, previous_pt.y)
                     ),
@@ -318,7 +337,7 @@ class ImgDetectionsExtended(dai.Buffer):
                 )
 
                 corner_size_to_next = min(
-                    detection_corner_size,
+                    DETECTION_CORNER_SIZE,
                     self._calculate_distance(
                         (current_pt.x, current_pt.y), (next_pt.x, next_pt.y)
                     ),
@@ -334,14 +353,14 @@ class ImgDetectionsExtended(dai.Buffer):
                 annotation_builder.draw_line(
                     corner_to_previous_pt,
                     (current_pt.x, current_pt.y),
-                    color=outline_color,
+                    color=corner_color,
                     thickness=border_thickness,
                     clip_to_viewport=True,
                 )
                 annotation_builder.draw_line(
                     (current_pt.x, current_pt.y),
                     corner_to_next_pt,
-                    color=outline_color,
+                    color=corner_color,
                     thickness=border_thickness,
                     clip_to_viewport=True,
                 )
@@ -361,8 +380,13 @@ class ImgDetectionsExtended(dai.Buffer):
                     text_position_x,
                     text_position_y,
                 ),
-                color=(1, 1, 1, 1),
-                background_color=(0, 0, 0, 0),
+                color=(TEXT_COLOR.r, TEXT_COLOR.g, TEXT_COLOR.b, TEXT_COLOR.a),
+                background_color=(
+                    TEXT_BACKGROUND_COLOR.r,
+                    TEXT_BACKGROUND_COLOR.g,
+                    TEXT_BACKGROUND_COLOR.b,
+                    TEXT_BACKGROUND_COLOR.a,
+                ),
                 size=text_size,
             )
 

@@ -5,7 +5,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from depthai_nodes.ml.helpers.constants import (
-    BACKGROUND_COLOR,
+    TEXT_BACKGROUND_COLOR,
     TEXT_COLOR,
 )
 
@@ -140,7 +140,7 @@ class Classifications(dai.Buffer):
             text.text = f"{self._classes[i]} {self._scores[i] * 100:.0f}%"
             text.fontSize = 15
             text.textColor = TEXT_COLOR
-            text.backgroundColor = BACKGROUND_COLOR
+            text.backgroundColor = TEXT_BACKGROUND_COLOR
             annotation.texts.append(text)
 
         img_annotations.annotations.append(annotation)

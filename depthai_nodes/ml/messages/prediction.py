@@ -3,7 +3,7 @@ from typing import List
 import depthai as dai
 
 from depthai_nodes.ml.helpers.constants import (
-    BACKGROUND_COLOR,
+    TEXT_BACKGROUND_COLOR,
     TEXT_COLOR,
 )
 
@@ -137,7 +137,7 @@ class Predictions(dai.Buffer):
             text.text = f"{prediction.prediction:.2f}"
             text.fontSize = 15
             text.textColor = TEXT_COLOR
-            text.backgroundColor = BACKGROUND_COLOR
+            text.backgroundColor = TEXT_BACKGROUND_COLOR
             annotation.texts.append(text)
 
         img_annotations.annotations.append(annotation)
