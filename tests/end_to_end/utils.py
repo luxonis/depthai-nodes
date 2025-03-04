@@ -190,7 +190,9 @@ def find_slugs_from_zoo(parser: str) -> List[str]:
     already_checked = []
 
     for ix, instance in enumerate(model_instances):
-        sys.stdout.write(f"\r[{ix+1}/{len(model_instances)}] Checking model configs...")
+        sys.stdout.write(
+            f"\r[{ix + 1}/{len(model_instances)}] Checking model configs..."
+        )
         sys.stdout.flush()
         model_config = get_model_config_parser(instance["instance_id"])
         if model_config is None:

@@ -1,7 +1,7 @@
 import pytest
 
-from depthai_nodes.ml.messages import Keypoint, Keypoints
-from depthai_nodes.ml.messages.creators.keypoints import create_keypoints_message
+from depthai_nodes import Keypoint, Keypoints
+from depthai_nodes.message.creators import create_keypoints_message
 
 KPTS = [[0.1, 0.2], [0.3, 0.4]]
 SCORES = [0.9, 0.8]

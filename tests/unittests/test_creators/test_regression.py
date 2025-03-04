@@ -1,7 +1,7 @@
 import pytest
 
-from depthai_nodes.ml.messages import Prediction, Predictions
-from depthai_nodes.ml.messages.creators.regression import create_regression_message
+from depthai_nodes import Prediction, Predictions
+from depthai_nodes.message.creators import create_regression_message
 
 
 def test_valid_input():

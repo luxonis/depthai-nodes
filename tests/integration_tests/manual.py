@@ -5,7 +5,7 @@ import depthai as dai
 from check_messages import test_output
 from utils import extract_main_slug, extract_parser
 
-from depthai_nodes.parser_generator import ParserGenerator
+from depthai_nodes.node import ParserGenerator
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument(
