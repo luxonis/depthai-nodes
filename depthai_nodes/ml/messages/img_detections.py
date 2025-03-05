@@ -18,6 +18,7 @@ from depthai_nodes.utils.constants import (
     TEXT_BACKGROUND_COLOR,
     TEXT_COLOR,
 )
+from depthai_nodes.utils.viewport_clipper import ViewportClipper
 
 
 class ImgDetectionExtended(dai.Buffer):
@@ -188,6 +189,9 @@ class ImgDetectionsExtended(dai.Buffer):
         self._detections: List[ImgDetectionExtended] = []
         self._masks: SegmentationMask = SegmentationMask()
         self._transformation: dai.ImgTransformation = None
+        self._viewport_clipper = ViewportClipper(
+            min_x=0.0, min_y=0.0, max_x=1.0, max_y=1.0
+        )
 
     @property
     def detections(self) -> List[ImgDetectionExtended]:
@@ -274,7 +278,7 @@ class ImgDetectionsExtended(dai.Buffer):
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
         w, h = self.transformation.getSize()
         annotation_sizes = AnnotationSizes(w, h)
-        annotation_builder = AnnotationHelper()
+        annotation_builder = AnnotationHelper(self._viewport_clipper)
         for detection in self.detections:
             self._draw_overlay(annotation_builder, detection)
             self._draw_corners(annotation_sizes, annotation_builder, detection)
