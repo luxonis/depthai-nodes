@@ -313,7 +313,7 @@ class AnnotationHelper:
         return annotations_msg
 
     def _create_point(self, point: Point) -> dai.Point2f:
-        return dai.Point2f(point[0], point[1])
+        return dai.Point2f(point[0], point[1], True)
 
     def _create_points_annotation(
         self,
