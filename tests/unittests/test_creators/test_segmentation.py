@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from depthai_nodes.ml.messages import SegmentationMask
-from depthai_nodes.ml.messages.creators.segmentation import create_segmentation_message
+from depthai_nodes import SegmentationMask
+from depthai_nodes.message.creators import create_segmentation_message
 
 MASK = np.random.randint(0, 256, (480, 640), dtype=np.int16)
 

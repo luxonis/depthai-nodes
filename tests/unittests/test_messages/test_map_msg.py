@@ -2,7 +2,7 @@ import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes.ml.messages import Map2D
+from depthai_nodes import Map2D
 
 
 @pytest.fixture

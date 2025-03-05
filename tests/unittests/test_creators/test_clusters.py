@@ -1,7 +1,7 @@
 import pytest
 
-from depthai_nodes.ml.messages import Cluster, Clusters
-from depthai_nodes.ml.messages.creators import (
+from depthai_nodes import Cluster, Clusters
+from depthai_nodes.message.creators import (
     create_cluster_message,
 )
 

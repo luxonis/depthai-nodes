@@ -1,7 +1,7 @@
 import depthai as dai
 import pytest
 
-from depthai_nodes.ml.messages import Keypoint, Keypoints
+from depthai_nodes import Keypoint, Keypoints
 
 
 @pytest.fixture
