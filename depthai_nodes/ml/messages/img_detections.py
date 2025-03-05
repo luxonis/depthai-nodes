@@ -14,9 +14,11 @@ from depthai_nodes.utils.constants import (
     DETECTION_FILL_COLOR,
     KEYPOINT_COLOR,
     OUTLINE_COLOR,
+    SMALLER_DETECTION_THRESHOLD,
     TEXT_BACKGROUND_COLOR,
     TEXT_COLOR,
 )
+from depthai_nodes.utils.smaller_annotation_sizes import SmallerAnnotationSizes
 from depthai_nodes.utils.viewport_clipper import ViewportClipper
 
 
@@ -276,9 +278,13 @@ class ImgDetectionsExtended(dai.Buffer):
 
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
         w, h = self.transformation.getSize()
-        annotation_sizes = AnnotationSizes(w, h)
         annotation_builder = AnnotationHelper(self._viewport_clipper)
         for detection in self.detections:
+            annotation_sizes = (
+                AnnotationSizes(w, h)
+                if not self._is_small_detection(detection)
+                else SmallerAnnotationSizes(w, h)
+            )
             self._draw_overlay(annotation_builder, detection)
             self._draw_corners(annotation_sizes, annotation_builder, detection)
             self._draw_label(annotation_sizes, annotation_builder, detection)
@@ -286,6 +292,13 @@ class ImgDetectionsExtended(dai.Buffer):
                 self._draw_keypoints(annotation_sizes, annotation_builder, detection)
 
         return annotation_builder.build(self.getTimestamp(), self.getSequenceNum())
+
+    def _is_small_detection(self, detection: ImgDetectionExtended):
+        size = detection.rotated_rect.size
+        return (
+            size.width > SMALLER_DETECTION_THRESHOLD
+            or size.height > SMALLER_DETECTION_THRESHOLD
+        )
 
     def _draw_overlay(
         self, annotation_builder: AnnotationHelper, detection: ImgDetectionExtended
