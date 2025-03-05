@@ -296,8 +296,8 @@ class ImgDetectionsExtended(dai.Buffer):
     def _is_small_detection(self, detection: ImgDetectionExtended):
         size = detection.rotated_rect.size
         return (
-            size.width > SMALLER_DETECTION_THRESHOLD
-            or size.height > SMALLER_DETECTION_THRESHOLD
+            size.width <= SMALLER_DETECTION_THRESHOLD
+            or size.height <= SMALLER_DETECTION_THRESHOLD
         )
 
     def _draw_overlay(
