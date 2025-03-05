@@ -1,0 +1,97 @@
+name: BOM Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      distinct_id:
+        description: 'run identifier'
+        required: false
+      testbed:
+          description: 'On what testbed will tests be run'
+          required: false
+          type: string
+      reservation_name:
+          description: 'Reservation name - usually usually unique identifier of root CI run'
+          required: false
+          type: string
+      hold_reservation:
+        description: 'If this is set to true testbed will stay reserved after process is done - reccomended for CI use'
+        required: false
+        type: boolean
+      additional-parameter:
+        description: 'Additional parameter: -all or -p <parser_name>. Default: -all. If -p is used: -p <parser_name>'
+        required: true
+        default: '-all'
+      branch:
+        description: 'Branch to run the tests on. Default: main'
+        required: true
+        default: 'main'
+      depthai-version:
+        description: 'Version of depthai to install. Default: alpha11'
+        required: true
+        default: '3.0.0a13'
+
+jobs:
+  id:
+    name: Workflow ID Provider
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: echo distinct ID ${{ github.event.inputs.distinct_id }}
+        run: echo ${{ github.event.inputs.distinct_id }}
+  HIL-test:
+    runs-on: ['self-hosted', 'testbed-runner']
+    strategy:
+      matrix:
+        python-version: [3.12]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Checkout source code from tag
+        uses: actions/checkout@v3
+        with:
+            ref: ${{ github.event.inputs.branch }}  # Use input tag or the tag that triggered the workflow
+            path: depthai-nodes
+            submodules: 'recursive'
+      
+      - name: Update HIL
+        run: |
+          cd /home/$USER/hil_framework
+          git pull
+          git submodule update --init --recursive
+
+      - name: Add HIL Tools to Path
+        run: |
+          cd /home/$USER/hil_framework
+          echo "$(pwd)/lib_testbed/tools" >> $GITHUB_PATH
+          echo "PYTHONPATH="$PYTHONPATH:$(pwd)"" >> $GITHUB_ENV
+          echo "HIL_FRAMEWORK_PATH="$(pwd)"" >> $GITHUB_ENV
+          
+      - name: Run Test
+        run: |
+            rm -rf depthai-nodes/tests/end_to_end/run_e2e_tests.sh && cp tests/end_to_end/run_e2e_tests.sh depthai-nodes/tests/end_to_end/run_e2e_tests.sh
+            cd depthai-nodes
+            export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#${{ matrix.python-version}}"
+            # Assign testbed and reservation name only if both are provided
+            if [[ -n "${{ github.event.inputs.testbed }}" ]]; then
+                TESTBED_OPTION="--testbed ${{ github.event.inputs.testbed }}"
+            else
+                TESTBED_OPTION="--capabilities depthai-core-hil"
+            fi
+            if [[ -n "${{ github.event.inputs.reservation_name }}" ]]; then
+                RESERVATION_OPTION="--reservation-name ${{ github.event.inputs.reservation_name }}"
+            else
+                RESERVATION_OPTION="--reservation-name $RESERVATION_NAME"
+            fi
+            
+            if [[ "${{ github.event.inputs.hold_reservation }}" == 'true' ]]; then
+                HOLD_RESERVATION="--hold-reservation"
+            fi
+
+            if [[ "${{ github.event.inputs.depthai-version }}" == 'experimental' ]]; then
+                VOLUME_DEPTHAI="-v /tmp/depthai-core:/tmp/depthai-core"
+                DEPTHAI_PY_PATH="/tmp/depthai-core/build/bindings/python"
+            fi
+
+            exec hil $HOLD_RESERVATION --wait --sync-workspace $TESTBED_OPTION $RESERVATION_OPTION \
+                --commands "cd /tmp/depthai-nodes && ./tests/end_to_end/run_e2e_tests.sh ${{ github.event.inputs.depthai-version }} ${{ secrets.HUBAI_TEAM_SLUG }} ${{ secrets.HUBAI_API_KEY }} ${{ secrets.LUXONIS_EXTRA_INDEX_URL }}"
