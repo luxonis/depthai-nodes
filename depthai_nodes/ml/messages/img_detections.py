@@ -11,7 +11,6 @@ from depthai_nodes.utils.annotation_helper import AnnotationHelper
 from depthai_nodes.utils.annotation_sizes import AnnotationSizes
 from depthai_nodes.utils.constants import (
     DETECTION_CORNER_COLOR,
-    DETECTION_CORNER_SIZE,
     DETECTION_FILL_COLOR,
     KEYPOINT_COLOR,
     OUTLINE_COLOR,
@@ -315,7 +314,7 @@ class ImgDetectionsExtended(dai.Buffer):
             next_pt = pts[(i + 1) % pts_len]
 
             corner_size_to_previous = min(
-                DETECTION_CORNER_SIZE,
+                annotation_sizes.corner_size,
                 self._calculate_distance(
                     (current_pt.x, current_pt.y), (previous_pt.x, previous_pt.y)
                 ),
@@ -332,7 +331,7 @@ class ImgDetectionsExtended(dai.Buffer):
             )
 
             corner_size_to_next = min(
-                DETECTION_CORNER_SIZE,
+                annotation_sizes.corner_size,
                 self._calculate_distance(
                     (current_pt.x, current_pt.y), (next_pt.x, next_pt.y)
                 ),
