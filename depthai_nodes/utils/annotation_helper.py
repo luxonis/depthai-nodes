@@ -16,11 +16,13 @@ class AnnotationHelper:
     After calling the desired drawing methods, call the `build` method to create the `ImgAnnotations` message.
     """
 
-    def __init__(self):
+    def __init__(self, viewport_clipper: Optional[ViewportClipper] = None):
         self.annotation: dai.ImgAnnotation = dai.ImgAnnotation()
-        self._viewport_clipper = ViewportClipper(
-            min_x=0.0, max_x=1.0, min_y=0.0, max_y=1.0
-        )
+        if not viewport_clipper:
+            viewport_clipper = ViewportClipper(
+                min_x=0.0, max_x=1.0, min_y=0.0, max_y=1.0
+            )
+        self._viewport_clipper = viewport_clipper
 
     def draw_line(
         self,
