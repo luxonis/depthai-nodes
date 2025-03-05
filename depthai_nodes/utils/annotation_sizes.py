@@ -1,5 +1,6 @@
 from depthai_nodes.utils.constants import (
     DETECTION_BORDER_THICKNESS_PER_RESOLUTION,
+    DETECTION_CORNER_SIZE,
     KEYPOINT_THICKNESS_PER_RESOLUTION,
     TEXT_SIZE_PER_HEIGHT,
 )
@@ -12,15 +13,21 @@ class AnnotationSizes:
 
     @property
     def border_thickness(self):
-        return DETECTION_BORDER_THICKNESS_PER_RESOLUTION * (self._height + self._width)
+        return self._get_thickness(DETECTION_BORDER_THICKNESS_PER_RESOLUTION)
 
     @property
     def keypoint_thickness(self):
-        return KEYPOINT_THICKNESS_PER_RESOLUTION * (self._height + self._width)
+        return self._get_thickness(KEYPOINT_THICKNESS_PER_RESOLUTION)
+
+    def _get_thickness(self, thickness_per_resolution: float):
+        return thickness_per_resolution * (self._height + self._width)
 
     @property
     def text_size(self):
-        return TEXT_SIZE_PER_HEIGHT * self._height
+        return self._get_size_per_height(TEXT_SIZE_PER_HEIGHT)
+
+    def _get_size_per_height(self, size_per_heigh):
+        return size_per_heigh * self._height
 
     @property
     def relative_text_size(self):
@@ -33,3 +40,7 @@ class AnnotationSizes:
     @property
     def aspect_ratio(self):
         return self._width / self._height
+
+    @property
+    def corner_size(self):
+        return DETECTION_CORNER_SIZE
