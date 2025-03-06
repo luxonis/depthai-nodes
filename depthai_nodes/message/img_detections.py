@@ -271,9 +271,7 @@ class ImgDetectionsExtended(dai.Buffer):
         img_annotations = dai.ImgAnnotations()
         annotation = dai.ImgAnnotation()
         transformation = self.transformation
-        w, h = 1, 1
-        if transformation is not None:  # remove once RVC2 supports ImgTransformation
-            w, h = transformation.getSize()
+        w, h = transformation.getSize()
 
         for detection in self.detections:
             detection: ImgDetectionExtended = detection
