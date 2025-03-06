@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import sys
 
@@ -34,6 +35,12 @@ def main():
         default="",
         help="RVC platform to run the tests on. Default is both.",
     )
+    arg_parser.add_argument(
+        "-v",
+        "--depthai-nodes-version",
+        default="main",
+        help="Branch or release of depthai-nodes. It is used when selecting the models to be tested. Default is main - means main branch and selects all available models. If release tag is provided it will look only for specific set of models.",
+    )
 
     args = arg_parser.parse_args()
     nn_archive_path = args.nn_archive_path  # it is a list of paths
@@ -41,6 +48,18 @@ def main():
     run_all = args.all
     parser = args.parser
     rvc_platform = "both" if args.platform == "" else args.platform
+
+    print()
+
+    supported_models = json.load(open("supported_models.json"))
+    if args.depthai_nodes_version not in supported_models:
+        run_all = True
+    else:
+        model = supported_models[args.depthai_nodes_version]
+        print(
+            f"Running on release version {args.depthai_nodes_version} with preselected {len(model)} models."
+        )
+
     print(f"Run all tests: {run_all}")
     print(f"RVC2 IP: {os.getenv('RVC2_IP', '')}")
     print(f"RVC4 IP: {os.getenv('RVC4_IP', '')}")
