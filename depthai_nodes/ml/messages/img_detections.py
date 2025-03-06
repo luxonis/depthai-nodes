@@ -330,7 +330,8 @@ class ImgDetectionsExtended(dai.Buffer):
                 annotation_sizes.corner_size,
                 self._calculate_distance(
                     (current_pt.x, current_pt.y), (previous_pt.x, previous_pt.y)
-                ),
+                )
+                / 2,
             )
             corner_size_to_previous *= self._scale_to_aspect(
                 (current_pt.x, current_pt.y),
@@ -347,7 +348,8 @@ class ImgDetectionsExtended(dai.Buffer):
                 annotation_sizes.corner_size,
                 self._calculate_distance(
                     (current_pt.x, current_pt.y), (next_pt.x, next_pt.y)
-                ),
+                )
+                / 2,
             )
             corner_size_to_next *= self._scale_to_aspect(
                 (current_pt.x, current_pt.y),
