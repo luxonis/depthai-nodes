@@ -55,6 +55,7 @@ def main():
     if args.depthai_nodes_version not in supported_models:
         run_all = True
     else:
+        run_all = False
         model = supported_models[args.depthai_nodes_version]
         print(
             f"Running on release version {args.depthai_nodes_version} with preselected {len(model)} models."
