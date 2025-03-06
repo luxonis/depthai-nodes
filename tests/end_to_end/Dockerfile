@@ -32,7 +32,7 @@ ENTRYPOINT ["bash", "-c", "git checkout main && git pull && \
     echo 'Checking out tag' $BRANCH && \
     git checkout tags/$BRANCH; \
   else \
-    echo 'Checking out branch $BRANCH' && \
+    echo 'Checking out branch' $BRANCH && \
     git checkout $BRANCH; \
   fi && \
   pip install --extra-index-url $LUXONIS_EXTRA_INDEX_URL depthai==$DEPTHAI_VERSION && \
