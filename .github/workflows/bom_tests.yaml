@@ -22,8 +22,8 @@ on:
         description: 'Additional parameter: -all or -p <parser_name>. Default: -all. If -p is used: -p <parser_name>'
         required: true
         default: '-all'
-      branch:
-        description: 'Branch to run the tests on. Default: main'
+      depthai-nodes-version:
+        description: 'Release or branch of depthai nodes we are testing against'
         required: true
         default: 'main'
       depthai-version:
@@ -50,7 +50,7 @@ jobs:
       - name: Checkout source code from tag
         uses: actions/checkout@v3
         with:
-            ref: ${{ github.event.inputs.branch }}  # Use input tag or the tag that triggered the workflow
+            ref: ${{ github.event.inputs.depthai-nodes-version }}  # Use input tag or the tag that triggered the workflow
             path: depthai-nodes
             submodules: 'recursive'
       
