@@ -75,9 +75,8 @@ jobs:
             # Assign testbed and reservation name only if both are provided
             if [[ -n "${{ github.event.inputs.testbed }}" ]]; then
                 TESTBED_OPTION="--testbed ${{ github.event.inputs.testbed }}"
-            else
-                TESTBED_OPTION="--capabilities depthai-core-hil"
             fi
+
             if [[ -n "${{ github.event.inputs.reservation_name }}" ]]; then
                 RESERVATION_OPTION="--reservation-name ${{ github.event.inputs.reservation_name }}"
             else
@@ -93,5 +92,5 @@ jobs:
                 DEPTHAI_PY_PATH="/tmp/depthai-core/build/bindings/python"
             fi
 
-            exec hil $HOLD_RESERVATION --wait --sync-workspace $TESTBED_OPTION $RESERVATION_OPTION \
-                --commands "cd /tmp/depthai-nodes && ./tests/end_to_end/run_e2e_tests.sh ${{ github.event.inputs.depthai-version }} ${{ secrets.HUBAI_TEAM_SLUG }} ${{ secrets.HUBAI_API_KEY }} ${{ secrets.LUXONIS_EXTRA_INDEX_URL }}"
+            exec hil $HOLD_RESERVATION --wait --sync-workspace --models "oak4_pro or oak4_d" $TESTBED_OPTION $RESERVATION_OPTION \
+                --commands "cd /tmp/depthai-nodes && ./tests/end_to_end/run_e2e_tests.sh ${{ github.event.inputs.depthai-version }} ${{ secrets.HUBAI_TEAM_SLUG }} ${{ secrets.HUBAI_API_KEY }} ${{ secrets.LUXONIS_EXTRA_INDEX_URL }} ${{ github.event.inputs.depthai-nodes-version }}"
