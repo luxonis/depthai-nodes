@@ -59,6 +59,9 @@ def main():
             f"\nRunning on release version {args.depthai_nodes_version} with preselected {len(model)} models."
         )
 
+    if model:
+        run_all = False
+
     print(f"\nRun all tests: {run_all}")
     print(f"RVC2 IP: {os.getenv('RVC2_IP', '')}")
     print(f"RVC4 IP: {os.getenv('RVC4_IP', '')}")
