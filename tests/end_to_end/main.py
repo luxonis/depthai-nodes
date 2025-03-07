@@ -49,8 +49,6 @@ def main():
     parser = args.parser
     rvc_platform = "both" if args.platform == "" else args.platform
 
-    print()
-
     supported_models = json.load(open("supported_models.json"))
     if args.depthai_nodes_version not in supported_models:
         run_all = True
@@ -58,10 +56,10 @@ def main():
         run_all = False
         model = supported_models[args.depthai_nodes_version]
         print(
-            f"Running on release version {args.depthai_nodes_version} with preselected {len(model)} models."
+            f"\nRunning on release version {args.depthai_nodes_version} with preselected {len(model)} models."
         )
 
-    print(f"Run all tests: {run_all}")
+    print(f"\nRun all tests: {run_all}")
     print(f"RVC2 IP: {os.getenv('RVC2_IP', '')}")
     print(f"RVC4 IP: {os.getenv('RVC4_IP', '')}")
     print(f"RVC platform: {'RVC2 & RVC4' if rvc_platform == '' else rvc_platform}")
