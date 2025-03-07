@@ -62,7 +62,7 @@ def pytest_generate_tests(metafunc):
 
 
 def test_pipelines(IP: str, ip_platform: str, nn_archive_path, model):
-    time.sleep(3)
+    time.sleep(10)
 
     if not (nn_archive_path or model):
         raise ValueError("You have to pass either path to NNArchive or model model")
