@@ -113,5 +113,10 @@
         "mediapipe-palm-detection:192x192",
         "mediapipe-face-landmarker:192x192",
         "scrfd-face-detection:10g-640x640"
+    ],
+    "tests/e2e-extension": [
+        "superanimal-landmarker:256x256",
+        "mediapipe-palm-detection:192x192",
+        "mediapipe-face-landmarker:192x192"
     ]
 }
