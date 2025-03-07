@@ -12,9 +12,9 @@ on:
         required: true
         default: 'main'
       depthai-version:
-        description: 'Version of depthai to install. Default: alpha11'
+        description: 'Version of depthai to install. Default: alpha13'
         required: true
-        default: '3.0.0a11'
+        default: '3.0.0a13'
   pull_request:
     branches:
       - main
