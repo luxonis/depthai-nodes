@@ -26,7 +26,6 @@ RUN pip install -r requirements-dev.txt
 WORKDIR /app/depthai-nodes/tests/end_to_end
 
 # Run the setup script and the tests
-# ENTRYPOINT ["bash", "-c", "git checkout main && git pull && git checkout $BRANCH && pip install --extra-index-url $LUXONIS_EXTRA_INDEX_URL depthai==$DEPTHAI_VERSION && source <(python setup_camera_ips.py) && python main.py $FLAGS"]
 ENTRYPOINT ["bash", "-c", "git checkout main && git pull && \
   if git show-ref --tags --quiet $BRANCH; then \
     echo 'Checking out tag' $BRANCH && \
