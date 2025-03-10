@@ -46,7 +46,12 @@ jobs:
         cache: pip
 
     - name: Install depthai
-      run: pip install --extra-index-url ${{ secrets.LUXONIS_EXTRA_INDEX_URL }} depthai==${{ github.event.inputs.depthai-version }}
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          pip install --extra-index-url ${{ secrets.LUXONIS_EXTRA_INDEX_URL }} depthai==${{ github.event.inputs.depthai-version }}
+        else
+          pip install --extra-index-url ${{ secrets.LUXONIS_EXTRA_INDEX_URL }} depthai==3.0.0a13
+        fi
 
     - name: Install package
       run: pip install -e .[dev]
