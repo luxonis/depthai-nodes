@@ -13,3 +13,9 @@ def pytest_addoption(parser):
         "--models", action="store", default="", help="Model slug from the ZOO."
     )
     parser.addoption("--parsers", action="store", default="", help="Parsers to test.")
+    parser.addoption(
+        "--duration",
+        action="store",
+        default="",
+        help="Duration of the test in seconds.",
+    )

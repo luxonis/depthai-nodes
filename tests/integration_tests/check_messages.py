@@ -3,7 +3,6 @@ from typing import Any, Dict, List
 
 import depthai as dai
 import numpy as np
-from utils import extract_main_slug
 
 from depthai_nodes import (
     Classifications,
@@ -16,6 +15,8 @@ from depthai_nodes import (
     SegmentationMask,
 )
 
+from .utils import extract_main_slug
+
 
 def load_expected_output(model: str, parser: str) -> Dict[str, Any]:
     model = extract_main_slug(model)
@@ -23,7 +24,9 @@ def load_expected_output(model: str, parser: str) -> Dict[str, Any]:
         return pickle.load(f)
 
 
-def check_classification_msg(message: Classifications, expected_output: Dict[str, Any]):
+def check_classification_msg(
+    message: Classifications, expected_output: Dict[str, Any], verbose: bool = False
+):
     """
     Expected output format:
     {
@@ -37,18 +40,19 @@ def check_classification_msg(message: Classifications, expected_output: Dict[str
         message, Classifications
     ), f"The message is not a Classifications. Got {type(message)}."
 
-    print(
-        f"Expected top class: {expected_output['class']}, predicted top class: {message.top_class}"
-    )
-    print(
-        f"Expected top score: {expected_output['score']}, predicted top score: {message.top_score}"
-    )
+    if verbose:
+        print(
+            f"Expected top class: {expected_output['class']}, predicted top class: {message.top_class}"
+        )
+        print(
+            f"Expected top score: {expected_output['score']}, predicted top score: {message.top_score}"
+        )
     assert message.top_class == expected_output["class"]
     np.testing.assert_allclose(message.top_score, expected_output["score"], rtol=1e-2)
 
 
 def check_classification_sequence_msg(
-    message: Classifications, expected_output: Dict[str, Any]
+    message: Classifications, expected_output: Dict[str, Any], verbose: bool = False
 ):
     """
     Expected output format:
@@ -61,9 +65,10 @@ def check_classification_sequence_msg(
         message, Classifications
     ), f"The message is not a Classifications. Got {type(message)}."
 
-    print(
-        f"Expected top class: {expected_output['class']}, predicted top class: {message.classes}"
-    )
+    if verbose:
+        print(
+            f"Expected top class: {expected_output['class']}, predicted top class: {message.classes}"
+        )
     assert len(message.classes) == len(
         expected_output["class"]
     ), "The number of classes is different."
@@ -73,7 +78,9 @@ def check_classification_sequence_msg(
         ), f"Class {i} is different."
 
 
-def check_embeddings_msg(message: dai.NNData, expected_output: Dict[str, Any]):
+def check_embeddings_msg(
+    message: dai.NNData, expected_output: Dict[str, Any], verbose: bool = False
+):
     """
     Expected output format:
     {
@@ -90,9 +97,10 @@ def check_embeddings_msg(message: dai.NNData, expected_output: Dict[str, Any]):
     assert len(outputs) == 1, "The number of outputs must be 1."
     embeddings = message.getTensor(outputs[0])
     expected_embeddings = expected_output["embeddings"]
-    print(
-        f"Expected embeddings shape: {expected_embeddings.shape}, predicted embeddings shape: {embeddings.shape}"
-    )
+    if verbose:
+        print(
+            f"Expected embeddings shape: {expected_embeddings.shape}, predicted embeddings shape: {embeddings.shape}"
+        )
     assert (
         embeddings.shape == expected_embeddings.shape
     ), "The shape of the embeddings is different."
@@ -100,7 +108,10 @@ def check_embeddings_msg(message: dai.NNData, expected_output: Dict[str, Any]):
 
 
 def check_segmentation_msg(
-    message: SegmentationMask, expected_output: Dict[str, Any], threshold: float = 0.9
+    message: SegmentationMask,
+    expected_output: Dict[str, Any],
+    threshold: float = 0.9,
+    verbose: bool = False,
 ):
     """
     Expected output format:
@@ -117,9 +128,10 @@ def check_segmentation_msg(
     mask = message.mask
 
     expected_mask = expected_output["mask"]
-    print(
-        f"Expected mask shape: {expected_mask.shape}, predicted mask shape: {mask.shape}"
-    )
+    if verbose:
+        print(
+            f"Expected mask shape: {expected_mask.shape}, predicted mask shape: {mask.shape}"
+        )
     assert (
         mask.shape == expected_mask.shape
     ), f"The shape of the mask is different. Expects {expected_mask.shape}, got {mask.shape}"
@@ -130,7 +142,8 @@ def check_segmentation_msg(
     correct = (mask == expected_mask).sum()
     total = expected_mask.size
     acc = correct / total
-    print(f"Accuracy: {acc}")
+    if verbose:
+        print(f"Accuracy: {acc}")
     assert (
         acc > threshold
     ), f"The accuracy {acc} is lower than the threshold {threshold}"
@@ -139,6 +152,7 @@ def check_segmentation_msg(
 def check_keypoints_msg(
     message: Keypoints,
     expected_output: Dict[str, Any],
+    verbose: bool = False,
 ):
     """
     Expected output format:
@@ -156,9 +170,10 @@ def check_keypoints_msg(
     expected_keypoints = np.array(expected_output["keypoints"])
     if expected_keypoints.shape[1] == 3:
         expected_keypoints = expected_keypoints[:, :2]  # we dont need the confidences
-    print(
-        f"Expected keypoints shape: {expected_keypoints.shape}, predicted keypoints shape: {keypoints.shape}"
-    )
+    if verbose:
+        print(
+            f"Expected keypoints shape: {expected_keypoints.shape}, predicted keypoints shape: {keypoints.shape}"
+        )
     assert (
         keypoints.shape == expected_keypoints.shape
     ), f"The shape of the keypoints is different. Expects {expected_keypoints.shape}, got {keypoints.shape}"
@@ -166,7 +181,9 @@ def check_keypoints_msg(
     np.testing.assert_allclose(keypoints, expected_keypoints, rtol=1e-2)
 
 
-def check_image_msg(message: dai.ImgFrame, expected_output: Dict[str, Any]):
+def check_image_msg(
+    message: dai.ImgFrame, expected_output: Dict[str, Any], verbose: bool = False
+):
     """
     Expected output format:
     {
@@ -181,16 +198,19 @@ def check_image_msg(message: dai.ImgFrame, expected_output: Dict[str, Any]):
 
     image = message.getCvFrame()
     expected_image = expected_output["output"]
-    print(
-        f"Expected image shape: {expected_image.shape}, predicted image shape: {image.shape}"
-    )
+    if verbose:
+        print(
+            f"Expected image shape: {expected_image.shape}, predicted image shape: {image.shape}"
+        )
     assert (
         image.shape == expected_image.shape
     ), f"The shape of the image is different. Expects {expected_image.shape}, got {image.shape}"
     assert np.allclose(image, expected_image, atol=1), "The image is different."
 
 
-def check_cluster_msg(message: Clusters, expected_output: Dict[str, Any]):
+def check_cluster_msg(
+    message: Clusters, expected_output: Dict[str, Any], verbose: bool = False
+):
     """
     Expected output format:
     {
@@ -222,7 +242,9 @@ def check_cluster_msg(message: Clusters, expected_output: Dict[str, Any]):
             assert found, f"Expected point {gt_point} not found in the cluster."
 
 
-def check_map_msg(message: Map2D, expected_output: Dict[str, Any]):
+def check_map_msg(
+    message: Map2D, expected_output: Dict[str, Any], verbose: bool = False
+):
     """
     Expected output format:
     {
@@ -237,9 +259,10 @@ def check_map_msg(message: Map2D, expected_output: Dict[str, Any]):
 
     map_tensor = message.map
     expected_map = expected_output["map"]
-    print(
-        f"Expected map shape: {expected_map.shape}, predicted map shape: {map_tensor.shape}"
-    )
+    if verbose:
+        print(
+            f"Expected map shape: {expected_map.shape}, predicted map shape: {map_tensor.shape}"
+        )
     assert (
         map_tensor.shape == expected_map.shape
     ), f"The shape of the map is different. Expects {expected_map.shape}, got {map_tensor.shape}"
@@ -247,7 +270,9 @@ def check_map_msg(message: Map2D, expected_output: Dict[str, Any]):
 
 
 def check_detection_msg(
-    message: ImgDetectionsExtended, expected_output: Dict[str, Any]
+    message: ImgDetectionsExtended,
+    expected_output: Dict[str, Any],
+    verbose: bool = False,
 ):
     """
     Expected output format:
@@ -294,9 +319,11 @@ def check_detection_msg(
     assert (
         len(predicted_detections) == len(expected_detections)
     ), f"The number of detections is different. Got {len(predicted_detections)}, expected {len(expected_detections)}"
-    print(
-        f"Expected number of detections: {len(expected_detections)}, predicted number of detections: {len(predicted_detections)}"
-    )
+
+    if verbose:
+        print(
+            f"Expected number of detections: {len(expected_detections)}, predicted number of detections: {len(predicted_detections)}"
+        )
 
     for i, expected_detection in enumerate(expected_detections):
         predicted_detection = predicted_detections[i]
@@ -332,9 +359,10 @@ def check_detection_msg(
             ), f"Expected keypoints {expected_detection['keypoints']}, got {predicted_detection['keypoints']}."
 
         if "mask" in expected_detection.keys():
-            print(
-                f"Expected mask shape: {expected_detection['mask'].shape}, predicted mask shape: {predicted_detection['mask'].shape}"
-            )
+            if verbose:
+                print(
+                    f"Expected mask shape: {expected_detection['mask'].shape}, predicted mask shape: {predicted_detection['mask'].shape}"
+                )
             assert (
                 expected_detection["mask"].shape == predicted_detection["mask"].shape
             ), f"The shape of the mask is different. Expects {expected_detection['mask'].shape}, got {predicted_detection['mask'].shape}"
@@ -343,7 +371,9 @@ def check_detection_msg(
             ), f"Expected mask {expected_detection['mask']}, got {predicted_detection['mask']}."
 
 
-def check_line_msg(message: Lines, expected_output: Dict[str, Any]):
+def check_line_msg(
+    message: Lines, expected_output: Dict[str, Any], verbose: bool = False
+):
     """
     Expected output format:
     {
@@ -373,9 +403,10 @@ def check_line_msg(message: Lines, expected_output: Dict[str, Any]):
         }
         predicted_lines.append(line_dict)
 
-    print(
-        f"Expected number of lines: {len(expected_lines)}, predicted number of lines: {len(predicted_lines)}"
-    )
+    if verbose:
+        print(
+            f"Expected number of lines: {len(expected_lines)}, predicted number of lines: {len(predicted_lines)}"
+        )
     assert (
         len(predicted_lines) == len(expected_lines)
     ), f"The number of lines is different. Got {len(predicted_lines)}, expected {len(expected_lines)}"
@@ -393,7 +424,9 @@ def check_line_msg(message: Lines, expected_output: Dict[str, Any]):
         ), f"Expected end_point {expected_line['end_point']}, got {predicted_line['end_point']}."
 
 
-def check_regression_msg(message: Predictions, expected_output: Dict[str, Any]):
+def check_regression_msg(
+    message: Predictions, expected_output: Dict[str, Any], verbose: bool = False
+):
     """
     Expected output format:
     {
@@ -409,16 +442,18 @@ def check_regression_msg(message: Predictions, expected_output: Dict[str, Any]):
     predictions = message.predictions
     predictions = np.array([pred.prediction for pred in predictions])
     expected_predictions = np.array(expected_output["value"])
-    print(
-        f"Expected predictions shape: {expected_predictions.shape}, predicted predictions shape: {predictions.shape}"
-    )
+
+    if verbose:
+        print(
+            f"Expected predictions shape: {expected_predictions.shape}, predicted predictions shape: {predictions.shape}"
+        )
     assert (
         predictions.shape == expected_predictions.shape
     ), f"The shape of the predictions is different. Expects {expected_predictions.shape}, got {predictions.shape}"
     np.testing.assert_allclose(predictions, expected_predictions, rtol=1e-2)
 
 
-def test_output(message, model_slug, parser_name):
+def check_output(message, model_slug, parser_name):
     expected_output = load_expected_output(model_slug, parser_name)
 
     if expected_output["parser"] == "ClassificationParser":
