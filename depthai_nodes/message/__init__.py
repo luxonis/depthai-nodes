@@ -9,10 +9,12 @@ from .lines import Line, Lines
 from .map import Map2D
 from .prediction import Prediction, Predictions
 from .segmentation import SegmentationMask
+from .detected_recognitions import DetectedRecognitions
 
 __all__ = [
     "ImgDetectionExtended",
     "ImgDetectionsExtended",
+    "DetectedRecognitions",
     "Keypoints",
     "Keypoint",
     "Line",

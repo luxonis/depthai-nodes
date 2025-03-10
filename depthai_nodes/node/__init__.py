@@ -26,6 +26,7 @@ from .parsers.yunet import YuNetParser
 from .parsing_neural_network import ParsingNeuralNetwork
 from .tiles_patcher import TilesPatcher
 from .tiling import Tiling
+from .detections_recognitions_sync import DetectionsRecognitionsSync
 
 __all__ = [
     "DepthColorTransform",
@@ -57,4 +58,5 @@ __all__ = [
     "BaseParser",
     "DetectionParser",
     "EmbeddingsParser",
+    "DetectionsRecognitionsSync",
 ]
