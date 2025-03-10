@@ -41,75 +41,35 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         self._nn = self._pipeline.create(dai.node.NeuralNetwork)
         self._parsers: Dict[int, BaseParser] = {}
 
-    def build(
-        self,
-        input: Union[dai.Node.Output, dai.node.Camera],
-        nn_source: Union[dai.NNModelDescription, dai.NNArchive, str],
-        fps: Optional[float] = None,
-    ) -> "ParsingNeuralNetwork":
-        """Builds the underlying NeuralNetwork node and creates parser nodes for each
-        model head.
+    @property
+    def input(self) -> dai.Node.Input:
+        return self._nn.input
 
-        @param input: Node's input. It is a linking point to which the NeuralNetwork is
-            linked. It accepts the output of a Camera node.
-        @type input: Node.Input
+    @property
+    def inputs(self) -> dai.Node.InputMap:
+        return self._nn.inputs
 
-        @param nn_source: NNModelDescription object containing the HubAI model descriptors, NNArchive object of the model, or HubAI model slug in form of <model_slug>:<model_version_slug> or <model_slug>:<model_version_slug>:<model_instance_hash>.
-        @type nn_source: Union[dai.NNModelDescription, dai.NNArchive, str]
-        @param fps: FPS limit for the model runtime.
-        @type fps: int
-        @return: Returns the ParsingNeuralNetwork object.
-        @rtype: ParsingNeuralNetwork
-        @raise ValueError: If the nn_source is not a NNModelDescription or NNArchive
-            object.
-        """
-
-        platform = self.getParentPipeline().getDefaultDevice().getPlatformAsString()
-
-        if isinstance(nn_source, str):
-            nn_source = dai.NNModelDescription(nn_source)
-        if isinstance(nn_source, (dai.NNModelDescription, str)):
-            if not nn_source.platform:
-                nn_source.platform = platform
-            self._nn_archive = dai.NNArchive(dai.getModelFromZoo(nn_source))
-        elif isinstance(nn_source, dai.NNArchive):
-            self._nn_archive = nn_source
-        else:
-            raise ValueError(
-                "nn_source must be either a NNModelDescription, NNArchive, or a string representing HubAI model slug."
+    @property
+    def out(self) -> dai.Node.Output:
+        self._checkNNArchive()
+        if len(self._parsers) != 1:
+            raise RuntimeError(
+                f"Property out is only available when there is exactly one model head. \
+                               The model has {self._getModelHeadsLen()} heads. Use {self.getOutput.__name__} method instead."
             )
+        return list(self._parsers.values())[0].out
 
-        kwargs = {"fps": fps} if fps else {}
-        self._nn.build(input, self._nn_archive, **kwargs)
+    @property
+    def passthrough(self) -> dai.Node.Output:
+        return self._nn.passthrough
 
-        self._updateParsers(self._nn_archive)
-        return self
-
-    def _updateParsers(self, nnArchive: dai.NNArchive) -> None:
-        self._removeOldParserNodes()
-        self._parsers = self._getParserNodes(nnArchive)
-
-    def _removeOldParserNodes(self) -> None:
-        for parser in self._parsers.values():
-            self._pipeline.remove(parser)
-
-    def _getParserNodes(self, nnArchive: dai.NNArchive) -> Dict[int, BaseParser]:
-        parser_generator = self._pipeline.create(ParserGenerator)
-        parsers = parser_generator.build(nnArchive)
-        for parser in parsers.values():
-            self._nn.out.link(
-                parser.input
-            )  # TODO: once NN node has output dictionary, link to the correct output
-        self._pipeline.remove(parser_generator)
-        return parsers
+    @property
+    def passthroughs(self) -> dai.Node.OutputMap:
+        return self._nn.passthroughs
 
     def getNumInferenceThreads(self) -> int:
         """Returns number of inference threads of the NeuralNetwork node."""
         return self._nn.getNumInferenceThreads()
-
-    def setBackend(self, setBackend: str) -> None:
-        """Sets the backend of the NeuralNetwork node."""
-        self._nn.setBackend(setBackend)
 
     @overload
     def getParser(self, index: int = 0) -> Union[BaseParser, dai.DeviceNode]:
@@ -182,6 +142,18 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
                 )
         return parser
 
+    def getOutput(self, head: int) -> dai.Node.Output:
+        """Obtains output of a parser for specified NeuralNetwork model head."""
+        if head not in self._parsers:
+            raise KeyError(
+                f"Head {head} is not available. Available heads for the model {self._getModelName()} are {list(self._parsers.keys())}."
+            )
+        return self._parsers[head].out
+
+    def setBackend(self, setBackend: str) -> None:
+        """Sets the backend of the NeuralNetwork node."""
+        self._nn.setBackend(setBackend)
+
     def setBackendProperties(self, setBackendProperties: Dict[str, str]) -> None:
         """Sets the backend properties of the NeuralNetwork node."""
         self._nn.setBackendProperties(setBackendProperties)
@@ -241,23 +213,74 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         """Sets the number of shaves per inference thread of the NeuralNetwork node."""
         self._nn.setNumShavesPerInferenceThread(numShavesPerInferenceThread)
 
-    @property
-    def input(self) -> dai.Node.Input:
-        return self._nn.input
+    def build(
+        self,
+        input: Union[dai.Node.Output, dai.node.Camera],
+        nn_source: Union[dai.NNModelDescription, dai.NNArchive, str],
+        fps: Optional[float] = None,
+    ) -> "ParsingNeuralNetwork":
+        """Builds the underlying NeuralNetwork node and creates parser nodes for each
+        model head.
 
-    @property
-    def inputs(self) -> dai.Node.InputMap:
-        return self._nn.inputs
+        @param input: Node's input. It is a linking point to which the NeuralNetwork is
+            linked. It accepts the output of a Camera node.
+        @type input: Node.Input
 
-    @property
-    def out(self) -> dai.Node.Output:
-        self._checkNNArchive()
-        if len(self._parsers) != 1:
-            raise RuntimeError(
-                f"Property out is only available when there is exactly one model head. \
-                               The model has {self._getModelHeadsLen()} heads. Use {self.getOutput.__name__} method instead."
+        @param nn_source: NNModelDescription object containing the HubAI model descriptors, NNArchive object of the model, or HubAI model slug in form of <model_slug>:<model_version_slug> or <model_slug>:<model_version_slug>:<model_instance_hash>.
+        @type nn_source: Union[dai.NNModelDescription, dai.NNArchive, str]
+        @param fps: FPS limit for the model runtime.
+        @type fps: int
+        @return: Returns the ParsingNeuralNetwork object.
+        @rtype: ParsingNeuralNetwork
+        @raise ValueError: If the nn_source is not a NNModelDescription or NNArchive
+            object.
+        """
+
+        platform = self.getParentPipeline().getDefaultDevice().getPlatformAsString()
+
+        if isinstance(nn_source, str):
+            nn_source = dai.NNModelDescription(nn_source)
+        if isinstance(nn_source, (dai.NNModelDescription, str)):
+            if not nn_source.platform:
+                nn_source.platform = platform
+            self._nn_archive = dai.NNArchive(dai.getModelFromZoo(nn_source))
+        elif isinstance(nn_source, dai.NNArchive):
+            self._nn_archive = nn_source
+        else:
+            raise ValueError(
+                "nn_source must be either a NNModelDescription, NNArchive, or a string representing HubAI model slug."
             )
-        return list(self._parsers.values())[0].out
+
+        kwargs = {"fps": fps} if fps else {}
+        self._nn.build(input, self._nn_archive, **kwargs)
+
+        self._updateParsers(self._nn_archive)
+        return self
+
+    def run(self) -> None:
+        """Methods inherited from ThreadedHostNode.
+
+        Method runs with start of the pipeline.
+        """
+        self._checkNNArchive()
+
+    def _updateParsers(self, nnArchive: dai.NNArchive) -> None:
+        self._removeOldParserNodes()
+        self._parsers = self._getParserNodes(nnArchive)
+
+    def _removeOldParserNodes(self) -> None:
+        for parser in self._parsers.values():
+            self._pipeline.remove(parser)
+
+    def _getParserNodes(self, nnArchive: dai.NNArchive) -> Dict[int, BaseParser]:
+        parser_generator = self._pipeline.create(ParserGenerator)
+        parsers = parser_generator.build(nnArchive)
+        for parser in parsers.values():
+            self._nn.out.link(
+                parser.input
+            )  # TODO: once NN node has output dictionary, link to the correct output
+        self._pipeline.remove(parser_generator)
+        return parsers
 
     def _getModelHeadsLen(self):
         heads = self._getModelHeads()
@@ -268,34 +291,11 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
     def _getModelHeads(self):
         return self._getConfig().model.heads
 
-    @property
-    def passthrough(self) -> dai.Node.Output:
-        return self._nn.passthrough
-
-    @property
-    def passthroughs(self) -> dai.Node.OutputMap:
-        return self._nn.passthroughs
-
-    def run(self) -> None:
-        """Methods inherited from ThreadedHostNode.
-
-        Method runs with start of the pipeline.
-        """
-        self._checkNNArchive()
-
     def _checkNNArchive(self) -> None:
         if self._nn_archive is None:
             raise RuntimeError(
                 f"NNArchive is not set. Use {self.setNNArchive.__name__} or {self.build.__name__} method to set it."
             )
-
-    def getOutput(self, head: int) -> dai.Node.Output:
-        """Obtains output of a parser for specified NeuralNetwork model head."""
-        if head not in self._parsers:
-            raise KeyError(
-                f"Head {head} is not available. Available heads for the model {self._getModelName()} are {list(self._parsers.keys())}."
-            )
-        return self._parsers[head].out
 
     def _getModelName(self) -> str:
         return self._getConfig().model.metadata.name

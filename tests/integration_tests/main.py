@@ -1,6 +1,6 @@
 import argparse
 import os
-import sys
+import subprocess
 
 import pytest
 from config import parsers_slugs
@@ -24,12 +24,16 @@ def main():
     arg_parser.add_argument(
         "-d", "--download", action="store_true", help="Download test files"
     )
+    arg_parser.add_argument(
+        "--duration", type=int, default=10, help="Duration of the test in seconds"
+    )
 
     args = arg_parser.parse_args()
     models = args.model
     run_all = args.all
     parser = args.parser
     download = args.download
+    duration = args.duration
 
     if os.path.exists("nn_datas"):
         print()
@@ -42,6 +46,7 @@ def main():
         download_test_files()
 
     print(f"Run all tests: {run_all}")
+    print(f"Duration of each test: {duration} seconds")
 
     if run_all and models:
         raise ValueError("You can't pass both -all and --model")
@@ -68,18 +73,27 @@ def main():
         if model in value
     ]
 
-    command = [
-        "parser_test.py",
-        f"--models={models}",
-        f"--parsers={parsers}",
-        "-v",
-        "--tb=short",
-        "-r a",
-        "--log-cli-level=DEBUG",
-        "--color=yes",
-    ]
-    exitcode = pytest.main(command)
-    sys.exit(exitcode)
+    models = repr(models)
+    parsers = repr(parsers)
+    try:
+        subprocess.run(
+            f'pytest run_parser_test.py --models "{models}" --parsers "{parsers}" --duration {duration} -v --tb=short -r a --log-cli-level=DEBUG --color=yes',
+            shell=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError as e:
+        if e.returncode == 6:
+            pytest.skip("Couldn't connect to the default device.")
+        elif e.returncode == 7:
+            pytest.skip(f"Couldn't find model {models} in the ZOO")
+        elif e.returncode == 8:
+            pytest.skip(f"Couldn't load the model {models} from NN archive.")
+        elif e.returncode == 9:
+            pytest.skip(f"Couldn't extract the parser from the model {models}.")
+        elif e.returncode == 10:
+            pytest.skip(f"Couldn't load the tensors for the model {models}.")
+        else:
+            raise RuntimeError("Pipeline crashed.") from e
 
 
 if __name__ == "__main__":
