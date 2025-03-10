@@ -1,4 +1,3 @@
-import os
 import time
 from collections import deque
 from typing import List, Tuple, Type
@@ -228,6 +227,21 @@ class PipelineMock:
                     self._is_running = is_running
 
             node = ConcreteParser()
+        elif node_type == dai.node.DetectionParser:
+
+            class MockDetectionParser:
+                def __init__(self):
+                    self._input = Input()
+                    self._out = Output()
+                    self._nn_archive = None
+
+                def build(self):
+                    pass
+
+                def setNNArchive(self, nn_archive):
+                    self._nn_archive = nn_archive
+
+            node = MockDetectionParser()
         else:
             node = node_type()
 
@@ -237,12 +251,7 @@ class PipelineMock:
 
 
 def pytest_configure(config: Config):
-    print(config.invocation_params.dir)
-    if (
-        os.getcwd().endswith("integration_tests")
-        or "integration_tests" in config.invocation_params.dir.as_uri()
-    ):
-        import depthai as dai
+    import depthai as dai
 
-        dai.Pipeline = PipelineMock
-        dai.node.ThreadedHostNode = ThreadedHostNodeMock
+    dai.Pipeline = PipelineMock
+    dai.node.ThreadedHostNode = ThreadedHostNodeMock
