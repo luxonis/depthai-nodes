@@ -69,6 +69,5 @@ You would need the B2 credentials to download the tests from the bucket and set 
 The integration tests are triggered in every PR. But you can also trigger them manually. Required parameters are:
 
 - `additional-parameter`: The parameter that specifies the desired test. Default is `-all` which runs tests on all parsers. The available options are: `-all`, `-p <parser_name>`.
-- `branch`: The branch on which the tests will be run. Default is `main`.
-- `testbed`: The testbed on which the tests will be run. Default is `oak4-s`. Available: `oak4-pro`, `oak4-s`.
-- `depthai-version`: The version of the DepthAI that will be used for the tests. Default is `3.0.0a6`.
+- `depthai-version`: The version of the DepthAI that will be used for the tests. Default is `3.0.0a13`.
+- `duration`: The duration of each test in seconds. Default is `10` seconds.

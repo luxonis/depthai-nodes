@@ -242,7 +242,6 @@ def pytest_configure(config: Config):
         os.getcwd().endswith("integration_tests")
         or "integration_tests" in config.invocation_params.dir.as_uri()
     ):
-        print("Applying unittest-specific configuration")
         import depthai as dai
 
         dai.Pipeline = PipelineMock
