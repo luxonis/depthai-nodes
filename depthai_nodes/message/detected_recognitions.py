@@ -1,5 +1,5 @@
 import depthai as dai
-from depthai_nodes import ImgDetectionsExtended
+from .img_detections import ImgDetectionsExtended
 
 
 class DetectedRecognitions(dai.Buffer):
