@@ -1,6 +1,6 @@
 def pytest_addoption(parser):
     parser.addoption("--nn_archive_path", default="", type=str, help="NN archive path")
-    parser.addoption("--model", default="", help="Model from the ZOO.")
+    parser.addoption("--model", default="", type=str, help="Model from the ZOO.")
     parser.addoption(
         "--platform",
         default="",
