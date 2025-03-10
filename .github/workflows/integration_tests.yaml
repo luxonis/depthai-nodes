@@ -107,8 +107,14 @@ jobs:
     - name: Install package
       run: pip install -e .[dev]
 
+    - name: List
+      run: ls -la
+
     - name: Move to integration tests directory
       run: cd tests/integration_tests
+
+    - name: List after moving
+      run: ls -la
     
     - name: Export environment variables
       run: |
