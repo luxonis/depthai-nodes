@@ -7,14 +7,14 @@ on:
         description: 'Additional parameter: -all or -p <parser_name>. Default: -all. If -p is used: -p <parser_name>'
         required: true
         default: '-all --download'
-      branch:
-        description: 'Branch to run the tests on. Default: main'
-        required: true
-        default: 'main'
       depthai-version:
         description: 'Version of depthai to install. Default: alpha13'
         required: true
         default: '3.0.0a13'
+      duration:
+        description: 'Duration of each test in seconds. Default: 10'
+        required: true
+        default: '10'
   pull_request:
     branches:
       - main
@@ -25,31 +25,44 @@ on:
 
 jobs:
   Integration-test:
-    runs-on: ['self-hosted', 'testbed-runner']
-
     strategy:
+      fail-fast: false
       matrix:
-        python-version: [3.12]
+        os: [ubuntu-latest]
+        python-version: ['3.8', '3.10']
+
+    runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Update HIL
-        run: |
-          cd /home/$USER/hil_framework
-          git pull
-          git submodule update --init --recursive
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
 
-      - name: Add HIL Tools to Path
-        run: |
-          cd /home/$USER/hil_framework
-          echo "$(pwd)/lib_testbed/tools" >> $GITHUB_PATH
-          echo "PYTHONPATH="$PYTHONPATH:$(pwd)"" >> $GITHUB_ENV
-          echo "HIL_FRAMEWORK_PATH="$(pwd)"" >> $GITHUB_ENV
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: pip
 
-      - name: Run Test
-        run: |
-          export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#${{ matrix.python-version}}"
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            hil --capabilities "depthai-core-hil" --wait --reservation-name $RESERVATION_NAME --before-docker-pull "echo ${{secrets.GHCR_PAT}} | docker login ghcr.io -u ${{secrets.GHCR_USER}} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-integration-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=${{ github.event.inputs.depthai-version }} --env B2_APPLICATION_KEY=${{ secrets.B2_APPLICATION_KEY }} --env B2_APPLICATION_KEY_ID=${{ secrets.B2_APPLICATION_KEY_ID }} --env BRANCH=${{ github.event.inputs.branch }} --env FLAGS=\"${{ github.event.inputs.additional-parameter }}\""
-          else
-            hil --capabilities "depthai-core-hil" --wait --reservation-name $RESERVATION_NAME --before-docker-pull "echo ${{secrets.GHCR_PAT}} | docker login ghcr.io -u ${{secrets.GHCR_USER}} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-integration-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=\"3.0.0a11\" --env B2_APPLICATION_KEY=${{ secrets.B2_APPLICATION_KEY }} --env B2_APPLICATION_KEY_ID=${{ secrets.B2_APPLICATION_KEY_ID }} --env BRANCH=${{ github.head_ref }} --env FLAGS=\"-all --download\""
-          fi
+    - name: Install depthai
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          pip install --extra-index-url ${{ secrets.LUXONIS_EXTRA_INDEX_URL }} depthai==${{ github.event.inputs.depthai-version }}
+        else
+          pip install --extra-index-url ${{ secrets.LUXONIS_EXTRA_INDEX_URL }} depthai==3.0.0a13
+        fi
+
+    - name: Install package
+      run: pip install -e .[dev]
+
+    - name: Run integration tests
+      run: |
+        cd tests/integration_tests
+        export B2_APPLICATION_KEY=${{ secrets.B2_APPLICATION_KEY }}
+        export B2_APPLICATION_KEY_ID=${{ secrets.B2_APPLICATION_KEY_ID }}
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          python main.py ${{ github.event.inputs.additional-parameter }} --duration ${{ github.event.inputs.duration }}
+        else
+          python main.py -all --duration 2
+        fi
