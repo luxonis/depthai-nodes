@@ -1,12 +1,23 @@
 from typing import List, Optional
 
+import depthai as dai
+import numpy as np
+
+from depthai_nodes.message.creators import (
+    create_detection_message,
+)
+from depthai_nodes.node.parsers.utils.bbox_format_converters import xyxy_to_xywh
+from depthai_nodes.node.parsers.utils.nms import nms_cv2
+
 from .base_parser import BaseParser
 
 
 class DetectionParser(BaseParser):
-    """Parser class for parsing the output of a detection model. The parser expects the
-    output of the model to be in the (x_min, y_min, x_max, y_max, confidence) format. As
-    the result, the node sends out the detected objects in the form of a message
+    """Parser class for parsing the output of a "general" detection model. The parser expects the
+    output of the model to have two tensors: one for bounding boxes and one for scores.
+    Tensor for bboxes should be of shape (N, 4) and scores should be of shape (N,).
+    Bboxes are expected to be in the format [xmin, ymin, xmax, ymax]. If this is not the case you can check other parsers
+    or create a new one. As the result, the node sends out the detected objects in the form of a message
     containing bounding boxes and confidence scores.
 
     Attributes
@@ -32,9 +43,9 @@ class DetectionParser(BaseParser):
 
     def __init__(
         self,
-        conf_threshold: float,
-        iou_threshold: float,
-        max_det: int,
+        conf_threshold: float = 0.5,
+        iou_threshold: float = 0.5,
+        max_det: int = 100,
         label_names: Optional[List[str]] = None,
     ) -> None:
         """Initializes the parser node.
@@ -109,3 +120,51 @@ class DetectionParser(BaseParser):
         self.label_names = head_config.get("classes", self.label_names)
 
         return self
+
+    def run(self):
+        while self.isRunning():
+            try:
+                output: dai.NNData = self.input.get()
+            except dai.MessageQueue.QueueException:
+                break  # Pipeline was stopped
+
+            layers = output.getAllLayerNames()
+            if len(layers) != 2:
+                raise ValueError(
+                    f"Expected 2 output layers, got {len(layers)} layers. Please use different parser or create a new one."
+                )
+
+            bboxes = None
+            scores = None
+
+            for layer in layers:
+                tensor: np.ndarray = output.getTensor(layer, dequantize=True)
+                if 4 in tensor.shape:
+                    bboxes = tensor
+                else:
+                    scores = tensor
+
+            bboxes = bboxes.reshape(-1, 4)
+            scores = scores.reshape(-1)
+
+            if bboxes is None or scores is None:
+                raise ValueError(
+                    "Bounding boxes or scores are missing in the output. Please check the NN model."
+                )
+
+            indices = nms_cv2(
+                bboxes, scores, self.conf_threshold, self.iou_threshold, self.max_det
+            )
+
+            if len(indices) > 0:
+                bboxes = bboxes[indices]
+                scores = scores[indices]
+
+                bboxes = xyxy_to_xywh(bboxes)
+
+                message = create_detection_message(bboxes=bboxes, scores=scores)
+                message.transformation = output.getTransformation()
+                message.setTimestamp(output.getTimestamp())
+                message.setSequenceNum(output.getSequenceNum())
+
+                self.out.send(message)
