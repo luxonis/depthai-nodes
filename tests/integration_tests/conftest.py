@@ -1,6 +1,6 @@
 import time
 from collections import deque
-from typing import List, Tuple, Type
+from typing import List, Tuple, Type, Union
 
 import depthai as dai
 from pytest import Config
@@ -117,6 +117,9 @@ class Output:
         self._queues.append(queue)
         return queue
 
+    def link(self, node):
+        pass
+
 
 class ThreadedHostNodeMock:
     """Mock class for the depthai ThreadedHostNode.
@@ -161,6 +164,61 @@ class ThreadedHostNodeMock:
         return self._parent_pipeline
 
 
+class NeuralNetworkMock:
+    def __init__(self):
+        self._input = Input()
+        self._out = Output()
+        self._passthrough = Output()
+        self._nn_archive = None
+
+    def build(
+        self,
+        input: Input,
+        model: Union[dai.NNModelDescription, dai.NNArchive],
+        fps: float,
+    ):
+        self._nn_archive = model
+        self._input = input
+        return self
+
+
+class DetectionParserMock:
+    def __init__(self):
+        self._input = Input()
+        self._out = Output()
+        self._nn_archive = None
+
+    @property
+    def input(self):
+        return self._input
+
+    @input.setter
+    def input(self, input):
+        self._input = input
+
+    @property
+    def out(self):
+        return self._out
+
+    @out.setter
+    def out(self, output):
+        self._out = output
+
+    def build(self):
+        pass
+
+    def setNNArchive(self, nn_archive):
+        self._nn_archive = nn_archive
+
+
+class DeviceMock:
+    def __init__(self):
+        pass
+
+    def getPlatformAsString(self):
+        return "RVC2"
+
+
 class PipelineMock:
     """Mock class for the depthai Pipeline.
 
@@ -169,6 +227,7 @@ class PipelineMock:
 
     def __init__(self):
         self._nodes = []
+        self._defaultDevice = DeviceMock()
 
     def __enter__(self):
         return self
@@ -176,12 +235,18 @@ class PipelineMock:
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 
+    def getDefaultDevice(self):
+        return self._defaultDevice
+
+    def remove(self, node):
+        self._nodes.remove(node)
+
     def create(self, node_type: Type[ThreadedHostNodeMock]):
         from depthai_nodes.node.parsers.base_parser import BaseParser
 
         if issubclass(node_type, BaseParser):
             # Create a concrete subclass of the parser that implements the abstract methods
-            class ConcreteParser(node_type):
+            class ParserMock(node_type):
                 """Concrete parser class that implements the abstract methods of the
                 BaseParser."""
 
@@ -226,24 +291,47 @@ class PipelineMock:
                 def setIsRunning(self, is_running: bool):
                     self._is_running = is_running
 
-            node = ConcreteParser()
-        elif node_type == dai.node.DetectionParser:
+            node = ParserMock()
 
-            class MockDetectionParser:
-                def __init__(self):
+        elif node_type == dai.node.DetectionParser:
+            node = DetectionParserMock()
+
+        else:
+
+            class NodeMock(node_type):
+                def __init__(self, pipeline):
+                    self._pipeline = pipeline
+                    super().__init__()
                     self._input = Input()
                     self._out = Output()
-                    self._nn_archive = None
 
-                def build(self):
-                    pass
+                def getParentPipeline(self):
+                    return self._pipeline
+
+                @property
+                def input(self):
+                    return self._input
+
+                @input.setter
+                def input(self, input):
+                    self._input = input
+
+                @property
+                def out(self):
+                    return self._out
+
+                @out.setter
+                def out(self, output):
+                    self._out = output
 
                 def setNNArchive(self, nn_archive):
-                    self._nn_archive = nn_archive
+                    # check if superclass has the method
+                    if hasattr(super(), "setNNArchive"):
+                        super().setNNArchive(nn_archive)
+                    else:
+                        self._nn_archive = nn_archive
 
-            node = MockDetectionParser()
-        else:
-            node = node_type()
+            node = NodeMock(self)
 
         node.parentPipeline = self
         self._nodes.append(node)
