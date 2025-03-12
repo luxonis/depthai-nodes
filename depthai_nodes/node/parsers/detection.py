@@ -139,7 +139,7 @@ class DetectionParser(BaseParser):
 
             for layer in layers:
                 tensor: np.ndarray = output.getTensor(layer, dequantize=True)
-                if 4 in tensor.shape:
+                if tensor.shape[-1] == 4 and len(tensor.shape) != 1:
                     bboxes = tensor
                 else:
                     scores = tensor
