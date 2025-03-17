@@ -92,20 +92,20 @@ class CropConfigsCreatorNode(dai.node.HostNode):
         """
         assert isinstance(detections_input, ImgDetectionsExtended)
         detections = detections_input.detections
-        keep_image = False
         sequence_num = detections_input.getSequenceNum()
         timestamp = detections_input.getTimestamp()
 
         detections_to_keep = []
         num_detections = min(len(detections), self._n_detections)
-        if num_detections == 0:  # if no detections, skip the current frame
-            cfg = dai.ImageManipConfigV2()
-            cfg.setSkipCurrentImage(True)
-            cfg.setTimestamp(timestamp)
-            cfg.setSequenceNum(sequence_num)
-            send_status = False
-            while not send_status:
-                send_status = self.config_output.trySend(cfg)
+
+        # Skip the current frame / load new frame
+        cfg = dai.ImageManipConfigV2()
+        cfg.setSkipCurrentImage(True)
+        cfg.setTimestamp(timestamp)
+        cfg.setSequenceNum(sequence_num)
+        send_status = False
+        while not send_status:
+            send_status = self.config_output.trySend(cfg)
 
         for i in range(num_detections):
             cfg = dai.ImageManipConfigV2()
@@ -116,16 +116,13 @@ class CropConfigsCreatorNode(dai.node.HostNode):
 
             cfg.addCropRotatedRect(rect, normalizedCoords=False)
             cfg.setOutputSize(self.target_w, self.target_h)
-            cfg.setReusePreviousImage(
-                keep_image
-            )  # dont reuse previous image only on the first detection
+            cfg.setReusePreviousImage(True)
             cfg.setTimestamp(timestamp)
             cfg.setSequenceNum(sequence_num)
 
             send_status = False
             while not send_status:
                 send_status = self.config_output.trySend(cfg)
-            keep_image = True
 
         detections_input.detections = detections_to_keep
         if detections_input.masks.ndim == 2:
