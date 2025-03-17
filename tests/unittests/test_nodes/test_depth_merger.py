@@ -1,3 +1,4 @@
+import time
 from typing import Union
 
 import depthai as dai
@@ -10,6 +11,11 @@ from utils.calibration_handler import get_calibration_handler
 from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.node.depth_merger import DepthMerger
 from depthai_nodes.node.host_spatials_calc import HostSpatialsCalc
+
+
+@pytest.fixture(scope="session")
+def duration(request):
+    return request.config.getoption("--duration")
 
 
 @pytest.fixture
@@ -96,12 +102,33 @@ def img_detections_extended():
     return det
 
 
+def verify_spatial_detection(spatial_det, img_detection):
+    assert isinstance(spatial_det, dai.SpatialImgDetection)
+
+    if isinstance(img_detection, ImgDetectionExtended):
+        xmin, ymin, xmax, ymax = img_detection.rotated_rect.getOuterRect()
+    else:
+        xmin = img_detection.xmin
+        ymin = img_detection.ymin
+        xmax = img_detection.xmax
+        ymax = img_detection.ymax
+    np.testing.assert_almost_equal(spatial_det.xmin, xmin, decimal=2)
+    np.testing.assert_almost_equal(spatial_det.ymin, ymin, decimal=2)
+    np.testing.assert_almost_equal(spatial_det.xmax, xmax, decimal=2)
+    np.testing.assert_almost_equal(spatial_det.ymax, ymax, decimal=2)
+    assert spatial_det.label == img_detection.label
+    np.testing.assert_almost_equal(
+        spatial_det.confidence, img_detection.confidence, decimal=2
+    )
+
+
 def test_initialization(depth_merger: DepthMerger, depth_frame: dai.ImgFrame):
     assert depth_merger.shrinking_factor == 0.0
 
 
 @pytest.mark.parametrize("detection", ["img_detection", "img_detection_extended"])
 def test_img_detection(
+    duration: int,
     depth_merger: DepthMerger,
     depth_frame: dai.ImgFrame,
     request: FixtureRequest,
@@ -131,23 +158,21 @@ def test_img_detection(
     depth_merger.process(q_2d.get(), q_depth.get())
 
     spatial_det: dai.SpatialImgDetection = q_out.get()
-    assert isinstance(spatial_det, dai.SpatialImgDetection)
+    verify_spatial_detection(spatial_det, img_detection)
 
-    if isinstance(img_detection, ImgDetectionExtended):
-        xmin, ymin, xmax, ymax = img_detection.rotated_rect.getOuterRect()
-    else:
-        xmin = img_detection.xmin
-        ymin = img_detection.ymin
-        xmax = img_detection.xmax
-        ymax = img_detection.ymax
-    np.testing.assert_almost_equal(spatial_det.xmin, xmin, decimal=2)
-    np.testing.assert_almost_equal(spatial_det.ymin, ymin, decimal=2)
-    np.testing.assert_almost_equal(spatial_det.xmax, xmax, decimal=2)
-    np.testing.assert_almost_equal(spatial_det.ymax, ymax, decimal=2)
-    assert spatial_det.label == img_detection.label
-    np.testing.assert_almost_equal(
-        spatial_det.confidence, img_detection.confidence, decimal=2
-    )
+    if not duration:
+        return
+
+    start_time = time.time()
+
+    while time.time() - start_time < duration:
+        output_2d.send(img_detection)
+        output_depth.send(depth_frame)
+
+        depth_merger.process(q_2d.get(), q_depth.get())
+
+        spatial_det = q_out.get()
+        verify_spatial_detection(spatial_det, img_detection)
 
 
 @pytest.mark.parametrize("detections", ["img_detections", "img_detections_extended"])
@@ -156,6 +181,7 @@ def test_img_detections(
     depth_frame: dai.ImgFrame,
     request: FixtureRequest,
     detections: str,
+    duration: int,
 ):
     img_detections: Union[
         ImgDetectionsExtended, dai.ImgDetections
@@ -186,18 +212,23 @@ def test_img_detections(
 
     for i, spatial_det in enumerate(spatial_dets.detections):
         img_det = img_detections.detections[i]
-        if isinstance(img_det, ImgDetectionExtended):
-            xmin, ymin, xmax, ymax = img_det.rotated_rect.getOuterRect()
-        else:
-            xmin = img_det.xmin
-            ymin = img_det.ymin
-            xmax = img_det.xmax
-            ymax = img_det.ymax
-        np.testing.assert_almost_equal(spatial_det.xmin, xmin, decimal=2)
-        np.testing.assert_almost_equal(spatial_det.ymin, ymin, decimal=2)
-        np.testing.assert_almost_equal(spatial_det.xmax, xmax, decimal=2)
-        np.testing.assert_almost_equal(spatial_det.ymax, ymax, decimal=2)
-        assert spatial_det.label == img_det.label
-        np.testing.assert_almost_equal(
-            spatial_det.confidence, img_det.confidence, decimal=2
-        )
+        verify_spatial_detection(spatial_det, img_det)
+
+    if not duration:
+        return
+
+    start_time = time.time()
+
+    while time.time() - start_time < duration:
+        output_2d.send(img_detections)
+        output_depth.send(depth_frame)
+
+        depth_merger.process(q_2d.get(), q_depth.get())
+
+        spatial_dets = q_out.get()
+        assert isinstance(spatial_dets, dai.SpatialImgDetections)
+        assert len(spatial_dets.detections) == len(img_detections.detections)
+
+        for i, spatial_det in enumerate(spatial_dets.detections):
+            img_det = img_detections.detections[i]
+            verify_spatial_detection(spatial_det, img_det)

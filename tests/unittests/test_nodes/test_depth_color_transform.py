@@ -1,9 +1,16 @@
+import time
+
 import cv2
 import depthai as dai
 import numpy as np
 import pytest
 
 from depthai_nodes.node import DepthColorTransform
+
+
+@pytest.fixture(scope="session")
+def duration(request):
+    return request.config.getoption("--duration")
 
 
 @pytest.fixture
@@ -30,7 +37,7 @@ def empty_frame(disp_shape):
     return frame
 
 
-def test_dimensions_type(disp_frame, disp_shape):
+def test_dimensions_type(disp_frame, disp_shape, duration):
     color_transform = DepthColorTransform()
     q = color_transform.out.createOutputQueue()
     color_transform.process(disp_frame)
@@ -38,8 +45,19 @@ def test_dimensions_type(disp_frame, disp_shape):
     assert isinstance(output, dai.ImgFrame)
     assert output.getCvFrame().shape == (*disp_shape, 3)
 
+    if not duration:
+        return
 
-def test_empty_frame(empty_frame):
+    start_time = time.time()
+
+    while time.time() - start_time < duration:
+        color_transform.process(disp_frame)
+        output = q.get()
+        assert isinstance(output, dai.ImgFrame)
+        assert output.getCvFrame().shape == (*disp_shape, 3)
+
+
+def test_empty_frame(empty_frame, duration):
     color_transform = DepthColorTransform()
     q = color_transform.out.createOutputQueue()
     color_transform.process(empty_frame)
@@ -48,11 +66,23 @@ def test_empty_frame(empty_frame):
     output_matrix = output.getCvFrame()
     assert np.all(output_matrix == 0)
 
+    if not duration:
+        return
+
+    start_time = time.time()
+
+    while time.time() - start_time < duration:
+        color_transform.process(empty_frame)
+        output = q.get()
+        assert isinstance(output, dai.ImgFrame)
+        output_matrix = output.getCvFrame()
+        assert np.all(output_matrix == 0)
+
 
 @pytest.mark.parametrize(
     "color_map", [cv2.COLORMAP_HOT, cv2.COLORMAP_PLASMA, cv2.COLORMAP_INFERNO]
 )
-def test_color_map_applied(disp_array, disp_frame, color_map):
+def test_color_map_applied(disp_array, disp_frame, color_map, duration):
     color_transform = DepthColorTransform()
     color_transform.setColormap(color_map)
     factor = 2
@@ -67,3 +97,17 @@ def test_color_map_applied(disp_array, disp_frame, color_map):
     assert np.all(
         output_matrix == cv2.applyColorMap(factored_disp, color_transform._colormap)
     )
+
+    if not duration:
+        return
+
+    start_time = time.time()
+
+    while time.time() - start_time < duration:
+        color_transform.process(disp_frame)
+        output = q.get()
+        assert isinstance(output, dai.ImgFrame)
+        output_matrix = output.getCvFrame()
+        assert np.all(
+            output_matrix == cv2.applyColorMap(factored_disp, color_transform._colormap)
+        )
