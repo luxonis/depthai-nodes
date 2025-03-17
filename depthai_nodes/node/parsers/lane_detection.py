@@ -203,7 +203,7 @@ class LaneDetectionParser(BaseParser):
 
             msg = create_cluster_message(points)
             msg.setTimestamp(output.getTimestamp())
-            msg.transformation = output.getTransformation()
+            msg.setTransformation(output.getTransformation())
             msg.setSequenceNum(output.getSequenceNum())
 
             self.out.send(msg)

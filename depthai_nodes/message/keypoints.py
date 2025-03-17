@@ -199,14 +199,38 @@ class Keypoints(dai.Buffer):
                 )
         self._transformation = value
 
+    def setTransformation(self, transformation: dai.ImgTransformation):
+        """Sets the Image Transformation object.
+
+        @param transformation: The Image Transformation object.
+        @type transformation: dai.ImgTransformation
+        @raise TypeError: If value is not a dai.ImgTransformation object.
+        """
+        self.transformation = transformation
+
+    def getPoints2f(self) -> dai.VectorPoint2f:
+        """Returns the keypoints in the form of a dai.VectorPoint2f object."""
+
+        return dai.VectorPoint2f(
+            [dai.Point2f(keypoint.x, keypoint.y) for keypoint in self.keypoints]
+        )
+
+    def getPoints3f(self) -> List[dai.Point3f]:
+        """Returns the keypoints in the form of a list of dai.Point3f objects."""
+
+        return [
+            dai.Point3f(keypoint.x, keypoint.y, keypoint.z)
+            for keypoint in self.keypoints
+        ]
+
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
         """Creates a default visualization message for the keypoints."""
         img_annotations = dai.ImgAnnotations()
         annotation = dai.ImgAnnotation()
-        keypoints = [dai.Point2f(keypoint.x, keypoint.y) for keypoint in self.keypoints]
+
         pointsAnnotation = dai.PointsAnnotation()
         pointsAnnotation.type = dai.PointsAnnotationType.POINTS
-        pointsAnnotation.points = dai.VectorPoint2f(keypoints)
+        pointsAnnotation.points = self.getPoints2f()
         pointsAnnotation.outlineColor = KEYPOINT_COLOR
         pointsAnnotation.fillColor = KEYPOINT_COLOR
         pointsAnnotation.thickness = 2
