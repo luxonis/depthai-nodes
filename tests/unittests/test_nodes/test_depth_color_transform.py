@@ -45,16 +45,14 @@ def test_dimensions_type(disp_frame, disp_shape, duration):
     assert isinstance(output, dai.ImgFrame)
     assert output.getCvFrame().shape == (*disp_shape, 3)
 
-    if not duration:
-        return
+    if duration:
+        start_time = time.time()
 
-    start_time = time.time()
-
-    while time.time() - start_time < duration:
-        color_transform.process(disp_frame)
-        output = q.get()
-        assert isinstance(output, dai.ImgFrame)
-        assert output.getCvFrame().shape == (*disp_shape, 3)
+        while time.time() - start_time < duration:
+            color_transform.process(disp_frame)
+            output = q.get()
+            assert isinstance(output, dai.ImgFrame)
+            assert output.getCvFrame().shape == (*disp_shape, 3)
 
 
 def test_empty_frame(empty_frame, duration):
@@ -66,17 +64,15 @@ def test_empty_frame(empty_frame, duration):
     output_matrix = output.getCvFrame()
     assert np.all(output_matrix == 0)
 
-    if not duration:
-        return
+    if duration:
+        start_time = time.time()
 
-    start_time = time.time()
-
-    while time.time() - start_time < duration:
-        color_transform.process(empty_frame)
-        output = q.get()
-        assert isinstance(output, dai.ImgFrame)
-        output_matrix = output.getCvFrame()
-        assert np.all(output_matrix == 0)
+        while time.time() - start_time < duration:
+            color_transform.process(empty_frame)
+            output = q.get()
+            assert isinstance(output, dai.ImgFrame)
+            output_matrix = output.getCvFrame()
+            assert np.all(output_matrix == 0)
 
 
 @pytest.mark.parametrize(
@@ -98,16 +94,15 @@ def test_color_map_applied(disp_array, disp_frame, color_map, duration):
         output_matrix == cv2.applyColorMap(factored_disp, color_transform._colormap)
     )
 
-    if not duration:
-        return
+    if duration:
+        start_time = time.time()
 
-    start_time = time.time()
-
-    while time.time() - start_time < duration:
-        color_transform.process(disp_frame)
-        output = q.get()
-        assert isinstance(output, dai.ImgFrame)
-        output_matrix = output.getCvFrame()
-        assert np.all(
-            output_matrix == cv2.applyColorMap(factored_disp, color_transform._colormap)
-        )
+        while time.time() - start_time < duration:
+            color_transform.process(disp_frame)
+            output = q.get()
+            assert isinstance(output, dai.ImgFrame)
+            output_matrix = output.getCvFrame()
+            assert np.all(
+                output_matrix
+                == cv2.applyColorMap(factored_disp, color_transform._colormap)
+            )

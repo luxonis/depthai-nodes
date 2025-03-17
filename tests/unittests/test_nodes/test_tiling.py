@@ -114,14 +114,12 @@ def test_process(tiling, dummy_img_frame, duration):
 
     assert out_q.is_empty()
 
-    if not duration:
-        return
+    if duration:
+        start_time = time.time()
 
-    start_time = time.time()
-
-    while time.time() - start_time < duration:
-        tiling.process(dummy_img_frame)
-        for _ in range(expected_num_tiles):
-            out_frame = out_q.get()
-            assert isinstance(out_frame, dai.ImgFrame)
-        assert out_q.is_empty()
+        while time.time() - start_time < duration:
+            tiling.process(dummy_img_frame)
+            for _ in range(expected_num_tiles):
+                out_frame = out_q.get()
+                assert isinstance(out_frame, dai.ImgFrame)
+            assert out_q.is_empty()

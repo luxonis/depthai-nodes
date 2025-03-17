@@ -99,16 +99,14 @@ def test_process_accumulation(
     assert isinstance(detections_msg, dai.ImgDetections)
     assert len(detections_msg.detections) == 2
 
-    if not duration:
-        return
+    if duration:
+        start_time = time.time()
 
-    start_time = time.time()
-
-    while time.time() - start_time < duration:
-        patcher.process(nn_output1)
-        patcher.process(nn_output2)
-        assert len(out_q._messages) == 1
-        detections_msg = out_q.get()
-        assert out_q.is_empty()
-        assert isinstance(detections_msg, dai.ImgDetections)
-        assert len(detections_msg.detections) == 2
+        while time.time() - start_time < duration:
+            patcher.process(nn_output1)
+            patcher.process(nn_output2)
+            assert len(out_q._messages) == 1
+            detections_msg = out_q.get()
+            assert out_q.is_empty()
+            assert isinstance(detections_msg, dai.ImgDetections)
+            assert len(detections_msg.detections) == 2
