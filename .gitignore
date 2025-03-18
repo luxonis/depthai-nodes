@@ -168,4 +168,4 @@ cython_debug/
 #VS Code
 .vscode/
 
-/tests/integration_tests/nn_datas
+/tests/stability_tests/nn_datas

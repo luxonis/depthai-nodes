@@ -1,6 +1,6 @@
 import depthai as dai
 import pytest
-from integration_tests.conftest import Input, NeuralNetworkMock, PipelineMock
+from stability_tests.conftest import Input, NeuralNetworkMock, PipelineMock
 
 from depthai_nodes.node import ParsingNeuralNetwork
 
