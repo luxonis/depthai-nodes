@@ -65,8 +65,6 @@ class OverlayFrames(dai.node.HostNode):
             0,
         )
 
-        print("overlay frame", overlay_frame.shape)
-
         overlay = dai.ImgFrame()
         overlay.setCvFrame(
             overlay_frame,

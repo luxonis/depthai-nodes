@@ -1,12 +1,12 @@
 import cv2
-import depthai as dai
 import numpy as np
+import depthai as dai
 
-from depthai_nodes.message import Map2D
+from depthai_nodes.message import Map2D, ImgDetectionsExtended
 
 
 class ApplyColormap(dai.node.HostNode):
-    """A host node that applies a colormap to a given 2D frame.
+    """A host node that applies a colormap to a given 2D array (e.g. depth maps, segmentation masks, heatmaps, etc.).
 
     Attributes
     ----------
@@ -14,8 +14,8 @@ class ApplyColormap(dai.node.HostNode):
         OpenCV colormap enum value. Determines the applied color mapping.
     max_value : Optional[int]
         Maximum value to consider for normalization. If set lower than the map's actual maximum, the map's maximum will be used instead.
-    frame : Map2D or dai.ImgFrame
-        The input message for a 2D frame.
+    arr : dai.ImgFrame or Map2D or ImgDetectionsExtended
+        The input message with a 2D array.
     output : dai.ImgFrame
         The output message for a colorized frame.
     """
@@ -54,53 +54,64 @@ class ApplyColormap(dai.node.HostNode):
         assert isinstance(max_value, int)
         self._max_value = max_value
 
-    def build(self, frame: dai.Node.Output) -> "ApplyColormap":
+    def build(self, arr: dai.Node.Output) -> "ApplyColormap":
         """Configures the node connections.
 
-        @param frame: Output with 2D frame.
+        @param frame: Output with 2D array.
         @type frame: depthai.Node.Output
         @return: The node object with input stream connected
         @rtype: ApplyColormap
         """
-        self.link_args(frame)
+        self.link_args(arr)
         return self
 
-    def process(self, frame: dai.Buffer) -> None:
-        """Processes incoming 2D frames and converts them to colored frames.
+    def process(self, msg: dai.Buffer) -> None:
+        """Processes incoming 2D arrays and converts them to colored frames.
 
-        @param frame: Input 2D frame.
-        @type frame: Map2D or dai.ImgFrame
+        @param msg: The input message with a 2D array.
+        @type msg: dai.ImgFrame or Map2D or ImgDetectionsExtended
         """
 
-        if isinstance(frame, dai.ImgFrame):
-            raw = frame.getFrame()
-        elif isinstance(frame, Map2D):
-            raw = frame.map
+        if isinstance(msg, dai.ImgFrame):
+            arr = msg.getFrame()
+        elif isinstance(msg, Map2D):
+            arr = msg.map  # density map
+        elif isinstance(msg, ImgDetectionsExtended):
+            labels = {
+                idx: detection.label for idx, detection in enumerate(msg.detections)
+            }
+            labels[-1] = -1  # background class
+            arr = np.vectorize(lambda x: labels.get(x, -1))(
+                msg.masks  # instance_segmentation_mask
+            )  # semantic segmentation mask
         else:
-            raise ValueError("Unsupported 2D frame type")
+            raise ValueError("Unsupported message type. Cannot obtain a 2D array.")
 
-        max_value = max(self._max_value, raw.max())
+        # make sure that min value == 0 to ensure proper normalization
+        arr += np.abs(arr.min()) if arr.min() < 0 else 0
+
+        max_value = max(self._max_value, arr.max())
         if max_value == 0:
-            color = np.zeros(
-                (raw.shape[0], raw.shape[1], 3),
+            color_arr = np.zeros(
+                (arr.shape[0], arr.shape[1], 3),
                 dtype=np.uint8,
             )
         else:
-            color = cv2.applyColorMap(
-                ((raw / max_value) * 255).astype(np.uint8),
+            color_arr = cv2.applyColorMap(
+                ((arr / max_value) * 255).astype(np.uint8),
                 self._colormap,
             )
 
-        frame_colorized = dai.ImgFrame()
-        frame_colorized.setCvFrame(
-            color,
+        frame = dai.ImgFrame()
+        frame.setCvFrame(
+            color_arr,
             (
                 dai.ImgFrame.Type.BGR888p
                 if self._platform == "RVC2"
                 else dai.ImgFrame.Type.BGR888i
             ),
         )
-        frame_colorized.setTimestamp(frame.getTimestamp())
-        frame_colorized.setSequenceNum(frame.getSequenceNum())
+        frame.setTimestamp(frame.getTimestamp())
+        frame.setSequenceNum(frame.getSequenceNum())
 
-        self.out.send(frame_colorized)
+        self.out.send(frame)
