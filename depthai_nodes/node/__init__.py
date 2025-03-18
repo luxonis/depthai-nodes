@@ -1,6 +1,7 @@
 from .apply_colormap import ApplyColormap
 from .depth_merger import DepthMerger
 from .host_spatials_calc import HostSpatialsCalc
+from .overlay_frames import OverlayFrames
 from .parser_generator import ParserGenerator
 from .parsers.base_parser import BaseParser
 from .parsers.classification import ClassificationParser
@@ -26,7 +27,6 @@ from .parsers.yunet import YuNetParser
 from .parsing_neural_network import ParsingNeuralNetwork
 from .tiles_patcher import TilesPatcher
 from .tiling import Tiling
-from .overlay_frames import OverlayFrames
 
 __all__ = [
     "ApplyColormap",
