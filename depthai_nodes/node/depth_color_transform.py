@@ -2,78 +2,105 @@ import cv2
 import depthai as dai
 import numpy as np
 
+from depthai_nodes.message import Map2D
 
-class DepthColorTransform(dai.node.HostNode):
-    """Postprocessing node for colorizing disparity/depth frames.
 
-    Converts grayscale disparity/depth frames into color-mapped visualization using OpenCV colormaps.
+class ApplyColormap(dai.node.HostNode):
+    """A host node that applies a colormap to a given 2D frame.
 
-    Output Message/s
-    ----------------
-    **Type** : ImgFrame(dai.Buffer)
-
-    **Description**: Colorized BGR888i frame where depth/disparity values are mapped to colors using the specified colormap.
+    Attributes
+    ----------
+    colormap_value : Optional[int]
+        OpenCV colormap enum value. Determines the applied color mapping.
+    max_value : Optional[int]
+        Maximum value to consider for normalization. If set lower than the map's actual maximum, the map's maximum will be used instead.
+    frame : Map2D or dai.ImgFrame
+        The input message for a 2D frame.
+    output : dai.ImgFrame
+        The output message for a colorized frame.
     """
 
-    def __init__(self) -> None:
-        """Initializes the depth colorization node with default HOT colormap."""
+    def __init__(
+        self, colormap_value: int = cv2.COLORMAP_HOT, max_value: int = 0
+    ) -> None:
         super().__init__()
-        # TODO: Cannot access attribute "setPossibleDatatypes" for class "Output"
 
         self.out.setPossibleDatatypes([(dai.DatatypeEnum.ImgFrame, True)])
-        self._max_disparity = 0
-        self.setColormap(cv2.COLORMAP_HOT)
+
+        self.setColormap(colormap_value)
+        self.setMaxDisparity(max_value)
+
+        self._platform = (
+            self.getParentPipeline().getDefaultDevice().getPlatformAsString()
+        )
 
     def setColormap(self, colormap_value: int) -> None:
-        """Sets the colormap used for depth visualization.
+        """Sets the applied color mapping.
 
         @param colormap_value: OpenCV colormap enum value (e.g. cv2.COLORMAP_HOT)
         @type colormap_value: int
         """
-        color_map = cv2.applyColorMap(np.arange(256, dtype=np.uint8), colormap_value)
-        color_map[0] = [0, 0, 0]  # Set zero values to black
-        self._colormap = color_map
+        assert isinstance(colormap_value, int)
+        colormap = cv2.applyColorMap(np.arange(256, dtype=np.uint8), colormap_value)
+        colormap[0] = [0, 0, 0]  # Set zero values to black
+        self._colormap = colormap
 
-    def build(self, disparity_frames: dai.Node.Output) -> "DepthColorTransform":
+    def setMaxDisparity(self, max_value: int) -> None:
+        """Sets the maximum frame value for normalization.
+
+        @param max_value: Maximum frame value.
+        @type max_value: int
+        """
+        assert isinstance(max_value, int)
+        self._max_value = max_value
+
+    def build(self, frame: dai.Node.Output) -> "ApplyColormap":
         """Configures the node connections.
 
-        @param disparity_frames: Output with disparity/depth frames
-        @type disparity_frames: depthai.Node.Output
+        @param frame: Output with 2D frame.
+        @type frame: depthai.Node.Output
         @return: The node object with input stream connected
-        @rtype: DepthColorTransform
+        @rtype: ApplyColormap
         """
-        self.link_args(disparity_frames)
+        self.link_args(frame)
         return self
 
-    def setMaxDisparity(self, max_disparity: int) -> None:
-        """Sets the maximum disparity value for normalization.
+    def process(self, frame: dai.Buffer) -> None:
+        """Processes incoming 2D frames and converts them to colored frames.
 
-        @param max_disparity: Maximum disparity value. If not set, uses frame's maximum
-            value. If set smaller than maximum of a frame, maximum of the frame will be
-            used instead.
-        @type max_disparity: int
+        @param frame: Input 2D frame.
+        @type frame: Map2D or dai.ImgFrame
         """
-        self._max_disparity = max_disparity
 
-    def process(self, disparity_frame: dai.Buffer) -> None:
-        """Processes incoming disparity frames and converts them to colored frames.
+        if isinstance(frame, dai.ImgFrame):
+            raw = frame.getFrame()
+        elif isinstance(frame, Map2D):
+            raw = frame.map
+        else:
+            raise ValueError("Unsupported 2D frame type")
 
-        @param disparity_frame: Input disparity/depth frame
-        @type disparity_frame: depthai.ImgFrame
-        """
-        assert isinstance(disparity_frame, dai.ImgFrame)
-
-        frame = disparity_frame.getFrame()
-        maxDisparity = max(self._max_disparity, frame.max())
-        if maxDisparity == 0:
-            colorizedDisparity = np.zeros(
-                (frame.shape[0], frame.shape[1], 3), dtype=np.uint8
+        max_value = max(self._max_value, raw.max())
+        if max_value == 0:
+            color = np.zeros(
+                (raw.shape[0], raw.shape[1], 3),
+                dtype=np.uint8,
             )
         else:
-            colorizedDisparity = cv2.applyColorMap(
-                ((frame / maxDisparity) * 255).astype(np.uint8), self._colormap
+            color = cv2.applyColorMap(
+                ((raw / max_value) * 255).astype(np.uint8),
+                self._colormap,
             )
-        resultFrame = dai.ImgFrame()
-        resultFrame.setCvFrame(colorizedDisparity, dai.ImgFrame.Type.BGR888i)
-        resultFrame.setTimestamp(disparity_frame.getTimestamp())
-        self.out.send(resultFrame)
+
+        frame_colorized = dai.ImgFrame()
+        frame_colorized.setCvFrame(
+            color,
+            (
+                dai.ImgFrame.Type.BGR888p
+                if self._platform == "RVC2"
+                else dai.ImgFrame.Type.BGR888i
+            ),
+        )
+        frame_colorized.setTimestamp(frame.getTimestamp())
+        frame_colorized.setSequenceNum(frame.getSequenceNum())
+
+        self.out.send(frame_colorized)
