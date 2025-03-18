@@ -1,4 +1,4 @@
-from .depth_color_transform import DepthColorTransform
+from .apply_colormap import ApplyColormap
 from .depth_merger import DepthMerger
 from .host_spatials_calc import HostSpatialsCalc
 from .parser_generator import ParserGenerator
@@ -26,9 +26,10 @@ from .parsers.yunet import YuNetParser
 from .parsing_neural_network import ParsingNeuralNetwork
 from .tiles_patcher import TilesPatcher
 from .tiling import Tiling
+from .overlay_frames import OverlayFrames
 
 __all__ = [
-    "DepthColorTransform",
+    "ApplyColormap",
     "DepthMerger",
     "Tiling",
     "TilesPatcher",
@@ -57,4 +58,5 @@ __all__ = [
     "BaseParser",
     "DetectionParser",
     "EmbeddingsParser",
+    "OverlayFrames",
 ]
