@@ -1,12 +1,13 @@
 import cv2
-import numpy as np
 import depthai as dai
+import numpy as np
 
-from depthai_nodes.message import Map2D, ImgDetectionsExtended
+from depthai_nodes.message import ImgDetectionsExtended, Map2D
 
 
 class ApplyColormap(dai.node.HostNode):
-    """A host node that applies a colormap to a given 2D array (e.g. depth maps, segmentation masks, heatmaps, etc.).
+    """A host node that applies a colormap to a given 2D array (e.g. depth maps,
+    segmentation masks, heatmaps, etc.).
 
     Attributes
     ----------

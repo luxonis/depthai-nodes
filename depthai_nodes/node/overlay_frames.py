@@ -3,7 +3,8 @@ import depthai as dai
 
 
 class OverlayFrames(dai.node.HostNode):
-    """A host node that receives two dai.ImgFrame objects and overlays them into a single dai.ImgFrame object.
+    """A host node that receives two dai.ImgFrame objects and overlays them into a
+    single dai.ImgFrame object.
 
     Attributes
     ----------
@@ -33,6 +34,11 @@ class OverlayFrames(dai.node.HostNode):
         )
 
     def SetBackgroundWeight(self, background_weight: float) -> None:
+        """Sets the weight of the background frame in the overlay.
+
+        @param background_weight: The weight of the background frame in the overlay.
+        @type background_weight: float
+        """
         assert isinstance(background_weight, float)
         assert 0.0 <= background_weight <= 1.0
         self._background_weight = background_weight
@@ -40,10 +46,26 @@ class OverlayFrames(dai.node.HostNode):
     def build(
         self, background: dai.Node.Output, foreground: dai.Node.Output
     ) -> "OverlayFrames":
+        """Configures the node connections.
+
+        @param background: The input message for the background frame.
+        @type background: dai.Node.Output
+        @param foreground: The input message for the foreground frame.
+        @type foreground: dai.Node.Output
+        @return: The node object with the background and foreground streams overlaid.
+        @rtype: OverlayFrames
+        """
         self.link_args(background, foreground)
         return self
 
     def process(self, background: dai.Buffer, foreground: dai.Buffer) -> None:
+        """Processes incoming background and foreground frames and overlays them.
+
+        @param background: The input message for the background frame.
+        @type background: dai.ImgFrame
+        @param foreground: The input message for the foreground frame.
+        @type foreground: dai.ImgFrame
+        """
         assert isinstance(background, dai.ImgFrame)
         assert isinstance(foreground, dai.ImgFrame)
 
