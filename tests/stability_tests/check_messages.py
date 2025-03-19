@@ -492,3 +492,5 @@ def check_output(message, model_slug, parser_name):
         check_detection_msg(message, expected_output)
     elif expected_output["parser"] == "YOLOExtendedParser":
         check_detection_msg(message, expected_output)
+    elif expected_output["parser"] == "DetectionParser":
+        check_detection_msg(message, expected_output)

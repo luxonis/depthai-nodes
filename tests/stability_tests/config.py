@@ -26,4 +26,5 @@ parsers_slugs = {
     ],
     "YuNetParser": ["luxonis/yunet:320x240"],
     "RegressionParser": ["luxonis/gaze-estimation-adas:60x60"],
+    "DetectionParser": ["luxonis/mobile-object-localizer:192x192"],
 }

@@ -15,7 +15,7 @@ def to_planar(arr: np.ndarray, shape: Tuple) -> np.ndarray:
     @return: A 1D NumPy array with the planar image data.
     @rtype: np.ndarray
     """
-    if arr.shape[:2] == shape:
+    if np.array_equal(arr.shape[:2], shape):
         resized = arr
     else:
         resized = cv2.resize(arr, shape)

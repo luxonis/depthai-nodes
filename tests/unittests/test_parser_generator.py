@@ -1,6 +1,6 @@
 import depthai as dai
 import pytest
-from integration_tests.conftest import PipelineMock
+from stability_tests.conftest import PipelineMock
 
 from depthai_nodes.node import ParserGenerator
 
