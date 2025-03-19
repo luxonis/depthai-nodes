@@ -95,6 +95,16 @@ def main():
         else:
             raise RuntimeError("Pipeline crashed.") from e
 
+    if run_all:
+        try:
+            subprocess.run(
+                f"pytest ../unittests/test_nodes --duration {duration} -v --tb=short -r a --log-cli-level=DEBUG --color=yes",
+                shell=True,
+                check=True,
+            )
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError("Pipeline crashed.") from e
+
 
 if __name__ == "__main__":
     main()

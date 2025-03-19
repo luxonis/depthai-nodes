@@ -11,7 +11,7 @@ def pytest_addoption(parser):
     parser.addoption("--parsers", default="", type=str, help="Parsers to test.")
     parser.addoption(
         "--duration",
-        default=10,
+        default=None,
         type=int,
         help="Duration of the test in seconds.",
     )
