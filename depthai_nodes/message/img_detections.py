@@ -267,6 +267,16 @@ class ImgDetectionsExtended(dai.Buffer):
                 )
         self._transformation = value
 
+    def setTransformation(self, transformation: dai.ImgTransformation):
+        """Sets the Image Transformation object.
+
+        @param transformation: The Image Transformation object.
+        @type transformation: dai.ImgTransformation
+        @raise TypeError: If value is not a dai.ImgTransformation object.
+        """
+
+        self.transformation = transformation
+
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
         img_annotations = dai.ImgAnnotations()
         annotation = dai.ImgAnnotation()

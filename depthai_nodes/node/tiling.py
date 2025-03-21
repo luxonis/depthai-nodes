@@ -294,7 +294,7 @@ class Tiling(dai.node.HostNode):
         self.tile_positions = []
         # add a whole image as a tile with index 0 (hence the first to go)
         if self.global_detection:
-            scale = min(self.nn_shape / img_width, self.nn_shape / img_height)
+            scale = min(self.nn_shape[0] / img_width, self.nn_shape[1] / img_height)
             scaled_width = int(img_width * scale)
             scaled_height = int(img_height * scale)
             self.tile_positions.append(

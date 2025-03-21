@@ -16,6 +16,9 @@ class Queue:
     def send(self, item):
         self._messages.append(item)
 
+    def is_empty(self):
+        return len(self._messages) == 0
+
 
 class Output:
     def __init__(self):
@@ -72,6 +75,9 @@ class HostNodeMock:
         o = Output()
         o.setPossibleDatatypes(possibleDatatypes)
         return o
+
+    def sendProcessingToPipeline(self, send: bool):
+        self._sendProcessingToPipeline = send
 
 
 def pytest_configure():

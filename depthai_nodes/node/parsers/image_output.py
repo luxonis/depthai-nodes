@@ -45,6 +45,10 @@ class ImageOutputParser(BaseParser):
         self.output_layer_name = output_layer_name
         self.output_is_bgr = output_is_bgr
 
+        self._platform = (
+            self.getParentPipeline().getDefaultDevice().getPlatformAsString()
+        )
+
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
 
@@ -111,6 +115,11 @@ class ImageOutputParser(BaseParser):
             image_message = create_image_message(
                 image=image,
                 is_bgr=self.output_is_bgr,
+                img_frame_type=(
+                    dai.ImgFrame.Type.BGR888p
+                    if self._platform == "RVC2"
+                    else dai.ImgFrame.Type.BGR888i
+                ),
             )
             image_message.setTimestamp(output.getTimestamp())
             if output.getTransformation():

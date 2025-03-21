@@ -1,8 +1,12 @@
-# Integration tests for Parsers in Depthai-nodes
+# Stability tests for parsers and host nodes in Depthai-nodes
 
 ## Overview
 
-This directory contains integration tests for parsers in DepthAI-nodes. These tests are designed to simulate a neural network output and send it to the parser node. The parser node will parse the output and return the message. The tests check if the parser outputs the expected message. Since we know what `NNData` we are sending to the parser, we can check if the outputed message is correct.
+This directory contains stability tests for parsers and host nodes in DepthAI-nodes. These tests are designed to simulate a neural network output and send it to the parser node. The parser node will parse the output and return the message. The tests check if the parser outputs the expected message. Since we know what `NNData` we are sending to the parser, we can check if the outputed message is correct.
+
+The stability tests runs without the device. It uses the mock pipeline and mock queues to send the `NNData` to the parser node and check the output.
+
+The tests for parsers pipeline are in this directory while the stability tests for host nodes re-use their unit tests by running them for specified amount of time.
 
 The testing pipeline is as follows:
 
@@ -66,7 +70,7 @@ You would need the B2 credentials to download the tests from the bucket and set 
 
 ## Running the tests in the CI
 
-The integration tests are triggered in every PR. But you can also trigger them manually. Required parameters are:
+The stability tests are triggered in every PR. But you can also trigger them manually. Required parameters are:
 
 - `additional-parameter`: The parameter that specifies the desired test. Default is `-all` which runs tests on all parsers. The available options are: `-all`, `-p <parser_name>`.
 - `depthai-version`: The version of the DepthAI that will be used for the tests. Default is `3.0.0a13`.

@@ -1,6 +1,6 @@
 import time
 from collections import deque
-from typing import List, Tuple, Type, Union
+from typing import List, Optional, Tuple, Type, Union
 
 import depthai as dai
 from pytest import Config
@@ -119,6 +119,40 @@ class Output:
 
     def link(self, node):
         pass
+
+
+class HostNodeMock:
+    """Mock class for the depthai HostNode.
+
+    The class is used to create a mock pipeline for testing purposes.
+    """
+
+    def __init__(self):
+        self._output = OutputQueue()
+        self._parent_pipeline = None
+        self._input = Input()
+        self._linked_args: Optional[Tuple[Output, ...]] = None
+        self._sendProcessingToPipeline = False
+
+    def link_args(self, *args):
+        for arg in args:
+            assert isinstance(arg, Output)
+        self._linked_args = args
+
+    @property
+    def out(self):
+        return self._output
+
+    @property
+    def output(self):
+        return self._output
+
+    @output.setter
+    def output(self, output):
+        self._output = output
+
+    def createOutput(self, possibleDatatypes: List[Tuple[dai.DatatypeEnum, bool]]):
+        return self._output
 
 
 class ThreadedHostNodeMock:
@@ -250,7 +284,8 @@ class PipelineMock:
                 """Concrete parser class that implements the abstract methods of the
                 BaseParser."""
 
-                def __init__(self):
+                def __init__(self, parent_pipeline: PipelineMock):
+                    self.parent_pipeline = parent_pipeline
                     super().__init__()
                     self._input = InfiniteInput()
                     self._out = Output()
@@ -291,7 +326,10 @@ class PipelineMock:
                 def setIsRunning(self, is_running: bool):
                     self._is_running = is_running
 
-            node = ParserMock()
+                def getParentPipeline(self):
+                    return self.parent_pipeline
+
+            node = ParserMock(self)
 
         elif node_type == dai.node.DetectionParser:
             node = DetectionParserMock()
@@ -343,3 +381,4 @@ def pytest_configure(config: Config):
 
     dai.Pipeline = PipelineMock
     dai.node.ThreadedHostNode = ThreadedHostNodeMock
+    dai.node.HostNode = HostNodeMock

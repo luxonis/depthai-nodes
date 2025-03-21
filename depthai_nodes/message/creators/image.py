@@ -6,6 +6,7 @@ import numpy as np
 def create_image_message(
     image: np.ndarray,
     is_bgr: bool = True,
+    img_frame_type: dai.ImgFrame.Type = dai.ImgFrame.Type.BGR888i,
 ) -> dai.ImgFrame:
     """Create a DepthAI message for an image array.
 
@@ -14,6 +15,8 @@ def create_image_message(
     @param is_bgr: If True, the image is in BGR format. If False, the image is in RGB
         format. Defaults to True.
     @type is_bgr: bool
+    @param img_frame_type: Output ImgFrame type. Defaults to BGR888i.
+    @type img_frame_type: dai.ImgFrame.Type
     @return: dai.ImgFrame object containing the image information.
     @rtype: dai.ImgFrame
     @raise ValueError: If the image shape is not CHW or HWC.
@@ -41,11 +44,10 @@ def create_image_message(
     else:
         if not is_bgr:
             image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        img_frame_type = dai.ImgFrame.Type.BGR888i  # HWC BGR image
         height, width, _ = image.shape
 
     imgFrame = dai.ImgFrame()
-    imgFrame.setFrame(image)
+    imgFrame.setCvFrame(image, img_frame_type)
     imgFrame.setWidth(width)
     imgFrame.setHeight(height)
     imgFrame.setType(img_frame_type)

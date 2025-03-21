@@ -179,7 +179,7 @@ class ClassificationSequenceParser(ClassificationParser):
                 ignored_indexes=self.ignored_indexes,
                 concatenate_classes=self.concatenate_classes,
             )
-            msg.transformation = output.getTransformation()
+            msg.setTransformation(output.getTransformation())
             msg.setTimestamp(output.getTimestamp())
             msg.setSequenceNum(output.getSequenceNum())
 

@@ -205,7 +205,7 @@ class MPPalmDetectionParser(DetectionParser):
                 label_names=label_names,
             )
             detections_msg.setTimestamp(output.getTimestamp())
-            detections_msg.transformation = output.getTransformation()
+            detections_msg.setTransformation(output.getTransformation())
             detections_msg.setSequenceNum(output.getSequenceNum())
 
             self.out.send(detections_msg)
