@@ -10,6 +10,9 @@ class Queue:
     def get(self):
         return self._messages.pop(0)
 
+    def get_all(self):
+        return self._messages
+
     def send(self, item):
         self._messages.append(item)
 
@@ -28,6 +31,14 @@ class Output:
     def send(self, message):
         for queue in self._queues:
             queue.send(message)
+
+    def trySend(self, message):
+        for queue in self._queues:
+            queue.send(message)
+        return True
+
+    def returnQueue(self):
+        return self._queues
 
     def createOutputQueue(self):
         queue = Queue()
@@ -58,7 +69,9 @@ class HostNodeMock:
         self._output = output
 
     def createOutput(self, possibleDatatypes: List[Tuple[dai.DatatypeEnum, bool]]):
-        return self._output
+        o = Output()
+        o.setPossibleDatatypes(possibleDatatypes)
+        return o
 
 
 def pytest_configure():
