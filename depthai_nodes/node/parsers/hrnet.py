@@ -113,7 +113,7 @@ class HRNetParser(KeypointParser):
                 confidence_threshold=self.score_threshold,
             )
             keypoints_message.setTimestamp(output.getTimestamp())
-            keypoints_message.transformation = output.getTransformation()
+            keypoints_message.setTransformation(output.getTransformation())
             keypoints_message.setSequenceNum(output.getSequenceNum())
 
             self.out.send(keypoints_message)

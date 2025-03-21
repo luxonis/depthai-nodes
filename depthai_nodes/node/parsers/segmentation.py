@@ -153,7 +153,7 @@ class SegmentationParser(BaseParser):
 
             mask_message = create_segmentation_message(class_map)
             mask_message.setTimestamp(output.getTimestamp())
-            mask_message.transformation = output.getTransformation()
+            mask_message.setTransformation(output.getTransformation())
             mask_message.setSequenceNum(output.getSequenceNum())
 
             self.out.send(mask_message)
