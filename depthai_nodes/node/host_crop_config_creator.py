@@ -1,5 +1,3 @@
-from typing import Optional
-
 import depthai as dai
 import numpy as np
 
@@ -48,16 +46,14 @@ class CropConfigsCreatorNode(dai.node.HostNode):
                 dai.Node.DatatypeHierarchy(dai.DatatypeEnum.Buffer, True)
             ]
         )
-        print(self.detections_output)
-        print(self.config_output)
-        self._w: Optional[int] = None
-        self._h: Optional[int] = None
-        self._target_w: Optional[int] = None
-        self._target_h: Optional[int] = None
-        self._n_detections: Optional[int] = None
+        self._w: int = None
+        self._h: int = None
+        self._target_w: int = None
+        self._target_h: int = None
+        self._n_detections: int = None
 
     @property
-    def w(self) -> Optional[int]:
+    def w(self) -> int:
         """Returns the width of the source image.
 
         @return: Width of the source image.
@@ -66,7 +62,7 @@ class CropConfigsCreatorNode(dai.node.HostNode):
         return self._w
 
     @property
-    def h(self) -> Optional[int]:
+    def h(self) -> int:
         """Returns the height of the source image.
 
         @return: Height of the source image.
@@ -75,7 +71,7 @@ class CropConfigsCreatorNode(dai.node.HostNode):
         return self._h
 
     @property
-    def target_w(self) -> Optional[int]:
+    def target_w(self) -> int:
         """Returns the width of the target image.
 
         @return: Width of the target image.
@@ -84,7 +80,7 @@ class CropConfigsCreatorNode(dai.node.HostNode):
         return self._target_w
 
     @property
-    def target_h(self) -> Optional[int]:
+    def target_h(self) -> int:
         """Returns the height of the target image.
 
         @return: Height of the target image.
@@ -93,7 +89,7 @@ class CropConfigsCreatorNode(dai.node.HostNode):
         return self._target_h
 
     @property
-    def n_detections(self) -> Optional[int]:
+    def n_detections(self) -> int:
         """Returns the number of detections to keep.
 
         @return: Number of detections to keep.
@@ -200,10 +196,9 @@ class CropConfigsCreatorNode(dai.node.HostNode):
         """Process the input detections and create crop configurations. This function is
         ran every time a new ImgDetectionsExtended message is received.
 
-        Sends the first n detections to the detections_output link and crop
-        configurations to the config_output link. The first crop config has the
-        setReusePreviousImage flag set to False, which changes the previous frame for a
-        new one.
+        Sends the first n  crop configurations to the config_output link in addition
+        send an ImgDetectionsExtended object containing the corresponding detections to
+        the detections_output link.
         """
         assert isinstance(detections_input, ImgDetectionsExtended)
         detections = detections_input.detections
@@ -242,7 +237,7 @@ class CropConfigsCreatorNode(dai.node.HostNode):
         detections_msg = ImgDetectionsExtended()
         detections_msg.setSequenceNum(sequence_num)
         detections_msg.setTimestamp(timestamp)
-        detections_msg.setTransformation(detections_input.getTransformation())
+        detections_msg.setTransformation(detections_input.transformation)
         detections_msg.detections = detections_to_keep
 
         if detections_input.masks.ndim == 2:
@@ -250,7 +245,8 @@ class CropConfigsCreatorNode(dai.node.HostNode):
                 detections_input.masks >= num_detections, -1, detections_input.masks
             )
             detections_msg.masks = masks
-        self.detections_output.send(detections_input)
+
+        self.detections_output.send(detections_msg)
 
     def _validate_positive_integer(self, value: int):
         """Validates that the set size is a positive integer.
