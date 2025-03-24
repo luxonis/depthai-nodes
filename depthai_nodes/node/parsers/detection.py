@@ -162,9 +162,13 @@ class DetectionParser(BaseParser):
 
                 bboxes = xyxy_to_xywh(bboxes)
 
-                message = create_detection_message(bboxes=bboxes, scores=scores)
-                message.transformation = output.getTransformation()
-                message.setTimestamp(output.getTimestamp())
-                message.setSequenceNum(output.getSequenceNum())
+            else:
+                bboxes = np.array([])
+                scores = np.array([])
 
-                self.out.send(message)
+            message = create_detection_message(bboxes=bboxes, scores=scores)
+            message.transformation = output.getTransformation()
+            message.setTimestamp(output.getTimestamp())
+            message.setSequenceNum(output.getSequenceNum())
+
+            self.out.send(message)
