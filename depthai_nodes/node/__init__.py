@@ -1,5 +1,6 @@
 from .depth_color_transform import DepthColorTransform
 from .depth_merger import DepthMerger
+from .detections_recognitions_sync import DetectionsRecognitionsSync
 from .host_spatials_calc import HostSpatialsCalc
 from .parser_generator import ParserGenerator
 from .parsers.base_parser import BaseParser
