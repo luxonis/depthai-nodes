@@ -58,4 +58,5 @@ __all__ = [
     "BaseParser",
     "DetectionParser",
     "EmbeddingsParser",
+    "DetectionsRecognitionsSync",
 ]

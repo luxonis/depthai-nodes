@@ -1,5 +1,6 @@
 from .classification import Classifications
 from .clusters import Cluster, Clusters
+from .detected_recognitions import DetectedRecognitions
 from .img_detections import (
     ImgDetectionExtended,
     ImgDetectionsExtended,
@@ -9,8 +10,6 @@ from .lines import Line, Lines
 from .map import Map2D
 from .prediction import Prediction, Predictions
 from .segmentation import SegmentationMask
-from .detected_recognitions import DetectedRecognitions
-
 
 __all__ = [
     "ImgDetectionExtended",

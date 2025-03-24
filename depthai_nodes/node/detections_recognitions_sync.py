@@ -1,7 +1,10 @@
-from queue import PriorityQueue
 import time
+from queue import PriorityQueue
+from typing import Dict, List, Optional, Union
+
 import depthai as dai
-from depthai_nodes import ImgDetectionsExtended, DetectedRecognitions
+
+from depthai_nodes import DetectedRecognitions, ImgDetectionsExtended
 
 
 class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
@@ -11,9 +14,12 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._camera_fps = 30
-        self._unmatched_recognitions: list[dai.NNData] = []
-        self._recognitions_by_detection_ts: dict[float, list[dai.NNData]] = {}
-        self._detections: dict[float, dai.ImgDetections | dai.SpatialImgDetections | ImgDetectionsExtended] = {}
+        self._unmatched_recognitions: List[dai.NNData] = []
+        self._recognitions_by_detection_ts: Dict[float, List[dai.NNData]] = {}
+        self._detections: Dict[
+            float,
+            Union[dai.ImgDetections, dai.SpatialImgDetections, ImgDetectionsExtended],
+        ] = {}
         self._ready_timestamps = PriorityQueue()
 
         self.input_recognitions = dai.Node.Input(self)
@@ -58,14 +64,17 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
         else:
             self._unmatched_recognitions.append(recognition)
 
-    def _get_matching_detection_ts(self, recognition_ts: float) -> float | None:
+    def _get_matching_detection_ts(self, recognition_ts: float) -> Optional[float]:
         for detection_ts in self._detections.keys():
             if self._timestamps_in_tolerance(detection_ts, recognition_ts):
                 return detection_ts
         return None
 
     def _add_detection(
-        self, detection: dai.ImgDetections | dai.SpatialImgDetections | ImgDetectionsExtended
+        self,
+        detection: Union[
+            dai.ImgDetections, dai.SpatialImgDetections, ImgDetectionsExtended
+        ],
     ) -> None:
         detection_ts = self._get_total_seconds_ts(detection)
         self._detections[detection_ts] = detection
@@ -73,7 +82,7 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
         self._update_ready_timestamps(detection_ts)
 
     def _try_match_recognitions(self, detection_ts: float) -> None:
-        matched_recognitions: list[dai.NNData] = []
+        matched_recognitions: List[dai.NNData] = []
         for recognition in self._unmatched_recognitions:
             recognition_ts = self._get_total_seconds_ts(recognition)
             if self._timestamps_in_tolerance(detection_ts, recognition_ts):
@@ -114,7 +123,7 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
 
         return len(detections.detections) == len(recognitions)
 
-    def _pop_ready_data(self) -> DetectedRecognitions | None:
+    def _pop_ready_data(self) -> Optional[DetectedRecognitions]:
         if self._ready_timestamps.empty():
             return None
 
