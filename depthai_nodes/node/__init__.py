@@ -1,5 +1,6 @@
 from .depth_color_transform import DepthColorTransform
 from .depth_merger import DepthMerger
+from .host_crop_config_creator import CropConfigsCreatorNode
 from .host_spatials_calc import HostSpatialsCalc
 from .parser_generator import ParserGenerator
 from .parsers.base_parser import BaseParser
@@ -57,4 +58,5 @@ __all__ = [
     "BaseParser",
     "DetectionParser",
     "EmbeddingsParser",
+    "CropConfigsCreatorNode",
 ]
