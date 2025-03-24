@@ -141,7 +141,7 @@ class ClassificationParser(BaseParser):
                 scores = softmax(scores)
 
             msg = create_classification_message(self.classes, scores)
-            msg.transformation = output.getTransformation()
+            msg.setTransformation(output.getTransformation())
             msg.setTimestamp(output.getTimestamp())
             msg.setSequenceNum(output.getSequenceNum())
 

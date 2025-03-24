@@ -284,7 +284,8 @@ class PipelineMock:
                 """Concrete parser class that implements the abstract methods of the
                 BaseParser."""
 
-                def __init__(self):
+                def __init__(self, parent_pipeline: PipelineMock):
+                    self.parent_pipeline = parent_pipeline
                     super().__init__()
                     self._input = InfiniteInput()
                     self._out = Output()
@@ -325,7 +326,10 @@ class PipelineMock:
                 def setIsRunning(self, is_running: bool):
                     self._is_running = is_running
 
-            node = ParserMock()
+                def getParentPipeline(self):
+                    return self.parent_pipeline
+
+            node = ParserMock(self)
 
         elif node_type == dai.node.DetectionParser:
             node = DetectionParserMock()
