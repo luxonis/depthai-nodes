@@ -27,6 +27,7 @@ from .parsers.yunet import YuNetParser
 from .parsing_neural_network import ParsingNeuralNetwork
 from .tiles_patcher import TilesPatcher
 from .tiling import Tiling
+from .img_detections_bridge import ImgDetectionsBridge
 
 __all__ = [
     "ApplyColormap",
@@ -59,4 +60,5 @@ __all__ = [
     "DetectionParser",
     "EmbeddingsParser",
     "OverlayFrames",
+    "ImgDetectionsBridge",
 ]
