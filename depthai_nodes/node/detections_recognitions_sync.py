@@ -51,33 +51,9 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
             Union[dai.ImgDetections, dai.SpatialImgDetections, ImgDetectionsExtended],
         ] = {}
         self._ready_timestamps = PriorityQueue()
-
-    @property
-    def input_recognitions(self) -> dai.Node.Input:
-        """Returns the input for recognitions.
-
-        @return: Input for recognitions.
-        @rtype: dai.Node.Input
-        """
-        return self._input_recognitions
-
-    @property
-    def input_detections(self) -> dai.Node.Input:
-        """Returns the input for detections.
-
-        @return: Input for detections.
-        @rtype: dai.Node.Input
-        """
-        return self._input_detections
-
-    @property
-    def out(self) -> dai.Node.Output:
-        """Returns the output for detected recognitions.
-
-        @return: Output for detected recognitions.
-        @rtype: dai.Node.Output
-        """
-        return self._output
+        self.input_recognitions = self.createInput()
+        self.input_detections = self.createInput()
+        self.output = self.createOutput()
 
     def build(self) -> "DetectionsRecognitionsSync":
         return self
