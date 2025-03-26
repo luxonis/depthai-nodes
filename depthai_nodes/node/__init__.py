@@ -28,6 +28,7 @@ from .parsing_neural_network import ParsingNeuralNetwork
 from .tiles_patcher import TilesPatcher
 from .tiling import Tiling
 from .img_detections_bridge import ImgDetectionsBridge
+from .img_detections_filter import ImgDetectionsFilter
 
 __all__ = [
     "ApplyColormap",
@@ -61,4 +62,5 @@ __all__ = [
     "EmbeddingsParser",
     "OverlayFrames",
     "ImgDetectionsBridge",
+    "ImgDetectionsFilter",
 ]
