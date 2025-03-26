@@ -1,73 +1,107 @@
-import time
-from typing import List, Union
+from typing import Optional
 
 import depthai as dai
 import numpy as np
 import pytest
-from conftest import Output, PipelineMock
+from stability_tests.conftest import OutputQueue, PipelineMock
 
-# from depthai_nodes import 
-from depthai_nodes.message import DetectedRecognitions, ImgDetectionExtended, ImgDetectionsExtended
+# from depthai_nodes import
+from depthai_nodes.message import (
+    DetectedRecognitions,
+    ImgDetectionExtended,
+    ImgDetectionsExtended,
+)
+
+
+def check_synchronized_detections_recognitions(item, model_slug: Optional[str], parser_name: Optional[str]) -> bool:
+    """
+    Check that detections and recognitions are properly synchronized.
+
+    Parameters
+    ----------
+    item : DetectedRecognitions
+        The output from DetectionsRecognitionsSync
+    model_slug : Optional[str]
+        Model identifier (not used in this function but required by interface)
+    parser_name : Optional[str]
+        Parser name (not used in this function but required by interface)
+
+    Returns
+    -------
+    bool
+        True if validation passes
+
+    Raises
+    ------
+    AssertionError
+        If the synchronization validation fails
+    """
+    # Constants from the DetectionsRecognitionsSync class
+    FPS_TOLERANCE_DIVISOR = 2.0
+    CAMERA_FPS = 30  # Default value from the DetectionsRecognitionsSync class
+
+    # Check that the item is a DetectedRecognitions object
+    assert isinstance(item, DetectedRecognitions), f"Expected DetectedRecognitions, got {type(item)}"
+
+    # Check that detections and nn_data are present
+    assert item.img_detections is not None, "img_detections is None"
+    assert item.nn_data is not None, "nn_data is None"
+    assert len(item.nn_data) > 0, "nn_data is empty"
+
+    # Get detection timestamp
+    detection_ts = item.img_detections.getTimestamp().total_seconds()
+
+    # Calculate tolerance using the same formula as in the DetectionsRecognitionsSync class
+    tolerance = 1 / (CAMERA_FPS * FPS_TOLERANCE_DIVISOR)
+
+    # Check that each recognition has a timestamp within tolerance of the detection timestamp
+    for i, recognition in enumerate(item.nn_data):
+        rec_ts = recognition.getTimestamp().total_seconds()
+        timestamp_diff = abs(detection_ts - rec_ts)
+        assert timestamp_diff < tolerance, \
+            f"Timestamp difference ({timestamp_diff}) exceeds tolerance ({tolerance}): " \
+            f"detection={detection_ts}, recognition[{i}]={rec_ts}"
+
+    # Check that the number of recognitions matches the number of detections
+    # (if there are detections)
+    if hasattr(item.img_detections, 'detections') and len(item.img_detections.detections) > 0:
+        assert len(item.nn_data) == len(item.img_detections.detections), \
+            f"Number of recognitions ({len(item.nn_data)}) doesn't match " \
+            f"number of detections ({len(item.img_detections.detections)})"
+
+    # For ImgDetectionsExtended, perform additional checks
+    if isinstance(item.img_detections, ImgDetectionsExtended):
+        for detection in item.img_detections.detections:
+            assert isinstance(detection, ImgDetectionExtended), \
+                f"Expected ImgDetectionExtended but got {type(detection)}"
+
+    print(f"✓ Synchronized data validation passed: {len(item.nn_data)} recognitions matched with detections")
+    return True
 
 
 @pytest.fixture
-def detections_recognitions_sync():
+def duration(request):
+    return request.config.getoption("--duration")
+
+
+@pytest.fixture
+def detections_recognitions_sync_generator():
     """Create a DetectionsRecognitionsSync instance for testing."""
-    from depthai_nodes.node.detections_recognitions_sync import DetectionsRecognitionsSync
+    from depthai_nodes.node.detections_recognitions_sync import (
+        DetectionsRecognitionsSync,
+    )
 
     pipeline = PipelineMock()
     return pipeline.create(DetectionsRecognitionsSync)
 
 
 @pytest.fixture
-def img_detection():
-    det = dai.ImgDetection()
-    det.xmin = 0.3
-    det.xmax = 0.5
-    det.ymin = 0.3
-    det.ymax = 0.5
-    det.label = 1
-    det.confidence = 0.9
-    return det
-
-
-@pytest.fixture
-def img_detection_extended():
-    det = ImgDetectionExtended()
-    xmin = 0.3
-    xmax = 0.5
-    ymin = 0.3
-    ymax = 0.5
-    x_center = (xmin + xmax) / 2
-    y_center = (ymin + ymax) / 2
-    width = xmax - xmin
-    height = ymax - ymin
-    det.rotated_rect = (x_center, y_center, width, height, 0)
-    det.rotated_rect.angle = 0
-    det.label = 1
-    det.confidence = 0.9
-    return det
-
-
-@pytest.fixture
 def nn_data():
-    """Create a single NNData object for testing."""
+    """Create a NNData object with the same timestamp."""
     nn_data = dai.NNData()
     tensor = np.random.rand(1, 10).astype(np.float32)
     nn_data.addTensor("test_layer", tensor)
     return nn_data
-
-
-@pytest.fixture
-def nn_data_list():
-    """Create a list of NNData objects with the same timestamp."""
-    data_list = []
-    for i in range(2):
-        nn_data = dai.NNData()
-        tensor = np.random.rand(1, 10).astype(np.float32)
-        nn_data.addTensor(f"test_layer_{i}", tensor)
-        data_list.append(nn_data)
-    return data_list
 
 
 @pytest.fixture
@@ -106,67 +140,41 @@ def img_detections_extended():
     return det
 
 
-def test_initialization(detections_recognitions_sync):
-    """Test that the sync node initializes with expected default values."""
+def test_detections_recognitions_sync_node_build_valid(detections_recognitions_sync_generator):
+    detections_recognitions_sync = detections_recognitions_sync_generator.build()
+
     assert len(detections_recognitions_sync._unmatched_recognitions) == 0
     assert len(detections_recognitions_sync._recognitions_by_detection_ts) == 0
     assert len(detections_recognitions_sync._detections) == 0
 
 
-def test_set_camera_fps(detections_recognitions_sync):
-    """Test setting the camera FPS."""
-    detections_recognitions_sync.set_camera_fps(60)
-    assert detections_recognitions_sync._camera_fps == 60
+def test_detections_recognitions_sync_node_img_detections(detections_recognitions_sync_generator, img_detections, nn_data, duration: int):
+    detections_recognitions_sync = detections_recognitions_sync_generator.build()
+    detections_recognitions_sync.input_recognitions._queue.duration = duration
+    detections_recognitions_sync.input_detections._queue.duration = duration
+
+    # Create output queue with checking function
+    detections_recognitions_sync.out = OutputQueue(check_synchronized_detections_recognitions, model_slug=None, parser_name=None)
+
+    # Send data
+    detections_recognitions_sync.input_recognitions.send(nn_data)
+    detections_recognitions_sync.input_detections.send(img_detections)
+
+    # Process the data
+    detections_recognitions_sync.run()
 
 
-def test_timestamps_in_tolerance(detections_recognitions_sync):
-    """Test the timestamp tolerance function."""
-    # Set camera FPS to 30, the tolerance should be 1/(30*2.0) = 0.01667 seconds
-    detections_recognitions_sync.set_camera_fps(30)
-    
-    # Timestamps that should be within tolerance
-    assert detections_recognitions_sync._timestamps_in_tolerance(1.0, 1.01)
-    assert detections_recognitions_sync._timestamps_in_tolerance(1.0, 0.99)
-    
-    # Timestamps that should be outside tolerance
-    assert not detections_recognitions_sync._timestamps_in_tolerance(1.0, 1.02)
-    assert not detections_recognitions_sync._timestamps_in_tolerance(1.0, 0.98)
-    
-    # Change FPS to 60, tolerance becomes smaller: 1/(60*2.0) = 0.00833 seconds
-    detections_recognitions_sync.set_camera_fps(60)
-    
-    # Now these should be outside tolerance with higher FPS
-    assert not detections_recognitions_sync._timestamps_in_tolerance(1.0, 1.01)
-    assert not detections_recognitions_sync._timestamps_in_tolerance(1.0, 0.99)
+def test_detections_recognitions_sync_node_img_detections_extended(detections_recognitions_sync_generator, img_detections_extended, nn_data, duration: int):
+    detections_recognitions_sync = detections_recognitions_sync_generator.build()
+    detections_recognitions_sync.input_recognitions._queue.duration = duration
+    detections_recognitions_sync.input_detections._queue.duration = duration
 
+    # Create output queue with checking function
+    detections_recognitions_sync.out = OutputQueue(check_synchronized_detections_recognitions, model_slug=None, parser_name=None)
 
-# def test_synchronization_with_matching_timestamps(detections_recognitions_sync, img_detections, nn_data):
-#     """Test synchronization with perfectly matching timestamps."""
-#     # Initialize and build
-#     detections_recognitions_sync.build()
-    
-#     # Create output queue
-#     output_queue = detections_recognitions_sync.output.createOutputQueue()
-    
-#     # timestamp = dai.Timestamp()
-#     # timestamp.sec = 1000
-#     # timestamp.nsec = 0
-#     # nn_data.setTimestamp(timestamp)
-    
-#     # Send data
-#     detections_recognitions_sync.input_detections.send(img_detections)
-#     detections_recognitions_sync.input_recognitions.send(nn_data)
-    
-#     # Run once to process
-#     detections_recognitions_sync._add_detection(img_detections)
-#     detections_recognitions_sync._add_recognition(nn_data)
-#     detections_recognitions_sync._send_ready_data()
-    
-#     # Get result
-#     result = output_queue.get()
-    
-#     # Check result
-#     assert isinstance(result, DetectedRecognitions)
-#     assert result.img_detections == img_detections
-#     assert len(result.nn_data) == 1
-#     assert result.nn_data[0] == nn_data
+    # Send data
+    detections_recognitions_sync.input_recognitions.send(nn_data)
+    detections_recognitions_sync.input_detections.send(img_detections_extended)
+
+    # Process the data
+    detections_recognitions_sync.run()

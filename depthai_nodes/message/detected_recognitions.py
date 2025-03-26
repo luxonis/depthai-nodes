@@ -6,17 +6,66 @@ from .img_detections import ImgDetectionsExtended
 
 
 class DetectedRecognitions(dai.Buffer):
-    def __init__(
-        self,
-        detections: Union[dai.ImgDetections, ImgDetectionsExtended],
-        nn_data: List[dai.NNData],
-    ) -> None:
-        super().__init__(0)
-        self.img_detections: Union[
-            dai.ImgDetections, ImgDetectionsExtended
-        ] = detections
-        self.nn_data: list[dai.NNData] = nn_data
+    """A class for storing image detections combined with neural network data.
 
-        self.setTimestampDevice(detections.getTimestampDevice())
-        self.setTimestamp(detections.getTimestamp())
-        self.setSequenceNum(detections.getSequenceNum())
+    Attributes
+    ----------
+    img_detections: Union[dai.ImgDetections, ImgDetectionsExtended]
+        Image detections with keypoints and masks.
+    nn_data: List[dai.NNData]
+        Neural network output data corresponding to the detections.
+    """
+
+    def __init__(self) -> None:
+        """Initializes the DetectedRecognitions object."""
+        super().__init__()
+        self._img_detections = None
+        self._nn_data = []
+
+    @property
+    def img_detections(self) -> Union[dai.ImgDetections, ImgDetectionsExtended]:
+        """Returns the image detections.
+
+        @return: Image detections with keypoints and masks.
+        @rtype: Union[dai.ImgDetections, ImgDetectionsExtended]
+        """
+        return self._img_detections
+
+    @img_detections.setter
+    def img_detections(self, value: Union[dai.ImgDetections, ImgDetectionsExtended]):
+        """Sets the image detections.
+
+        @param value: Image detections with keypoints and masks.
+        @type value: Union[dai.ImgDetections, ImgDetectionsExtended]
+        @raise TypeError: If value is not an ImgDetections or ImgDetectionsExtended object.
+        """
+        if not isinstance(value, (dai.ImgDetections, ImgDetectionsExtended)):
+            raise TypeError("img_detections must be an ImgDetections or ImgDetectionsExtended object.")
+        self._img_detections = value
+        self.setTimestampDevice(value.getTimestampDevice())
+        self.setTimestamp(value.getTimestamp())
+        self.setSequenceNum(value.getSequenceNum())
+
+    @property
+    def nn_data(self) -> List[dai.NNData]:
+        """Returns the neural network data.
+
+        @return: List of neural network data.
+        @rtype: List[dai.NNData]
+        """
+        return self._nn_data
+
+    @nn_data.setter
+    def nn_data(self, value: List[dai.NNData]):
+        """Sets the neural network data.
+
+        @param value: List of neural network data.
+        @type value: List[dai.NNData]
+        @raise TypeError: If value is not a list.
+        @raise TypeError: If each element is not a dai.NNData object.
+        """
+        if not isinstance(value, list):
+            raise TypeError("nn_data must be a list.")
+        if not all(isinstance(item, dai.NNData) for item in value):
+            raise TypeError("All items in nn_data must be dai.NNData objects.")
+        self._nn_data = value

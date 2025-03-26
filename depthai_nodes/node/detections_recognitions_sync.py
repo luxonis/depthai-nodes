@@ -10,8 +10,38 @@ from depthai_nodes import DetectedRecognitions, ImgDetectionsExtended
 class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
     FPS_TOLERANCE_DIVISOR = 2.0
     INPUT_CHECKS_PER_FPS = 100
+    """A class for synchronizing detections and recognitions.
+
+    Attributes
+    ----------
+    FPS_TOLERANCE_DIVISOR: float
+        Divisor for the FPS tolerance.
+    INPUT_CHECKS_PER_FPS: int
+        Number of input checks per FPS.
+    _camera_fps: int
+        The camera FPS.
+    _unmatched_recognitions: List[dai.NNData]
+        List of unmatched recognitions.
+    _recognitions_by_detection_ts: Dict[float, List[dai.NNData]]
+        Dictionary of recognitions by detection timestamp.
+    _detections: Dict[float, Union[dai.ImgDetections, dai.SpatialImgDetections, ImgDetectionsExtended]]
+        Dictionary of detections.
+    _ready_timestamps: PriorityQueue
+        Priority queue of ready timestamps.
+    input_recognitions: dai.Node.Input
+        Input for recognitions.
+    input_detections: dai.Node.Input
+        Input for detections.
+    output: dai.Node.Output
+        Output for detected recognitions.
+    """
 
     def __init__(self, *args, **kwargs) -> None:
+        """Initializes the DetectionsRecognitionsSync node.
+
+        @param args: Arguments to be passed to the ThreadedHostNode class.
+        @param kwargs: Keyword arguments to be passed to the ThreadedHostNode class.
+        """
         super().__init__(*args, **kwargs)
         self._camera_fps = 30
         self._unmatched_recognitions: List[dai.NNData] = []
@@ -22,9 +52,32 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
         ] = {}
         self._ready_timestamps = PriorityQueue()
 
-        self.input_recognitions = dai.Node.Input(self)
-        self.input_detections = dai.Node.Input(self)
-        self.output = dai.Node.Output(self)
+    @property
+    def input_recognitions(self) -> dai.Node.Input:
+        """Returns the input for recognitions.
+
+        @return: Input for recognitions.
+        @rtype: dai.Node.Input
+        """
+        return self._input_recognitions
+
+    @property
+    def input_detections(self) -> dai.Node.Input:
+        """Returns the input for detections.
+
+        @return: Input for detections.
+        @rtype: dai.Node.Input
+        """
+        return self._input_detections
+
+    @property
+    def out(self) -> dai.Node.Output:
+        """Returns the output for detected recognitions.
+
+        @return: Output for detected recognitions.
+        @rtype: dai.Node.Output
+        """
+        return self._output
 
     def build(self) -> "DetectionsRecognitionsSync":
         return self
@@ -128,10 +181,10 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
             return None
 
         timestamp = self._ready_timestamps.get()
-        detections = self._detections.pop(timestamp)
-        recognitions = self._recognitions_by_detection_ts.pop(timestamp, None)
-
-        return DetectedRecognitions(detections, recognitions)
+        detections_recognitions = DetectedRecognitions()
+        detections_recognitions.img_detections = self._detections.pop(timestamp)
+        detections_recognitions.nn_data = self._recognitions_by_detection_ts.pop(timestamp, None)
+        return detections_recognitions
 
     def _clear_old_data(self, ready_data: DetectedRecognitions) -> None:
         current_timestamp = self._get_total_seconds_ts(ready_data)
