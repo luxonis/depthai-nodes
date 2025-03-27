@@ -53,7 +53,7 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
         self._ready_timestamps = PriorityQueue()
         self.input_recognitions = self.createInput()
         self.input_detections = self.createInput()
-        self.output = self.createOutput()
+        self.out = self.createOutput()
 
     def build(self) -> "DetectionsRecognitionsSync":
         return self
@@ -63,12 +63,14 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
 
     def run(self) -> None:
         while self.isRunning():
-            input_recognitions = self.input_recognitions.tryGet()
+            try:
+                input_recognitions = self.input_recognitions.tryGet()
+                input_detections = self.input_detections.tryGet()
+            except dai.MessageQueue.QueueException:
+                break
             if input_recognitions:
                 self._add_recognition(input_recognitions)
                 self._send_ready_data()
-
-            input_detections = self.input_detections.tryGet()
             if input_detections:
                 self._add_detection(input_detections)
                 self._send_ready_data()
@@ -79,7 +81,7 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
         ready_data = self._pop_ready_data()
         if ready_data:
             self._clear_old_data(ready_data)
-            self.output.send(ready_data)
+            self.out.send(ready_data)
 
     def _add_recognition(self, recognition: dai.NNData) -> None:
         recognition_ts = self._get_total_seconds_ts(recognition)
@@ -159,7 +161,9 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
         timestamp = self._ready_timestamps.get()
         detections_recognitions = DetectedRecognitions()
         detections_recognitions.img_detections = self._detections.pop(timestamp)
-        detections_recognitions.nn_data = self._recognitions_by_detection_ts.pop(timestamp, None)
+        detections_recognitions.nn_data = self._recognitions_by_detection_ts.pop(
+            timestamp, None
+        )
         return detections_recognitions
 
     def _clear_old_data(self, ready_data: DetectedRecognitions) -> None:

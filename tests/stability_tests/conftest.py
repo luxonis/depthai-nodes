@@ -1,13 +1,9 @@
 import time
 from collections import deque
-from queue import PriorityQueue
 from typing import List, Optional, Tuple, Type, Union
 
 import depthai as dai
 from pytest import Config
-
-from depthai_nodes.message.detected_recognitions import DetectedRecognitions
-from depthai_nodes.node.detections_recognitions_sync import DetectionsRecognitionsSync
 
 
 class Queue:
@@ -42,7 +38,7 @@ class InfiniteQueue(Queue):
 
     def __init__(self):
         super().__init__()
-        self.duration = 5  # seconds
+        self.duration = 1  # seconds
         self.start_time = time.time()
 
     def send(self, item):
@@ -51,6 +47,15 @@ class InfiniteQueue(Queue):
     def get(self):
         if time.time() - self.start_time > self.duration:
             raise dai.MessageQueue.QueueException
+        element = self._messages.pop()
+        self.send(element)
+        return element
+
+    def tryGet(self):
+        if time.time() - self.start_time > self.duration:
+            raise dai.MessageQueue.QueueException
+        if len(self._messages) == 0:
+            return None
         element = self._messages.pop()
         self.send(element)
         return element
@@ -119,7 +124,7 @@ class Output:
             queue.send(message)
 
     def createOutputQueue(
-        self, checking_function, model_slug, parser_name
+        self, checking_function=None, model_slug=None, parser_name=None
     ) -> OutputQueue:
         queue = OutputQueue(
             checking_function=checking_function,
@@ -176,7 +181,7 @@ class ThreadedHostNodeMock:
     def __init__(self):
         self._output = OutputQueue()
         self._parent_pipeline = None
-        self._input = Input()
+        self._input = InfiniteInput()
 
     @property
     def input(self):
@@ -226,174 +231,6 @@ class NeuralNetworkMock:
         self._nn_archive = model
         self._input = input
         return self
-
-
-class DetectionsRecognitionsSyncMock(ThreadedHostNodeMock):
-    FPS_TOLERANCE_DIVISOR = 2.0
-    INPUT_CHECKS_PER_FPS = 100
-
-    def __init__(self):
-        super().__init__()
-        self._camera_fps = 30
-        self._unmatched_recognitions = []
-        self._recognitions_by_detection_ts = {}
-        self._detections = {}
-        self._ready_timestamps = PriorityQueue()
-
-        # Create inputs and outputs
-        self._input_recognitions = Input()
-        self._input_detections = Input()
-
-    @property
-    def input_recognitions(self):
-        return self._input_recognitions
-
-    @input_recognitions.setter
-    def input_recognitions(self, value):
-        self._input_recognitions = value
-
-    @property
-    def input_detections(self):
-        return self._input_detections
-
-    @input_detections.setter
-    def input_detections(self, value):
-        self._input_detections = value
-
-    def build(self):
-        return self
-
-    def set_camera_fps(self, fps: int):
-        self._camera_fps = fps
-
-    def isRunning(self):
-        return True
-
-    def run(self):
-        """Mock implementation of the run method."""
-        # Process all available recognition messages
-        while True:
-            input_recognitions = self.input_recognitions.tryGet()
-            if input_recognitions is None:
-                break
-
-            self._add_recognition(input_recognitions)
-            self._send_ready_data()
-
-        # Process all available detection messages
-        while True:
-            input_detections = self.input_detections.tryGet()
-            if input_detections is None:
-                break
-            self._add_detection(input_detections)
-            self._send_ready_data()
-
-    def _timestamps_in_tolerance(self, timestamp1, timestamp2):
-        difference = abs(timestamp1 - timestamp2)
-        return difference < (1 / self._camera_fps / self.FPS_TOLERANCE_DIVISOR)
-
-    def _get_total_seconds_ts(self, buffer_like):
-        return buffer_like.getTimestamp().total_seconds()
-
-    def _add_recognition(self, recognition):
-        recognition_ts = self._get_total_seconds_ts(recognition)
-        best_matching_detection_ts = self._get_matching_detection_ts(recognition_ts)
-        if best_matching_detection_ts is not None:
-            self._add_recognition_by_detection_ts(recognition, best_matching_detection_ts)
-            self._update_ready_timestamps(best_matching_detection_ts)
-        else:
-            self._unmatched_recognitions.append(recognition)
-
-    def _get_matching_detection_ts(self, recognition_ts):
-        for detection_ts in self._detections.keys():
-            if self._timestamps_in_tolerance(detection_ts, recognition_ts):
-                return detection_ts
-        return None
-
-    def _add_detection(self, detection):
-        detection_ts = self._get_total_seconds_ts(detection)
-        self._detections[detection_ts] = detection
-        self._try_match_recognitions(detection_ts)
-        self._update_ready_timestamps(detection_ts)
-
-    def _try_match_recognitions(self, detection_ts):
-        matched_recognitions = []
-        for recognition in self._unmatched_recognitions:
-            recognition_ts = self._get_total_seconds_ts(recognition)
-            if self._timestamps_in_tolerance(detection_ts, recognition_ts):
-                self._add_recognition_by_detection_ts(recognition, detection_ts)
-                matched_recognitions.append(recognition)
-
-        for matched_recognition in matched_recognitions:
-            self._unmatched_recognitions.remove(matched_recognition)
-
-    def _add_recognition_by_detection_ts(self, recognition, detection_ts):
-        if detection_ts in self._recognitions_by_detection_ts:
-            self._recognitions_by_detection_ts[detection_ts].append(recognition)
-        else:
-            self._recognitions_by_detection_ts[detection_ts] = [recognition]
-
-    def _update_ready_timestamps(self, timestamp):
-        if not self._timestamp_ready(timestamp):
-            return
-        self._ready_timestamps.put(timestamp)
-
-    def _timestamp_ready(self, timestamp):
-        detections = self._detections.get(timestamp)
-        if not detections:
-            return False
-        elif len(detections.detections) == 0:
-            return True
-
-        recognitions = self._recognitions_by_detection_ts.get(timestamp)
-        if not recognitions:
-            return False
-
-        return len(detections.detections) == len(recognitions)
-
-    def _pop_ready_data(self):
-        if self._ready_timestamps.empty():
-            return None
-
-        timestamp = self._ready_timestamps.get()
-        detections_recognitions = DetectedRecognitions()
-        detections_recognitions.img_detections = self._detections.pop(timestamp)
-        detections_recognitions.nn_data = self._recognitions_by_detection_ts.pop(timestamp, None)
-        return detections_recognitions
-
-    def _send_ready_data(self):
-        """Send ready data."""
-        ready_data = self._pop_ready_data()
-        if ready_data:
-            self._clear_old_data(ready_data)
-            self.out.send(ready_data)
-
-    def _clear_old_data(self, ready_data):
-        """Clear old data."""
-        current_timestamp = self._get_total_seconds_ts(ready_data)
-        self._clear_unmatched_recognitions(current_timestamp)
-        self._clear_old_detections(current_timestamp)
-
-    def _clear_unmatched_recognitions(self, current_timestamp):
-        """Clear unmatched recognitions."""
-        unmatched_recognitions_to_remove = []
-        for unmatched_recognition in self._unmatched_recognitions:
-            if self._get_total_seconds_ts(unmatched_recognition) < current_timestamp:
-                unmatched_recognitions_to_remove.append(unmatched_recognition)
-
-        for unmatched_recognition in unmatched_recognitions_to_remove:
-            self._unmatched_recognitions.remove(unmatched_recognition)
-
-    def _clear_old_detections(self, current_timestamp):
-        """Clear old detections."""
-        detection_keys_to_pop = []
-        for detection_ts in self._detections.keys():
-            if detection_ts < current_timestamp:
-                detection_keys_to_pop.append(detection_ts)
-
-        for detection_ts in detection_keys_to_pop:
-            self._detections.pop(detection_ts)
-            self._recognitions_by_detection_ts.pop(detection_ts, None)
 
 
 class DetectionParserMock:
@@ -514,17 +351,21 @@ class PipelineMock:
         elif node_type == dai.node.DetectionParser:
             node = DetectionParserMock()
 
-        elif node_type == DetectionsRecognitionsSync:
-            node = DetectionsRecognitionsSyncMock()
-
         else:
 
             class NodeMock(node_type):
                 def __init__(self, pipeline):
                     self._pipeline = pipeline
                     super().__init__()
-                    self._input = Input()
+                    if (
+                        self.__class__.__bases__[0].__bases__[0].__name__
+                        == "ThreadedHostNodeMock"
+                    ):
+                        self._input = InfiniteInput()
+                    else:
+                        self._input = Input()
                     self._out = Output()
+                    self._is_running = True
 
                 def getParentPipeline(self):
                     return self._pipeline
@@ -551,6 +392,28 @@ class PipelineMock:
                         super().setNNArchive(nn_archive)
                     else:
                         self._nn_archive = nn_archive
+
+                def createInput(self):
+                    if (
+                        self.__class__.__bases__[0].__bases__[0].__name__
+                        == "ThreadedHostNodeMock"
+                    ):
+                        self._input = InfiniteInput()
+                    else:
+                        self._input = Input()
+                    return self._input
+
+                def isRunning(self):
+                    return self._is_running
+
+                def setIsRunning(self, is_running: bool):
+                    self._is_running = is_running
+
+                def createOutput(
+                    self, possibleDatatypes: List[Tuple[dai.DatatypeEnum, bool]] = None
+                ):
+                    self._out = Output()
+                    return self._out
 
             node = NodeMock(self)
 
