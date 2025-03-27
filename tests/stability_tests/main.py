@@ -98,7 +98,7 @@ def main():
     if run_all:
         try:
             subprocess.run(
-                f"pytest ../unittests/test_nodes --duration {duration} -v --tb=short -r a --log-cli-level=DEBUG --color=yes",
+                f"pytest ../ --duration {duration} -v --tb=short -r a --log-cli-level=DEBUG --color=yes",
                 shell=True,
                 check=True,
             )

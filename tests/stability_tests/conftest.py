@@ -17,6 +17,11 @@ class Queue:
             return None
         return self._messages.pop()
 
+    def tryGet(self):
+        if len(self._messages) == 0:
+            return None
+        return self._messages.pop()
+
     def send(self, item):
         self._messages.append(item)
 
@@ -33,7 +38,7 @@ class InfiniteQueue(Queue):
 
     def __init__(self):
         super().__init__()
-        self.duration = 5  # seconds
+        self.duration = 1  # seconds
         self.start_time = time.time()
 
     def send(self, item):
@@ -42,6 +47,15 @@ class InfiniteQueue(Queue):
     def get(self):
         if time.time() - self.start_time > self.duration:
             raise dai.MessageQueue.QueueException
+        element = self._messages.pop()
+        self.send(element)
+        return element
+
+    def tryGet(self):
+        if time.time() - self.start_time > self.duration:
+            raise dai.MessageQueue.QueueException
+        if len(self._messages) == 0:
+            return None
         element = self._messages.pop()
         self.send(element)
         return element
@@ -78,6 +92,9 @@ class Input:
     def get(self):
         return self._queue.get()
 
+    def tryGet(self):
+        return self._queue.tryGet()
+
     def send(self, message):
         self._queue.send(message)
 
@@ -107,7 +124,7 @@ class Output:
             queue.send(message)
 
     def createOutputQueue(
-        self, checking_function, model_slug, parser_name
+        self, checking_function=None, model_slug=None, parser_name=None
     ) -> OutputQueue:
         queue = OutputQueue(
             checking_function=checking_function,
@@ -164,7 +181,7 @@ class ThreadedHostNodeMock:
     def __init__(self):
         self._output = OutputQueue()
         self._parent_pipeline = None
-        self._input = Input()
+        self._input = InfiniteInput()
 
     @property
     def input(self):
@@ -340,8 +357,15 @@ class PipelineMock:
                 def __init__(self, pipeline):
                     self._pipeline = pipeline
                     super().__init__()
-                    self._input = Input()
+                    if (
+                        self.__class__.__bases__[0].__bases__[0].__name__
+                        == "ThreadedHostNodeMock"
+                    ):
+                        self._input = InfiniteInput()
+                    else:
+                        self._input = Input()
                     self._out = Output()
+                    self._is_running = True
 
                 def getParentPipeline(self):
                     return self._pipeline
@@ -368,6 +392,28 @@ class PipelineMock:
                         super().setNNArchive(nn_archive)
                     else:
                         self._nn_archive = nn_archive
+
+                def createInput(self):
+                    if (
+                        self.__class__.__bases__[0].__bases__[0].__name__
+                        == "ThreadedHostNodeMock"
+                    ):
+                        self._input = InfiniteInput()
+                    else:
+                        self._input = Input()
+                    return self._input
+
+                def isRunning(self):
+                    return self._is_running
+
+                def setIsRunning(self, is_running: bool):
+                    self._is_running = is_running
+
+                def createOutput(
+                    self, possibleDatatypes: List[Tuple[dai.DatatypeEnum, bool]] = None
+                ):
+                    self._out = Output()
+                    return self._out
 
             node = NodeMock(self)
 
