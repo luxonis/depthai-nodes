@@ -35,7 +35,7 @@ class InfiniteQueue(Queue):
         super().__init__()
         self.duration = 5  # seconds
         self.start_time = time.time()
-        self.log_interval = 2  # seconds
+        self.log_interval = 1  # seconds
         self.time_after_last_log = time.time()
         self.log_counter = 1
 
