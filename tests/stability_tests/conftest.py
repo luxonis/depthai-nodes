@@ -1,3 +1,4 @@
+import logging
 import time
 from collections import deque
 from typing import List, Optional, Tuple, Type, Union
@@ -38,6 +39,7 @@ class InfiniteQueue(Queue):
         self.log_interval = 1  # seconds
         self.time_after_last_log = time.time()
         self.log_counter = 1
+        self.logger = logging.getLogger(__name__)
 
     def send(self, item):
         super().send(item)
@@ -52,7 +54,9 @@ class InfiniteQueue(Queue):
         if elapsed > self.log_interval:
             elapsed = self.log_counter * self.log_interval
             remaining = self.duration - elapsed
-            print(f"Test running... {elapsed:.1f}s elapsed, {remaining:.1f}s remaining")
+            self.logger.info(
+                f"Test running... {elapsed:.1f}s elapsed, {remaining:.1f}s remaining"
+            )
             self.time_after_last_log = current_time
             self.log_counter += 1
         element = self._messages.pop()
