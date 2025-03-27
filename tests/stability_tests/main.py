@@ -105,6 +105,8 @@ def main():
         except subprocess.CalledProcessError as e:
             raise RuntimeError("Pipeline crashed.") from e
 
+    print("All tests passed.")
+
 
 if __name__ == "__main__":
     main()
