@@ -37,10 +37,13 @@ class DetectedRecognitions(dai.Buffer):
 
         @param value: Image detections with keypoints and masks.
         @type value: Union[dai.ImgDetections, ImgDetectionsExtended]
-        @raise TypeError: If value is not an ImgDetections or ImgDetectionsExtended object.
+        @raise TypeError: If value is not an ImgDetections or ImgDetectionsExtended
+            object.
         """
         if not isinstance(value, (dai.ImgDetections, ImgDetectionsExtended)):
-            raise TypeError("img_detections must be an ImgDetections or ImgDetectionsExtended object.")
+            raise TypeError(
+                "img_detections must be an ImgDetections or ImgDetectionsExtended object."
+            )
         self._img_detections = value
         self.setTimestampDevice(value.getTimestampDevice())
         self.setTimestamp(value.getTimestamp())
