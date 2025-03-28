@@ -16,9 +16,6 @@ class ImgDetectionsBridge(dai.node.HostNode):
     def __init__(self) -> None:
         super().__init__()
 
-        self.input = self.createInput()
-        self.output = self.createOutput()
-
     def build(self, msg: dai.Node.Output) -> "ImgDetectionsBridge":
         """Configures the node connections.
 
@@ -50,7 +47,7 @@ class ImgDetectionsBridge(dai.node.HostNode):
         msg_transformed.setSequenceNum(msg.getSequenceNum())
         # msg_transformed.setTransformation(msg.getTransformation()) # TODO: uncomment once .setTransformation() and .getTransformation() are supported
 
-        self.output.send(msg_transformed)
+        self.out.send(msg_transformed)
 
     def _img_det_to_img_det_ext(
         self, img_dets: dai.ImgDetections
