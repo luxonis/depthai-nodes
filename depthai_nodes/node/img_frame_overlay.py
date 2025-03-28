@@ -26,7 +26,7 @@ class ImgFrameOverlay(dai.node.HostNode):
             self._platform = (
                 self.getParentPipeline().getDefaultDevice().getPlatformAsString()
             )
-        except:
+        except AttributeError:
             self._platform = None  # so that it doesn't crash when running unittests
 
     def SetBackgroundWeight(self, background_weight: float) -> None:

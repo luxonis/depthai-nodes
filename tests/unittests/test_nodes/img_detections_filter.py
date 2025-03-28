@@ -32,18 +32,18 @@ def img_detections_extended():
 
 def test_initialization():
     filter = ImgDetectionsFilter()
-    assert filter._labels_to_keep == None
-    assert filter._labels_to_reject == None
-    assert filter._confidence_threshold == None
-    assert filter._max_detections == None
+    assert filter._labels_to_keep is None
+    assert filter._labels_to_reject is None
+    assert filter._confidence_threshold is None
+    assert filter._max_detections is None
 
 
 def test_building():
     filter = ImgDetectionsFilter().build(Output())
-    assert filter._labels_to_keep == None
-    assert filter._labels_to_reject == None
-    assert filter._confidence_threshold == None
-    assert filter._max_detections == None
+    assert filter._labels_to_keep is None
+    assert filter._labels_to_reject is None
+    assert filter._confidence_threshold is None
+    assert filter._max_detections is None
 
     # labels
     filter = ImgDetectionsFilter().build(
@@ -51,13 +51,13 @@ def test_building():
         labels_to_keep=LABELS,
     )
     assert filter._labels_to_keep == LABELS
-    assert filter._labels_to_reject == None
+    assert filter._labels_to_reject is None
     with pytest.raises(ValueError):
         ImgDetectionsFilter().build(
             Output(),
             labels_to_reject=LABELS,
         )
-    assert filter._labels_to_keep == None
+    assert filter._labels_to_keep is None
     assert filter._labels_to_reject == LABELS
     with pytest.raises(ValueError):
         ImgDetectionsFilter().build(
@@ -88,7 +88,7 @@ def test_parameter_setting():
     filter.setLabels(LABELS, keep=True)
     assert filter._labels_to_keep == LABELS
     filter.setLabels(LABELS, keep=False)
-    assert filter._labels_to_keep == None
+    assert filter._labels_to_keep is None
     assert filter._labels_to_reject == LABELS
     with pytest.raises(ValueError):
         filter.setLabels("not a list", keep=True)

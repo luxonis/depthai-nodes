@@ -41,7 +41,7 @@ class ApplyColormap(dai.node.HostNode):
             self._platform = (
                 self.getParentPipeline().getDefaultDevice().getPlatformAsString()
             )
-        except:
+        except AttributeError:
             self._platform = None  # so that it doesn't crash when running unittests
 
     def setColormap(self, colormap_value: int) -> None:
