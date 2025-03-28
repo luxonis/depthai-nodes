@@ -2,7 +2,7 @@ import cv2
 import depthai as dai
 
 
-class OverlayFrames(dai.node.HostNode):
+class ImgFrameOverlay(dai.node.HostNode):
     """A host node that receives two dai.ImgFrame objects and overlays them into a
     single dai.ImgFrame object.
 
@@ -20,18 +20,14 @@ class OverlayFrames(dai.node.HostNode):
 
     def __init__(self, background_weight: float = 0.5) -> None:
         super().__init__()
-
-        self.output = self.createOutput(
-            possibleDatatypes=[
-                dai.Node.DatatypeHierarchy(dai.DatatypeEnum.ImgFrame, True)
-            ]
-        )
-
         self.SetBackgroundWeight(background_weight)
 
-        self._platform = (
-            self.getParentPipeline().getDefaultDevice().getPlatformAsString()
-        )
+        try:
+            self._platform = (
+                self.getParentPipeline().getDefaultDevice().getPlatformAsString()
+            )
+        except:
+            self._platform = None  # so that it doesn't crash when running unittests
 
     def SetBackgroundWeight(self, background_weight: float) -> None:
         """Sets the weight of the background frame in the overlay.
@@ -39,13 +35,15 @@ class OverlayFrames(dai.node.HostNode):
         @param background_weight: The weight of the background frame in the overlay.
         @type background_weight: float
         """
-        assert isinstance(background_weight, float)
-        assert 0.0 <= background_weight <= 1.0
+        if not isinstance(background_weight, float):
+            raise ValueError("Background weight must be a float")
+        if not 0.0 <= background_weight <= 1.0:
+            raise ValueError("Background weight must be between 0 and 1")
         self._background_weight = background_weight
 
     def build(
         self, background: dai.Node.Output, foreground: dai.Node.Output
-    ) -> "OverlayFrames":
+    ) -> "ImgFrameOverlay":
         """Configures the node connections.
 
         @param background: The input message for the background frame.
@@ -53,7 +51,7 @@ class OverlayFrames(dai.node.HostNode):
         @param foreground: The input message for the foreground frame.
         @type foreground: dai.Node.Output
         @return: The node object with the background and foreground streams overlaid.
-        @rtype: OverlayFrames
+        @rtype: ImgFrameOverlay
         """
         self.link_args(background, foreground)
         return self
@@ -91,12 +89,12 @@ class OverlayFrames(dai.node.HostNode):
         overlay.setCvFrame(
             overlay_frame,
             (
-                dai.ImgFrame.Type.BGR888p
-                if self._platform == "RVC2"
-                else dai.ImgFrame.Type.BGR888i
+                dai.ImgFrame.Type.BGR888i
+                if self._platform == "RVC4"
+                else dai.ImgFrame.Type.BGR888p
             ),
         )
         overlay.setTimestamp(background.getTimestamp())
         overlay.setSequenceNum(background.getSequenceNum())
 
-        self.output.send(overlay)
+        self.out.send(overlay)

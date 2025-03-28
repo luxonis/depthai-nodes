@@ -1,7 +1,7 @@
 from .apply_colormap import ApplyColormap
 from .depth_merger import DepthMerger
 from .host_spatials_calc import HostSpatialsCalc
-from .overlay_frames import OverlayFrames
+from .img_frame_overlay import ImgFrameOverlay
 from .parser_generator import ParserGenerator
 from .parsers.base_parser import BaseParser
 from .parsers.classification import ClassificationParser
@@ -60,7 +60,7 @@ __all__ = [
     "BaseParser",
     "DetectionParser",
     "EmbeddingsParser",
-    "OverlayFrames",
+    "ImgFrameOverlay",
     "ImgDetectionsBridge",
     "ImgDetectionsFilter",
 ]
