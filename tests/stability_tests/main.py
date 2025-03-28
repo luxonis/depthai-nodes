@@ -77,7 +77,7 @@ def main():
     parsers = repr(parsers)
     try:
         subprocess.run(
-            f'pytest run_parser_test.py --models "{models}" --parsers "{parsers}" --duration {duration} -v --tb=short -r a --log-cli-level=DEBUG --color=yes',
+            f'pytest run_parser_test.py --models "{models}" --parsers "{parsers}" --duration {duration} -v --tb=short -r a --log-cli-level=DEBUG --color=yes -s',
             shell=True,
             check=True,
         )
@@ -98,12 +98,14 @@ def main():
     if run_all:
         try:
             subprocess.run(
-                f"pytest ../unittests/test_nodes --duration {duration} -v --tb=short -r a --log-cli-level=DEBUG --color=yes",
+                f'pytest ../ --duration {duration} -v --tb=short -r a --log-cli-level=DEBUG --color=yes -s -k "not test_creators and not test_messages"',
                 shell=True,
                 check=True,
             )
         except subprocess.CalledProcessError as e:
             raise RuntimeError("Pipeline crashed.") from e
+
+    print("All tests passed.")
 
 
 if __name__ == "__main__":
