@@ -1,17 +1,15 @@
-import numpy as np
 import cv2
-
 import depthai as dai
-from conftest import Output
+import numpy as np
 import pytest
-
-from depthai_nodes.node import ApplyColormap
+from conftest import Output
 from utils.create_message import (
-    create_img_frame,
     create_img_detections_extended,
+    create_img_frame,
     create_map2d,
 )
 
+from depthai_nodes.node import ApplyColormap
 
 HEIGHT, WIDTH = 5, 5
 MAX_VALUE = 50

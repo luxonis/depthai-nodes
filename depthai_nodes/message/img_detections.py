@@ -1,9 +1,9 @@
+import copy
 from typing import List, Tuple, Union
 
 import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
-import copy
 
 from depthai_nodes import (
     BACKGROUND_COLOR,
@@ -46,7 +46,8 @@ class ImgDetectionExtended(dai.Buffer):
         self._logger = get_logger(__name__)
 
     def copy(self):
-        """Creates a new instance of the ImgDetectionExtended class and copies the attributes.
+        """Creates a new instance of the ImgDetectionExtended class and copies the
+        attributes.
 
         @return: A new instance of the ImgDetectionExtended class.
         @rtype: ImgDetectionExtended
@@ -202,7 +203,8 @@ class ImgDetectionsExtended(dai.Buffer):
         self._transformation: dai.ImgTransformation = None
 
     def copy(self):
-        """Creates a new instance of the ImgDetectionsExtended class and copies the attributes.
+        """Creates a new instance of the ImgDetectionsExtended class and copies the
+        attributes.
 
         @return: A new instance of the ImgDetectionsExtended class.
         @rtype: ImgDetectionsExtended

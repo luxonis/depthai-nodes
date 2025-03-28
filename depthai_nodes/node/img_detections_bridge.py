@@ -1,9 +1,10 @@
 import depthai as dai
+
 from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 
 
 class ImgDetectionsBridge(dai.node.HostNode):
-    """Transforms the dai.ImgDetections to ImgDetectionsExtended object or vice versa"
+    """Transforms the dai.ImgDetections to ImgDetectionsExtended object or vice versa".
 
     Attributes
     ----------
@@ -52,7 +53,8 @@ class ImgDetectionsBridge(dai.node.HostNode):
     def _img_det_to_img_det_ext(
         self, img_dets: dai.ImgDetections
     ) -> ImgDetectionsExtended:
-        """Transforms the incoming dai.ImgDetections object to ImgDetectionsExtended." """
+        """Transforms the incoming dai.ImgDetections object to
+        ImgDetectionsExtended."."""
         assert isinstance(img_dets, dai.ImgDetections)
 
         img_dets_ext = ImgDetectionsExtended()
@@ -86,7 +88,8 @@ class ImgDetectionsBridge(dai.node.HostNode):
     def _img_det_ext_to_img_det(
         self, img_det_ext: ImgDetectionsExtended
     ) -> dai.ImgDetections:
-        """Transforms the incoming ImgDetectionsExtended object to dai.ImgDetections." """
+        """Transforms the incoming ImgDetectionsExtended object to
+        dai.ImgDetections."."""
         assert isinstance(img_det_ext, ImgDetectionsExtended)
 
         img_dets = dai.ImgDetections()

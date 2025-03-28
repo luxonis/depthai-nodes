@@ -1,11 +1,12 @@
 import depthai as dai
+import numpy as np
+
 from depthai_nodes import (
     ImgDetectionExtended,
     ImgDetectionsExtended,
-    SegmentationMask,
     Map2D,
+    SegmentationMask,
 )
-import numpy as np
 
 
 def create_img_frame(img: np.ndarray, dtype=dai.ImgFrame.Type.BGR888p):
@@ -25,8 +26,8 @@ def create_img_frame(img: np.ndarray, dtype=dai.ImgFrame.Type.BGR888p):
 def create_img_detection(det: dict):
     """Creates a dai.ImgDetection object.
 
-    @param det: Detection dict with keys "bbox" ([xmin, ymin, xmax, ymax]),
-        "label" (int), and "confidence" (float).
+    @param det: Detection dict with keys "bbox" ([xmin, ymin, xmax, ymax]), "label"
+        (int), and "confidence" (float).
     @type det: dict
     @return: The created dai.ImgDetection object.
     @rtype: dai.ImgDetection
@@ -42,8 +43,8 @@ def create_img_detection(det: dict):
 def create_img_detections(dets: list[dict]):
     """Creates a dai.ImgDetections object.
 
-    @param dets: List of detection dicts, each containing
-        "bbox" ([xmin, ymin, xmax, ymax]), "label" (int), and "confidence" (float).
+    @param dets: List of detection dicts, each containing "bbox" ([xmin, ymin, xmax,
+        ymax]), "label" (int), and "confidence" (float).
     @type dets: list[dict]
     @return: The created dai.ImgDetections object.
     @rtype: dai.ImgDetections
@@ -57,8 +58,8 @@ def create_img_detections(dets: list[dict]):
 def create_img_detection_extended(det: dict):
     """Creates a ImgDetectionExtended object.
 
-    @param det: Detection dict with keys "bbox" ([xmin, ymin, xmax, ymax]),
-        "label" (int), and "confidence" (float).
+    @param det: Detection dict with keys "bbox" ([xmin, ymin, xmax, ymax]), "label"
+        (int), and "confidence" (float).
     @type det: dict
     @return: The created ImgDetectionExtended object.
     @rtype: ImgDetectionExtended
@@ -79,8 +80,8 @@ def create_img_detection_extended(det: dict):
 def create_img_detections_extended(dets: list[dict] = None, mask: np.ndarray = None):
     """Creates a ImgDetectionsExtended object.
 
-    @param dets: List of detection dicts, each containing
-        "bbox" ([xmin, ymin, xmax, ymax]), "label" (int), and "confidence" (float).
+    @param dets: List of detection dicts, each containing "bbox" ([xmin, ymin, xmax,
+        ymax]), "label" (int), and "confidence" (float).
     @type dets: list[dict]
     @return: The created ImgDetectionsExtended object.
     @rtype: ImgDetectionsExtended

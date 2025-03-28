@@ -1,8 +1,9 @@
+import copy
+
 import cv2
 import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
-import copy
 
 
 class SegmentationMask(dai.Buffer):
@@ -25,7 +26,8 @@ class SegmentationMask(dai.Buffer):
         self._transformation: dai.ImgTransformation = None
 
     def copy(self):
-        """Creates a new instance of the SegmentationMask class and copies the attributes.
+        """Creates a new instance of the SegmentationMask class and copies the
+        attributes.
 
         @return: A new instance of the SegmentationMask class.
         @rtype: SegmentationMask

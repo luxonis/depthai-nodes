@@ -69,7 +69,8 @@ class ApplyColormap(dai.node.HostNode):
     def setInstanceToSemanticMask(self, instance_to_semantic_mask: bool) -> None:
         """Sets the instance to semantic mask flag.
 
-        @param instance_to_semantic_mask: If True, converts instance segmentation masks to semantic segmentation masks.
+        @param instance_to_semantic_mask: If True, converts instance segmentation masks
+            to semantic segmentation masks.
         @type instance_to_semantic_mask: bool
         """
         if not isinstance(instance_to_semantic_mask, bool):
@@ -92,7 +93,8 @@ class ApplyColormap(dai.node.HostNode):
 
         @param msg: The input message with a 2D array.
         @type msg: dai.ImgFrame or Map2D or ImgDetectionsExtended
-        @param instance_to_semantic_segmentation: If True, converts instance segmentation masks to semantic segmentation masks.
+        @param instance_to_semantic_segmentation: If True, converts instance
+            segmentation masks to semantic segmentation masks.
         @type instance_to_semantic_segmentation: bool
         """
 

@@ -1,11 +1,10 @@
-import numpy as np
-
 import depthai as dai
-from conftest import Output
+import numpy as np
 import pytest
+from conftest import Output
+from utils.create_message import create_img_frame
 
 from depthai_nodes.node import ImgFrameOverlay
-from utils.create_message import create_img_frame
 
 HEIGHT, WIDTH = 5, 5
 WEIGHT = 0.5

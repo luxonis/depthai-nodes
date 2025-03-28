@@ -1,6 +1,6 @@
-import depthai as dai
-
 import copy
+
+import depthai as dai
 
 
 def copy_message(msg: dai.Buffer) -> dai.Buffer:
@@ -26,7 +26,6 @@ def copy_message(msg: dai.Buffer) -> dai.Buffer:
 
 
 def _copy(msg: dai.Buffer) -> dai.Buffer:
-
     def _copy_img_detection(img_det: dai.ImgDetection) -> dai.ImgDetection:
         assert isinstance(img_det, dai.ImgDetection)
         img_det_copy = dai.ImgDetection()

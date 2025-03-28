@@ -1,13 +1,13 @@
-import depthai as dai
-from depthai_nodes import ImgDetectionsExtended
 from typing import List
 
+import depthai as dai
+
+from depthai_nodes import ImgDetectionsExtended
 from depthai_nodes.node.utils import copy_message
 
 
 class ImgDetectionsFilter(dai.node.HostNode):
-    """
-    Filters out detections that do not meet the specified criteria.
+    """Filters out detections that do not meet the specified criteria.
 
     Attributes
     ----------
@@ -76,7 +76,6 @@ class ImgDetectionsFilter(dai.node.HostNode):
         confidence_threshold: float = None,
         max_detections: int = None,
     ) -> "ImgDetectionsFilter":
-
         self.link_args(msg)
 
         if labels_to_keep is not None:
@@ -113,7 +112,6 @@ class ImgDetectionsFilter(dai.node.HostNode):
 
         filtered_detections = []
         for detection in msg.detections:
-
             if self._labels_to_keep is not None:
                 if detection.label not in self._labels_to_keep:
                     continue

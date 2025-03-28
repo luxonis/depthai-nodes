@@ -1,13 +1,13 @@
 from typing import Union
 
 import depthai as dai
-from conftest import Output
 import pytest
+from conftest import Output
 from pytest import FixtureRequest
+from utils.create_message import create_img_detections, create_img_detections_extended
 
 from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.node import ImgDetectionsBridge
-from utils.create_message import create_img_detections, create_img_detections_extended
 
 DETS = [
     {"bbox": [0.00, 0.00, 0.25, 0.25], "label": 0, "confidence": 0.25},

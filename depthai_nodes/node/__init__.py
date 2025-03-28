@@ -1,6 +1,8 @@
 from .apply_colormap import ApplyColormap
 from .depth_merger import DepthMerger
 from .host_spatials_calc import HostSpatialsCalc
+from .img_detections_bridge import ImgDetectionsBridge
+from .img_detections_filter import ImgDetectionsFilter
 from .img_frame_overlay import ImgFrameOverlay
 from .parser_generator import ParserGenerator
 from .parsers.base_parser import BaseParser
@@ -27,8 +29,6 @@ from .parsers.yunet import YuNetParser
 from .parsing_neural_network import ParsingNeuralNetwork
 from .tiles_patcher import TilesPatcher
 from .tiling import Tiling
-from .img_detections_bridge import ImgDetectionsBridge
-from .img_detections_filter import ImgDetectionsFilter
 
 __all__ = [
     "ApplyColormap",
