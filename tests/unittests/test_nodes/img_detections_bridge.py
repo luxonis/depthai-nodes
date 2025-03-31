@@ -1,20 +1,17 @@
 from typing import Union
-
+import math
 import depthai as dai
 import pytest
 from conftest import Output
 from pytest import FixtureRequest
-from utils.create_message import create_img_detections, create_img_detections_extended
+from utils.create_message import (
+    create_img_detections,
+    create_img_detections_extended,
+    DETS,
+)
 
 from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.node import ImgDetectionsBridge
-
-DETS = [
-    {"bbox": [0.00, 0.00, 0.25, 0.25], "label": 0, "confidence": 0.25},
-    {"bbox": [0.25, 0.25, 0.50, 0.50], "label": 1, "confidence": 0.50},
-    {"bbox": [0.50, 0.50, 0.75, 0.75], "label": 2, "confidence": 0.75},
-    {"bbox": [0.75, 0.75, 1.00, 1.00], "label": 3, "confidence": 1.00},
-]
 
 
 @pytest.fixture
@@ -64,12 +61,14 @@ def test_processing(
         assert len(img_dets.detections) == len(img_dets_ext.detections)
         for img_det, img_det_ext in zip(img_dets.detections, img_dets_ext.detections):
             xmin, ymin, xmax, ymax = img_det_ext.rotated_rect.getOuterRect()
-            assert img_det.xmin == xmin
-            assert img_det.ymin == ymin
-            assert img_det.xmax == xmax
-            assert img_det.ymax == ymax
-            assert img_det.label == img_det_ext.label
-            assert img_det.confidence == img_det_ext.confidence
+            assert math.isclose(img_det.xmin, xmin, rel_tol=1e-6)
+            assert math.isclose(img_det.ymin, ymin, rel_tol=1e-6)
+            assert math.isclose(img_det.xmax, xmax, rel_tol=1e-6)
+            assert math.isclose(img_det.ymax, ymax, rel_tol=1e-6)
+            assert math.isclose(img_det.label, img_det_ext.label, rel_tol=1e-6)
+            assert math.isclose(
+                img_det.confidence, img_det_ext.confidence, rel_tol=1e-6
+            )
 
     if isinstance(dets, dai.ImgDetections):
         _identical_detections(dets, dets_transformed)

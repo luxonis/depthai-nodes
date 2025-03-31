@@ -4,17 +4,15 @@ import depthai as dai
 import pytest
 from conftest import Output
 from pytest import FixtureRequest
-from utils.create_message import create_img_detections, create_img_detections_extended
+from utils.create_message import (
+    create_img_detections,
+    create_img_detections_extended,
+    DETS,
+)
 
 from depthai_nodes import ImgDetectionsExtended
 from depthai_nodes.node import ImgDetectionsFilter
 
-DETS = [
-    {"bbox": [0.00, 0.00, 0.25, 0.25], "label": 0, "confidence": 0.25},
-    {"bbox": [0.25, 0.25, 0.50, 0.50], "label": 1, "confidence": 0.50},
-    {"bbox": [0.50, 0.50, 0.75, 0.75], "label": 2, "confidence": 0.75},
-    {"bbox": [0.75, 0.75, 1.00, 1.00], "label": 3, "confidence": 1.00},
-]
 LABELS = [1]
 CONF_THRES = 0.5
 MAX_DET = 1

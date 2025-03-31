@@ -8,8 +8,20 @@ from depthai_nodes import (
     SegmentationMask,
 )
 
+HEIGHT, WIDTH = 5, 5
+MAX_VALUE = 255
+ARR_2D = np.random.randint(0, MAX_VALUE, (HEIGHT, WIDTH), dtype=np.int16)
+IMG = np.random.randint(0, MAX_VALUE, (HEIGHT, WIDTH, 3), dtype=np.uint8)
+DETS = [
+    {"bbox": [0.00, 0.20, 0.00, 0.20], "label": 0, "confidence": 0.2},
+    {"bbox": [0.20, 0.40, 0.20, 0.40], "label": 1, "confidence": 0.4},
+    {"bbox": [0.40, 0.60, 0.40, 0.60], "label": 2, "confidence": 0.6},
+    {"bbox": [0.60, 0.80, 0.60, 0.80], "label": 3, "confidence": 0.8},
+    {"bbox": [0.80, 1.00, 0.80, 1.00], "label": 4, "confidence": 1.0},
+]
 
-def create_img_frame(img: np.ndarray, dtype=dai.ImgFrame.Type.BGR888p):
+
+def create_img_frame(img: np.ndarray = IMG, dtype=dai.ImgFrame.Type.BGR888p):
     """Creates a dai.ImgFrame object.
 
     @param img: Image as a numpy array.
@@ -23,7 +35,7 @@ def create_img_frame(img: np.ndarray, dtype=dai.ImgFrame.Type.BGR888p):
     return img_frame
 
 
-def create_img_detection(det: dict):
+def create_img_detection(det: dict = DETS[0]):
     """Creates a dai.ImgDetection object.
 
     @param det: Detection dict with keys "bbox" ([xmin, ymin, xmax, ymax]), "label"
@@ -40,7 +52,7 @@ def create_img_detection(det: dict):
     return img_det
 
 
-def create_img_detections(dets: list[dict]):
+def create_img_detections(dets: list[dict] = DETS):
     """Creates a dai.ImgDetections object.
 
     @param dets: List of detection dicts, each containing "bbox" ([xmin, ymin, xmax,
@@ -55,7 +67,7 @@ def create_img_detections(dets: list[dict]):
     return img_dets
 
 
-def create_img_detection_extended(det: dict):
+def create_img_detection_extended(det: dict = DETS[0]):
     """Creates a ImgDetectionExtended object.
 
     @param det: Detection dict with keys "bbox" ([xmin, ymin, xmax, ymax]), "label"
@@ -77,7 +89,7 @@ def create_img_detection_extended(det: dict):
     return img_det_ext
 
 
-def create_img_detections_extended(dets: list[dict] = None, mask: np.ndarray = None):
+def create_img_detections_extended(dets: list[dict] = DETS, mask: np.ndarray = ARR_2D):
     """Creates a ImgDetectionsExtended object.
 
     @param dets: List of detection dicts, each containing "bbox" ([xmin, ymin, xmax,
@@ -96,7 +108,7 @@ def create_img_detections_extended(dets: list[dict] = None, mask: np.ndarray = N
     return img_dets_ext
 
 
-def create_segmentation_mask(mask: np.ndarray):
+def create_segmentation_mask(mask: np.ndarray = ARR_2D):
     """Creates a SegmentationMask object.
 
     @param mask: Segmentation mask as a numpy array.
@@ -109,7 +121,7 @@ def create_segmentation_mask(mask: np.ndarray):
     return seg_mask
 
 
-def create_map2d(map: np.ndarray):
+def create_map2d(map: np.ndarray = ARR_2D.astype(np.float32)):
     """Creates a Map2D object.
 
     @param map: 2D map as a numpy array.
