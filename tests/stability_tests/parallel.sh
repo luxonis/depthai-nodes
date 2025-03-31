@@ -10,6 +10,9 @@ B2_APPLICATION_KEY_ID=${B2_APPLICATION_KEY_ID:-""}
 BRANCH=${BRANCH:-"main"}
 TEST_DURATION=${TEST_DURATION:-"10"}
 
+# Delay between iterations in seconds
+LOOP_DELAY=1
+
 # Extract all model names from the config.py file into an array
 models=()
 while IFS= read -r line; do
@@ -42,4 +45,10 @@ for model in "${models[@]}"; do
   eval "$command_to_run"
 
   echo ""
+
+  # Add delay between iterations if not the last model
+  if [ $counter -lt ${#models[@]} ]; then
+    echo "Waiting for $LOOP_DELAY seconds before starting the next test..."
+    sleep $LOOP_DELAY
+  fi
 done
