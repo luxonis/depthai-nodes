@@ -53,7 +53,13 @@ class ImgDetectionExtended(dai.Buffer):
         @rtype: ImgDetectionExtended
         """
         new_obj = ImgDetectionExtended()
-        rectangle = self._rotated_rect.getOuterRect() + [self.rotated_rect.angle]
+        rectangle = (
+            self._rotated_rect.center.x,
+            self._rotated_rect.center.y,
+            self._rotated_rect.size.width,
+            self._rotated_rect.size.height,
+            self._rotated_rect.angle,
+        )
         new_obj.rotated_rect = copy.deepcopy(rectangle)
         new_obj.confidence = copy.deepcopy(self.confidence)
         new_obj.label = copy.deepcopy(self.label)
