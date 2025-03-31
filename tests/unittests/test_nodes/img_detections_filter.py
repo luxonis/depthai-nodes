@@ -18,6 +18,7 @@ DETS = [
 LABELS = [1]
 CONF_THRES = 0.5
 MAX_DET = 1
+SORT = True
 
 
 @pytest.fixture
@@ -36,6 +37,7 @@ def test_initialization():
     assert filter._labels_to_reject is None
     assert filter._confidence_threshold is None
     assert filter._max_detections is None
+    assert filter._sort_by_confidence == False
 
 
 def test_building():
@@ -44,27 +46,31 @@ def test_building():
     assert filter._labels_to_reject is None
     assert filter._confidence_threshold is None
     assert filter._max_detections is None
+    assert filter._sort_by_confidence == False
 
-    # labels
+    # labels to keep
     filter = ImgDetectionsFilter().build(
         Output(),
         labels_to_keep=LABELS,
     )
     assert filter._labels_to_keep == LABELS
     assert filter._labels_to_reject is None
-    with pytest.raises(ValueError):
-        ImgDetectionsFilter().build(
-            Output(),
-            labels_to_reject=LABELS,
-        )
+
+    # labels to reject
+    filter = ImgDetectionsFilter().build(
+        Output(),
+        labels_to_reject=LABELS,
+    )
     assert filter._labels_to_keep is None
     assert filter._labels_to_reject == LABELS
+
+    # labels_to_keep and labels_to_reject cannot be set at the same time
     with pytest.raises(ValueError):
         ImgDetectionsFilter().build(
             Output(),
             labels_to_keep=LABELS,
             labels_to_reject=LABELS,
-        )  # labels_to_keep and labels_to_reject cannot be set at the same time
+        )
 
     # confidence_threshold
     filter = ImgDetectionsFilter().build(
@@ -79,6 +85,13 @@ def test_building():
         max_detections=MAX_DET,
     )
     assert filter._max_detections == MAX_DET
+
+    # sort_by_confidence
+    filter = ImgDetectionsFilter().build(
+        Output(),
+        sort_by_confidence=SORT,
+    )
+    assert filter._sort_by_confidence == SORT
 
 
 def test_parameter_setting():
@@ -106,6 +119,12 @@ def test_parameter_setting():
     assert filter._max_detections == MAX_DET
     with pytest.raises(ValueError):
         filter.setMaxDetections("not an integer")
+
+    # sort_by_confidence
+    filter.setSortByConfidence(SORT)
+    assert filter._sort_by_confidence == SORT
+    with pytest.raises(ValueError):
+        filter.setSortByConfidence("not a boolean")
 
 
 @pytest.mark.parametrize(
@@ -174,3 +193,13 @@ def test_processing(
     filter.process(q_dets.get())
     dets_filtered = q_dets_filtered.get()
     assert len(dets_filtered.detections) == MAX_DET
+
+    # sort by confidence
+    filter.setSortByConfidence(SORT)
+    q_dets.send(dets)
+    filter.process(q_dets.get())
+    dets_filtered = q_dets_filtered.get()
+    if SORT:
+        assert dets_filtered.detections == sorted(
+            dets_filtered.detections, key=lambda x: x.confidence, reverse=True
+        )

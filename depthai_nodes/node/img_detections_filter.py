@@ -7,7 +7,9 @@ from depthai_nodes.node.utils import copy_message
 
 
 class ImgDetectionsFilter(dai.node.HostNode):
-    """Filters out detections that do not meet the specified criteria.
+    """Filters out detections based on the specified criteria. The order of operations:
+        filter by label/confidence -> sort -> subset
+
 
     Attributes
     ----------
@@ -19,6 +21,9 @@ class ImgDetectionsFilter(dai.node.HostNode):
         Minimum confidence threshold. Detections with confidence below this threshold will be filtered out.
     max_detections : int
         Maximum number of detections to keep. If not defined, all detections will be kept.
+    sort_by_confidence: bool
+        Whether to sort the detections by confidence before subsetting. If True, the detections will be sorted
+            in descending order of confidence. It's set to False by default.
     """
 
     def __init__(self):
@@ -27,6 +32,7 @@ class ImgDetectionsFilter(dai.node.HostNode):
         self._labels_to_reject = None
         self._confidence_threshold = None
         self._max_detections = None
+        self._sort_by_confidence = False
 
     def setLabels(self, labels: List[int], keep: bool) -> None:
         """Sets the labels to keep or reject.
@@ -68,6 +74,16 @@ class ImgDetectionsFilter(dai.node.HostNode):
             raise ValueError("max_detections must be an integer.")
         self._max_detections = max_detections
 
+    def setSortByConfidence(self, sort_by_confidence: bool) -> None:
+        """Sets whether to sort the detections by confidence before subsetting.
+
+        @param sort_by_confidence: Whether to sort the detections.
+        @type sort_by_confidence: bool
+        """
+        if not isinstance(sort_by_confidence, bool):
+            raise ValueError("sort_by_confidence must be a boolean.")
+        self._sort_by_confidence = sort_by_confidence
+
     def build(
         self,
         msg: dai.Node.Output,
@@ -75,6 +91,7 @@ class ImgDetectionsFilter(dai.node.HostNode):
         labels_to_reject: List[int] = None,
         confidence_threshold: float = None,
         max_detections: int = None,
+        sort_by_confidence: bool = False,
     ) -> "ImgDetectionsFilter":
         self.link_args(msg)
 
@@ -94,6 +111,8 @@ class ImgDetectionsFilter(dai.node.HostNode):
 
         if max_detections is not None:
             self.setMaxDetections(max_detections)
+
+        self.setSortByConfidence(sort_by_confidence)
 
         return self
 
@@ -126,8 +145,11 @@ class ImgDetectionsFilter(dai.node.HostNode):
 
             filtered_detections.append(detection)
 
-        msg_new.detections = filtered_detections[
-            : self._max_detections
-        ]  # TODO: sort detections by confidence before subsetting?
+        if self._sort_by_confidence:
+            filtered_detections = sorted(
+                filtered_detections, key=lambda x: x.confidence, reverse=True
+            )
+
+        msg_new.detections = filtered_detections[: self._max_detections]
 
         self.out.send(msg_new)
