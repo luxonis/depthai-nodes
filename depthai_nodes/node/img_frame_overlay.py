@@ -3,7 +3,8 @@ import depthai as dai
 
 
 class ImgFrameOverlay(dai.node.HostNode):
-    """A host node that receives two dai.ImgFrame objects and overlays them into a single one.
+    """A host node that receives two dai.ImgFrame objects and overlays them into a
+    single one.
 
     Attributes
     ----------

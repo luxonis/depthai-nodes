@@ -1,13 +1,14 @@
-from typing import Union
 import math
+from typing import Union
+
 import depthai as dai
 import pytest
 from conftest import Output
 from pytest import FixtureRequest
 from utils.create_message import (
+    DETS,
     create_img_detections,
     create_img_detections_extended,
-    DETS,
 )
 
 from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended

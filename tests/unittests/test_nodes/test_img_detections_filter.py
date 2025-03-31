@@ -5,9 +5,9 @@ import pytest
 from conftest import Output
 from pytest import FixtureRequest
 from utils.create_message import (
+    DETS,
     create_img_detections,
     create_img_detections_extended,
-    DETS,
 )
 
 from depthai_nodes import ImgDetectionsExtended
@@ -35,7 +35,7 @@ def test_initialization():
     assert filter._labels_to_reject is None
     assert filter._confidence_threshold is None
     assert filter._max_detections is None
-    assert filter._sort_by_confidence == False
+    assert filter._sort_by_confidence is False
 
 
 def test_building():
@@ -44,7 +44,7 @@ def test_building():
     assert filter._labels_to_reject is None
     assert filter._confidence_threshold is None
     assert filter._max_detections is None
-    assert filter._sort_by_confidence == False
+    assert filter._sort_by_confidence is False
 
     # labels to keep
     filter = ImgDetectionsFilter().build(

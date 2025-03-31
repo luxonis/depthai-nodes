@@ -8,8 +8,7 @@ from depthai_nodes.node.utils import copy_message
 
 class ImgDetectionsFilter(dai.node.HostNode):
     """Filters out detections based on the specified criteria. The order of operations:
-        filter by label/confidence -> sort -> subset
-
+    filter by label/confidence -> sort -> subset.
 
     Attributes
     ----------

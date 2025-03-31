@@ -1,10 +1,9 @@
 import inspect
-import pytest
+
 import numpy as np
-from pytest import FixtureRequest
+from utils import create_message
 
 from depthai_nodes.node.utils import copy_message
-from utils import create_message
 
 ATTRS_TO_IGNORE = [
     "transformation"
@@ -38,7 +37,9 @@ def equal_attributes(obj1, obj2):
 
 
 def test_message_copying():
-    for _, creator_function in inspect.getmembers(create_message, inspect.isfunction):
+    for creator_name, creator_function in inspect.getmembers(
+        create_message, inspect.isfunction
+    ):
         msg = creator_function()
         try:
             msg_copy = copy_message(msg)
@@ -49,5 +50,5 @@ def test_message_copying():
             assert msg_copy.getTimestamp() == msg.getTimestamp()
             assert msg_copy.getTimestampDevice() == msg.getTimestampDevice()
             # assert objects_equal(msg_copy.getTransformation(), msg.getTransformation()) TODO: add after getTransformation() is implemented
-        except:
-            pass  # not all messages are supported for copying
+        except TypeError:
+            print(f"Skipping {creator_name} as message copying is not implemented.")

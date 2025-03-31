@@ -11,6 +11,7 @@ from depthai_nodes import (
 HEIGHT, WIDTH = 5, 5
 MAX_VALUE = 255
 ARR_2D = np.random.randint(0, MAX_VALUE, (HEIGHT, WIDTH), dtype=np.int16)
+ARR_2D_FLOAT = ARR_2D.astype(np.float32)
 IMG = np.random.randint(0, MAX_VALUE, (HEIGHT, WIDTH, 3), dtype=np.uint8)
 DETS = [
     {"bbox": [0.00, 0.20, 0.00, 0.20], "label": 0, "confidence": 0.2},
@@ -121,7 +122,7 @@ def create_segmentation_mask(mask: np.ndarray = ARR_2D):
     return seg_mask
 
 
-def create_map2d(map: np.ndarray = ARR_2D.astype(np.float32)):
+def create_map2d(map: np.ndarray = ARR_2D_FLOAT):
     """Creates a Map2D object.
 
     @param map: 2D map as a numpy array.
