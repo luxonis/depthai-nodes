@@ -37,12 +37,9 @@ class ApplyColormap(dai.node.HostNode):
         self.setMaxValue(max_value)
         self.setInstanceToSemanticMask(instance_to_semantic_mask)
 
-        try:
-            self._platform = (
-                self.getParentPipeline().getDefaultDevice().getPlatformAsString()
-            )
-        except AttributeError:
-            self._platform = None  # so that it doesn't crash when running unittests
+        self._platform = (
+            self.getParentPipeline().getDefaultDevice().getPlatformAsString()
+        )
 
     def setColormap(self, colormap_value: int) -> None:
         """Sets the applied color mapping.

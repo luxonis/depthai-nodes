@@ -22,12 +22,9 @@ class ImgFrameOverlay(dai.node.HostNode):
         super().__init__()
         self.SetAlpha(alpha)
 
-        try:
-            self._platform = (
-                self.getParentPipeline().getDefaultDevice().getPlatformAsString()
-            )
-        except AttributeError:
-            self._platform = None  # so that it doesn't crash when running unittests
+        self._platform = (
+            self.getParentPipeline().getDefaultDevice().getPlatformAsString()
+        )
 
     def SetAlpha(self, alpha: float) -> None:
         """Sets the alpha.
