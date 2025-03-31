@@ -98,7 +98,7 @@ class ImgDetectionsFilter(dai.node.HostNode):
         if labels_to_keep is not None:
             if labels_to_reject is not None:
                 raise ValueError(
-                    "labels_to_keep and labels_to_reject cannot be set at the same time"
+                    "Cannot set labels_to_keep and labels_to_reject at the same time."
                 )
             else:
                 self.setLabels(labels_to_keep, keep=True)
@@ -122,7 +122,8 @@ class ImgDetectionsFilter(dai.node.HostNode):
             (
                 dai.ImgDetections,
                 ImgDetectionsExtended,
-            ),  # TODO: also allow dai.SpatialImgDetections?
+                dai.SpatialImgDetections,
+            ),
         )
 
         msg_new = copy_message(
