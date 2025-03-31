@@ -13,6 +13,11 @@ TEST_DURATION=${TEST_DURATION:-"10"}
 # Delay between iterations in seconds
 LOOP_DELAY=1
 
+# Create a temporary Docker config directory
+DOCKER_CONFIG_DIR=$(mktemp -d)
+echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"$(echo -n "$DOCKER_USERNAME:$DOCKER_PASSWORD" | base64)\"}}}" > $DOCKER_CONFIG_DIR/config.json
+
+
 # Extract all model names from the config.py file into an array
 models=()
 while IFS= read -r line; do
@@ -35,9 +40,10 @@ for model in "${models[@]}"; do
   command_to_run=""
 
   if [ $counter -eq 1 ]; then
-    command_to_run="hil --testbed test2 --skip-sanity-check --stability-test --stability-name=depthai-nodes-parallel-$counter --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"echo $GHCR_TOKEN | docker login ghcr.io -u $GHCR_USERNAME --password-stdin\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env FLAGS=\"-m $model --duration $TEST_DURATION\"'"
+    # command_to_run="hil --testbed test2 --skip-sanity-check --stability-test --stability-name=depthai-nodes-parallel-$counter --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"echo $GHCR_TOKEN | docker login ghcr.io -u $GHCR_USERNAME --password-stdin\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env FLAGS=\"-m $model --duration $TEST_DURATION\"'"
+    command_to_run="hil --testbed test2 --skip-sanity-check --stability-test --stability-name=depthai-nodes-parallel-$counter --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"DOCKER_CONFIG=$DOCKER_CONFIG_DIR\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env FLAGS=\"-m $model --duration $TEST_DURATION\"'"
   else
-    command_to_run="hil --testbed test2 --skip-sanity-check --hold-reservation --stability-test --stability-name=depthai-nodes-parallel-$counter --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"echo $GHCR_TOKEN | docker login ghcr.io -u $GHCR_USERNAME --password-stdin\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env FLAGS=\"-m $model --duration $TEST_DURATION\"'"
+    command_to_run="hil --testbed test2 --skip-sanity-check --hold-reservation --stability-test --stability-name=depthai-nodes-parallel-$counter --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"DOCKER_CONFIG=$DOCKER_CONFIG_DIR\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env FLAGS=\"-m $model --duration $TEST_DURATION\"'"
   fi
 
   echo "$command_to_run"
@@ -52,3 +58,6 @@ for model in "${models[@]}"; do
     sleep $LOOP_DELAY
   fi
 done
+
+# Clean up the temporary Docker config directory
+rm -rf $DOCKER_CONFIG_DIR
