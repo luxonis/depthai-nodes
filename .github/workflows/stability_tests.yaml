@@ -53,8 +53,9 @@ jobs:
       - name: Run Parallel Tests
         run: |
           export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#${{ matrix.python-version}}"
-          chmod +x ./tests/stability_tests/parallel.sh
-          ./tests/stability_tests/parallel.sh
+          cd tests/stability_tests
+          chmod +x ./parallel.sh
+          ./parallel.sh
         env:
           GHCR_TOKEN: ${{secrets.GHCR_PAT}}
           GHCR_USER: ${{secrets.GHCR_USER}}
