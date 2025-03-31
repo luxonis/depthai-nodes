@@ -3,24 +3,24 @@ import depthai as dai
 
 
 class ImgFrameOverlay(dai.node.HostNode):
-    """A host node that receives two dai.ImgFrame objects and overlays them into a
-    single dai.ImgFrame object.
+    """A host node that receives two dai.ImgFrame objects and overlays them into a single one.
 
     Attributes
     ----------
-    background_weight: float
-        The weight of the background frame in the overlay frame.
-    background : dai.ImgFrame
+    frame1 : dai.ImgFrame
         The input message for the background frame.
-    foreground : dai.ImgFrame
+    frame2 : dai.ImgFrame
         The input message for the foreground frame.
-    output : dai.ImgFrame
+    alpha: float
+        The weight of the background frame in the overlay. By default, the weight is 0.5
+            which means that both frames are represented equally in the overlay.
+    out : dai.ImgFrame
         The output message for the overlay frame.
     """
 
-    def __init__(self, background_weight: float = 0.5) -> None:
+    def __init__(self, alpha: float = 0.5) -> None:
         super().__init__()
-        self.SetBackgroundWeight(background_weight)
+        self.SetAlpha(alpha)
 
         try:
             self._platform = (
@@ -29,46 +29,52 @@ class ImgFrameOverlay(dai.node.HostNode):
         except AttributeError:
             self._platform = None  # so that it doesn't crash when running unittests
 
-    def SetBackgroundWeight(self, background_weight: float) -> None:
-        """Sets the weight of the background frame in the overlay.
+    def SetAlpha(self, alpha: float) -> None:
+        """Sets the alpha.
 
-        @param background_weight: The weight of the background frame in the overlay.
-        @type background_weight: float
+        @param alpha: The weight of the background frame in the overlay.
+        @type alpha: float
         """
-        if not isinstance(background_weight, float):
-            raise ValueError("Background weight must be a float")
-        if not 0.0 <= background_weight <= 1.0:
-            raise ValueError("Background weight must be between 0 and 1")
-        self._background_weight = background_weight
+        if not isinstance(alpha, float):
+            raise ValueError("Alpha must be a float")
+        if not 0.0 <= alpha <= 1.0:
+            raise ValueError("Alpha must be between 0.0 and 1.0")
+        self._alpha = alpha
 
     def build(
-        self, background: dai.Node.Output, foreground: dai.Node.Output
+        self, frame1: dai.Node.Output, frame2: dai.Node.Output, alpha: float = None
     ) -> "ImgFrameOverlay":
         """Configures the node connections.
 
-        @param background: The input message for the background frame.
-        @type background: dai.Node.Output
-        @param foreground: The input message for the foreground frame.
-        @type foreground: dai.Node.Output
+        @param frame1: The input message for the background frame.
+        @type frame1: dai.Node.Output
+        @param frame2: The input message for the foreground frame.
+        @type frame2: dai.Node.Output
+        @param alpha: The weight of the background frame in the overlay.
+        @type alpha: float
         @return: The node object with the background and foreground streams overlaid.
         @rtype: ImgFrameOverlay
         """
-        self.link_args(background, foreground)
+        self.link_args(frame1, frame2)
+
+        if alpha is not None:
+            self.SetAlpha(alpha)
+
         return self
 
-    def process(self, background: dai.Buffer, foreground: dai.Buffer) -> None:
-        """Processes incoming background and foreground frames and overlays them.
+    def process(self, frame1: dai.Buffer, frame2: dai.Buffer) -> None:
+        """Processes incoming frames and overlays them.
 
-        @param background: The input message for the background frame.
-        @type background: dai.ImgFrame
-        @param foreground: The input message for the foreground frame.
-        @type foreground: dai.ImgFrame
+        @param frame1: The input message for the background frame.
+        @type frame1: dai.ImgFrame
+        @param frame2: The input message for the foreground frame.
+        @type frame2: dai.ImgFrame
         """
-        assert isinstance(background, dai.ImgFrame)
-        assert isinstance(foreground, dai.ImgFrame)
+        assert isinstance(frame1, dai.ImgFrame)
+        assert isinstance(frame2, dai.ImgFrame)
 
-        background_frame = background.getCvFrame()
-        foreground_frame = foreground.getCvFrame()
+        background_frame = frame1.getCvFrame()
+        foreground_frame = frame2.getCvFrame()
 
         # reshape foreground to match the background shape
         foreground_frame = cv2.resize(
@@ -79,9 +85,9 @@ class ImgFrameOverlay(dai.node.HostNode):
 
         overlay_frame = cv2.addWeighted(
             background_frame,
-            self._background_weight,
+            self._alpha,
             foreground_frame,
-            1 - self._background_weight,
+            1 - self._alpha,
             0,
         )
 
@@ -94,7 +100,7 @@ class ImgFrameOverlay(dai.node.HostNode):
                 else dai.ImgFrame.Type.BGR888p
             ),
         )
-        overlay.setTimestamp(background.getTimestamp())
-        overlay.setSequenceNum(background.getSequenceNum())
+        overlay.setTimestamp(frame1.getTimestamp())
+        overlay.setSequenceNum(frame1.getSequenceNum())
 
         self.out.send(overlay)
