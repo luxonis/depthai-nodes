@@ -27,7 +27,7 @@ class ImgFrameOverlay(dai.node.HostNode):
             self.getParentPipeline().getDefaultDevice().getPlatformAsString()
         )
 
-    def SetAlpha(self, alpha: float) -> None:
+    def setAlpha(self, alpha: float) -> None:
         """Sets the alpha.
 
         @param alpha: The weight of the background frame in the overlay.
