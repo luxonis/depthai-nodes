@@ -22,6 +22,9 @@ RUN pip install -e .
 # Install the development requirements
 RUN pip install -r requirements-dev.txt
 
+# Install pytest-xdist
+RUN pip install pytest-xdist
+
 # Set the working directory to the tests directory
 WORKDIR /app/depthai-nodes/tests/stability_tests
 
