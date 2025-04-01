@@ -3,9 +3,10 @@ import time
 import depthai as dai
 import numpy as np
 import pytest
-from conftest import Output
 
 from depthai_nodes.node import TilesPatcher, Tiling
+
+from .conftest import Output
 
 
 @pytest.fixture

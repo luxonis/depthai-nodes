@@ -30,4 +30,4 @@ ENTRYPOINT ["bash", "-c", "git checkout main && git pull && \
   echo 'Checking out branch' $BRANCH && \
   git checkout $BRANCH && \
   pip install --extra-index-url $LUXONIS_EXTRA_INDEX_URL depthai==$DEPTHAI_VERSION && \
-  python main.py $FLAGS"]
+  $MAIN_COMMAND"]

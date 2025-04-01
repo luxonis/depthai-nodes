@@ -4,6 +4,9 @@ from stability_tests.conftest import Input, NeuralNetworkMock, PipelineMock
 
 from depthai_nodes.node import ParsingNeuralNetwork
 
+# Need to add because it uses PipelineMock from stability_tests conftest.py
+dai.Pipeline = PipelineMock
+
 
 @pytest.fixture
 def pipeline():
