@@ -36,11 +36,6 @@ def duration(request):
     return request.config.getoption("--duration")
 
 
-@pytest.fixture
-def img_detections_extended():
-    return
-
-
 def test_initialization():
     ApplyColormap()
 
