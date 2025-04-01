@@ -1,6 +1,6 @@
 import inspect
 import time
-from typing import Callable
+from typing import Callable, List, Tuple
 
 import numpy as np
 import pytest
@@ -23,7 +23,7 @@ def equal_attributes(obj1, obj2):
         return obj1 == obj2  # directly comparable types
     elif isinstance(obj1, np.ndarray):
         return np.array_equal(obj1, obj2)
-    elif isinstance(obj1, (list, tuple)):
+    elif isinstance(obj1, (List, Tuple)):
         return len(obj1) == len(obj2) and all(
             equal_attributes(a, b) for a, b in zip(obj1, obj2)
         )
@@ -48,7 +48,7 @@ def equal_attributes(obj1, obj2):
     "message_creator",
     inspect.getmembers(create_message, inspect.isfunction),
 )
-def test_message_copying(message_creator: tuple[str, Callable], duration: int = 1e-6):
+def test_message_copying(message_creator: Tuple[str, Callable], duration: int = 1e-6):
     _, creator_function = message_creator
 
     start_time = time.time()
