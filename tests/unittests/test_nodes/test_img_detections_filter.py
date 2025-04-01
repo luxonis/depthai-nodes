@@ -1,10 +1,10 @@
-from typing import Union
 import time
+from typing import Union
+
 import depthai as dai
 import pytest
-from pytest import FixtureRequest
-
 from conftest import Output
+from pytest import FixtureRequest
 from utils.create_message import (
     DETS,
     create_img_detections,

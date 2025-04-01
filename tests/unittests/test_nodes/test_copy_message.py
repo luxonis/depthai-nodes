@@ -1,10 +1,11 @@
 import inspect
 import time
-import numpy as np
-import pytest
 from typing import Callable
 
+import numpy as np
+import pytest
 from utils import create_message
+
 from depthai_nodes.node.utils import copy_message
 
 ATTRS_TO_IGNORE = [

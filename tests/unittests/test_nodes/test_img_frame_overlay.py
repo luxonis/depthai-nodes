@@ -1,11 +1,12 @@
+import time
+
 import depthai as dai
 import numpy as np
 import pytest
-import time
+from conftest import Output
+from utils.create_message import create_img_frame
 
 from depthai_nodes.node import ImgFrameOverlay
-from utils.create_message import create_img_frame
-from conftest import Output
 
 HEIGHT, WIDTH = 5, 5
 ALPHA = 0.5

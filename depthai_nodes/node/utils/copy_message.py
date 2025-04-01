@@ -25,8 +25,8 @@ def copy_message(msg: dai.Buffer) -> dai.Buffer:
     # 3rd attempt: deepcopy (the most general approach)
     try:
         return copy.deepcopy(msg)
-    except Exception:
-        raise TypeError(f"Copying of message type {type(msg)} is not supported.")
+    except TypeError as e:
+        raise TypeError(f"Copying of message type {type(msg)} is not supported.") from e
 
 
 def _copy(msg: dai.Buffer) -> dai.Buffer:

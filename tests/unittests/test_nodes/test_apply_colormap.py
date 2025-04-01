@@ -1,16 +1,17 @@
-import cv2
 import time
+
+import cv2
 import depthai as dai
 import numpy as np
 import pytest
-
 from conftest import Output
-from depthai_nodes.node import ApplyColormap
 from utils.create_message import (
     create_img_detections_extended,
     create_img_frame,
     create_map2d,
 )
+
+from depthai_nodes.node import ApplyColormap
 
 HEIGHT, WIDTH = 5, 5
 MAX_VALUE = 50
@@ -84,7 +85,6 @@ def test_processing(colormap_value: int, duration: int = 1e-6):
         create_map2d(ARR.astype(np.float32)),  # Map2D
         create_img_detections_extended(mask=ARR),  # ImgDetectionsExtended
     ]:
-
         start_time = time.time()
         while time.time() - start_time < duration:
             q_arr.send(arr)
