@@ -3,7 +3,6 @@ from typing import Callable, List, Tuple
 
 import numpy as np
 import pytest
-
 from unittests.test_nodes.utils import create_message
 
 from depthai_nodes.node.utils import copy_message
