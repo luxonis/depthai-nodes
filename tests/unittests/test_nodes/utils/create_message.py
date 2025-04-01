@@ -1,3 +1,5 @@
+from typing import Dict, List
+
 import depthai as dai
 import numpy as np
 
@@ -36,7 +38,7 @@ def create_img_frame(img: np.ndarray = IMG, dtype=dai.ImgFrame.Type.BGR888p):
     return img_frame
 
 
-def create_img_detection(det: dict = DETS[0]):
+def create_img_detection(det: Dict = DETS[0]):
     """Creates a dai.ImgDetection object.
 
     @param det: Detection dict with keys "bbox" ([xmin, ymin, xmax, ymax]), "label"
@@ -45,7 +47,7 @@ def create_img_detection(det: dict = DETS[0]):
     @return: The created dai.ImgDetection object.
     @rtype: dai.ImgDetection
     """
-    assert isinstance(det, dict)
+    assert isinstance(det, Dict)
     img_det = dai.ImgDetection()
     img_det.xmin, img_det.ymin, img_det.xmax, img_det.ymax = det["bbox"]
     img_det.label = det["label"]
@@ -53,22 +55,22 @@ def create_img_detection(det: dict = DETS[0]):
     return img_det
 
 
-def create_img_detections(dets: list[dict] = DETS):
+def create_img_detections(dets: List[Dict] = DETS):
     """Creates a dai.ImgDetections object.
 
     @param dets: List of detection dicts, each containing "bbox" ([xmin, ymin, xmax,
         ymax]), "label" (int), and "confidence" (float).
-    @type dets: list[dict]
+    @type dets: List[Dict]
     @return: The created dai.ImgDetections object.
     @rtype: dai.ImgDetections
     """
-    assert isinstance(dets, list)
+    assert isinstance(dets, List)
     img_dets = dai.ImgDetections()
     img_dets.detections = [create_img_detection(det) for det in dets]
     return img_dets
 
 
-def create_img_detection_extended(det: dict = DETS[0]):
+def create_img_detection_extended(det: Dict = DETS[0]):
     """Creates a ImgDetectionExtended object.
 
     @param det: Detection dict with keys "bbox" ([xmin, ymin, xmax, ymax]), "label"
@@ -77,7 +79,7 @@ def create_img_detection_extended(det: dict = DETS[0]):
     @return: The created ImgDetectionExtended object.
     @rtype: ImgDetectionExtended
     """
-    assert isinstance(det, dict)
+    assert isinstance(det, Dict)
     img_det_ext = ImgDetectionExtended()
     xmin, ymin, xmax, ymax = det["bbox"]
     x_center = (xmin + xmax) / 2
@@ -90,19 +92,19 @@ def create_img_detection_extended(det: dict = DETS[0]):
     return img_det_ext
 
 
-def create_img_detections_extended(dets: list[dict] = DETS, mask: np.ndarray = ARR_2D):
+def create_img_detections_extended(dets: List[Dict] = DETS, mask: np.ndarray = ARR_2D):
     """Creates a ImgDetectionsExtended object.
 
     @param dets: List of detection dicts, each containing "bbox" ([xmin, ymin, xmax,
         ymax]), "label" (int), and "confidence" (float).
-    @type dets: list[dict]
+    @type dets: List[dict]
     @return: The created ImgDetectionsExtended object.
     @rtype: ImgDetectionsExtended
     """
 
     img_dets_ext = ImgDetectionsExtended()
     if dets is not None:
-        assert isinstance(dets, list)
+        assert isinstance(dets, List)
         img_dets_ext.detections = [create_img_detection_extended(det) for det in dets]
     if mask is not None:
         img_dets_ext.masks = create_segmentation_mask(mask)
