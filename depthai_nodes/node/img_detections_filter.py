@@ -41,8 +41,8 @@ class ImgDetectionsFilter(dai.node.HostNode):
         @param keep: Whether to keep or reject the labels.
         @type keep: bool
         """
-        if not isinstance(labels, list):
-            raise ValueError("Labels must be a list.")
+        if not isinstance(labels, list) and labels is not None:
+            raise ValueError("Labels must be a list or None.")
         if not isinstance(keep, bool):
             raise ValueError("keep must be a boolean.")
 
@@ -59,7 +59,10 @@ class ImgDetectionsFilter(dai.node.HostNode):
         @param confidence_threshold: The confidence threshold.
         @type confidence_threshold: float
         """
-        if not isinstance(confidence_threshold, float):
+        if (
+            not isinstance(confidence_threshold, float)
+            and confidence_threshold is not None
+        ):
             raise ValueError("confidence_threshold must be a float.")
         self._confidence_threshold = confidence_threshold
 
@@ -69,7 +72,7 @@ class ImgDetectionsFilter(dai.node.HostNode):
         @param max_detections: The maximum number of detections.
         @type max_detections: int
         """
-        if not isinstance(max_detections, int):
+        if not isinstance(max_detections, int) and max_detections is not None:
             raise ValueError("max_detections must be an integer.")
         self._max_detections = max_detections
 

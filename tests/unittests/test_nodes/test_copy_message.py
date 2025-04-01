@@ -1,13 +1,20 @@
 import inspect
-
+import time
 import numpy as np
-from utils import create_message
+import pytest
+from typing import Callable
 
+from utils import create_message
 from depthai_nodes.node.utils import copy_message
 
 ATTRS_TO_IGNORE = [
     "transformation"
 ]  # TODO: remove after getTransformation() is implemented
+
+
+@pytest.fixture(scope="session")
+def duration(request):
+    return request.config.getoption("--duration")
 
 
 def equal_attributes(obj1, obj2):
@@ -36,19 +43,27 @@ def equal_attributes(obj1, obj2):
         raise ValueError(f"Unsupported attribute type: {type(obj1)}")
 
 
-def test_message_copying():
-    for creator_name, creator_function in inspect.getmembers(
-        create_message, inspect.isfunction
-    ):
+@pytest.mark.parametrize(
+    "message_creator",
+    inspect.getmembers(create_message, inspect.isfunction),
+)
+def test_message_copying(message_creator: tuple[str, Callable], duration: int = 1e-6):
+    _, creator_function = message_creator
+
+    start_time = time.time()
+    while time.time() - start_time < duration:
         msg = creator_function()
         try:
             msg_copy = copy_message(msg)
             assert isinstance(msg_copy, type(msg))
             assert equal_attributes(msg, msg_copy)
-            # check general message information
-            assert msg_copy.getSequenceNum() == msg.getSequenceNum()
-            assert msg_copy.getTimestamp() == msg.getTimestamp()
-            assert msg_copy.getTimestampDevice() == msg.getTimestampDevice()
-            # assert objects_equal(msg_copy.getTransformation(), msg.getTransformation()) TODO: add after getTransformation() is implemented
-        except TypeError:
-            print(f"Skipping {creator_name} as message copying is not implemented.")
+            if hasattr(msg, "getSequenceNum"):
+                assert msg.getSequenceNum() == msg_copy.getSequenceNum()
+            if hasattr(msg, "getTimestamp"):
+                assert msg.getTimestamp() == msg_copy.getTimestamp()
+            if hasattr(msg, "getTimestampDevice"):
+                assert msg.getTimestampDevice() == msg_copy.getTimestampDevice()
+            if hasattr(msg, "getTransformation"):
+                assert msg_copy.getTransformation() == msg.getTransformation()
+        except TypeError:  # copying not implemented for all messages
+            break

@@ -1,9 +1,10 @@
 from typing import Union
-
+import time
 import depthai as dai
 import pytest
-from conftest import Output
 from pytest import FixtureRequest
+
+from conftest import Output
 from utils.create_message import (
     DETS,
     create_img_detections,
@@ -17,6 +18,11 @@ LABELS = [1]
 CONF_THRES = 0.5
 MAX_DET = 1
 SORT = True
+
+
+@pytest.fixture(scope="session")
+def duration(request):
+    return request.config.getoption("--duration")
 
 
 @pytest.fixture
@@ -132,6 +138,7 @@ def test_parameter_setting():
 def test_processing(
     request: FixtureRequest,
     img_detections_type: str,
+    duration: int = 1e-6,  # allows only one run
 ):
     dets: Union[ImgDetectionsExtended, dai.ImgDetections] = request.getfixturevalue(
         img_detections_type
@@ -142,62 +149,66 @@ def test_processing(
     q_dets = o_dets.createOutputQueue()
     q_dets_filtered = filter.out.createOutputQueue()
 
-    # default filtering
-    q_dets.send(dets)
-    filter.process(q_dets.get())
-    dets_filtered = q_dets_filtered.get()
-    assert isinstance(dets_filtered, type(dets))
-    assert len(dets_filtered.detections) == len(DETS)
+    start_time = time.time()
+    while time.time() - start_time < duration:
+        # default filtering
+        q_dets.send(dets)
+        filter.process(q_dets.get())
+        dets_filtered = q_dets_filtered.get()
+        assert isinstance(dets_filtered, type(dets))
+        assert len(dets_filtered.detections) == len(DETS)
 
-    # filter by labels_to_keep
-    filter.setLabels(LABELS, keep=True)
-    q_dets.send(dets)
-    filter.process(q_dets.get())
-    dets_filtered = q_dets_filtered.get()
-    assert len(dets_filtered.detections) == len(
-        [det for det in DETS if det["label"] in LABELS]
-    )
-    for det in dets_filtered.detections:
-        assert det.label in LABELS
-    filter.setLabels([], keep=True)  # setting back to "default"
-
-    # filter by labels_to_reject
-    filter.setLabels(LABELS, keep=False)
-    q_dets.send(dets)
-    filter.process(q_dets.get())
-    dets_filtered = q_dets_filtered.get()
-    assert len(dets_filtered.detections) == len(
-        [det for det in DETS if det["label"] not in LABELS]
-    )
-    for det in dets_filtered.detections:
-        assert det.label not in LABELS
-    filter.setLabels([], keep=False)  # setting back to "default"
-
-    # filter by confidence
-    filter.setConfidenceThreshold(CONF_THRES)
-    q_dets.send(dets)
-    filter.process(q_dets.get())
-    dets_filtered = q_dets_filtered.get()
-    assert len(dets_filtered.detections) == len(
-        [det for det in DETS if det["confidence"] >= CONF_THRES]
-    )
-    for det in dets_filtered.detections:
-        assert det.confidence >= CONF_THRES
-    filter.setConfidenceThreshold(0.0)  # setting back to "default"
-
-    # filter by max detections
-    filter.setMaxDetections(MAX_DET)
-    q_dets.send(dets)
-    filter.process(q_dets.get())
-    dets_filtered = q_dets_filtered.get()
-    assert len(dets_filtered.detections) == MAX_DET
-
-    # sort by confidence
-    filter.setSortByConfidence(SORT)
-    q_dets.send(dets)
-    filter.process(q_dets.get())
-    dets_filtered = q_dets_filtered.get()
-    if SORT:
-        assert dets_filtered.detections == sorted(
-            dets_filtered.detections, key=lambda x: x.confidence, reverse=True
+        # filter by labels_to_keep
+        filter.setLabels(LABELS, keep=True)
+        q_dets.send(dets)
+        filter.process(q_dets.get())
+        dets_filtered = q_dets_filtered.get()
+        assert len(dets_filtered.detections) == len(
+            [det for det in DETS if det["label"] in LABELS]
         )
+        for det in dets_filtered.detections:
+            assert det.label in LABELS
+        filter.setLabels(None, keep=True)  # setting back to default
+
+        # filter by labels_to_reject
+        filter.setLabels(LABELS, keep=False)
+        q_dets.send(dets)
+        filter.process(q_dets.get())
+        dets_filtered = q_dets_filtered.get()
+        assert len(dets_filtered.detections) == len(
+            [det for det in DETS if det["label"] not in LABELS]
+        )
+        for det in dets_filtered.detections:
+            assert det.label not in LABELS
+        filter.setLabels(None, keep=False)  # setting back to default
+
+        # filter by confidence
+        filter.setConfidenceThreshold(CONF_THRES)
+        q_dets.send(dets)
+        filter.process(q_dets.get())
+        dets_filtered = q_dets_filtered.get()
+        assert len(dets_filtered.detections) == len(
+            [det for det in DETS if det["confidence"] >= CONF_THRES]
+        )
+        for det in dets_filtered.detections:
+            assert det.confidence >= CONF_THRES
+        filter.setConfidenceThreshold(None)  # setting back to default
+
+        # filter by max detections
+        filter.setMaxDetections(MAX_DET)
+        q_dets.send(dets)
+        filter.process(q_dets.get())
+        dets_filtered = q_dets_filtered.get()
+        assert len(dets_filtered.detections) == MAX_DET
+        filter.setMaxDetections(None)  # setting it back to default
+
+        # sort by confidence
+        filter.setSortByConfidence(SORT)
+        q_dets.send(dets)
+        filter.process(q_dets.get())
+        dets_filtered = q_dets_filtered.get()
+        if SORT:
+            assert dets_filtered.detections == sorted(
+                dets_filtered.detections, key=lambda x: x.confidence, reverse=True
+            )
+        filter.setSortByConfidence(False)

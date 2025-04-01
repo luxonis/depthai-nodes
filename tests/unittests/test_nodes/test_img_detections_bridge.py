@@ -1,10 +1,11 @@
 import math
 from typing import Union
-
+import time
 import depthai as dai
 import pytest
-from conftest import Output
 from pytest import FixtureRequest
+
+from conftest import Output
 from utils.create_message import (
     DETS,
     create_img_detections,
@@ -13,6 +14,11 @@ from utils.create_message import (
 
 from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.node import ImgDetectionsBridge
+
+
+@pytest.fixture(scope="session")
+def duration(request):
+    return request.config.getoption("--duration")
 
 
 @pytest.fixture
@@ -40,6 +46,7 @@ def test_building():
 def test_processing(
     request: FixtureRequest,
     img_detections_type: str,
+    duration: int = 1e-6,
 ):
     dets: Union[ImgDetectionsExtended, dai.ImgDetections] = request.getfixturevalue(
         img_detections_type
@@ -49,10 +56,6 @@ def test_processing(
     bridge = ImgDetectionsBridge().build(o_dets)
     q_dets = o_dets.createOutputQueue()
     q_dets_transformed = bridge.out.createOutputQueue()
-
-    q_dets.send(dets)
-    bridge.process(q_dets.get())
-    dets_transformed = q_dets_transformed.get()
 
     def _identical_detections(
         img_dets: dai.ImgDetections, img_dets_ext: ImgDetectionExtended
@@ -71,9 +74,15 @@ def test_processing(
                 img_det.confidence, img_det_ext.confidence, rel_tol=1e-6
             )
 
-    if isinstance(dets, dai.ImgDetections):
-        _identical_detections(dets, dets_transformed)
-    elif isinstance(dets, ImgDetectionsExtended):
-        _identical_detections(dets_transformed, dets)
-    else:
-        raise TypeError(f"Unexpected output message type: {type(dets)}")
+    start_time = time.time()
+    while time.time() - start_time < duration:
+        q_dets.send(dets)
+        bridge.process(q_dets.get())
+        dets_transformed = q_dets_transformed.get()
+
+        if isinstance(dets, dai.ImgDetections):
+            _identical_detections(dets, dets_transformed)
+        elif isinstance(dets, ImgDetectionsExtended):
+            _identical_detections(dets_transformed, dets)
+        else:
+            raise TypeError(f"Unexpected output message type: {type(dets)}")
