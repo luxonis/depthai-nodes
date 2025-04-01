@@ -12,17 +12,21 @@ def copy_message(msg: dai.Buffer) -> dai.Buffer:
     @rtype: dai.Buffer
     """
 
+    # 1st attempt: native .copy() method
+    if hasattr(msg, "copy"):
+        return msg.copy()
+
+    # 2nd attempt: custom copy implementation
     try:
-        return copy.deepcopy(msg)  # First attempt: use deepcopy
+        return _copy(msg)
+    except TypeError:
+        pass
+
+    # 3rd attempt: deepcopy (the most general approach)
+    try:
+        return copy.deepcopy(msg)
     except Exception:
-        pass  # If deepcopy fails, move to the next approach
-
-    try:
-        return msg.copy()  # Second attempt: use .copy() method
-    except AttributeError:
-        pass  # If .copy() method doesn't exist, move to the next approach
-
-    return _copy(msg)  # Last attempt: use a custom copy implementation
+        raise TypeError(f"Copying of message type {type(msg)} is not supported.")
 
 
 def _copy(msg: dai.Buffer) -> dai.Buffer:
