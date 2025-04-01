@@ -57,57 +57,66 @@ counter=0
 
 # Iterate over each model
 for model in "${models[@]}"; do
-  echo "$model"
-  echo ""
+  echo "--------------------------------"
+  echo "Starting test for model: $model"
+  echo "--------------------------------"
   counter=$((counter + 1))
 
-  command_to_run="hil --testbed $testbed --skip-sanity-check --stability-test --stability-name=depthai-nodes-parallel-$counter --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"DOCKER_CONFIG=$DOCKER_CONFIG_DIR\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env MAIN_COMMAND=\"python main.py -m $model --duration $TEST_DURATION\"'"
+  model_name="${model%%:*}"
+  model_name="${model_name##*/}"
+
+  command_to_run="hil --testbed $testbed --skip-sanity-check --stability-test --stability-name=$model_name --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"DOCKER_CONFIG=$DOCKER_CONFIG_DIR\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env MAIN_COMMAND=\"python main.py -m $model --duration $TEST_DURATION\"'"
 
   echo "$command_to_run"
 
   eval "$command_to_run"
 
-  echo ""
+  echo "--------------------------------"
 
-  # Add delay between iterations if not the last model
-  if [ $counter -lt ${#models[@]} ]; then
-    echo "Waiting for $LOOP_DELAY seconds before starting the next test..."
-    sleep $LOOP_DELAY
-  fi
+  echo "Waiting for $LOOP_DELAY seconds before starting the next test..."
+  sleep $LOOP_DELAY
 done
 
 # Iterate over each test file for HostNodes
 for test_file in "${test_host_node_files[@]}"; do
+  echo "--------------------------------"
   echo "Running test file: $test_file"
+  echo "--------------------------------"
   counter=$((counter + 1))
-  command_to_run="hil --testbed $testbed --skip-sanity-check --stability-test --stability-name=depthai-nodes-parallel-$counter --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"DOCKER_CONFIG=$DOCKER_CONFIG_DIR\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env MAIN_COMMAND=\"pytest $test_file --duration $TEST_DURATION -n 3 -r a --log-cli-level=DEBUG --color=yes -s\"'"
+
+  test_file_name=$(basename "$test_file" .py)
+
+  command_to_run="hil --testbed $testbed --skip-sanity-check --stability-test --stability-name=$test_file_name --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"DOCKER_CONFIG=$DOCKER_CONFIG_DIR\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env MAIN_COMMAND=\"pytest $test_file --duration $TEST_DURATION -n 3 -r a --log-cli-level=DEBUG --color=yes -s\"'"
   
+  echo "$command_to_run"
+
   eval "$command_to_run"
 
-  echo ""
+  echo "--------------------------------"
 
-  # Add delay between iterations if not the last model
-  if [ $counter -lt ${#models[@]} ]; then
-    echo "Waiting for $LOOP_DELAY seconds before starting the next test..."
-    sleep $LOOP_DELAY
-  fi
+  echo "Waiting for $LOOP_DELAY seconds before starting the next test..."
+  sleep $LOOP_DELAY
 done
 
 # Iterate over each test file for ThreadedHostNodes
 for test_file in "${test_threaded_host_node_files[@]}"; do
+  echo "--------------------------------"
   echo "Running test file: $test_file"
+  echo "--------------------------------"
   counter=$((counter + 1))
-  command_to_run="hil --testbed $testbed --skip-sanity-check --stability-test --stability-name=depthai-nodes-parallel-$counter --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"DOCKER_CONFIG=$DOCKER_CONFIG_DIR\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env MAIN_COMMAND=\"pytest $test_file --duration $TEST_DURATION -n 3 -r a --log-cli-level=DEBUG --color=yes -s\"'"
+
+  test_file_name=$(basename "$test_file" .py)
+
+  command_to_run="hil --testbed $testbed --skip-sanity-check --stability-test --stability-name=$test_file_name --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"DOCKER_CONFIG=$DOCKER_CONFIG_DIR\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env MAIN_COMMAND=\"pytest $test_file --duration $TEST_DURATION -n 3 -r a --log-cli-level=DEBUG --color=yes -s\"'"
   
+  echo "$command_to_run"
+
   eval "$command_to_run"
 
-  echo ""
+  echo "--------------------------------"
 
-  # Add delay between iterations if not the last model
-  if [ $counter -lt ${#models[@]} ]; then
-    echo "Waiting for $LOOP_DELAY seconds before starting the next test..."
-    sleep $LOOP_DELAY
-  fi
+  echo "Waiting for $LOOP_DELAY seconds before starting the next test..."
+  sleep $LOOP_DELAY
 done
 
 echo "All tests started. Check out the provided links to see the results."
