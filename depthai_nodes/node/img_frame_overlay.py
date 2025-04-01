@@ -21,7 +21,7 @@ class ImgFrameOverlay(dai.node.HostNode):
 
     def __init__(self, alpha: float = 0.5) -> None:
         super().__init__()
-        self.SetAlpha(alpha)
+        self.setAlpha(alpha)
 
         self._platform = (
             self.getParentPipeline().getDefaultDevice().getPlatformAsString()
@@ -56,7 +56,7 @@ class ImgFrameOverlay(dai.node.HostNode):
         self.link_args(frame1, frame2)
 
         if alpha is not None:
-            self.SetAlpha(alpha)
+            self.setAlpha(alpha)
 
         return self
 

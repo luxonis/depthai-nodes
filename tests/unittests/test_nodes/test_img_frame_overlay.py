@@ -32,16 +32,16 @@ def test_building():
 
 def test_parameter_setting():
     overlayer = ImgFrameOverlay()
-    overlayer.SetAlpha(ALPHA)
+    overlayer.setAlpha(ALPHA)
     assert overlayer._alpha == ALPHA
 
     # test isinstance(alpha, float)
     with pytest.raises(ValueError):
-        overlayer.SetAlpha("not a float")
+        overlayer.setAlpha("not a float")
 
     # test 0.0 <= alpha <= 1.0
     with pytest.raises(ValueError):
-        overlayer.SetAlpha(ALPHA * 100)
+        overlayer.setAlpha(ALPHA * 100)
 
 
 def test_processing(
@@ -54,7 +54,7 @@ def test_processing(
     o_background = Output()
     o_foreground = Output()
     overlayer = ImgFrameOverlay().build(o_background, o_foreground)
-    overlayer.SetAlpha(ALPHA)
+    overlayer.setAlpha(ALPHA)
 
     q_background = o_background.createOutputQueue()
     q_foreground = o_foreground.createOutputQueue()
