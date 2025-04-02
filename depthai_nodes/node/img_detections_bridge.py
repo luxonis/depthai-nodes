@@ -4,7 +4,8 @@ from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 
 
 class ImgDetectionsBridge(dai.node.HostNode):
-    """Transforms the dai.ImgDetections to ImgDetectionsExtended object or vice versa".
+    """Transforms the dai.ImgDetections to ImgDetectionsExtended object or vice versa.
+    Note that conversion from ImgDetectionsExtended to ImgDetection loses information about segmentation, keypoints and rotation.
 
     Attributes
     ----------
