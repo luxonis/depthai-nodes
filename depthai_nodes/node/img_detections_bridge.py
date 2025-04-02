@@ -17,15 +17,31 @@ class ImgDetectionsBridge(dai.node.HostNode):
     def __init__(self) -> None:
         super().__init__()
 
-    def build(self, msg: dai.Node.Output) -> "ImgDetectionsBridge":
+    def setIgnoreAngle(self, ignore_angle: bool) -> bool:
+        """Sets whether to ignore the angle of the detections during transformation.
+
+        @param ignore_angle: Whether to ignore the angle of the detections.
+        @type ignore_angle: bool
+        """
+        if not isinstance(ignore_angle, bool):
+            raise ValueError("ignore_angle must be a boolean.")
+        self._ignore_angle = ignore_angle
+        return self._ignore_angle
+
+    def build(
+        self, msg: dai.Node.Output, ignore_angle: bool = False
+    ) -> "ImgDetectionsBridge":
         """Configures the node connections.
 
         @param msg: The input message for the ImgDetections object.
         @type msg: dai.Node.Output
+        @param ignore_angle: Whether to ignore the angle of the detections.
+        @type ignore_angle: bool
         @return: The node object with the transformed ImgDetections object.
         @rtype: ImgDetectionsBridge
         """
         self.link_args(msg)
+        self.ignore_angle = self.setIgnoreAngle(ignore_angle)
         return self
 
     def process(self, msg: dai.Buffer) -> None:
@@ -99,7 +115,7 @@ class ImgDetectionsBridge(dai.node.HostNode):
             detection_transformed = dai.ImgDetection()
             detection_transformed.label = detection.label
             detection_transformed.confidence = detection.confidence
-            if detection.rotated_rect.angle != 0:
+            if not self.ignore_angle and detection.rotated_rect.angle != 0:
                 raise NotImplementedError(
                     "Unable to transform ImgDetectionsExtended with rotation."
                 )
