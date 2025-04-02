@@ -16,7 +16,7 @@ class ApplyColormap(dai.node.HostNode):
     max_value : Optional[int]
         Maximum value to consider for normalization. If set lower than the map's actual maximum, the map's maximum will be used instead.
     instance_to_semantic_mask : Optional[bool]
-        If True, converts instance segmentation masks to semantic segmentation masks.
+        If True, converts instance segmentation masks to semantic segmentation masks. Note that this is only relevant for ImgDetectionsExtended messages.
     arr : dai.ImgFrame or Map2D or ImgDetectionsExtended
         The input message with a 2D array.
     output : dai.ImgFrame
