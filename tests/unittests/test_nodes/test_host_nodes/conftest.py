@@ -89,6 +89,7 @@ class HostNodeMock:
     def getParentPipeline(self):
         return self._pipeline
 
+
 def pytest_configure():
     import depthai as dai
 
