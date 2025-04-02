@@ -26,7 +26,7 @@ class ApplyColormap(dai.node.HostNode):
     def __init__(
         self,
         colormap_value: int = cv2.COLORMAP_HOT,
-        max_value: int = 1,
+        max_value: int = 0,
         instance_to_semantic_mask: bool = False,
     ) -> None:
         super().__init__()
@@ -96,8 +96,8 @@ class ApplyColormap(dai.node.HostNode):
         """
 
         if isinstance(msg, dai.ImgFrame):
-            if msg.getType().name != "RAW8":
-                raise TypeError(f"Expected RAW8 image, got {msg.getType().name}")
+            if not msg.getType().name.startswith("RAW"):
+                raise TypeError(f"Expected image type RAW, got {msg.getType().name}")
             arr = msg.getCvFrame()
         elif isinstance(msg, Map2D):
             arr = msg.map
