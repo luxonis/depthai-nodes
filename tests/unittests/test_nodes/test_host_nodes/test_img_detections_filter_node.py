@@ -3,16 +3,17 @@ from typing import Union
 
 import depthai as dai
 import pytest
-from conftest import Output
 from pytest import FixtureRequest
-from utils.create_message import (
+
+from depthai_nodes import ImgDetectionsExtended
+from depthai_nodes.node import ImgDetectionsFilter
+
+from .conftest import Output
+from .utils.create_message import (
     DETS,
     create_img_detections,
     create_img_detections_extended,
 )
-
-from depthai_nodes import ImgDetectionsExtended
-from depthai_nodes.node import ImgDetectionsFilter
 
 LABELS = [1]
 CONF_THRES = 0.5

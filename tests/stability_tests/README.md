@@ -75,3 +75,25 @@ The stability tests are triggered in every PR. But you can also trigger them man
 - `additional-parameter`: The parameter that specifies the desired test. Default is `-all` which runs tests on all parsers. The available options are: `-all`, `-p <parser_name>`.
 - `depthai-version`: The version of the DepthAI that will be used for the tests. Default is `3.0.0a13`.
 - `duration`: The duration of each test in seconds. Default is `10` seconds.
+
+## How to create test for Host node or parser
+
+### Parser
+
+The process is quite simple. You need to generate the test for the parser node (see [Test generation](#test-generation)). Then add the entry in the `check_messages.py` file in the `check_output` function and optionally create a new function to check the specific message, if needed. Last step is to add the model information to the `config.py` file so the tests know which model to download from the ZOO and set up the parser node.
+
+### Host node
+
+We re-use the unit tests for the host nodes. The testing differs between the nodes that inherit from `dai.Node.ThreadedHostNode` and the ones that inherit from `dai.Node.HostNode`. The `ThreadedHostNode` are tested similarly to the parsers by creating `InfiniteInput` which sends the message to the node for `duration` of seconds. If we dont specify the duration, then we run the test only once.
+
+The nodes that inherit from `dai.Node.HostNode` are tested by creating the node and running the test for `duration` of seconds. If we dont specify the duration, then we run the test only once.
+
+You dont need to manually create the mock classes since they are implemented in the `conftest.py` file. Potentialy just add methods or attributes to the mock classes.
+
+Check the already implemented tests for reference.
+
+- `ThreadedHostNode` - tests for `DetectionsRecognitionsSync`
+- `HostNode` - tests for `TilesPatcher`
+
+You can check if everything works by running the tests locally. To run the unit tests move to the `depthai_nodes/tests` directory and run the tests with `pytest`.
+To run the stability tests move to the `depthai_nodes/tests/stability_tests` directory and run the tests with `python main.py -all --duration 2`.

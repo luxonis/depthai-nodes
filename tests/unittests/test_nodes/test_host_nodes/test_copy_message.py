@@ -3,9 +3,10 @@ from typing import Callable, List, Tuple
 
 import numpy as np
 import pytest
-from utils import create_message
 
 from depthai_nodes.node.utils import copy_message
+
+from .utils import create_message
 
 ATTRS_TO_IGNORE = [
     "transformation"

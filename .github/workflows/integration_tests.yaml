@@ -1,0 +1,49 @@
+name: Integration tests for parsers and host nodes.
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'depthai_nodes/**'
+      - 'tests/stability_tests/**'
+      - .github/workflows/stability_tests.yaml
+
+jobs:
+  Integration-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.8', '3.10']
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: pip
+
+    - name: Install depthai
+      run: pip install --extra-index-url ${{ secrets.LUXONIS_EXTRA_INDEX_URL }} depthai==3.0.0a14
+
+    - name: Install package
+      run: pip install -e .[dev]
+
+    - name: Run integration tests
+      run: |
+        cd tests/stability_tests
+        export B2_APPLICATION_KEY=${{ secrets.B2_APPLICATION_KEY }}
+        export B2_APPLICATION_KEY_ID=${{ secrets.B2_APPLICATION_KEY_ID }}
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          python main.py ${{ github.event.inputs.additional-parameter }} --duration ${{ github.event.inputs.duration }}
+        else
+          python main.py -all --download --duration 2
+        fi

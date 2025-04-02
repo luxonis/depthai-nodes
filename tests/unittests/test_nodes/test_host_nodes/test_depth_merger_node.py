@@ -4,13 +4,14 @@ from typing import Union
 import depthai as dai
 import numpy as np
 import pytest
-from conftest import Output
 from pytest import FixtureRequest
-from utils.calibration_handler import get_calibration_handler
 
 from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.node.depth_merger import DepthMerger
 from depthai_nodes.node.host_spatials_calc import HostSpatialsCalc
+
+from .conftest import Output
+from .utils.calibration_handler import get_calibration_handler
 
 
 @pytest.fixture(scope="session")
