@@ -36,7 +36,7 @@ test_host_node_files=()
 # List Python files in ../unittests/test_nodes/test_host_nodes that start with test_ and store them in an array
 while IFS= read -r file; do
     test_host_node_files+=("$file")
-done < <(find ../unittests/test_nodes/test_host_nodes -type f -name 'test_*.py')
+done < <(find ../unittests/test_nodes/test_host_nodes -type f -name 'test_*_node.py')
 
 # Print the total number of test files
 echo "Total test files for HostNodes: ${#test_host_node_files[@]}"
@@ -47,7 +47,7 @@ test_threaded_host_node_files=()
 # List Python files in ../unittests/test_nodes/test_threaded_host_nodes that start with test_ and store them in an array
 while IFS= read -r file; do
     test_threaded_host_node_files+=("$file")
-done < <(find ../unittests/test_nodes/test_threaded_host_nodes -type f -name 'test_*.py')
+done < <(find ../unittests/test_nodes/test_threaded_host_nodes -type f -name 'test_*_node.py')
 
 # Print the total number of test files
 echo "Total test files for ThreadedHostNodes: ${#test_threaded_host_node_files[@]}"
