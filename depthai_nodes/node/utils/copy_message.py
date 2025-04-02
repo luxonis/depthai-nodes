@@ -1,4 +1,5 @@
 import copy
+from typing import Union
 
 import depthai as dai
 
@@ -30,9 +31,16 @@ def copy_message(msg: dai.Buffer) -> dai.Buffer:
 
 
 def _copy(msg: dai.Buffer) -> dai.Buffer:
-    def _copy_img_detection(img_det: dai.ImgDetection) -> dai.ImgDetection:
-        assert isinstance(img_det, dai.ImgDetection)
-        img_det_copy = dai.ImgDetection()
+    def _copy_img_detection(
+        img_det: Union[dai.ImgDetection, dai.SpatialImgDetection],
+    ) -> Union[dai.ImgDetection, dai.SpatialImgDetection]:
+        assert isinstance(img_det, (dai.ImgDetection, dai.SpatialImgDetection))
+        if isinstance(img_det, dai.ImgDetection):
+            img_det_copy = dai.ImgDetection()
+        if isinstance(img_det, dai.SpatialImgDetection):
+            img_det_copy = dai.SpatialImgDetection()
+            img_det_copy.spatialCoordinates = img_det.spatialCoordinates
+            img_det_copy.boundingBoxMapping = img_det.boundingBoxMapping
         img_det_copy.xmin = img_det.xmin
         img_det_copy.ymin = img_det.ymin
         img_det_copy.xmax = img_det.xmax
@@ -41,9 +49,14 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         img_det_copy.confidence = img_det.confidence
         return img_det_copy
 
-    def _copy_img_detections(img_dets: dai.ImgDetections) -> dai.ImgDetections:
-        assert isinstance(img_dets, dai.ImgDetections)
-        img_dets_copy = dai.ImgDetections()
+    def _copy_img_detections(
+        img_dets: Union[dai.ImgDetections, dai.SpatialImgDetections],
+    ) -> Union[dai.ImgDetections, dai.SpatialImgDetections]:
+        assert isinstance(img_dets, (dai.ImgDetections, dai.SpatialImgDetections))
+        if isinstance(img_dets, dai.ImgDetections):
+            img_dets_copy = dai.ImgDetections()
+        if isinstance(img_dets, dai.SpatialImgDetections):
+            img_dets_copy = dai.SpatialImgDetections()
         img_dets_copy.detections = [
             _copy_img_detection(img_det) for img_det in img_dets.detections
         ]
@@ -53,9 +66,9 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         img_dets_copy.setTransformation(img_dets.getTransformation())
         return img_dets_copy
 
-    if isinstance(msg, dai.ImgDetection):
+    if isinstance(msg, (dai.ImgDetection, dai.SpatialImgDetection)):
         return _copy_img_detection(msg)
-    elif isinstance(msg, dai.ImgDetections):
+    elif isinstance(msg, (dai.ImgDetections, dai.SpatialImgDetections)):
         return _copy_img_detections(msg)
     else:
         # TODO: define logic for copying other message types
