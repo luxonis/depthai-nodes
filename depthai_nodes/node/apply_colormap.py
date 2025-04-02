@@ -25,7 +25,7 @@ class ApplyColormap(dai.node.HostNode):
 
     def __init__(
         self,
-        colormap_value: int = cv2.COLORMAP_HOT,
+        colormap_value: int = cv2.COLORMAP_JET,
         max_value: int = 0,
         instance_to_semantic_mask: bool = False,
     ) -> None:
