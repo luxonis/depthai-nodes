@@ -1,6 +1,7 @@
 import depthai as dai
 
 from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
+from depthai_nodes.logging import get_logger
 
 
 class ImgDetectionsBridge(dai.node.HostNode):
@@ -17,6 +18,7 @@ class ImgDetectionsBridge(dai.node.HostNode):
 
     def __init__(self) -> None:
         super().__init__()
+        self._logger = get_logger(__name__)
 
     def setIgnoreAngle(self, ignore_angle: bool) -> bool:
         """Sets whether to ignore the angle of the detections during transformation.
@@ -41,6 +43,10 @@ class ImgDetectionsBridge(dai.node.HostNode):
         @return: The node object with the transformed ImgDetections object.
         @rtype: ImgDetectionsBridge
         """
+        if isinstance(msg, ImgDetectionsExtended):
+            self.logger.debug(
+                "You are using ImgDetectionsBridge to transform from ImgDetectionsExtended to ImgDetections. This results in lose of keypoint, segmentation and bbox rotation information if present in the original message."
+            )
         self.link_args(msg)
         self.ignore_angle = self.setIgnoreAngle(ignore_angle)
         return self
