@@ -316,8 +316,16 @@ class ImgDetectionsExtended(dai.Buffer):
         @type transformation: dai.ImgTransformation
         @raise TypeError: If value is not a dai.ImgTransformation object.
         """
-
+        assert isinstance(transformation, dai.ImgTransformation)
         self.transformation = transformation
+
+    def getTransformation(self) -> dai.ImgTransformation:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self.transformation
 
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
         img_annotations = dai.ImgAnnotations()
