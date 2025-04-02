@@ -62,8 +62,7 @@ class ImgDetectionsBridge(dai.node.HostNode):
 
         msg_transformed.setTimestamp(msg.getTimestamp())
         msg_transformed.setSequenceNum(msg.getSequenceNum())
-        # msg_transformed.setTransformation(msg.getTransformation()) # TODO: uncomment once .setTransformation() and .getTransformation() are supported
-
+        msg_transformed.setTransformation(msg.getTransformation())
         self.out.send(msg_transformed)
 
     def _img_det_to_img_det_ext(
@@ -95,10 +94,6 @@ class ImgDetectionsBridge(dai.node.HostNode):
 
         img_dets_ext.detections = detections_transformed
 
-        img_dets_ext.transformation = (
-            img_dets.getTransformation()
-        )  # TODO: remove once .setTransformation() is supported
-
         return img_dets_ext
 
     def _img_det_ext_to_img_det(
@@ -128,9 +123,5 @@ class ImgDetectionsBridge(dai.node.HostNode):
             detections_transformed.append(detection_transformed)
 
         img_dets.detections = detections_transformed
-
-        img_dets.setTransformation(
-            img_det_ext.transformation
-        )  # remove once .getTransformation() is supported
 
         return img_dets
