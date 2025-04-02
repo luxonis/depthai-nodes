@@ -19,7 +19,8 @@ class ImgDetectionsBridge(dai.node.HostNode):
 
     def __init__(self) -> None:
         super().__init__()
-        self._logger = get_logger(__name__)
+        self._logger = get_logger()
+        self._log = True
 
     def setIgnoreAngle(self, ignore_angle: bool) -> bool:
         """Sets whether to ignore the angle of the detections during transformation.
@@ -44,10 +45,6 @@ class ImgDetectionsBridge(dai.node.HostNode):
         @return: The node object with the transformed ImgDetections object.
         @rtype: ImgDetectionsBridge
         """
-        if isinstance(msg, ImgDetectionsExtended):
-            self.logger.debug(
-                "You are using ImgDetectionsBridge to transform from ImgDetectionsExtended to ImgDetections. This results in lose of keypoint, segmentation and bbox rotation information if present in the original message."
-            )
         self.link_args(msg)
         self.ignore_angle = self.setIgnoreAngle(ignore_angle)
         return self
@@ -63,6 +60,11 @@ class ImgDetectionsBridge(dai.node.HostNode):
             msg_transformed = self._img_det_to_img_det_ext(msg)
         elif isinstance(msg, ImgDetectionsExtended):
             msg_transformed = self._img_det_ext_to_img_det(msg)
+            if self._log:
+                self._logger.warning(
+                    "You are using ImgDetectionsBridge to transform from ImgDetectionsExtended to ImgDetections. This results in lose of keypoint, segmentation and bbox rotation information if present in the original message."
+                )
+                self._log = False  # only log once
         else:
             raise TypeError(
                 f"Expected dai.ImgDetections or ImgDetectionsExtended, got {type(msg)}"
