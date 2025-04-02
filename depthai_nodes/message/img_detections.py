@@ -316,7 +316,8 @@ class ImgDetectionsExtended(dai.Buffer):
         @type transformation: dai.ImgTransformation
         @raise TypeError: If value is not a dai.ImgTransformation object.
         """
-        assert isinstance(transformation, dai.ImgTransformation)
+        if transformation is not None:
+            assert isinstance(transformation, dai.ImgTransformation)
         self.transformation = transformation
 
     def getTransformation(self) -> dai.ImgTransformation:
