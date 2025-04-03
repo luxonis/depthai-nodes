@@ -139,7 +139,7 @@ class ApplyColormap(dai.node.HostNode):
                 else dai.ImgFrame.Type.BGR888p
             ),
         )
-        frame.setTimestamp(frame.getTimestamp())
-        frame.setSequenceNum(frame.getSequenceNum())
+        frame.setTimestamp(msg.getTimestamp())
+        frame.setSequenceNum(msg.getSequenceNum())
 
         self.out.send(frame)
