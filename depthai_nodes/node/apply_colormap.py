@@ -2,7 +2,7 @@ import cv2
 import depthai as dai
 import numpy as np
 
-from depthai_nodes.message import ImgDetectionsExtended, Map2D
+from depthai_nodes.message import ImgDetectionsExtended, Map2D, SegmentationMask
 
 
 class ApplyColormap(dai.node.HostNode):
@@ -95,7 +95,9 @@ class ApplyColormap(dai.node.HostNode):
         @type instance_to_semantic_segmentation: bool
         """
 
-        if isinstance(msg, dai.ImgFrame):
+        if isinstance(msg, SegmentationMask):
+            arr = msg.mask
+        elif isinstance(msg, dai.ImgFrame):
             if not msg.getType().name.startswith("RAW"):
                 raise TypeError(f"Expected image type RAW, got {msg.getType().name}")
             arr = msg.getCvFrame()
@@ -113,7 +115,7 @@ class ApplyColormap(dai.node.HostNode):
             else:
                 arr = msg.masks  # semantic segmentation mask
         else:
-            raise ValueError("Unsupported input type. Cannot obtain a 2D array.")
+            raise ValueError(f"Unsupported input type {type(msg)}.")
 
         # make sure that min value == 0 to ensure proper normalization
         arr += np.abs(arr.min()) if arr.min() < 0 else 0
