@@ -4,6 +4,9 @@ from stability_tests.conftest import PipelineMock
 
 from depthai_nodes.node import ParserGenerator
 
+# Need to add because it uses PipelineMock and ThreadedHostNodeMock from stability_tests conftest.py
+dai.Pipeline = PipelineMock
+
 
 @pytest.fixture
 def parser_generator():

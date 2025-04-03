@@ -1,4 +1,3 @@
-import logging
 import time
 from collections import deque
 from typing import List, Optional, Tuple, Type, Union
@@ -41,29 +40,13 @@ class InfiniteQueue(Queue):
         super().__init__()
         self.duration = 1  # seconds
         self.start_time = time.time()
-        self.log_interval = 1  # seconds
-        self.time_after_last_log = time.time()
-        self.log_counter = 1
-        self.logger = logging.getLogger(__name__)
 
     def send(self, item):
         super().send(item)
 
     def get(self):
-        current_time = time.time()
-        if current_time - self.start_time > self.duration:
+        if time.time() - self.start_time > self.duration:
             raise dai.MessageQueue.QueueException
-
-        # Log progress periodically
-        elapsed = current_time - self.time_after_last_log
-        if elapsed > self.log_interval:
-            elapsed = self.log_counter * self.log_interval
-            remaining = self.duration - elapsed
-            self.logger.info(
-                f"Test running... {elapsed:.1f}s elapsed, {remaining:.1f}s remaining"
-            )
-            self.time_after_last_log = current_time
-            self.log_counter += 1
         element = self._messages.pop()
         self.send(element)
         return element

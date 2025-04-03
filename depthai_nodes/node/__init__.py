@@ -1,7 +1,10 @@
-from .depth_color_transform import DepthColorTransform
+from .apply_colormap import ApplyColormap
 from .depth_merger import DepthMerger
 from .detections_recognitions_sync import DetectionsRecognitionsSync
 from .host_spatials_calc import HostSpatialsCalc
+from .img_detections_bridge import ImgDetectionsBridge
+from .img_detections_filter import ImgDetectionsFilter
+from .img_frame_overlay import ImgFrameOverlay
 from .parser_generator import ParserGenerator
 from .parsers.base_parser import BaseParser
 from .parsers.classification import ClassificationParser
@@ -29,7 +32,7 @@ from .tiles_patcher import TilesPatcher
 from .tiling import Tiling
 
 __all__ = [
-    "DepthColorTransform",
+    "ApplyColormap",
     "DepthMerger",
     "Tiling",
     "TilesPatcher",
@@ -59,4 +62,7 @@ __all__ = [
     "DetectionParser",
     "EmbeddingsParser",
     "DetectionsRecognitionsSync",
+    "ImgFrameOverlay",
+    "ImgDetectionsBridge",
+    "ImgDetectionsFilter",
 ]

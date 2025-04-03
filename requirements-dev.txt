@@ -6,3 +6,4 @@ pytest-subtests>=0.12.1
 pytest-md>=0.2.0
 coverage-badge>=1.1.0
 b2==3.16.1
+pytest-xdist

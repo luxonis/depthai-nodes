@@ -37,11 +37,31 @@ class Output:
         self._queues.append(queue)
         return queue
 
+    def getParentPipeline(self):
+        return None
+
+
+class Pipeline:
+    def __init__(self):
+        self._default_device = Device()
+
+    def getDefaultDevice(self):
+        return self._default_device
+
+
+class Device:
+    def __init__(self):
+        self._platform = dai.Platform(0)  # initialize platform with 0 (RVC2)
+
+    def getPlatformAsString(self):
+        return self._platform.name
+
 
 class HostNodeMock:
     def __init__(self):
         self._output = Output()
         self._linked_args: Optional[Tuple[Output, ...]] = None
+        self._pipeline = Pipeline()
 
     def link_args(self, *args):
         for arg in args:
@@ -65,6 +85,9 @@ class HostNodeMock:
 
     def sendProcessingToPipeline(self, send: bool):
         self._sendProcessingToPipeline = send
+
+    def getParentPipeline(self):
+        return self._pipeline
 
 
 def pytest_configure():
