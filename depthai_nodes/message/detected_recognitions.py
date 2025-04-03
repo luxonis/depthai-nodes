@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Optional
 
 import depthai as dai
 
@@ -50,7 +50,7 @@ class DetectedRecognitions(dai.Buffer):
         self.setSequenceNum(value.getSequenceNum())
 
     @property
-    def nn_data(self) -> List[dai.NNData]:
+    def nn_data(self) -> Optional[List[dai.NNData]]:
         """Returns the neural network data.
 
         @return: List of neural network data.
@@ -59,16 +59,18 @@ class DetectedRecognitions(dai.Buffer):
         return self._nn_data
 
     @nn_data.setter
-    def nn_data(self, value: List[dai.NNData]):
+    def nn_data(self, value: Optional[List[dai.NNData]]):
         """Sets the neural network data.
 
         @param value: List of neural network data.
-        @type value: List[dai.NNData]
+        @type value: Optional[List[dai.NNData]]
         @raise TypeError: If value is not a list.
         @raise TypeError: If each element is not a dai.NNData object.
         """
+        if value is None:
+            self._nn_data = []
+            return
+
         if not isinstance(value, list):
             raise TypeError("nn_data must be a list.")
-        if not all(isinstance(item, dai.NNData) for item in value):
-            raise TypeError("All items in nn_data must be dai.NNData objects.")
         self._nn_data = value
