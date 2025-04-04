@@ -1,3 +1,4 @@
+import copy
 from typing import List
 
 import depthai as dai
@@ -21,6 +22,16 @@ class Prediction(dai.Buffer):
         """Initializes the Prediction object."""
         super().__init__()
         self._prediction: float = None
+
+    def copy(self):
+        """Creates a new instance of the Prediction class and copies the attributes.
+
+        @return: A new instance of the Prediction class.
+        @rtype: Prediction
+        """
+        new_obj = Prediction()
+        new_obj.prediction = copy.deepcopy(self.prediction)
+        return new_obj
 
     @property
     def prediction(self) -> float:
@@ -62,6 +73,20 @@ class Predictions(dai.Buffer):
         super().__init__()
         self._predictions: List[Prediction] = []
         self._transformation: dai.ImgTransformation = None
+
+    def copy(self):
+        """Creates a new instance of the Predictions class and copies the attributes.
+
+        @return: A new instance of the Predictions class.
+        @rtype: Predictions
+        """
+        new_obj = Predictions()
+        new_obj.predictions = [prediction.copy() for prediction in self.predictions]
+        new_obj.setSequenceNum(self.getSequenceNum())
+        new_obj.setTimestamp(self.getTimestamp())
+        new_obj.setTimestampDevice(self.getTimestampDevice())
+        new_obj.setTransformation(self.transformation)
+        return new_obj
 
     @property
     def predictions(self) -> List[Prediction]:

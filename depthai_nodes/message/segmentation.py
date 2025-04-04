@@ -34,7 +34,10 @@ class SegmentationMask(dai.Buffer):
         """
         new_obj = SegmentationMask()
         new_obj.mask = copy.deepcopy(self._mask)
-        new_obj.transformation = self._transformation
+        new_obj.setSequenceNum(self.getSequenceNum())
+        new_obj.setTimestamp(self.getTimestamp())
+        new_obj.setTimestampDevice(self.getTimestampDevice())
+        new_obj.setTransformation(self.transformation)
         return new_obj
 
     @property

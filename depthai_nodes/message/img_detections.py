@@ -231,6 +231,7 @@ class ImgDetectionsExtended(dai.Buffer):
         new_obj.setSequenceNum(self.getSequenceNum())
         new_obj.setTimestamp(self.getTimestamp())
         new_obj.setTimestampDevice(self.getTimestampDevice())
+        new_obj.setTransformation(self.transformation)
         return new_obj
 
     @property
