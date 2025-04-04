@@ -1,3 +1,4 @@
+import copy
 from typing import List
 
 import depthai as dai
@@ -29,6 +30,19 @@ class Keypoint(dai.Buffer):
         self._z: float = 0.0
         self._confidence: float = -1.0
         self._logger = get_logger(__name__)
+
+    def copy(self):
+        """Creates a new instance of the Keypoint class and copies the attributes.
+
+        @return: A new instance of the Keypoint class.
+        @rtype: Keypoint
+        """
+        new_obj = Keypoint()
+        new_obj.x = copy.deepcopy(self.x)
+        new_obj.y = copy.deepcopy(self.y)
+        new_obj.z = copy.deepcopy(self.z)
+        new_obj.confidence = copy.deepcopy(self.confidence)
+        return new_obj
 
     @property
     def x(self) -> float:
@@ -149,6 +163,20 @@ class Keypoints(dai.Buffer):
         super().__init__()
         self._keypoints: List[Keypoint] = []
         self._transformation: dai.ImgTransformation = None
+
+    def copy(self):
+        """Creates a new instance of the Keypoints class and copies the attributes.
+
+        @return: A new instance of the Keypoints class.
+        @rtype: Keypoints
+        """
+        new_obj = Keypoints()
+        new_obj.keypoints = [keypoint.copy() for keypoint in self.keypoints]
+        new_obj.setSequenceNum(self.getSequenceNum())
+        new_obj.setTimestamp(self.getTimestamp())
+        new_obj.setTimestampDevice(self.getTimestampDevice())
+        new_obj.setTransformation(self.transformation)
+        return new_obj
 
     @property
     def keypoints(self) -> List[Keypoint]:

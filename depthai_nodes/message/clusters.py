@@ -1,3 +1,4 @@
+import copy
 from typing import List
 
 import cv2
@@ -21,6 +22,17 @@ class Cluster(dai.Buffer):
         super().__init__()
         self._label: int = None
         self._points: List[dai.Point2f] = []
+
+    def copy(self):
+        """Creates a new instance of the Cluster class and copies the attributes.
+
+        @return: A new instance of the Cluster class.
+        @rtype: Cluster
+        """
+        new_obj = Cluster()
+        new_obj.label = copy.deepcopy(self.label)
+        new_obj.points = copy.deepcopy(self.points)
+        return new_obj
 
     @property
     def label(self) -> int:
@@ -84,6 +96,20 @@ class Clusters(dai.Buffer):
         super().__init__()
         self._clusters: List[Cluster] = []
         self._transformation: dai.ImgTransformation = None
+
+    def copy(self):
+        """Creates a new instance of the Clusters class and copies the attributes.
+
+        @return: A new instance of the Clusters class.
+        @rtype: Clusters
+        """
+        new_obj = Clusters()
+        new_obj.clusters = [cluster.copy() for cluster in self.clusters]
+        new_obj.setSequenceNum(self.getSequenceNum())
+        new_obj.setTimestamp(self.getTimestamp())
+        new_obj.setTimestampDevice(self.getTimestampDevice())
+        new_obj.setTransformation(self.transformation)
+        return new_obj
 
     @property
     def clusters(self) -> List[Cluster]:
