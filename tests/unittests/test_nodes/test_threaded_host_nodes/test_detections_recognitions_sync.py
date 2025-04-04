@@ -4,7 +4,6 @@ from typing import Optional
 import depthai as dai
 import numpy as np
 import pytest
-from stability_tests.conftest import PipelineMock
 
 # from depthai_nodes import
 from depthai_nodes.message import (
@@ -12,6 +11,8 @@ from depthai_nodes.message import (
     ImgDetectionExtended,
     ImgDetectionsExtended,
 )
+
+from .conftest import PipelineMock
 
 # Need to add because it uses PipelineMock and ThreadedHostNodeMock from stability_tests conftest.py
 dai.Pipeline = PipelineMock
