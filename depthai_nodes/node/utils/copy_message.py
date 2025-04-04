@@ -31,7 +31,6 @@ def copy_message(msg: dai.Buffer) -> dai.Buffer:
 
 
 def _copy(msg: dai.Buffer) -> dai.Buffer:
-
     def _copy_metadata(msg: dai.Buffer) -> dai.Buffer:
         msg_type = type(msg)
         msg_copy = msg_type()
