@@ -26,8 +26,8 @@ class DetectedRecognitions(dai.Buffer):
     def img_detections(self) -> Union[dai.ImgDetections, ImgDetectionsExtended]:
         """Returns the image detections.
 
-        @return: Image detections with keypoints and masks. @rtype:
-        Union[dai.ImgDetections, ImgDetectionsExtended]
+        @return: Image detections with keypoints and masks.
+        @rtype: Union[dai.ImgDetections, ImgDetectionsExtended]
         """
         return self._img_detections
 
@@ -35,9 +35,10 @@ class DetectedRecognitions(dai.Buffer):
     def img_detections(self, value: Union[dai.ImgDetections, ImgDetectionsExtended]):
         """Sets the image detections.
 
-        @param value: Image detections with keypoints and masks. @type value:
-        Union[dai.ImgDetections, ImgDetectionsExtended] @raise TypeError: If value is
-        not an ImgDetections or ImgDetectionsExtended     object.
+        @param value: Image detections with keypoints and masks.
+        @type value: Union[dai.ImgDetections, ImgDetectionsExtended]
+        @raise TypeError: If value is not an ImgDetections or ImgDetectionsExtended
+            object.
         """
         if not isinstance(value, (dai.ImgDetections, ImgDetectionsExtended)):
             raise TypeError(
@@ -52,7 +53,8 @@ class DetectedRecognitions(dai.Buffer):
     def recognitions_data(self) -> Optional[List[dai.Buffer]]:
         """Returns the recognitions data.
 
-        @return: List of recognitions data. @rtype: Optional[List[dai.Buffer]]
+        @return: List of recognitions data.
+        @rtype: Optional[List[dai.Buffer]]
         """
         return self._recognitions_data
 
@@ -60,9 +62,10 @@ class DetectedRecognitions(dai.Buffer):
     def recognitions_data(self, value: Optional[List[dai.Buffer]]):
         """Sets the recognitions data.
 
-        @param value: List of recognitions data. @type value: Optional[List[dai.Buffer]]
-        @raise TypeError: If value is not a list. @raise TypeError: If each element is
-        not of type dai.Buffer.
+        @param value: List of recognitions data.
+        @type value: Optional[List[dai.Buffer]]
+        @raise TypeError: If value is not a list.
+        @raise TypeError: If each element is not of type dai.Buffer.
         """
         if value is None:
             self._recognitions_data = []
