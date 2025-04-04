@@ -13,6 +13,9 @@ from depthai_nodes.message import (
     ImgDetectionsExtended,
 )
 
+# Need to add because it uses PipelineMock and ThreadedHostNodeMock from stability_tests conftest.py
+dai.Pipeline = PipelineMock
+
 NUMBER_OF_MESSAGES_TESTED = 0
 
 
@@ -119,10 +122,10 @@ def check_synchronized_detections_recognitions(
         item, DetectedRecognitions
     ), f"Expected DetectedRecognitions, got {type(item)}"
 
-    # Check that detections and nn_data are present
+    # Check that detections and recognitions_data are present
     assert item.img_detections is not None, "img_detections is None"
-    assert item.nn_data is not None, "nn_data is None"
-    assert len(item.nn_data) > 0, "nn_data is empty"
+    assert item.recognitions_data is not None, "recognitions_data is None"
+    assert len(item.recognitions_data) > 0, "recognitions_data is empty"
 
     # Get detection timestamp
     detection_ts = item.img_detections.getTimestamp().total_seconds()
@@ -131,7 +134,7 @@ def check_synchronized_detections_recognitions(
     tolerance = 1 / (CAMERA_FPS * FPS_TOLERANCE_DIVISOR)
 
     # Check that each recognition has a timestamp within tolerance of the detection timestamp
-    for i, recognition in enumerate(item.nn_data):
+    for i, recognition in enumerate(item.recognitions_data):
         rec_ts = recognition.getTimestamp().total_seconds()
         timestamp_diff = abs(detection_ts - rec_ts)
         assert timestamp_diff < tolerance, (
@@ -145,8 +148,8 @@ def check_synchronized_detections_recognitions(
         hasattr(item.img_detections, "detections")
         and len(item.img_detections.detections) > 0
     ):
-        assert len(item.nn_data) == len(item.img_detections.detections), (
-            f"Number of recognitions ({len(item.nn_data)}) doesn't match "
+        assert len(item.recognitions_data) == len(item.img_detections.detections), (
+            f"Number of recognitions ({len(item.recognitions_data)}) doesn't match "
             f"number of detections ({len(item.img_detections.detections)})"
         )
 

@@ -20,9 +20,9 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
         Number of input checks per FPS.
     _camera_fps: int
         The camera FPS.
-    _unmatched_recognitions: List[dai.NNData]
+    _unmatched_recognitions: List[dai.Buffer]
         List of unmatched recognitions.
-    _recognitions_by_detection_ts: Dict[float, List[dai.NNData]]
+    _recognitions_by_detection_ts: Dict[float, List[dai.Buffer]]
         Dictionary of recognitions by detection timestamp.
     _detections: Dict[float, Union[dai.ImgDetections, dai.SpatialImgDetections, ImgDetectionsExtended]]
         Dictionary of detections.
@@ -39,13 +39,13 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
     def __init__(self, *args, **kwargs) -> None:
         """Initializes the DetectionsRecognitionsSync node.
 
-        @param args: Arguments to be passed to the ThreadedHostNode class.
-        @param kwargs: Keyword arguments to be passed to the ThreadedHostNode class.
+        @param args: Arguments to be passed to the ThreadedHostNode class. @param
+        kwargs: Keyword arguments to be passed to the ThreadedHostNode class.
         """
         super().__init__(*args, **kwargs)
         self._camera_fps = 30
-        self._unmatched_recognitions: List[dai.NNData] = []
-        self._recognitions_by_detection_ts: Dict[float, List[dai.NNData]] = {}
+        self._unmatched_recognitions: List[dai.Buffer] = []
+        self._recognitions_by_detection_ts: Dict[float, List[dai.Buffer]] = {}
         self._detections: Dict[
             float,
             Union[dai.ImgDetections, dai.SpatialImgDetections, ImgDetectionsExtended],
@@ -83,7 +83,7 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
             self._clear_old_data(ready_data)
             self.out.send(ready_data)
 
-    def _add_recognition(self, recognition: dai.NNData) -> None:
+    def _add_recognition(self, recognition: dai.Buffer) -> None:
         recognition_ts = self._get_total_seconds_ts(recognition)
         best_matching_detection_ts = self._get_matching_detection_ts(recognition_ts)
 
@@ -113,7 +113,7 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
         self._update_ready_timestamps(detection_ts)
 
     def _try_match_recognitions(self, detection_ts: float) -> None:
-        matched_recognitions: List[dai.NNData] = []
+        matched_recognitions: List[dai.Buffer] = []
         for recognition in self._unmatched_recognitions:
             recognition_ts = self._get_total_seconds_ts(recognition)
             if self._timestamps_in_tolerance(detection_ts, recognition_ts):
@@ -128,7 +128,7 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
         return difference < (1 / self._camera_fps / self.FPS_TOLERANCE_DIVISOR)
 
     def _add_recognition_by_detection_ts(
-        self, recognition: dai.NNData, detection_ts: float
+        self, recognition: dai.Buffer, detection_ts: float
     ) -> None:
         if detection_ts in self._recognitions_by_detection_ts:
             self._recognitions_by_detection_ts[detection_ts].append(recognition)
@@ -161,8 +161,8 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
         timestamp = self._ready_timestamps.get()
         detections_recognitions = DetectedRecognitions()
         detections_recognitions.img_detections = self._detections.pop(timestamp)
-        detections_recognitions.nn_data = self._recognitions_by_detection_ts.pop(
-            timestamp, None
+        detections_recognitions.recognitions_data = (
+            self._recognitions_by_detection_ts.pop(timestamp, None)
         )
         return detections_recognitions
 
