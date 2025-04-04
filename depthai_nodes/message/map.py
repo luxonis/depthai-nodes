@@ -2,6 +2,7 @@ import cv2
 import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
+import copy
 
 
 class Map2D(dai.Buffer):
@@ -26,6 +27,18 @@ class Map2D(dai.Buffer):
         self._width: int = None
         self._height: int = None
         self._transformation: dai.ImgTransformation = None
+
+    def copy(self):
+        """Creates a new instance of the Map2D class and copies the
+        attributes.
+
+        @return: A new instance of the Map2D class.
+        @rtype: Map2D
+        """
+        new_obj = Map2D()
+        new_obj.map = copy.deepcopy(self._map)
+        new_obj.transformation = self._transformation
+        return new_obj
 
     @property
     def map(self) -> NDArray[np.float32]:
