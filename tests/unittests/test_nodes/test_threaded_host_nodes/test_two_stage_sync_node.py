@@ -26,14 +26,14 @@ def duration(request):
 
 
 @pytest.fixture
-def detections_recognitions_sync_generator():
-    """Create a DetectionsRecognitionsSync instance for testing."""
-    from depthai_nodes.node.detections_recognitions_sync import (
-        DetectionsRecognitionsSync,
+def two_stage_sync_generator():
+    """Create a TwoStageSync instance for testing."""
+    from depthai_nodes.node.two_stage_sync import (
+        TwoStageSync,
     )
 
     pipeline = PipelineMock()
-    return pipeline.create(DetectionsRecognitionsSync)
+    return pipeline.create(TwoStageSync)
 
 
 @pytest.fixture
@@ -96,7 +96,7 @@ def check_synchronized_detections_recognitions(
     Parameters
     ----------
     item : DetectedRecognitions
-        The output from DetectionsRecognitionsSync
+        The output from TwoStageSync
     model_slug : Optional[str]
         Model identifier (not used in this function but required by interface)
     parser_name : Optional[str]
@@ -112,9 +112,9 @@ def check_synchronized_detections_recognitions(
     AssertionError
         If the synchronization validation fails
     """
-    # Constants from the DetectionsRecognitionsSync class
+    # Constants from the TwoStageSync class
     FPS_TOLERANCE_DIVISOR = 2.0
-    CAMERA_FPS = 30  # Default value from the DetectionsRecognitionsSync class
+    CAMERA_FPS = 30  # Default value from the TwoStageSync class
     global NUMBER_OF_MESSAGES_TESTED
     NUMBER_OF_MESSAGES_TESTED += 1
 
@@ -131,7 +131,7 @@ def check_synchronized_detections_recognitions(
     # Get detection timestamp
     detection_ts = item.img_detections.getTimestamp().total_seconds()
 
-    # Calculate tolerance using the same formula as in the DetectionsRecognitionsSync class
+    # Calculate tolerance using the same formula as in the TwoStageSync class
     tolerance = 1 / (CAMERA_FPS * FPS_TOLERANCE_DIVISOR)
 
     # Check that each recognition has a timestamp within tolerance of the detection timestamp
@@ -164,70 +164,70 @@ def check_synchronized_detections_recognitions(
     return True
 
 
-def test_detections_recognitions_sync_node_build_valid(
-    detections_recognitions_sync_generator,
+def test_two_stage_sync_node_build_valid(
+    two_stage_sync_generator,
 ):
-    detections_recognitions_sync = detections_recognitions_sync_generator.build()
+    two_stage_sync = two_stage_sync_generator.build(camera_fps=15)
 
-    assert len(detections_recognitions_sync._unmatched_recognitions) == 0
-    assert len(detections_recognitions_sync._recognitions_by_detection_ts) == 0
-    assert len(detections_recognitions_sync._detections) == 0
+    assert len(two_stage_sync._unmatched_recognitions) == 0
+    assert len(two_stage_sync._recognitions_by_detection_ts) == 0
+    assert len(two_stage_sync._detections) == 0
 
 
-def test_detections_recognitions_sync_node_img_detections(
-    detections_recognitions_sync_generator, img_detections, nn_data, duration: int
+def test_two_stage_sync_node_img_detections(
+    two_stage_sync_generator, img_detections, nn_data, duration: int
 ):
-    detections_recognitions_sync = detections_recognitions_sync_generator.build()
+    two_stage_sync = two_stage_sync_generator.build(camera_fps=15)
 
     # Send data
     if duration is not None:
-        detections_recognitions_sync.input_detections._queue.duration = duration
-        detections_recognitions_sync.input_recognitions._queue.duration = duration
-    detections_recognitions_sync.input_detections.send(img_detections)
-    detections_recognitions_sync._detections[
+        two_stage_sync.input_detections._queue.duration = duration
+        two_stage_sync.input_recognitions._queue.duration = duration
+    two_stage_sync.input_detections.send(img_detections)
+    two_stage_sync._detections[
         img_detections.getTimestamp().total_seconds()
     ] = img_detections
 
     # Send two nn_data messages because we have two detections
-    detections_recognitions_sync.input_recognitions.send(nn_data)
-    detections_recognitions_sync.input_recognitions.send(nn_data)
-    detections_recognitions_sync.out.createOutputQueue(
+    two_stage_sync.input_recognitions.send(nn_data)
+    two_stage_sync.input_recognitions.send(nn_data)
+    two_stage_sync.out.createOutputQueue(
         check_synchronized_detections_recognitions, model_slug=None, parser_name=None
     )
 
     # Process the data
-    detections_recognitions_sync.run()
+    two_stage_sync.run()
 
     global NUMBER_OF_MESSAGES_TESTED
     assert NUMBER_OF_MESSAGES_TESTED > 0, "The node did not send out any messages."
 
 
-def test_detections_recognitions_sync_node_img_detections_extended(
-    detections_recognitions_sync_generator,
+def test_two_stage_sync_node_img_detections_extended(
+    two_stage_sync_generator,
     img_detections_extended,
     nn_data,
     duration: int,
 ):
-    detections_recognitions_sync = detections_recognitions_sync_generator.build()
+    two_stage_sync = two_stage_sync_generator.build(camera_fps=15)
 
     # Send data
     if duration is not None:
-        detections_recognitions_sync.input_detections._queue.duration = duration
-        detections_recognitions_sync.input_recognitions._queue.duration = duration
-    detections_recognitions_sync.input_detections.send(img_detections_extended)
-    detections_recognitions_sync._detections[
+        two_stage_sync.input_detections._queue.duration = duration
+        two_stage_sync.input_recognitions._queue.duration = duration
+    two_stage_sync.input_detections.send(img_detections_extended)
+    two_stage_sync._detections[
         img_detections_extended.getTimestamp().total_seconds()
     ] = img_detections_extended
 
     # Send two nn_data messages because we have two detections
-    detections_recognitions_sync.input_recognitions.send(nn_data)
-    detections_recognitions_sync.input_recognitions.send(nn_data)
-    detections_recognitions_sync.out.createOutputQueue(
+    two_stage_sync.input_recognitions.send(nn_data)
+    two_stage_sync.input_recognitions.send(nn_data)
+    two_stage_sync.out.createOutputQueue(
         check_synchronized_detections_recognitions, model_slug=None, parser_name=None
     )
 
     # Process the data
-    detections_recognitions_sync.run()
+    two_stage_sync.run()
 
     global NUMBER_OF_MESSAGES_TESTED
     assert NUMBER_OF_MESSAGES_TESTED > 0, "The node did not send out any messages."

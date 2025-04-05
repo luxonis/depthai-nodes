@@ -7,7 +7,7 @@ import depthai as dai
 from depthai_nodes import DetectedRecognitions, ImgDetectionsExtended
 
 
-class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
+class TwoStageSync(dai.node.ThreadedHostNode):
     FPS_TOLERANCE_DIVISOR = 2.0
     INPUT_CHECKS_PER_FPS = 100
     """A class for synchronizing detections and recognitions.
@@ -37,7 +37,7 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
     """
 
     def __init__(self, *args, **kwargs) -> None:
-        """Initializes the DetectionsRecognitionsSync node.
+        """Initializes the TwoStageSync node.
 
         @param args: Arguments to be passed to the ThreadedHostNode class. @param
         kwargs: Keyword arguments to be passed to the ThreadedHostNode class.
@@ -55,7 +55,11 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
         self.input_detections = self.createInput()
         self.out = self.createOutput()
 
-    def build(self) -> "DetectionsRecognitionsSync":
+    def build(self, camera_fps: int) -> "TwoStageSync":
+        if camera_fps <= 0:
+            raise ValueError(f"Camera FPS must be positive, got {camera_fps}")
+
+        self._camera_fps = camera_fps
         return self
 
     def set_camera_fps(self, fps: int) -> None:
@@ -64,15 +68,15 @@ class DetectionsRecognitionsSync(dai.node.ThreadedHostNode):
     def run(self) -> None:
         while self.isRunning():
             try:
-                input_recognitions = self.input_recognitions.tryGet()
-                input_detections = self.input_detections.tryGet()
+                input_recognition = self.input_recognitions.tryGet()
+                input_detection = self.input_detections.tryGet()
             except dai.MessageQueue.QueueException:
                 break
-            if input_recognitions:
-                self._add_recognition(input_recognitions)
+            if input_recognition:
+                self._add_recognition(input_recognition)
                 self._send_ready_data()
-            if input_detections:
-                self._add_detection(input_detections)
+            if input_detection:
+                self._add_detection(input_detection)
                 self._send_ready_data()
 
             time.sleep(1 / self.INPUT_CHECKS_PER_FPS / self._camera_fps)

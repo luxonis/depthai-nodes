@@ -13,7 +13,7 @@ class DetectedRecognitions(dai.Buffer):
     img_detections: Union[dai.ImgDetections, ImgDetectionsExtended]
         Image detections with keypoints and masks.
     recognitions_data: List[dai.Buffer]
-        List of neural network data.
+        List of recognitions data.
     """
 
     def __init__(self) -> None:
