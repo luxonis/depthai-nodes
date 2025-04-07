@@ -9,8 +9,8 @@ from depthai_nodes.node.utils import copy_message
 from .utils import create_message
 
 ATTRS_TO_IGNORE = [
-    "transformation"
-]  # TODO: remove after getTransformation() is implemented
+    "Type",  # dai.ImgFrame attribute
+]
 
 
 def equal_attributes(obj1, obj2):
@@ -57,7 +57,5 @@ def test_message_copying(message_creator: Tuple[str, Callable]):
             assert msg.getTimestamp() == msg_copy.getTimestamp()
         if hasattr(msg, "getTimestampDevice"):
             assert msg.getTimestampDevice() == msg_copy.getTimestampDevice()
-        if hasattr(msg, "getTransformation"):
-            assert msg_copy.getTransformation() == msg.getTransformation()
     except TypeError:  # copying not implemented for all messages
         pass
