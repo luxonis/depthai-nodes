@@ -110,7 +110,7 @@ run_test() {
     fi
     
     echo "$command_to_run"
-    # eval "$command_to_run"
+    eval "$command_to_run"
     
     echo "--------------------------------"
 }
