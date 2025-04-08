@@ -33,8 +33,9 @@ class Cluster(dai.Buffer):
         new_obj.label = copy.deepcopy(self.label)
         from depthai_nodes.node.utils import (
             copy_message,
-        )  # TODO: move on top after debugging issues with circular imports
+        )
 
+        # TODO: move on top after debugging issues with circular imports
         new_obj.points = [copy_message(p) for p in self.points]
         return new_obj
 

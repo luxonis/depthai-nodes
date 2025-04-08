@@ -10,9 +10,9 @@ from depthai_nodes.node import ImgDetectionsFilter
 
 from .conftest import Output
 from .utils.create_message import (
+    DETECTIONS,
     create_img_detections,
     create_img_detections_extended,
-    DETECTIONS,
 )
 
 LABELS = [1]

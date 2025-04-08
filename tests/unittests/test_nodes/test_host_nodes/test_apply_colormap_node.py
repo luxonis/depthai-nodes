@@ -9,10 +9,10 @@ from depthai_nodes.node import ApplyColormap
 
 from .conftest import Output
 from .utils.create_message import (
+    ARRAYS,
     create_img_detections_extended,
     create_img_frame,
     create_map,
-    ARRAYS,
 )
 
 # HEIGHT, WIDTH = 5, 5
@@ -88,7 +88,6 @@ def test_processing(colormap_value: int, duration: int = 1e-6):
         create_map(ARR.astype(np.float32)),  # Map2D
         create_img_detections_extended(masks=ARR),  # ImgDetectionsExtended
     ]:
-
         start_time = time.time()
         while time.time() - start_time < duration:
             # breakpoint()

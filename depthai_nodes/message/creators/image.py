@@ -41,7 +41,6 @@ def create_image_message(
         image = image[:, :, 0]  # HW image
         if not (img_frame_type.name.startswith(("RAW", "GRAY"))):
             img_frame_type = dai.ImgFrame.Type.GRAY8
-        dai.ImgFrame.Type.RAW8
         height, width = image.shape
     else:
         if not is_bgr:
