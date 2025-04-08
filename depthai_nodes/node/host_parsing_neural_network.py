@@ -1,4 +1,4 @@
-from depthai_nodes.node import ParsingNeuralNetwork
+from depthai_nodes.node.parsing_neural_network import ParsingNeuralNetwork
 
 
 class HostParsingNeuralNetwork(ParsingNeuralNetwork):

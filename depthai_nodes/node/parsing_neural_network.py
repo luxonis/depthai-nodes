@@ -3,7 +3,7 @@ from typing import Dict, Optional, Type, TypeVar, Union, overload
 
 import depthai as dai
 
-from depthai_nodes.node import ParserGenerator
+from depthai_nodes.node.parser_generator import ParserGenerator
 from depthai_nodes.node.parsers import BaseParser
 
 TParser = TypeVar("TParser", bound=Union[BaseParser, dai.DeviceNode])
