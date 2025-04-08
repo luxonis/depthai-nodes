@@ -1,5 +1,6 @@
 from .apply_colormap import ApplyColormap
 from .depth_merger import DepthMerger
+from .host_parsing_neural_network import HostParsingNeuralNetwork
 from .host_spatials_calc import HostSpatialsCalc
 from .img_detections_bridge import ImgDetectionsBridge
 from .img_detections_filter import ImgDetectionsFilter
@@ -37,6 +38,7 @@ __all__ = [
     "TilesPatcher",
     "ParserGenerator",
     "ParsingNeuralNetwork",
+    "HostParsingNeuralNetwork",
     "HostSpatialsCalc",
     "ImageOutputParser",
     "YuNetParser",
