@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import depthai as dai
 
@@ -19,6 +19,8 @@ class Keypoint(dai.Buffer):
         Z coordinate of the keypoint.
     confidence: Optional[float]
         Confidence of the keypoint.
+    label: Optional[str]
+        Label of the keypoint.
     """
 
     def __init__(self):
@@ -28,6 +30,7 @@ class Keypoint(dai.Buffer):
         self._y: float = None
         self._z: float = 0.0
         self._confidence: float = -1.0
+        self._label: str = None
         self._logger = get_logger(__name__)
 
     @property
@@ -132,6 +135,26 @@ class Keypoint(dai.Buffer):
             self._logger.info("Confidence value was clipped to [0, 1].")
         self._confidence = value
 
+    @property
+    def label(self) -> str:
+        """Returns the label of the keypoint.
+
+        @return: Label of the keypoint.
+        @rtype: str
+        """
+        return self._label
+
+    @label.setter
+    def label(self, value: str):
+        """Sets the label of the keypoint.
+
+        @param value: Label of the keypoint.
+        @type value: str
+        """
+        if not isinstance(value, str):
+            raise TypeError("label must be a string.")
+        self._label = value
+
 
 class Keypoints(dai.Buffer):
     """Keypoints class for storing keypoints.
@@ -148,6 +171,7 @@ class Keypoints(dai.Buffer):
         """Initializes the Keypoints object."""
         super().__init__()
         self._keypoints: List[Keypoint] = []
+        self._edges: List[Tuple[int, int]] = []
         self._transformation: dai.ImgTransformation = None
 
     @property
@@ -173,6 +197,35 @@ class Keypoints(dai.Buffer):
         if not all(isinstance(item, Keypoint) for item in value):
             raise ValueError("keypoints must be a list of Keypoint objects.")
         self._keypoints = value
+
+    @property
+    def edges(self) -> List[Tuple[int, int]]:
+        """Returns the edges.
+
+        @return: List of edges.
+        @rtype: List[Tuple[int, int]]
+        """
+        return self._edges
+
+    @edges.setter
+    def edges(self, value: List[Tuple[int, int]]):
+        """Sets the edges.
+
+        @param value: List of edges.
+        @type value: List[Tuple[int, int]]
+        @raise TypeError: If value is not a list.
+        @raise TypeError: If each each element is not of type Tuple[int, int].
+        """
+        if not isinstance(value, list):
+            raise TypeError("edges must be a list.")
+        if not all(
+            (isinstance(item, tuple) or isinstance(item, list))
+            and len(item) == 2
+            and all(isinstance(i, int) for i in item)
+            for item in value
+        ):
+            raise TypeError("edges must be a list of tuples or lists of integers.")
+        self._edges = value
 
     @property
     def transformation(self) -> dai.ImgTransformation:
@@ -235,6 +288,20 @@ class Keypoints(dai.Buffer):
         pointsAnnotation.fillColor = KEYPOINT_COLOR
         pointsAnnotation.thickness = 2
         annotation.points.append(pointsAnnotation)
+
+        for edge in self.edges:
+            pt1_ix, pt2_ix = edge
+            pt1 = self.keypoints[pt1_ix]
+            pt2 = self.keypoints[pt2_ix]
+            pointsAnnotation = dai.PointsAnnotation()
+            pointsAnnotation.type = dai.PointsAnnotationType.LINE_STRIP
+            pointsAnnotation.points = dai.VectorPoint2f(
+                [dai.Point2f(pt1.x, pt1.y), dai.Point2f(pt2.x, pt2.y)]
+            )
+            pointsAnnotation.outlineColor = KEYPOINT_COLOR
+            pointsAnnotation.fillColor = KEYPOINT_COLOR
+            pointsAnnotation.thickness = 1
+            annotation.points.append(pointsAnnotation)
 
         img_annotations.annotations.append(annotation)
         img_annotations.setTimestamp(self.getTimestamp())

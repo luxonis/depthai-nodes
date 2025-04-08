@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 import depthai as dai
 import numpy as np
@@ -22,6 +22,10 @@ class KeypointParser(BaseParser):
         Number of keypoints the model detects.
     score_threshold : float
         Confidence score threshold for detected keypoints.
+    labels : List[str]
+        Labels for the keypoints.
+    edges : List[List[int]]
+        Keypoint connection pairs for visualizing the skeleton.
 
     Output Message/s
     ----------------
@@ -44,6 +48,8 @@ class KeypointParser(BaseParser):
         scale_factor: float = 1.0,
         n_keypoints: int = None,
         score_threshold: float = None,
+        labels: Optional[List[str]] = None,
+        edges: Optional[List[List[int]]] = None,
     ) -> None:
         """Initializes the parser node.
 
@@ -53,12 +59,18 @@ class KeypointParser(BaseParser):
         @type scale_factor: float
         @param n_keypoints: Number of keypoints.
         @type n_keypoints: int
+        @param labels: Labels for the keypoints.
+        @type labels: Optional[List[str]]
+        @param edges: Keypoint connection pairs for visualizing the skeleton.
+        @type edges: Optional[List[List[int]]]
         """
         super().__init__()
         self.output_layer_name = output_layer_name
         self.scale_factor = scale_factor
         self.n_keypoints = n_keypoints
         self.score_threshold = score_threshold
+        self.labels = labels
+        self.edges = edges
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
@@ -112,6 +124,35 @@ class KeypointParser(BaseParser):
 
         self.score_threshold = threshold
 
+    def setLabels(self, labels: List[str]) -> None:
+        """Sets the labels for the keypoints.
+
+        @param labels: List of labels for the keypoints.
+        @type labels: List[str]
+        """
+        if not isinstance(labels, list):
+            raise ValueError("Labels must be a list.")
+        if not all(isinstance(label, str) for label in labels):
+            raise ValueError("Labels must be a list of strings.")
+        self.labels = labels
+
+    def setEdges(self, edges: List[List[int]]) -> None:
+        """Sets the edges for the keypoints.
+
+        @param edges: List of edges for the keypoints.
+        @type edges: List[List[int]]
+        """
+        if not isinstance(edges, list) and not isinstance(edges, tuple):
+            raise ValueError("Edges must be a list or tuple.")
+        if not all(
+            (isinstance(edge, list) or isinstance(edge, tuple))
+            and len(edge) == 2
+            and all(isinstance(i, int) for i in edge)
+            for edge in edges
+        ):
+            raise ValueError("Edges must be a list of lists or tuples of integers.")
+        self.edges = edges
+
     def build(
         self,
         head_config: Dict[str, Any],
@@ -133,6 +174,8 @@ class KeypointParser(BaseParser):
         self.scale_factor = head_config.get("scale_factor", self.scale_factor)
         self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
         self.score_threshold = head_config.get("score_threshold", self.score_threshold)
+        self.labels = head_config.get("keypoint_labels", self.labels)
+        self.edges = head_config.get("skeleton_edges", self.edges)
 
         return self
 
@@ -170,7 +213,9 @@ class KeypointParser(BaseParser):
 
             keypoints = np.clip(keypoints, 0, 1)
 
-            msg = create_keypoints_message(keypoints)
+            msg = create_keypoints_message(
+                keypoints, edges=self.edges, labels=self.labels
+            )
             msg.setTimestamp(output.getTimestamp())
             msg.setTransformation(output.getTransformation())
             msg.setSequenceNum(output.getSequenceNum())

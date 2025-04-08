@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 import depthai as dai
 import numpy as np
@@ -21,6 +21,10 @@ class SuperAnimalParser(KeypointParser):
         Number of keypoints.
     score_threshold : float
         Confidence score threshold for detected keypoints.
+    labels : List[str]
+        Labels for the keypoints.
+    edges : List[List[int]]
+        Keypoint connection pairs for visualizing the skeleton.
 
     Output Message/s
     ----------------
@@ -35,6 +39,8 @@ class SuperAnimalParser(KeypointParser):
         scale_factor: float = 256.0,
         n_keypoints: int = 39,
         score_threshold: float = 0.5,
+        labels: Optional[List[str]] = None,
+        edges: Optional[List[List[int]]] = None,
     ) -> None:
         """Initializes the parser node.
 
@@ -52,6 +58,8 @@ class SuperAnimalParser(KeypointParser):
             scale_factor=scale_factor,
             n_keypoints=n_keypoints,
             score_threshold=score_threshold,
+            labels=labels,
+            edges=edges,
         )
 
     def build(
@@ -97,7 +105,13 @@ class SuperAnimalParser(KeypointParser):
             scores = keypoints[:, 2]
             keypoints = keypoints[:, :2] / self.scale_factor
 
-            msg = create_keypoints_message(keypoints, scores, self.score_threshold)
+            msg = create_keypoints_message(
+                keypoints,
+                scores,
+                self.score_threshold,
+                labels=self.labels,
+                edges=self.edges,
+            )
             msg.setTimestamp(output.getTimestamp())
             msg.setTransformation(output.getTransformation())
             msg.setSequenceNum(output.getSequenceNum())

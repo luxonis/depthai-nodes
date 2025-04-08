@@ -9,6 +9,8 @@ def create_keypoints_message(
     keypoints: Union[np.ndarray, List[List[float]]],
     scores: Union[np.ndarray, List[float], None] = None,
     confidence_threshold: Optional[float] = None,
+    labels: Optional[List[str]] = None,
+    edges: Optional[List[List[int]]] = None,
 ) -> Keypoints:
     """Create a DepthAI message for the keypoints.
 
@@ -18,7 +20,10 @@ def create_keypoints_message(
     @type scores: Union[np.ndarray, List[float], None]
     @param confidence_threshold: Confidence threshold of keypoint detections. Defaults to None.
     @type confidence_threshold: Optional[float]
-
+    @param labels: Labels of the detected keypoints. Defaults to None.
+    @type labels: Optional[List[str]]
+    @param edges: Connection pairs of the detected keypoints. Defaults to None.
+    @type edges: Optional[List[List[int]]]
     @return: Keypoints message containing the detected keypoints.
     @rtype: Keypoints
 
@@ -90,6 +95,23 @@ def create_keypoints_message(
                         f"Keypoints inner list should contain only float, got {type(coord)}."
                     )
 
+    if labels is not None:
+        if not isinstance(labels, list):
+            raise ValueError(f"Labels should be list, got {type(labels)}.")
+        if not all(isinstance(label, str) for label in labels):
+            raise ValueError("Labels should be a list of strings.")
+
+    if edges is not None:
+        if not isinstance(edges, list) and not isinstance(edges, tuple):
+            raise ValueError(f"Edges should be list or tuple, got {type(edges)}.")
+        if not all(
+            (isinstance(edge, list) or isinstance(edge, tuple))
+            and len(edge) == 2
+            and all(isinstance(i, int) for i in edge)
+            for edge in edges
+        ):
+            raise ValueError("Edges should be a list of lists or tuples of integers.")
+
     keypoints = np.array(keypoints)
     if scores is not None:
         scores = np.array(scores)
@@ -104,6 +126,8 @@ def create_keypoints_message(
 
     keypoints_msg = Keypoints()
     points = []
+    included_keypoints = []
+
     for i, keypoint in enumerate(keypoints):
         if scores is not None and confidence_threshold is not None:
             if scores[i] < confidence_threshold:
@@ -114,7 +138,26 @@ def create_keypoints_message(
         pt.z = float(keypoint[2]) if use_3d else 0.0
         if scores is not None:
             pt.confidence = float(scores[i])
+        if labels is not None:
+            pt.label = labels[i]
         points.append(pt)
+        included_keypoints.append(i)
 
     keypoints_msg.keypoints = points
+
+    if edges is not None:
+        filtered_edges = []
+        # Create a mapping from original indices to new indices
+        index_mapping = {
+            old_idx: new_idx for new_idx, old_idx in enumerate(included_keypoints)
+        }
+
+        for edge in edges:
+            # Only include edges where both endpoints exist in the filtered keypoints
+            if edge[0] in included_keypoints and edge[1] in included_keypoints:
+                # Map the old indices to the new indices
+                new_edge = [index_mapping[edge[0]], index_mapping[edge[1]]]
+                filtered_edges.append(new_edge)
+
+        keypoints_msg.edges = filtered_edges
     return keypoints_msg

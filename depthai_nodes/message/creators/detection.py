@@ -18,6 +18,8 @@ def create_detection_message(
     label_names: Optional[List[str]] = None,
     keypoints: np.ndarray = None,
     keypoints_scores: np.ndarray = None,
+    keypoint_labels: Optional[List[str]] = None,
+    keypoint_edges: Optional[List[List[int]]] = None,
     masks: np.ndarray = None,
 ) -> ImgDetectionsExtended:
     """Create a DepthAI message for object detection. The message contains the bounding
@@ -41,6 +43,10 @@ def create_detection_message(
     @param keypoints_scores: Confidence scores of detected keypoints of shape (N,
         n_keypoints, 1). Defaults to None.
     @type keypoints_scores: Optional[np.ndarray]
+    @param keypoint_labels: Labels of keypoints. Defaults to None.
+    @type keypoint_labels: Optional[List[str]]
+    @param keypoint_edges: Connection pairs of keypoints. Defaults to None.
+    @type keypoint_edges: Optional[List[List[int]]]
     @param masks: Masks of detected objects of shape (H, W). Defaults to None.
     @type masks: Optional[np.ndarray]
     @return: Message containing the bounding boxes, labels, confidence scores, and
@@ -164,6 +170,33 @@ def create_detection_message(
         if not all(0 <= score <= 1 for score in keypoints_scores.flatten()):
             raise ValueError("Keypoints scores should be between 0 and 1.")
 
+    if keypoint_labels is not None:
+        if not isinstance(keypoint_labels, list):
+            raise ValueError(
+                f"Keypoint labels should be a list, got {type(keypoint_labels)}."
+            )
+        if not all(isinstance(label, str) for label in keypoint_labels):
+            raise ValueError(
+                f"Keypoint labels should be a list of strings, got {keypoint_labels}."
+            )
+
+    if keypoint_edges is not None:
+        if not isinstance(keypoint_edges, list) and not isinstance(
+            keypoint_edges, tuple
+        ):
+            raise ValueError(
+                f"Keypoint edges should be a list or tuple, got {type(keypoint_edges)}."
+            )
+        if not all(
+            (isinstance(edge, list) or isinstance(edge, tuple))
+            and len(edge) == 2
+            and all(isinstance(i, int) for i in edge)
+            for edge in keypoint_edges
+        ):
+            raise ValueError(
+                f"Keypoint edges should be a list of lists or tuples of integers, got {keypoint_edges}."
+            )
+
     if masks is not None:
         if not isinstance(masks, np.ndarray):
             raise ValueError(f"Masks should be a numpy array, got {type(masks)}.")
@@ -201,9 +234,10 @@ def create_detection_message(
                 scores=None
                 if keypoints_scores is None
                 else keypoints_scores[detection_idx],
+                labels=keypoint_labels,
+                edges=keypoint_edges,
             )
-            detection.keypoints = keypoints_msg.keypoints
-
+            detection.keypoints = keypoints_msg
         detections.append(detection)
 
     detections_msg = ImgDetectionsExtended()

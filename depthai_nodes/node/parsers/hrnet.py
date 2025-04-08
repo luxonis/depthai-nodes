@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 import depthai as dai
 import numpy as np
@@ -25,7 +25,11 @@ class HRNetParser(KeypointParser):
     """
 
     def __init__(
-        self, output_layer_name: str = "", score_threshold: float = 0.5
+        self,
+        output_layer_name: str = "",
+        score_threshold: float = 0.5,
+        labels: Optional[List[str]] = None,
+        edges: Optional[List[List[int]]] = None,
     ) -> None:
         """Initializes the parser node.
 
@@ -33,8 +37,17 @@ class HRNetParser(KeypointParser):
         @type output_layer_name: str
         @param score_threshold: Confidence score threshold for detected keypoints.
         @type score_threshold: float
+        @param labels: Labels for the keypoints.
+        @type labels: Optional[List[str]]
+        @param edges: Keypoint connection pairs for visualizing the skeleton.
+        @type edges: Optional[List[List[int]]]
         """
-        super().__init__(output_layer_name, score_threshold=score_threshold)
+        super().__init__(
+            output_layer_name,
+            score_threshold=score_threshold,
+            labels=labels,
+            edges=edges,
+        )
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
@@ -111,6 +124,8 @@ class HRNetParser(KeypointParser):
                 keypoints=keypoints,
                 scores=scores,
                 confidence_threshold=self.score_threshold,
+                edges=self.edges,
+                labels=self.labels,
             )
             keypoints_message.setTimestamp(output.getTimestamp())
             keypoints_message.setTransformation(output.getTransformation())

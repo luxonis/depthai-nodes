@@ -41,6 +41,10 @@ class YOLOExtendedParser(BaseParser):
         Number of keypoints in the model.
     anchors : Optional[List[List[List[float]]]]
         Anchors for the YOLO model (optional).
+    keypoint_labels : Optional[List[str]]
+        Labels for the keypoints.
+    keypoint_edges : Optional[List[List[int]]]
+        Keypoint connection pairs for visualizing the skeleton.
     subtype : str
         Version of the YOLO model.
 
@@ -66,6 +70,8 @@ class YOLOExtendedParser(BaseParser):
         n_keypoints: int = 17,
         anchors: Optional[List[List[List[float]]]] = None,
         subtype: str = "",
+        keypoint_labels: Optional[List[str]] = None,
+        keypoint_edges: Optional[List[List[int]]] = None,
     ):
         """Initialize the parser node.
 
@@ -85,6 +91,10 @@ class YOLOExtendedParser(BaseParser):
         @type anchors: Optional[List[List[List[float]]]]
         @param subtype: The version of the YOLO model
         @type subtype: str
+        @param keypoint_labels: The labels for the keypoints
+        @type keypoint_labels: Optional[List[str]]
+        @param keypoint_edges: Connection pairs of the keypoints
+        @type keypoint_edges: Optional[List[List[int]]]
         """
         super().__init__()
 
@@ -96,6 +106,8 @@ class YOLOExtendedParser(BaseParser):
         self.mask_conf = mask_conf
         self.n_keypoints = n_keypoints
         self.anchors = anchors
+        self.keypoint_labels = keypoint_labels
+        self.keypoint_edges = keypoint_edges
         try:
             self.subtype = YOLOSubtype(subtype.lower())
         except ValueError as err:
@@ -226,6 +238,41 @@ class YOLOExtendedParser(BaseParser):
 
         self.label_names = label_names
 
+    def setKeypointLabels(self, keypoint_labels: List[str]) -> None:
+        """Sets the labels for the keypoints.
+
+        @param keypoint_labels: The labels for the keypoints.
+        @type keypoint_labels: List[str]
+        """
+        if not isinstance(keypoint_labels, list):
+            raise ValueError("Keypoint labels must be a list.")
+        if not all(isinstance(label, str) for label in keypoint_labels):
+            raise ValueError("Keypoint labels must be a list of strings.")
+
+        self.keypoint_labels = keypoint_labels
+
+    def setKeypointEdges(self, keypoint_edges: List[List[int]]) -> None:
+        """Sets the edges for the keypoints.
+
+        @param keypoint_edges: The edges for the keypoints.
+        @type keypoint_edges: List[List[int]]
+        """
+        if not isinstance(keypoint_edges, list) and not isinstance(
+            keypoint_edges, tuple
+        ):
+            raise ValueError("Keypoint edges must be a list or tuple.")
+        if not all(
+            (isinstance(edge, list) or isinstance(edge, tuple))
+            and len(edge) == 2
+            and all(isinstance(i, int) for i in edge)
+            for edge in keypoint_edges
+        ):
+            raise ValueError(
+                "Keypoint edges must be a list of lists or tuples of integers."
+            )
+
+        self.keypoint_edges = keypoint_edges
+
     def build(
         self,
         head_config: Dict[str, Any],
@@ -264,6 +311,8 @@ class YOLOExtendedParser(BaseParser):
         self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
         subtype = head_config.get("subtype", self.subtype)
         self.label_names = head_config.get("classes", self.label_names)
+        self.keypoint_labels = head_config.get("keypoint_labels", self.keypoint_labels)
+        self.keypoint_edges = head_config.get("skeleton_edges", self.keypoint_edges)
         try:
             self.subtype = YOLOSubtype(subtype.lower())
         except ValueError as err:
@@ -426,6 +475,8 @@ class YOLOExtendedParser(BaseParser):
                     label_names=label_names,
                     keypoints=keypoints,
                     keypoints_scores=keypoints_scores,
+                    keypoint_labels=self.keypoint_labels,
+                    keypoint_edges=self.keypoint_edges,
                 )
             elif mode == self._SEG_MODE:
                 detections_message = create_detection_message(
