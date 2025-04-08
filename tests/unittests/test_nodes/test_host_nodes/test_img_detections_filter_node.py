@@ -10,9 +10,9 @@ from depthai_nodes.node import ImgDetectionsFilter
 
 from .conftest import Output
 from .utils.create_message import (
-    DETS,
     create_img_detections,
     create_img_detections_extended,
+    DETECTIONS,
 )
 
 LABELS = [1]
@@ -28,12 +28,12 @@ def duration(request):
 
 @pytest.fixture
 def img_detections():
-    return create_img_detections(DETS)
+    return create_img_detections()
 
 
 @pytest.fixture
 def img_detections_extended():
-    return create_img_detections_extended(DETS)
+    return create_img_detections_extended()
 
 
 def test_initialization():
@@ -157,7 +157,7 @@ def test_processing(
         filter.process(q_dets.get())
         dets_filtered = q_dets_filtered.get()
         assert isinstance(dets_filtered, type(dets))
-        assert len(dets_filtered.detections) == len(DETS)
+        assert len(dets_filtered.detections) == len(DETECTIONS["bboxes"])
 
         # filter by labels_to_keep
         filter.setLabels(LABELS, keep=True)
@@ -165,7 +165,7 @@ def test_processing(
         filter.process(q_dets.get())
         dets_filtered = q_dets_filtered.get()
         assert len(dets_filtered.detections) == len(
-            [det for det in DETS if det["label"] in LABELS]
+            [None for label in DETECTIONS["labels"] if label in LABELS]
         )
         for det in dets_filtered.detections:
             assert det.label in LABELS
@@ -177,7 +177,7 @@ def test_processing(
         filter.process(q_dets.get())
         dets_filtered = q_dets_filtered.get()
         assert len(dets_filtered.detections) == len(
-            [det for det in DETS if det["label"] not in LABELS]
+            [None for label in DETECTIONS["labels"] if label not in LABELS]
         )
         for det in dets_filtered.detections:
             assert det.label not in LABELS
@@ -189,7 +189,7 @@ def test_processing(
         filter.process(q_dets.get())
         dets_filtered = q_dets_filtered.get()
         assert len(dets_filtered.detections) == len(
-            [det for det in DETS if det["confidence"] >= CONF_THRES]
+            [None for score in DETECTIONS["scores"] if score >= CONF_THRES]
         )
         for det in dets_filtered.detections:
             assert det.confidence >= CONF_THRES

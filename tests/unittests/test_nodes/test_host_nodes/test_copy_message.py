@@ -14,8 +14,11 @@ ATTRS_TO_IGNORE = [
 
 
 def equal_attributes(obj1, obj2):
-    if isinstance(obj1, (int, float, str, bool, bytes)):
-        return obj1 == obj2  # directly comparable types
+    if not (type(obj1) == type(obj2)):
+        return False
+    if np.isscalar(obj1):
+        # int, float, str, bool, bytes, np.int32, np.float64, np.bool_, etc.
+        return obj1 == obj2
     elif isinstance(obj1, np.ndarray):
         return np.array_equal(obj1, obj2)
     elif isinstance(obj1, (List, Tuple)):
@@ -57,5 +60,10 @@ def test_message_copying(message_creator: Tuple[str, Callable]):
             assert msg.getTimestamp() == msg_copy.getTimestamp()
         if hasattr(msg, "getTimestampDevice"):
             assert msg.getTimestampDevice() == msg_copy.getTimestampDevice()
+        if hasattr(msg, "getTransformation"):
+            assert equal_attributes(
+                msg_copy.getTransformation(), msg.getTransformation()
+            )  # comparisson of dai.ImgTransformation objects
+
     except TypeError:  # copying not implemented for all messages
         pass
