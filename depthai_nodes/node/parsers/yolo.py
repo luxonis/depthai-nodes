@@ -314,10 +314,9 @@ class YOLOExtendedParser(BaseParser):
         self.keypoint_label_names = head_config.get(
             "keypoint_label_names", self.keypoint_label_names
         )
-        self.keypoint_edges = [
-            tuple(edge)
-            for edge in head_config.get("skeleton_edges", self.keypoint_edges)
-        ]
+        keypoint_edges = head_config.get("skeleton_edges", self.keypoint_edges)
+        if keypoint_edges:
+            self.keypoint_edges = [tuple(edge) for edge in keypoint_edges]
         try:
             self.subtype = YOLOSubtype(subtype.lower())
         except ValueError as err:

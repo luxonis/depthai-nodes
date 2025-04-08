@@ -179,9 +179,9 @@ class KeypointParser(BaseParser):
         self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
         self.score_threshold = head_config.get("score_threshold", self.score_threshold)
         self.labels = head_config.get("keypoint_labels", self.labels)
-        self.edges = [
-            tuple(edge) for edge in head_config.get("skeleton_edges", self.edges)
-        ]
+        keypoint_edges = head_config.get("skeleton_edges", self.edges)
+        if keypoint_edges:
+            self.edges = [tuple(edge) for edge in keypoint_edges]
 
         return self
 
