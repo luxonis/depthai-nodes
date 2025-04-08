@@ -33,8 +33,12 @@ class Line(dai.Buffer):
         @rtype: Line
         """
         new_obj = Line()
-        new_obj.start_point = copy.deepcopy(self.start_point)
-        new_obj.end_point = copy.deepcopy(self.end_point)
+        from depthai_nodes.node.utils import (
+            copy_message,
+        )  # TODO: move on top after debugging issues with circular imports
+
+        new_obj.start_point = copy_message(self.start_point)
+        new_obj.end_point = copy_message(self.end_point)
         new_obj.confidence = copy.deepcopy(self.confidence)
         return new_obj
 
