@@ -41,7 +41,7 @@ def create_detection_message(
         dim is 2 or 3. Defaults to None.
     @type keypoints: Optional[np.array]
     @param keypoints_scores: Confidence scores of detected keypoints of shape (N,
-        n_keypoints, 1). Defaults to None.
+        n_keypoints). Defaults to None.
     @type keypoints_scores: Optional[np.ndarray]
     @param keypoint_label_names: Labels of keypoints. Defaults to None.
     @type keypoint_label_names: Optional[List[str]]
@@ -231,9 +231,11 @@ def create_detection_message(
         if keypoints is not None:
             keypoints_msg = create_keypoints_message(
                 keypoints=keypoints[detection_idx],
-                scores=None
-                if keypoints_scores is None
-                else keypoints_scores[detection_idx],
+                scores=(
+                    None
+                    if keypoints_scores is None
+                    else keypoints_scores[detection_idx]
+                ),
                 label_names=keypoint_label_names,
                 edges=keypoint_edges,
             )
