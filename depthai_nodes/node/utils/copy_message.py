@@ -80,7 +80,7 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         point2f_copy = _copy_metadata(point2f)
         point2f_copy.x = point2f.x
         point2f_copy.y = point2f.y
-        # TODO: how to correctly set the value returned by .isNormalized()?
+        # TODO: set the value for .isNormalized()
         return point2f_copy
 
     if isinstance(msg, dai.ImgFrame):

@@ -15,9 +15,6 @@ from .utils.create_message import (
     create_map,
 )
 
-# HEIGHT, WIDTH = 5, 5
-# MAX_VALUE = 50
-# ARR = np.random.randint(0, MAX_VALUE, (HEIGHT, WIDTH), dtype=np.int16)
 ARR = ARRAYS["2d"]
 HEIGHT, WIDTH = ARR.shape
 MAX_VALUE = ARR.max().item()
@@ -80,7 +77,6 @@ def test_processing(colormap_value: int, duration: int = 1e-6):
     q_arr = o_array.createOutputQueue()
     q_colorizer = colorizer.out.createOutputQueue()
 
-    # breakpoint()
     for arr in [
         create_img_frame(
             image=ARR[..., np.newaxis], img_frame_type=dai.ImgFrame.Type.RAW8
@@ -90,15 +86,9 @@ def test_processing(colormap_value: int, duration: int = 1e-6):
     ]:
         start_time = time.time()
         while time.time() - start_time < duration:
-            # breakpoint()
-
             q_arr.send(arr)
-            # breakpoint()
             colorizer.process(q_arr.get())
-            # breakpoint()
             arr_colored = q_colorizer.get()
-
-            # breakpoint()
 
             assert isinstance(arr_colored, dai.ImgFrame)
             assert arr_colored.getCvFrame().shape == (HEIGHT, WIDTH, 3)
