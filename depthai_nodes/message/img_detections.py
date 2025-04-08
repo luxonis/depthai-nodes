@@ -64,10 +64,19 @@ class ImgDetectionExtended(dai.Buffer):
         new_obj.confidence = copy.deepcopy(self.confidence)
         new_obj.label = copy.deepcopy(self.label)
         new_obj.label_name = copy.deepcopy(self.label_name)
-        new_kpts = Keypoints()
-        new_kpts.keypoints = copy.deepcopy(self.keypoints)
-        new_kpts.edges = copy.deepcopy(self._keypoints.edges)
-        new_obj.keypoints = new_kpts
+        new_kpts_msg = Keypoints()
+        new_kpts = []
+        for kpt in self.keypoints:
+            new_kpt = Keypoint()
+            new_kpt.x = kpt.x
+            new_kpt.y = kpt.y
+            new_kpt.z = kpt.z
+            new_kpt.confidence = kpt.confidence
+            new_kpt.label = kpt.label
+            new_kpts.append(new_kpt)
+        new_kpts_msg.keypoints = new_kpts
+        new_kpts_msg.edges = copy.deepcopy(self._keypoints.edges)
+        new_obj.keypoints = new_kpts_msg
         return new_obj
 
     @property

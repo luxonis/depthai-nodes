@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import depthai as dai
 import numpy as np
@@ -24,8 +24,8 @@ class KeypointParser(BaseParser):
         Confidence score threshold for detected keypoints.
     labels : List[str]
         Labels for the keypoints.
-    edges : List[List[int]]
-        Keypoint connection pairs for visualizing the skeleton.
+    edges : List[Tuple[int, int]]
+        Keypoint connection pairs for visualizing the skeleton. Example: [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint 1, keypoint 1 is connected to keypoint 2, etc.
 
     Output Message/s
     ----------------
@@ -61,8 +61,10 @@ class KeypointParser(BaseParser):
         @type n_keypoints: int
         @param labels: Labels for the keypoints.
         @type labels: Optional[List[str]]
-        @param edges: Keypoint connection pairs for visualizing the skeleton.
-        @type edges: Optional[List[List[int]]]
+        @param edges: Keypoint connection pairs for visualizing the skeleton. Example:
+            [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
+            1, keypoint 1 is connected to keypoint 2, etc.
+        @type edges: Optional[List[Tuple[int, int]]]
         """
         super().__init__()
         self.output_layer_name = output_layer_name
@@ -136,21 +138,23 @@ class KeypointParser(BaseParser):
             raise ValueError("Labels must be a list of strings.")
         self.labels = labels
 
-    def setEdges(self, edges: List[List[int]]) -> None:
+    def setEdges(self, edges: List[Tuple[int, int]]) -> None:
         """Sets the edges for the keypoints.
 
-        @param edges: List of edges for the keypoints.
-        @type edges: List[List[int]]
+        @param edges: List of edges for the keypoints. Example: [(0,1), (1,2), (2,3),
+            (3,0)] shows that keypoint 0 is connected to keypoint 1, keypoint 1 is
+            connected to keypoint 2, etc.
+        @type edges: List[Tuple[int, int]]
         """
-        if not isinstance(edges, list) and not isinstance(edges, tuple):
-            raise ValueError("Edges must be a list or tuple.")
+        if not isinstance(edges, list):
+            raise ValueError("Edges must be a list.")
         if not all(
-            (isinstance(edge, list) or isinstance(edge, tuple))
+            isinstance(edge, tuple)
             and len(edge) == 2
             and all(isinstance(i, int) for i in edge)
             for edge in edges
         ):
-            raise ValueError("Edges must be a list of lists or tuples of integers.")
+            raise ValueError("Edges must be a list of tuples of integers.")
         self.edges = edges
 
     def build(
@@ -175,7 +179,9 @@ class KeypointParser(BaseParser):
         self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
         self.score_threshold = head_config.get("score_threshold", self.score_threshold)
         self.labels = head_config.get("keypoint_labels", self.labels)
-        self.edges = head_config.get("skeleton_edges", self.edges)
+        self.edges = [
+            tuple(edge) for edge in head_config.get("skeleton_edges", self.edges)
+        ]
 
         return self
 

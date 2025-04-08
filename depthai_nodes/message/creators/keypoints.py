@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -10,7 +10,7 @@ def create_keypoints_message(
     scores: Union[np.ndarray, List[float], None] = None,
     confidence_threshold: Optional[float] = None,
     labels: Optional[List[str]] = None,
-    edges: Optional[List[List[int]]] = None,
+    edges: Optional[List[Tuple[int, int]]] = None,
 ) -> Keypoints:
     """Create a DepthAI message for the keypoints.
 
@@ -22,8 +22,8 @@ def create_keypoints_message(
     @type confidence_threshold: Optional[float]
     @param labels: Labels of the detected keypoints. Defaults to None.
     @type labels: Optional[List[str]]
-    @param edges: Connection pairs of the detected keypoints. Defaults to None.
-    @type edges: Optional[List[List[int]]]
+    @param edges: Connection pairs of the detected keypoints. Defaults to None. Example: [[0,1], [1,2], [2,3], [3,0]] shows that keypoint 0 is connected to keypoint 1, keypoint 1 is connected to keypoint 2, etc.
+    @type edges: Optional[List[Tuple[int, int]]]
     @return: Keypoints message containing the detected keypoints.
     @rtype: Keypoints
 
@@ -102,15 +102,15 @@ def create_keypoints_message(
             raise ValueError("Labels should be a list of strings.")
 
     if edges is not None:
-        if not isinstance(edges, list) and not isinstance(edges, tuple):
-            raise ValueError(f"Edges should be list or tuple, got {type(edges)}.")
+        if not isinstance(edges, list):
+            raise ValueError(f"Edges should be list, got {type(edges)}.")
         if not all(
-            (isinstance(edge, list) or isinstance(edge, tuple))
+            isinstance(edge, tuple)
             and len(edge) == 2
             and all(isinstance(i, int) for i in edge)
             for edge in edges
         ):
-            raise ValueError("Edges should be a list of lists or tuples of integers.")
+            raise ValueError("Edges should be a list of tuples of integers.")
 
     keypoints = np.array(keypoints)
     if scores is not None:

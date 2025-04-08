@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import depthai as dai
 import numpy as np
@@ -29,7 +29,7 @@ class HRNetParser(KeypointParser):
         output_layer_name: str = "",
         score_threshold: float = 0.5,
         labels: Optional[List[str]] = None,
-        edges: Optional[List[List[int]]] = None,
+        edges: Optional[List[Tuple[int, int]]] = None,
     ) -> None:
         """Initializes the parser node.
 
@@ -39,8 +39,10 @@ class HRNetParser(KeypointParser):
         @type score_threshold: float
         @param labels: Labels for the keypoints.
         @type labels: Optional[List[str]]
-        @param edges: Keypoint connection pairs for visualizing the skeleton.
-        @type edges: Optional[List[List[int]]]
+        @param edges: Keypoint connection pairs for visualizing the skeleton. Example:
+            [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
+            1, keypoint 1 is connected to keypoint 2, etc.
+        @type edges: Optional[List[Tuple[int, int]]]
         """
         super().__init__(
             output_layer_name,
