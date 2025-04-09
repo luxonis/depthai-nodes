@@ -153,7 +153,7 @@ class GatherData(dai.node.ThreadedHostNode):
         timestamp = self._ready_timestamps.get()
         detections_recognitions = GatheredData()
         detections_recognitions.reference_data = self._detections.pop(timestamp)
-        detections_recognitions.collected = self._recognitions_by_detection_ts.pop(
+        detections_recognitions.gathered = self._recognitions_by_detection_ts.pop(
             timestamp, None
         )
         return detections_recognitions

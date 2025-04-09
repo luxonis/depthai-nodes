@@ -125,8 +125,8 @@ def check_synchronized_detections_recognitions(
 
     # Check that detections and recognitions_data are present
     assert item.reference_data is not None, "img_detections is None"
-    assert item.collected is not None, "recognitions_data is None"
-    assert len(item.collected) > 0, "recognitions_data is empty"
+    assert item.gathered is not None, "recognitions_data is None"
+    assert len(item.gathered) > 0, "recognitions_data is empty"
 
     # Get detection timestamp
     detection_ts = item.reference_data.getTimestamp().total_seconds()
@@ -135,7 +135,7 @@ def check_synchronized_detections_recognitions(
     tolerance = 1 / (CAMERA_FPS * FPS_TOLERANCE_DIVISOR)
 
     # Check that each recognition has a timestamp within tolerance of the detection timestamp
-    for i, recognition in enumerate(item.collected):
+    for i, recognition in enumerate(item.gathered):
         rec_ts = recognition.getTimestamp().total_seconds()
         timestamp_diff = abs(detection_ts - rec_ts)
         assert timestamp_diff < tolerance, (
@@ -149,8 +149,8 @@ def check_synchronized_detections_recognitions(
         hasattr(item.reference_data, "detections")
         and len(item.reference_data.detections) > 0
     ):
-        assert len(item.collected) == len(item.reference_data.detections), (
-            f"Number of recognitions ({len(item.collected)}) doesn't match "
+        assert len(item.gathered) == len(item.reference_data.detections), (
+            f"Number of recognitions ({len(item.gathered)}) doesn't match "
             f"number of detections ({len(item.reference_data.detections)})"
         )
 

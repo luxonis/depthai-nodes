@@ -3,26 +3,26 @@ from typing import Generic, List, TypeVar
 import depthai as dai
 
 TReference = TypeVar("TReference")
-TCollected = TypeVar("TCollected")
+TGathered = TypeVar("TGathered")
 
 
-class GatheredData(dai.Buffer, Generic[TReference, TCollected]):
+class GatheredData(dai.Buffer, Generic[TReference, TGathered]):
     """A class for gathered number of data and the reference data on which the data was
     gathered.
 
     Attributes
     ----------
     reference_data: TReference
-        Data that is used to determine how many of TCollected to gather.
-    collected: List[TCollected]
+        Data that is used to determine how many of TGathered to gather.
+    collected: List[TGathered]
         List of collected data.
     """
 
-    def __init__(self, reference_data: TReference, collected: List[TCollected]) -> None:
+    def __init__(self, reference_data: TReference, gathered: List[TGathered]) -> None:
         """Initializes the DetectedRecognitions object."""
         super().__init__()
         self._reference_data = reference_data
-        self._collected = collected
+        self._gathered = gathered
 
     @property
     def reference_data(self) -> TReference:
@@ -43,22 +43,22 @@ class GatheredData(dai.Buffer, Generic[TReference, TCollected]):
         self._reference_data = value
 
     @property
-    def collected(self) -> List[TCollected]:
+    def gathered(self) -> List[TGathered]:
         """Returns the collected data.
 
         @return: List of collected data.
-        @rtype: List[TCollected]
+        @rtype: List[TGathered]
         """
-        return self._collected
+        return self._gathered
 
-    @collected.setter
-    def collected(self, value: List[TCollected]):
-        """Sets the collected data.
+    @gathered.setter
+    def gathered(self, value: List[TGathered]):
+        """Sets the gathered data.
 
-        @param value: List of collected data.
-        @type value: List[TCollected]
+        @param value: List of gathered data.
+        @type value: List[TGathered]
         @raise TypeError: If value is not a list.
         """
         if not isinstance(value, list):
-            raise TypeError("collected_data must be a list.")
-        self._collected = value
+            raise TypeError("gathered_data must be a list.")
+        self._gathered = value
