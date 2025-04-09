@@ -1,16 +1,20 @@
 import time
 from queue import PriorityQueue
-from typing import Dict, List, Optional, Union
+from typing import Dict, Generic, List, Optional, TypeVar
 
 import depthai as dai
 
-from depthai_nodes import GatheredData, ImgDetectionsExtended
+from depthai_nodes import GatheredData
+
+TReference = TypeVar("TReference", bound=dai.Buffer)
+TGathered = TypeVar("TGathered", bound=dai.Buffer)
 
 
-class GatherData(dai.node.ThreadedHostNode):
+class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     FPS_TOLERANCE_DIVISOR = 2.0
     INPUT_CHECKS_PER_FPS = 100
-    """A class for gathering data. #TODO: Add more details.
+    """A class for gathering data. By default gathers n of NNData where n is number of .
+    #TODO: extend.
 
     Attributes
     ----------
@@ -18,30 +22,27 @@ class GatherData(dai.node.ThreadedHostNode):
         Divisor for the FPS tolerance.
     INPUT_CHECKS_PER_FPS: int
         Number of input checks per FPS.
-    input_recognitions: dai.Node.Input
-        Input for recognitions.
-    input_detections: dai.Node.Input
-        Input for detections.
+    input_data: dai.Node.Input
+        Input to be gathered.
+    input_reference: dai.Node.Input
+        Input to determine how many gathered items to wait for.
     output: dai.Node.Output
-        Output for detected recognitions.
+        Output for gathered data.
     """
 
     def __init__(self) -> None:
         """Initializes the GatherData node."""
         self._camera_fps: Optional[int] = None
-        self._unmatched_recognitions: List[dai.Buffer] = []
-        self._recognitions_by_detection_ts: Dict[float, List[dai.Buffer]] = {}
-        self._detections: Dict[
-            float,
-            Union[dai.ImgDetections, dai.SpatialImgDetections, ImgDetectionsExtended],
-        ] = {}
+        self._unmatched_data: List[TGathered] = []
+        self._data_by_reference_ts: Dict[float, List[TGathered]] = {}
+        self._reference_data: Dict[float, TReference] = {}
         self._ready_timestamps = PriorityQueue()
 
-        self.input_recognitions = self.createInput()
-        self.input_detections = self.createInput()
+        self.input_data = self.createInput()
+        self.input_reference = self.createInput()
         self.out = self.createOutput()
 
-    def build(self, camera_fps: int) -> "GatherData":
+    def build(self, camera_fps: int) -> "GatherData[TReference, TGathered]":
         self.set_camera_fps(camera_fps)
         return self
 
@@ -56,15 +57,15 @@ class GatherData(dai.node.ThreadedHostNode):
 
         while self.isRunning():
             try:
-                input_recognition = self.input_recognitions.tryGet()
-                input_detection = self.input_detections.tryGet()
+                input_data: TGathered = self.input_data.tryGet()
+                input_reference: TReference = self.input_reference.tryGet()
             except dai.MessageQueue.QueueException:
                 break
-            if input_recognition:
-                self._add_recognition(input_recognition)
+            if input_data:
+                self._add_data(input_data)
                 self._send_ready_data()
-            if input_detection:
-                self._add_detection(input_detection)
+            if input_reference:
+                self._add_reference(input_reference)
                 self._send_ready_data()
 
             time.sleep(1 / self.INPUT_CHECKS_PER_FPS / self._camera_fps)
@@ -75,57 +76,51 @@ class GatherData(dai.node.ThreadedHostNode):
             self._clear_old_data(ready_data)
             self.out.send(ready_data)
 
-    def _add_recognition(self, recognition: dai.Buffer) -> None:
-        recognition_ts = self._get_total_seconds_ts(recognition)
-        best_matching_detection_ts = self._get_matching_detection_ts(recognition_ts)
+    def _add_data(self, data: TGathered) -> None:
+        data_ts = self._get_total_seconds_ts(data)
+        best_matching_reference_ts = self._get_matching_reference_ts(data_ts)
 
-        if best_matching_detection_ts is not None:
-            self._add_recognition_by_detection_ts(
-                recognition, best_matching_detection_ts
-            )
-            self._update_ready_timestamps(best_matching_detection_ts)
+        if best_matching_reference_ts is not None:
+            self._add_data_by_reference_ts(data, best_matching_reference_ts)
+            self._update_ready_timestamps(best_matching_reference_ts)
         else:
-            self._unmatched_recognitions.append(recognition)
+            self._unmatched_data.append(data)
 
-    def _get_matching_detection_ts(self, recognition_ts: float) -> Optional[float]:
-        for detection_ts in self._detections.keys():
-            if self._timestamps_in_tolerance(detection_ts, recognition_ts):
-                return detection_ts
+    def _get_matching_reference_ts(self, data_ts: float) -> Optional[float]:
+        for reference_ts in self._reference_data.keys():
+            if self._timestamps_in_tolerance(reference_ts, data_ts):
+                return reference_ts
         return None
 
-    def _add_detection(
+    def _add_reference(
         self,
-        detection: Union[
-            dai.ImgDetections, dai.SpatialImgDetections, ImgDetectionsExtended
-        ],
+        reference: TReference,
     ) -> None:
-        detection_ts = self._get_total_seconds_ts(detection)
-        self._detections[detection_ts] = detection
-        self._try_match_recognitions(detection_ts)
-        self._update_ready_timestamps(detection_ts)
+        reference_ts = self._get_total_seconds_ts(reference)
+        self._reference_data[reference_ts] = reference
+        self._try_match_data(reference_ts)
+        self._update_ready_timestamps(reference_ts)
 
-    def _try_match_recognitions(self, detection_ts: float) -> None:
-        matched_recognitions: List[dai.Buffer] = []
-        for recognition in self._unmatched_recognitions:
-            recognition_ts = self._get_total_seconds_ts(recognition)
-            if self._timestamps_in_tolerance(detection_ts, recognition_ts):
-                self._add_recognition_by_detection_ts(recognition, detection_ts)
-                matched_recognitions.append(recognition)
+    def _try_match_data(self, reference_ts: float) -> None:
+        matched_data: List[TGathered] = []
+        for data in self._unmatched_data:
+            data_ts = self._get_total_seconds_ts(data)
+            if self._timestamps_in_tolerance(reference_ts, data_ts):
+                self._add_data_by_reference_ts(data, reference_ts)
+                matched_data.append(data)
 
-        for matched_recognition in matched_recognitions:
-            self._unmatched_recognitions.remove(matched_recognition)
+        for matched in matched_data:
+            self._unmatched_data.remove(matched)
 
     def _timestamps_in_tolerance(self, timestamp1: float, timestamp2: float) -> bool:
         difference = abs(timestamp1 - timestamp2)
         return difference < (1 / self._camera_fps / self.FPS_TOLERANCE_DIVISOR)
 
-    def _add_recognition_by_detection_ts(
-        self, recognition: dai.Buffer, detection_ts: float
-    ) -> None:
-        if detection_ts in self._recognitions_by_detection_ts:
-            self._recognitions_by_detection_ts[detection_ts].append(recognition)
+    def _add_data_by_reference_ts(self, data: TGathered, reference_ts: float) -> None:
+        if reference_ts in self._data_by_reference_ts:
+            self._data_by_reference_ts[reference_ts].append(data)
         else:
-            self._recognitions_by_detection_ts[detection_ts] = [recognition]
+            self._data_by_reference_ts[reference_ts] = [data]
 
     def _update_ready_timestamps(self, timestamp: float) -> None:
         if not self._timestamp_ready(timestamp):
@@ -134,13 +129,14 @@ class GatherData(dai.node.ThreadedHostNode):
         self._ready_timestamps.put(timestamp)
 
     def _timestamp_ready(self, timestamp: float) -> bool:
-        detections = self._detections.get(timestamp)
+        # TODO: change here
+        detections = self._reference_data.get(timestamp)
         if not detections:
             return False
         elif len(detections.detections) == 0:
             return True
 
-        recognitions = self._recognitions_by_detection_ts.get(timestamp)
+        recognitions = self._data_by_reference_ts.get(timestamp)
         if not recognitions:
             return False
 
@@ -151,36 +147,34 @@ class GatherData(dai.node.ThreadedHostNode):
             return None
 
         timestamp = self._ready_timestamps.get()
-        detections_recognitions = GatheredData()
-        detections_recognitions.reference_data = self._detections.pop(timestamp)
-        detections_recognitions.gathered = self._recognitions_by_detection_ts.pop(
-            timestamp, None
+        return GatheredData(
+            reference_data=self._reference_data.pop(timestamp),
+            gathered=self._data_by_reference_ts.pop(timestamp, None) or [],
         )
-        return detections_recognitions
 
     def _clear_old_data(self, ready_data: GatheredData) -> None:
         current_timestamp = self._get_total_seconds_ts(ready_data)
-        self._clear_unmatched_recognitions(current_timestamp)
-        self._clear_old_detections(current_timestamp)
+        self._clear_unmatched_data(current_timestamp)
+        self._clear_old_references(current_timestamp)
 
-    def _clear_unmatched_recognitions(self, current_timestamp) -> None:
-        unmatched_recognitions_to_remove = []
-        for unmatched_recognition in self._unmatched_recognitions:
-            if self._get_total_seconds_ts(unmatched_recognition) < current_timestamp:
-                unmatched_recognitions_to_remove.append(unmatched_recognition)
+    def _clear_unmatched_data(self, current_timestamp: float) -> None:
+        unmatched_data_to_remove = []
+        for unmatched_data in self._unmatched_data:
+            if self._get_total_seconds_ts(unmatched_data) < current_timestamp:
+                unmatched_data_to_remove.append(unmatched_data)
 
-        for unmatched_recognition in unmatched_recognitions_to_remove:
-            self._unmatched_recognitions.remove(unmatched_recognition)
+        for unmatched_data in unmatched_data_to_remove:
+            self._unmatched_data.remove(unmatched_data)
 
     def _get_total_seconds_ts(self, buffer_like: dai.Buffer) -> float:
         return buffer_like.getTimestamp().total_seconds()
 
-    def _clear_old_detections(self, current_timestamp) -> None:
-        detection_keys_to_pop = []
-        for detection_ts in self._detections.keys():
-            if detection_ts < current_timestamp:
-                detection_keys_to_pop.append(detection_ts)
+    def _clear_old_references(self, current_timestamp: float) -> None:
+        reference_keys_to_pop = []
+        for reference_ts in self._reference_data.keys():
+            if reference_ts < current_timestamp:
+                reference_keys_to_pop.append(reference_ts)
 
-        for detection_ts in detection_keys_to_pop:
-            self._detections.pop(detection_ts)
-            self._recognitions_by_detection_ts.pop(detection_ts, None)
+        for reference_ts in reference_keys_to_pop:
+            self._reference_data.pop(reference_ts)
+            self._data_by_reference_ts.pop(reference_ts, None)
