@@ -26,14 +26,13 @@ class GatherData(dai.node.ThreadedHostNode):
         Output for detected recognitions.
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self) -> None:
         """Initializes the TwoStageSync node.
 
         @param args: Arguments to be passed to the ThreadedHostNode class. @param
         kwargs: Keyword arguments to be passed to the ThreadedHostNode class.
         """
-        super().__init__(*args, **kwargs)
-        self._camera_fps = 30
+        self._camera_fps: Optional[int] = None
         self._unmatched_recognitions: List[dai.Buffer] = []
         self._recognitions_by_detection_ts: Dict[float, List[dai.Buffer]] = {}
         self._detections: Dict[
@@ -41,6 +40,7 @@ class GatherData(dai.node.ThreadedHostNode):
             Union[dai.ImgDetections, dai.SpatialImgDetections, ImgDetectionsExtended],
         ] = {}
         self._ready_timestamps = PriorityQueue()
+
         self.input_recognitions = self.createInput()
         self.input_detections = self.createInput()
         self.out = self.createOutput()
@@ -55,6 +55,9 @@ class GatherData(dai.node.ThreadedHostNode):
         self._camera_fps = fps
 
     def run(self) -> None:
+        if not self._camera_fps:
+            raise ValueError("Camera FPS not set. Call build() before run().")
+
         while self.isRunning():
             try:
                 input_recognition = self.input_recognitions.tryGet()
