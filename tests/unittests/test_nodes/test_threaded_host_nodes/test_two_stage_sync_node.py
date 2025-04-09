@@ -29,11 +29,11 @@ def duration(request):
 def two_stage_sync_generator():
     """Create a TwoStageSync instance for testing."""
     from depthai_nodes.node.two_stage_sync import (
-        TwoStageSync,
+        GatherData,
     )
 
     pipeline = PipelineMock()
-    return pipeline.create(TwoStageSync)
+    return pipeline.create(GatherData)
 
 
 @pytest.fixture

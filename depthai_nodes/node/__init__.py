@@ -29,7 +29,7 @@ from .parsers.yunet import YuNetParser
 from .parsing_neural_network import ParsingNeuralNetwork
 from .tiles_patcher import TilesPatcher
 from .tiling import Tiling
-from .two_stage_sync import TwoStageSync
+from .two_stage_sync import GatherData
 
 __all__ = [
     "ApplyColormap",
@@ -61,7 +61,7 @@ __all__ = [
     "BaseParser",
     "DetectionParser",
     "EmbeddingsParser",
-    "TwoStageSync",
+    "GatherData",
     "ImgFrameOverlay",
     "ImgDetectionsBridge",
     "ImgDetectionsFilter",

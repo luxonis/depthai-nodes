@@ -7,7 +7,7 @@ import depthai as dai
 from depthai_nodes import DetectedRecognitions, ImgDetectionsExtended
 
 
-class TwoStageSync(dai.node.ThreadedHostNode):
+class GatherData(dai.node.ThreadedHostNode):
     FPS_TOLERANCE_DIVISOR = 2.0
     INPUT_CHECKS_PER_FPS = 100
     """A class for synchronizing detections and recognitions.
@@ -45,7 +45,7 @@ class TwoStageSync(dai.node.ThreadedHostNode):
         self.input_detections = self.createInput()
         self.out = self.createOutput()
 
-    def build(self, camera_fps: int) -> "TwoStageSync":
+    def build(self, camera_fps: int) -> "GatherData":
         if camera_fps <= 0:
             raise ValueError(f"Camera FPS must be positive, got {camera_fps}")
 
