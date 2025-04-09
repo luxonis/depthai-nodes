@@ -46,13 +46,12 @@ class GatherData(dai.node.ThreadedHostNode):
         self.out = self.createOutput()
 
     def build(self, camera_fps: int) -> "GatherData":
-        if camera_fps <= 0:
-            raise ValueError(f"Camera FPS must be positive, got {camera_fps}")
-
-        self._camera_fps = camera_fps
+        self.set_camera_fps(camera_fps)
         return self
 
     def set_camera_fps(self, fps: int) -> None:
+        if fps <= 0:
+            raise ValueError(f"Camera FPS must be positive, got {fps}")
         self._camera_fps = fps
 
     def run(self) -> None:
