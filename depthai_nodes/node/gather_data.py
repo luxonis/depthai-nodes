@@ -1,10 +1,27 @@
 import time
 from queue import PriorityQueue
-from typing import Dict, Generic, List, Optional, TypeVar
+from typing import (
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Protocol,
+    TypeVar,
+    runtime_checkable,
+)
 
 import depthai as dai
 
 from depthai_nodes import GatheredData
+
+
+@runtime_checkable
+class HasDetections(Protocol):
+    @property
+    def detections(self) -> List:
+        ...
+
 
 TReference = TypeVar("TReference", bound=dai.Buffer)
 TGathered = TypeVar("TGathered", bound=dai.Buffer)
@@ -13,8 +30,8 @@ TGathered = TypeVar("TGathered", bound=dai.Buffer)
 class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     FPS_TOLERANCE_DIVISOR = 2.0
     INPUT_CHECKS_PER_FPS = 100
-    """A class for gathering data. By default gathers n of NNData where n is number of .
-    #TODO: extend.
+    """A class for gathering data. By default gathers n of dai.NNData where n is number
+    of dai.ImgDetection objects in dai.ImgDetections.
 
     Attributes
     ----------
@@ -37,10 +54,15 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         self._data_by_reference_ts: Dict[float, List[TGathered]] = {}
         self._reference_data: Dict[float, TReference] = {}
         self._ready_timestamps = PriorityQueue()
+        self._wait_count_fn = self._default_wait_count_fn
 
         self.input_data = self.createInput()
         self.input_reference = self.createInput()
         self.out = self.createOutput()
+
+    def _default_wait_count_fn(self, reference: TReference) -> int:
+        assert isinstance(reference, HasDetections)
+        return len(reference.detections)
 
     def build(self, camera_fps: int) -> "GatherData[TReference, TGathered]":
         self.set_camera_fps(camera_fps)
@@ -129,18 +151,22 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         self._ready_timestamps.put(timestamp)
 
     def _timestamp_ready(self, timestamp: float) -> bool:
-        # TODO: change here
-        detections = self._reference_data.get(timestamp)
-        if not detections:
+        reference = self._reference_data.get(timestamp)
+        if not reference:
             return False
-        elif len(detections.detections) == 0:
+
+        wait_for_count = self._get_wait_count(reference)
+        if wait_for_count == 0:
             return True
 
         recognitions = self._data_by_reference_ts.get(timestamp)
         if not recognitions:
             return False
 
-        return len(detections.detections) == len(recognitions)
+        return wait_for_count == len(recognitions)
+
+    def _get_wait_count(self, reference: TReference) -> int:
+        return self._wait_count_fn(reference)
 
     def _pop_ready_data(self) -> Optional[GatheredData]:
         if self._ready_timestamps.empty():
@@ -178,3 +204,6 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         for reference_ts in reference_keys_to_pop:
             self._reference_data.pop(reference_ts)
             self._data_by_reference_ts.pop(reference_ts, None)
+
+    def set_wait_count_fn(self, fn: Callable[[TReference], int]) -> None:
+        self._wait_count_fn = fn
