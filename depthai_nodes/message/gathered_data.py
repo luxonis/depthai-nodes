@@ -1,78 +1,64 @@
-from typing import List, Optional, Union
+from typing import Generic, List, TypeVar
 
 import depthai as dai
 
-from .img_detections import ImgDetectionsExtended
+TReference = TypeVar("TReference")
+TCollected = TypeVar("TCollected")
 
 
-class GatheredData(dai.Buffer):
-    """A class for storing image detections combined with recognitions data.
+class GatheredData(dai.Buffer, Generic[TReference, TCollected]):
+    """A class for gathered number of data and the reference data on which the data was
+    gathered.
 
     Attributes
     ----------
-    img_detections: Union[dai.ImgDetections, ImgDetectionsExtended]
-        Image detections with keypoints and masks.
-    recognitions_data: List[dai.Buffer]
-        List of recognitions data.
+    reference_data: TReference
+        Data that is used to determine how many of TCollected to gather.
+    collected: List[TCollected]
+        List of collected data.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, reference_data: TReference, collected: List[TCollected]) -> None:
         """Initializes the DetectedRecognitions object."""
         super().__init__()
-        self._img_detections = None
-        self._recognitions_data = []
+        self._reference_data = reference_data
+        self._collected = collected
 
     @property
-    def img_detections(self) -> Union[dai.ImgDetections, ImgDetectionsExtended]:
-        """Returns the image detections.
+    def reference_data(self) -> TReference:
+        """Returns the reference data.
 
-        @return: Image detections with keypoints and masks.
-        @rtype: Union[dai.ImgDetections, ImgDetectionsExtended]
+        @return: Reference data.
+        @rtype: TReference
         """
-        return self._img_detections
+        return self._reference_data
 
-    @img_detections.setter
-    def img_detections(self, value: Union[dai.ImgDetections, ImgDetectionsExtended]):
-        """Sets the image detections.
+    @reference_data.setter
+    def reference_data(self, value: TReference):
+        """Sets the reference data.
 
-        @param value: Image detections with keypoints and masks.
-        @type value: Union[dai.ImgDetections, ImgDetectionsExtended]
-        @raise TypeError: If value is not an ImgDetections or ImgDetectionsExtended
-            object.
+        @param value: Reference data.
+        @type value: TReference
         """
-        if not isinstance(value, (dai.ImgDetections, ImgDetectionsExtended)):
-            raise TypeError(
-                "img_detections must be an ImgDetections or ImgDetectionsExtended object."
-            )
-        self._img_detections = value
-        self.setTimestampDevice(value.getTimestampDevice())
-        self.setTimestamp(value.getTimestamp())
-        self.setSequenceNum(value.getSequenceNum())
+        self._reference_data = value
 
     @property
-    def recognitions_data(self) -> Optional[List[dai.Buffer]]:
-        """Returns the recognitions data.
+    def collected(self) -> List[TCollected]:
+        """Returns the collected data.
 
-        @return: List of recognitions data.
-        @rtype: Optional[List[dai.Buffer]]
+        @return: List of collected data.
+        @rtype: List[TCollected]
         """
-        return self._recognitions_data
+        return self._collected
 
-    @recognitions_data.setter
-    def recognitions_data(self, value: Optional[List[dai.Buffer]]):
-        """Sets the recognitions data.
+    @collected.setter
+    def collected(self, value: List[TCollected]):
+        """Sets the collected data.
 
-        @param value: List of recognitions data.
-        @type value: Optional[List[dai.Buffer]]
+        @param value: List of collected data.
+        @type value: List[TCollected]
         @raise TypeError: If value is not a list.
-        @raise TypeError: If each element is not of type dai.Buffer.
         """
-        if value is None:
-            self._recognitions_data = []
-            return
-
         if not isinstance(value, list):
-            raise TypeError("recognitions_data must be a list.")
-        if not all(isinstance(item, dai.Buffer) for item in value):
-            raise TypeError("recognitions_data must be a list of dai.Buffer objects.")
-        self._recognitions_data = value
+            raise TypeError("collected_data must be a list.")
+        self._collected = value

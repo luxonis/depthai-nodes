@@ -124,18 +124,18 @@ def check_synchronized_detections_recognitions(
     ), f"Expected DetectedRecognitions, got {type(item)}"
 
     # Check that detections and recognitions_data are present
-    assert item.img_detections is not None, "img_detections is None"
-    assert item.recognitions_data is not None, "recognitions_data is None"
-    assert len(item.recognitions_data) > 0, "recognitions_data is empty"
+    assert item.reference_data is not None, "img_detections is None"
+    assert item.collected is not None, "recognitions_data is None"
+    assert len(item.collected) > 0, "recognitions_data is empty"
 
     # Get detection timestamp
-    detection_ts = item.img_detections.getTimestamp().total_seconds()
+    detection_ts = item.reference_data.getTimestamp().total_seconds()
 
     # Calculate tolerance using the same formula as in the TwoStageSync class
     tolerance = 1 / (CAMERA_FPS * FPS_TOLERANCE_DIVISOR)
 
     # Check that each recognition has a timestamp within tolerance of the detection timestamp
-    for i, recognition in enumerate(item.recognitions_data):
+    for i, recognition in enumerate(item.collected):
         rec_ts = recognition.getTimestamp().total_seconds()
         timestamp_diff = abs(detection_ts - rec_ts)
         assert timestamp_diff < tolerance, (
@@ -146,17 +146,17 @@ def check_synchronized_detections_recognitions(
     # Check that the number of recognitions matches the number of detections
     # (if there are detections)
     if (
-        hasattr(item.img_detections, "detections")
-        and len(item.img_detections.detections) > 0
+        hasattr(item.reference_data, "detections")
+        and len(item.reference_data.detections) > 0
     ):
-        assert len(item.recognitions_data) == len(item.img_detections.detections), (
-            f"Number of recognitions ({len(item.recognitions_data)}) doesn't match "
-            f"number of detections ({len(item.img_detections.detections)})"
+        assert len(item.collected) == len(item.reference_data.detections), (
+            f"Number of recognitions ({len(item.collected)}) doesn't match "
+            f"number of detections ({len(item.reference_data.detections)})"
         )
 
     # For ImgDetectionsExtended, perform additional checks
-    if isinstance(item.img_detections, ImgDetectionsExtended):
-        for detection in item.img_detections.detections:
+    if isinstance(item.reference_data, ImgDetectionsExtended):
+        for detection in item.reference_data.detections:
             assert isinstance(
                 detection, ImgDetectionExtended
             ), f"Expected ImgDetectionExtended but got {type(detection)}"
