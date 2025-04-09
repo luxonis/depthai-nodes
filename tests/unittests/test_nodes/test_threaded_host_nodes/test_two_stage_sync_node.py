@@ -7,7 +7,7 @@ import pytest
 
 # from depthai_nodes import
 from depthai_nodes.message import (
-    DetectedRecognitions,
+    GatheredData,
     ImgDetectionExtended,
     ImgDetectionsExtended,
 )
@@ -120,7 +120,7 @@ def check_synchronized_detections_recognitions(
 
     # Check that the item is a DetectedRecognitions object
     assert isinstance(
-        item, DetectedRecognitions
+        item, GatheredData
     ), f"Expected DetectedRecognitions, got {type(item)}"
 
     # Check that detections and recognitions_data are present

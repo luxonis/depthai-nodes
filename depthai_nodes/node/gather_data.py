@@ -4,13 +4,13 @@ from typing import Dict, List, Optional, Union
 
 import depthai as dai
 
-from depthai_nodes import DetectedRecognitions, ImgDetectionsExtended
+from depthai_nodes import GatheredData, ImgDetectionsExtended
 
 
 class GatherData(dai.node.ThreadedHostNode):
     FPS_TOLERANCE_DIVISOR = 2.0
     INPUT_CHECKS_PER_FPS = 100
-    """A class for synchronizing detections and recognitions.
+    """A class for gathering data. #TODO: Add more details.
 
     Attributes
     ----------
@@ -27,11 +27,7 @@ class GatherData(dai.node.ThreadedHostNode):
     """
 
     def __init__(self) -> None:
-        """Initializes the TwoStageSync node.
-
-        @param args: Arguments to be passed to the ThreadedHostNode class. @param
-        kwargs: Keyword arguments to be passed to the ThreadedHostNode class.
-        """
+        """Initializes the GatherData node."""
         self._camera_fps: Optional[int] = None
         self._unmatched_recognitions: List[dai.Buffer] = []
         self._recognitions_by_detection_ts: Dict[float, List[dai.Buffer]] = {}
@@ -150,19 +146,19 @@ class GatherData(dai.node.ThreadedHostNode):
 
         return len(detections.detections) == len(recognitions)
 
-    def _pop_ready_data(self) -> Optional[DetectedRecognitions]:
+    def _pop_ready_data(self) -> Optional[GatheredData]:
         if self._ready_timestamps.empty():
             return None
 
         timestamp = self._ready_timestamps.get()
-        detections_recognitions = DetectedRecognitions()
+        detections_recognitions = GatheredData()
         detections_recognitions.img_detections = self._detections.pop(timestamp)
         detections_recognitions.recognitions_data = (
             self._recognitions_by_detection_ts.pop(timestamp, None)
         )
         return detections_recognitions
 
-    def _clear_old_data(self, ready_data: DetectedRecognitions) -> None:
+    def _clear_old_data(self, ready_data: GatheredData) -> None:
         current_timestamp = self._get_total_seconds_ts(ready_data)
         self._clear_unmatched_recognitions(current_timestamp)
         self._clear_old_detections(current_timestamp)

@@ -5,7 +5,7 @@ import depthai as dai
 from .img_detections import ImgDetectionsExtended
 
 
-class DetectedRecognitions(dai.Buffer):
+class GatheredData(dai.Buffer):
     """A class for storing image detections combined with recognitions data.
 
     Attributes

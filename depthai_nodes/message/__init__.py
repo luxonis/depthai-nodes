@@ -1,6 +1,6 @@
 from .classification import Classifications
 from .clusters import Cluster, Clusters
-from .detected_recognitions import DetectedRecognitions
+from .detected_recognitions import GatheredData
 from .img_detections import (
     ImgDetectionExtended,
     ImgDetectionsExtended,
@@ -25,5 +25,5 @@ __all__ = [
     "Cluster",
     "Prediction",
     "Predictions",
-    "DetectedRecognitions",
+    "GatheredData",
 ]
