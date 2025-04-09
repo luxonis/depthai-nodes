@@ -1,5 +1,6 @@
 from .apply_colormap import ApplyColormap
 from .depth_merger import DepthMerger
+from .gather_data import GatherData
 from .host_spatials_calc import HostSpatialsCalc
 from .img_detections_bridge import ImgDetectionsBridge
 from .img_detections_filter import ImgDetectionsFilter
@@ -29,7 +30,6 @@ from .parsers.yunet import YuNetParser
 from .parsing_neural_network import ParsingNeuralNetwork
 from .tiles_patcher import TilesPatcher
 from .tiling import Tiling
-from .two_stage_sync import GatherData
 
 __all__ = [
     "ApplyColormap",

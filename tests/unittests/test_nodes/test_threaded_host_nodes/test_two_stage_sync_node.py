@@ -28,7 +28,7 @@ def duration(request):
 @pytest.fixture
 def two_stage_sync_generator():
     """Create a TwoStageSync instance for testing."""
-    from depthai_nodes.node.two_stage_sync import (
+    from depthai_nodes.node.gather_data import (
         GatherData,
     )
 
