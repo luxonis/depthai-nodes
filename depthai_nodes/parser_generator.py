@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 
 import depthai as dai
 
@@ -13,17 +13,23 @@ class ParserGenerator(dai.node.ThreadedHostNode):
     The `build` method creates parsers based on the head information stored in the NN Archive. The method then returns a dictionary of these parsers.
     """
 
-    def __init__(self):
-        super().__init__()
+    DEVICE_PARSERS = ["YOLO", "SSD"]
 
-    def build(self, nn_archive: dai.NNArchive, head_index: int = None) -> Dict:
+    def build(
+        self,
+        nn_archive: dai.NNArchive,
+        head_index: Optional[int] = None,
+        host_only: bool = False,
+    ) -> Dict:
         """Instantiates parsers based on the provided model archive.
 
         @param nn_archive: NN Archive of the model.
         @type nn_archive: dai.NNArchive
         @param head_index: Index of the head to be used for parsing. If not provided,
             each head will instantiate a separate parser.
-        @type head_index: int
+        @type head_index: Optional[int]
+        @param host_only: If True, only host parsers will be instantiated.
+        @type host_only: bool
         @return: A dictionary of instantiated parsers.
         @rtype: Dict[int, BaseParser]
         """
@@ -45,11 +51,14 @@ class ParserGenerator(dai.node.ThreadedHostNode):
         for index, head in zip(indexes, heads):
             parser_name = head.parser
 
-            if parser_name == "YOLO" or parser_name == "SSD":
-                parser = pipeline.create(dai.node.DetectionParser)
-                parser.setNNArchive(nn_archive)
-                parsers[index] = parser
-                continue
+            if parser_name in self.DEVICE_PARSERS:
+                if host_only:
+                    parser_name = self._getHostParserName(parser_name)
+                else:
+                    parser = pipeline.create(dai.node.DetectionParser)
+                    parser.setNNArchive(nn_archive)
+                    parsers[index] = parser
+                    continue
 
             parser = globals().get(parser_name)
 
@@ -69,6 +78,14 @@ class ParserGenerator(dai.node.ThreadedHostNode):
             parsers[index] = pipeline.create(parser).build(head_config)
 
         return parsers
+
+    def _getHostParserName(self, parser_name: str) -> str:
+        if parser_name == "YOLO":
+            return YOLOExtendedParser.__name__  # noqa: F405
+        else:
+            raise ValueError(
+                f"Parser {parser_name} is not supported for host only mode."
+            )
 
     def run(self):
         pass

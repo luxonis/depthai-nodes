@@ -115,24 +115,6 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         self._updateParsers(self._nn_archive)
         return self
 
-    def _updateParsers(self, nnArchive: dai.NNArchive) -> None:
-        self._removeOldParserNodes()
-        self._parsers = self._getParserNodes(nnArchive)
-
-    def _removeOldParserNodes(self) -> None:
-        for parser in self._parsers.values():
-            self._pipeline.remove(parser)
-
-    def _getParserNodes(self, nnArchive: dai.NNArchive) -> Dict[int, BaseParser]:
-        parser_generator = self._pipeline.create(ParserGenerator)
-        parsers = parser_generator.build(nnArchive)
-        for parser in parsers.values():
-            self._nn.out.link(
-                parser.input
-            )  # TODO: once NN node has output dictionary, link to the correct output
-        self._pipeline.remove(parser_generator)
-        return parsers
-
     def getNumInferenceThreads(self) -> int:
         """Returns number of inference threads of the NeuralNetwork node."""
         return self._nn.getNumInferenceThreads()
@@ -288,6 +270,29 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
                                The model has {self._getModelHeadsLen()} heads. Use {self.getOutput.__name__} method instead."
             )
         return list(self._parsers.values())[0].out
+
+    def _updateParsers(self, nnArchive: dai.NNArchive) -> None:
+        self._removeOldParserNodes()
+        self._parsers = self._getParserNodes(nnArchive)
+
+    def _removeOldParserNodes(self) -> None:
+        for parser in self._parsers.values():
+            self._pipeline.remove(parser)
+
+    def _getParserNodes(self, nnArchive: dai.NNArchive) -> Dict[int, BaseParser]:
+        parser_generator = self._pipeline.create(ParserGenerator)
+        parsers = parser_generator.build(nnArchive)
+        for parser in parsers.values():
+            self._nn.out.link(
+                parser.input
+            )  # TODO: once NN node has output dictionary, link to the correct output
+        self._pipeline.remove(parser_generator)
+        return parsers
+
+    def _generateParsers(
+        self, parserGenerator: ParserGenerator, nnArchive: dai.NNArchive
+    ) -> Dict[int, BaseParser]:
+        return parserGenerator.build(nnArchive)
 
     def _getModelHeadsLen(self):
         heads = self._getModelHeads()
