@@ -1,6 +1,6 @@
 from .classification import Classifications
 from .clusters import Cluster, Clusters
-from .detected_recognitions import GatheredData
+from .gathered_data import GatheredData
 from .img_detections import (
     ImgDetectionExtended,
     ImgDetectionsExtended,
