@@ -18,16 +18,6 @@ class TwoStageSync(dai.node.ThreadedHostNode):
         Divisor for the FPS tolerance.
     INPUT_CHECKS_PER_FPS: int
         Number of input checks per FPS.
-    _camera_fps: int
-        The camera FPS.
-    _unmatched_recognitions: List[dai.Buffer]
-        List of unmatched recognitions.
-    _recognitions_by_detection_ts: Dict[float, List[dai.Buffer]]
-        Dictionary of recognitions by detection timestamp.
-    _detections: Dict[float, Union[dai.ImgDetections, dai.SpatialImgDetections, ImgDetectionsExtended]]
-        Dictionary of detections.
-    _ready_timestamps: PriorityQueue
-        Priority queue of ready timestamps.
     input_recognitions: dai.Node.Input
         Input for recognitions.
     input_detections: dai.Node.Input
