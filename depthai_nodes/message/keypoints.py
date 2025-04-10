@@ -1,3 +1,4 @@
+import copy
 from typing import List, Tuple
 
 import depthai as dai
@@ -44,6 +45,7 @@ class Keypoint(dai.Buffer):
         new_obj.y = copy.deepcopy(self.y)
         new_obj.z = copy.deepcopy(self.z)
         new_obj.confidence = copy.deepcopy(self.confidence)
+        new_obj.label_name = copy.deepcopy(self.label_name)
         return new_obj
 
     @property
@@ -197,6 +199,7 @@ class Keypoints(dai.Buffer):
         """
         new_obj = Keypoints()
         new_obj.keypoints = [keypoint.copy() for keypoint in self.keypoints]
+        new_obj.edges = copy.deepcopy(self.edges)
         new_obj.setSequenceNum(self.getSequenceNum())
         new_obj.setTimestamp(self.getTimestamp())
         new_obj.setTimestampDevice(self.getTimestampDevice())
