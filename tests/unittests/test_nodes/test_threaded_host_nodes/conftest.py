@@ -25,6 +25,11 @@ class Queue:
     def send(self, item):
         self._messages.append(item)
 
+    def getAll(self):
+        messages = list(self._messages)
+        self._messages.clear()
+        return messages
+
     def __len__(self):
         return len(self._messages)
 
