@@ -16,16 +16,14 @@ class ImgFrameSender(dai.node.HostNode, metaclass=CombinedMeta):
     """
 
     IMG_FRAME_TYPES = {
-        "RVC2": dai.ImgFrame.Type.BGR888p,
-        "RVC4": dai.ImgFrame.Type.BGR888i,
+        dai.Platform(0): dai.ImgFrame.Type.BGR888p,  # RVC2
+        dai.Platform(2): dai.ImgFrame.Type.BGR888i,  # RVC4
     }  # TODO: extend for other platforms?
 
     def __init__(self) -> None:
         super().__init__()
 
-        self._platform = (
-            self.getParentPipeline().getDefaultDevice().getPlatformAsString()
-        )
+        self._platform = self.getParentPipeline().getDefaultDevice().getPlatform()
 
         try:
             self._img_frame_type = self.IMG_FRAME_TYPES[self._platform]
