@@ -5,7 +5,7 @@ import depthai as dai
 HostNodeMeta = type(dai.node.HostNode)  # metaclass of dai.node.HostNode
 
 
-class CombinedMeta(HostNodeMeta, ABCMeta):
+class CombinedMeta(ABCMeta, HostNodeMeta):
     pass
 
 
