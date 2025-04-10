@@ -14,6 +14,8 @@ def create_keypoints_message(
 ) -> Keypoints:
     """Create a DepthAI message for the keypoints.
 
+    NOTE: If you provide a confidence threshold for filtering the keypoints based on scores, the edges will be filtered to only include the edges between the keypoints that are present in the filtered keypoints. This is done to ensure that the edges are only drawn between the keypoints that are present in the filtered keypoints. You can always access the full set of edges in the model's NN archive.
+
     @param keypoints: Detected 2D or 3D keypoints of shape (N,2 or 3) meaning [...,[x, y],...] or [...,[x, y, z],...].
     @type keypoints: np.ndarray or List[List[float]]
     @param scores: Confidence scores of the detected keypoints. Defaults to None.

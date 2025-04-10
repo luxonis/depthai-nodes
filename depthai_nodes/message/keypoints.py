@@ -164,7 +164,7 @@ class Keypoints(dai.Buffer):
     keypoints: List[Keypoint]
         List of Keypoint objects, each representing a keypoint.
     edges: List[Tuple[int, int]]
-        List of edges, each representing a connection between two keypoints.
+        List of edges, each representing a connection between two keypoints. NOTE: If you create a Keypoints message with a `create_keypoints_message` function, the edges will be filtered to only include the edges between the keypoints that are present in the filtered keypoints. This is done to ensure that the edges are only drawn between the keypoints that are present in the filtered keypoints. You can always access the full set of edges in the model's NN archive.
     transformation : dai.ImgTransformation
         Image transformation object.
     """
