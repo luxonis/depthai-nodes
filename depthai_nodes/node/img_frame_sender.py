@@ -1,6 +1,6 @@
-import depthai as dai
 from abc import ABCMeta
 
+import depthai as dai
 
 HostNodeMeta = type(dai.node.HostNode)  # metaclass of dai.node.HostNode
 
@@ -10,9 +10,10 @@ class CombinedMeta(HostNodeMeta, ABCMeta):
 
 
 class ImgFrameSender(dai.node.HostNode, metaclass=CombinedMeta):
-    """An abstract base class for host nodes that send out dai.ImgFrame objects. Designed to encapsulate and abstract the configuration of platform-specific attributes,
-    providing a clean and consistent interface for derived classes.
+    """An abstract base class for host nodes that send out dai.ImgFrame objects.
 
+    Designed to encapsulate and abstract the configuration of platform-specific
+    attributes, providing a clean and consistent interface for derived classes.
     """
 
     IMG_FRAME_TYPES = {
