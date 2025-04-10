@@ -1,5 +1,4 @@
 from datetime import timedelta
-from typing import Optional
 
 import depthai as dai
 import numpy as np
@@ -10,6 +9,9 @@ from depthai_nodes.message import (
     GatheredData,
     ImgDetectionExtended,
     ImgDetectionsExtended,
+)
+from depthai_nodes.node.gather_data import (
+    GatherData,
 )
 
 from .conftest import PipelineMock
@@ -26,31 +28,58 @@ def duration(request):
 
 
 @pytest.fixture
-def gather_data_generator():
-    """Create a GatherData instance for testing."""
-    from depthai_nodes.node.gather_data import (
-        GatherData,
-    )
+def fps():
+    return 30
 
+
+@pytest.fixture
+def tolerance(fps):
+    return 1 / GatherData.FPS_TOLERANCE_DIVISOR / fps
+
+
+@pytest.fixture
+def reference_timestamp():
+    return timedelta(days=1, hours=1, minutes=1, seconds=1, milliseconds=0)
+
+
+@pytest.fixture
+def in_tolerance_timestamp(reference_timestamp, tolerance):
+    return reference_timestamp + timedelta(seconds=(tolerance * 0.9))
+
+
+@pytest.fixture
+def out_of_tolerance_timestamp(reference_timestamp, tolerance):
+    return reference_timestamp + timedelta(seconds=(tolerance * 1.1))
+
+
+@pytest.fixture
+def gather_data_generator():
     pipeline = PipelineMock()
     return pipeline.create(GatherData)
 
 
 @pytest.fixture
 def nn_data():
-    """Create a NNData object with the same timestamp."""
     nn_data = dai.NNData()
     tensor = np.random.rand(1, 10).astype(np.float32)
     nn_data.addTensor("test_layer", tensor)
-    nn_data.setTimestamp(
-        timedelta(days=1, hours=1, minutes=1, seconds=1, milliseconds=5)
-    )
     return nn_data
 
 
 @pytest.fixture
-def img_detections():
-    """Create ImgDetections with two detection objects."""
+def nn_data_in_tolerance(nn_data, in_tolerance_timestamp):
+    nn_data.setTimestamp(in_tolerance_timestamp)
+    return nn_data
+
+
+@pytest.fixture
+def nn_data_out_of_tolerance(nn_data, out_of_tolerance_timestamp):
+    nn_data.setTimestamp(out_of_tolerance_timestamp)
+    return nn_data
+
+
+@pytest.fixture
+def img_detections(reference_timestamp):
     det = dai.ImgDetections()
     det.detections = [dai.ImgDetection() for _ in range(2)]
     for i, d in enumerate(det.detections):
@@ -60,14 +89,12 @@ def img_detections():
         d.ymax = 0.5
         d.label = i
         d.confidence = 0.9
-
-    det.setTimestamp(timedelta(days=1, hours=1, minutes=1, seconds=1, milliseconds=0))
+    det.setTimestamp(reference_timestamp)
     return det
 
 
 @pytest.fixture
-def img_detections_extended():
-    """Create ImgDetectionsExtended with two detection objects."""
+def img_detections_extended(reference_timestamp):
     det = ImgDetectionsExtended()
     det.detections = [ImgDetectionExtended() for _ in range(2)]
     for i, d in enumerate(det.detections):
@@ -83,85 +110,8 @@ def img_detections_extended():
         d.rotated_rect.angle = 0
         d.label = i
         d.confidence = 0.9
-
-    det.setTimestamp(timedelta(days=1, hours=1, minutes=1, seconds=1, milliseconds=0))
+    det.setTimestamp(reference_timestamp)
     return det
-
-
-def check_synchronized_detections_recognitions(
-    item, model_slug: Optional[str], parser_name: Optional[str]
-) -> bool:
-    """Check that detections and recognitions are properly synchronized.
-
-    Parameters
-    ----------
-    item : DetectedRecognitions
-        The output from TwoStageSync
-    model_slug : Optional[str]
-        Model identifier (not used in this function but required by interface)
-    parser_name : Optional[str]
-        Parser name (not used in this function but required by interface)
-
-    Returns
-    -------
-    bool
-        True if validation passes
-
-    Raises
-    ------
-    AssertionError
-        If the synchronization validation fails
-    """
-    # Constants from the gather data class
-    FPS_TOLERANCE_DIVISOR = 2.0
-    CAMERA_FPS = 30  # Default value from the TwoStageSync class
-    global NUMBER_OF_MESSAGES_TESTED
-    NUMBER_OF_MESSAGES_TESTED += 1
-
-    # Check that the item is a DetectedRecognitions object
-    assert isinstance(
-        item, GatheredData
-    ), f"Expected DetectedRecognitions, got {type(item)}"
-
-    # Check that detections and recognitions_data are present
-    assert item.reference_data is not None, "img_detections is None"
-    assert item.gathered is not None, "recognitions_data is None"
-    assert len(item.gathered) > 0, "recognitions_data is empty"
-
-    # Get detection timestamp
-    detection_ts = item.reference_data.getTimestamp().total_seconds()
-
-    # Calculate tolerance using the same formula as in the TwoStageSync class
-    tolerance = 1 / (CAMERA_FPS * FPS_TOLERANCE_DIVISOR)
-
-    # Check that each recognition has a timestamp within tolerance of the detection timestamp
-    for i, recognition in enumerate(item.gathered):
-        rec_ts = recognition.getTimestamp().total_seconds()
-        timestamp_diff = abs(detection_ts - rec_ts)
-        assert timestamp_diff < tolerance, (
-            f"Timestamp difference ({timestamp_diff}) exceeds tolerance ({tolerance}): "
-            f"detection={detection_ts}, recognition[{i}]={rec_ts}"
-        )
-
-    # Check that the number of recognitions matches the number of detections
-    # (if there are detections)
-    if (
-        hasattr(item.reference_data, "detections")
-        and len(item.reference_data.detections) > 0
-    ):
-        assert len(item.gathered) == len(item.reference_data.detections), (
-            f"Number of recognitions ({len(item.gathered)}) doesn't match "
-            f"number of detections ({len(item.reference_data.detections)})"
-        )
-
-    # For ImgDetectionsExtended, perform additional checks
-    if isinstance(item.reference_data, ImgDetectionsExtended):
-        for detection in item.reference_data.detections:
-            assert isinstance(
-                detection, ImgDetectionExtended
-            ), f"Expected ImgDetectionExtended but got {type(detection)}"
-
-    return True
 
 
 def test_build(
@@ -172,32 +122,40 @@ def test_build(
     gather_data_generator.build(camera_fps=15)
 
 
-def test_two_stage_sync_node_img_detections(
-    gather_data_generator, img_detections, nn_data, duration: int
+def test_img_detections(
+    gather_data_generator,
+    img_detections,
+    nn_data_in_tolerance,
+    nn_data_out_of_tolerance,
+    duration: int,
 ):
-    gather_data = gather_data_generator.build(camera_fps=15)
-
-    # Send data
+    gather_data: GatherData = gather_data_generator.build(camera_fps=15)
     if duration is not None:
-        gather_data.input_detections._queue.duration = duration
-        gather_data.input_recognitions._queue.duration = duration
-    gather_data.input_detections.send(img_detections)
-    gather_data._detections[
-        img_detections.getTimestamp().total_seconds()
-    ] = img_detections
+        gather_data.input_data._queue.duration = duration
+        gather_data.input_reference._queue.duration = duration
 
-    # Send two nn_data messages because we have two detections
-    gather_data.input_recognitions.send(nn_data)
-    gather_data.input_recognitions.send(nn_data)
-    gather_data.out.createOutputQueue(
-        check_synchronized_detections_recognitions, model_slug=None, parser_name=None
-    )
+    gather_data.input_reference.send(img_detections)
+    gather_data.input_data.send(nn_data_in_tolerance)
+    gather_data.input_data.send(nn_data_in_tolerance)
+    gather_data.input_data.send(nn_data_out_of_tolerance)
 
-    # Process the data
+    output = gather_data.out.createOutputQueue()
+
     gather_data.run()
+    results = output.getAll()
 
-    global NUMBER_OF_MESSAGES_TESTED
-    assert NUMBER_OF_MESSAGES_TESTED > 0, "The node did not send out any messages."
+    assert isinstance(results, list)
+    assert len(results) > 0, "The node did not send out any messages."
+    for result in results:
+        assert isinstance(
+            result, GatheredData
+        ), "All results should be GatheredData objects"
+        assert (
+            result.reference_data == img_detections
+        ), "The reference data should match the sent ImgDetections"
+        assert (
+            len(result.gathered) == 2
+        ), "The number of gathered data should match the number of sent nn_data messages with timestamps in tolerance"
 
 
 def test_two_stage_sync_node_img_detections_extended(
@@ -220,9 +178,7 @@ def test_two_stage_sync_node_img_detections_extended(
     # Send two nn_data messages because we have two detections
     two_stage_sync.input_recognitions.send(nn_data)
     two_stage_sync.input_recognitions.send(nn_data)
-    two_stage_sync.out.createOutputQueue(
-        check_synchronized_detections_recognitions, model_slug=None, parser_name=None
-    )
+    two_stage_sync.out.createOutputQueue(model_slug=None, parser_name=None)
 
     # Process the data
     two_stage_sync.run()
