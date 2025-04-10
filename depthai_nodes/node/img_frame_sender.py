@@ -17,9 +17,9 @@ class ImgFrameSender(dai.node.HostNode, metaclass=CombinedMeta):
     """
 
     IMG_FRAME_TYPES = {
-        dai.Platform(0): dai.ImgFrame.Type.BGR888p,  # RVC2
-        dai.Platform(2): dai.ImgFrame.Type.BGR888i,  # RVC4
-    }  # TODO: extend for other platforms?
+        dai.Platform.RVC2: dai.ImgFrame.Type.BGR888p,
+        dai.Platform.RVC4: dai.ImgFrame.Type.BGR888i,
+    }
 
     def __init__(self) -> None:
         super().__init__()
