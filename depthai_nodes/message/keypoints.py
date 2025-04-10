@@ -166,8 +166,9 @@ class Keypoint(dai.Buffer):
         @param value: Label name of the keypoint.
         @type value: str
         """
-        if not isinstance(value, str):
-            raise TypeError("label_name must be a string.")
+        if value is not None:
+            if not isinstance(value, str):
+                raise TypeError("label_name must be a string.")
         self._label_name = value
 
 
