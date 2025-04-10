@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional, Tuple
 
 import depthai as dai
 import numpy as np
@@ -21,6 +21,10 @@ class SuperAnimalParser(KeypointParser):
         Number of keypoints.
     score_threshold : float
         Confidence score threshold for detected keypoints.
+    label_names : List[str]
+        Label names for the keypoints.
+    edges : List[Tuple[int, int]]
+        Keypoint connection pairs for visualizing the skeleton. Example: [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint 1, keypoint 1 is connected to keypoint 2, etc.
 
     Output Message/s
     ----------------
@@ -35,6 +39,8 @@ class SuperAnimalParser(KeypointParser):
         scale_factor: float = 256.0,
         n_keypoints: int = 39,
         score_threshold: float = 0.5,
+        label_names: Optional[List[str]] = None,
+        edges: Optional[List[Tuple[int, int]]] = None,
     ) -> None:
         """Initializes the parser node.
 
@@ -46,12 +52,20 @@ class SuperAnimalParser(KeypointParser):
         @type score_threshold: float
         @param scale_factor: Scale factor to divide the keypoints by.
         @type scale_factor: float
+        @param label_names: Label names for the keypoints.
+        @type label_names: Optional[List[str]]
+        @param edges: Keypoint connection pairs for visualizing the skeleton. Example:
+            [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
+            1, keypoint 1 is connected to keypoint 2, etc.
+        @type edges: Optional[List[Tuple[int, int]]]
         """
         super().__init__(
             output_layer_name,
             scale_factor=scale_factor,
             n_keypoints=n_keypoints,
             score_threshold=score_threshold,
+            label_names=label_names,
+            edges=edges,
         )
 
     def build(
@@ -97,7 +111,13 @@ class SuperAnimalParser(KeypointParser):
             scores = keypoints[:, 2]
             keypoints = keypoints[:, :2] / self.scale_factor
 
-            msg = create_keypoints_message(keypoints, scores, self.score_threshold)
+            msg = create_keypoints_message(
+                keypoints,
+                scores,
+                self.score_threshold,
+                label_names=self.label_names,
+                edges=self.edges,
+            )
             msg.setTimestamp(output.getTimestamp())
             msg.setTransformation(output.getTransformation())
             msg.setSequenceNum(output.getSequenceNum())

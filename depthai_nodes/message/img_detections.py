@@ -13,7 +13,7 @@ from depthai_nodes import (
 )
 from depthai_nodes.logging import get_logger
 
-from .keypoints import Keypoint
+from .keypoints import Keypoint, Keypoints
 from .segmentation import SegmentationMask
 
 
@@ -31,8 +31,8 @@ class ImgDetectionExtended(dai.Buffer):
         Label of the detection.
     label_name: str
         The corresponding label name if available.
-    keypoints: List[Keypoint]
-        Keypoints of the detection.
+    keypoints: Keypoints
+        Keypoints of the detection. Getter returns list of Keypoint objects and setter accepts Keypoints object.
     """
 
     def __init__(self):
@@ -42,7 +42,7 @@ class ImgDetectionExtended(dai.Buffer):
         self._confidence: float = -1.0
         self._label: int = -1
         self._label_name: str = ""
-        self._keypoints: List[Keypoint] = []
+        self._keypoints: Keypoints = Keypoints()
         self._logger = get_logger(__name__)
 
     def copy(self):
@@ -64,7 +64,19 @@ class ImgDetectionExtended(dai.Buffer):
         new_obj.confidence = copy.deepcopy(self.confidence)
         new_obj.label = copy.deepcopy(self.label)
         new_obj.label_name = copy.deepcopy(self.label_name)
-        new_obj.keypoints = copy.deepcopy(self.keypoints)
+        new_kpts_msg = Keypoints()
+        new_kpts = []
+        for kpt in self.keypoints:
+            new_kpt = Keypoint()
+            new_kpt.x = kpt.x
+            new_kpt.y = kpt.y
+            new_kpt.z = kpt.z
+            new_kpt.confidence = kpt.confidence
+            new_kpt.label = kpt.label
+            new_kpts.append(new_kpt)
+        new_kpts_msg.keypoints = new_kpts
+        new_kpts_msg.edges = copy.deepcopy(self._keypoints.edges)
+        new_obj.keypoints = new_kpts_msg
         return new_obj
 
     @property
@@ -167,24 +179,21 @@ class ImgDetectionExtended(dai.Buffer):
         @return: List of keypoints.
         @rtype: Keypoints
         """
-        return self._keypoints
+        return self._keypoints.keypoints
 
     @keypoints.setter
     def keypoints(
         self,
-        value: List[Keypoint],
+        value: Keypoints,
     ) -> None:
         """Sets the keypoints.
 
-        @param value: List of keypoints.
-        @type value: List[Keypoint]
-        @raise TypeError: If value is not a list.
-        @raise TypeError: If each element is not of type Keypoint.
+        @param value: Keypoints object.
+        @type value: Keypoints
+        @raise TypeError: If value is not a Keypoints object.
         """
-        if not isinstance(value, list):
-            raise ValueError("Keypoints must be a list")
-        if not all(isinstance(item, Keypoint) for item in value):
-            raise ValueError("Keypoints must be a list of Keypoint objects.")
+        if not isinstance(value, Keypoints):
+            raise TypeError("Keypoints must be a Keypoints object.")
         self._keypoints = value
 
 
@@ -367,6 +376,20 @@ class ImgDetectionsExtended(dai.Buffer):
                 keypointAnnotation.fillColor = KEYPOINT_COLOR
                 keypointAnnotation.thickness = 2
                 annotation.points.append(keypointAnnotation)
+
+                if detection._keypoints.edges is not None:
+                    for edge in detection._keypoints.edges:
+                        skeletonAnnotation = dai.PointsAnnotation()
+                        skeletonAnnotation.type = dai.PointsAnnotationType.LINE_STRIP
+                        pt1 = keypoints[edge[0]]
+                        pt2 = keypoints[edge[1]]
+                        skeletonAnnotation.points = dai.VectorPoint2f(
+                            [dai.Point2f(pt1.x, pt1.y), dai.Point2f(pt2.x, pt2.y)]
+                        )
+                        skeletonAnnotation.outlineColor = KEYPOINT_COLOR
+                        skeletonAnnotation.fillColor = KEYPOINT_COLOR
+                        skeletonAnnotation.thickness = 1
+                        annotation.points.append(skeletonAnnotation)
 
         img_annotations.annotations.append(annotation)
         img_annotations.setTimestamp(self.getTimestamp())
