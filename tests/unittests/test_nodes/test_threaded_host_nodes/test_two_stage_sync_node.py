@@ -26,8 +26,8 @@ def duration(request):
 
 
 @pytest.fixture
-def two_stage_sync_generator():
-    """Create a TwoStageSync instance for testing."""
+def gather_data_generator():
+    """Create a GatherData instance for testing."""
     from depthai_nodes.node.gather_data import (
         GatherData,
     )
@@ -112,7 +112,7 @@ def check_synchronized_detections_recognitions(
     AssertionError
         If the synchronization validation fails
     """
-    # Constants from the TwoStageSync class
+    # Constants from the gather data class
     FPS_TOLERANCE_DIVISOR = 2.0
     CAMERA_FPS = 30  # Default value from the TwoStageSync class
     global NUMBER_OF_MESSAGES_TESTED
@@ -164,51 +164,49 @@ def check_synchronized_detections_recognitions(
     return True
 
 
-def test_two_stage_sync_node_build_valid(
-    two_stage_sync_generator,
+def test_build(
+    gather_data_generator,
 ):
-    two_stage_sync = two_stage_sync_generator.build(camera_fps=15)
-
-    assert len(two_stage_sync._unmatched_recognitions) == 0
-    assert len(two_stage_sync._recognitions_by_detection_ts) == 0
-    assert len(two_stage_sync._detections) == 0
+    with pytest.raises(ValueError):
+        gather_data_generator.build(camera_fps=-1)
+    gather_data_generator.build(camera_fps=15)
 
 
 def test_two_stage_sync_node_img_detections(
-    two_stage_sync_generator, img_detections, nn_data, duration: int
+    gather_data_generator, img_detections, nn_data, duration: int
 ):
-    two_stage_sync = two_stage_sync_generator.build(camera_fps=15)
+    gather_data = gather_data_generator.build(camera_fps=15)
 
     # Send data
     if duration is not None:
-        two_stage_sync.input_detections._queue.duration = duration
-        two_stage_sync.input_recognitions._queue.duration = duration
-    two_stage_sync.input_detections.send(img_detections)
-    two_stage_sync._detections[
+        gather_data.input_detections._queue.duration = duration
+        gather_data.input_recognitions._queue.duration = duration
+    gather_data.input_detections.send(img_detections)
+    gather_data._detections[
         img_detections.getTimestamp().total_seconds()
     ] = img_detections
 
     # Send two nn_data messages because we have two detections
-    two_stage_sync.input_recognitions.send(nn_data)
-    two_stage_sync.input_recognitions.send(nn_data)
-    two_stage_sync.out.createOutputQueue(
+    gather_data.input_recognitions.send(nn_data)
+    gather_data.input_recognitions.send(nn_data)
+    gather_data.out.createOutputQueue(
         check_synchronized_detections_recognitions, model_slug=None, parser_name=None
     )
 
     # Process the data
-    two_stage_sync.run()
+    gather_data.run()
 
     global NUMBER_OF_MESSAGES_TESTED
     assert NUMBER_OF_MESSAGES_TESTED > 0, "The node did not send out any messages."
 
 
 def test_two_stage_sync_node_img_detections_extended(
-    two_stage_sync_generator,
+    gather_data_generator,
     img_detections_extended,
     nn_data,
     duration: int,
 ):
-    two_stage_sync = two_stage_sync_generator.build(camera_fps=15)
+    two_stage_sync = gather_data_generator.build(camera_fps=15)
 
     # Send data
     if duration is not None:
