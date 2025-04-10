@@ -5,6 +5,10 @@ import depthai as dai
 
 from depthai_nodes import OUTLINE_COLOR
 
+from .utils import (
+    copy_message,
+)
+
 
 class Line(dai.Buffer):
     """Line class for storing a line.
@@ -33,11 +37,6 @@ class Line(dai.Buffer):
         @rtype: Line
         """
         new_obj = Line()
-        from depthai_nodes.node.utils import (
-            copy_message,
-        )
-
-        # TODO: move on top after debugging issues with circular imports
         new_obj.start_point = copy_message(self.start_point)
         new_obj.end_point = copy_message(self.end_point)
         new_obj.confidence = copy.deepcopy(self.confidence)

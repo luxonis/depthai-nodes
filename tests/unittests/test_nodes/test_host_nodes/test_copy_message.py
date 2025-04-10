@@ -4,7 +4,7 @@ from typing import Callable, List, Tuple
 import numpy as np
 import pytest
 
-from depthai_nodes.node.utils import copy_message
+from depthai_nodes.message.utils import copy_message
 
 from .utils import create_message
 
@@ -14,7 +14,7 @@ ATTRS_TO_IGNORE = [
 
 
 def equal_attributes(obj1, obj2):
-    if not (type(obj1) == type(obj2)):
+    if type(obj1) is not type(obj2):
         return False
     if np.isscalar(obj1):
         # int, float, str, bool, bytes, np.int32, np.float64, np.bool_, etc.

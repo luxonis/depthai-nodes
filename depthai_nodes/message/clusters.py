@@ -5,6 +5,10 @@ import cv2
 import depthai as dai
 import numpy as np
 
+from .utils import (
+    copy_message,
+)
+
 
 class Cluster(dai.Buffer):
     """Cluster class for storing a cluster.
@@ -31,11 +35,6 @@ class Cluster(dai.Buffer):
         """
         new_obj = Cluster()
         new_obj.label = copy.deepcopy(self.label)
-        from depthai_nodes.node.utils import (
-            copy_message,
-        )
-
-        # TODO: move on top after debugging issues with circular imports
         new_obj.points = [copy_message(p) for p in self.points]
         return new_obj
 

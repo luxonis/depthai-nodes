@@ -3,8 +3,7 @@ import depthai as dai
 import numpy as np
 
 from depthai_nodes.message import ImgDetectionsExtended, Map2D, SegmentationMask
-
-from .utils import copy_message
+from depthai_nodes.message.utils import copy_message
 
 
 class ApplyColormap(dai.node.HostNode):
