@@ -28,10 +28,10 @@ class ImgFrameSender(dai.node.HostNode, metaclass=CombinedMeta):
 
         try:
             self._img_frame_type = self.IMG_FRAME_TYPES[self._platform]
-        except KeyError:
+        except KeyError as e:
             raise ValueError(
                 f"No dai.ImgFrame.Type defined for platform {self._platform}."
-            )
+            ) from e
 
     def process(self) -> None:
         pass
