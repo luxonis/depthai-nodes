@@ -175,11 +175,11 @@ def create_detection_message(
     if keypoint_label_names is not None:
         if not isinstance(keypoint_label_names, list):
             raise ValueError(
-                f"Keypoint labels should be a list, got {type(keypoint_label_names)}."
+                f"Keypoint label names should be a list, got {type(keypoint_label_names)}."
             )
         if not all(isinstance(label, str) for label in keypoint_label_names):
             raise ValueError(
-                f"Keypoint labels should be a list of strings, got {keypoint_label_names}."
+                f"Keypoint label names should be a list of strings, got {keypoint_label_names}."
             )
 
     if keypoint_edges is not None:
@@ -234,7 +234,7 @@ def create_detection_message(
                 scores=None
                 if keypoints_scores is None
                 else keypoints_scores[detection_idx],
-                labels=keypoint_label_names,
+                label_names=keypoint_label_names,
                 edges=keypoint_edges,
             )
             detection.keypoints = keypoints_msg

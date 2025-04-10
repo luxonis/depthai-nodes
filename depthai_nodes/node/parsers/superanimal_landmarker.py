@@ -21,8 +21,8 @@ class SuperAnimalParser(KeypointParser):
         Number of keypoints.
     score_threshold : float
         Confidence score threshold for detected keypoints.
-    labels : List[str]
-        Labels for the keypoints.
+    label_names : List[str]
+        Label names for the keypoints.
     edges : List[Tuple[int, int]]
         Keypoint connection pairs for visualizing the skeleton. Example: [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint 1, keypoint 1 is connected to keypoint 2, etc.
 
@@ -39,7 +39,7 @@ class SuperAnimalParser(KeypointParser):
         scale_factor: float = 256.0,
         n_keypoints: int = 39,
         score_threshold: float = 0.5,
-        labels: Optional[List[str]] = None,
+        label_names: Optional[List[str]] = None,
         edges: Optional[List[Tuple[int, int]]] = None,
     ) -> None:
         """Initializes the parser node.
@@ -52,8 +52,8 @@ class SuperAnimalParser(KeypointParser):
         @type score_threshold: float
         @param scale_factor: Scale factor to divide the keypoints by.
         @type scale_factor: float
-        @param labels: Labels for the keypoints.
-        @type labels: Optional[List[str]]
+        @param label_names: Label names for the keypoints.
+        @type label_names: Optional[List[str]]
         @param edges: Keypoint connection pairs for visualizing the skeleton. Example:
             [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
             1, keypoint 1 is connected to keypoint 2, etc.
@@ -64,7 +64,7 @@ class SuperAnimalParser(KeypointParser):
             scale_factor=scale_factor,
             n_keypoints=n_keypoints,
             score_threshold=score_threshold,
-            labels=labels,
+            label_names=label_names,
             edges=edges,
         )
 
@@ -115,7 +115,7 @@ class SuperAnimalParser(KeypointParser):
                 keypoints,
                 scores,
                 self.score_threshold,
-                labels=self.labels,
+                label_names=self.label_names,
                 edges=self.edges,
             )
             msg.setTimestamp(output.getTimestamp())

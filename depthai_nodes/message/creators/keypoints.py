@@ -9,7 +9,7 @@ def create_keypoints_message(
     keypoints: Union[np.ndarray, List[List[float]]],
     scores: Union[np.ndarray, List[float], None] = None,
     confidence_threshold: Optional[float] = None,
-    labels: Optional[List[str]] = None,
+    label_names: Optional[List[str]] = None,
     edges: Optional[List[Tuple[int, int]]] = None,
 ) -> Keypoints:
     """Create a DepthAI message for the keypoints.
@@ -20,8 +20,8 @@ def create_keypoints_message(
     @type scores: Union[np.ndarray, List[float], None]
     @param confidence_threshold: Confidence threshold of keypoint detections. Defaults to None.
     @type confidence_threshold: Optional[float]
-    @param labels: Labels of the detected keypoints. Defaults to None.
-    @type labels: Optional[List[str]]
+    @param label_names: label_names of the detected keypoints. Defaults to None.
+    @type label_names: Optional[List[str]]
     @param edges: Connection pairs of the detected keypoints. Defaults to None. Example: [[0,1], [1,2], [2,3], [3,0]] shows that keypoint 0 is connected to keypoint 1, keypoint 1 is connected to keypoint 2, etc.
     @type edges: Optional[List[Tuple[int, int]]]
     @return: Keypoints message containing the detected keypoints.
@@ -95,11 +95,11 @@ def create_keypoints_message(
                         f"Keypoints inner list should contain only float, got {type(coord)}."
                     )
 
-    if labels is not None:
-        if not isinstance(labels, list):
-            raise ValueError(f"Labels should be list, got {type(labels)}.")
-        if not all(isinstance(label, str) for label in labels):
-            raise ValueError("Labels should be a list of strings.")
+    if label_names is not None:
+        if not isinstance(label_names, list):
+            raise ValueError(f"label_names should be list, got {type(label_names)}.")
+        if not all(isinstance(label, str) for label in label_names):
+            raise ValueError("label_names should be a list of strings.")
 
     if edges is not None:
         if not isinstance(edges, list):
@@ -138,8 +138,8 @@ def create_keypoints_message(
         pt.z = float(keypoint[2]) if use_3d else 0.0
         if scores is not None:
             pt.confidence = float(scores[i])
-        if labels is not None:
-            pt.label = labels[i]
+        if label_names is not None:
+            pt.label_name = label_names[i]
         points.append(pt)
         included_keypoints.append(i)
 

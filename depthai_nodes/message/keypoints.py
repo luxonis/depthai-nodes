@@ -19,8 +19,8 @@ class Keypoint(dai.Buffer):
         Z coordinate of the keypoint.
     confidence: Optional[float]
         Confidence of the keypoint.
-    label: Optional[str]
-        Label of the keypoint.
+    label_name: Optional[str]
+        Label name of the keypoint.
     """
 
     def __init__(self):
@@ -30,7 +30,7 @@ class Keypoint(dai.Buffer):
         self._y: float = None
         self._z: float = 0.0
         self._confidence: float = -1.0
-        self._label: str = None
+        self._label_name: str = None
         self._logger = get_logger(__name__)
 
     @property
@@ -136,24 +136,24 @@ class Keypoint(dai.Buffer):
         self._confidence = value
 
     @property
-    def label(self) -> str:
-        """Returns the label of the keypoint.
+    def label_name(self) -> str:
+        """Returns the label name of the keypoint.
 
-        @return: Label of the keypoint.
+        @return: Label name of the keypoint.
         @rtype: str
         """
-        return self._label
+        return self._label_name
 
-    @label.setter
-    def label(self, value: str):
-        """Sets the label of the keypoint.
+    @label_name.setter
+    def label_name(self, value: str):
+        """Sets the label name of the keypoint.
 
-        @param value: Label of the keypoint.
+        @param value: Label name of the keypoint.
         @type value: str
         """
         if not isinstance(value, str):
-            raise TypeError("label must be a string.")
-        self._label = value
+            raise TypeError("label_name must be a string.")
+        self._label_name = value
 
 
 class Keypoints(dai.Buffer):
@@ -163,6 +163,8 @@ class Keypoints(dai.Buffer):
     ----------
     keypoints: List[Keypoint]
         List of Keypoint objects, each representing a keypoint.
+    edges: List[Tuple[int, int]]
+        List of edges, each representing a connection between two keypoints.
     transformation : dai.ImgTransformation
         Image transformation object.
     """

@@ -16,6 +16,12 @@ class HRNetParser(KeypointParser):
         Name of the output layer relevant to the parser.
     score_threshold : float
         Confidence score threshold for detected keypoints.
+    label_names: Optional[List[str]]
+        Label names for the keypoints.
+    edges: Optional[List[Tuple[int, int]]]
+        Keypoint connection pairs for visualizing the skeleton. Example:
+            [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
+            1, keypoint 1 is connected to keypoint 2, etc.
 
     Output Message/s
     ----------------
@@ -28,7 +34,7 @@ class HRNetParser(KeypointParser):
         self,
         output_layer_name: str = "",
         score_threshold: float = 0.5,
-        labels: Optional[List[str]] = None,
+        label_names: Optional[List[str]] = None,
         edges: Optional[List[Tuple[int, int]]] = None,
     ) -> None:
         """Initializes the parser node.
@@ -37,8 +43,8 @@ class HRNetParser(KeypointParser):
         @type output_layer_name: str
         @param score_threshold: Confidence score threshold for detected keypoints.
         @type score_threshold: float
-        @param labels: Labels for the keypoints.
-        @type labels: Optional[List[str]]
+        @param label_names: Label names for the keypoints.
+        @type label_names: Optional[List[str]]
         @param edges: Keypoint connection pairs for visualizing the skeleton. Example:
             [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
             1, keypoint 1 is connected to keypoint 2, etc.
@@ -47,7 +53,7 @@ class HRNetParser(KeypointParser):
         super().__init__(
             output_layer_name,
             score_threshold=score_threshold,
-            labels=labels,
+            label_names=label_names,
             edges=edges,
         )
 
@@ -127,7 +133,7 @@ class HRNetParser(KeypointParser):
                 scores=scores,
                 confidence_threshold=self.score_threshold,
                 edges=self.edges,
-                labels=self.labels,
+                label_names=self.label_names,
             )
             keypoints_message.setTimestamp(output.getTimestamp())
             keypoints_message.setTransformation(output.getTransformation())

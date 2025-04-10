@@ -22,8 +22,8 @@ class KeypointParser(BaseParser):
         Number of keypoints the model detects.
     score_threshold : float
         Confidence score threshold for detected keypoints.
-    labels : List[str]
-        Labels for the keypoints.
+    label_names : List[str]
+        Label names for the keypoints.
     edges : List[Tuple[int, int]]
         Keypoint connection pairs for visualizing the skeleton. Example: [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint 1, keypoint 1 is connected to keypoint 2, etc.
 
@@ -48,7 +48,7 @@ class KeypointParser(BaseParser):
         scale_factor: float = 1.0,
         n_keypoints: int = None,
         score_threshold: float = None,
-        labels: Optional[List[str]] = None,
+        label_names: Optional[List[str]] = None,
         edges: Optional[List[List[int]]] = None,
     ) -> None:
         """Initializes the parser node.
@@ -59,8 +59,8 @@ class KeypointParser(BaseParser):
         @type scale_factor: float
         @param n_keypoints: Number of keypoints.
         @type n_keypoints: int
-        @param labels: Labels for the keypoints.
-        @type labels: Optional[List[str]]
+        @param label_names: Label names for the keypoints.
+        @type label_names: Optional[List[str]]
         @param edges: Keypoint connection pairs for visualizing the skeleton. Example:
             [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
             1, keypoint 1 is connected to keypoint 2, etc.
@@ -71,7 +71,7 @@ class KeypointParser(BaseParser):
         self.scale_factor = scale_factor
         self.n_keypoints = n_keypoints
         self.score_threshold = score_threshold
-        self.labels = labels
+        self.label_names = label_names
         self.edges = edges
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
@@ -126,17 +126,17 @@ class KeypointParser(BaseParser):
 
         self.score_threshold = threshold
 
-    def setLabels(self, labels: List[str]) -> None:
-        """Sets the labels for the keypoints.
+    def setLabelNames(self, label_names: List[str]) -> None:
+        """Sets the label names for the keypoints.
 
-        @param labels: List of labels for the keypoints.
-        @type labels: List[str]
+        @param label_names: List of label names for the keypoints.
+        @type label_names: List[str]
         """
-        if not isinstance(labels, list):
-            raise ValueError("Labels must be a list.")
-        if not all(isinstance(label, str) for label in labels):
-            raise ValueError("Labels must be a list of strings.")
-        self.labels = labels
+        if not isinstance(label_names, list):
+            raise ValueError("Label names must be a list.")
+        if not all(isinstance(label, str) for label in label_names):
+            raise ValueError("Label names must be a list of strings.")
+        self.label_names = label_names
 
     def setEdges(self, edges: List[Tuple[int, int]]) -> None:
         """Sets the edges for the keypoints.
@@ -178,7 +178,7 @@ class KeypointParser(BaseParser):
         self.scale_factor = head_config.get("scale_factor", self.scale_factor)
         self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
         self.score_threshold = head_config.get("score_threshold", self.score_threshold)
-        self.labels = head_config.get("keypoint_labels", self.labels)
+        self.label_names = head_config.get("keypoint_labels", self.label_names)
         keypoint_edges = head_config.get("skeleton_edges", self.edges)
         if keypoint_edges:
             self.edges = [tuple(edge) for edge in keypoint_edges]
@@ -220,7 +220,7 @@ class KeypointParser(BaseParser):
             keypoints = np.clip(keypoints, 0, 1)
 
             msg = create_keypoints_message(
-                keypoints, edges=self.edges, labels=self.labels
+                keypoints, edges=self.edges, label_names=self.label_names
             )
             msg.setTimestamp(output.getTimestamp())
             msg.setTransformation(output.getTransformation())
