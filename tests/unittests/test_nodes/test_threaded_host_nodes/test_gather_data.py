@@ -6,8 +6,6 @@ import pytest
 
 from depthai_nodes.message import (
     GatheredData,
-    ImgDetectionExtended,
-    ImgDetectionsExtended,
 )
 from depthai_nodes.node.gather_data import (
     GatherData,
@@ -103,27 +101,6 @@ def old_img_detections(old_reference_timestamp):
     dets = get_img_detections()
     dets.setTimestamp(old_reference_timestamp)
     return dets
-
-
-@pytest.fixture
-def img_detections_extended(reference_timestamp):
-    det = ImgDetectionsExtended()
-    det.detections = [ImgDetectionExtended() for _ in range(2)]
-    for i, d in enumerate(det.detections):
-        xmin = 0.3
-        xmax = 0.5
-        ymin = 0.3
-        ymax = 0.5
-        x_center = (xmin + xmax) / 2
-        y_center = (ymin + ymax) / 2
-        width = xmax - xmin
-        height = ymax - ymin
-        d.rotated_rect = (x_center, y_center, width, height, 0)
-        d.rotated_rect.angle = 0
-        d.label = i
-        d.confidence = 0.9
-    det.setTimestamp(reference_timestamp)
-    return det
 
 
 def test_build(gather_data_generator, fps):
