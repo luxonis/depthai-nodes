@@ -38,8 +38,9 @@ def create_image_message(
         raise ValueError(f"Expected int type, got {type(image[0, 0, 0])}.")
 
     if image.shape[2] == 1:  # grayscale
-        image = image[:, :, 0]
-        img_frame_type = dai.ImgFrame.Type.GRAY8  # HW image
+        image = image[:, :, 0]  # HW image
+        if not (img_frame_type.name.startswith(("RAW", "GRAY"))):
+            img_frame_type = dai.ImgFrame.Type.GRAY8
         height, width = image.shape
     else:
         if not is_bgr:

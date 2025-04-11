@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional, Tuple
 
 import depthai as dai
 import numpy as np
@@ -16,6 +16,12 @@ class HRNetParser(KeypointParser):
         Name of the output layer relevant to the parser.
     score_threshold : float
         Confidence score threshold for detected keypoints.
+    label_names: Optional[List[str]]
+        Label names for the keypoints.
+    edges: Optional[List[Tuple[int, int]]]
+        Keypoint connection pairs for visualizing the skeleton. Example:
+            [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
+            1, keypoint 1 is connected to keypoint 2, etc.
 
     Output Message/s
     ----------------
@@ -25,7 +31,11 @@ class HRNetParser(KeypointParser):
     """
 
     def __init__(
-        self, output_layer_name: str = "", score_threshold: float = 0.5
+        self,
+        output_layer_name: str = "",
+        score_threshold: float = 0.5,
+        label_names: Optional[List[str]] = None,
+        edges: Optional[List[Tuple[int, int]]] = None,
     ) -> None:
         """Initializes the parser node.
 
@@ -33,8 +43,19 @@ class HRNetParser(KeypointParser):
         @type output_layer_name: str
         @param score_threshold: Confidence score threshold for detected keypoints.
         @type score_threshold: float
+        @param label_names: Label names for the keypoints.
+        @type label_names: Optional[List[str]]
+        @param edges: Keypoint connection pairs for visualizing the skeleton. Example:
+            [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
+            1, keypoint 1 is connected to keypoint 2, etc.
+        @type edges: Optional[List[Tuple[int, int]]]
         """
-        super().__init__(output_layer_name, score_threshold=score_threshold)
+        super().__init__(
+            output_layer_name,
+            score_threshold=score_threshold,
+            label_names=label_names,
+            edges=edges,
+        )
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
@@ -111,6 +132,8 @@ class HRNetParser(KeypointParser):
                 keypoints=keypoints,
                 scores=scores,
                 confidence_threshold=self.score_threshold,
+                edges=self.edges,
+                label_names=self.label_names,
             )
             keypoints_message.setTimestamp(output.getTimestamp())
             keypoints_message.setTransformation(output.getTransformation())

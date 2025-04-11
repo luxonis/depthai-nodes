@@ -2,7 +2,7 @@ import depthai as dai
 import pytest
 from stability_tests.conftest import PipelineMock
 
-from depthai_nodes.node import ParserGenerator
+from depthai_nodes.node import ParserGenerator, YOLOExtendedParser
 
 # Need to add because it uses PipelineMock and ThreadedHostNodeMock from stability_tests conftest.py
 dai.Pipeline = PipelineMock
@@ -36,3 +36,23 @@ def test_parser_generator(parser_generator: ParserGenerator, model_name: str):
     assert (
         len(parsers) == num_heads
     ), f"Expected {num_heads} parsers, got {len(parsers)}"
+
+
+def test_host_only_flag(parser_generator: ParserGenerator):
+    nn_archive = dai.NNArchive(
+        dai.getModelFromZoo(dai.NNModelDescription("luxonis/yolov6-nano", "RVC2"))
+    )
+    parsers = parser_generator.build(nn_archive, host_only=True)
+    assert parsers is not None, "Parsers should not be None"
+    assert len(parsers) == 1, "Expected 1 parser"
+    assert isinstance(parsers[0], YOLOExtendedParser), "Expected YOLOExtendedParser"
+
+
+def test_host_only_flag_unsupported(parser_generator: ParserGenerator):
+    nn_archive = dai.NNArchive(
+        dai.getModelFromZoo(
+            dai.NNModelDescription("luxonis/mobilenet-ssd:300x300", "RVC2")
+        )
+    )
+    with pytest.raises(ValueError):
+        parser_generator.build(nn_archive, host_only=True)

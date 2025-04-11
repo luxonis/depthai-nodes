@@ -3,6 +3,7 @@ import depthai as dai
 import numpy as np
 
 from depthai_nodes.message import ImgDetectionsExtended, Map2D, SegmentationMask
+from depthai_nodes.message.utils import copy_message
 
 
 class ApplyColormap(dai.node.HostNode):
@@ -95,14 +96,16 @@ class ApplyColormap(dai.node.HostNode):
         @type instance_to_semantic_segmentation: bool
         """
 
+        msg_copy = copy_message(msg)
+
         if isinstance(msg, SegmentationMask):
-            arr = msg.mask
+            arr = msg_copy.mask
         elif isinstance(msg, dai.ImgFrame):
             if not msg.getType().name.startswith("RAW"):
                 raise TypeError(f"Expected image type RAW, got {msg.getType().name}")
             arr = msg.getCvFrame()
         elif isinstance(msg, Map2D):
-            arr = msg.map
+            arr = msg_copy.map
         elif isinstance(msg, ImgDetectionsExtended):
             if self._instance_to_semantic_mask:
                 labels = {
@@ -110,10 +113,10 @@ class ApplyColormap(dai.node.HostNode):
                 }
                 labels[-1] = -1  # background class
                 arr = np.vectorize(lambda x: labels.get(x, -1))(
-                    msg.masks  # instance segmentation mask
+                    msg_copy.masks  # instance segmentation mask
                 )  # semantic segmentation mask
             else:
-                arr = msg.masks  # semantic segmentation mask
+                arr = msg_copy.masks  # semantic segmentation mask
         else:
             raise ValueError(f"Unsupported input type {type(msg)}.")
 

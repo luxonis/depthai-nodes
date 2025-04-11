@@ -1,8 +1,13 @@
+import copy
 from typing import List
 
 import depthai as dai
 
 from depthai_nodes import OUTLINE_COLOR
+
+from .utils import (
+    copy_message,
+)
 
 
 class Line(dai.Buffer):
@@ -24,6 +29,18 @@ class Line(dai.Buffer):
         self._start_point: dai.Point2f = None
         self._end_point: dai.Point2f = None
         self._confidence: float = None
+
+    def copy(self):
+        """Creates a new instance of the Line class and copies the attributes.
+
+        @return: A new instance of the Line class.
+        @rtype: Line
+        """
+        new_obj = Line()
+        new_obj.start_point = copy_message(self.start_point)
+        new_obj.end_point = copy_message(self.end_point)
+        new_obj.confidence = copy.deepcopy(self.confidence)
+        return new_obj
 
     @property
     def start_point(self) -> dai.Point2f:
@@ -111,6 +128,20 @@ class Lines(dai.Buffer):
         super().__init__()
         self._lines: List[Line] = []
         self._transformation: dai.ImgTransformation = None
+
+    def copy(self):
+        """Creates a new instance of the Lines class and copies the attributes.
+
+        @return: A new instance of the Lines class.
+        @rtype: Lines
+        """
+        new_obj = Lines()
+        new_obj.lines = [line.copy() for line in self.lines]
+        new_obj.setSequenceNum(self.getSequenceNum())
+        new_obj.setTimestamp(self.getTimestamp())
+        new_obj.setTimestampDevice(self.getTimestampDevice())
+        new_obj.setTransformation(self.transformation)
+        return new_obj
 
     @property
     def lines(self) -> List[Line]:
