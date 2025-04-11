@@ -4,12 +4,8 @@ import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes.message import (
-    GatheredData,
-)
-from depthai_nodes.node.gather_data import (
-    GatherData,
-)
+from depthai_nodes.message import GatheredData
+from depthai_nodes.node.gather_data import GatherData
 
 from .conftest import PipelineMock
 
@@ -51,34 +47,31 @@ def old_reference_timestamp(reference_timestamp, tolerance):
 
 @pytest.fixture
 def gather_data_generator():
-    pipeline = PipelineMock()
-    return pipeline.create(GatherData)
+    return PipelineMock().create(GatherData)
 
 
-def get_nn_data():
+def create_nn_data(timestamp=None):
     nn_data = dai.NNData()
     tensor = np.random.rand(1, 10).astype(np.float32)
-    nn_data.addTensor("test_layer", tensor)
+    nn_data.addTensor(name="test_layer", tensor=tensor)
+    if timestamp:
+        nn_data.setTimestamp(timestamp)
     return nn_data
 
 
 @pytest.fixture
 def nn_data_in_tolerance(in_tolerance_timestamp):
-    nn_data = get_nn_data()
-    nn_data.setTimestamp(in_tolerance_timestamp)
-    return nn_data
+    return create_nn_data(timestamp=in_tolerance_timestamp)
 
 
 @pytest.fixture
 def nn_data_out_of_tolerance(out_of_tolerance_timestamp):
-    nn_data = get_nn_data()
-    nn_data.setTimestamp(out_of_tolerance_timestamp)
-    return nn_data
+    return create_nn_data(timestamp=out_of_tolerance_timestamp)
 
 
-def get_img_detections():
+def create_img_detections(timestamp=None, num_detections=2):
     det = dai.ImgDetections()
-    det.detections = [dai.ImgDetection() for _ in range(2)]
+    det.detections = [dai.ImgDetection() for _ in range(num_detections)]
     for i, d in enumerate(det.detections):
         d.xmin = 0.3
         d.xmax = 0.5
@@ -86,27 +79,68 @@ def get_img_detections():
         d.ymax = 0.5
         d.label = i
         d.confidence = 0.9
+    if timestamp:
+        det.setTimestamp(timestamp)
     return det
 
 
 @pytest.fixture
 def img_detections(reference_timestamp):
-    dets = get_img_detections()
-    dets.setTimestamp(reference_timestamp)
-    return dets
+    return create_img_detections(timestamp=reference_timestamp)
 
 
 @pytest.fixture
 def old_img_detections(old_reference_timestamp):
-    dets = get_img_detections()
-    dets.setTimestamp(old_reference_timestamp)
-    return dets
+    return create_img_detections(timestamp=old_reference_timestamp)
+
+
+def setup_gather_data_node(generator, fps, duration=None):
+    gather_data = generator.build(camera_fps=fps)
+    if duration is not None:
+        gather_data.input_data._queue.duration = duration
+        gather_data.input_reference._queue.duration = duration
+    return gather_data
+
+
+def send_data_and_run(gather_data, reference_data, data_items):
+    gather_data.input_reference.send(reference_data)
+    for item in data_items:
+        gather_data.input_data.send(item)
+    output = gather_data.out.createOutputQueue()
+    gather_data.run()
+    return output.getAll()
+
+
+def assert_gather_data_result_basics(
+    result, expected_reference, expected_gathered_count
+):
+    assert isinstance(result, GatheredData)
+    assert result.reference_data == expected_reference
+    assert len(result.gathered) == expected_gathered_count
+    assert result.getTimestamp() == expected_reference.getTimestamp()
+
+
+def assert_timestamps_in_tolerance(timestamps, reference_timestamp, tolerance):
+    tolerance_td = timedelta(seconds=tolerance)
+    for timestamp in timestamps:
+        assert (
+            reference_timestamp - tolerance_td
+            <= timestamp
+            <= reference_timestamp + tolerance_td
+        )
+
+
+def assert_results_not_empty(results):
+    assert isinstance(results, list)
+    assert len(results) > 0
 
 
 def test_build(gather_data_generator, fps):
     with pytest.raises(ValueError):
         gather_data_generator.build(camera_fps=-fps)
-    gather_data_generator.build(camera_fps=fps)
+
+    gather_data = gather_data_generator.build(camera_fps=fps)
+    assert gather_data is not None
 
 
 def test_run_without_build(gather_data_generator):
@@ -122,75 +156,55 @@ def test_img_detections(
     nn_data_out_of_tolerance,
     reference_timestamp,
     tolerance,
-    duration: int,
+    duration,
 ):
-    gather_data: GatherData = gather_data_generator.build(camera_fps=fps)
-    if duration is not None:
-        gather_data.input_data._queue.duration = duration
-        gather_data.input_reference._queue.duration = duration
+    gather_data = setup_gather_data_node(
+        generator=gather_data_generator, fps=fps, duration=duration
+    )
 
-    gather_data.input_reference.send(img_detections)
-    gather_data.input_data.send(nn_data_in_tolerance)
-    gather_data.input_data.send(nn_data_in_tolerance)
-    gather_data.input_data.send(nn_data_out_of_tolerance)
+    data_items = [nn_data_in_tolerance, nn_data_in_tolerance, nn_data_out_of_tolerance]
+    results = send_data_and_run(
+        gather_data=gather_data, reference_data=img_detections, data_items=data_items
+    )
 
-    output = gather_data.out.createOutputQueue()
+    assert_results_not_empty(results=results)
 
-    gather_data.run()
-    results = output.getAll()
-
-    assert isinstance(results, list)
-    assert len(results) > 0, "The node did not send out any messages."
     for result in results:
-        assert isinstance(
-            result, GatheredData
-        ), "All results should be GatheredData objects"
-        assert (
-            result.getTimestamp() == reference_timestamp
-        ), "The timestamp should match the reference timestamp"
-        assert (
-            result.reference_data == img_detections
-        ), "The reference data should match the sent ImgDetections"
-        assert (
-            len(result.gathered) == 2
-        ), "The number of gathered data should match the number of sent nn_data messages with timestamps in tolerance"
+        assert_gather_data_result_basics(
+            result=result, expected_reference=img_detections, expected_gathered_count=2
+        )
+
+        gathered_timestamps = [gathered.getTimestamp() for gathered in result.gathered]
+        assert_timestamps_in_tolerance(
+            timestamps=gathered_timestamps,
+            reference_timestamp=reference_timestamp,
+            tolerance=tolerance,
+        )
+
         for gathered in result.gathered:
-            assert isinstance(
-                gathered, dai.Buffer
-            ), "Gathered data should be derived from dai.Buffer"
-            tolerance_td = timedelta(seconds=tolerance)
-            assert (
-                reference_timestamp - tolerance_td
-                <= gathered.getTimestamp()
-                <= reference_timestamp + tolerance_td
-            ), "Gathered data timestamp should be within the tolerance range"
+            assert isinstance(gathered, dai.Buffer)
 
 
 def test_set_wait_count_fn(gather_data_generator, fps, duration, nn_data_in_tolerance):
-    gather_data: GatherData[dai.NNData, dai.NNData] = gather_data_generator.build(
-        camera_fps=fps
+    gather_data = setup_gather_data_node(
+        generator=gather_data_generator, fps=fps, duration=duration
     )
-    if duration is not None:
-        gather_data.input_data._queue.duration = duration
-        gather_data.input_reference._queue.duration = duration
-    gather_data.input_reference.send(nn_data_in_tolerance)
-    gather_data.input_data.send(nn_data_in_tolerance)
+
     gather_data.set_wait_count_fn(lambda _: 1)
-    output = gather_data.out.createOutputQueue()
-    gather_data.run()
-    results = output.getAll()
-    assert isinstance(results, list)
-    assert len(results) > 0, "The node should have sent out more than one message."
+    results = send_data_and_run(
+        gather_data=gather_data,
+        reference_data=nn_data_in_tolerance,
+        data_items=[nn_data_in_tolerance],
+    )
+
+    assert_results_not_empty(results=results)
+
     for result in results:
-        assert isinstance(
-            result, GatheredData
-        ), "The result should be a GatheredData object"
-        assert (
-            result.reference_data == nn_data_in_tolerance
-        ), "The reference data should match the sent ImgDetections"
-        assert (
-            len(result.gathered) == 1
-        ), "The number of gathered data should match the wait count function"
+        assert_gather_data_result_basics(
+            result=result,
+            expected_reference=nn_data_in_tolerance,
+            expected_gathered_count=1,
+        )
         assert result.gathered[0] == nn_data_in_tolerance
 
 
@@ -202,24 +216,21 @@ def test_clear_old_data(
     img_detections,
     nn_data_in_tolerance,
 ):
-    gather_data: GatherData = gather_data_generator.build(camera_fps=fps)
-    if duration is not None:
-        gather_data.input_data._queue.duration = duration
-        gather_data.input_reference._queue.duration = duration
+    gather_data = setup_gather_data_node(
+        generator=gather_data_generator, fps=fps, duration=duration
+    )
+
     gather_data.input_reference.send(old_img_detections)
     gather_data.input_reference.send(img_detections)
-    gather_data.input_data.send(nn_data_in_tolerance)
-    gather_data.input_data.send(nn_data_in_tolerance)
-    output = gather_data.out.createOutputQueue()
-    gather_data.run()
-    results = output.getAll()
-    assert isinstance(results, list)
-    assert len(results) > 0, "The node should have sent out more than one message."
+
+    data_items = [nn_data_in_tolerance, nn_data_in_tolerance]
+    results = send_data_and_run(
+        gather_data=gather_data, reference_data=img_detections, data_items=data_items
+    )
+
+    assert_results_not_empty(results=results)
+
     for result in results:
-        assert isinstance(
-            result, GatheredData
-        ), "The result should be a GatheredData object"
-        assert (
-            result.reference_data == img_detections
-        ), "The reference data should match the sent ImgDetections"
-        assert len(result.gathered) == 2, "There should be only one gathered data item"
+        assert_gather_data_result_basics(
+            result=result, expected_reference=img_detections, expected_gathered_count=2
+        )
