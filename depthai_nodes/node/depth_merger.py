@@ -3,11 +3,12 @@ from typing import Union
 import depthai as dai
 
 from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
+from depthai_nodes.node.base_host_node import BaseHostNode
 
 from .host_spatials_calc import HostSpatialsCalc
 
 
-class DepthMerger(dai.node.HostNode):
+class DepthMerger(BaseHostNode):
     """DepthMerger is a custom host node for merging 2D detections with depth
     information to produce spatial detections.
 

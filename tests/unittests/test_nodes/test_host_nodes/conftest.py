@@ -56,6 +56,9 @@ class Device:
     def getPlatformAsString(self):
         return self._platform.name
 
+    def getPlatform(self):
+        return self._platform
+
 
 class HostNodeMock:
     def __init__(self):
