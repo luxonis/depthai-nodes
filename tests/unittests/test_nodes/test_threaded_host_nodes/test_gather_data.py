@@ -4,7 +4,6 @@ import depthai as dai
 import numpy as np
 import pytest
 
-# from depthai_nodes import
 from depthai_nodes.message import (
     GatheredData,
     ImgDetectionExtended,
@@ -15,9 +14,6 @@ from depthai_nodes.node.gather_data import (
 )
 
 from .conftest import PipelineMock
-
-# Need to add because it uses PipelineMock and ThreadedHostNodeMock from stability_tests conftest.py
-dai.Pipeline = PipelineMock
 
 
 @pytest.fixture
@@ -166,3 +162,31 @@ def test_img_detections(
                 <= gathered.getTimestamp()
                 <= reference_timestamp + tolerance_td
             ), "Gathered data timestamp should be within the tolerance range"
+
+
+def test_set_wait_count_fn(gather_data_generator, fps, duration, nn_data_in_tolerance):
+    gather_data: GatherData[dai.NNData, dai.NNData] = gather_data_generator.build(
+        camera_fps=fps
+    )
+    if duration is not None:
+        gather_data.input_data._queue.duration = duration
+        gather_data.input_reference._queue.duration = duration
+    gather_data.input_reference.send(nn_data_in_tolerance)
+    gather_data.input_data.send(nn_data_in_tolerance)
+    gather_data.set_wait_count_fn(lambda _: 1)
+    output = gather_data.out.createOutputQueue()
+    gather_data.run()
+    results = output.getAll()
+    assert isinstance(results, list)
+    assert len(results) > 0, "The node should have sent out more than one message."
+    for result in results:
+        assert isinstance(
+            result, GatheredData
+        ), "The result should be a GatheredData object"
+        assert (
+            result.reference_data == nn_data_in_tolerance
+        ), "The reference data should match the sent ImgDetections"
+        assert (
+            len(result.gathered) == 1
+        ), "The number of gathered data should match the wait count function"
+        assert result.gathered[0] == nn_data_in_tolerance
