@@ -3,8 +3,8 @@ from typing import List
 import depthai as dai
 
 from depthai_nodes import ImgDetectionsExtended
+from depthai_nodes.message.utils import copy_message
 from depthai_nodes.node.base_host_node import BaseHostNode
-from depthai_nodes.node.utils import copy_message
 
 
 class ImgDetectionsFilter(BaseHostNode):
