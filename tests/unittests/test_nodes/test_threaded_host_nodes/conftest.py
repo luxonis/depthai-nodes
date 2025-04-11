@@ -23,7 +23,7 @@ class Queue:
         return self._messages.pop()
 
     def send(self, item):
-        self._messages.append(item)
+        self._messages.appendleft(item)
 
     def getAll(self):
         messages = list(self._messages)
