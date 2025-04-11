@@ -152,6 +152,9 @@ def test_img_detections(
             result, GatheredData
         ), "All results should be GatheredData objects"
         assert (
+            result.getTimestamp() == reference_timestamp
+        ), "The timestamp should match the reference timestamp"
+        assert (
             result.reference_data == img_detections
         ), "The reference data should match the sent ImgDetections"
         assert (
