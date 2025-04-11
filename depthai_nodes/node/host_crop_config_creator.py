@@ -1,36 +1,30 @@
+from typing import Optional, Tuple
+
 import depthai as dai
-import numpy as np
 
 from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 
 
-class CropConfigsCreatorNode(dai.node.HostNode):
-    """This node is used to create a dai.ImageManipConfigV2() object for every detection
-    in a ImgDetectionsExtended message. The node iterates over a list of n detections
-    and sends a dai.ImgeManipConfigV2 objects for each detection. By default, the node
-    will keep at most the first 100 detections.
+class CropConfigsCreator(dai.node.HostNode):
+    """A node to create and send a dai.ImageManipConfigV2 crop configuration for each
+    detection in a list of detections. An optional target size and resize mode can be
+    set to ensure uniform crop sizes.
 
-    Before use, the source and target image sizes need to be set with the build function.
-    The node assumes the last frame is saved in the dai.ImgManipV2 node and when recieving a detection_message the node sends an empty crop config that skips the frame and loads the next frame in the queue.
-
+    To ensure correct synchronization between the crop configurations and the image, ensure "inputConfig.setReusePreviousMessage" is set to False in the dai.ImageManipV2 node.
     Attributes
     ----------
     detections_input : dai.Input
-        The input link for the ImgDetectionsExtended message
+        The input link for the ImageDetectionsExtended | dai.ImgDetections message
     config_output : dai.Output
         The output link for the ImageManipConfigV2 messages
     detections_output : dai.Output
         The output link for the ImgDetectionsExtended message
-    w : int
-        The width of the source image.
-    h : int
-        The height of the source image.
-    target_w : int
-        The width of the target image.
-    target_h : int
-        The height of the target image.
-    n_detections : int
-        The number of detections to keep.
+    source_size : Tuple[int, int]
+        The size of the source image (width, height).
+    target_size : Optional[Tuple[int, int]] = None
+        The size of the target image (width, height). If None, crop sizes will not be uniform.
+    resize_mode : dai.ImageManipConfigV2.ResizeMode = dai.ImageManipConfigV2.ResizeMode.STRETCH
+        The resize mode to use when target size is set. Options are: CENTER_CROP, LETTERBOX, NONE, STRETCH
     """
 
     def __init__(self) -> None:
@@ -50,7 +44,7 @@ class CropConfigsCreatorNode(dai.node.HostNode):
         self._h: int = None
         self._target_w: int = None
         self._target_h: int = None
-        self._n_detections: int = None
+        self.resize_mode: dai.ImageManipConfigV2.ResizeMode = None
 
     @property
     def w(self) -> int:
@@ -87,15 +81,6 @@ class CropConfigsCreatorNode(dai.node.HostNode):
         @rtype: int
         """
         return self._target_h
-
-    @property
-    def n_detections(self) -> int:
-        """Returns the number of detections to keep.
-
-        @return: Number of detections to keep.
-        @rtype: int
-        """
-        return self._n_detections
 
     @w.setter
     def w(self, w: int):
@@ -145,68 +130,55 @@ class CropConfigsCreatorNode(dai.node.HostNode):
         self._validate_positive_integer(target_h)
         self._target_h = target_h
 
-    @n_detections.setter
-    def n_detections(self, n_detections: int):
-        """Sets the number of detections to keep.
-
-        @param n_detections: Number of detections to keep.
-        @type n_detections: int
-        @raise TypeError: If n_detections is not an integer.
-        @raise ValueError: If n_detections is less than 1.
-        """
-        self._validate_positive_integer(n_detections)
-        self._n_detections = n_detections
-
     def build(
         self,
         detections_input: dai.Node.Output,
-        w: int,
-        h: int,
-        target_w: int,
-        target_h: int,
-        n_detections: int = 100,
-    ) -> "CropConfigsCreatorNode":
+        source_size: Tuple[int, int],
+        target_size: Optional[Tuple[int, int]] = None,
+        resize_mode: dai.ImageManipConfigV2.ResizeMode = dai.ImageManipConfigV2.ResizeMode.STRETCH,
+    ) -> "CropConfigsCreator":
         """Link the node input and set the correct source and target image sizes.
 
         Parameters
         ----------
         detections_input : dai.Node.Output
             The input link for the ImgDetectionsExtended message
-        w : int
-            The width of the source image.
-        h : int
-            The height of the source image.
-        target_w : int
-            The width of the target image.
-        target_h : int
-            The height of the target image.
-        n_detections : int, optional
-            The number of detections to keep, by default 100
         """
-        self.w = w
-        self.h = h
-        self.target_w = target_w
-        self.target_h = target_h
-        self.n_detections = n_detections
+
+        self.w = source_size[0]
+        self.h = source_size[1]
+
+        if target_size is not None:
+            self.target_w = target_size[0]
+            self.target_h = target_size[1]
+
+        self.resize_mode = resize_mode
+
         self.link_args(detections_input)
 
         return self
 
     def process(self, detections_input: dai.Buffer) -> None:
         """Process the input detections and create crop configurations. This function is
-        ran every time a new ImgDetectionsExtended message is received.
+        ran every time a new ImgDetectionsExtended or dai.ImgDetections message is
+        received.
 
-        Sends the first n  crop configurations to the config_output link in addition
-        send an ImgDetectionsExtended object containing the corresponding detections to
-        the detections_output link.
+        Sends len(detections) number of crop configurations to the config_output link.
+        In addition sends an ImgDetectionsExtended object containing the corresponding
+        detections to the detections_output link.
         """
-        assert isinstance(detections_input, ImgDetectionsExtended)
-        detections = detections_input.detections
+
+        assert isinstance(detections_input, (ImgDetectionsExtended, dai.ImgDetections))
+
         sequence_num = detections_input.getSequenceNum()
         timestamp = detections_input.getTimestamp()
 
-        detections_to_keep = []
-        num_detections = min(len(detections), self._n_detections)
+        if isinstance(detections_input, dai.ImgDetections):
+            detections_msg = self._convert_to_extended(detections_input)
+        else:
+            detections_msg = detections_input
+
+        detections = detections_msg.detections
 
         # Skip the current frame / load new frame
         cfg = dai.ImageManipConfigV2()
@@ -217,15 +189,17 @@ class CropConfigsCreatorNode(dai.node.HostNode):
         while not send_status:
             send_status = self.config_output.trySend(cfg)
 
-        for i in range(num_detections):
+        for i in range(len(detections)):
             cfg = dai.ImageManipConfigV2()
             detection: ImgDetectionExtended = detections[i]
-            detections_to_keep.append(detection)
             rect = detection.rotated_rect
             rect = rect.denormalize(self.w, self.h)
 
             cfg.addCropRotatedRect(rect, normalizedCoords=False)
-            cfg.setOutputSize(self.target_w, self.target_h)
+
+            if self.target_w is not None and self.target_h is not None:
+                cfg.setOutputSize(self.target_w, self.target_h, self.resize_mode)
+
             cfg.setReusePreviousImage(True)
             cfg.setTimestamp(timestamp)
             cfg.setSequenceNum(sequence_num)
@@ -234,19 +208,35 @@ class CropConfigsCreatorNode(dai.node.HostNode):
             while not send_status:
                 send_status = self.config_output.trySend(cfg)
 
-        detections_msg = ImgDetectionsExtended()
-        detections_msg.setSequenceNum(sequence_num)
-        detections_msg.setTimestamp(timestamp)
-        detections_msg.setTransformation(detections_input.transformation)
-        detections_msg.detections = detections_to_keep
-
-        if detections_input.masks.ndim == 2:
-            masks = np.where(
-                detections_input.masks >= num_detections, -1, detections_input.masks
-            )
-            detections_msg.masks = masks
-
         self.detections_output.send(detections_msg)
+
+    def _convert_to_extended(
+        self, detections: dai.ImgDetections
+    ) -> ImgDetectionsExtended:
+        rotated_rectangle_detections = []
+        for det in detections.detections:
+            img_detection = ImgDetectionExtended()
+            img_detection.label = det.label
+            img_detection.confidence = det.confidence
+
+            x_center = (det.xmin + det.xmax) / 2
+            y_center = (det.ymin + det.ymax) / 2
+            width = det.xmax - det.xmin
+            height = det.ymax - det.ymin
+
+            img_detection.rotated_rect = (x_center, y_center, width, height, 0.0)
+
+            rotated_rectangle_detections.append(img_detection)
+
+        img_detections_extended = ImgDetectionsExtended()
+        img_detections_extended.setSequenceNum(detections.getSequenceNum())
+        img_detections_extended.setTimestamp(detections.getTimestamp())
+        img_detections_extended.detections = rotated_rectangle_detections
+        transformation = detections.getTransformation()
+        if transformation is not None:
+            img_detections_extended.setTransformation(transformation)
+
+        return img_detections_extended
 
     def _validate_positive_integer(self, value: int):
         """Validates that the set size is a positive integer.
