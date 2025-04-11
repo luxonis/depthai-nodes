@@ -76,12 +76,21 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         ]
         return img_dets_copy
 
+    def _copy_point2f(point2f: dai.Point2f) -> dai.Point2f:
+        point2f_copy = _copy_metadata(point2f)
+        point2f_copy.x = point2f.x
+        point2f_copy.y = point2f.y
+        # TODO: set the value for .isNormalized()
+        return point2f_copy
+
     if isinstance(msg, dai.ImgFrame):
         return _copy_img_frame(msg)
     elif isinstance(msg, (dai.ImgDetection, dai.SpatialImgDetection)):
         return _copy_img_detection(msg)
     elif isinstance(msg, (dai.ImgDetections, dai.SpatialImgDetections)):
         return _copy_img_detections(msg)
+    elif isinstance(msg, dai.Point2f):
+        return _copy_point2f(msg)
     else:
         # TODO: define logic for copying other message types
         raise TypeError(f"Copying of message type {type(msg)} is not supported.")

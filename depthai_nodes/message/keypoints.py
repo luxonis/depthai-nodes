@@ -1,3 +1,4 @@
+import copy
 from typing import List, Tuple
 
 import depthai as dai
@@ -32,6 +33,20 @@ class Keypoint(dai.Buffer):
         self._confidence: float = -1.0
         self._label_name: str = None
         self._logger = get_logger(__name__)
+
+    def copy(self):
+        """Creates a new instance of the Keypoint class and copies the attributes.
+
+        @return: A new instance of the Keypoint class.
+        @rtype: Keypoint
+        """
+        new_obj = Keypoint()
+        new_obj.x = copy.deepcopy(self.x)
+        new_obj.y = copy.deepcopy(self.y)
+        new_obj.z = copy.deepcopy(self.z)
+        new_obj.confidence = copy.deepcopy(self.confidence)
+        new_obj.label_name = copy.deepcopy(self.label_name)
+        return new_obj
 
     @property
     def x(self) -> float:
@@ -151,8 +166,9 @@ class Keypoint(dai.Buffer):
         @param value: Label name of the keypoint.
         @type value: str
         """
-        if not isinstance(value, str):
-            raise TypeError("label_name must be a string.")
+        if value is not None:
+            if not isinstance(value, str):
+                raise TypeError("label_name must be a string.")
         self._label_name = value
 
 
@@ -175,6 +191,21 @@ class Keypoints(dai.Buffer):
         self._keypoints: List[Keypoint] = []
         self._edges: List[Tuple[int, int]] = []
         self._transformation: dai.ImgTransformation = None
+
+    def copy(self):
+        """Creates a new instance of the Keypoints class and copies the attributes.
+
+        @return: A new instance of the Keypoints class.
+        @rtype: Keypoints
+        """
+        new_obj = Keypoints()
+        new_obj.keypoints = [keypoint.copy() for keypoint in self.keypoints]
+        new_obj.edges = copy.deepcopy(self.edges)
+        new_obj.setSequenceNum(self.getSequenceNum())
+        new_obj.setTimestamp(self.getTimestamp())
+        new_obj.setTimestampDevice(self.getTimestampDevice())
+        new_obj.setTransformation(self.transformation)
+        return new_obj
 
     @property
     def keypoints(self) -> List[Keypoint]:

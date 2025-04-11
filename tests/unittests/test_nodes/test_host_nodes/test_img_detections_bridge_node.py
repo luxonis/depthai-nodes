@@ -11,7 +11,6 @@ from depthai_nodes.node import ImgDetectionsBridge
 
 from .conftest import Output
 from .utils.create_message import (
-    DETS,
     create_img_detections,
     create_img_detections_extended,
 )
@@ -24,12 +23,12 @@ def duration(request):
 
 @pytest.fixture
 def img_detections():
-    return create_img_detections(DETS)
+    return create_img_detections()
 
 
 @pytest.fixture
 def img_detections_extended():
-    return create_img_detections_extended(DETS)
+    return create_img_detections_extended()
 
 
 def test_initialization():
@@ -54,7 +53,7 @@ def test_processing(
     )
 
     o_dets = Output()
-    bridge = ImgDetectionsBridge().build(o_dets)
+    bridge = ImgDetectionsBridge().build(o_dets, ignore_angle=True)
     q_dets = o_dets.createOutputQueue()
     q_dets_transformed = bridge.out.createOutputQueue()
 

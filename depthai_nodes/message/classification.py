@@ -1,3 +1,4 @@
+import copy
 from typing import List
 
 import depthai as dai
@@ -29,6 +30,22 @@ class Classifications(dai.Buffer):
         self._classes: List[str] = []
         self._scores: NDArray[np.float32] = np.array([])
         self._transformation: dai.ImgTransformation = None
+
+    def copy(self):
+        """Creates a new instance of the Classifications class and copies the
+        attributes.
+
+        @return: A new instance of the Classifications class.
+        @rtype: Classifications
+        """
+        new_obj = Classifications()
+        new_obj.classes = copy.deepcopy(self.classes)
+        new_obj.scores = copy.deepcopy(self.scores)
+        new_obj.setSequenceNum(self.getSequenceNum())
+        new_obj.setTimestamp(self.getTimestamp())
+        new_obj.setTimestampDevice(self.getTimestampDevice())
+        new_obj.setTransformation(self.transformation)
+        return new_obj
 
     @property
     def classes(self) -> List:
