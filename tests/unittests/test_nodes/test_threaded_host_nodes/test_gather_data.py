@@ -115,6 +115,11 @@ def test_build(gather_data_generator, fps):
     gather_data_generator.build(camera_fps=fps)
 
 
+def test_run_without_build(gather_data_generator):
+    with pytest.raises(ValueError):
+        gather_data_generator.run()
+
+
 def test_img_detections(
     gather_data_generator,
     fps,
