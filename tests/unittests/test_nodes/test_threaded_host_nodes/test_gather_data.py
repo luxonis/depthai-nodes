@@ -19,8 +19,6 @@ from .conftest import PipelineMock
 # Need to add because it uses PipelineMock and ThreadedHostNodeMock from stability_tests conftest.py
 dai.Pipeline = PipelineMock
 
-NUMBER_OF_MESSAGES_TESTED = 0
-
 
 @pytest.fixture
 def duration(request):
@@ -34,7 +32,7 @@ def fps():
 
 @pytest.fixture
 def tolerance(fps):
-    return 1 / GatherData.FPS_TOLERANCE_DIVISOR / fps
+    return 1 / fps / GatherData.FPS_TOLERANCE_DIVISOR
 
 
 @pytest.fixture
@@ -58,8 +56,7 @@ def gather_data_generator():
     return pipeline.create(GatherData)
 
 
-@pytest.fixture
-def nn_data():
+def get_nn_data():
     nn_data = dai.NNData()
     tensor = np.random.rand(1, 10).astype(np.float32)
     nn_data.addTensor("test_layer", tensor)
@@ -67,13 +64,15 @@ def nn_data():
 
 
 @pytest.fixture
-def nn_data_in_tolerance(nn_data, in_tolerance_timestamp):
+def nn_data_in_tolerance(in_tolerance_timestamp):
+    nn_data = get_nn_data()
     nn_data.setTimestamp(in_tolerance_timestamp)
     return nn_data
 
 
 @pytest.fixture
-def nn_data_out_of_tolerance(nn_data, out_of_tolerance_timestamp):
+def nn_data_out_of_tolerance(out_of_tolerance_timestamp):
+    nn_data = get_nn_data()
     nn_data.setTimestamp(out_of_tolerance_timestamp)
     return nn_data
 
@@ -114,22 +113,23 @@ def img_detections_extended(reference_timestamp):
     return det
 
 
-def test_build(
-    gather_data_generator,
-):
+def test_build(gather_data_generator, fps):
     with pytest.raises(ValueError):
-        gather_data_generator.build(camera_fps=-1)
-    gather_data_generator.build(camera_fps=15)
+        gather_data_generator.build(camera_fps=-fps)
+    gather_data_generator.build(camera_fps=fps)
 
 
 def test_img_detections(
     gather_data_generator,
+    fps,
     img_detections,
     nn_data_in_tolerance,
     nn_data_out_of_tolerance,
+    reference_timestamp,
+    tolerance,
     duration: int,
 ):
-    gather_data: GatherData = gather_data_generator.build(camera_fps=15)
+    gather_data: GatherData = gather_data_generator.build(camera_fps=fps)
     if duration is not None:
         gather_data.input_data._queue.duration = duration
         gather_data.input_reference._queue.duration = duration
@@ -156,32 +156,13 @@ def test_img_detections(
         assert (
             len(result.gathered) == 2
         ), "The number of gathered data should match the number of sent nn_data messages with timestamps in tolerance"
-
-
-def test_two_stage_sync_node_img_detections_extended(
-    gather_data_generator,
-    img_detections_extended,
-    nn_data,
-    duration: int,
-):
-    two_stage_sync = gather_data_generator.build(camera_fps=15)
-
-    # Send data
-    if duration is not None:
-        two_stage_sync.input_detections._queue.duration = duration
-        two_stage_sync.input_recognitions._queue.duration = duration
-    two_stage_sync.input_detections.send(img_detections_extended)
-    two_stage_sync._detections[
-        img_detections_extended.getTimestamp().total_seconds()
-    ] = img_detections_extended
-
-    # Send two nn_data messages because we have two detections
-    two_stage_sync.input_recognitions.send(nn_data)
-    two_stage_sync.input_recognitions.send(nn_data)
-    two_stage_sync.out.createOutputQueue(model_slug=None, parser_name=None)
-
-    # Process the data
-    two_stage_sync.run()
-
-    global NUMBER_OF_MESSAGES_TESTED
-    assert NUMBER_OF_MESSAGES_TESTED > 0, "The node did not send out any messages."
+        for gathered in result.gathered:
+            assert isinstance(
+                gathered, dai.Buffer
+            ), "Gathered data should be derived from dai.Buffer"
+            tolerance_td = timedelta(seconds=tolerance)
+            assert (
+                reference_timestamp - tolerance_td
+                <= gathered.getTimestamp()
+                <= reference_timestamp + tolerance_td
+            ), "Gathered data timestamp should be within the tolerance range"
