@@ -10,21 +10,23 @@ class CropConfigsCreator(dai.node.HostNode):
     detection in a list of detections. An optional target size and resize mode can be
     set to ensure uniform crop sizes.
 
-    To ensure correct synchronization between the crop configurations and the image, ensure "inputConfig.setReusePreviousMessage" is set to False in the dai.ImageManipV2 node.
+    To ensure correct synchronization between the crop configurations and the image,
+    ensure "inputConfig.setReusePreviousMessage" is set to False in the dai.ImageManipV2 node.
+
     Attributes
     ----------
     detections_input : dai.Input
-        The input link for the ImageDetectionsExtended | dai.ImgDetections message
+        The input link for the ImageDetectionsExtended | dai.ImgDetections message.
     config_output : dai.Output
-        The output link for the ImageManipConfigV2 messages
+        The output link for the ImageManipConfigV2 messages.
     detections_output : dai.Output
-        The output link for the ImgDetectionsExtended message
+        The output link for the ImgDetectionsExtended message.
     source_size : Tuple[int, int]
         The size of the source image (width, height).
     target_size : Optional[Tuple[int, int]] = None
         The size of the target image (width, height). If None, crop sizes will not be uniform.
     resize_mode : dai.ImageManipConfigV2.ResizeMode = dai.ImageManipConfigV2.ResizeMode.STRETCH
-        The resize mode to use when target size is set. Options are: CENTER_CROP, LETTERBOX, NONE, STRETCH
+        The resize mode to use when target size is set. Options are: CENTER_CROP, LETTERBOX, NONE, STRETCH.
     """
 
     def __init__(self) -> None:
@@ -143,6 +145,12 @@ class CropConfigsCreator(dai.node.HostNode):
         ----------
         detections_input : dai.Node.Output
             The input link for the ImgDetectionsExtended message
+        source_size : Tuple[int, int]
+            The size of the source image (width, height).
+        target_size : Optional[Tuple[int, int]]
+            The size of the target image (width, height). If None, crop sizes will not be uniform.
+        resize_mode : dai.ImageManipConfigV2.ResizeMode = dai.ImageManipConfigV2.ResizeMode.STRETCH
+            The resize mode to use when target size is set. Options are: CENTER_CROP, LETTERBOX, NONE, STRETCH.
         """
 
         self.w = source_size[0]
