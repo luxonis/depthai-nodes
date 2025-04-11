@@ -2,7 +2,7 @@ from typing import Generic, List, TypeVar
 
 import depthai as dai
 
-TReference = TypeVar("TReference")
+TReference = TypeVar("TReference", bound=dai.Buffer)
 TGathered = TypeVar("TGathered")
 
 
@@ -21,8 +21,8 @@ class GatheredData(dai.Buffer, Generic[TReference, TGathered]):
     def __init__(self, reference_data: TReference, gathered: List[TGathered]) -> None:
         """Initializes the DetectedRecognitions object."""
         super().__init__()
-        self._reference_data = reference_data
-        self._gathered = gathered
+        self.reference_data = reference_data
+        self.gathered = gathered
 
     @property
     def reference_data(self) -> TReference:
@@ -40,6 +40,9 @@ class GatheredData(dai.Buffer, Generic[TReference, TGathered]):
         @param value: Reference data.
         @type value: TReference
         """
+        self.setSequenceNum(value.getSequenceNum())
+        self.setTimestamp(value.getTimestamp())
+        self.setTimestampDevice(value.getTimestampDevice())
         self._reference_data = value
 
     @property
