@@ -2,12 +2,13 @@ from typing import List
 
 import depthai as dai
 
+from depthai_nodes.node.base_host_node import BaseHostNode
 from depthai_nodes.node.utils import nms_detections
 
 from .tiling import Tiling
 
 
-class TilesPatcher(dai.node.HostNode):
+class TilesPatcher(BaseHostNode):
     """Handles the processing of tiled frames from neural network (NN) outputs, maps the
     detections from tiles back into the global frame, and sends out the combined
     detections for further processing.

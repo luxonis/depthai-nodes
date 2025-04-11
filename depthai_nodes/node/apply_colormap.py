@@ -3,10 +3,12 @@ import depthai as dai
 import numpy as np
 
 from depthai_nodes.message import ImgDetectionsExtended, Map2D, SegmentationMask
-from depthai_nodes.message.utils import copy_message
+from depthai_nodes.node.base_host_node import BaseHostNode
+
+from .utils import copy_message
 
 
-class ApplyColormap(ImgFrameSender):
+class ApplyColormap(BaseHostNode):
     """A host node that applies a colormap to a given 2D array (e.g. depth maps,
     segmentation masks, heatmaps, etc.).
 

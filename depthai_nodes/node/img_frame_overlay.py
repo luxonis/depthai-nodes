@@ -1,10 +1,10 @@
 import cv2
 import depthai as dai
 
-from .img_frame_sender import ImgFrameSender
+from depthai_nodes.node.base_host_node import BaseHostNode
 
 
-class ImgFrameOverlay(ImgFrameSender):
+class ImgFrameOverlay(BaseHostNode):
     """A host node that receives two dai.ImgFrame objects and overlays them into a
     single one.
 
