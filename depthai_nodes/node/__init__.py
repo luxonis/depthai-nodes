@@ -1,7 +1,12 @@
-from .depth_color_transform import DepthColorTransform
+from .apply_colormap import ApplyColormap
+from .base_host_node import BaseHostNode
 from .depth_merger import DepthMerger
 from .host_crop_config_creator import CropConfigsCreator
+from .host_parsing_neural_network import HostParsingNeuralNetwork
 from .host_spatials_calc import HostSpatialsCalc
+from .img_detections_bridge import ImgDetectionsBridge
+from .img_detections_filter import ImgDetectionsFilter
+from .img_frame_overlay import ImgFrameOverlay
 from .parser_generator import ParserGenerator
 from .parsers.base_parser import BaseParser
 from .parsers.classification import ClassificationParser
@@ -29,12 +34,13 @@ from .tiles_patcher import TilesPatcher
 from .tiling import Tiling
 
 __all__ = [
-    "DepthColorTransform",
+    "ApplyColormap",
     "DepthMerger",
     "Tiling",
     "TilesPatcher",
     "ParserGenerator",
     "ParsingNeuralNetwork",
+    "HostParsingNeuralNetwork",
     "HostSpatialsCalc",
     "ImageOutputParser",
     "YuNetParser",
@@ -59,4 +65,8 @@ __all__ = [
     "DetectionParser",
     "EmbeddingsParser",
     "CropConfigsCreator",
+    "ImgFrameOverlay",
+    "ImgDetectionsBridge",
+    "ImgDetectionsFilter",
+    "BaseHostNode",
 ]

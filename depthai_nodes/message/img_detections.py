@@ -1,4 +1,5 @@
-from typing import List, Tuple
+import copy
+from typing import List, Tuple, Union
 
 import depthai as dai
 import numpy as np
@@ -12,7 +13,7 @@ from depthai_nodes import (
 )
 from depthai_nodes.logging import get_logger
 
-from .keypoints import Keypoint
+from .keypoints import Keypoint, Keypoints
 from .segmentation import SegmentationMask
 
 
@@ -30,8 +31,8 @@ class ImgDetectionExtended(dai.Buffer):
         Label of the detection.
     label_name: str
         The corresponding label name if available.
-    keypoints: List[Keypoint]
-        Keypoints of the detection.
+    keypoints: Keypoints
+        Keypoints of the detection. Getter returns list of Keypoint objects and setter accepts Keypoints object.
     """
 
     def __init__(self):
@@ -41,8 +42,30 @@ class ImgDetectionExtended(dai.Buffer):
         self._confidence: float = -1.0
         self._label: int = -1
         self._label_name: str = ""
-        self._keypoints: List[Keypoint] = []
+        self._keypoints: Keypoints = Keypoints()
         self._logger = get_logger(__name__)
+
+    def copy(self):
+        """Creates a new instance of the ImgDetectionExtended class and copies the
+        attributes.
+
+        @return: A new instance of the ImgDetectionExtended class.
+        @rtype: ImgDetectionExtended
+        """
+        new_obj = ImgDetectionExtended()
+        rectangle = (
+            self._rotated_rect.center.x,
+            self._rotated_rect.center.y,
+            self._rotated_rect.size.width,
+            self._rotated_rect.size.height,
+            self._rotated_rect.angle,
+        )
+        new_obj.rotated_rect = copy.deepcopy(rectangle)
+        new_obj.confidence = copy.deepcopy(self.confidence)
+        new_obj.label = copy.deepcopy(self.label)
+        new_obj.label_name = copy.deepcopy(self.label_name)
+        new_obj.keypoints = self._keypoints.copy()
+        return new_obj
 
     @property
     def rotated_rect(self) -> dai.RotatedRect:
@@ -144,24 +167,21 @@ class ImgDetectionExtended(dai.Buffer):
         @return: List of keypoints.
         @rtype: Keypoints
         """
-        return self._keypoints
+        return self._keypoints.keypoints
 
     @keypoints.setter
     def keypoints(
         self,
-        value: List[Keypoint],
+        value: Keypoints,
     ) -> None:
         """Sets the keypoints.
 
-        @param value: List of keypoints.
-        @type value: List[Keypoint]
-        @raise TypeError: If value is not a list.
-        @raise TypeError: If each element is not of type Keypoint.
+        @param value: Keypoints object.
+        @type value: Keypoints
+        @raise TypeError: If value is not a Keypoints object.
         """
-        if not isinstance(value, list):
-            raise ValueError("Keypoints must be a list")
-        if not all(isinstance(item, Keypoint) for item in value):
-            raise ValueError("Keypoints must be a list of Keypoint objects.")
+        if not isinstance(value, Keypoints):
+            raise TypeError("Keypoints must be a Keypoints object.")
         self._keypoints = value
 
 
@@ -184,6 +204,23 @@ class ImgDetectionsExtended(dai.Buffer):
         self._detections: List[ImgDetectionExtended] = []
         self._masks: SegmentationMask = SegmentationMask()
         self._transformation: dai.ImgTransformation = None
+
+    def copy(self):
+        """Creates a new instance of the ImgDetectionsExtended class and copies the
+        attributes.
+
+        @return: A new instance of the ImgDetectionsExtended class.
+        @rtype: ImgDetectionsExtended
+        """
+        new_obj = ImgDetectionsExtended()
+        new_obj.detections = [det.copy() for det in self.detections]
+        new_obj.masks = self._masks.copy()
+        new_obj.transformation = self.transformation
+        new_obj.setSequenceNum(self.getSequenceNum())
+        new_obj.setTimestamp(self.getTimestamp())
+        new_obj.setTimestampDevice(self.getTimestampDevice())
+        new_obj.setTransformation(self.transformation)
+        return new_obj
 
     @property
     def detections(self) -> List[ImgDetectionExtended]:
@@ -221,7 +258,7 @@ class ImgDetectionsExtended(dai.Buffer):
         return self._masks.mask
 
     @masks.setter
-    def masks(self, value: NDArray[np.int16]):
+    def masks(self, value: Union[NDArray[np.int16], SegmentationMask]):
         """Sets the segmentation mask.
 
         @param value: Segmentation mask.
@@ -231,17 +268,20 @@ class ImgDetectionsExtended(dai.Buffer):
         @raise ValueError: If each element is not of type int8.
         @raise ValueError: If each element is larger or equal to -1.
         """
-        if not isinstance(value, np.ndarray):
-            raise TypeError("Mask must be a numpy array.")
-        if value.ndim != 2:
-            raise ValueError("Mask must be 2D.")
-        if value.dtype != np.int16:
-            raise ValueError("Mask must be an array of int16.")
-        if np.any((value < -1)):
-            raise ValueError("Mask must be an array values larger or equal to -1.")
-        masks_msg = SegmentationMask()
-        masks_msg.mask = value
-        self._masks = masks_msg
+        if isinstance(value, SegmentationMask):
+            self._masks = value
+        elif isinstance(value, np.ndarray):
+            if not (value.size == 0 or value.ndim == 2):
+                raise ValueError("Mask must be 2D.")
+            if value.dtype != np.int16:
+                raise ValueError("Mask must be an array of int16.")
+            if np.any((value < -1)):
+                raise ValueError("Mask must be an array values larger or equal to -1.")
+            masks_msg = SegmentationMask()
+            masks_msg.mask = value
+            self._masks = masks_msg
+        else:
+            raise TypeError("Mask must be a numpy array or a SegmentationMask object.")
 
     @property
     def transformation(self) -> dai.ImgTransformation:
@@ -274,8 +314,17 @@ class ImgDetectionsExtended(dai.Buffer):
         @type transformation: dai.ImgTransformation
         @raise TypeError: If value is not a dai.ImgTransformation object.
         """
-
+        if transformation is not None:
+            assert isinstance(transformation, dai.ImgTransformation)
         self.transformation = transformation
+
+    def getTransformation(self) -> dai.ImgTransformation:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self.transformation
 
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
         img_annotations = dai.ImgAnnotations()
@@ -316,6 +365,20 @@ class ImgDetectionsExtended(dai.Buffer):
                 keypointAnnotation.fillColor = KEYPOINT_COLOR
                 keypointAnnotation.thickness = 2
                 annotation.points.append(keypointAnnotation)
+
+                if detection._keypoints.edges is not None:
+                    for edge in detection._keypoints.edges:
+                        skeletonAnnotation = dai.PointsAnnotation()
+                        skeletonAnnotation.type = dai.PointsAnnotationType.LINE_STRIP
+                        pt1 = keypoints[edge[0]]
+                        pt2 = keypoints[edge[1]]
+                        skeletonAnnotation.points = dai.VectorPoint2f(
+                            [dai.Point2f(pt1.x, pt1.y), dai.Point2f(pt2.x, pt2.y)]
+                        )
+                        skeletonAnnotation.outlineColor = KEYPOINT_COLOR
+                        skeletonAnnotation.fillColor = KEYPOINT_COLOR
+                        skeletonAnnotation.thickness = 1
+                        annotation.points.append(skeletonAnnotation)
 
         img_annotations.annotations.append(annotation)
         img_annotations.setTimestamp(self.getTimestamp())

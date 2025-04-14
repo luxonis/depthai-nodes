@@ -1,3 +1,5 @@
+import copy
+
 import cv2
 import depthai as dai
 import numpy as np
@@ -20,8 +22,23 @@ class SegmentationMask(dai.Buffer):
     def __init__(self):
         """Initializes the SegmentationMask object."""
         super().__init__()
-        self._mask: NDArray[np.int16] = np.array([])
+        self._mask: NDArray[np.int16] = np.empty(0, dtype=np.int16)
         self._transformation: dai.ImgTransformation = None
+
+    def copy(self):
+        """Creates a new instance of the SegmentationMask class and copies the
+        attributes.
+
+        @return: A new instance of the SegmentationMask class.
+        @rtype: SegmentationMask
+        """
+        new_obj = SegmentationMask()
+        new_obj.mask = copy.deepcopy(self._mask)
+        new_obj.setSequenceNum(self.getSequenceNum())
+        new_obj.setTimestamp(self.getTimestamp())
+        new_obj.setTimestampDevice(self.getTimestampDevice())
+        new_obj.setTransformation(self.transformation)
+        return new_obj
 
     @property
     def mask(self) -> NDArray[np.int16]:
@@ -45,8 +62,8 @@ class SegmentationMask(dai.Buffer):
         """
         if not isinstance(value, np.ndarray):
             raise TypeError("Mask must be a numpy array.")
-        if value.ndim != 2:
-            raise ValueError("Mask must be 2D.")
+        if not (value.size == 0 or value.ndim == 2):
+            raise ValueError("Mask must be 2D or empty.")
         if value.dtype != np.int16:
             raise ValueError("Mask must be an array of int16.")
         if np.any((value < -1)):

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import cv2
 import depthai as dai
@@ -41,6 +41,10 @@ class YOLOExtendedParser(BaseParser):
         Number of keypoints in the model.
     anchors : Optional[List[List[List[float]]]]
         Anchors for the YOLO model (optional).
+    keypoint_label_names : Optional[List[str]]
+        Labels for the keypoints.
+    keypoint_edges : Optional[List[Tuple[int, int]]]
+        Keypoint connection pairs for visualizing the skeleton. Example: [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint 1, keypoint 1 is connected to keypoint 2, etc.
     subtype : str
         Version of the YOLO model.
 
@@ -66,6 +70,8 @@ class YOLOExtendedParser(BaseParser):
         n_keypoints: int = 17,
         anchors: Optional[List[List[List[float]]]] = None,
         subtype: str = "",
+        keypoint_label_names: Optional[List[str]] = None,
+        keypoint_edges: Optional[List[Tuple[int, int]]] = None,
     ):
         """Initialize the parser node.
 
@@ -85,6 +91,12 @@ class YOLOExtendedParser(BaseParser):
         @type anchors: Optional[List[List[List[float]]]]
         @param subtype: The version of the YOLO model
         @type subtype: str
+        @param keypoint_label_names: The labels for the keypoints
+        @type keypoint_label_names: Optional[List[str]]
+        @param keypoint_edges: Connection pairs of the keypoints. Example: [(0,1),
+            (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint 1,
+            keypoint 1 is connected to keypoint 2, etc.
+        @type keypoint_edges: Optional[List[Tuple[int, int]]]
         """
         super().__init__()
 
@@ -96,6 +108,8 @@ class YOLOExtendedParser(BaseParser):
         self.mask_conf = mask_conf
         self.n_keypoints = n_keypoints
         self.anchors = anchors
+        self.keypoint_label_names = keypoint_label_names
+        self.keypoint_edges = keypoint_edges
         try:
             self.subtype = YOLOSubtype(subtype.lower())
         except ValueError as err:
@@ -226,6 +240,39 @@ class YOLOExtendedParser(BaseParser):
 
         self.label_names = label_names
 
+    def setKeypointLabelNames(self, keypoint_label_names: List[str]) -> None:
+        """Sets the label names for the keypoints.
+
+        @param keypoint_label_names: The labels for the keypoints.
+        @type keypoint_label_names: List[str]
+        """
+        if not isinstance(keypoint_label_names, list):
+            raise ValueError("Keypoint labels must be a list.")
+        if not all(isinstance(label, str) for label in keypoint_label_names):
+            raise ValueError("Keypoint labels must be a list of strings.")
+
+        self.keypoint_label_names = keypoint_label_names
+
+    def setKeypointEdges(self, keypoint_edges: List[Tuple[int, int]]) -> None:
+        """Sets the edges for the keypoints.
+
+        @param keypoint_edges: The edges for the keypoints.
+        @type keypoint_edges: List[Tuple[int, int]]
+        """
+        if not isinstance(keypoint_edges, list) and not isinstance(
+            keypoint_edges, tuple
+        ):
+            raise ValueError("Keypoint edges must be a list or tuple.")
+        if not all(
+            isinstance(edge, tuple)
+            and len(edge) == 2
+            and all(isinstance(i, int) for i in edge)
+            for edge in keypoint_edges
+        ):
+            raise ValueError("Keypoint edges must be a list of tuples of integers.")
+
+        self.keypoint_edges = keypoint_edges
+
     def build(
         self,
         head_config: Dict[str, Any],
@@ -264,6 +311,12 @@ class YOLOExtendedParser(BaseParser):
         self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
         subtype = head_config.get("subtype", self.subtype)
         self.label_names = head_config.get("classes", self.label_names)
+        self.keypoint_label_names = head_config.get(
+            "keypoint_label_names", self.keypoint_label_names
+        )
+        keypoint_edges = head_config.get("skeleton_edges", self.keypoint_edges)
+        if keypoint_edges:
+            self.keypoint_edges = [tuple(edge) for edge in keypoint_edges]
         try:
             self.subtype = YOLOSubtype(subtype.lower())
         except ValueError as err:
@@ -426,6 +479,8 @@ class YOLOExtendedParser(BaseParser):
                     label_names=label_names,
                     keypoints=keypoints,
                     keypoints_scores=keypoints_scores,
+                    keypoint_label_names=self.keypoint_label_names,
+                    keypoint_edges=self.keypoint_edges,
                 )
             elif mode == self._SEG_MODE:
                 detections_message = create_detection_message(
