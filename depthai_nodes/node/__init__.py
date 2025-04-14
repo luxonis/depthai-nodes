@@ -1,4 +1,5 @@
 from .apply_colormap import ApplyColormap
+from .base_host_node import BaseHostNode
 from .depth_merger import DepthMerger
 from .host_parsing_neural_network import HostParsingNeuralNetwork
 from .host_spatials_calc import HostSpatialsCalc
@@ -65,4 +66,5 @@ __all__ = [
     "ImgFrameOverlay",
     "ImgDetectionsBridge",
     "ImgDetectionsFilter",
+    "BaseHostNode",
 ]

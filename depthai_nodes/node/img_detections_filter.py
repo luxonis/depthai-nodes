@@ -4,9 +4,10 @@ import depthai as dai
 
 from depthai_nodes import ImgDetectionsExtended
 from depthai_nodes.message.utils import copy_message
+from depthai_nodes.node.base_host_node import BaseHostNode
 
 
-class ImgDetectionsFilter(dai.node.HostNode):
+class ImgDetectionsFilter(BaseHostNode):
     """Filters out detections based on the specified criteria and outputs them as a separate message.
     The order of operations:
         1. Filter by label/confidence;

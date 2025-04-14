@@ -4,9 +4,10 @@ import numpy as np
 
 from depthai_nodes.message import ImgDetectionsExtended, Map2D, SegmentationMask
 from depthai_nodes.message.utils import copy_message
+from depthai_nodes.node.base_host_node import BaseHostNode
 
 
-class ApplyColormap(dai.node.HostNode):
+class ApplyColormap(BaseHostNode):
     """A host node that applies a colormap to a given 2D array (e.g. depth maps,
     segmentation masks, heatmaps, etc.).
 
@@ -37,10 +38,6 @@ class ApplyColormap(dai.node.HostNode):
         self.setColormap(colormap_value)
         self.setMaxValue(max_value)
         self.setInstanceToSemanticMask(instance_to_semantic_mask)
-
-        self._platform = (
-            self.getParentPipeline().getDefaultDevice().getPlatformAsString()
-        )
 
     def setColormap(self, colormap_value: int) -> None:
         """Sets the applied color mapping.
@@ -138,11 +135,7 @@ class ApplyColormap(dai.node.HostNode):
         frame = dai.ImgFrame()
         frame.setCvFrame(
             color_arr,
-            (
-                dai.ImgFrame.Type.BGR888i
-                if self._platform == "RVC4"
-                else dai.ImgFrame.Type.BGR888p
-            ),
+            self._img_frame_type,
         )
         frame.setTimestamp(msg.getTimestamp())
         frame.setSequenceNum(msg.getSequenceNum())

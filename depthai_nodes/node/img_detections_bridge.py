@@ -2,9 +2,10 @@ import depthai as dai
 
 from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.logging import get_logger
+from depthai_nodes.node.base_host_node import BaseHostNode
 
 
-class ImgDetectionsBridge(dai.node.HostNode):
+class ImgDetectionsBridge(BaseHostNode):
     """Transforms the dai.ImgDetections to ImgDetectionsExtended object or vice versa.
     Note that conversion from ImgDetectionsExtended to ImgDetection loses information
     about segmentation, keypoints and rotation.

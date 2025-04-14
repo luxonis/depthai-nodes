@@ -1,8 +1,10 @@
 import cv2
 import depthai as dai
 
+from depthai_nodes.node.base_host_node import BaseHostNode
 
-class ImgFrameOverlay(dai.node.HostNode):
+
+class ImgFrameOverlay(BaseHostNode):
     """A host node that receives two dai.ImgFrame objects and overlays them into a
     single one.
 
@@ -22,10 +24,6 @@ class ImgFrameOverlay(dai.node.HostNode):
     def __init__(self, alpha: float = 0.5) -> None:
         super().__init__()
         self.setAlpha(alpha)
-
-        self._platform = (
-            self.getParentPipeline().getDefaultDevice().getPlatformAsString()
-        )
 
     def setAlpha(self, alpha: float) -> None:
         """Sets the alpha.
@@ -92,11 +90,7 @@ class ImgFrameOverlay(dai.node.HostNode):
         overlay = dai.ImgFrame()
         overlay.setCvFrame(
             overlay_frame,
-            (
-                dai.ImgFrame.Type.BGR888i
-                if self._platform == "RVC4"
-                else dai.ImgFrame.Type.BGR888p
-            ),
+            self._img_frame_type,
         )
         overlay.setTimestamp(frame1.getTimestamp())
         overlay.setSequenceNum(frame1.getSequenceNum())
