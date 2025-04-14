@@ -5,11 +5,12 @@ import depthai as dai
 import numpy as np
 import pytest
 import yaml
-from conftest import Output
 from pytest import FixtureRequest
 
 from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.node import CropConfigsCreator
+
+from .conftest import Output
 
 
 @pytest.fixture(scope="session")
