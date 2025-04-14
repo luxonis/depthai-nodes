@@ -1,6 +1,7 @@
 from .apply_colormap import ApplyColormap
 from .base_host_node import BaseHostNode
 from .depth_merger import DepthMerger
+from .host_crop_config_creator import CropConfigsCreator
 from .host_parsing_neural_network import HostParsingNeuralNetwork
 from .host_spatials_calc import HostSpatialsCalc
 from .img_detections_bridge import ImgDetectionsBridge
@@ -63,6 +64,7 @@ __all__ = [
     "BaseParser",
     "DetectionParser",
     "EmbeddingsParser",
+    "CropConfigsCreator",
     "ImgFrameOverlay",
     "ImgDetectionsBridge",
     "ImgDetectionsFilter",
