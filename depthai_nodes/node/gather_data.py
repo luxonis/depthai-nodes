@@ -68,9 +68,11 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     def build(
         self,
         camera_fps: int,
-        wait_count_fn: Callable[[TReference], int] = _default_wait_count_fn,
+        wait_count_fn: Optional[Callable[[TReference], int]] = None,
     ) -> "GatherData[TReference, TGathered]":
         self.set_camera_fps(camera_fps)
+        if wait_count_fn is None:
+            wait_count_fn = self._default_wait_count_fn
         self.set_wait_count_fn(wait_count_fn)
         return self
 
