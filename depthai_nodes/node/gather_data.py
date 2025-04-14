@@ -30,8 +30,10 @@ TGathered = TypeVar("TGathered", bound=dai.Buffer)
 class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     FPS_TOLERANCE_DIVISOR = 2.0
     INPUT_CHECKS_PER_FPS = 100
-    """A class for gathering data. By default gathers n of dai.NNData where n is number
-    of dai.ImgDetection objects in dai.ImgDetections.
+    """A class for gathering data. Gathers n messages based on reference_data. To
+    determine n, wait_count_fn function is used. The default wait_count_fn function is
+    waiting for len(TReference.detection). This means the node works out-of-the-box with
+    dai.ImgDetections and ImgDetectionsExtended.
 
     Attributes
     ----------
