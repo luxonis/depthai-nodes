@@ -60,12 +60,18 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         self.input_reference = self.createInput()
         self.out = self.createOutput()
 
-    def _default_wait_count_fn(self, reference: TReference) -> int:
+    @staticmethod
+    def _default_wait_count_fn(reference: TReference) -> int:
         assert isinstance(reference, HasDetections)
         return len(reference.detections)
 
-    def build(self, camera_fps: int) -> "GatherData[TReference, TGathered]":
+    def build(
+        self,
+        camera_fps: int,
+        wait_count_fn: Callable[[TReference], int] = _default_wait_count_fn,
+    ) -> "GatherData[TReference, TGathered]":
         self.set_camera_fps(camera_fps)
+        self.set_wait_count_fn(wait_count_fn)
         return self
 
     def set_camera_fps(self, fps: int) -> None:
