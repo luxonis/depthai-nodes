@@ -19,7 +19,7 @@ class GatheredData(dai.Buffer, Generic[TReference, TGathered]):
     """
 
     def __init__(self, reference_data: TReference, gathered: List[TGathered]) -> None:
-        """Initializes the DetectedRecognitions object."""
+        """Initializes the GatheredData object."""
         super().__init__()
         self.reference_data = reference_data
         self.gathered = gathered
