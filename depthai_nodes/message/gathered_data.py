@@ -7,8 +7,7 @@ TGathered = TypeVar("TGathered")
 
 
 class GatheredData(dai.Buffer, Generic[TReference, TGathered]):
-    """A class for gathered number of data and the reference data on which the data was
-    gathered.
+    """Contains N messages and reference data that the messages were matched with.
 
     Attributes
     ----------
