@@ -92,7 +92,7 @@ You dont need to manually create the mock classes since they are implemented in 
 
 Check the already implemented tests for reference.
 
-- `ThreadedHostNode` - tests for `DetectionsRecognitionsSync`
+- `ThreadedHostNode` - tests for `GatherData`
 - `HostNode` - tests for `TilesPatcher`
 
 You can check if everything works by running the tests locally. To run the unit tests move to the `depthai_nodes/tests` directory and run the tests with `pytest`.
