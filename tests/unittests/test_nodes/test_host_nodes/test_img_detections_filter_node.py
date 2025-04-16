@@ -22,7 +22,10 @@ SORT = True
 
 @pytest.fixture(scope="session")
 def duration(request):
-    return request.config.getoption("--duration")
+    d = request.config.getoption("--duration")
+    if d is None:
+        return 1e-6
+    return d
 
 
 @pytest.fixture
@@ -140,7 +143,7 @@ def test_processing(
     filter: ImgDetectionsFilter,
     request: FixtureRequest,
     img_detections_type: str,
-    duration: int = 1e-6,  # allows only one run
+    duration: int,
 ):
     dets: Union[ImgDetectionsExtended, dai.ImgDetections] = request.getfixturevalue(
         img_detections_type

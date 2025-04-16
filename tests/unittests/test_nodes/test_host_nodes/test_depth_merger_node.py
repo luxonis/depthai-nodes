@@ -22,7 +22,10 @@ from .utils.calibration_handler import get_calibration_handler
 
 @pytest.fixture(scope="session")
 def duration(request):
-    return request.config.getoption("--duration")
+    d = request.config.getoption("--duration")
+    if d is None:
+        return 1e-6
+    return d
 
 
 @pytest.fixture
@@ -115,25 +118,15 @@ def test_img_detection(
     q_depth = output_depth.createOutputQueue()
     q_out = depth_merger.output.createOutputQueue()
 
-    output_2d.send(img_detection)
-    output_depth.send(depth_frame)
+    start_time = time.time()
+    while time.time() - start_time < duration:
+        output_2d.send(img_detection)
+        output_depth.send(depth_frame)
 
-    depth_merger.process(q_2d.get(), q_depth.get())
+        depth_merger.process(q_2d.get(), q_depth.get())
 
-    spatial_det: dai.SpatialImgDetection = q_out.get()
-    verify_spatial_detection(spatial_det, img_detection)
-
-    if duration:
-        start_time = time.time()
-
-        while time.time() - start_time < duration:
-            output_2d.send(img_detection)
-            output_depth.send(depth_frame)
-
-            depth_merger.process(q_2d.get(), q_depth.get())
-
-            spatial_det = q_out.get()
-            verify_spatial_detection(spatial_det, img_detection)
+        spatial_det: dai.SpatialImgDetection = q_out.get()
+        verify_spatial_detection(spatial_det, img_detection)
 
 
 @pytest.mark.parametrize("detections", ["img_detections", "img_detections_extended"])
@@ -162,32 +155,17 @@ def test_img_detections(
     q_depth = output_depth.createOutputQueue()
     q_out = depth_merger.output.createOutputQueue()
 
-    output_2d.send(img_detections)
-    output_depth.send(depth_frame)
+    start_time = time.time()
+    while time.time() - start_time < duration:
+        output_2d.send(img_detections)
+        output_depth.send(depth_frame)
 
-    depth_merger.process(q_2d.get(), q_depth.get())
+        depth_merger.process(q_2d.get(), q_depth.get())
 
-    spatial_dets: dai.SpatialImgDetections = q_out.get()
-    assert isinstance(spatial_dets, dai.SpatialImgDetections)
-    assert len(spatial_dets.detections) == len(img_detections.detections)
+        spatial_dets: dai.SpatialImgDetections = q_out.get()
+        assert isinstance(spatial_dets, dai.SpatialImgDetections)
+        assert len(spatial_dets.detections) == len(img_detections.detections)
 
-    for i, spatial_det in enumerate(spatial_dets.detections):
-        img_det = img_detections.detections[i]
-        verify_spatial_detection(spatial_det, img_det)
-
-    if duration:
-        start_time = time.time()
-
-        while time.time() - start_time < duration:
-            output_2d.send(img_detections)
-            output_depth.send(depth_frame)
-
-            depth_merger.process(q_2d.get(), q_depth.get())
-
-            spatial_dets = q_out.get()
-            assert isinstance(spatial_dets, dai.SpatialImgDetections)
-            assert len(spatial_dets.detections) == len(img_detections.detections)
-
-            for i, spatial_det in enumerate(spatial_dets.detections):
-                img_det = img_detections.detections[i]
-                verify_spatial_detection(spatial_det, img_det)
+        for i, spatial_det in enumerate(spatial_dets.detections):
+            img_det = img_detections.detections[i]
+            verify_spatial_detection(spatial_det, img_det)

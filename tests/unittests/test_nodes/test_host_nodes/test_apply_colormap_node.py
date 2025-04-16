@@ -19,6 +19,14 @@ HEIGHT, WIDTH = ARR.shape
 MAX_VALUE = ARR.max().item()
 
 
+@pytest.fixture(scope="session")
+def duration(request):
+    d = request.config.getoption("--duration")
+    if d is None:
+        return 1e-6
+    return d
+
+
 def make_colormap(colormap_value: int) -> np.ndarray:
     colormap = cv2.applyColorMap(np.arange(256, dtype=np.uint8), colormap_value)
     colormap[0] = [0, 0, 0]  # Set zero values to black
@@ -30,11 +38,6 @@ def apply_colormap(arr: np.ndarray, colormap: np.ndarray) -> np.ndarray:
         ((arr / arr.max()) * 255).astype(np.uint8),
         colormap,
     )
-
-
-@pytest.fixture(scope="session")
-def duration(request):
-    return request.config.getoption("--duration")
 
 
 @pytest.fixture

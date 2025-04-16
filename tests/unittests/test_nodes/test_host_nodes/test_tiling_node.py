@@ -10,7 +10,10 @@ from tests.utils import OutputMock, create_img_frame
 
 @pytest.fixture
 def duration(request):
-    return request.config.getoption("--duration")
+    d = request.config.getoption("--duration")
+    if d is None:
+        return 1e-6
+    return d
 
 
 @pytest.fixture

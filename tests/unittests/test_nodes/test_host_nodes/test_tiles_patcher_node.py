@@ -10,7 +10,10 @@ from tests.utils import OutputMock, create_img_detection
 
 @pytest.fixture
 def duration(request):
-    return request.config.getoption("--duration")
+    d = request.config.getoption("--duration")
+    if d is None:
+        return 1e-6
+    return d
 
 
 @pytest.fixture
@@ -85,23 +88,14 @@ def test_process_accumulation(
 
     out_q = patcher.out.createOutputQueue()
 
-    patcher.process(nn_output1)
-    assert out_q.is_empty()
-    patcher.process(nn_output2)
-    assert len(out_q._messages) == 1
-    detections_msg = out_q.get()
-    assert out_q.is_empty()
-    assert isinstance(detections_msg, dai.ImgDetections)
-    assert len(detections_msg.detections) == 2
+    start_time = time.time()
 
-    if duration:
-        start_time = time.time()
-
-        while time.time() - start_time < duration:
-            patcher.process(nn_output1)
-            patcher.process(nn_output2)
-            assert len(out_q._messages) == 1
-            detections_msg = out_q.get()
-            assert out_q.is_empty()
-            assert isinstance(detections_msg, dai.ImgDetections)
-            assert len(detections_msg.detections) == 2
+    while time.time() - start_time < duration:
+        patcher.process(nn_output1)
+        assert out_q.is_empty()
+        patcher.process(nn_output2)
+        assert len(out_q._messages) == 1
+        detections_msg = out_q.get()
+        assert out_q.is_empty()
+        assert isinstance(detections_msg, dai.ImgDetections)
+        assert len(detections_msg.detections) == 2
