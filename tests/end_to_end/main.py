@@ -94,6 +94,7 @@ def main():
         "-r a",
         "--log-cli-level=DEBUG",
         "--color=yes",
+        "-s",
     ]
 
     if model:
@@ -106,6 +107,7 @@ def main():
             "-r a",
             "--log-cli-level=DEBUG",
             "--color=yes",
+            "-s",
         ]
 
     exit_code = pytest.main(command)
