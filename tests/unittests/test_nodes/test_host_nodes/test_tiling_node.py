@@ -11,7 +11,10 @@ from .conftest import Output
 
 @pytest.fixture
 def duration(request):
-    return request.config.getoption("--duration")
+    d = request.config.getoption("--duration")
+    if d is None:
+        return 1e-6
+    return d
 
 
 @pytest.fixture
@@ -105,22 +108,14 @@ def test_process(tiling, dummy_img_frame, duration):
         global_detection=False,
     )
 
-    tiling.process(dummy_img_frame)
+    start_time = time.time()
+    while time.time() - start_time < duration:
+        tiling.process(dummy_img_frame)
 
-    expected_num_tiles = len(tiling.tile_positions)
+        expected_num_tiles = len(tiling.tile_positions)
 
-    for _ in range(expected_num_tiles):
-        out_frame = out_q.get()
-        assert isinstance(out_frame, dai.ImgFrame)
+        for _ in range(expected_num_tiles):
+            out_frame = out_q.get()
+            assert isinstance(out_frame, dai.ImgFrame)
 
-    assert out_q.is_empty()
-
-    if duration:
-        start_time = time.time()
-
-        while time.time() - start_time < duration:
-            tiling.process(dummy_img_frame)
-            for _ in range(expected_num_tiles):
-                out_frame = out_q.get()
-                assert isinstance(out_frame, dai.ImgFrame)
-            assert out_q.is_empty()
+        assert out_q.is_empty()

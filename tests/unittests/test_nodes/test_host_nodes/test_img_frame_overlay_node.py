@@ -18,7 +18,10 @@ FRAME3 = np.random.randint(0, 255, (HEIGHT, WIDTH * 2, 3), dtype=np.uint8)
 
 @pytest.fixture(scope="session")
 def duration(request):
-    return request.config.getoption("--duration")
+    d = request.config.getoption("--duration")
+    if d is None:
+        return 1e-6
+    return d
 
 
 def test_initialization():
@@ -46,7 +49,7 @@ def test_parameter_setting():
 
 
 def test_processing(
-    duration: int = 1e-6,
+    duration: int,
 ):
     img_frame1: dai.ImgFrame = create_img_frame(FRAME1)
     img_frame2: dai.ImgFrame = create_img_frame(FRAME2)
