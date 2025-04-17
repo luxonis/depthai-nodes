@@ -162,7 +162,7 @@ class Classifications(dai.Buffer):
         x_offset = 2 / w
         y_offset = 2 / h
 
-        for i in range(5):
+        for i in range(min(5, len(self._classes))):
             text = dai.TextAnnotation()
             text.position = dai.Point2f(
                 x_offset,
