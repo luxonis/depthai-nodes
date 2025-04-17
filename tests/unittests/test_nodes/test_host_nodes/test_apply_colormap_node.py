@@ -38,19 +38,24 @@ def duration(request):
     return request.config.getoption("--duration")
 
 
-def test_initialization():
-    ApplyColormap()
+@pytest.fixture
+def colorizer():
+    return ApplyColormap()
 
 
-def test_building():
-    ApplyColormap().build(Output())
+def test_initialization(colorizer: ApplyColormap):
+    assert colorizer.parentInitialized()
+
+
+def test_building(colorizer: ApplyColormap):
+    colorizer.build(Output())
 
 
 def test_parameter_setting(
-    colormap_value: int = cv2.COLORMAP_WINTER, max_value: int = MAX_VALUE
+    colorizer: ApplyColormap,
+    colormap_value: int = cv2.COLORMAP_WINTER,
+    max_value: int = MAX_VALUE,
 ):
-    colorizer = ApplyColormap()
-
     # colormap_value
     colorizer.setColormap(colormap_value)
     assert np.array_equal(colorizer._colormap, make_colormap(colormap_value))
@@ -69,9 +74,11 @@ def test_parameter_setting(
 @pytest.mark.parametrize(
     "colormap_value", [cv2.COLORMAP_HOT, cv2.COLORMAP_PLASMA, cv2.COLORMAP_INFERNO]
 )
-def test_processing(colormap_value: int, duration: int = 1e-6):
+def test_processing(
+    colorizer: ApplyColormap, colormap_value: int, duration: int = 1e-6
+):
     o_array = Output()
-    colorizer = ApplyColormap().build(o_array)
+    colorizer.build(o_array)
     colorizer.setColormap(colormap_value)
 
     q_arr = o_array.createOutputQueue()

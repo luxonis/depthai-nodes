@@ -15,6 +15,11 @@ def duration(request):
 
 
 @pytest.fixture
+def patcher():
+    return TilesPatcher()
+
+
+@pytest.fixture
 def dummy_tile_manager():
     tm = Tiling()
     tm.overlap = 0.1
@@ -64,8 +69,11 @@ def dummy_output():
     return Output()
 
 
-def test_build_valid(dummy_tile_manager, dummy_output):
-    patcher = TilesPatcher()
+def test_initialization(patcher: TilesPatcher):
+    assert patcher.parentInitialized()
+
+
+def test_build_valid(patcher: TilesPatcher, dummy_tile_manager, dummy_output):
     patcher.build(
         tile_manager=dummy_tile_manager,
         nn=dummy_output,
@@ -80,10 +88,13 @@ def test_build_valid(dummy_tile_manager, dummy_output):
 
 
 def test_process_accumulation(
-    dummy_tile_manager, dummy_detection_1, dummy_detection_2, dummy_output, duration
+    patcher: TilesPatcher,
+    dummy_tile_manager,
+    dummy_detection_1,
+    dummy_detection_2,
+    dummy_output,
+    duration,
 ):
-    patcher = TilesPatcher()
-
     patcher.build(tile_manager=dummy_tile_manager, nn=dummy_output)
 
     nn_output1 = create_dummy_nn_output(dummy_detection_1)
