@@ -3,7 +3,7 @@ from typing import List
 
 import depthai as dai
 
-from depthai_nodes import OUTLINE_COLOR
+from depthai_nodes import PRIMARY_COLOR
 
 from .utils import (
     copy_message,
@@ -215,7 +215,7 @@ class Lines(dai.Buffer):
             pointsAnnotation.points = dai.VectorPoint2f(
                 [line.start_point, line.end_point]
             )
-            pointsAnnotation.outlineColor = OUTLINE_COLOR
+            pointsAnnotation.outlineColor = PRIMARY_COLOR
             pointsAnnotation.thickness = 2.0
             annotation.points.append(pointsAnnotation)
 

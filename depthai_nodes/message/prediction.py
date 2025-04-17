@@ -4,8 +4,7 @@ from typing import List
 import depthai as dai
 
 from depthai_nodes import (
-    BACKGROUND_COLOR,
-    TEXT_COLOR,
+    PRIMARY_COLOR,
 )
 
 
@@ -165,13 +164,22 @@ class Predictions(dai.Buffer):
         img_annotations = dai.ImgAnnotations()
         annotation = dai.ImgAnnotation()
 
+        w, h = self.transformation.getSize()
+
+        font_size = h / 30
+        x_offset = 3 / w
+        y_offset = 3 / h
+
         for i, prediction in enumerate(self.predictions):
             text = dai.TextAnnotation()
-            text.position = dai.Point2f(1.05, 0.1 + i * 0.1)
+            text.position = dai.Point2f(
+                x_offset,
+                y_offset + (font_size / h) + i * (font_size / h),
+                normalized=True,
+            )
             text.text = f"{prediction.prediction:.2f}"
-            text.fontSize = 15
-            text.textColor = TEXT_COLOR
-            text.backgroundColor = BACKGROUND_COLOR
+            text.fontSize = font_size
+            text.textColor = PRIMARY_COLOR
             annotation.texts.append(text)
 
         img_annotations.annotations.append(annotation)

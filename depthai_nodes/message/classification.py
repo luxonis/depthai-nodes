@@ -5,10 +5,7 @@ import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
 
-from depthai_nodes.constants import (
-    BACKGROUND_COLOR,
-    TEXT_COLOR,
-)
+from depthai_nodes import PRIMARY_COLOR, SECONDARY_COLOR
 
 
 class Classifications(dai.Buffer):
@@ -159,14 +156,22 @@ class Classifications(dai.Buffer):
         """
         img_annotations = dai.ImgAnnotations()
         annotation = dai.ImgAnnotation()
+        w, h = self.transformation.getSize()
 
-        for i in range(len(self._scores)):
+        font_size = h / 30
+        x_offset = 2 / w
+        y_offset = 2 / h
+
+        for i in range(5):
             text = dai.TextAnnotation()
-            text.position = dai.Point2f(1.05, 0.1 + i * 0.1)
+            text.position = dai.Point2f(
+                x_offset,
+                y_offset + (font_size / h) + i * (font_size / h),
+                normalized=True,
+            )
             text.text = f"{self._classes[i]} {self._scores[i] * 100:.0f}%"
-            text.fontSize = 15
-            text.textColor = TEXT_COLOR
-            text.backgroundColor = BACKGROUND_COLOR
+            text.fontSize = font_size
+            text.textColor = PRIMARY_COLOR if i == 0 else SECONDARY_COLOR
             annotation.texts.append(text)
 
         img_annotations.annotations.append(annotation)

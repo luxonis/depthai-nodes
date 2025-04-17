@@ -3,7 +3,7 @@ from typing import List, Tuple
 
 import depthai as dai
 
-from depthai_nodes import KEYPOINT_COLOR
+from depthai_nodes import PRIMARY_COLOR, SECONDARY_COLOR
 from depthai_nodes.logging import get_logger
 
 
@@ -317,9 +317,9 @@ class Keypoints(dai.Buffer):
         pointsAnnotation = dai.PointsAnnotation()
         pointsAnnotation.type = dai.PointsAnnotationType.POINTS
         pointsAnnotation.points = self.getPoints2f()
-        pointsAnnotation.outlineColor = KEYPOINT_COLOR
-        pointsAnnotation.fillColor = KEYPOINT_COLOR
-        pointsAnnotation.thickness = 2
+        pointsAnnotation.outlineColor = PRIMARY_COLOR
+        pointsAnnotation.fillColor = PRIMARY_COLOR
+        pointsAnnotation.thickness = 1
         annotation.points.append(pointsAnnotation)
 
         for edge in self.edges:
@@ -331,8 +331,8 @@ class Keypoints(dai.Buffer):
             pointsAnnotation.points = dai.VectorPoint2f(
                 [dai.Point2f(pt1.x, pt1.y), dai.Point2f(pt2.x, pt2.y)]
             )
-            pointsAnnotation.outlineColor = KEYPOINT_COLOR
-            pointsAnnotation.fillColor = KEYPOINT_COLOR
+            pointsAnnotation.outlineColor = SECONDARY_COLOR
+            pointsAnnotation.fillColor = SECONDARY_COLOR
             pointsAnnotation.thickness = 1
             annotation.points.append(pointsAnnotation)
 

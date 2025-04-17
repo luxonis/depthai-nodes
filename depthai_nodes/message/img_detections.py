@@ -6,10 +6,9 @@ import numpy as np
 from numpy.typing import NDArray
 
 from depthai_nodes import (
-    BACKGROUND_COLOR,
-    KEYPOINT_COLOR,
-    OUTLINE_COLOR,
-    TEXT_COLOR,
+    PRIMARY_COLOR,
+    SECONDARY_COLOR,
+    TRANSPARENT_PRIMARY_COLOR,
 )
 from depthai_nodes.logging import get_logger
 
@@ -341,16 +340,20 @@ class ImgDetectionsExtended(dai.Buffer):
             pointsAnnotation = dai.PointsAnnotation()
             pointsAnnotation.type = dai.PointsAnnotationType.LINE_LOOP
             pointsAnnotation.points = dai.VectorPoint2f(points)
-            pointsAnnotation.outlineColor = OUTLINE_COLOR
-            pointsAnnotation.thickness = 2.0
+            pointsAnnotation.outlineColor = PRIMARY_COLOR
+            pointsAnnotation.fillColor = TRANSPARENT_PRIMARY_COLOR
+            pointsAnnotation.thickness = 1.0
             annotation.points.append(pointsAnnotation)
 
             text = dai.TextAnnotation()
             text.position = points[0]
+            font_size = h / 30
+            text.position.y += font_size / h
+            text.position.x += 1 / w
+            text.position.y += 1 / h
             text.text = f"{detection.label_name} {int(detection.confidence * 100)}%"
-            text.fontSize = 15
-            text.textColor = TEXT_COLOR
-            text.backgroundColor = BACKGROUND_COLOR
+            text.fontSize = font_size
+            text.textColor = SECONDARY_COLOR
             annotation.texts.append(text)
 
             if len(detection.keypoints) > 0:
@@ -361,8 +364,8 @@ class ImgDetectionsExtended(dai.Buffer):
                 keypointAnnotation = dai.PointsAnnotation()
                 keypointAnnotation.type = dai.PointsAnnotationType.POINTS
                 keypointAnnotation.points = dai.VectorPoint2f(keypoints)
-                keypointAnnotation.outlineColor = KEYPOINT_COLOR
-                keypointAnnotation.fillColor = KEYPOINT_COLOR
+                keypointAnnotation.outlineColor = PRIMARY_COLOR
+                keypointAnnotation.fillColor = PRIMARY_COLOR
                 keypointAnnotation.thickness = 2
                 annotation.points.append(keypointAnnotation)
 
@@ -375,8 +378,8 @@ class ImgDetectionsExtended(dai.Buffer):
                         skeletonAnnotation.points = dai.VectorPoint2f(
                             [dai.Point2f(pt1.x, pt1.y), dai.Point2f(pt2.x, pt2.y)]
                         )
-                        skeletonAnnotation.outlineColor = KEYPOINT_COLOR
-                        skeletonAnnotation.fillColor = KEYPOINT_COLOR
+                        skeletonAnnotation.outlineColor = SECONDARY_COLOR
+                        skeletonAnnotation.fillColor = SECONDARY_COLOR
                         skeletonAnnotation.thickness = 1
                         annotation.points.append(skeletonAnnotation)
 
