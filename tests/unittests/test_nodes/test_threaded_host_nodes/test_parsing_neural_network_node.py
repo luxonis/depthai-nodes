@@ -29,6 +29,10 @@ def validate(pnn: ParsingNeuralNetwork, nn_archive: dai.NNArchive):
         assert output is not None, f"Output {parser_ix} is None"
 
 
+def test_initialization(pipeline: PipelineMock):
+    assert pipeline.create(ParsingNeuralNetwork).parentInitialized()
+
+
 @pytest.mark.parametrize(
     "model",
     [
