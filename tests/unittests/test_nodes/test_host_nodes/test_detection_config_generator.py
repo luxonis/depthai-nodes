@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional
 
 import depthai as dai
 import pytest
@@ -14,11 +14,6 @@ def resize_width():
 @pytest.fixture
 def resize_height():
     return 256
-
-
-def test_rvc3_unsupported(resize_width, resize_height):
-    with pytest.raises(ValueError, match="Unsupported"):
-        generate_script_content("rvc3", resize_width, resize_height)
 
 
 class ImageManipConfigV2(dai.ImageManipConfigV2):
@@ -172,7 +167,6 @@ def test_passthrough(
     node,
     node_input_detections,
     node_input_frames,
-    platform,
     resize_width,
     resize_height,
 ):
@@ -195,7 +189,6 @@ def test_label_validation(
     node,
     node_input_detections,
     node_input_frames,
-    platform,
     labels,
     resize_width,
     resize_height,
@@ -264,7 +257,6 @@ def run_script(node, script):
         {
             "node": node,
             "ImageManipConfigV2": ImageManipConfigV2,
-            "ImageManipConfig": dai.ImageManipConfig,
             "RotatedRect": dai.RotatedRect,
         },
     )
@@ -276,5 +268,5 @@ def get_output_frames(node: Node) -> List[Frame]:
 
 def get_output_config(
     node: Node,
-) -> Union[List[dai.ImageManipConfig], List[ImageManipConfigV2]]:
+) -> List[ImageManipConfigV2]:
     return node.outputs[Node.OUTPUT_CONFIG_KEY].items
