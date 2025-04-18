@@ -1,5 +1,6 @@
-import depthai as dai
 from typing import List, Tuple
+
+import depthai as dai
 
 from .queue import OutputQueueMock
 

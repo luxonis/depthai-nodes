@@ -1,10 +1,10 @@
-import depthai as dai
 from typing import List, Optional, Tuple
 
+import depthai as dai
+
+from .input import InputMock
 from .output import OutputMock
 from .pipeline import PipelineMock
-from .queue import OutputQueueMock
-from .input import InputMock
 
 
 class HostNodeMock:

@@ -1,9 +1,9 @@
 from typing import Union
 
+import depthai as dai
+
 from .input import InputMock
 from .output import OutputMock
-
-import depthai as dai
 
 
 class NeuralNetworkMock:

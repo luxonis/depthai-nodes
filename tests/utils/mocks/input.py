@@ -1,4 +1,4 @@
-from .queue import QueueMock, InfiniteQueueMock
+from .queue import InfiniteQueueMock, QueueMock
 
 
 class InputMock:

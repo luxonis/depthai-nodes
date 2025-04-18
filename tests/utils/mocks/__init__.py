@@ -1,11 +1,11 @@
-from .host_node import HostNodeMock
-from .pipeline import PipelineMock
 from .device import DeviceMock
-from .output import OutputMock
-from .queue import QueueMock
-from .input import InputMock, InfiniteInputMock
-from .threaded_host_node import ThreadedHostNodeMock
+from .host_node import HostNodeMock
+from .input import InfiniteInputMock, InputMock
 from .neural_network import NeuralNetworkMock
+from .output import OutputMock
+from .pipeline import PipelineMock
+from .queue import QueueMock
+from .threaded_host_node import ThreadedHostNodeMock
 
 __all__ = [
     "HostNodeMock",

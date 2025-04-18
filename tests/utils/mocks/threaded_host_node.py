@@ -1,5 +1,5 @@
-from .queue import OutputQueueMock
 from .input import InfiniteInputMock
+from .queue import OutputQueueMock
 
 
 class ThreadedHostNodeMock:
