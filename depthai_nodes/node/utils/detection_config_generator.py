@@ -4,7 +4,7 @@ from typing import List, Optional
 def generate_script_content(
     resize_width: int,
     resize_height: int,
-    resize_mode: str = "STRETCH",
+    resize_mode: str = "NONE",
     padding: float = 0,
     valid_labels: Optional[List[int]] = None,
 ) -> str:
@@ -18,8 +18,8 @@ def generate_script_content(
     @type resize_width: int
     @param resize_height: Target height for the resized image
     @type resize_height: int
-    @param resize_mode: Resize mode for the image. Supported values: 'LETTERBOX',
-        'CENTER_CROP', and 'STRETCH'
+    @param resize_mode: Resize mode for the image. Supported values: "CENTER_CROP",
+        "LETTERBOX", "NONE", "STRETCH". Default: "NONE"
     @type resize_mode: str
     @param padding: Additional padding around the detection in normalized coordinates
         (0-1)
@@ -31,7 +31,7 @@ def generate_script_content(
     @rtype: str
     """
 
-    if resize_mode not in ["LETTERBOX", "CENTER_CROP", "STRETCH"]:
+    if resize_mode not in ["CENTER_CROP", "LETTERBOX", "NONE", "STRETCH"]:
         raise ValueError("Unsupported resize mode")
 
     cfg_content = f"""
