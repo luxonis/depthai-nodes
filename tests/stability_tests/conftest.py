@@ -167,6 +167,7 @@ class HostNodeMock:
         self._input = Input()
         self._linked_args: Optional[Tuple[Output, ...]] = None
         self._sendProcessingToPipeline = False
+        self._initialized = True
 
     def link_args(self, *args):
         for arg in args:
@@ -188,6 +189,12 @@ class HostNodeMock:
     def createOutput(self, possibleDatatypes: List[Tuple[dai.DatatypeEnum, bool]]):
         return self._output
 
+    def parentInitialized(self):
+        try:
+            return self._initialized
+        except AttributeError:
+            return False
+
 
 class ThreadedHostNodeMock:
     """Mock class for the depthai ThreadedHostNode.
@@ -199,6 +206,7 @@ class ThreadedHostNodeMock:
         self._output = OutputQueue()
         self._parent_pipeline = None
         self._input = InfiniteInput()
+        self._initialized = True
 
     @property
     def input(self):
@@ -230,6 +238,12 @@ class ThreadedHostNodeMock:
 
     def getParentPipeline(self):
         return self._parent_pipeline
+
+    def parentInitialized(self):
+        try:
+            return self._initialized
+        except AttributeError:
+            return False
 
 
 class NeuralNetworkMock:

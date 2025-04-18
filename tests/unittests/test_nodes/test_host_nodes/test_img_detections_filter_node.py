@@ -27,6 +27,11 @@ def duration(request):
 
 
 @pytest.fixture
+def filter():
+    return ImgDetectionsFilter()
+
+
+@pytest.fixture
 def img_detections():
     return create_img_detections()
 
@@ -36,8 +41,8 @@ def img_detections_extended():
     return create_img_detections_extended()
 
 
-def test_initialization():
-    filter = ImgDetectionsFilter()
+def test_initialization(filter: ImgDetectionsFilter):
+    assert filter.parentInitialized()
     assert filter._labels_to_keep is None
     assert filter._labels_to_reject is None
     assert filter._confidence_threshold is None
@@ -45,8 +50,8 @@ def test_initialization():
     assert filter._sort_by_confidence is False
 
 
-def test_building():
-    filter = ImgDetectionsFilter().build(Output())
+def test_building(filter: ImgDetectionsFilter):
+    filter.build(Output())
     assert filter._labels_to_keep is None
     assert filter._labels_to_reject is None
     assert filter._confidence_threshold is None
@@ -54,53 +59,34 @@ def test_building():
     assert filter._sort_by_confidence is False
 
     # labels to keep
-    filter = ImgDetectionsFilter().build(
-        Output(),
-        labels_to_keep=LABELS,
-    )
+    filter.build(Output(), labels_to_keep=LABELS)
     assert filter._labels_to_keep == LABELS
     assert filter._labels_to_reject is None
 
     # labels to reject
-    filter = ImgDetectionsFilter().build(
-        Output(),
-        labels_to_reject=LABELS,
-    )
+    filter.build(Output(), labels_to_reject=LABELS)
     assert filter._labels_to_keep is None
     assert filter._labels_to_reject == LABELS
 
     # labels_to_keep and labels_to_reject cannot be set at the same time
     with pytest.raises(ValueError):
-        ImgDetectionsFilter().build(
-            Output(),
-            labels_to_keep=LABELS,
-            labels_to_reject=LABELS,
-        )
+        filter.build(Output(), labels_to_keep=LABELS, labels_to_reject=LABELS)
 
     # confidence_threshold
-    filter = ImgDetectionsFilter().build(
-        Output(),
-        confidence_threshold=CONF_THRES,
-    )
+    filter.build(Output(), confidence_threshold=CONF_THRES)
     assert filter._confidence_threshold == CONF_THRES
 
     # max_detections
-    filter = ImgDetectionsFilter().build(
-        Output(),
-        max_detections=MAX_DET,
-    )
+    filter.build(Output(), max_detections=MAX_DET)
     assert filter._max_detections == MAX_DET
 
     # sort_by_confidence
-    filter = ImgDetectionsFilter().build(
-        Output(),
-        sort_by_confidence=SORT,
-    )
+    filter.build(Output(), sort_by_confidence=SORT)
     assert filter._sort_by_confidence == SORT
 
 
-def test_parameter_setting():
-    filter = ImgDetectionsFilter().build(Output())
+def test_parameter_setting(filter: ImgDetectionsFilter):
+    filter.build(Output())
 
     # labels
     filter.setLabels(LABELS, keep=True)
@@ -137,6 +123,7 @@ def test_parameter_setting():
     ["img_detections", "img_detections_extended"],
 )
 def test_processing(
+    filter: ImgDetectionsFilter,
     request: FixtureRequest,
     img_detections_type: str,
     duration: int = 1e-6,  # allows only one run
@@ -146,7 +133,7 @@ def test_processing(
     )
 
     o_dets = Output()
-    filter = ImgDetectionsFilter().build(o_dets)
+    filter.build(o_dets)
     q_dets = o_dets.createOutputQueue()
     q_dets_filtered = filter.out.createOutputQueue()
 

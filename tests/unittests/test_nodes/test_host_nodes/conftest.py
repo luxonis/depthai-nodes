@@ -65,6 +65,7 @@ class HostNodeMock:
         self._output = Output()
         self._linked_args: Optional[Tuple[Output, ...]] = None
         self._pipeline = Pipeline()
+        self._initialized = True
 
     def link_args(self, *args):
         for arg in args:
@@ -91,6 +92,12 @@ class HostNodeMock:
 
     def getParentPipeline(self):
         return self._pipeline
+
+    def parentInitialized(self):
+        try:
+            return self._initialized
+        except AttributeError:
+            return False
 
 
 def pytest_configure():
