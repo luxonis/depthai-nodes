@@ -10,7 +10,7 @@ from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.node.depth_merger import DepthMerger
 from depthai_nodes.node.host_spatials_calc import HostSpatialsCalc
 
-from .conftest import Output
+from tests.utils import OutputMock
 from .utils.calibration_handler import get_calibration_handler
 
 
@@ -136,11 +136,11 @@ def test_img_detection(
     request: FixtureRequest,
     detection: str,
 ):
-    img_detection: Union[
-        ImgDetectionExtended, dai.ImgDetection
-    ] = request.getfixturevalue(detection)
-    output_2d = Output()
-    output_depth = Output()
+    img_detection: Union[ImgDetectionExtended, dai.ImgDetection] = (
+        request.getfixturevalue(detection)
+    )
+    output_2d = OutputMock()
+    output_depth = OutputMock()
 
     depth_merger.build(
         output_2d=output_2d,
@@ -183,11 +183,11 @@ def test_img_detections(
     detections: str,
     duration: int,
 ):
-    img_detections: Union[
-        ImgDetectionsExtended, dai.ImgDetections
-    ] = request.getfixturevalue(detections)
-    output_2d = Output()
-    output_depth = Output()
+    img_detections: Union[ImgDetectionsExtended, dai.ImgDetections] = (
+        request.getfixturevalue(detections)
+    )
+    output_2d = OutputMock()
+    output_depth = OutputMock()
 
     depth_merger.build(
         output_2d=output_2d,

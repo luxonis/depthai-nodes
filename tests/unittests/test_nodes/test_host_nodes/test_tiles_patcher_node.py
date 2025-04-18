@@ -6,7 +6,7 @@ import pytest
 
 from depthai_nodes.node import TilesPatcher, Tiling
 
-from .conftest import Output
+from tests.utils import OutputMock
 
 
 @pytest.fixture
@@ -66,7 +66,7 @@ def dummy_detection_2():
 
 @pytest.fixture
 def dummy_output():
-    return Output()
+    return OutputMock()
 
 
 def test_initialization(patcher: TilesPatcher):

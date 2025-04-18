@@ -6,7 +6,7 @@ import depthai as dai
 import pytest
 
 from .check_messages import check_output
-from .conftest import PipelineMock
+from tests.utils import PipelineMock
 from .utils import extract_main_slug, extract_parser
 
 

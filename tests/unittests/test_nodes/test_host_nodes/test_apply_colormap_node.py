@@ -7,7 +7,7 @@ import pytest
 
 from depthai_nodes.node import ApplyColormap
 
-from .conftest import Output
+from tests.utils import OutputMock
 from .utils.create_message import (
     ARRAYS,
     create_img_detections_extended,
@@ -48,7 +48,7 @@ def test_initialization(colorizer: ApplyColormap):
 
 
 def test_building(colorizer: ApplyColormap):
-    colorizer.build(Output())
+    colorizer.build(OutputMock())
 
 
 def test_parameter_setting(
@@ -77,7 +77,7 @@ def test_parameter_setting(
 def test_processing(
     colorizer: ApplyColormap, colormap_value: int, duration: int = 1e-6
 ):
-    o_array = Output()
+    o_array = OutputMock()
     colorizer.build(o_array)
     colorizer.setColormap(colormap_value)
 
