@@ -11,7 +11,8 @@ BRANCH=${BRANCH:-"main"}
 TEST_DURATION=${TEST_DURATION:-"10"}
 
 # Define all available testbeds
-testbeds=("test" "test2" "slo4012-4s" "slo407-4d")
+testbeds=("test" "test2")
+# testbeds=("test" "test2" "slo4012-4s" "slo407-4d") # TODO: Uncomment this when slo4012-4s and slo407-4d are available again
 
 # Delay between iterations in seconds
 LOOP_DELAY=2
@@ -98,7 +99,7 @@ run_test() {
         echo "Running $model_name test on testbed $testbed"
         echo "--------------------------------"
         
-        command_to_run="hil --testbed $testbed --skip-sanity-check --stability-test --stability-name=depthai-nodes-$model_name --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"DOCKER_CONFIG=$DOCKER_CONFIG_DIR\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env MAIN_COMMAND=\"python main.py -m $test_content --duration $TEST_DURATION\"'"
+        command_to_run="hil --testbed $testbed --skip-sanity-check --stability-test --stability-name=depthai-nodes-$model_name --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"DOCKER_CONFIG=$DOCKER_CONFIG_DIR\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--memory=256m --env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env MAIN_COMMAND=\"python main.py -m $test_content --duration $TEST_DURATION\"'"
     else
         # Handle host node or threaded host node test
         test_file_name=$(basename "$test_content" .py)
@@ -106,7 +107,7 @@ run_test() {
         echo "Running $test_file_name test on testbed $testbed"
         echo "--------------------------------"
         
-        command_to_run="hil --testbed $testbed --skip-sanity-check --stability-test --stability-name=depthai-nodes-$test_file_name --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"DOCKER_CONFIG=$DOCKER_CONFIG_DIR\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env MAIN_COMMAND=\"pytest $test_content --duration $TEST_DURATION -n 3 -r a --log-cli-level=DEBUG --color=yes -s\"'"
+        command_to_run="hil --testbed $testbed --skip-sanity-check --stability-test --stability-name=depthai-nodes-$test_file_name --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"DOCKER_CONFIG=$DOCKER_CONFIG_DIR\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--memory=256m --env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env MAIN_COMMAND=\"pytest $test_content --duration $TEST_DURATION -n 3 -r a --log-cli-level=DEBUG --color=yes -s\"'"
     fi
     
     echo "$command_to_run"
@@ -117,6 +118,11 @@ run_test() {
 
 # Run tests in parallel across testbeds
 for ((i=0; i<${#all_tests[@]}; i++)); do
+    # NOTE: Currently, we will only trigger 6 tests until HIL support is fixed
+    echo "i: $i"
+    if [ $i -gt 5 ]; then
+        break
+    fi
     testbed_index=$((i % testbed_count))
     testbed=${testbeds[$testbed_index]}
     
