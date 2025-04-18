@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional
 
 import depthai as dai
 import pytest
@@ -14,11 +14,6 @@ def resize_width():
 @pytest.fixture
 def resize_height():
     return 256
-
-
-def test_rvc3_unsupported(resize_width, resize_height):
-    with pytest.raises(ValueError, match="Unsupported"):
-        generate_script_content("rvc3", resize_width, resize_height)
 
 
 class ImageManipConfigV2(dai.ImageManipConfigV2):
@@ -168,16 +163,14 @@ def node_input_detections(node) -> List[dai.ImgDetections]:
     return node.inputs[Node.INPUT_DETECTIONS_KEY].items
 
 
-@pytest.mark.parametrize("platform", ["rvc2", "rvc4"])
 def test_passthrough(
     node,
     node_input_detections,
     node_input_frames,
-    platform,
     resize_width,
     resize_height,
 ):
-    script = generate_script_content(platform, resize_width, resize_height)
+    script = generate_script_content(resize_width, resize_height)
     expected_frames = []
     for frame, detections in zip(node_input_frames, node_input_detections):
         for _ in detections.detections:
@@ -191,12 +184,11 @@ def test_passthrough(
         assert len(get_output_config(node)) == len(expected_frames)
 
 
-@pytest.mark.parametrize(("platform", "labels"), [("rvc2", [1]), ("rvc4", [1, 2])])
+@pytest.mark.parametrize("labels", [[1], [1, 2]])
 def test_label_validation(
     node,
     node_input_detections,
     node_input_frames,
-    platform,
     labels,
     resize_width,
     resize_height,
@@ -207,9 +199,7 @@ def test_label_validation(
             if detection.label not in labels:
                 continue
             expected_frames.append(frame)
-    script = generate_script_content(
-        platform, resize_width, resize_height, valid_labels=labels
-    )
+    script = generate_script_content(resize_width, resize_height, valid_labels=labels)
     try:
         run_script(node, script)
     except Warning:
@@ -217,20 +207,8 @@ def test_label_validation(
 
 
 @pytest.mark.parametrize("resize", [(128, 128), (128, 256), (256, 256)])
-def test_rvc2_output_size(node, resize):
-    script = generate_script_content("rvc2", *resize)
-    try:
-        run_script(node, script)
-    except Warning:
-        output_cfg = get_output_config(node)
-        for cfg in output_cfg:
-            assert isinstance(cfg, dai.ImageManipConfig)
-            assert cfg.getResizeWidth(), cfg.getResizeHeight() == resize
-
-
-@pytest.mark.parametrize("resize", [(128, 128), (128, 256), (256, 256)])
-def test_rvc4_output_size(node, resize):
-    script = generate_script_content("rvc4", *resize)
+def test_output_size(node, resize):
+    script = generate_script_content(*resize)
     try:
         run_script(node, script)
     except Warning:
@@ -241,36 +219,7 @@ def test_rvc4_output_size(node, resize):
 
 
 @pytest.mark.parametrize("padding", [0, 0.1, 0.2, -0.1, -0.2])
-def test_rvc2_crop(node, node_input_detections, padding, resize_width, resize_height):
-    expected_rects: List[dai.ImageManipConfig.CropRect] = []
-    for input_dets in node_input_detections:
-        for detection in input_dets.detections:
-            rect = dai.ImageManipConfig.CropRect()
-            rect.xmin = max(detection.xmin - padding, 0)
-            rect.xmax = min(detection.xmax + padding, 1)
-            rect.ymin = max(detection.ymin - padding, 0)
-            rect.ymax = min(detection.ymax + padding, 1)
-            expected_rects.append(rect)
-    script = generate_script_content(
-        "rvc2", resize_width, resize_height, padding=padding
-    )
-    try:
-        run_script(node, script)
-    except Warning:
-        output_cfg = get_output_config(node)
-        for cfg, expected_rect in zip(output_cfg, expected_rects):
-            assert isinstance(cfg, dai.ImageManipConfig)
-            crop_rect = cfg.getCropConfig().cropRect
-            assert (crop_rect.xmin, crop_rect.xmax, crop_rect.ymin, crop_rect.ymax) == (
-                expected_rect.xmin,
-                expected_rect.xmax,
-                expected_rect.ymin,
-                expected_rect.ymax,
-            )
-
-
-@pytest.mark.parametrize("padding", [0, 0.1, 0.2, -0.1, -0.2])
-def test_rvc4_crop(node, node_input_detections, padding, resize_width, resize_height):
+def test_crop(node, node_input_detections, padding, resize_width, resize_height):
     ANGLE = 0
     expected_rects: List[dai.RotatedRect] = []
     for input_dets in node_input_detections:
@@ -283,9 +232,7 @@ def test_rvc4_crop(node, node_input_detections, padding, resize_width, resize_he
             rect.size.width = detection.xmax - detection.xmin + rect_padding
             rect.size.height = detection.ymax - detection.ymin + rect_padding
             expected_rects.append(rect)
-    script = generate_script_content(
-        "rvc4", resize_width, resize_height, padding=padding
-    )
+    script = generate_script_content(resize_width, resize_height, padding=padding)
     try:
         run_script(node, script)
     except Warning:
@@ -310,7 +257,6 @@ def run_script(node, script):
         {
             "node": node,
             "ImageManipConfigV2": ImageManipConfigV2,
-            "ImageManipConfig": dai.ImageManipConfig,
             "RotatedRect": dai.RotatedRect,
         },
     )
@@ -322,5 +268,5 @@ def get_output_frames(node: Node) -> List[Frame]:
 
 def get_output_config(
     node: Node,
-) -> Union[List[dai.ImageManipConfig], List[ImageManipConfigV2]]:
+) -> List[ImageManipConfigV2]:
     return node.outputs[Node.OUTPUT_CONFIG_KEY].items
