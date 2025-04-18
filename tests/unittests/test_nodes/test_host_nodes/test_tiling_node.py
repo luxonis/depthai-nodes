@@ -5,8 +5,7 @@ import numpy as np
 import pytest
 
 from depthai_nodes.node import Tiling
-
-from .conftest import Output
+from tests.utils import OutputMock
 
 
 @pytest.fixture
@@ -28,7 +27,7 @@ def tiling():
 
 
 def test_build(tiling):
-    output = Output()
+    output = OutputMock()
     grid_size = (2, 2)
     img_shape = (1280, 720)
     nn_shape = np.array([300, 300])
@@ -64,7 +63,7 @@ def test_build(tiling):
 
 
 def test_build_global_detection(tiling, dummy_img_frame):
-    output = Output()
+    output = OutputMock()
     grid_size = (2, 2)
     img_shape = (dummy_img_frame.getWidth(), dummy_img_frame.getHeight())
     nn_shape = np.array([300, 300])
@@ -89,7 +88,7 @@ def test_build_global_detection(tiling, dummy_img_frame):
 
 
 def test_process(tiling, dummy_img_frame, duration):
-    output = Output()
+    output = OutputMock()
     grid_size = (2, 2)
     img_shape = (dummy_img_frame.getWidth(), dummy_img_frame.getHeight())
     nn_shape = np.array([300, 300])

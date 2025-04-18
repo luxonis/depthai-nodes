@@ -7,8 +7,8 @@ from pytest import FixtureRequest
 
 from depthai_nodes import ImgDetectionsExtended
 from depthai_nodes.node import ImgDetectionsFilter
+from tests.utils import OutputMock
 
-from .conftest import Output
 from .utils.create_message import (
     DETECTIONS,
     create_img_detections,
@@ -46,7 +46,7 @@ def test_initialization():
 
 
 def test_building():
-    filter = ImgDetectionsFilter().build(Output())
+    filter = ImgDetectionsFilter().build(OutputMock())
     assert filter._labels_to_keep is None
     assert filter._labels_to_reject is None
     assert filter._confidence_threshold is None
@@ -55,7 +55,7 @@ def test_building():
 
     # labels to keep
     filter = ImgDetectionsFilter().build(
-        Output(),
+        OutputMock(),
         labels_to_keep=LABELS,
     )
     assert filter._labels_to_keep == LABELS
@@ -63,7 +63,7 @@ def test_building():
 
     # labels to reject
     filter = ImgDetectionsFilter().build(
-        Output(),
+        OutputMock(),
         labels_to_reject=LABELS,
     )
     assert filter._labels_to_keep is None
@@ -72,35 +72,35 @@ def test_building():
     # labels_to_keep and labels_to_reject cannot be set at the same time
     with pytest.raises(ValueError):
         ImgDetectionsFilter().build(
-            Output(),
+            OutputMock(),
             labels_to_keep=LABELS,
             labels_to_reject=LABELS,
         )
 
     # confidence_threshold
     filter = ImgDetectionsFilter().build(
-        Output(),
+        OutputMock(),
         confidence_threshold=CONF_THRES,
     )
     assert filter._confidence_threshold == CONF_THRES
 
     # max_detections
     filter = ImgDetectionsFilter().build(
-        Output(),
+        OutputMock(),
         max_detections=MAX_DET,
     )
     assert filter._max_detections == MAX_DET
 
     # sort_by_confidence
     filter = ImgDetectionsFilter().build(
-        Output(),
+        OutputMock(),
         sort_by_confidence=SORT,
     )
     assert filter._sort_by_confidence == SORT
 
 
 def test_parameter_setting():
-    filter = ImgDetectionsFilter().build(Output())
+    filter = ImgDetectionsFilter().build(OutputMock())
 
     # labels
     filter.setLabels(LABELS, keep=True)
@@ -145,7 +145,7 @@ def test_processing(
         img_detections_type
     )
 
-    o_dets = Output()
+    o_dets = OutputMock()
     filter = ImgDetectionsFilter().build(o_dets)
     q_dets = o_dets.createOutputQueue()
     q_dets_filtered = filter.out.createOutputQueue()

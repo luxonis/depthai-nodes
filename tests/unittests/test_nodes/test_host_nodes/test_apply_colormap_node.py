@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 
 from depthai_nodes.node import ApplyColormap
+from tests.utils import OutputMock
 
-from .conftest import Output
 from .utils.create_message import (
     ARRAYS,
     create_img_detections_extended,
@@ -43,7 +43,7 @@ def test_initialization():
 
 
 def test_building():
-    ApplyColormap().build(Output())
+    ApplyColormap().build(OutputMock())
 
 
 def test_parameter_setting(
@@ -70,7 +70,7 @@ def test_parameter_setting(
     "colormap_value", [cv2.COLORMAP_HOT, cv2.COLORMAP_PLASMA, cv2.COLORMAP_INFERNO]
 )
 def test_processing(colormap_value: int, duration: int = 1e-6):
-    o_array = Output()
+    o_array = OutputMock()
     colorizer = ApplyColormap().build(o_array)
     colorizer.setColormap(colormap_value)
 

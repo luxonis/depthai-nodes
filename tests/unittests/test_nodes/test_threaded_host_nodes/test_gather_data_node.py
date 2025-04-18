@@ -6,8 +6,7 @@ import pytest
 
 from depthai_nodes.message import GatheredData
 from depthai_nodes.node.gather_data import GatherData
-
-from .conftest import PipelineMock
+from tests.utils import PipelineMock
 
 
 @pytest.fixture

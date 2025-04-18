@@ -5,8 +5,8 @@ import numpy as np
 import pytest
 
 from depthai_nodes.node import ImgFrameOverlay
+from tests.utils import OutputMock
 
-from .conftest import Output
 from .utils.create_message import create_img_frame
 
 HEIGHT, WIDTH = 5, 5
@@ -27,7 +27,7 @@ def test_initialization():
 
 
 def test_building():
-    overlayer = ImgFrameOverlay().build(Output(), Output(), alpha=ALPHA)
+    overlayer = ImgFrameOverlay().build(OutputMock(), OutputMock(), alpha=ALPHA)
     assert overlayer._alpha == ALPHA
 
 
@@ -52,8 +52,8 @@ def test_processing(
     img_frame2: dai.ImgFrame = create_img_frame(FRAME2)
     img_frame3: dai.ImgFrame = create_img_frame(FRAME3)
 
-    o_background = Output()
-    o_foreground = Output()
+    o_background = OutputMock()
+    o_foreground = OutputMock()
     overlayer = ImgFrameOverlay().build(o_background, o_foreground)
     overlayer.setAlpha(ALPHA)
 
