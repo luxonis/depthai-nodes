@@ -331,9 +331,6 @@ class ImgDetectionsExtended(dai.Buffer):
         transformation = self.transformation
         w, h = transformation.getSize()
 
-        if w == 0 or h == 0:
-            return img_annotations
-
         for detection in self.detections:
             detection: ImgDetectionExtended = detection
             rotated_rect = detection.rotated_rect
