@@ -119,7 +119,6 @@ run_test() {
 # Run tests in parallel across testbeds
 for ((i=0; i<${#all_tests[@]}; i++)); do
     # NOTE: Currently, we will only trigger 6 tests until HIL support is fixed
-    echo "i: $i"
     if [ $i -gt 5 ]; then
         break
     fi
