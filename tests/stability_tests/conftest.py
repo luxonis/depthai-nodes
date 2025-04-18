@@ -1,6 +1,6 @@
 from pytest import Config
 
-from tests.utils import PipelineMock, ThreadedHostNodeMock, HostNodeMock
+from tests.utils import HostNodeMock, PipelineMock, ThreadedHostNodeMock
 
 
 def pytest_configure(config: Config):

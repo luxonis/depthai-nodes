@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 
 from depthai_nodes.node import ApplyColormap
-
 from tests.utils import OutputMock
+
 from .utils.create_message import (
     ARRAYS,
     create_img_detections_extended,

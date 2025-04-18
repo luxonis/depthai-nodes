@@ -5,8 +5,9 @@ from typing import List
 import depthai as dai
 import pytest
 
-from .check_messages import check_output
 from tests.utils import PipelineMock
+
+from .check_messages import check_output
 from .utils import extract_main_slug, extract_parser
 
 

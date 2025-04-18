@@ -7,8 +7,8 @@ from pytest import FixtureRequest
 
 from depthai_nodes import ImgDetectionsExtended
 from depthai_nodes.node import ImgDetectionsFilter
-
 from tests.utils import OutputMock
+
 from .utils.create_message import (
     DETECTIONS,
     create_img_detections,

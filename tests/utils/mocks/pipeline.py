@@ -3,9 +3,9 @@ from typing import List, Tuple, Type
 import depthai as dai
 
 from .device import DeviceMock
-from .threaded_host_node import ThreadedHostNodeMock
-from .input import InputMock, InfiniteInputMock
+from .input import InfiniteInputMock, InputMock
 from .output import OutputMock
+from .threaded_host_node import ThreadedHostNodeMock
 
 
 class PipelineMock:

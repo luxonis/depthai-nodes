@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 
 from depthai_nodes.node import TilesPatcher, Tiling
-
 from tests.utils import OutputMock
 
 
