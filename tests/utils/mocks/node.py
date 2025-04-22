@@ -1,5 +1,6 @@
 class RequireSuperInit(type):
-    """Checking whether every class in the hierarchy calls super().__init__() inside their __init__ method"""
+    """Checking whether every class in the hierarchy calls super().__init__() inside
+    their __init__ method."""
 
     def __call__(cls, *args, **kwargs):
         inst = cls.__new__(cls, *args, **kwargs)
