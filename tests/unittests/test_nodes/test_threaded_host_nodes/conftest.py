@@ -1,9 +1,7 @@
-from pytest import Config
-
 from tests.utils import HostNodeMock, PipelineMock, ThreadedHostNodeMock
 
 
-def pytest_configure(config: Config):
+def pytest_configure():
     import depthai as dai
 
     dai.Pipeline = PipelineMock
