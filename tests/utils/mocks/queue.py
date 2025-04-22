@@ -47,22 +47,6 @@ class InfiniteQueueMock(QueueMock):
         super().__init__()
         self.duration = 1  # seconds
         self.start_time = time.time()
-
-    def send(self, item):
-        super().send(item)
-
-
-class InfiniteQueue(QueueMock):
-    """Queue used in InfiniteInput to simulate a long running test.
-
-    We can set the duration for how long the queue will be active and in the end raise
-    an Exception that is caught by the parser.
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.duration = 1  # seconds
-        self.start_time = time.time()
         self.log_interval = 1  # seconds
         self.time_after_last_log = time.time()
         self.log_counter = 1
@@ -98,24 +82,6 @@ class InfiniteQueue(QueueMock):
         element = self._messages.pop()
         self.send(element)
         return element
-
-    """
-    def get(self):
-        if time.time() - self.start_time > self.duration:
-            raise dai.MessageQueue.QueueException
-        element = self._messages.pop()
-        self.send(element)
-        return element
-
-    def tryGet(self):
-        if time.time() - self.start_time > self.duration:
-            raise dai.MessageQueue.QueueException
-        if len(self._messages) == 0:
-            return None
-        element = self._messages.pop()
-        self.send(element)
-        return element
-    """
 
 
 class OutputQueueMock(QueueMock):
