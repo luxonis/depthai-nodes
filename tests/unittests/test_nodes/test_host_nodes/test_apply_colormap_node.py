@@ -6,13 +6,12 @@ import numpy as np
 import pytest
 
 from depthai_nodes.node import ApplyColormap
-from tests.utils import OutputMock
-
 from tests.utils import (
+    ARRAYS,
+    OutputMock,
     create_img_detections_extended,
     create_img_frame,
     create_map,
-    ARRAYS,
 )
 
 ARR = ARRAYS["2d"]

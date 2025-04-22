@@ -8,10 +8,10 @@ from pytest import FixtureRequest
 from depthai_nodes import ImgDetectionsExtended
 from depthai_nodes.node import ImgDetectionsFilter
 from tests.utils import (
+    DETECTIONS,
     OutputMock,
     create_img_detections,
     create_img_detections_extended,
-    DETECTIONS,
 )
 
 LABELS = [1]

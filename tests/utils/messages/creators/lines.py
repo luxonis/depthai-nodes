@@ -1,4 +1,5 @@
 from typing import List
+
 import numpy as np
 
 import depthai_nodes.message.creators as creators

@@ -1,7 +1,8 @@
+from datetime import timedelta
 from typing import List
+
 import depthai as dai
 import numpy as np
-from datetime import timedelta
 
 import depthai_nodes.message.creators as creators
 from depthai_nodes import ImgDetectionExtended
@@ -10,9 +11,9 @@ from .constants import ARRAYS, DETECTIONS
 
 
 def create_img_detection(
-    bbox: List[float] = DETECTIONS["bboxes"][0].tolist(),
-    label: int = DETECTIONS["labels"][0].item(),
-    score: float = DETECTIONS["scores"][0].item(),
+    bbox: List[float] = DETECTIONS["bboxes"][0],
+    label: int = DETECTIONS["labels"][0],
+    score: float = DETECTIONS["scores"][0],
 ):
     """Creates a dai.ImgDetection object.
 
@@ -22,6 +23,7 @@ def create_img_detection(
     @return: The created dai.ImgDetection object.
     @rtype: dai.ImgDetection
     """
+
     img_det = dai.ImgDetection()
     img_det.xmin, img_det.ymin, img_det.xmax, img_det.ymax = bbox
     img_det.label = label

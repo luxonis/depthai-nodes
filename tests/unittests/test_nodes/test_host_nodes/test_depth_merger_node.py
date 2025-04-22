@@ -12,10 +12,11 @@ from depthai_nodes.node.host_spatials_calc import HostSpatialsCalc
 from tests.utils import (
     OutputMock,
     create_img_detection,
-    create_img_detections,
     create_img_detection_extended,
+    create_img_detections,
     create_img_detections_extended,
 )
+
 from .utils.calibration_handler import get_calibration_handler
 
 
@@ -96,9 +97,9 @@ def test_img_detection(
     request: FixtureRequest,
     detection: str,
 ):
-    img_detection: Union[ImgDetectionExtended, dai.ImgDetection] = (
-        request.getfixturevalue(detection)
-    )
+    img_detection: Union[
+        ImgDetectionExtended, dai.ImgDetection
+    ] = request.getfixturevalue(detection)
     output_2d = OutputMock()
     output_depth = OutputMock()
 
@@ -143,9 +144,9 @@ def test_img_detections(
     detections: str,
     duration: int,
 ):
-    img_detections: Union[ImgDetectionsExtended, dai.ImgDetections] = (
-        request.getfixturevalue(detections)
-    )
+    img_detections: Union[
+        ImgDetectionsExtended, dai.ImgDetections
+    ] = request.getfixturevalue(detections)
     output_2d = OutputMock()
     output_depth = OutputMock()
 
