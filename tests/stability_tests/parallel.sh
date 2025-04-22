@@ -11,7 +11,8 @@ BRANCH=${BRANCH:-"main"}
 TEST_DURATION=${TEST_DURATION:-"10"}
 
 # Define all available testbeds
-testbeds=("test" "test2")
+testbeds=("slo4132-stability")
+# testbeds=("test" "test2")
 # testbeds=("test" "test2" "slo4012-4s" "slo407-4d") # TODO: Uncomment this when slo4012-4s and slo407-4d are available again
 
 # Delay between iterations in seconds
@@ -119,9 +120,9 @@ run_test() {
 # Run tests in parallel across testbeds
 for ((i=0; i<${#all_tests[@]}; i++)); do
     # NOTE: Currently, we will only trigger 6 tests until HIL support is fixed
-    if [ $i -gt 5 ]; then
-        break
-    fi
+    # if [ $i -gt 5 ]; then
+    #     break
+    # fi
     testbed_index=$((i % testbed_count))
     testbed=${testbeds[$testbed_index]}
     
