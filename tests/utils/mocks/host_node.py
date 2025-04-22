@@ -3,17 +3,19 @@ from typing import List, Optional, Tuple
 import depthai as dai
 
 from .input import InputMock
+from .node import NodeMock
 from .output import OutputMock
 from .pipeline import PipelineMock
 
 
-class HostNodeMock:
+class HostNodeMock(NodeMock):
     """Mock class for the depthai HostNode.
 
     The class is used to create a mock pipeline for testing purposes.
     """
 
     def __init__(self):
+        super().__init__()
         self._output = OutputMock()
         self._parent_pipeline = None
         self._input = InputMock()

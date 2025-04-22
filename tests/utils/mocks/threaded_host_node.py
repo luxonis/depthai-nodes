@@ -1,14 +1,16 @@
 from .input import InfiniteInputMock
+from .node import NodeMock
 from .queue import OutputQueueMock
 
 
-class ThreadedHostNodeMock:
+class ThreadedHostNodeMock(NodeMock):
     """Mock class for the depthai ThreadedHostNode.
 
     The class is used to create a mock pipeline for testing purposes.
     """
 
     def __init__(self):
+        super().__init__()
         self._output = OutputQueueMock()
         self._parent_pipeline = None
         self._input = InfiniteInputMock()
