@@ -21,18 +21,21 @@ def duration(request):
     return request.config.getoption("--duration")
 
 
-def test_initialization():
-    overlayer = ImgFrameOverlay(alpha=ALPHA)
+@pytest.fixture
+def overlayer():
+    return ImgFrameOverlay()
+
+
+def test_initialization(overlayer: ImgFrameOverlay):
+    assert overlayer.parentInitialized()
+
+
+def test_building(overlayer: ImgFrameOverlay):
+    overlayer.build(Output(), Output(), alpha=ALPHA)
     assert overlayer._alpha == ALPHA
 
 
-def test_building():
-    overlayer = ImgFrameOverlay().build(Output(), Output(), alpha=ALPHA)
-    assert overlayer._alpha == ALPHA
-
-
-def test_parameter_setting():
-    overlayer = ImgFrameOverlay()
+def test_parameter_setting(overlayer: ImgFrameOverlay):
     overlayer.setAlpha(ALPHA)
     assert overlayer._alpha == ALPHA
 
@@ -46,6 +49,7 @@ def test_parameter_setting():
 
 
 def test_processing(
+    overlayer: ImgFrameOverlay,
     duration: int = 1e-6,
 ):
     img_frame1: dai.ImgFrame = create_img_frame(FRAME1)
@@ -54,8 +58,7 @@ def test_processing(
 
     o_background = Output()
     o_foreground = Output()
-    overlayer = ImgFrameOverlay().build(o_background, o_foreground)
-    overlayer.setAlpha(ALPHA)
+    overlayer.build(o_background, o_foreground, alpha=ALPHA)
 
     q_background = o_background.createOutputQueue()
     q_foreground = o_foreground.createOutputQueue()

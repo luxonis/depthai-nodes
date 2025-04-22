@@ -123,7 +123,8 @@ def verify_spatial_detection(spatial_det, img_detection):
     )
 
 
-def test_initialization(depth_merger: DepthMerger, depth_frame: dai.ImgFrame):
+def test_initialization(depth_merger: DepthMerger):
+    assert depth_merger.parentInitialized()
     assert depth_merger.shrinking_factor == 0.0
 
 

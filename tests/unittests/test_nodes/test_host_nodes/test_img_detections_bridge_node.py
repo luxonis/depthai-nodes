@@ -22,6 +22,11 @@ def duration(request):
 
 
 @pytest.fixture
+def bridge():
+    return ImgDetectionsBridge()
+
+
+@pytest.fixture
 def img_detections():
     return create_img_detections()
 
@@ -31,12 +36,12 @@ def img_detections_extended():
     return create_img_detections_extended()
 
 
-def test_initialization():
-    ImgDetectionsBridge()
+def test_initialization(bridge: ImgDetectionsBridge):
+    assert bridge.parentInitialized()
 
 
-def test_building():
-    ImgDetectionsBridge().build(Output())
+def test_building(bridge: ImgDetectionsBridge):
+    bridge.build(Output())
 
 
 @pytest.mark.parametrize(
@@ -44,6 +49,7 @@ def test_building():
     ["img_detections", "img_detections_extended"],
 )
 def test_processing(
+    bridge: ImgDetectionsBridge,
     request: FixtureRequest,
     img_detections_type: str,
     duration: int = 1e-6,
@@ -53,7 +59,7 @@ def test_processing(
     )
 
     o_dets = Output()
-    bridge = ImgDetectionsBridge().build(o_dets, ignore_angle=True)
+    bridge.build(o_dets, ignore_angle=True)
     q_dets = o_dets.createOutputQueue()
     q_dets_transformed = bridge.out.createOutputQueue()
 

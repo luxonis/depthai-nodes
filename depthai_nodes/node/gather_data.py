@@ -51,6 +51,7 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
 
     def __init__(self) -> None:
         """Initializes the GatherData node."""
+        super().__init__()
         self._camera_fps: Optional[int] = None
         self._unmatched_data: List[TGathered] = []
         self._data_by_reference_ts: Dict[float, List[TGathered]] = {}
