@@ -6,7 +6,7 @@ import pytest
 
 from depthai_nodes.message.utils import copy_message
 
-from .utils import create_message
+from tests.utils.message import creators as message_creators
 
 ATTRS_TO_IGNORE = [
     "Type",  # dai.ImgFrame attribute
@@ -44,10 +44,10 @@ def equal_attributes(obj1, obj2):
 
 @pytest.mark.parametrize(
     "message_creator",
-    inspect.getmembers(create_message, inspect.isfunction),
+    message_creators.__all__,
 )
 def test_message_copying(message_creator: Tuple[str, Callable]):
-    _, creator_function = message_creator
+    creator_function = getattr(message_creators, message_creator)
 
     msg = creator_function()
     try:
