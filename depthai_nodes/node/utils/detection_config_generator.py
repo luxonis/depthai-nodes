@@ -45,7 +45,7 @@ def generate_script_content(
             rect.size.height = rect.size.height + {padding} * 2
             rect.angle = 0
 
-            cfg.addCropRotatedRect(rect, True)
+            cfg.addCropRotatedRect(rect, normalizedCoords=True)
             cfg.setOutputSize({resize_width}, {resize_height}, ImageManipConfigV2.ResizeMode.{resize_mode})
         """
     validate_label = (
