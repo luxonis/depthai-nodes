@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from depthai_nodes.message.utils import copy_message
-from tests.utils.message import creators as message_creators
+from tests.utils.messages import creators as message_creators
 
 ATTRS_TO_IGNORE = [
     "Type",  # dai.ImgFrame attribute
