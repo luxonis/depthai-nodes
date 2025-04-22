@@ -2,9 +2,9 @@ from typing import List, Optional
 
 
 def generate_script_content(
-    platform: str,
     resize_width: int,
     resize_height: int,
+    resize_mode: str = "NONE",
     padding: float = 0,
     valid_labels: Optional[List[int]] = None,
 ) -> str:
@@ -14,12 +14,13 @@ def generate_script_content(
     also work with padding around the detection bounding box and filter detections by
     labels.
 
-    @param platform: Target platform for the script. Supported values: 'rvc2', 'rvc4'
-    @type platform: str
     @param resize_width: Target width for the resized image
     @type resize_width: int
     @param resize_height: Target height for the resized image
     @type resize_height: int
+    @param resize_mode: Resize mode for the image. Supported values: "CENTER_CROP",
+        "LETTERBOX", "NONE", "STRETCH". Default: "NONE"
+    @type resize_mode: str
     @param padding: Additional padding around the detection in normalized coordinates
         (0-1)
     @type padding: float
@@ -30,15 +31,10 @@ def generate_script_content(
     @rtype: str
     """
 
-    if platform.lower() == "rvc2":
-        cfg_content = f"""
-            cfg = ImageManipConfig()
-            cfg.setCropRect(det.xmin - {padding}, det.ymin - {padding}, det.xmax + {padding}, det.ymax + {padding})
-            cfg.setResize({resize_width}, {resize_height})
-            cfg.setKeepAspectRatio(False)
-        """
-    elif platform.lower() == "rvc4":
-        cfg_content = f"""
+    if resize_mode not in ["CENTER_CROP", "LETTERBOX", "NONE", "STRETCH"]:
+        raise ValueError("Unsupported resize mode")
+
+    cfg_content = f"""
             cfg = ImageManipConfigV2()
             rect = RotatedRect()
             rect.center.x = (det.xmin + det.xmax) / 2
@@ -49,11 +45,9 @@ def generate_script_content(
             rect.size.height = rect.size.height + {padding} * 2
             rect.angle = 0
 
-            cfg.addCropRotatedRect(rect=rect, normalizedCoords=True)
-            cfg.setOutputSize({resize_width}, {resize_height})
+            cfg.addCropRotatedRect(rect, normalizedCoords=True)
+            cfg.setOutputSize({resize_width}, {resize_height}, ImageManipConfigV2.ResizeMode.{resize_mode})
         """
-    else:
-        raise ValueError("Unsupported platform")
     validate_label = (
         f"""
             if det.label not in {valid_labels}:
