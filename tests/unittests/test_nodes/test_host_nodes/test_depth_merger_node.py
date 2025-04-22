@@ -9,8 +9,13 @@ from pytest import FixtureRequest
 from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.node.depth_merger import DepthMerger
 from depthai_nodes.node.host_spatials_calc import HostSpatialsCalc
-from tests.utils import OutputMock
-
+from tests.utils import (
+    OutputMock,
+    create_img_detection,
+    create_img_detections,
+    create_img_detection_extended,
+    create_img_detections_extended,
+)
 from .utils.calibration_handler import get_calibration_handler
 
 
@@ -31,32 +36,12 @@ def depth_merger():
 
 @pytest.fixture
 def img_detection():
-    det = dai.ImgDetection()
-    det.xmin = 0.3
-    det.xmax = 0.5
-    det.ymin = 0.3
-    det.ymax = 0.5
-    det.label = 1
-    det.confidence = 0.9
-    return det
+    return create_img_detection()
 
 
 @pytest.fixture
 def img_detection_extended():
-    det = ImgDetectionExtended()
-    xmin = 0.3
-    xmax = 0.5
-    ymin = 0.3
-    ymax = 0.5
-    x_center = (xmin + xmax) / 2
-    y_center = (ymin + ymax) / 2
-    width = xmax - xmin
-    height = ymax - ymin
-    det.rotated_rect = (x_center, y_center, width, height, 0)
-    det.rotated_rect.angle = 0
-    det.label = 1
-    det.confidence = 0.9
-    return det
+    return create_img_detection_extended()
 
 
 @pytest.fixture
@@ -71,36 +56,12 @@ def depth_frame():
 
 @pytest.fixture
 def img_detections():
-    det = dai.ImgDetections()
-    det.detections = [dai.ImgDetection() for _ in range(2)]
-    for i, d in enumerate(det.detections):
-        d.xmin = 0.3
-        d.xmax = 0.5
-        d.ymin = 0.3
-        d.ymax = 0.5
-        d.label = i
-        d.confidence = 0.9
-    return det
+    return create_img_detections()
 
 
 @pytest.fixture
 def img_detections_extended():
-    det = ImgDetectionsExtended()
-    det.detections = [ImgDetectionExtended() for _ in range(2)]
-    for i, d in enumerate(det.detections):
-        xmin = 0.3
-        xmax = 0.5
-        ymin = 0.3
-        ymax = 0.5
-        x_center = (xmin + xmax) / 2
-        y_center = (ymin + ymax) / 2
-        width = xmax - xmin
-        height = ymax - ymin
-        d.rotated_rect = (x_center, y_center, width, height, 0)
-        d.rotated_rect.angle = 0
-        d.label = i
-        d.confidence = 0.9
-    return det
+    return create_img_detections_extended()
 
 
 def verify_spatial_detection(spatial_det, img_detection):
@@ -135,9 +96,9 @@ def test_img_detection(
     request: FixtureRequest,
     detection: str,
 ):
-    img_detection: Union[
-        ImgDetectionExtended, dai.ImgDetection
-    ] = request.getfixturevalue(detection)
+    img_detection: Union[ImgDetectionExtended, dai.ImgDetection] = (
+        request.getfixturevalue(detection)
+    )
     output_2d = OutputMock()
     output_depth = OutputMock()
 
@@ -182,9 +143,9 @@ def test_img_detections(
     detections: str,
     duration: int,
 ):
-    img_detections: Union[
-        ImgDetectionsExtended, dai.ImgDetections
-    ] = request.getfixturevalue(detections)
+    img_detections: Union[ImgDetectionsExtended, dai.ImgDetections] = (
+        request.getfixturevalue(detections)
+    )
     output_2d = OutputMock()
     output_depth = OutputMock()
 

@@ -5,9 +5,7 @@ import numpy as np
 import pytest
 
 from depthai_nodes.node import ImgFrameOverlay
-from tests.utils import OutputMock
-
-from .utils.create_message import create_img_frame
+from tests.utils import OutputMock, create_img_frame
 
 HEIGHT, WIDTH = 5, 5
 ALPHA = 0.5

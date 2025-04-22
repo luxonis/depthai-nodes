@@ -6,7 +6,7 @@ import pytest
 
 from depthai_nodes.message import GatheredData
 from depthai_nodes.node.gather_data import GatherData
-from tests.utils import PipelineMock
+from tests.utils import PipelineMock, create_img_detections
 
 
 @pytest.fixture
@@ -66,21 +66,6 @@ def nn_data_in_tolerance(in_tolerance_timestamp):
 @pytest.fixture
 def nn_data_out_of_tolerance(out_of_tolerance_timestamp):
     return create_nn_data(timestamp=out_of_tolerance_timestamp)
-
-
-def create_img_detections(timestamp=None, num_detections=2):
-    det = dai.ImgDetections()
-    det.detections = [dai.ImgDetection() for _ in range(num_detections)]
-    for i, d in enumerate(det.detections):
-        d.xmin = 0.3
-        d.xmax = 0.5
-        d.ymin = 0.3
-        d.ymax = 0.5
-        d.label = i
-        d.confidence = 0.9
-    if timestamp:
-        det.setTimestamp(timestamp)
-    return det
 
 
 @pytest.fixture
@@ -179,7 +164,7 @@ def test_img_detections(
         assert_gather_data_result(
             result=result,
             expected_reference=img_detections,
-            expected_gathered_count=2,
+            expected_gathered_count=3,
             reference_timestamp=reference_timestamp,
             tolerance=tolerance,
         )
@@ -226,7 +211,7 @@ def test_clear_old_data(
     def check(result, *_):
         assert isinstance(result, GatheredData)
         assert result.reference_data == img_detections
-        assert len(result.gathered) == 2
+        assert len(result.gathered) == 3
 
     gather_data = setup_gather_data_node(
         generator=gather_data_generator, fps=fps, duration=duration
