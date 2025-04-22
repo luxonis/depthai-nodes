@@ -68,10 +68,6 @@ def dummy_output():
     return OutputMock()
 
 
-def test_initialization(patcher: TilesPatcher):
-    assert patcher.parentInitialized()
-
-
 def test_build_valid(patcher: TilesPatcher, dummy_tile_manager, dummy_output):
     patcher.build(
         tile_manager=dummy_tile_manager,

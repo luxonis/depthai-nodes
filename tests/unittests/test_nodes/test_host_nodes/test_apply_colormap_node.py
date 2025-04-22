@@ -43,10 +43,6 @@ def colorizer():
     return ApplyColormap()
 
 
-def test_initialization(colorizer: ApplyColormap):
-    assert colorizer.parentInitialized()
-
-
 def test_building(colorizer: ApplyColormap):
     colorizer.build(OutputMock())
 

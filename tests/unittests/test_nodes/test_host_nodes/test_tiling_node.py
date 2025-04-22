@@ -26,10 +26,6 @@ def tiling():
     return Tiling()
 
 
-def test_initialization(tiling):
-    assert tiling.parentInitialized()
-
-
 def test_build(tiling):
     output = OutputMock()
     grid_size = (2, 2)

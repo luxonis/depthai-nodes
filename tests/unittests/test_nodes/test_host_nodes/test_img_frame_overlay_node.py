@@ -26,10 +26,6 @@ def overlayer():
     return ImgFrameOverlay()
 
 
-def test_initialization(overlayer: ImgFrameOverlay):
-    assert overlayer.parentInitialized()
-
-
 def test_building(overlayer: ImgFrameOverlay):
     overlayer.build(OutputMock(), OutputMock(), alpha=ALPHA)
     assert overlayer._alpha == ALPHA

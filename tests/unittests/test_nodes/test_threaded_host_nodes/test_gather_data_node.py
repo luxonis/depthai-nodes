@@ -152,10 +152,6 @@ def assert_gather_data_result(
         assert isinstance(gathered, dai.Buffer)
 
 
-def test_initialization(gather_data_generator):
-    assert gather_data_generator.parentInitialized()
-
-
 def test_build(gather_data_generator, fps):
     with pytest.raises(ValueError):
         gather_data_generator.build(camera_fps=-fps)

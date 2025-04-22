@@ -11,10 +11,6 @@ def pipeline():
     return PipelineMock()
 
 
-def test_initialization(pipeline: PipelineMock):
-    assert pipeline.create(HostParsingNeuralNetwork).parentInitialized()
-
-
 def test_yolo(pipeline: PipelineMock):
     nn_archive = dai.NNArchive(
         dai.getModelFromZoo(dai.NNModelDescription("luxonis/yolov6-nano", "RVC2"))

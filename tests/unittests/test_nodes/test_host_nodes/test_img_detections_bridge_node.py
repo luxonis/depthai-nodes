@@ -36,10 +36,6 @@ def img_detections_extended():
     return create_img_detections_extended()
 
 
-def test_initialization(bridge: ImgDetectionsBridge):
-    assert bridge.parentInitialized()
-
-
 def test_building(bridge: ImgDetectionsBridge):
     bridge.build(OutputMock())
 

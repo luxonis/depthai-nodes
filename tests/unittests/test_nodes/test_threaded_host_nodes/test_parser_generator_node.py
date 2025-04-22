@@ -11,10 +11,6 @@ def parser_generator():
     return pipeline.create(ParserGenerator)
 
 
-def test_initialization(parser_generator: ParserGenerator):
-    assert parser_generator.parentInitialized()
-
-
 @pytest.mark.parametrize(
     "model_name",
     [

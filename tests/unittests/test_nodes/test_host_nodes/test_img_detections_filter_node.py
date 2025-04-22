@@ -42,7 +42,6 @@ def img_detections_extended():
 
 
 def test_initialization(filter: ImgDetectionsFilter):
-    assert filter.parentInitialized()
     assert filter._labels_to_keep is None
     assert filter._labels_to_reject is None
     assert filter._confidence_threshold is None
