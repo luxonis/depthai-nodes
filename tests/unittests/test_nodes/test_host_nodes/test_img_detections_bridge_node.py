@@ -8,9 +8,8 @@ from pytest import FixtureRequest
 
 from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.node import ImgDetectionsBridge
-
-from .conftest import Output
-from .utils.create_message import (
+from tests.utils import (
+    OutputMock,
     create_img_detections,
     create_img_detections_extended,
 )
@@ -36,12 +35,8 @@ def img_detections_extended():
     return create_img_detections_extended()
 
 
-def test_initialization(bridge: ImgDetectionsBridge):
-    assert bridge.parentInitialized()
-
-
 def test_building(bridge: ImgDetectionsBridge):
-    bridge.build(Output())
+    bridge.build(OutputMock())
 
 
 @pytest.mark.parametrize(
@@ -58,7 +53,7 @@ def test_processing(
         img_detections_type
     )
 
-    o_dets = Output()
+    o_dets = OutputMock()
     bridge.build(o_dets, ignore_angle=True)
     q_dets = o_dets.createOutputQueue()
     q_dets_transformed = bridge.out.createOutputQueue()

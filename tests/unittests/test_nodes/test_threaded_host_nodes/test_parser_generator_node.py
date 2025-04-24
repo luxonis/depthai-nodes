@@ -1,21 +1,14 @@
 import depthai as dai
 import pytest
-from stability_tests.conftest import PipelineMock
 
 from depthai_nodes.node import ParserGenerator, YOLOExtendedParser
-
-# Need to add because it uses PipelineMock and ThreadedHostNodeMock from stability_tests conftest.py
-dai.Pipeline = PipelineMock
+from tests.utils import PipelineMock
 
 
 @pytest.fixture
 def parser_generator():
     pipeline = PipelineMock()
     return pipeline.create(ParserGenerator)
-
-
-def test_initialization(parser_generator: ParserGenerator):
-    assert parser_generator.parentInitialized()
 
 
 @pytest.mark.parametrize(

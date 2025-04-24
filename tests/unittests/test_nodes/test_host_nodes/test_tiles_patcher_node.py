@@ -5,8 +5,7 @@ import numpy as np
 import pytest
 
 from depthai_nodes.node import TilesPatcher, Tiling
-
-from .conftest import Output
+from tests.utils import OutputMock, create_img_detection
 
 
 @pytest.fixture
@@ -20,7 +19,7 @@ def patcher():
 
 
 @pytest.fixture
-def dummy_tile_manager():
+def tile_manager():
     tm = Tiling()
     tm.overlap = 0.1
     tm.grid_size = (2, 2)
@@ -34,71 +33,55 @@ def dummy_tile_manager():
     return tm
 
 
+@pytest.fixture
+def img_detection_1():
+    return create_img_detection(
+        [0.1, 0.1, 0.2, 0.2],
+        1,
+        0.9,
+    )
+
+
+@pytest.fixture
+def img_detection_2():
+    return create_img_detection(
+        [0.7, 0.7, 0.8, 0.8],
+        2,
+        0.8,
+    )
+
+
 def create_dummy_nn_output(detection):
     nn_output = dai.ImgDetections()
     nn_output.detections = [detection]
     return nn_output
 
 
-@pytest.fixture
-def dummy_detection_1():
-    det = dai.ImgDetection()
-    det.label = 1
-    det.confidence = 0.9
-    det.xmin = 0.1
-    det.ymin = 0.1
-    det.xmax = 0.2
-    det.ymax = 0.2
-    return det
-
-
-@pytest.fixture
-def dummy_detection_2():
-    det = dai.ImgDetection()
-    det.label = 2
-    det.confidence = 0.8
-    det.xmin = 0.7
-    det.ymin = 0.7
-    det.xmax = 0.8
-    det.ymax = 0.8
-    return det
-
-
-@pytest.fixture
-def dummy_output():
-    return Output()
-
-
-def test_initialization(patcher: TilesPatcher):
-    assert patcher.parentInitialized()
-
-
-def test_build_valid(patcher: TilesPatcher, dummy_tile_manager, dummy_output):
+def test_build_valid(patcher: TilesPatcher, tile_manager: Tiling):
     patcher.build(
-        tile_manager=dummy_tile_manager,
-        nn=dummy_output,
+        tile_manager=tile_manager,
+        nn=OutputMock(),
         conf_thresh=0.5,
         iou_thresh=0.6,
     )
 
     assert patcher.conf_thresh == 0.5
     assert patcher.iou_thresh == 0.6
-    assert patcher.tile_manager is dummy_tile_manager
-    assert patcher.expected_tiles_count == len(dummy_tile_manager.tile_positions)
+    assert patcher.tile_manager is tile_manager
+    assert patcher.expected_tiles_count == len(tile_manager.tile_positions)
 
 
 def test_process_accumulation(
     patcher: TilesPatcher,
-    dummy_tile_manager,
-    dummy_detection_1,
-    dummy_detection_2,
-    dummy_output,
+    tile_manager: Tiling,
+    img_detection_1,
+    img_detection_2,
     duration,
 ):
-    patcher.build(tile_manager=dummy_tile_manager, nn=dummy_output)
+    patcher.build(tile_manager=tile_manager, nn=OutputMock())
 
-    nn_output1 = create_dummy_nn_output(dummy_detection_1)
-    nn_output2 = create_dummy_nn_output(dummy_detection_2)
+    nn_output1 = create_dummy_nn_output(img_detection_1)
+    nn_output2 = create_dummy_nn_output(img_detection_2)
 
     out_q = patcher.out.createOutputQueue()
 

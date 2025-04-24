@@ -137,7 +137,15 @@ class HostSpatialsCalc:
         depthROI = depthFrame[ymin:ymax, xmin:xmax]
         inRange = (self.thresh_low <= depthROI) & (depthROI <= self.thresh_high)
 
-        averageDepth = averaging_method(depthROI[inRange])
+        valid_depths = depthROI[inRange]
+        if valid_depths.size == 0:
+            return {
+                "x": np.nan,
+                "y": np.nan,
+                "z": np.nan,
+            }
+        else:
+            averageDepth = averaging_method(valid_depths)
 
         centroid = np.array(  # Get centroid of the ROI
             [

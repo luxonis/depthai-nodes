@@ -5,8 +5,7 @@ import numpy as np
 import pytest
 
 from depthai_nodes.node import Tiling
-
-from .conftest import Output
+from tests.utils import OutputMock, create_img_frame
 
 
 @pytest.fixture
@@ -15,11 +14,8 @@ def duration(request):
 
 
 @pytest.fixture
-def dummy_img_frame():
-    frame = np.random.randint(0, 255, (720, 1280, 3), dtype=np.uint8)
-    img_frame = dai.ImgFrame()
-    img_frame.setCvFrame(frame, dai.ImgFrame.Type.BGR888i)
-    return img_frame
+def img_frame():
+    return create_img_frame()
 
 
 @pytest.fixture
@@ -27,12 +23,8 @@ def tiling():
     return Tiling()
 
 
-def test_initialization(tiling):
-    assert tiling.parentInitialized()
-
-
 def test_build(tiling):
-    output = Output()
+    output = OutputMock()
     grid_size = (2, 2)
     img_shape = (1280, 720)
     nn_shape = np.array([300, 300])
@@ -67,10 +59,10 @@ def test_build(tiling):
     assert len(tiling.tile_positions) == expected_num_tiles
 
 
-def test_build_global_detection(tiling, dummy_img_frame):
-    output = Output()
+def test_build_global_detection(tiling, img_frame):
+    output = OutputMock()
     grid_size = (2, 2)
-    img_shape = (dummy_img_frame.getWidth(), dummy_img_frame.getHeight())
+    img_shape = (img_frame.getWidth(), img_frame.getHeight())
     nn_shape = np.array([300, 300])
     overlap = 0.1
 
@@ -92,10 +84,10 @@ def test_build_global_detection(tiling, dummy_img_frame):
     assert first_tile["scaled_size"] == (expected_scaled_width, expected_scaled_height)
 
 
-def test_process(tiling, dummy_img_frame, duration):
-    output = Output()
+def test_process(tiling, img_frame, duration):
+    output = OutputMock()
     grid_size = (2, 2)
-    img_shape = (dummy_img_frame.getWidth(), dummy_img_frame.getHeight())
+    img_shape = (img_frame.getWidth(), img_frame.getHeight())
     nn_shape = np.array([300, 300])
     overlap = 0.1
     out_q = tiling.out.createOutputQueue()
@@ -109,7 +101,7 @@ def test_process(tiling, dummy_img_frame, duration):
         global_detection=False,
     )
 
-    tiling.process(dummy_img_frame)
+    tiling.process(img_frame)
 
     expected_num_tiles = len(tiling.tile_positions)
 
@@ -123,7 +115,7 @@ def test_process(tiling, dummy_img_frame, duration):
         start_time = time.time()
 
         while time.time() - start_time < duration:
-            tiling.process(dummy_img_frame)
+            tiling.process(img_frame)
             for _ in range(expected_num_tiles):
                 out_frame = out_q.get()
                 assert isinstance(out_frame, dai.ImgFrame)

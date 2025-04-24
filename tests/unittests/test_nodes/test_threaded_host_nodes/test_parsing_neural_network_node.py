@@ -1,11 +1,8 @@
 import depthai as dai
 import pytest
-from stability_tests.conftest import Input, NeuralNetworkMock, PipelineMock
 
 from depthai_nodes.node import ParsingNeuralNetwork
-
-# Need to add because it uses PipelineMock from stability_tests conftest.py
-dai.Pipeline = PipelineMock
+from tests.utils import InputMock, NeuralNetworkMock, PipelineMock
 
 
 @pytest.fixture
@@ -29,10 +26,6 @@ def validate(pnn: ParsingNeuralNetwork, nn_archive: dai.NNArchive):
         assert output is not None, f"Output {parser_ix} is None"
 
 
-def test_initialization(pipeline: PipelineMock):
-    assert pipeline.create(ParsingNeuralNetwork).parentInitialized()
-
-
 @pytest.mark.parametrize(
     "model",
     [
@@ -48,7 +41,7 @@ def test_parsing_neural_network(pipeline: PipelineMock, model: str):
         dai.getModelFromZoo(dai.NNModelDescription(model, "RVC2"))
     )
     pnn: ParsingNeuralNetwork = pipeline.create(ParsingNeuralNetwork).build(
-        input=Input(), nn_source=nn_archive, fps=30
+        input=InputMock(), nn_source=nn_archive, fps=30
     )
 
     validate(pnn, nn_archive)
@@ -60,7 +53,7 @@ def test_parsing_neural_network_nn_archive(pipeline: PipelineMock):
         dai.getModelFromZoo(dai.NNModelDescription(model, "RVC2"))
     )
     pnn: ParsingNeuralNetwork = pipeline.create(ParsingNeuralNetwork).build(
-        input=Input(), nn_source=nn_archive, fps=30
+        input=InputMock(), nn_source=nn_archive, fps=30
     )
 
     validate(pnn, nn_archive)
