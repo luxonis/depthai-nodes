@@ -60,6 +60,11 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         return list(self._parsers.values())[0].out
 
     @property
+    def outputs(self) -> dai.Node.Output:
+        """Returns outputs of all heads in a single output message."""
+        pass
+
+    @property
     def passthrough(self) -> dai.Node.Output:
         return self._nn.passthrough
 
