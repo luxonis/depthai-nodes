@@ -58,7 +58,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         if len(self._parsers) != 1:
             raise RuntimeError(
                 f"Property out is only available when there is exactly one model head. \
-                               The model has {self._getModelHeadsLen()} heads. Use {self.getOutput.__name__} method instead."
+                               The model has {self._getModelHeadsLen()} heads. Use {self.getOutput.__name__} method or {self.outputs.__name__} property instead."
             )
         return list(self._parsers.values())[0].out
 
@@ -67,7 +67,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         """Returns outputs of all heads in a single output message."""
         if self._internal_sync is None:
             raise RuntimeError(
-                "ParsingNeuralNetwork node must have at least two model heads to use sync node and outputs property."
+                f"ParsingNeuralNetwork node must have at least two model heads to use sync node and outputs property. The model has {self._getModelHeadsLen()} heads."
             )
         return self._internal_sync.out
 
@@ -341,6 +341,10 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         return self._nn_archive.getConfig()
 
     def _createSyncNode(self):
+        if self._internal_sync is not None:
+            raise RuntimeError(
+                "Sync node already exists. Remove it before creating a new one."
+            )
         if len(list(self._parsers.values())) <= 1:
             raise RuntimeError(
                 "ParsingNeuralNetwork node must have at least two model heads to use sync node."
