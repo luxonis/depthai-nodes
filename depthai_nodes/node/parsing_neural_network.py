@@ -64,7 +64,13 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
 
     @property
     def outputs(self) -> dai.Node.Output:
-        """Returns outputs of all heads in a single output message."""
+        """Neural network output having dai.MessageGroup as a payload which contains
+        outputs of all model heads and can be accessed as a dictionary with str(model
+        head index) as a key.
+
+        Can be used only when there are at least two model heads. Otherwise, out
+        property must be used.
+        """
         if self._internal_sync is None:
             raise RuntimeError(
                 f"ParsingNeuralNetwork node must have at least two model heads to use sync node and outputs property. The model has {self._getModelHeadsLen()} heads."
