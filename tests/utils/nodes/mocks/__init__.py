@@ -5,6 +5,7 @@ from .neural_network import NeuralNetworkMock
 from .output import OutputMock
 from .pipeline import PipelineMock
 from .queue import QueueMock
+from .sync_node import SyncMock
 from .threaded_host_node import ThreadedHostNodeMock
 
 __all__ = [
@@ -17,4 +18,5 @@ __all__ = [
     "InfiniteInputMock",
     "ThreadedHostNodeMock",
     "NeuralNetworkMock",
+    "SyncMock",
 ]
