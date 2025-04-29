@@ -292,14 +292,11 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
 
         Must be called before removing the node from the pipeline.
         """
-        if self._internal_sync is not None:
-            self._pipeline.remove(self._internal_sync)
-            self._internal_sync = None
-
         self._pipeline.remove(self._nn)
         self._nn = None
 
         self._removeOldParserNodes()
+        self._internal_sync = None
         self._parsers = {}
 
     def _updateParsers(self, nnArchive: dai.NNArchive) -> None:
@@ -309,6 +306,8 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
     def _removeOldParserNodes(self) -> None:
         for parser in self._parsers.values():
             self._pipeline.remove(parser)
+        if self._internal_sync is not None:
+            self._pipeline.remove(self._internal_sync)
 
     def _getParserNodes(self, nnArchive: dai.NNArchive) -> Dict[int, BaseParser]:
         parser_generator = self._pipeline.create(ParserGenerator)
