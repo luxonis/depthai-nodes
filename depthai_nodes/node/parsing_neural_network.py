@@ -23,6 +23,8 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         Neural network inputs.
     out : Node.Output
         Neural network output. Can be used only when there is exactly one model head. Otherwise, getOutput method must be used.
+    outputs: Node.Output
+        Neural network output having dai.MessageGroup as a payload which contains outputs of all model heads and can be accessed as a dictionary with str(model head index) as a key. Can be used only when there is at least two model heads. Otherwise, out property must be used.
     passthrough : Node.Output
         Neural network passthrough.
     passthroughs : Node.OutputMap
@@ -40,6 +42,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         self._pipeline = self.getParentPipeline()
         self._nn = self._pipeline.create(dai.node.NeuralNetwork)
         self._parsers: Dict[int, BaseParser] = {}
+        self._internal_sync: Optional[dai.node.Sync] = None
 
     @property
     def input(self) -> dai.Node.Input:
@@ -55,9 +58,24 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         if len(self._parsers) != 1:
             raise RuntimeError(
                 f"Property out is only available when there is exactly one model head. \
-                               The model has {self._getModelHeadsLen()} heads. Use {self.getOutput.__name__} method instead."
+                               The model has {self._getModelHeadsLen()} heads. Use {self.getOutput.__name__} method or {self.outputs.__name__} property instead."
             )
         return list(self._parsers.values())[0].out
+
+    @property
+    def outputs(self) -> dai.Node.Output:
+        """Neural network output having dai.MessageGroup as a payload which contains
+        outputs of all model heads and can be accessed as a dictionary with str(model
+        head index) as a key.
+
+        Can be used only when there are at least two model heads. Otherwise, out
+        property must be used.
+        """
+        if self._internal_sync is None:
+            raise RuntimeError(
+                f"ParsingNeuralNetwork node must have at least two model heads to use sync node and outputs property. The model has {self._getModelHeadsLen()} heads."
+            )
+        return self._internal_sync.out
 
     @property
     def passthrough(self) -> dai.Node.Output:
@@ -255,6 +273,10 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         self._nn.build(input, self._nn_archive, **kwargs)
 
         self._updateParsers(self._nn_archive)
+
+        if len(self._parsers) > 1:
+            self._createSyncNode()
+
         return self
 
     def run(self) -> None:
@@ -264,6 +286,19 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         """
         self._checkNNArchive()
 
+    def cleanup(self):
+        """Cleans up the ParsingNeuralNetwork node and removes all nodes created by
+        ParsingNeuralNetwork from the pipeline.
+
+        Must be called before removing the node from the pipeline.
+        """
+        self._pipeline.remove(self._nn)
+        self._nn = None
+
+        self._removeOldParserNodes()
+        self._internal_sync = None
+        self._parsers = {}
+
     def _updateParsers(self, nnArchive: dai.NNArchive) -> None:
         self._removeOldParserNodes()
         self._parsers = self._getParserNodes(nnArchive)
@@ -271,6 +306,8 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
     def _removeOldParserNodes(self) -> None:
         for parser in self._parsers.values():
             self._pipeline.remove(parser)
+        if self._internal_sync is not None:
+            self._pipeline.remove(self._internal_sync)
 
     def _getParserNodes(self, nnArchive: dai.NNArchive) -> Dict[int, BaseParser]:
         parser_generator = self._pipeline.create(ParserGenerator)
@@ -307,3 +344,18 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
 
     def _getConfig(self):
         return self._nn_archive.getConfig()
+
+    def _createSyncNode(self):
+        if self._internal_sync is not None:
+            raise RuntimeError(
+                "Sync node already exists. Remove it before creating a new one."
+            )
+        if len(list(self._parsers.values())) <= 1:
+            raise RuntimeError(
+                "ParsingNeuralNetwork node must have at least two model heads to use sync node."
+            )
+        self._internal_sync = self._pipeline.create(dai.node.Sync)
+        self._internal_sync.setRunOnHost(True)
+        outputs = [parser.out for parser in list(self._parsers.values())]
+        for ix, output in enumerate(outputs):
+            output.link(self._internal_sync.inputs[str(ix)])

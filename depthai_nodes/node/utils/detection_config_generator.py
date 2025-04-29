@@ -4,7 +4,7 @@ from typing import List, Optional
 def generate_script_content(
     resize_width: int,
     resize_height: int,
-    resize_mode: str = "NONE",
+    resize_mode: str = "STRETCH",
     padding: float = 0,
     valid_labels: Optional[List[int]] = None,
 ) -> str:
@@ -19,7 +19,11 @@ def generate_script_content(
     @param resize_height: Target height for the resized image
     @type resize_height: int
     @param resize_mode: Resize mode for the image. Supported values: "CENTER_CROP",
-        "LETTERBOX", "NONE", "STRETCH". Default: "NONE"
+        "LETTERBOX", "NONE", "STRETCH". Default: "STRETCH".
+        "STRETCH" - stretches the image so that the corners of the region are now in the corners of the output image.
+        "CENTER_CROP" - resizes + crops the image to keep aspect ratio and fill the final size.
+        "LETTERBOX" - resizes + pads the image to the final size to keep aspect ratio.
+        "NONE" - does not scale and pads top, bottom, left and right to fill the final image.
     @type resize_mode: str
     @param padding: Additional padding around the detection in normalized coordinates
         (0-1)
