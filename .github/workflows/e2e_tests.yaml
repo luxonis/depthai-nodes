@@ -79,7 +79,7 @@ jobs:
               MODELS_OPTION="--models 'oak4_pro or oak4_d'"
             else
               MODELS_OPTION='--capabilities depthai-core-hil'
-              PLATFORM_OPTION= '--platforms "rvc2 and rvc4"'
+              PLATFORM_OPTION='--platforms "rvc2 and rvc4"'
             fi
  
             exec hil $MODELS_OPTION $PLATFORM_OPTION --wait $RESERVATION_OPTION $HOLD_RESERVATION --dockerfile ./tests/end_to_end/Dockerfile --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=${{ github.event.inputs.depthai-version }} --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=${{ github.event.inputs.depthai-nodes-version }} --env FLAGS=\"${{ github.event.inputs.additional-parameter }} -v ${{ github.event.inputs.depthai-nodes-version }}\""
