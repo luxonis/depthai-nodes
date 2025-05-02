@@ -79,7 +79,7 @@ jobs:
               MODELS_OPTION="--models 'oak4_pro or oak4_d'"
             else
               MODELS_OPTION="--capabilities depthai-core-hil"
-              PLATFORM_OPTION="--platforms 'rvc2 and rvc4'"
+              PLATFORM_OPTION='--platforms "\"rvc2 and rvc4\""'
 
             fi
  
