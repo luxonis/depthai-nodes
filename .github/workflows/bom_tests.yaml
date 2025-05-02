@@ -69,8 +69,6 @@ jobs:
           
       - name: Run Test
         run: |
-            rm -rf depthai-nodes/tests/end_to_end/run_e2e_tests.sh && cp tests/end_to_end/run_e2e_tests.sh depthai-nodes/tests/end_to_end/run_e2e_tests.sh
-            cd depthai-nodes
             export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#${{ matrix.python-version}}"
             # Assign testbed and reservation name only if both are provided
             if [[ -n "${{ github.event.inputs.testbed }}" ]]; then
