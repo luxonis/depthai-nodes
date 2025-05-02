@@ -34,6 +34,6 @@ ENTRYPOINT ["bash", "-c", "git checkout main && git pull && \
     echo 'Checking out branch' $BRANCH && \
     git checkout $BRANCH; \
   fi && \
-  pip install --extra-index-url $LUXONIS_EXTRA_INDEX_URL depthai==$DEPTHAI_VERSION && \
+  pip install --extra-index-url $LUXONIS_EXTRA_INDEX_URL --extra-index-url https://artifacts.luxonis.com/artifactory/luxonis-python-snapshot-local/  depthai==$DEPTHAI_VERSION && \
   source <(python setup_camera_ips.py) && \
   python main.py $FLAGS"]
