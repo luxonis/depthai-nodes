@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 
 import depthai as dai
 
@@ -52,7 +52,7 @@ class ImgDetectionsBridge(BaseHostNode):
         self,
         msg: dai.Node.Output,
         ignore_angle: bool = False,
-        label_encoding: Dict[int, str] = {},
+        label_encoding: Optional[Dict[int, str]] = None,
     ) -> "ImgDetectionsBridge":
         """Configures the node connections.
 
@@ -68,7 +68,8 @@ class ImgDetectionsBridge(BaseHostNode):
         """
         self.link_args(msg)
         self.setIgnoreAngle(ignore_angle)
-        self.setLabelEncoding(label_encoding)
+        if label_encoding is not None:
+            self.setLabelEncoding(label_encoding)
         return self
 
     def process(self, msg: dai.Buffer) -> None:
