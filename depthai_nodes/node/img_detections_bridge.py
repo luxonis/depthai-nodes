@@ -1,4 +1,5 @@
 from typing import Dict
+
 import depthai as dai
 
 from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
@@ -38,7 +39,9 @@ class ImgDetectionsBridge(BaseHostNode):
 
     def setLabelEncoding(self, label_encoding: Dict[int, str]) -> None:
         """Sets the label encoding.
-        @param label_encoding: The label encoding with labels as keys and label names as values.
+
+        @param label_encoding: The label encoding with labels as keys and label names as
+            values.
         @type label_encoding: Dict[int, str]
         """
         if not isinstance(label_encoding, Dict):
@@ -57,7 +60,8 @@ class ImgDetectionsBridge(BaseHostNode):
         @type msg: dai.Node.Output
         @param ignore_angle: Whether to ignore the angle of the detections.
         @type ignore_angle: bool
-        @param label_encoding: The label encoding with labels as keys and label names as values.
+        @param label_encoding: The label encoding with labels as keys and label names as
+            values.
         @type label_encoding: Dict[int, str]
         @return: The node object with the transformed ImgDetections object.
         @rtype: ImgDetectionsBridge
