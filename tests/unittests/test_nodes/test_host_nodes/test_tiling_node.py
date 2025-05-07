@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from depthai_nodes.node import Tiling
-from tests.utils import OutputMock, create_img_frame
+from tests.utils import LOG_INTERVAL, OutputMock, create_img_frame
 
 
 @pytest.fixture
@@ -117,7 +117,13 @@ def test_process(tiling, img_frame, duration):
     if duration:
         start_time = time.time()
 
+        last_log_time = time.time()
         while time.time() - start_time < duration:
+            if time.time() - last_log_time > LOG_INTERVAL:
+                print(
+                    f"Test running... {time.time()-start_time:.1f}s elapsed, {duration-time.time()+start_time:.1f}s remaining"
+                )
+                last_log_time = time.time()
             tiling.process(img_frame)
             for _ in range(expected_num_tiles):
                 out_frame = out_q.get()

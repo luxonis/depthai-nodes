@@ -10,6 +10,7 @@ from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.node.depth_merger import DepthMerger
 from depthai_nodes.node.host_spatials_calc import HostSpatialsCalc
 from tests.utils import (
+    LOG_INTERVAL,
     OutputMock,
     create_img_detection,
     create_img_detection_extended,
@@ -119,7 +120,13 @@ def test_img_detection(
     q_out = depth_merger.output.createOutputQueue()
 
     start_time = time.time()
+    last_log_time = time.time()
     while time.time() - start_time < duration:
+        if time.time() - last_log_time > LOG_INTERVAL:
+            print(
+                f"Test running... {time.time()-start_time:.1f}s elapsed, {duration-time.time()+start_time:.1f}s remaining"
+            )
+            last_log_time = time.time()
         output_2d.send(img_detection)
         output_depth.send(depth_frame)
 
@@ -156,7 +163,13 @@ def test_img_detections(
     q_out = depth_merger.output.createOutputQueue()
 
     start_time = time.time()
+    last_log_time = time.time()
     while time.time() - start_time < duration:
+        if time.time() - last_log_time > LOG_INTERVAL:
+            print(
+                f"Test running... {time.time()-start_time:.1f}s elapsed, {duration-time.time()+start_time:.1f}s remaining"
+            )
+            last_log_time = time.time()
         output_2d.send(img_detections)
         output_depth.send(depth_frame)
 

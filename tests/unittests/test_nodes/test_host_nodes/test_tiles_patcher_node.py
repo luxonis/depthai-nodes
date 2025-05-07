@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from depthai_nodes.node import TilesPatcher, Tiling
-from tests.utils import OutputMock, create_img_detection
+from tests.utils import LOG_INTERVAL, OutputMock, create_img_detection
 
 
 @pytest.fixture
@@ -90,7 +90,13 @@ def test_process_accumulation(
 
     start_time = time.time()
 
+    last_log_time = time.time()
     while time.time() - start_time < duration:
+        if time.time() - last_log_time > LOG_INTERVAL:
+            print(
+                f"Test running... {time.time()-start_time:.1f}s elapsed, {duration-time.time()+start_time:.1f}s remaining"
+            )
+            last_log_time = time.time()
         patcher.process(nn_output1)
         assert out_q.is_empty()
         patcher.process(nn_output2)

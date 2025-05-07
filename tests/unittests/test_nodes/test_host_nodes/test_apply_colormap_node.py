@@ -8,6 +8,7 @@ import pytest
 from depthai_nodes.node import ApplyColormap
 from tests.utils import (
     ARRAYS,
+    LOG_INTERVAL,
     OutputMock,
     create_img_detections_extended,
     create_img_frame,
@@ -72,9 +73,7 @@ def test_parameter_setting(
 @pytest.mark.parametrize(
     "colormap_value", [cv2.COLORMAP_HOT, cv2.COLORMAP_PLASMA, cv2.COLORMAP_INFERNO]
 )
-def test_processing(
-    colorizer: ApplyColormap, colormap_value: int, duration: int = 1e-6
-):
+def test_processing(colorizer: ApplyColormap, colormap_value: int, duration: int):
     o_array = OutputMock()
     colorizer.build(o_array)
     colorizer.setColormap(colormap_value)
@@ -90,7 +89,13 @@ def test_processing(
         create_img_detections_extended(masks=ARR),  # ImgDetectionsExtended
     ]:
         start_time = time.time()
+        last_log_time = time.time()
         while time.time() - start_time < duration:
+            if time.time() - last_log_time > LOG_INTERVAL:
+                print(
+                    f"Test running... {time.time()-start_time:.1f}s elapsed, {duration-time.time()+start_time:.1f}s remaining"
+                )
+                last_log_time = time.time()
             q_arr.send(arr)
             colorizer.process(q_arr.get())
             arr_colored = q_colorizer.get()

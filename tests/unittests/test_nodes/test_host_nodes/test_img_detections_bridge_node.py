@@ -9,6 +9,7 @@ from pytest import FixtureRequest
 from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.node import ImgDetectionsBridge
 from tests.utils import (
+    LOG_INTERVAL,
     OutputMock,
     create_img_detections,
     create_img_detections_extended,
@@ -79,7 +80,13 @@ def test_processing(
             )
 
     start_time = time.time()
+    last_log_time = time.time()
     while time.time() - start_time < duration:
+        if time.time() - last_log_time > LOG_INTERVAL:
+            print(
+                f"Test running... {time.time()-start_time:.1f}s elapsed, {duration-time.time()+start_time:.1f}s remaining"
+            )
+            last_log_time = time.time()
         q_dets.send(dets)
         bridge.process(q_dets.get())
         dets_transformed = q_dets_transformed.get()

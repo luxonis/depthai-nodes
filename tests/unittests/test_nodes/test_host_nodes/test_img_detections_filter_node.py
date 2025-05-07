@@ -9,6 +9,7 @@ from depthai_nodes import ImgDetectionsExtended
 from depthai_nodes.node import ImgDetectionsFilter
 from tests.utils import (
     DETECTIONS,
+    LOG_INTERVAL,
     OutputMock,
     create_img_detections,
     create_img_detections_extended,
@@ -155,7 +156,13 @@ def test_processing(
     q_dets_filtered = filter.out.createOutputQueue()
 
     start_time = time.time()
+    last_log_time = time.time()
     while time.time() - start_time < duration:
+        if time.time() - last_log_time > LOG_INTERVAL:
+            print(
+                f"Test running... {time.time()-start_time:.1f}s elapsed, {duration-time.time()+start_time:.1f}s remaining"
+            )
+            last_log_time = time.time()
         # default filtering
         q_dets.send(dets)
         filter.process(q_dets.get())
