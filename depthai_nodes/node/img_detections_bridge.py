@@ -1,3 +1,5 @@
+from typing import Dict, Optional
+
 import depthai as dai
 
 from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
@@ -22,6 +24,8 @@ class ImgDetectionsBridge(BaseHostNode):
         super().__init__()
         self._logger = get_logger()
         self._log = True
+        self._ignore_angle = False
+        self._label_encoding = {}
 
     def setIgnoreAngle(self, ignore_angle: bool) -> bool:
         """Sets whether to ignore the angle of the detections during transformation.
@@ -32,10 +36,23 @@ class ImgDetectionsBridge(BaseHostNode):
         if not isinstance(ignore_angle, bool):
             raise ValueError("ignore_angle must be a boolean.")
         self._ignore_angle = ignore_angle
-        return self._ignore_angle
+
+    def setLabelEncoding(self, label_encoding: Dict[int, str]) -> None:
+        """Sets the label encoding.
+
+        @param label_encoding: The label encoding with labels as keys and label names as
+            values.
+        @type label_encoding: Dict[int, str]
+        """
+        if not isinstance(label_encoding, Dict):
+            raise ValueError("label_encoding must be a dictionary.")
+        self._label_encoding = label_encoding
 
     def build(
-        self, msg: dai.Node.Output, ignore_angle: bool = False
+        self,
+        msg: dai.Node.Output,
+        ignore_angle: bool = False,
+        label_encoding: Optional[Dict[int, str]] = None,
     ) -> "ImgDetectionsBridge":
         """Configures the node connections.
 
@@ -43,11 +60,16 @@ class ImgDetectionsBridge(BaseHostNode):
         @type msg: dai.Node.Output
         @param ignore_angle: Whether to ignore the angle of the detections.
         @type ignore_angle: bool
+        @param label_encoding: The label encoding with labels as keys and label names as
+            values.
+        @type label_encoding: Dict[int, str]
         @return: The node object with the transformed ImgDetections object.
         @rtype: ImgDetectionsBridge
         """
         self.link_args(msg)
-        self.ignore_angle = self.setIgnoreAngle(ignore_angle)
+        self.setIgnoreAngle(ignore_angle)
+        if label_encoding is not None:
+            self.setLabelEncoding(label_encoding)
         return self
 
     def process(self, msg: dai.Buffer) -> None:
@@ -89,6 +111,9 @@ class ImgDetectionsBridge(BaseHostNode):
         for detection in img_dets.detections:
             detection_transformed = ImgDetectionExtended()
             detection_transformed.label = detection.label
+            label_name = self._label_encoding.get(detection.label)
+            if label_name is not None:
+                detection_transformed.label_name = label_name
             detection_transformed.confidence = detection.confidence
             x_center = (detection.xmin + detection.xmax) / 2
             y_center = (detection.ymin + detection.ymax) / 2
@@ -121,7 +146,7 @@ class ImgDetectionsBridge(BaseHostNode):
             detection_transformed = dai.ImgDetection()
             detection_transformed.label = detection.label
             detection_transformed.confidence = detection.confidence
-            if not self.ignore_angle and detection.rotated_rect.angle != 0:
+            if not self._ignore_angle and detection.rotated_rect.angle != 0:
                 raise NotImplementedError(
                     "Unable to transform ImgDetectionsExtended with rotation."
                 )
