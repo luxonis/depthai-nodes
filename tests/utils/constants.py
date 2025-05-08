@@ -1,0 +1,1 @@
+LOG_INTERVAL = 60

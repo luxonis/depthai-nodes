@@ -8,6 +8,8 @@ from depthai_nodes.message import GatheredData
 from depthai_nodes.node.gather_data import GatherData
 from tests.utils import PipelineMock, create_img_detections
 
+DIFFERENT_TESTS = 3  # used for stability tests
+
 
 @pytest.fixture
 def duration(request):
@@ -81,8 +83,9 @@ def old_img_detections(old_reference_timestamp):
 def setup_gather_data_node(generator, fps, duration=None):
     gather_data = generator.build(camera_fps=fps)
     if duration is not None:
-        gather_data.input_data._queue.duration = duration
-        gather_data.input_reference._queue.duration = duration
+        modified_duration = duration / DIFFERENT_TESTS
+        gather_data.input_data._queue.duration = modified_duration
+        gather_data.input_reference._queue.duration = modified_duration
     return gather_data
 
 

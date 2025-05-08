@@ -23,14 +23,15 @@ if not (args.nn_archive or args.model):
 
 try:
     device = dai.Device(dai.DeviceInfo(args.ip))
+    print(f"(1) Connected to device with IP/mxid: {args.ip}")
 except Exception as e:
     print(e)
-    print("Can't connect to the device with IP/mxid: ", args.ip)
+    print("Can't connect to the device with IP/mxid: %s", args.ip)
     exit(6)
 
 with dai.Pipeline(device) as pipeline:
     camera_node = pipeline.create(dai.node.Camera).build()
-
+    print("(2) Camera node created.")
     if args.model:
         model_desc = dai.NNModelDescription(
             model=args.model,
@@ -38,6 +39,7 @@ with dai.Pipeline(device) as pipeline:
         )
         try:
             nn_archive_path = dai.getModelFromZoo(model_desc, useCached=False)
+            print("(3) NN archive downloaded.")
         except Exception as e:
             print(e)
             print(
@@ -47,6 +49,7 @@ with dai.Pipeline(device) as pipeline:
             exit(7)
         try:
             nn_archive = dai.NNArchive(nn_archive_path)
+            print("(4) NN archive loaded.")
         except Exception as e:
             print(e)
             print(f"Couldn't load the model {args.model} from NN archive.")
@@ -99,10 +102,12 @@ with dai.Pipeline(device) as pipeline:
             manip.inputImage
         )
         nn_w_parser = pipeline.create(ParsingNeuralNetwork).build(manip.out, nn_archive)
+        print("(5) ImageManip node and ParsingNeuralNetwork node created.")
     else:
         nn_w_parser = pipeline.create(ParsingNeuralNetwork).build(
             camera_node, nn_archive, fps=20.0
         )
+        print("(5) ParsingNeuralNetwork node created.")
 
     head_indices = nn_w_parser._parsers.keys()
 
@@ -110,9 +115,13 @@ with dai.Pipeline(device) as pipeline:
         i: nn_w_parser.getOutput(i).createOutputQueue() for i in head_indices
     }
 
+    print("(6) Parser output queues created.")
+
     pipeline.start()
+    print("(7) Pipeline started.")
 
     while pipeline.isRunning():
+        print("(8) Pipeline is running.")
         for head_id in parser_output_queues:
             parser_output = parser_output_queues[head_id].get()
             print(f"{head_id} - {type(parser_output)}")
