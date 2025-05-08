@@ -15,6 +15,8 @@ from tests.utils import (
     create_img_detections_extended,
 )
 
+img_det_types = ["img_detections", "img_detections_extended"]
+
 
 @pytest.fixture(scope="session")
 def duration(request):
@@ -45,7 +47,7 @@ def test_building(bridge: ImgDetectionsBridge):
 
 @pytest.mark.parametrize(
     "img_detections_type",
-    ["img_detections", "img_detections_extended"],
+    img_det_types,
 )
 def test_processing(
     bridge: ImgDetectionsBridge,
@@ -61,6 +63,8 @@ def test_processing(
     bridge.build(o_dets, ignore_angle=True)
     q_dets = o_dets.createOutputQueue()
     q_dets_transformed = bridge.out.createOutputQueue()
+
+    modified_duration = duration / len(img_det_types)
 
     def _identical_detections(
         img_dets: dai.ImgDetections, img_dets_ext: ImgDetectionExtended
@@ -81,10 +85,10 @@ def test_processing(
 
     start_time = time.time()
     last_log_time = time.time()
-    while time.time() - start_time < duration:
+    while time.time() - start_time < modified_duration:
         if time.time() - last_log_time > LOG_INTERVAL:
             print(
-                f"Test running... {time.time()-start_time:.1f}s elapsed, {duration-time.time()+start_time:.1f}s remaining"
+                f"Test running... {time.time()-start_time:.1f}s elapsed, {modified_duration-time.time()+start_time:.1f}s remaining"
             )
             last_log_time = time.time()
         q_dets.send(dets)

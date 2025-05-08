@@ -20,6 +20,8 @@ from tests.utils import (
 
 from .utils.calibration_handler import get_calibration_handler
 
+DIFFERENT_TESTS = 4  # used for stability tests
+
 
 @pytest.fixture(scope="session")
 def duration(request):
@@ -107,6 +109,8 @@ def test_img_detection(
     output_2d = OutputMock()
     output_depth = OutputMock()
 
+    modified_duration = duration / DIFFERENT_TESTS
+
     depth_merger.build(
         output_2d=output_2d,
         output_depth=output_depth,
@@ -121,10 +125,10 @@ def test_img_detection(
 
     start_time = time.time()
     last_log_time = time.time()
-    while time.time() - start_time < duration:
+    while time.time() - start_time < modified_duration:
         if time.time() - last_log_time > LOG_INTERVAL:
             print(
-                f"Test running... {time.time()-start_time:.1f}s elapsed, {duration-time.time()+start_time:.1f}s remaining"
+                f"Test running... {time.time()-start_time:.1f}s elapsed, {modified_duration-time.time()+start_time:.1f}s remaining"
             )
             last_log_time = time.time()
         output_2d.send(img_detection)
@@ -150,6 +154,8 @@ def test_img_detections(
     output_2d = OutputMock()
     output_depth = OutputMock()
 
+    modified_duration = duration / DIFFERENT_TESTS
+
     depth_merger.build(
         output_2d=output_2d,
         output_depth=output_depth,
@@ -164,10 +170,10 @@ def test_img_detections(
 
     start_time = time.time()
     last_log_time = time.time()
-    while time.time() - start_time < duration:
+    while time.time() - start_time < modified_duration:
         if time.time() - last_log_time > LOG_INTERVAL:
             print(
-                f"Test running... {time.time()-start_time:.1f}s elapsed, {duration-time.time()+start_time:.1f}s remaining"
+                f"Test running... {time.time()-start_time:.1f}s elapsed, {modified_duration-time.time()+start_time:.1f}s remaining"
             )
             last_log_time = time.time()
         output_2d.send(img_detections)

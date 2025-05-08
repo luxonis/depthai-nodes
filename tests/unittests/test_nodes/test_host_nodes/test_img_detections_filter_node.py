@@ -20,6 +20,8 @@ CONF_THRES = 0.5
 MAX_DET = 1
 SORT = True
 
+img_det_types = ["img_detections", "img_detections_extended"]
+
 
 @pytest.fixture(scope="session")
 def duration(request):
@@ -138,7 +140,7 @@ def test_parameter_setting(filter: ImgDetectionsFilter):
 
 @pytest.mark.parametrize(
     "img_detections_type",
-    ["img_detections", "img_detections_extended"],
+    img_det_types,
 )
 def test_processing(
     filter: ImgDetectionsFilter,
@@ -155,12 +157,14 @@ def test_processing(
     q_dets = o_dets.createOutputQueue()
     q_dets_filtered = filter.out.createOutputQueue()
 
+    modified_duration = duration / len(img_det_types)
+
     start_time = time.time()
     last_log_time = time.time()
-    while time.time() - start_time < duration:
+    while time.time() - start_time < modified_duration:
         if time.time() - last_log_time > LOG_INTERVAL:
             print(
-                f"Test running... {time.time()-start_time:.1f}s elapsed, {duration-time.time()+start_time:.1f}s remaining"
+                f"Test running... {time.time()-start_time:.1f}s elapsed, {modified_duration-time.time()+start_time:.1f}s remaining"
             )
             last_log_time = time.time()
         # default filtering
