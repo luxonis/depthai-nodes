@@ -9,15 +9,21 @@ from pytest import FixtureRequest
 from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.node import ImgDetectionsBridge
 from tests.utils import (
+    LOG_INTERVAL,
     OutputMock,
     create_img_detections,
     create_img_detections_extended,
 )
 
+img_det_types = ["img_detections", "img_detections_extended"]
+
 
 @pytest.fixture(scope="session")
 def duration(request):
-    return request.config.getoption("--duration")
+    d = request.config.getoption("--duration")
+    if d is None:
+        return 1e-6
+    return d
 
 
 @pytest.fixture
@@ -41,13 +47,13 @@ def test_building(bridge: ImgDetectionsBridge):
 
 @pytest.mark.parametrize(
     "img_detections_type",
-    ["img_detections", "img_detections_extended"],
+    img_det_types,
 )
 def test_processing(
     bridge: ImgDetectionsBridge,
     request: FixtureRequest,
     img_detections_type: str,
-    duration: int = 1e-6,
+    duration: float,
 ):
     dets: Union[ImgDetectionsExtended, dai.ImgDetections] = request.getfixturevalue(
         img_detections_type
@@ -57,6 +63,8 @@ def test_processing(
     bridge.build(o_dets, ignore_angle=True)
     q_dets = o_dets.createOutputQueue()
     q_dets_transformed = bridge.out.createOutputQueue()
+
+    modified_duration = duration / len(img_det_types)
 
     def _identical_detections(
         img_dets: dai.ImgDetections, img_dets_ext: ImgDetectionExtended
@@ -76,7 +84,13 @@ def test_processing(
             )
 
     start_time = time.time()
-    while time.time() - start_time < duration:
+    last_log_time = time.time()
+    while time.time() - start_time < modified_duration:
+        if time.time() - last_log_time > LOG_INTERVAL:
+            print(
+                f"Test running... {time.time()-start_time:.1f}s elapsed, {modified_duration-time.time()+start_time:.1f}s remaining"
+            )
+            last_log_time = time.time()
         q_dets.send(dets)
         bridge.process(q_dets.get())
         dets_transformed = q_dets_transformed.get()

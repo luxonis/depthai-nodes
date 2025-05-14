@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from depthai_nodes.node import ImgFrameOverlay
-from tests.utils import OutputMock, create_img_frame
+from tests.utils import LOG_INTERVAL, OutputMock, create_img_frame
 
 HEIGHT, WIDTH = 5, 5
 ALPHA = 0.5
@@ -16,7 +16,10 @@ FRAME3 = np.random.randint(0, 255, (HEIGHT, WIDTH * 2, 3), dtype=np.uint8)
 
 @pytest.fixture(scope="session")
 def duration(request):
-    return request.config.getoption("--duration")
+    d = request.config.getoption("--duration")
+    if d is None:
+        return 1e-6
+    return d
 
 
 @pytest.fixture
@@ -44,7 +47,7 @@ def test_parameter_setting(overlayer: ImgFrameOverlay):
 
 def test_processing(
     overlayer: ImgFrameOverlay,
-    duration: int = 1e-6,
+    duration: float,
 ):
     img_frame1: dai.ImgFrame = create_img_frame(FRAME1)
     img_frame2: dai.ImgFrame = create_img_frame(FRAME2)
@@ -60,7 +63,13 @@ def test_processing(
     q_overlayer = overlayer.out.createOutputQueue()
 
     start_time = time.time()
+    last_log_time = time.time()
     while time.time() - start_time < duration:
+        if time.time() - last_log_time > LOG_INTERVAL:
+            print(
+                f"Test running... {time.time()-start_time:.1f}s elapsed, {duration-time.time()+start_time:.1f}s remaining"
+            )
+            last_log_time = time.time()
         q_background.send(img_frame1)
         q_foreground.send(img_frame2)
         overlayer.process(q_background.get(), q_foreground.get())

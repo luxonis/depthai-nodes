@@ -4,6 +4,8 @@ from collections import deque
 
 import depthai as dai
 
+from tests.utils.constants import LOG_INTERVAL
+
 
 class QueueMock:
     """Classic queue to imitate the depthai message queue."""
@@ -47,7 +49,7 @@ class InfiniteQueueMock(QueueMock):
         super().__init__()
         self.duration = 1  # seconds
         self.start_time = time.time()
-        self.log_interval = 1  # seconds
+        self.log_interval = LOG_INTERVAL  # seconds
         self.time_after_last_log = time.time()
         self.log_counter = 1
         self.logger = logging.getLogger(__name__)
@@ -75,8 +77,19 @@ class InfiniteQueueMock(QueueMock):
         return element
 
     def tryGet(self):
-        if time.time() - self.start_time > self.duration:
+        current_time = time.time()
+        if current_time - self.start_time > self.duration:
             raise dai.MessageQueue.QueueException
+
+        # Log progress periodically
+        elapsed = current_time - self.time_after_last_log
+        if elapsed > self.log_interval:
+            elapsed = self.log_counter * self.log_interval
+            remaining = self.duration - elapsed
+            print(f"Test running... {elapsed:.1f}s elapsed, {remaining:.1f}s remaining")
+            self.time_after_last_log = current_time
+            self.log_counter += 1
+
         if len(self._messages) == 0:
             return None
         element = self._messages.pop()

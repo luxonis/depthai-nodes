@@ -10,6 +10,7 @@ from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.node.depth_merger import DepthMerger
 from depthai_nodes.node.host_spatials_calc import HostSpatialsCalc
 from tests.utils import (
+    LOG_INTERVAL,
     OutputMock,
     create_img_detection,
     create_img_detection_extended,
@@ -19,10 +20,15 @@ from tests.utils import (
 
 from .utils.calibration_handler import get_calibration_handler
 
+DIFFERENT_TESTS = 4  # used for stability tests
+
 
 @pytest.fixture(scope="session")
 def duration(request):
-    return request.config.getoption("--duration")
+    d = request.config.getoption("--duration")
+    if d is None:
+        return 1e-6
+    return d
 
 
 @pytest.fixture
@@ -91,7 +97,7 @@ def test_initialization(depth_merger: DepthMerger):
 
 @pytest.mark.parametrize("detection", ["img_detection", "img_detection_extended"])
 def test_img_detection(
-    duration: int,
+    duration: float,
     depth_merger: DepthMerger,
     depth_frame: dai.ImgFrame,
     request: FixtureRequest,
@@ -103,6 +109,8 @@ def test_img_detection(
     output_2d = OutputMock()
     output_depth = OutputMock()
 
+    modified_duration = duration / DIFFERENT_TESTS
+
     depth_merger.build(
         output_2d=output_2d,
         output_depth=output_depth,
@@ -115,25 +123,21 @@ def test_img_detection(
     q_depth = output_depth.createOutputQueue()
     q_out = depth_merger.output.createOutputQueue()
 
-    output_2d.send(img_detection)
-    output_depth.send(depth_frame)
+    start_time = time.time()
+    last_log_time = time.time()
+    while time.time() - start_time < modified_duration:
+        if time.time() - last_log_time > LOG_INTERVAL:
+            print(
+                f"Test running... {time.time()-start_time:.1f}s elapsed, {modified_duration-time.time()+start_time:.1f}s remaining"
+            )
+            last_log_time = time.time()
+        output_2d.send(img_detection)
+        output_depth.send(depth_frame)
 
-    depth_merger.process(q_2d.get(), q_depth.get())
+        depth_merger.process(q_2d.get(), q_depth.get())
 
-    spatial_det: dai.SpatialImgDetection = q_out.get()
-    verify_spatial_detection(spatial_det, img_detection)
-
-    if duration:
-        start_time = time.time()
-
-        while time.time() - start_time < duration:
-            output_2d.send(img_detection)
-            output_depth.send(depth_frame)
-
-            depth_merger.process(q_2d.get(), q_depth.get())
-
-            spatial_det = q_out.get()
-            verify_spatial_detection(spatial_det, img_detection)
+        spatial_det: dai.SpatialImgDetection = q_out.get()
+        verify_spatial_detection(spatial_det, img_detection)
 
 
 @pytest.mark.parametrize("detections", ["img_detections", "img_detections_extended"])
@@ -142,13 +146,15 @@ def test_img_detections(
     depth_frame: dai.ImgFrame,
     request: FixtureRequest,
     detections: str,
-    duration: int,
+    duration: float,
 ):
     img_detections: Union[
         ImgDetectionsExtended, dai.ImgDetections
     ] = request.getfixturevalue(detections)
     output_2d = OutputMock()
     output_depth = OutputMock()
+
+    modified_duration = duration / DIFFERENT_TESTS
 
     depth_merger.build(
         output_2d=output_2d,
@@ -162,32 +168,23 @@ def test_img_detections(
     q_depth = output_depth.createOutputQueue()
     q_out = depth_merger.output.createOutputQueue()
 
-    output_2d.send(img_detections)
-    output_depth.send(depth_frame)
+    start_time = time.time()
+    last_log_time = time.time()
+    while time.time() - start_time < modified_duration:
+        if time.time() - last_log_time > LOG_INTERVAL:
+            print(
+                f"Test running... {time.time()-start_time:.1f}s elapsed, {modified_duration-time.time()+start_time:.1f}s remaining"
+            )
+            last_log_time = time.time()
+        output_2d.send(img_detections)
+        output_depth.send(depth_frame)
 
-    depth_merger.process(q_2d.get(), q_depth.get())
+        depth_merger.process(q_2d.get(), q_depth.get())
 
-    spatial_dets: dai.SpatialImgDetections = q_out.get()
-    assert isinstance(spatial_dets, dai.SpatialImgDetections)
-    assert len(spatial_dets.detections) == len(img_detections.detections)
+        spatial_dets: dai.SpatialImgDetections = q_out.get()
+        assert isinstance(spatial_dets, dai.SpatialImgDetections)
+        assert len(spatial_dets.detections) == len(img_detections.detections)
 
-    for i, spatial_det in enumerate(spatial_dets.detections):
-        img_det = img_detections.detections[i]
-        verify_spatial_detection(spatial_det, img_det)
-
-    if duration:
-        start_time = time.time()
-
-        while time.time() - start_time < duration:
-            output_2d.send(img_detections)
-            output_depth.send(depth_frame)
-
-            depth_merger.process(q_2d.get(), q_depth.get())
-
-            spatial_dets = q_out.get()
-            assert isinstance(spatial_dets, dai.SpatialImgDetections)
-            assert len(spatial_dets.detections) == len(img_detections.detections)
-
-            for i, spatial_det in enumerate(spatial_dets.detections):
-                img_det = img_detections.detections[i]
-                verify_spatial_detection(spatial_det, img_det)
+        for i, spatial_det in enumerate(spatial_dets.detections):
+            img_det = img_detections.detections[i]
+            verify_spatial_detection(spatial_det, img_det)

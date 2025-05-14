@@ -9,6 +9,7 @@ from depthai_nodes import ImgDetectionsExtended
 from depthai_nodes.node import ImgDetectionsFilter
 from tests.utils import (
     DETECTIONS,
+    LOG_INTERVAL,
     OutputMock,
     create_img_detections,
     create_img_detections_extended,
@@ -19,10 +20,15 @@ CONF_THRES = 0.5
 MAX_DET = 1
 SORT = True
 
+img_det_types = ["img_detections", "img_detections_extended"]
+
 
 @pytest.fixture(scope="session")
 def duration(request):
-    return request.config.getoption("--duration")
+    d = request.config.getoption("--duration")
+    if d is None:
+        return 1e-6
+    return d
 
 
 @pytest.fixture
@@ -134,13 +140,13 @@ def test_parameter_setting(filter: ImgDetectionsFilter):
 
 @pytest.mark.parametrize(
     "img_detections_type",
-    ["img_detections", "img_detections_extended"],
+    img_det_types,
 )
 def test_processing(
     filter: ImgDetectionsFilter,
     request: FixtureRequest,
     img_detections_type: str,
-    duration: int = 1e-6,  # allows only one run
+    duration: float,
 ):
     dets: Union[ImgDetectionsExtended, dai.ImgDetections] = request.getfixturevalue(
         img_detections_type
@@ -151,8 +157,16 @@ def test_processing(
     q_dets = o_dets.createOutputQueue()
     q_dets_filtered = filter.out.createOutputQueue()
 
+    modified_duration = duration / len(img_det_types)
+
     start_time = time.time()
-    while time.time() - start_time < duration:
+    last_log_time = time.time()
+    while time.time() - start_time < modified_duration:
+        if time.time() - last_log_time > LOG_INTERVAL:
+            print(
+                f"Test running... {time.time()-start_time:.1f}s elapsed, {modified_duration-time.time()+start_time:.1f}s remaining"
+            )
+            last_log_time = time.time()
         # default filtering
         q_dets.send(dets)
         filter.process(q_dets.get())

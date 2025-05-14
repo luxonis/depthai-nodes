@@ -5,12 +5,15 @@ import numpy as np
 import pytest
 
 from depthai_nodes.node import TilesPatcher, Tiling
-from tests.utils import OutputMock, create_img_detection
+from tests.utils import LOG_INTERVAL, OutputMock, create_img_detection
 
 
 @pytest.fixture
 def duration(request):
-    return request.config.getoption("--duration")
+    d = request.config.getoption("--duration")
+    if d is None:
+        return 1e-6
+    return d
 
 
 @pytest.fixture
@@ -74,9 +77,9 @@ def test_build_valid(patcher: TilesPatcher, tile_manager: Tiling):
 def test_process_accumulation(
     patcher: TilesPatcher,
     tile_manager: Tiling,
-    img_detection_1,
-    img_detection_2,
-    duration,
+    img_detection_1: dai.ImgDetection,
+    img_detection_2: dai.ImgDetection,
+    duration: float,
 ):
     patcher.build(tile_manager=tile_manager, nn=OutputMock())
 
@@ -85,23 +88,20 @@ def test_process_accumulation(
 
     out_q = patcher.out.createOutputQueue()
 
-    patcher.process(nn_output1)
-    assert out_q.is_empty()
-    patcher.process(nn_output2)
-    assert len(out_q._messages) == 1
-    detections_msg = out_q.get()
-    assert out_q.is_empty()
-    assert isinstance(detections_msg, dai.ImgDetections)
-    assert len(detections_msg.detections) == 2
+    start_time = time.time()
 
-    if duration:
-        start_time = time.time()
-
-        while time.time() - start_time < duration:
-            patcher.process(nn_output1)
-            patcher.process(nn_output2)
-            assert len(out_q._messages) == 1
-            detections_msg = out_q.get()
-            assert out_q.is_empty()
-            assert isinstance(detections_msg, dai.ImgDetections)
-            assert len(detections_msg.detections) == 2
+    last_log_time = time.time()
+    while time.time() - start_time < duration:
+        if time.time() - last_log_time > LOG_INTERVAL:
+            print(
+                f"Test running... {time.time()-start_time:.1f}s elapsed, {duration-time.time()+start_time:.1f}s remaining"
+            )
+            last_log_time = time.time()
+        patcher.process(nn_output1)
+        assert out_q.is_empty()
+        patcher.process(nn_output2)
+        assert len(out_q._messages) == 1
+        detections_msg = out_q.get()
+        assert out_q.is_empty()
+        assert isinstance(detections_msg, dai.ImgDetections)
+        assert len(detections_msg.detections) == 2
