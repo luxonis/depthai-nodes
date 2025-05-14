@@ -53,7 +53,7 @@ def test_processing(
     bridge: ImgDetectionsBridge,
     request: FixtureRequest,
     img_detections_type: str,
-    duration: int,
+    duration: float,
 ):
     dets: Union[ImgDetectionsExtended, dai.ImgDetections] = request.getfixturevalue(
         img_detections_type

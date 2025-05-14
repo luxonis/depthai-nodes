@@ -97,7 +97,7 @@ def test_initialization(depth_merger: DepthMerger):
 
 @pytest.mark.parametrize("detection", ["img_detection", "img_detection_extended"])
 def test_img_detection(
-    duration: int,
+    duration: float,
     depth_merger: DepthMerger,
     depth_frame: dai.ImgFrame,
     request: FixtureRequest,
@@ -146,7 +146,7 @@ def test_img_detections(
     depth_frame: dai.ImgFrame,
     request: FixtureRequest,
     detections: str,
-    duration: int,
+    duration: float,
 ):
     img_detections: Union[
         ImgDetectionsExtended, dai.ImgDetections

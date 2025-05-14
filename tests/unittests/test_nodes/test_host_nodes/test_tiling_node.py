@@ -87,7 +87,7 @@ def test_build_global_detection(tiling, img_frame):
     assert first_tile["scaled_size"] == (expected_scaled_width, expected_scaled_height)
 
 
-def test_process(tiling, img_frame, duration):
+def test_process(tiling: Tiling, img_frame: dai.ImgFrame, duration: float):
     output = OutputMock()
     grid_size = (2, 2)
     img_shape = (img_frame.getWidth(), img_frame.getHeight())

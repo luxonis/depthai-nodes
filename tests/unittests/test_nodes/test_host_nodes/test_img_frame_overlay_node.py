@@ -47,7 +47,7 @@ def test_parameter_setting(overlayer: ImgFrameOverlay):
 
 def test_processing(
     overlayer: ImgFrameOverlay,
-    duration: int,
+    duration: float,
 ):
     img_frame1: dai.ImgFrame = create_img_frame(FRAME1)
     img_frame2: dai.ImgFrame = create_img_frame(FRAME2)

@@ -84,7 +84,10 @@ def test_parameter_setting(
 @pytest.mark.parametrize("colormap_value", colormap_values)
 @pytest.mark.parametrize("arr_creator", arr_creators)
 def test_processing(
-    colorizer: ApplyColormap, colormap_value: int, arr_creator: Callable, duration: int
+    colorizer: ApplyColormap,
+    colormap_value: int,
+    arr_creator: Callable,
+    duration: float,
 ):
     total_combinations = len(colormap_values) * len(arr_creators)
 

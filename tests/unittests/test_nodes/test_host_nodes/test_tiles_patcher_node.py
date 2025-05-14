@@ -77,9 +77,9 @@ def test_build_valid(patcher: TilesPatcher, tile_manager: Tiling):
 def test_process_accumulation(
     patcher: TilesPatcher,
     tile_manager: Tiling,
-    img_detection_1,
-    img_detection_2,
-    duration,
+    img_detection_1: dai.ImgDetection,
+    img_detection_2: dai.ImgDetection,
+    duration: float,
 ):
     patcher.build(tile_manager=tile_manager, nn=OutputMock())
 
