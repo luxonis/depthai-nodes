@@ -14,8 +14,6 @@ class SnapsProducer(BaseHostNode):
         super().__init__()
         self.last_update = time.time()
 
-        self.out.setPossibleDatatypes([(dai.DatatypeEnum.ImgFrame, True)])
-
         self._em = dai.EventsManager()
         self._em.setLogResponse(True)
         self._time_interval = 60
@@ -37,7 +35,7 @@ class SnapsProducer(BaseHostNode):
     def build(
         self,
         frame: dai.Node.Output,
-        msg: Optional[dai.Node.Output] = None,
+        msg: dai.Node.Output = None,
         time_interval: float = 60.0,
         process_fn: Optional[Callable] = None,
     ) -> "SnapsProducer":
@@ -48,7 +46,8 @@ class SnapsProducer(BaseHostNode):
             self.setProcessFn(process_fn)
         return self
 
-    def process(self, frame: dai.ImgFrame, msg: Optional[dai.Buffer] = None):
+    def process(self, frame: dai.Buffer, msg: dai.Buffer = None):
+        assert isinstance(frame, dai.ImgFrame)
         if self._process_fn is None:
             self.sendSnap("frame", frame)
         if self._process_fn is not None:
@@ -68,27 +67,17 @@ class SnapsProducer(BaseHostNode):
             self._em.sendSnap(name, frame, tags, groups, extra_data)
             self._logger.info(f"Sent snap with name `{name}`")
 
-        # for det in detections.detections:
-        #     if (
-        #         det.confidence < self.confidence_threshold
-        #         and self.label_map[det.label] in self.labels
-        #         and time.time() > self.last_update + self.time_interval
-        #     ):
-        #         self.last_update = time.time()
-        #         det_xyxy = [det.xmin, det.ymin, det.xmax, det.ymax]
-        #         extra_data = {
-        #             "model": "luxonis/yolov6-nano:r2-coco-512x288",
-        #             "detection_xyxy": str(det_xyxy),
-        #             "detection_label": str(det.label),
-        #             "detection_label_str": self.label_map[det.label],
-        #             "detection_confidence": str(det.confidence),
-        #         }
-        #         self.em.sendSnap(
-        #             "rgb",
-        #             rgb,
-        #             [],
-        #             ["demo"],
-        #             extra_data,
-        #         )
 
-        #         print(f"Event sent: {extra_data}")
+# Example usage:
+
+# def filter_detections(producer, frame, msg):
+#     # some filtering on msg possible here ...
+#     extra_data = {"last_update":str(producer.last_update)}
+#     producer.sendSnap(name="test123", frame=frame, extra_data=extra_data)
+
+# snaps_producer = pipeline.create(SnapsProducer).build(
+#     frame = nn_with_parser.passthrough,
+#     msg = nn_with_parser.out,
+#     process_fn=filter_detections,
+#     time_interval=5
+# )
