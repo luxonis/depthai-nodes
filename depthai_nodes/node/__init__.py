@@ -30,7 +30,7 @@ from .parsers.xfeat import XFeatMonoParser, XFeatStereoParser
 from .parsers.yolo import YOLOExtendedParser
 from .parsers.yunet import YuNetParser
 from .parsing_neural_network import ParsingNeuralNetwork
-from .snaps_producer import SnapsProducer
+from .snaps_producer import SnapsProducer, SnapsProducerFrameOnly
 from .tiles_patcher import TilesPatcher
 from .tiling import Tiling
 
@@ -69,6 +69,7 @@ __all__ = [
     "ImgFrameOverlay",
     "ImgDetectionsBridge",
     "ImgDetectionsFilter",
+    "SnapsProducerFrameOnly",
     "SnapsProducer",
     "BaseHostNode",
 ]
