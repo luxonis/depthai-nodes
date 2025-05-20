@@ -77,7 +77,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
         if not (isinstance(time_interval, int) or isinstance(time_interval, float)):
             raise ValueError("time_interval must be of type int or float.")
 
-        self._time_interval = time_interval
+        self.time_interval = time_interval
 
     def setProcessFn(self, process_fn: ProcessFnFrameOnlyType):
         """Sets custom processing function.
@@ -136,9 +136,10 @@ class SnapsProducerFrameOnly(BaseHostNode):
         tags: List[str] = [],  # noqa: B006
         extra_data: Dict[str, str] = {},  # noqa: B006
         device_serial_num: str = "",
-    ):
-        """Function that creates the snap and sends it out. Make sure to call this
-        function from any custom processing functions to send snaps.
+    ) -> bool:
+        """Function that creates the snap and sends it out if time from last snap is
+        greater than time_interval. Make sure to call this function from any custom
+        processing functions to send snaps. Returns True if snap was sent.
 
         @param name: Name of the snap.
         @type name: str
@@ -152,10 +153,11 @@ class SnapsProducerFrameOnly(BaseHostNode):
         @type extra_data: Dict[str, str]
         @param device_serial_num: Device serial number. Defualts to ''.
         @type device_serial_num: str
+        @return: True if snap was sent out else False.
+        @rtype: bool
         """
         now = time.time()
-        if now > self.last_update + self._time_interval:
-            self.last_update = now
+        if now > self.last_update + self.time_interval:
             out = self._em.sendSnap(
                 name=name,
                 imgFrame=frame,
@@ -166,6 +168,9 @@ class SnapsProducerFrameOnly(BaseHostNode):
             )
             if out:
                 self._logger.info(f"Snap `{name}` sent")
+                self.last_update = now
+            return out
+        return False
 
 
 class SnapsProducer(SnapsProducerFrameOnly):
