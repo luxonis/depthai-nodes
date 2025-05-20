@@ -262,7 +262,6 @@ def test_partial_process_fn(
     def partial_process_fn(
         producer: SnapsProducerFrameOnly, frame: dai.ImgFrame, threshold: float
     ):
-        # Your custom logic using extra param `threshold`
         if frame.getWidth() > threshold:
             producer.sendSnap("threshold_snap", frame)
 
