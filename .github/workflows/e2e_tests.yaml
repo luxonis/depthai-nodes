@@ -25,7 +25,7 @@ on:
       depthai-version:
         description: 'Version of depthai to install. Default: alpha13'
         required: true
-        default: '3.0.0a14'
+        default: '3.0.0a15'
   push:
     branches:
       - main
