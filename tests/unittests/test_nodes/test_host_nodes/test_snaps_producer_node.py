@@ -25,6 +25,7 @@ def duration(request):
 @pytest.fixture
 def snaps_producer_frame_only():
     producer = SnapsProducerFrameOnly()
+    producer.setToken("test token")
     producer._logger = MagicMock()
     return producer
 
@@ -32,6 +33,7 @@ def snaps_producer_frame_only():
 @pytest.fixture
 def snaps_producer():
     producer = SnapsProducer()
+    producer.setToken("test token")
     producer._logger = MagicMock()
     return producer
 
