@@ -82,9 +82,9 @@ def test_parameter_setting_frame_only(
 
     # time_interval
     snaps_producer_frame_only.setTimeInterval(time_interval)
-    assert snaps_producer_frame_only._time_interval == time_interval
+    assert snaps_producer_frame_only.time_interval == time_interval
     snaps_producer_frame_only.setTimeInterval(int(time_interval))
-    assert snaps_producer_frame_only._time_interval == int(time_interval)
+    assert snaps_producer_frame_only.time_interval == int(time_interval)
     with pytest.raises(ValueError):
         snaps_producer_frame_only.setTimeInterval("not an integer or float")
 
@@ -118,9 +118,9 @@ def test_parameter_setting(
 
     # time_interval
     snaps_producer.setTimeInterval(time_interval)
-    assert snaps_producer._time_interval == time_interval
+    assert snaps_producer.time_interval == time_interval
     snaps_producer.setTimeInterval(int(time_interval))
-    assert snaps_producer._time_interval == int(time_interval)
+    assert snaps_producer.time_interval == int(time_interval)
     with pytest.raises(ValueError):
         snaps_producer.setTimeInterval("not an integer or float")
 
