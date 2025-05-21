@@ -32,7 +32,7 @@ jobs:
         cache: pip
 
     - name: Install depthai
-      run: pip install --extra-index-url ${{ secrets.LUXONIS_EXTRA_INDEX_URL }} depthai==3.0.0a14
+      run: pip install --extra-index-url ${{ secrets.LUXONIS_EXTRA_INDEX_URL }} depthai==3.0.0a15
 
     - name: Install package
       run: pip install -e .[dev]
