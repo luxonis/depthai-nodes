@@ -144,7 +144,8 @@ class ImgDetectionsBridge(BaseHostNode):
         detections_transformed = []
         for detection in img_det_ext.detections:
             detection_transformed = dai.ImgDetection()
-            detection_transformed.label = detection.label
+            if detection.label >= 0:
+                detection_transformed.label = detection.label
             detection_transformed.confidence = detection.confidence
             if not self._ignore_angle and detection.rotated_rect.angle != 0:
                 raise NotImplementedError(
