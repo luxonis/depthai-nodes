@@ -281,7 +281,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
 
     def _getParserNodes(self, nnArchive: dai.NNArchive) -> Dict[int, BaseParser]:
         parser_generator = self._pipeline.create(ParserGenerator)
-        parsers = parser_generator.build(nnArchive)
+        parsers = self._generateParsers(parser_generator, nnArchive)
         for parser in parsers.values():
             self._nn.out.link(
                 parser.input
