@@ -4,7 +4,7 @@ devices = dai.Device.getAllAvailableDevices()
 RVC2_IP = ""
 RVC4_IP = ""
 for device in devices:
-    mxid = device.getMxId()
+    mxid = device.getDeviceId()
     platform = device.platform.name
     if "RVC4" in platform:
         RVC4_IP = str(mxid)
