@@ -50,7 +50,7 @@ def generate_script_content(
             rect.angle = 0
 
             cfg.addCropRotatedRect(rect, True)
-            cfg.setOutputSize({resize_width}, {resize_height}, ImageManipConfigC2.ResizeMode.{resize_mode})
+            cfg.setOutputSize({resize_width}, {resize_height}, ImageManipConfigV2.ResizeMode.{resize_mode})
         """
     validate_label = (
         f"""
