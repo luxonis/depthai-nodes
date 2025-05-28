@@ -67,6 +67,15 @@ class SuperAnimalParser(KeypointParser):
             label_names=label_names,
             edges=edges,
         )
+        self._logger.debug(
+            "SuperAnimalParser initialized with output_layer_name='%s', scale_factor=%.2f, n_keypoints=%d, score_threshold=%.2f, label_names=%s, edges=%s",
+            output_layer_name,
+            scale_factor,
+            n_keypoints,
+            score_threshold,
+            label_names,
+            edges,
+        )
 
     def build(
         self,
@@ -82,9 +91,12 @@ class SuperAnimalParser(KeypointParser):
 
         super().build(head_config)
 
+        self._logger.debug("SuperAnimalParser built")
+
         return self
 
     def run(self):
+        self._logger.debug("SuperAnimalParser run started")
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
@@ -92,6 +104,7 @@ class SuperAnimalParser(KeypointParser):
                 break  # Pipeline was stopped
 
             layers = output.getAllLayerNames()
+            self._logger.debug("Processing input with layers: %s", layers)
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":
@@ -122,4 +135,10 @@ class SuperAnimalParser(KeypointParser):
             msg.setTransformation(output.getTransformation())
             msg.setSequenceNum(output.getSequenceNum())
 
+            self._logger.debug(
+                "Created keypoints message with %d points", len(keypoints)
+            )
+
             self.out.send(msg)
+
+            self._logger.debug("Keypoints message sent successfully")

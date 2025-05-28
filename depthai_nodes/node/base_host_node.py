@@ -2,6 +2,8 @@ from abc import ABCMeta
 
 import depthai as dai
 
+from depthai_nodes.logging import get_logger
+
 HostNodeMeta = type(dai.node.HostNode)  # metaclass of dai.node.HostNode
 
 
@@ -32,6 +34,8 @@ class BaseHostNode(dai.node.HostNode, metaclass=CombinedMeta):
             raise ValueError(
                 f"No dai.ImgFrame.Type defined for platform {self._platform}."
             ) from e
+
+        self._logger = get_logger(self.__class__.__name__)
 
     def process(self) -> None:
         pass

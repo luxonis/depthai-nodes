@@ -62,6 +62,12 @@ class DetectionParser(BaseParser):
         self.iou_threshold = iou_threshold
         self.max_det = max_det
         self.label_names = label_names
+        self._logger.debug(
+            "DetectionParser initialized with conf_threshold=%.2f, iou_threshold=%.2f, max_det=%d",
+            conf_threshold,
+            iou_threshold,
+            max_det,
+        )
 
     def setConfidenceThreshold(self, threshold: float) -> None:
         """Sets the confidence score threshold for detected objects.
@@ -72,6 +78,7 @@ class DetectionParser(BaseParser):
         if not isinstance(threshold, float):
             raise ValueError("Confidence threshold must be a float.")
         self.conf_threshold = threshold
+        self._logger.debug("Confidence threshold updated to %.2f", threshold)
 
     def setIOUThreshold(self, threshold: float) -> None:
         """Sets the non-maximum suppression threshold.
@@ -82,6 +89,7 @@ class DetectionParser(BaseParser):
         if not isinstance(threshold, float):
             raise ValueError("IOU threshold must be a float.")
         self.iou_threshold = threshold
+        self._logger.debug("IoU threshold updated to %.2f", threshold)
 
     def setMaxDetections(self, max_det: int) -> None:
         """Sets the maximum number of detections to keep.
@@ -92,6 +100,7 @@ class DetectionParser(BaseParser):
         if not isinstance(max_det, int):
             raise ValueError("Max detections must be an integer.")
         self.max_det = max_det
+        self._logger.debug("Maximum detections updated to %d", max_det)
 
     def setLabelNames(self, label_names: List[str]) -> None:
         """Sets the label names for detected objects.
@@ -104,6 +113,7 @@ class DetectionParser(BaseParser):
         if not all(isinstance(label, str) for label in label_names):
             raise ValueError("Each label name must be a string.")
         self.label_names = label_names
+        self._logger.debug("Label names updated to: %s", label_names)
 
     def build(self, head_config) -> "DetectionParser":
         """Configures the parser.
@@ -119,9 +129,16 @@ class DetectionParser(BaseParser):
         self.max_det = head_config.get("max_det", self.max_det)
         self.label_names = head_config.get("classes", self.label_names)
 
+        self._logger.debug(
+            "DetectionParser built with conf_threshold=%.2f, iou_threshold=%.2f, max_det=%d",
+            self.conf_threshold,
+            self.iou_threshold,
+            self.max_det,
+        )
         return self
 
     def run(self):
+        self._logger.debug("DetectionParser run started")
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
@@ -171,4 +188,8 @@ class DetectionParser(BaseParser):
             message.setTimestamp(output.getTimestamp())
             message.setSequenceNum(output.getSequenceNum())
 
+            self._logger.debug(
+                "Created detections message with %d objects", len(bboxes)
+            )
             self.out.send(message)
+            self._logger.debug("Detections message sent successfully")

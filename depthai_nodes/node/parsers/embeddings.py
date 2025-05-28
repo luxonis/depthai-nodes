@@ -24,6 +24,10 @@ class EmbeddingsParser(BaseParser):
         """Initialize the EmbeddingsParser node."""
         super().__init__()
         self.output_layer_name: str = None
+        self._logger.debug(
+            "EmbeddingsParser initialized with output_layer_name=%s",
+            self.output_layer_name,
+        )
 
     def setOutputLayerNames(self, output_layer_name: str) -> None:
         """Sets the output layer name for the parser.
@@ -35,6 +39,7 @@ class EmbeddingsParser(BaseParser):
             raise ValueError("Output layer name must be a string.")
 
         self.output_layer_name = output_layer_name
+        self._logger.debug("Output layer name set to %s", self.output_layer_name)
 
     def build(self, head_config: Dict[str, Any]) -> "EmbeddingsParser":
         """Sets the head configuration for the parser.
@@ -50,9 +55,14 @@ class EmbeddingsParser(BaseParser):
             len(self.output_layer_name) == 1
         ), "Embeddings head should have only one output layer"
 
+        self._logger.debug(
+            "EmbeddingsParser built with output_layer_name=%s", self.output_layer_name
+        )
+
         return self
 
     def run(self):
+        self._logger.debug("EmbeddingsParser run started")
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
@@ -61,9 +71,13 @@ class EmbeddingsParser(BaseParser):
 
             # Get all the layer names
             output_names = self.output_layer_name or output.getAllLayerNames()
+            self._logger.debug("Processing input with layers: %s", output_names)
+
             assert (
                 len(output_names) == 1
             ), "Embeddings head should have only one output layer"
             output.setSequenceNum(output.getSequenceNum())
 
             self.out.send(output)
+
+            self._logger.debug("Message sent successfully")

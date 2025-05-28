@@ -4,10 +4,11 @@ import cv2
 import depthai as dai
 import numpy as np
 
+from depthai_nodes.node.base_host_node import BaseHostNode
 from depthai_nodes.node.utils import to_planar
 
 
-class Tiling(dai.node.HostNode):
+class Tiling(BaseHostNode):
     """Manages tiling of input frames for neural network processing, divides frames into
     overlapping tiles based on configuration parameters, and creates ImgFrames for each
     tile to be sent to a neural network node.
@@ -43,6 +44,7 @@ class Tiling(dai.node.HostNode):
         self.tile_positions = []
         self.img_shape = None
         self.global_detection = False
+        self._logger.debug("Tiling initialized")
 
     def build(
         self,
@@ -85,6 +87,15 @@ class Tiling(dai.node.HostNode):
         self.x = self._calculate_tiles(grid_size, img_shape, overlap)
         self._compute_tile_positions()
 
+        self._logger.debug(
+            "Tiling built with overlap=%f, grid_size=%s, img_shape=%s, nn_shape=%s, global_detection=%s",
+            overlap,
+            grid_size,
+            img_shape,
+            nn_shape,
+            global_detection,
+        )
+
         return self
 
     def process(self, img_frame) -> None:
@@ -94,6 +105,7 @@ class Tiling(dai.node.HostNode):
         @param img_frame: The frame to be sent to a neural network.
         @type img_frame: dai.ImgFrame
         """
+        self._logger.debug("Processing new input")
         frame: np.ndarray = img_frame.getCvFrame()
 
         if self.grid_size is None or self.x is None or self.nn_shape is None:
@@ -108,7 +120,9 @@ class Tiling(dai.node.HostNode):
             tile_img_frame = self._create_img_frame(
                 tile, img_frame, index, scaled_width, scaled_height
             )
+            self._logger.debug("ImgFrame message %d created", index)
             self.out.send(tile_img_frame)
+            self._logger.debug("Message %d sent successfully", index)
 
     def _crop_to_nn_shape(
         self, frame: np.ndarray, scaled_width, scaled_height

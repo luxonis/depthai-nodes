@@ -66,6 +66,14 @@ class LaneDetectionParser(BaseParser):
         self.griding_num = griding_num
         self.cls_num_per_lane = cls_num_per_lane
         self.input_size = input_size
+        self._logger.debug(
+            "LaneDetectionParser initialized with output_layer_name='%s', row_anchors=%s, griding_num=%d, cls_num_per_lane=%d, input_size=%s",
+            output_layer_name,
+            row_anchors,
+            griding_num,
+            cls_num_per_lane,
+            input_size,
+        )
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Set the output layer name for the lane detection model.
@@ -76,6 +84,7 @@ class LaneDetectionParser(BaseParser):
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
         self.output_layer_name = output_layer_name
+        self._logger.debug("Output layer name set to '%s'", self.output_layer_name)
 
     def setRowAnchors(self, row_anchors: List[int]) -> None:
         """Set the row anchors for the lane detection model.
@@ -88,6 +97,7 @@ class LaneDetectionParser(BaseParser):
         if not all(isinstance(anchor, int) for anchor in row_anchors):
             raise ValueError("Row anchors must be a list of integers.")
         self.row_anchors = row_anchors
+        self._logger.debug("Row anchors set to %s", self.row_anchors)
 
     def setGridingNum(self, griding_num: int) -> None:
         """Set the griding number for the lane detection model.
@@ -98,6 +108,7 @@ class LaneDetectionParser(BaseParser):
         if not isinstance(griding_num, int):
             raise ValueError("Griding number must be an integer.")
         self.griding_num = griding_num
+        self._logger.debug("Griding number set to %d", self.griding_num)
 
     def setClsNumPerLane(self, cls_num_per_lane: int) -> None:
         """Set the number of points per lane for the lane detection model.
@@ -108,6 +119,7 @@ class LaneDetectionParser(BaseParser):
         if not isinstance(cls_num_per_lane, int):
             raise ValueError("Number of points per lane must be an integer.")
         self.cls_num_per_lane = cls_num_per_lane
+        self._logger.debug("Number of points per lane set to %d", self.cls_num_per_lane)
 
     def setInputSize(self, input_size: Tuple[int, int]) -> None:
         """Set the input size for the lane detection model.
@@ -122,6 +134,7 @@ class LaneDetectionParser(BaseParser):
         if not all(isinstance(size, int) for size in input_size):
             raise ValueError("Input size must be a tuple of integers.")
         self.input_size = input_size
+        self._logger.debug("Input size set to %s", self.input_size)
 
     def build(
         self,
@@ -163,9 +176,19 @@ class LaneDetectionParser(BaseParser):
                 f"Input layout {self.layout} not supported for input_size extraction."
             )
 
+        self._logger.debug(
+            "LaneDetectionParser built with output_layer_name='%s', row_anchors=%s, griding_num=%d, cls_num_per_lane=%d, input_size=%s",
+            self.output_layer_name,
+            self.row_anchors,
+            self.griding_num,
+            self.cls_num_per_lane,
+            self.input_size,
+        )
+
         return self
 
     def run(self):
+        self._logger.debug("LaneDetectionParser run started")
         if self.row_anchors is None:
             raise ValueError("Row anchors must be specified!")
         if self.griding_num is None:
@@ -180,6 +203,7 @@ class LaneDetectionParser(BaseParser):
                 break  # Pipeline was stopped
 
             layers = output.getAllLayerNames()
+            self._logger.debug("Processing input with layers: %s", layers)
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":
@@ -206,4 +230,10 @@ class LaneDetectionParser(BaseParser):
             msg.setTransformation(output.getTransformation())
             msg.setSequenceNum(output.getSequenceNum())
 
+            self._logger.debug(
+                "Created lane detection message with %d points", len(points)
+            )
+
             self.out.send(msg)
+
+            self._logger.debug("Lane detection message sent successfully")

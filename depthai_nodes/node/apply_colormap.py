@@ -39,6 +39,13 @@ class ApplyColormap(BaseHostNode):
         self.setMaxValue(max_value)
         self.setInstanceToSemanticMask(instance_to_semantic_mask)
 
+        self._logger.debug(
+            "ApplyColormap initialized with colormap_value=%d, max_value=%d, instance_to_semantic_mask=%s",
+            colormap_value,
+            max_value,
+            instance_to_semantic_mask,
+        )
+
     def setColormap(self, colormap_value: int) -> None:
         """Sets the applied color mapping.
 
@@ -50,6 +57,7 @@ class ApplyColormap(BaseHostNode):
         colormap = cv2.applyColorMap(np.arange(256, dtype=np.uint8), colormap_value)
         colormap[0] = [0, 0, 0]  # Set zero values to black
         self._colormap = colormap
+        self._logger.debug("Colormap set to %s", self._colormap)
 
     def setMaxValue(self, max_value: int) -> None:
         """Sets the maximum frame value for normalization.
@@ -60,6 +68,7 @@ class ApplyColormap(BaseHostNode):
         if not isinstance(max_value, int):
             raise ValueError("max_value must be an integer.")
         self._max_value = max_value
+        self._logger.debug("Max value set to %d", self._max_value)
 
     def setInstanceToSemanticMask(self, instance_to_semantic_mask: bool) -> None:
         """Sets the instance to semantic mask flag.
@@ -71,6 +80,9 @@ class ApplyColormap(BaseHostNode):
         if not isinstance(instance_to_semantic_mask, bool):
             raise ValueError("instance_to_semantic_mask must be a boolean.")
         self._instance_to_semantic_mask = instance_to_semantic_mask
+        self._logger.debug(
+            "Instance to semantic mask set to %s", self._instance_to_semantic_mask
+        )
 
     def build(self, arr: dai.Node.Output) -> "ApplyColormap":
         """Configures the node connections.
@@ -81,6 +93,7 @@ class ApplyColormap(BaseHostNode):
         @rtype: ApplyColormap
         """
         self.link_args(arr)
+        self._logger.debug("ApplyColormap built")
         return self
 
     def process(self, msg: dai.Buffer) -> None:
@@ -92,7 +105,7 @@ class ApplyColormap(BaseHostNode):
             segmentation masks to semantic segmentation masks.
         @type instance_to_semantic_segmentation: bool
         """
-
+        self._logger.debug("Processing new input")
         msg_copy = copy_message(msg)
 
         if isinstance(msg, SegmentationMask):
@@ -140,4 +153,8 @@ class ApplyColormap(BaseHostNode):
         frame.setTimestamp(msg.getTimestamp())
         frame.setSequenceNum(msg.getSequenceNum())
 
+        self._logger.debug("ImgFrame message created")
+
         self.out.send(frame)
+
+        self._logger.debug("Message sent successfully")

@@ -14,6 +14,7 @@ from typing import (
 import depthai as dai
 
 from depthai_nodes import GatheredData
+from depthai_nodes.logging import get_logger
 
 
 @runtime_checkable
@@ -63,6 +64,9 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         self.input_reference = self.createInput()
         self.out = self.createOutput()
 
+        self._logger = get_logger(__name__)
+        self._logger.debug("GatherData initialized")
+
     @staticmethod
     def _default_wait_count_fn(reference: TReference) -> int:
         assert isinstance(reference, HasDetections)
@@ -106,14 +110,17 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         if wait_count_fn is None:
             wait_count_fn = self._default_wait_count_fn
         self.set_wait_count_fn(wait_count_fn)
+        self._logger.debug("GatherData built with camera_fps=%d", camera_fps)
         return self
 
     def set_camera_fps(self, fps: int) -> None:
         if fps <= 0:
             raise ValueError(f"Camera FPS must be positive, got {fps}")
         self._camera_fps = fps
+        self._logger.debug("Camera FPS set to %d", fps)
 
     def run(self) -> None:
+        self._logger.debug("GatherData run started")
         if not self._camera_fps:
             raise ValueError("Camera FPS not set. Call build() before run().")
 
@@ -124,9 +131,11 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
             except dai.MessageQueue.QueueException:
                 break
             if input_data:
+                self._logger.debug("Input data received")
                 self._add_data(input_data)
                 self._send_ready_data()
             if input_reference:
+                self._logger.debug("Input reference received")
                 self._add_reference(input_reference)
                 self._send_ready_data()
 
@@ -137,6 +146,7 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         if ready_data:
             self._clear_old_data(ready_data)
             self.out.send(ready_data)
+            self._logger.debug("Gathered data sent")
 
     def _add_data(self, data: TGathered) -> None:
         data_ts = self._get_total_seconds_ts(data)

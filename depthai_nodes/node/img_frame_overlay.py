@@ -24,6 +24,7 @@ class ImgFrameOverlay(BaseHostNode):
     def __init__(self, alpha: float = 0.5) -> None:
         super().__init__()
         self.setAlpha(alpha)
+        self._logger.debug("ImgFrameOverlay initialized with alpha=%f", alpha)
 
     def setAlpha(self, alpha: float) -> None:
         """Sets the alpha.
@@ -36,6 +37,7 @@ class ImgFrameOverlay(BaseHostNode):
         if not 0.0 <= alpha <= 1.0:
             raise ValueError("Alpha must be between 0.0 and 1.0")
         self._alpha = alpha
+        self._logger.debug("Alpha set to %f", self._alpha)
 
     def build(
         self, frame1: dai.Node.Output, frame2: dai.Node.Output, alpha: float = None
@@ -56,6 +58,8 @@ class ImgFrameOverlay(BaseHostNode):
         if alpha is not None:
             self.setAlpha(alpha)
 
+        self._logger.debug("ImgFrameOverlay built with alpha=%f", alpha)
+
         return self
 
     def process(self, frame1: dai.Buffer, frame2: dai.Buffer) -> None:
@@ -66,6 +70,7 @@ class ImgFrameOverlay(BaseHostNode):
         @param frame2: The input message for the foreground frame.
         @type frame2: dai.ImgFrame
         """
+        self._logger.debug("Processing new input")
         assert isinstance(frame1, dai.ImgFrame)
         assert isinstance(frame2, dai.ImgFrame)
 
@@ -95,4 +100,8 @@ class ImgFrameOverlay(BaseHostNode):
         overlay.setTimestamp(frame1.getTimestamp())
         overlay.setSequenceNum(frame1.getSequenceNum())
 
+        self._logger.debug("ImgFrame message created")
+
         self.out.send(overlay)
+
+        self._logger.debug("Message sent successfully")

@@ -48,6 +48,11 @@ class ImageOutputParser(BaseParser):
         self._platform = (
             self.getParentPipeline().getDefaultDevice().getPlatformAsString()
         )
+        self._logger.debug(
+            "ImageOutputParser initialized with output_layer_name='%s', output_is_bgr=%s",
+            output_layer_name,
+            output_is_bgr,
+        )
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
@@ -58,10 +63,12 @@ class ImageOutputParser(BaseParser):
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
         self.output_layer_name = output_layer_name
+        self._logger.debug("Output layer name set to '%s'", self.output_layer_name)
 
     def setBGROutput(self) -> None:
         """Sets the flag indicating that output image is in BGR."""
         self.output_is_bgr = True
+        self._logger.debug("Output is BGR set to %s", self.output_is_bgr)
 
     def build(
         self,
@@ -83,9 +90,16 @@ class ImageOutputParser(BaseParser):
         self.output_layer_name = output_layers[0]
         self.output_is_bgr = head_config.get("output_is_bgr", self.output_is_bgr)
 
+        self._logger.debug(
+            "ImageOutputParser built with output_layer_name='%s', output_is_bgr=%s",
+            self.output_layer_name,
+            self.output_is_bgr,
+        )
+
         return self
 
     def run(self):
+        self._logger.debug("ImageOutputParser run started")
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
@@ -93,6 +107,7 @@ class ImageOutputParser(BaseParser):
                 break  # Pipeline was stopped
 
             layers = output.getAllLayerNames()
+            self._logger.debug("Processing input with layers: %s", layers)
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":
@@ -126,4 +141,8 @@ class ImageOutputParser(BaseParser):
                 image_message.setTransformation(output.getTransformation())
             image_message.setSequenceNum(output.getSequenceNum())
 
+            self._logger.debug("Created image message with shape %s", image.shape)
+
             self.out.send(image_message)
+
+            self._logger.debug("Image message sent successfully")

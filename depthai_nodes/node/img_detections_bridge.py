@@ -26,6 +26,7 @@ class ImgDetectionsBridge(BaseHostNode):
         self._log = True
         self._ignore_angle = False
         self._label_encoding = {}
+        self._logger.debug("ImgDetectionsBridge initialized")
 
     def setIgnoreAngle(self, ignore_angle: bool) -> bool:
         """Sets whether to ignore the angle of the detections during transformation.
@@ -36,6 +37,7 @@ class ImgDetectionsBridge(BaseHostNode):
         if not isinstance(ignore_angle, bool):
             raise ValueError("ignore_angle must be a boolean.")
         self._ignore_angle = ignore_angle
+        self._logger.debug("Ignore angle set to %s", self._ignore_angle)
 
     def setLabelEncoding(self, label_encoding: Dict[int, str]) -> None:
         """Sets the label encoding.
@@ -47,6 +49,7 @@ class ImgDetectionsBridge(BaseHostNode):
         if not isinstance(label_encoding, Dict):
             raise ValueError("label_encoding must be a dictionary.")
         self._label_encoding = label_encoding
+        self._logger.debug("Label encoding set to %s", self._label_encoding)
 
     def build(
         self,
@@ -70,6 +73,11 @@ class ImgDetectionsBridge(BaseHostNode):
         self.setIgnoreAngle(ignore_angle)
         if label_encoding is not None:
             self.setLabelEncoding(label_encoding)
+        self._logger.debug(
+            "ImgDetectionsBridge built with ignore_angle=%s, label_encoding=%s",
+            ignore_angle,
+            label_encoding,
+        )
         return self
 
     def process(self, msg: dai.Buffer) -> None:
@@ -78,7 +86,7 @@ class ImgDetectionsBridge(BaseHostNode):
         @param msg: The input message for the ImgDetections object.
         @type msg: dai.ImgDetections or ImgDetectionsExtended
         """
-
+        self._logger.debug("Processing new input")
         if isinstance(msg, dai.ImgDetections):
             msg_transformed = self._img_det_to_img_det_ext(msg)
         elif isinstance(msg, ImgDetectionsExtended):
@@ -96,7 +104,12 @@ class ImgDetectionsBridge(BaseHostNode):
         msg_transformed.setTimestamp(msg.getTimestamp())
         msg_transformed.setSequenceNum(msg.getSequenceNum())
         msg_transformed.setTransformation(msg.getTransformation())
+
+        self._logger.debug("Detection message created")
+
         self.out.send(msg_transformed)
+
+        self._logger.debug("Message sent successfully")
 
     def _img_det_to_img_det_ext(
         self, img_dets: dai.ImgDetections

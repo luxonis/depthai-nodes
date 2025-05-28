@@ -117,6 +117,20 @@ class YOLOExtendedParser(BaseParser):
                 f"Invalid YOLO version {subtype}. Supported YOLO versions are {[e.value for e in YOLOSubtype][:-1]}."
             ) from err
 
+        self._logger.debug(
+            "YOLOExtendedParser initialized with conf_threshold=%.2f, n_classes=%d, label_names=%s, iou_threshold=%.2f, mask_conf=%.2f, n_keypoints=%d, anchors=%s, subtype='%s', keypoint_label_names=%s, keypoint_edges=%s",
+            self.conf_threshold,
+            self.n_classes,
+            self.label_names,
+            self.iou_threshold,
+            self.mask_conf,
+            self.n_keypoints,
+            self.anchors,
+            self.subtype,
+            self.keypoint_label_names,
+            self.keypoint_edges,
+        )
+
     def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
         """Sets the output layer names for the parser.
 
@@ -129,6 +143,7 @@ class YOLOExtendedParser(BaseParser):
             raise ValueError("Output layer names must be a list of strings.")
 
         self.output_layer_names = output_layer_names
+        self._logger.debug("Output layer names set to %s", self.output_layer_names)
 
     def setConfidenceThreshold(self, threshold: float) -> None:
         """Sets the confidence score threshold for detected faces.
@@ -140,6 +155,9 @@ class YOLOExtendedParser(BaseParser):
             raise ValueError("Confidence score threshold must be a float.")
 
         self.conf_threshold = threshold
+        self._logger.debug(
+            "Confidence score threshold set to %.2f", self.conf_threshold
+        )
 
     def setNumClasses(self, n_classes: int) -> None:
         """Sets the number of classes in the model.
@@ -153,6 +171,7 @@ class YOLOExtendedParser(BaseParser):
             raise ValueError("Number of classes must be greater than 0.")
 
         self.n_classes = n_classes
+        self._logger.debug("Number of classes set to %d", self.n_classes)
 
     def setIouThreshold(self, iou_threshold: float) -> None:
         """Sets the intersection over union threshold.
@@ -168,6 +187,9 @@ class YOLOExtendedParser(BaseParser):
             )
 
         self.iou_threshold = iou_threshold
+        self._logger.debug(
+            "Intersection over union threshold set to %.2f", self.iou_threshold
+        )
 
     def setMaskConfidence(self, mask_conf: float) -> None:
         """Sets the mask confidence threshold.
@@ -181,6 +203,7 @@ class YOLOExtendedParser(BaseParser):
             raise ValueError("Mask confidence threshold must be between 0 and 1.")
 
         self.mask_conf = mask_conf
+        self._logger.debug("Mask confidence threshold set to %.2f", self.mask_conf)
 
     def setNumKeypoints(self, n_keypoints: int) -> None:
         """Sets the number of keypoints in the model.
@@ -194,6 +217,7 @@ class YOLOExtendedParser(BaseParser):
             raise ValueError("Number of keypoints must be greater than 0.")
 
         self.n_keypoints = n_keypoints
+        self._logger.debug("Number of keypoints set to %d", self.n_keypoints)
 
     def setAnchors(self, anchors: List[List[List[float]]]) -> None:
         """Sets the anchors for the YOLO model.
@@ -210,6 +234,7 @@ class YOLOExtendedParser(BaseParser):
                 raise ValueError("Anchors must be a list of lists of floats.")
 
         self.anchors = anchors
+        self._logger.debug("Anchors set to %s", self.anchors)
 
     def setSubtype(self, subtype: str) -> None:
         """Sets the subtype of the YOLO model.
@@ -227,6 +252,8 @@ class YOLOExtendedParser(BaseParser):
                 f"Invalid YOLO subtype {subtype}. Supported YOLO subtypes are {[e.value for e in YOLOSubtype][:-1]}."
             ) from err
 
+        self._logger.debug("Subtype set to %s", self.subtype)
+
     def setLabelNames(self, label_names: List[str]) -> None:
         """Sets the names of the classes.
 
@@ -239,6 +266,7 @@ class YOLOExtendedParser(BaseParser):
             raise ValueError("Label names must be a list of strings.")
 
         self.label_names = label_names
+        self._logger.debug("Label names set to %s", self.label_names)
 
     def setKeypointLabelNames(self, keypoint_label_names: List[str]) -> None:
         """Sets the label names for the keypoints.
@@ -252,6 +280,7 @@ class YOLOExtendedParser(BaseParser):
             raise ValueError("Keypoint labels must be a list of strings.")
 
         self.keypoint_label_names = keypoint_label_names
+        self._logger.debug("Keypoint label names set to %s", self.keypoint_label_names)
 
     def setKeypointEdges(self, keypoint_edges: List[Tuple[int, int]]) -> None:
         """Sets the edges for the keypoints.
@@ -272,6 +301,7 @@ class YOLOExtendedParser(BaseParser):
             raise ValueError("Keypoint edges must be a list of tuples of integers.")
 
         self.keypoint_edges = keypoint_edges
+        self._logger.debug("Keypoint edges set to %s", self.keypoint_edges)
 
     def build(
         self,
@@ -324,9 +354,24 @@ class YOLOExtendedParser(BaseParser):
                 f"Invalid YOLO subtype {subtype}. Supported YOLO subtypes are {[e.value for e in YOLOSubtype][:-1]}."
             ) from err
 
+        self._logger.debug(
+            "YOLOExtendedParser built with conf_threshold=%.2f, n_classes=%d, label_names=%s, iou_threshold=%.2f, mask_conf=%.2f, n_keypoints=%d, anchors=%s, subtype='%s', keypoint_label_names=%s, keypoint_edges=%s",
+            self.conf_threshold,
+            self.n_classes,
+            self.label_names,
+            self.iou_threshold,
+            self.mask_conf,
+            self.n_keypoints,
+            self.anchors,
+            self.subtype,
+            self.keypoint_label_names,
+            self.keypoint_edges,
+        )
+
         return self
 
     def run(self):
+        self._logger.debug("YOLOExtendedParser run started")
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
@@ -334,6 +379,7 @@ class YOLOExtendedParser(BaseParser):
                 break  # Pipeline was stopped, no more data
             # Get all the layer names
             layer_names = self.output_layer_names or output.getAllLayerNames()
+            self._logger.debug("Processing input with layers: %s", layer_names)
 
             outputs_names = sorted(
                 [name for name in layer_names if "_yolo" in name or "yolo-" in name]
@@ -502,4 +548,10 @@ class YOLOExtendedParser(BaseParser):
             detections_message.setTransformation(output.getTransformation())
             detections_message.setSequenceNum(output.getSequenceNum())
 
+            self._logger.debug(
+                "Created detection message with %d detections", len(bboxes)
+            )
+
             self.out.send(detections_message)
+
+            self._logger.debug("Detection message sent successfully")

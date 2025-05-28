@@ -69,6 +69,14 @@ class MPPalmDetectionParser(DetectionParser):
         self.max_det = max_det
         self.scale = scale
         self.label_names = ["Palm"]
+        self._logger.debug(
+            "MPPalmDetectionParser initialized with output_layer_names=%s, conf_threshold=%.2f, iou_threshold=%.2f, max_det=%d, scale=%d",
+            output_layer_names,
+            conf_threshold,
+            iou_threshold,
+            max_det,
+            scale,
+        )
 
     def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
         """Sets the output layer name(s) for the parser.
@@ -86,6 +94,7 @@ class MPPalmDetectionParser(DetectionParser):
                 f"Only two output layers are supported for MPPalmDetectionParser, got {len(output_layer_names)} layers."
             )
         self.output_layer_names = output_layer_names
+        self._logger.debug("Output layer names set to %s", self.output_layer_names)
 
     def setScale(self, scale: int) -> None:
         """Sets the scale of the input image.
@@ -96,6 +105,7 @@ class MPPalmDetectionParser(DetectionParser):
         if not isinstance(scale, int):
             raise ValueError("Scale must be an integer.")
         self.scale = scale
+        self._logger.debug("Scale set to %d", self.scale)
 
     def build(
         self,
@@ -118,9 +128,16 @@ class MPPalmDetectionParser(DetectionParser):
         self.output_layer_names = output_layers
         self.scale = head_config.get("scale", self.scale)
 
+        self._logger.debug(
+            "MPPalmDetectionParser built with output_layer_names=%s, scale=%d",
+            self.output_layer_names,
+            self.scale,
+        )
+
         return self
 
     def run(self):
+        self._logger.debug("MPPalmDetectionParser run started")
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
@@ -128,6 +145,8 @@ class MPPalmDetectionParser(DetectionParser):
                 break  # Pipeline was stopped
 
             all_tensors = output.getAllLayerNames()
+
+            self._logger.debug("Processing input with layers: %s", all_tensors)
 
             bboxes = None
             scores = None
@@ -208,4 +227,10 @@ class MPPalmDetectionParser(DetectionParser):
             detections_msg.setTransformation(output.getTransformation())
             detections_msg.setSequenceNum(output.getSequenceNum())
 
+            self._logger.debug(
+                "Created detection message with %d detections", len(bboxes)
+            )
+
             self.out.send(detections_msg)
+
+            self._logger.debug("Detection message sent successfully")

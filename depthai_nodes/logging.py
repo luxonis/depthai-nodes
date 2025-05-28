@@ -39,7 +39,9 @@ def setup_logging(level: Optional[str] = None, file: Optional[str] = None):
     if not used_level:
         used_level = LogLevel.WARN
 
-    format = file_format = "%(asctime)s [depthai-nodes] [%(levelname)s] %(message)s"
+    format = (
+        file_format
+    ) = "%(asctime)s [depthai-nodes] [%(levelname)s] [%(name)s] %(message)s"
     datefmt = "[%Y-%m-%d %H:%M:%S]"
 
     console_handler = logging.StreamHandler()
