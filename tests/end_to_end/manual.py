@@ -3,6 +3,7 @@ import argparse
 import depthai as dai
 from utils import get_input_shape, get_num_inputs
 
+from depthai_nodes.logging import get_logger
 from depthai_nodes.node import ParsingNeuralNetwork
 
 parser = argparse.ArgumentParser()
@@ -12,6 +13,8 @@ parser.add_argument(
 parser.add_argument("-m", "--model", type=str, default=None, help="Model from HubAI.")
 parser.add_argument("-ip", type=str, default="", help="IP of the device")
 args = parser.parse_args()
+
+logger = get_logger(__name__)
 
 if args.model:
     if "xfeat" in args.model:
@@ -31,7 +34,7 @@ except Exception as e:
 
 with dai.Pipeline(device) as pipeline:
     camera_node = pipeline.create(dai.node.Camera).build()
-    print("(2) Camera node created.")
+    logger.debug("(2) Camera node created.")
     if args.model:
         model_desc = dai.NNModelDescription(
             model=args.model,
