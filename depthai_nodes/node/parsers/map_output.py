@@ -120,7 +120,7 @@ class MapOutputParser(BaseParser):
             map_message.setTransformation(output.getTransformation())
             map_message.setSequenceNum(output.getSequenceNum())
 
-            self._logger.debug(f"Created map message with shape {map_message.shape}")
+            self._logger.debug("Created Map message.")
 
             self.out.send(map_message)
 
