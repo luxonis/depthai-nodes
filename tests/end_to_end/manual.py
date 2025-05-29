@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 
 if args.model:
     if "xfeat" in args.model:
-        print("XFeat model is not supported in this test.")
+        logger.warning("XFeat model is not supported in this test.")
         exit(8)
 
 if not (args.nn_archive or args.model):
@@ -26,10 +26,10 @@ if not (args.nn_archive or args.model):
 
 try:
     device = dai.Device(dai.DeviceInfo(args.ip))
-    print(f"(1) Connected to device with IP/mxid: {args.ip}")
+    logger.debug(f"(1) Connected to device with IP/mxid: {args.ip}")
 except Exception as e:
-    print(e)
-    print("Can't connect to the device with IP/mxid: %s", args.ip)
+    logger.warning(e)
+    logger.warning("Can't connect to the device with IP/mxid: %s", args.ip)
     exit(6)
 
 with dai.Pipeline(device) as pipeline:
@@ -42,20 +42,20 @@ with dai.Pipeline(device) as pipeline:
         )
         try:
             nn_archive_path = dai.getModelFromZoo(model_desc, useCached=False)
-            print("(3) NN archive downloaded.")
+            logger.debug("(3) NN archive downloaded.")
         except Exception as e:
-            print(e)
-            print(
+            logger.warning(e)
+            logger.warning(
                 f"Couldn't find model {args.model} for {device.getPlatform().name} in the ZOO"
             )
             device.close()
             exit(7)
         try:
             nn_archive = dai.NNArchive(nn_archive_path)
-            print("(4) NN archive loaded.")
+            logger.debug("(4) NN archive loaded.")
         except Exception as e:
-            print(e)
-            print(f"Couldn't load the model {args.model} from NN archive.")
+            logger.debug(e)
+            logger.warning(f"Couldn't load the model {args.model} from NN archive.")
             device.close()
             exit(9)
 
@@ -65,12 +65,12 @@ with dai.Pipeline(device) as pipeline:
     model_platforms = [platform.name for platform in nn_archive.getSupportedPlatforms()]
 
     if device.getPlatform().name not in model_platforms:
-        print(f"Model not supported on {device.getPlatform().name}.")
+        logger.warning(f"Model not supported on {device.getPlatform().name}.")
         device.close()
         exit(5)
 
     if get_num_inputs(nn_archive) > 1:
-        print(
+        logger.warning(
             "This model has more than one input. Currently, only models with one input are supported."
         )
         device.close()
@@ -79,7 +79,7 @@ with dai.Pipeline(device) as pipeline:
     try:
         input_size = get_input_shape(nn_archive)
     except Exception as e:
-        print(e)
+        logger.warning(e)
         device.close()
         exit(8)
 
@@ -105,12 +105,12 @@ with dai.Pipeline(device) as pipeline:
             manip.inputImage
         )
         nn_w_parser = pipeline.create(ParsingNeuralNetwork).build(manip.out, nn_archive)
-        print("(5) ImageManip node and ParsingNeuralNetwork node created.")
+        logger.debug("(5) ImageManip node and ParsingNeuralNetwork node created.")
     else:
         nn_w_parser = pipeline.create(ParsingNeuralNetwork).build(
             camera_node, nn_archive, fps=20.0
         )
-        print("(5) ParsingNeuralNetwork node created.")
+        logger.debug("(5) ParsingNeuralNetwork node created.")
 
     head_indices = nn_w_parser._parsers.keys()
 
@@ -118,16 +118,16 @@ with dai.Pipeline(device) as pipeline:
         i: nn_w_parser.getOutput(i).createOutputQueue() for i in head_indices
     }
 
-    print("(6) Parser output queues created.")
+    logger.debug("(6) Parser output queues created.")
 
     pipeline.start()
-    print("(7) Pipeline started.")
+    logger.debug("(7) Pipeline started.")
 
     while pipeline.isRunning():
-        print("(8) Pipeline is running.")
+        logger.debug("(8) Pipeline is running.")
         for head_id in parser_output_queues:
             parser_output = parser_output_queues[head_id].get()
-            print(f"{head_id} - {type(parser_output)}")
+            logger.debug(f"Parser output {head_id} - {type(parser_output)}")
         pipeline.stop()
 
 device.close()

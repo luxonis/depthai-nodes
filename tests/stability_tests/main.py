@@ -6,6 +6,10 @@ import pytest
 from config import parsers_slugs
 from utils import download_test_files
 
+from depthai_nodes.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 def main():
     arg_parser = argparse.ArgumentParser()
@@ -36,17 +40,17 @@ def main():
     duration = args.duration
 
     if os.path.exists("nn_datas"):
-        print()
-        print("Folder `nn_datas` with test files already exists. Skipping download.")
-        print()
+        logger.info(
+            "Folder `nn_datas` with test files already exists. Skipping download."
+        )
     else:
         download_test_files()
 
     if download:
         download_test_files()
 
-    print(f"Run all tests: {run_all}")
-    print(f"Duration of each test: {duration} seconds")
+    logger.info(f"Run all tests: {run_all}")
+    logger.info(f"Duration of each test: {duration} seconds")
 
     if run_all and models:
         raise ValueError("You can't pass both -all and --model")
@@ -60,7 +64,7 @@ def main():
         if not models:
             raise ValueError(f"No models found for parser {parser}")
         else:
-            print(f"Found models for parser {parser}: {models}")
+            logger.info(f"Found models for parser {parser}: {models}")
 
     if not models:
         raise ValueError("No models provided")
@@ -105,7 +109,7 @@ def main():
         except subprocess.CalledProcessError as e:
             raise RuntimeError("Pipeline crashed.") from e
 
-    print("All tests passed.")
+    logger.info("All tests passed.")
 
 
 if __name__ == "__main__":
