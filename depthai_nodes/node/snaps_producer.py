@@ -176,7 +176,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
                 deviceSerialNo=device_serial_num,
             )
             if out:
-                self._logger.debug(f"Snap `{name}` sent")
+                self._logger.info(f"Snap `{name}` sent")
                 self.last_update = now
             return out
         return False
