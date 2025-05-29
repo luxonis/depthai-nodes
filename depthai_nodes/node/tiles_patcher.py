@@ -74,9 +74,7 @@ class TilesPatcher(BaseHostNode):
         self.sendProcessingToPipeline(True)
         self.link_args(nn)
         self._logger.debug(
-            "TilesPatcher built with conf_thresh=%f, iou_thresh=%f",
-            conf_thresh,
-            iou_thresh,
+            f"TilesPatcher built with conf_thresh={conf_thresh}, iou_thresh={iou_thresh}"
         )
         return self
 

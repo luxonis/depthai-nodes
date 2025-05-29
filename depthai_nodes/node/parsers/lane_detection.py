@@ -67,12 +67,7 @@ class LaneDetectionParser(BaseParser):
         self.cls_num_per_lane = cls_num_per_lane
         self.input_size = input_size
         self._logger.debug(
-            "LaneDetectionParser initialized with output_layer_name='%s', row_anchors=%s, griding_num=%d, cls_num_per_lane=%d, input_size=%s",
-            output_layer_name,
-            row_anchors,
-            griding_num,
-            cls_num_per_lane,
-            input_size,
+            f"LaneDetectionParser initialized with output_layer_name='{output_layer_name}', row_anchors={row_anchors}, griding_num={griding_num}, cls_num_per_lane={cls_num_per_lane}, input_size={input_size}"
         )
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
@@ -84,7 +79,7 @@ class LaneDetectionParser(BaseParser):
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
         self.output_layer_name = output_layer_name
-        self._logger.debug("Output layer name set to '%s'", self.output_layer_name)
+        self._logger.debug(f"Output layer name set to '{self.output_layer_name}'")
 
     def setRowAnchors(self, row_anchors: List[int]) -> None:
         """Set the row anchors for the lane detection model.
@@ -97,7 +92,7 @@ class LaneDetectionParser(BaseParser):
         if not all(isinstance(anchor, int) for anchor in row_anchors):
             raise ValueError("Row anchors must be a list of integers.")
         self.row_anchors = row_anchors
-        self._logger.debug("Row anchors set to %s", self.row_anchors)
+        self._logger.debug(f"Row anchors set to {self.row_anchors}")
 
     def setGridingNum(self, griding_num: int) -> None:
         """Set the griding number for the lane detection model.
@@ -108,7 +103,7 @@ class LaneDetectionParser(BaseParser):
         if not isinstance(griding_num, int):
             raise ValueError("Griding number must be an integer.")
         self.griding_num = griding_num
-        self._logger.debug("Griding number set to %d", self.griding_num)
+        self._logger.debug(f"Griding number set to {self.griding_num}")
 
     def setClsNumPerLane(self, cls_num_per_lane: int) -> None:
         """Set the number of points per lane for the lane detection model.
@@ -119,7 +114,7 @@ class LaneDetectionParser(BaseParser):
         if not isinstance(cls_num_per_lane, int):
             raise ValueError("Number of points per lane must be an integer.")
         self.cls_num_per_lane = cls_num_per_lane
-        self._logger.debug("Number of points per lane set to %d", self.cls_num_per_lane)
+        self._logger.debug(f"Number of points per lane set to {self.cls_num_per_lane}")
 
     def setInputSize(self, input_size: Tuple[int, int]) -> None:
         """Set the input size for the lane detection model.
@@ -134,7 +129,7 @@ class LaneDetectionParser(BaseParser):
         if not all(isinstance(size, int) for size in input_size):
             raise ValueError("Input size must be a tuple of integers.")
         self.input_size = input_size
-        self._logger.debug("Input size set to %s", self.input_size)
+        self._logger.debug(f"Input size set to {self.input_size}")
 
     def build(
         self,
@@ -177,12 +172,7 @@ class LaneDetectionParser(BaseParser):
             )
 
         self._logger.debug(
-            "LaneDetectionParser built with output_layer_name='%s', row_anchors=%s, griding_num=%d, cls_num_per_lane=%d, input_size=%s",
-            self.output_layer_name,
-            self.row_anchors,
-            self.griding_num,
-            self.cls_num_per_lane,
-            self.input_size,
+            f"LaneDetectionParser built with output_layer_name='{self.output_layer_name}', row_anchors={self.row_anchors}, griding_num={self.griding_num}, cls_num_per_lane={self.cls_num_per_lane}, input_size={self.input_size}"
         )
 
         return self
@@ -203,7 +193,7 @@ class LaneDetectionParser(BaseParser):
                 break  # Pipeline was stopped
 
             layers = output.getAllLayerNames()
-            self._logger.debug("Processing input with layers: %s", layers)
+            self._logger.debug(f"Processing input with layers: {layers}")
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":
@@ -231,7 +221,7 @@ class LaneDetectionParser(BaseParser):
             msg.setSequenceNum(output.getSequenceNum())
 
             self._logger.debug(
-                "Created lane detection message with %d points", len(points)
+                f"Created lane detection message with {len(points)} points"
             )
 
             self.out.send(msg)

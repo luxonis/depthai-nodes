@@ -40,10 +40,7 @@ class ApplyColormap(BaseHostNode):
         self.setInstanceToSemanticMask(instance_to_semantic_mask)
 
         self._logger.debug(
-            "ApplyColormap initialized with colormap_value=%d, max_value=%d, instance_to_semantic_mask=%s",
-            colormap_value,
-            max_value,
-            instance_to_semantic_mask,
+            f"ApplyColormap initialized with colormap_value={colormap_value}, max_value={max_value}, instance_to_semantic_mask={instance_to_semantic_mask}",
         )
 
     def setColormap(self, colormap_value: int) -> None:
@@ -57,7 +54,7 @@ class ApplyColormap(BaseHostNode):
         colormap = cv2.applyColorMap(np.arange(256, dtype=np.uint8), colormap_value)
         colormap[0] = [0, 0, 0]  # Set zero values to black
         self._colormap = colormap
-        self._logger.debug("Colormap set to %s", self._colormap)
+        self._logger.debug(f"Colormap set to {self._colormap}")
 
     def setMaxValue(self, max_value: int) -> None:
         """Sets the maximum frame value for normalization.
@@ -68,7 +65,7 @@ class ApplyColormap(BaseHostNode):
         if not isinstance(max_value, int):
             raise ValueError("max_value must be an integer.")
         self._max_value = max_value
-        self._logger.debug("Max value set to %d", self._max_value)
+        self._logger.debug(f"Max value set to {self._max_value}")
 
     def setInstanceToSemanticMask(self, instance_to_semantic_mask: bool) -> None:
         """Sets the instance to semantic mask flag.
@@ -81,7 +78,7 @@ class ApplyColormap(BaseHostNode):
             raise ValueError("instance_to_semantic_mask must be a boolean.")
         self._instance_to_semantic_mask = instance_to_semantic_mask
         self._logger.debug(
-            "Instance to semantic mask set to %s", self._instance_to_semantic_mask
+            f"Instance to semantic mask set to {self._instance_to_semantic_mask}"
         )
 
     def build(self, arr: dai.Node.Output) -> "ApplyColormap":

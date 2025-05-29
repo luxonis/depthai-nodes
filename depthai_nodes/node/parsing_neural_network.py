@@ -281,10 +281,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
             self._createSyncNode()
 
         self._logger.debug(
-            "ParsingNeuralNetwork built with fps=%s, type_of_nn_source=%s, parsers=%s",
-            fps,
-            type(nn_source).__name__,
-            len(self._parsers),
+            f"ParsingNeuralNetwork built with fps={fps}, type_of_nn_source={type(nn_source).__name__}, parsers={len(self._parsers)}"
         )
 
         return self
@@ -369,4 +366,4 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         outputs = [parser.out for parser in list(self._parsers.values())]
         for ix, output in enumerate(outputs):
             output.link(self._internal_sync.inputs[str(ix)])
-        self._logger.debug("Internal Sync node created with %d outputs", len(outputs))
+        self._logger.debug(f"Internal Sync node created with {len(outputs)} outputs")

@@ -39,7 +39,7 @@ class DepthMerger(BaseHostNode):
 
         self.shrinking_factor = shrinking_factor
         self._logger.debug(
-            "DepthMerger initialized with shrinking_factor=%f", shrinking_factor
+            f"DepthMerger initialized with shrinking_factor={shrinking_factor}"
         )
 
     def build(
@@ -54,7 +54,7 @@ class DepthMerger(BaseHostNode):
         self.shrinking_factor = shrinking_factor
         self.host_spatials_calc = HostSpatialsCalc(calib_data, depth_alignment_socket)
         self._logger.debug(
-            "DepthMerger built with shrinking_factor=%f", shrinking_factor
+            f"DepthMerger built with shrinking_factor={shrinking_factor}"
         )
         return self
 

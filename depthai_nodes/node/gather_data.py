@@ -110,14 +110,14 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         if wait_count_fn is None:
             wait_count_fn = self._default_wait_count_fn
         self.set_wait_count_fn(wait_count_fn)
-        self._logger.debug("GatherData built with camera_fps=%d", camera_fps)
+        self._logger.debug(f"GatherData built with camera_fps={camera_fps}")
         return self
 
     def set_camera_fps(self, fps: int) -> None:
         if fps <= 0:
             raise ValueError(f"Camera FPS must be positive, got {fps}")
         self._camera_fps = fps
-        self._logger.debug("Camera FPS set to %d", fps)
+        self._logger.debug(f"Camera FPS set to {fps}")
 
     def run(self) -> None:
         self._logger.debug("GatherData run started")

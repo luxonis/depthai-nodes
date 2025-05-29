@@ -59,7 +59,7 @@ class ImgDetectionsFilter(BaseHostNode):
             self._labels_to_reject = labels
 
         self._logger.debug(
-            "Labels set to %s", self._labels_to_keep if keep else self._labels_to_reject
+            f"Labels set to {self._labels_to_keep if keep else self._labels_to_reject}"
         )
 
     def setConfidenceThreshold(self, confidence_threshold: float) -> None:
@@ -74,7 +74,7 @@ class ImgDetectionsFilter(BaseHostNode):
         ):
             raise ValueError("confidence_threshold must be a float.")
         self._confidence_threshold = confidence_threshold
-        self._logger.debug("Confidence threshold set to %f", self._confidence_threshold)
+        self._logger.debug(f"Confidence threshold set to {self._confidence_threshold}")
 
     def setMaxDetections(self, max_detections: int) -> None:
         """Sets the maximum number of detections.
@@ -85,7 +85,7 @@ class ImgDetectionsFilter(BaseHostNode):
         if not isinstance(max_detections, int) and max_detections is not None:
             raise ValueError("max_detections must be an integer.")
         self._max_detections = max_detections
-        self._logger.debug("Max detections set to %d", self._max_detections)
+        self._logger.debug(f"Max detections set to {self._max_detections}")
 
     def setSortByConfidence(self, sort_by_confidence: bool) -> None:
         """Sets whether to sort the detections by confidence before subsetting.
@@ -96,7 +96,7 @@ class ImgDetectionsFilter(BaseHostNode):
         if not isinstance(sort_by_confidence, bool):
             raise ValueError("sort_by_confidence must be a boolean.")
         self._sort_by_confidence = sort_by_confidence
-        self._logger.debug("Sort by confidence set to %s", self._sort_by_confidence)
+        self._logger.debug(f"Sort by confidence set to {self._sort_by_confidence}")
 
     def build(
         self,
@@ -129,12 +129,7 @@ class ImgDetectionsFilter(BaseHostNode):
         self.setSortByConfidence(sort_by_confidence)
 
         self._logger.debug(
-            "ImgDetectionsFilter built with labels_to_keep=%s, labels_to_reject=%s, confidence_threshold=%f, max_detections=%d, sort_by_confidence=%s",
-            labels_to_keep,
-            labels_to_reject,
-            confidence_threshold,
-            max_detections,
-            sort_by_confidence,
+            f"ImgDetectionsFilter built with labels_to_keep={labels_to_keep}, labels_to_reject={labels_to_reject}, confidence_threshold={confidence_threshold}, max_detections={max_detections}, sort_by_confidence={sort_by_confidence}"
         )
 
         return self

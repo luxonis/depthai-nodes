@@ -24,7 +24,7 @@ class ImgFrameOverlay(BaseHostNode):
     def __init__(self, alpha: float = 0.5) -> None:
         super().__init__()
         self.setAlpha(alpha)
-        self._logger.debug("ImgFrameOverlay initialized with alpha=%f", alpha)
+        self._logger.debug(f"ImgFrameOverlay initialized with alpha={alpha}")
 
     def setAlpha(self, alpha: float) -> None:
         """Sets the alpha.
@@ -37,7 +37,7 @@ class ImgFrameOverlay(BaseHostNode):
         if not 0.0 <= alpha <= 1.0:
             raise ValueError("Alpha must be between 0.0 and 1.0")
         self._alpha = alpha
-        self._logger.debug("Alpha set to %f", self._alpha)
+        self._logger.debug(f"Alpha set to {self._alpha}")
 
     def build(
         self, frame1: dai.Node.Output, frame2: dai.Node.Output, alpha: float = None
@@ -58,7 +58,7 @@ class ImgFrameOverlay(BaseHostNode):
         if alpha is not None:
             self.setAlpha(alpha)
 
-        self._logger.debug("ImgFrameOverlay built with alpha=%f", alpha)
+        self._logger.debug(f"ImgFrameOverlay built with alpha={alpha}")
 
         return self
 

@@ -153,10 +153,10 @@ def test_processing_frame_only(
         frame = create_img_frame(FRAME)
         q_snaps.send(frame)
 
-        with caplog.at_level("INFO"):
+        with caplog.at_level("DEBUG"):
             snaps_producer_frame_only.process(q_snaps.get())
 
-        snaps_producer_frame_only._logger.info.assert_called_with("Snap `frame` sent")
+        snaps_producer_frame_only._logger.debug.assert_called_with("Snap `frame` sent")
 
 
 def test_processing_frame_only_custom_process_fn(
@@ -183,10 +183,10 @@ def test_processing_frame_only_custom_process_fn(
         frame = create_img_frame(FRAME)
         q_snaps.send(frame)
 
-        with caplog.at_level("INFO"):
+        with caplog.at_level("DEBUG"):
             snaps_producer_frame_only.process(q_snaps.get())
 
-        snaps_producer_frame_only._logger.info.assert_called_with("Snap `test` sent")
+        snaps_producer_frame_only._logger.debug.assert_called_with("Snap `test` sent")
 
 
 def test_processing(
@@ -214,10 +214,10 @@ def test_processing(
         detection = create_img_detection()
         q_snaps_msg.send(detection)
 
-        with caplog.at_level("INFO"):
+        with caplog.at_level("DEBUG"):
             snaps_producer.process(q_snaps_frame.get(), q_snaps_msg.get())
 
-        snaps_producer._logger.info.assert_called_with("Snap `frame` sent")
+        snaps_producer._logger.debug.assert_called_with("Snap `frame` sent")
 
 
 def test_processing_custom_process_fn(
@@ -248,10 +248,10 @@ def test_processing_custom_process_fn(
         detection = create_img_detection()
         q_snaps_msg.send(detection)
 
-        with caplog.at_level("INFO"):
+        with caplog.at_level("DEBUG"):
             snaps_producer.process(q_snaps_frame.get(), q_snaps_msg.get())
 
-        snaps_producer._logger.info.assert_called_with("Snap `test` sent")
+        snaps_producer._logger.debug.assert_called_with("Snap `test` sent")
 
 
 def test_partial_process_fn(
@@ -283,9 +283,9 @@ def test_partial_process_fn(
         frame = create_img_frame(FRAME)
         q_snaps.send(frame)
 
-        with caplog.at_level("INFO"):
+        with caplog.at_level("DEBUG"):
             snaps_producer_frame_only.process(q_snaps.get())
 
-        snaps_producer_frame_only._logger.info.assert_called_with(
+        snaps_producer_frame_only._logger.debug.assert_called_with(
             "Snap `threshold_snap` sent"
         )

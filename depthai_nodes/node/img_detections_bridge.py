@@ -37,7 +37,7 @@ class ImgDetectionsBridge(BaseHostNode):
         if not isinstance(ignore_angle, bool):
             raise ValueError("ignore_angle must be a boolean.")
         self._ignore_angle = ignore_angle
-        self._logger.debug("Ignore angle set to %s", self._ignore_angle)
+        self._logger.debug(f"Ignore angle set to {self._ignore_angle}")
 
     def setLabelEncoding(self, label_encoding: Dict[int, str]) -> None:
         """Sets the label encoding.
@@ -49,7 +49,7 @@ class ImgDetectionsBridge(BaseHostNode):
         if not isinstance(label_encoding, Dict):
             raise ValueError("label_encoding must be a dictionary.")
         self._label_encoding = label_encoding
-        self._logger.debug("Label encoding set to %s", self._label_encoding)
+        self._logger.debug(f"Label encoding set to {self._label_encoding}")
 
     def build(
         self,
@@ -74,9 +74,7 @@ class ImgDetectionsBridge(BaseHostNode):
         if label_encoding is not None:
             self.setLabelEncoding(label_encoding)
         self._logger.debug(
-            "ImgDetectionsBridge built with ignore_angle=%s, label_encoding=%s",
-            ignore_angle,
-            label_encoding,
+            f"ImgDetectionsBridge built with ignore_angle={ignore_angle}, label_encoding={label_encoding}"
         )
         return self
 

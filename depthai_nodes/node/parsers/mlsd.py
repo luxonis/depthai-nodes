@@ -58,12 +58,7 @@ class MLSDParser(BaseParser):
         self.score_thr = score_thr
         self.dist_thr = dist_thr
         self._logger.debug(
-            "MLSDParser initialized with output_layer_tpmap='%s', output_layer_heat='%s', topk_n=%d, score_thr=%.2f, dist_thr=%.2f",
-            output_layer_tpmap,
-            output_layer_heat,
-            topk_n,
-            score_thr,
-            dist_thr,
+            f"MLSDParser initialized with output_layer_tpmap='{output_layer_tpmap}', output_layer_heat='{output_layer_heat}', topk_n={topk_n}, score_thr={score_thr}, dist_thr={dist_thr}"
         )
 
     def setOutputLayerTPMap(self, output_layer_tpmap: str) -> None:
@@ -75,7 +70,7 @@ class MLSDParser(BaseParser):
         if not isinstance(output_layer_tpmap, str):
             raise ValueError("Output layer name must be a string.")
         self.output_layer_tpmap = output_layer_tpmap
-        self._logger.debug("Output layer tpmap set to '%s'", self.output_layer_tpmap)
+        self._logger.debug(f"Output layer tpmap set to '{self.output_layer_tpmap}'")
 
     def setOutputLayerHeat(self, output_layer_heat: str) -> None:
         """Sets the name of the output layer containing the heat tensor.
@@ -86,7 +81,7 @@ class MLSDParser(BaseParser):
         if not isinstance(output_layer_heat, str):
             raise ValueError("Output layer name must be a string.")
         self.output_layer_heat = output_layer_heat
-        self._logger.debug("Output layer heat set to '%s'", self.output_layer_heat)
+        self._logger.debug(f"Output layer heat set to '{self.output_layer_heat}'")
 
     def setTopK(self, topk_n: int) -> None:
         """Sets the number of top candidates to keep.
@@ -97,7 +92,7 @@ class MLSDParser(BaseParser):
         if not isinstance(topk_n, int):
             raise ValueError("topk_n must be an integer.")
         self.topk_n = topk_n
-        self._logger.debug("Topk_n set to %d", self.topk_n)
+        self._logger.debug(f"Topk_n set to {self.topk_n}")
 
     def setScoreThreshold(self, score_thr: float) -> None:
         """Sets the confidence score threshold for detected lines.
@@ -108,7 +103,7 @@ class MLSDParser(BaseParser):
         if not isinstance(score_thr, float):
             raise ValueError("score_thr must be a float.")
         self.score_thr = score_thr
-        self._logger.debug("Score threshold set to %.2f", self.score_thr)
+        self._logger.debug(f"Score threshold set to {self.score_thr}")
 
     def setDistanceThreshold(self, dist_thr: float) -> None:
         """Sets the distance threshold for merging lines.
@@ -119,7 +114,7 @@ class MLSDParser(BaseParser):
         if not isinstance(dist_thr, float):
             raise ValueError("dist_thr must be a float.")
         self.dist_thr = dist_thr
-        self._logger.debug("Distance threshold set to %.2f", self.dist_thr)
+        self._logger.debug(f"Distance threshold set to {self.dist_thr}")
 
     def build(
         self,
@@ -148,12 +143,7 @@ class MLSDParser(BaseParser):
         self.dist_thr = head_config.get("dist_thr", self.dist_thr)
 
         self._logger.debug(
-            "MLSDParser built with output_layer_tpmap='%s', output_layer_heat='%s', topk_n=%d, score_thr=%.2f, dist_thr=%.2f",
-            self.output_layer_tpmap,
-            self.output_layer_heat,
-            self.topk_n,
-            self.score_thr,
-            self.dist_thr,
+            f"MLSDParser built with output_layer_tpmap='{self.output_layer_tpmap}', output_layer_heat='{self.output_layer_heat}', topk_n={self.topk_n}, score_thr={self.score_thr}, dist_thr={self.dist_thr}"
         )
 
         return self
@@ -176,7 +166,7 @@ class MLSDParser(BaseParser):
                 break  # Pipeline was stopped
 
             self._logger.debug(
-                "Processing input with layers: %s", output.getAllLayerNames()
+                f"Processing input with layers: {output.getAllLayerNames()}"
             )
             tpMap = output.getTensor(
                 self.output_layer_tpmap,
@@ -201,7 +191,7 @@ class MLSDParser(BaseParser):
             message.setSequenceNum(output.getSequenceNum())
 
             self._logger.debug(
-                "Created line detection message with %d lines", len(lines)
+                f"Created line detection message with {len(lines)} lines"
             )
 
             self.out.send(message)

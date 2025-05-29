@@ -88,12 +88,7 @@ class Tiling(BaseHostNode):
         self._compute_tile_positions()
 
         self._logger.debug(
-            "Tiling built with overlap=%f, grid_size=%s, img_shape=%s, nn_shape=%s, global_detection=%s",
-            overlap,
-            grid_size,
-            img_shape,
-            nn_shape,
-            global_detection,
+            f"Tiling built with overlap={overlap}, grid_size={grid_size}, img_shape={img_shape}, nn_shape={nn_shape}, global_detection={global_detection}"
         )
 
         return self
@@ -120,9 +115,9 @@ class Tiling(BaseHostNode):
             tile_img_frame = self._create_img_frame(
                 tile, img_frame, index, scaled_width, scaled_height
             )
-            self._logger.debug("ImgFrame message %d created", index)
+            self._logger.debug(f"ImgFrame message {index} created")
             self.out.send(tile_img_frame)
-            self._logger.debug("Message %d sent successfully", index)
+            self._logger.debug(f"Message {index} sent successfully")
 
     def _crop_to_nn_shape(
         self, frame: np.ndarray, scaled_width, scaled_height

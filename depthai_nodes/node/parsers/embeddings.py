@@ -25,8 +25,7 @@ class EmbeddingsParser(BaseParser):
         super().__init__()
         self.output_layer_name: str = None
         self._logger.debug(
-            "EmbeddingsParser initialized with output_layer_name=%s",
-            self.output_layer_name,
+            f"EmbeddingsParser initialized with output_layer_name={self.output_layer_name}"
         )
 
     def setOutputLayerNames(self, output_layer_name: str) -> None:
@@ -39,7 +38,7 @@ class EmbeddingsParser(BaseParser):
             raise ValueError("Output layer name must be a string.")
 
         self.output_layer_name = output_layer_name
-        self._logger.debug("Output layer name set to %s", self.output_layer_name)
+        self._logger.debug(f"Output layer name set to {self.output_layer_name}")
 
     def build(self, head_config: Dict[str, Any]) -> "EmbeddingsParser":
         """Sets the head configuration for the parser.
@@ -56,7 +55,7 @@ class EmbeddingsParser(BaseParser):
         ), "Embeddings head should have only one output layer"
 
         self._logger.debug(
-            "EmbeddingsParser built with output_layer_name=%s", self.output_layer_name
+            f"EmbeddingsParser built with output_layer_name={self.output_layer_name}"
         )
 
         return self
@@ -71,7 +70,7 @@ class EmbeddingsParser(BaseParser):
 
             # Get all the layer names
             output_names = self.output_layer_name or output.getAllLayerNames()
-            self._logger.debug("Processing input with layers: %s", output_names)
+            self._logger.debug(f"Processing input with layers: {output_names}")
 
             assert (
                 len(output_names) == 1

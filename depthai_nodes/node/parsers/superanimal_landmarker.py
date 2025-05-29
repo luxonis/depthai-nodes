@@ -68,13 +68,7 @@ class SuperAnimalParser(KeypointParser):
             edges=edges,
         )
         self._logger.debug(
-            "SuperAnimalParser initialized with output_layer_name='%s', scale_factor=%.2f, n_keypoints=%d, score_threshold=%.2f, label_names=%s, edges=%s",
-            output_layer_name,
-            scale_factor,
-            n_keypoints,
-            score_threshold,
-            label_names,
-            edges,
+            f"SuperAnimalParser initialized with output_layer_name='{output_layer_name}', scale_factor={scale_factor}, n_keypoints={n_keypoints}, score_threshold={score_threshold}, label_names={label_names}, edges={edges}"
         )
 
     def build(
@@ -104,7 +98,7 @@ class SuperAnimalParser(KeypointParser):
                 break  # Pipeline was stopped
 
             layers = output.getAllLayerNames()
-            self._logger.debug("Processing input with layers: %s", layers)
+            self._logger.debug(f"Processing input with layers: {layers}")
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":
@@ -136,7 +130,7 @@ class SuperAnimalParser(KeypointParser):
             msg.setSequenceNum(output.getSequenceNum())
 
             self._logger.debug(
-                "Created keypoints message with %d points", len(keypoints)
+                f"Created keypoints message with {len(keypoints)} points"
             )
 
             self.out.send(msg)

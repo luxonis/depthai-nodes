@@ -46,9 +46,7 @@ class SegmentationParser(BaseParser):
         self.output_layer_name = output_layer_name
         self.classes_in_one_layer = classes_in_one_layer
         self._logger.debug(
-            "SegmentationParser initialized with output_layer_name='%s', classes_in_one_layer=%s",
-            output_layer_name,
-            classes_in_one_layer,
+            f"SegmentationParser initialized with output_layer_name='{output_layer_name}', classes_in_one_layer={classes_in_one_layer}"
         )
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
@@ -60,7 +58,7 @@ class SegmentationParser(BaseParser):
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
         self.output_layer_name = output_layer_name
-        self._logger.debug("Output layer name set to '%s'", self.output_layer_name)
+        self._logger.debug(f"Output layer name set to '{self.output_layer_name}'")
 
     def setClassesInOneLayer(self, classes_in_one_layer: bool) -> None:
         """Sets the flag indicating whether all classes are in one layer.
@@ -71,7 +69,7 @@ class SegmentationParser(BaseParser):
         if not isinstance(classes_in_one_layer, bool):
             raise ValueError("classes_in_one_layer must be a boolean.")
         self.classes_in_one_layer = classes_in_one_layer
-        self._logger.debug("Classes in one layer set to %s", self.classes_in_one_layer)
+        self._logger.debug(f"Classes in one layer set to {self.classes_in_one_layer}")
 
     def build(
         self,
@@ -96,9 +94,7 @@ class SegmentationParser(BaseParser):
         )
 
         self._logger.debug(
-            "SegmentationParser built with output_layer_name='%s', classes_in_one_layer=%s",
-            self.output_layer_name,
-            self.classes_in_one_layer,
+            f"SegmentationParser built with output_layer_name='{self.output_layer_name}', classes_in_one_layer={self.classes_in_one_layer}"
         )
 
         return self
@@ -112,7 +108,7 @@ class SegmentationParser(BaseParser):
                 break  # Pipeline was stopped
 
             layers = output.getAllLayerNames()
-            self._logger.debug("Processing input with layers: %s", layers)
+            self._logger.debug(f"Processing input with layers: {layers}")
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":
@@ -172,7 +168,7 @@ class SegmentationParser(BaseParser):
             mask_message.setSequenceNum(output.getSequenceNum())
 
             self._logger.debug(
-                "Created segmentation message with %d classes", class_map.shape[0]
+                f"Created segmentation message with {class_map.shape[0]} classes"
             )
 
             self.out.send(mask_message)

@@ -45,7 +45,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
             self.setProcessFn(process_fn)
 
         self._logger.debug(
-            "SnapsProducerFrameOnly initialized with time_interval=%f", time_interval
+            f"SnapsProducerFrameOnly initialized with time_interval={time_interval}"
         )
 
     def setToken(self, token: str):
@@ -57,7 +57,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
         if not isinstance(token, str):
             raise ValueError("token must of of type string.")
         self._em.setToken(token)
-        self._logger.debug("Token set to %s", token)
+        self._logger.debug(f"Token set to {token}")
 
     def setUrl(self, url: str):
         """Set the URL of the events service. By default, the URL is set to https://events-ingest.cloud.luxonis.com.
@@ -68,7 +68,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
         if not isinstance(url, str):
             raise ValueError("url must of of type string.")
         self._em.setUrl(url)
-        self._logger.debug("Url set to %s", url)
+        self._logger.debug(f"Url set to {url}")
 
     def setTimeInterval(self, time_interval: Union[int, float]):
         """Sets time interval between snaps. Only relevant if using default processing.
@@ -81,7 +81,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
             raise ValueError("time_interval must be of type int or float.")
 
         self.time_interval = time_interval
-        self._logger.debug("Time interval set to %f", time_interval)
+        self._logger.debug(f"Time interval set to {time_interval}")
 
     def setProcessFn(self, process_fn: ProcessFnFrameOnlyType):
         """Sets custom processing function.
@@ -118,7 +118,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
         if process_fn is not None:
             self.setProcessFn(process_fn)
         self._logger.debug(
-            "SnapsProducerFrameOnly built with time_interval=%f", time_interval
+            f"SnapsProducerFrameOnly built with time_interval={time_interval}"
         )
         return self
 
@@ -176,7 +176,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
                 deviceSerialNo=device_serial_num,
             )
             if out:
-                self._logger.debug("Snap `%s` sent", name)
+                self._logger.debug(f"Snap `{name}` sent")
                 self.last_update = now
             return out
         return False
@@ -240,7 +240,7 @@ class SnapsProducer(SnapsProducerFrameOnly):
         self.setTimeInterval(time_interval)
         if process_fn is not None:
             self.setProcessFn(process_fn)
-        self._logger.debug("SnapsProducer built with time_interval=%f", time_interval)
+        self._logger.debug(f"SnapsProducer built with time_interval={time_interval}")
         return self
 
     def process(self, frame: dai.Buffer, msg: dai.Buffer):

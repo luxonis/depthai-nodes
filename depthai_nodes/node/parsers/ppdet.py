@@ -54,11 +54,7 @@ class PPTextDetectionParser(DetectionParser):
         self.mask_threshold = mask_threshold
         self.output_layer_name = output_layer_name
         self._logger.debug(
-            "PPTextDetectionParser initialized with output_layer_name='%s', conf_threshold=%.2f, mask_threshold=%.2f, max_det=%d",
-            output_layer_name,
-            conf_threshold,
-            mask_threshold,
-            max_det,
+            f"PPTextDetectionParser initialized with output_layer_name='{output_layer_name}', conf_threshold={conf_threshold}, mask_threshold={mask_threshold}, max_det={max_det}"
         )
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
@@ -70,7 +66,7 @@ class PPTextDetectionParser(DetectionParser):
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
         self.output_layer_name = output_layer_name
-        self._logger.debug("Output layer name set to '%s'", self.output_layer_name)
+        self._logger.debug(f"Output layer name set to '{self.output_layer_name}'")
 
     def setMaskThreshold(self, mask_threshold: float = 0.25) -> None:
         """Sets the mask threshold for creating the mask from model output
@@ -82,7 +78,7 @@ class PPTextDetectionParser(DetectionParser):
         if not isinstance(mask_threshold, float):
             raise ValueError("Mask threshold must be a float.")
         self.mask_threshold = mask_threshold
-        self._logger.debug("Mask threshold set to %.2f", self.mask_threshold)
+        self._logger.debug(f"Mask threshold set to {self.mask_threshold}")
 
     def build(self, head_config: Dict[str, Any]) -> "PPTextDetectionParser":
         """Configures the parser.
@@ -97,11 +93,7 @@ class PPTextDetectionParser(DetectionParser):
         self.mask_threshold = head_config.get("mask_threshold", self.mask_threshold)
 
         self._logger.debug(
-            "PPTextDetectionParser built with output_layer_name='%s', conf_threshold=%.2f, mask_threshold=%.2f, max_det=%d",
-            self.output_layer_name,
-            self.conf_threshold,
-            self.mask_threshold,
-            self.max_det,
+            f"PPTextDetectionParser built with output_layer_name='{self.output_layer_name}', conf_threshold={self.conf_threshold}, mask_threshold={self.mask_threshold}, max_det={self.max_det}"
         )
 
         return self
@@ -115,7 +107,7 @@ class PPTextDetectionParser(DetectionParser):
                 break  # Pipeline was stopped
 
             layers = output.getAllLayerNames()
-            self._logger.debug("Processing input with layers: %s", layers)
+            self._logger.debug(f"Processing input with layers: {layers}")
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":
@@ -149,7 +141,7 @@ class PPTextDetectionParser(DetectionParser):
             message.setSequenceNum(output.getSequenceNum())
 
             self._logger.debug(
-                "Created text detection message with %d detections", len(bboxes)
+                f"Created text detection message with {len(bboxes)} detections"
             )
 
             self.out.send(message)

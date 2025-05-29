@@ -73,14 +73,7 @@ class SCRFDParser(DetectionParser):
         self.input_size = input_size
         self.label_names = ["Face"]
         self._logger.debug(
-            "SCRFDParser initialized with output_layer_names=%s, conf_threshold=%.2f, iou_threshold=%.2f, max_det=%d, input_size=%s, feat_stride_fpn=%s, num_anchors=%d",
-            output_layer_names,
-            conf_threshold,
-            iou_threshold,
-            max_det,
-            input_size,
-            feat_stride_fpn,
-            num_anchors,
+            f"SCRFDParser initialized with output_layer_names={output_layer_names}, conf_threshold={conf_threshold}, iou_threshold={iou_threshold}, max_det={max_det}, input_size={input_size}, feat_stride_fpn={feat_stride_fpn}, num_anchors={num_anchors}"
         )
 
     def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
@@ -94,7 +87,7 @@ class SCRFDParser(DetectionParser):
         if not all(isinstance(layer, str) for layer in output_layer_names):
             raise ValueError("Output layer names must be a list of strings.")
         self.output_layer_names = output_layer_names
-        self._logger.debug("Output layer names set to %s", self.output_layer_names)
+        self._logger.debug(f"Output layer names set to {self.output_layer_names}")
 
     def setInputSize(self, input_size: Tuple[int, int]) -> None:
         """Sets the input size of the model.
@@ -107,7 +100,7 @@ class SCRFDParser(DetectionParser):
         if not all(isinstance(size, int) for size in input_size):
             raise ValueError("Input size must be a tuple of integers.")
         self.input_size = input_size
-        self._logger.debug("Input size set to %s", self.input_size)
+        self._logger.debug(f"Input size set to {self.input_size}")
 
     def setFeatStrideFPN(self, feat_stride_fpn: List[int]) -> None:
         """Sets the feature stride of the FPN.
@@ -120,7 +113,7 @@ class SCRFDParser(DetectionParser):
         if not all(isinstance(stride, int) for stride in feat_stride_fpn):
             raise ValueError("Feature stride must be a list of integers.")
         self.feat_stride_fpn = feat_stride_fpn
-        self._logger.debug("Feature stride set to %s", self.feat_stride_fpn)
+        self._logger.debug(f"Feature stride set to {self.feat_stride_fpn}")
 
     def setNumAnchors(self, num_anchors: int) -> None:
         """Sets the number of anchors.
@@ -131,7 +124,7 @@ class SCRFDParser(DetectionParser):
         if not isinstance(num_anchors, int):
             raise ValueError("Number of anchors must be an integer.")
         self.num_anchors = num_anchors
-        self._logger.debug("Number of anchors set to %d", self.num_anchors)
+        self._logger.debug(f"Number of anchors set to {self.num_anchors}")
 
     def build(
         self,
@@ -164,10 +157,7 @@ class SCRFDParser(DetectionParser):
         self.num_anchors = head_config.get("num_anchors", self.num_anchors)
 
         self._logger.debug(
-            "SCRFDParser built with output_layer_names=%s, feat_stride_fpn=%s, num_anchors=%d",
-            self.output_layer_names,
-            self.feat_stride_fpn,
-            self.num_anchors,
+            f"SCRFDParser built with output_layer_names={self.output_layer_names}, feat_stride_fpn={self.feat_stride_fpn}, num_anchors={self.num_anchors}"
         )
 
         return self
@@ -188,7 +178,7 @@ class SCRFDParser(DetectionParser):
                 self.output_layer_names = output.getAllLayerNames()
 
             self._logger.debug(
-                "Processing input with layers: %s", output.getAllLayerNames()
+                f"Processing input with layers: {output.getAllLayerNames()}"
             )
 
             for stride in self.feat_stride_fpn:
@@ -260,7 +250,7 @@ class SCRFDParser(DetectionParser):
             message.setSequenceNum(output.getSequenceNum())
 
             self._logger.debug(
-                "Created detection message with %d detections", len(bboxes)
+                f"Created detection message with {len(bboxes)} detections"
             )
 
             self.out.send(message)

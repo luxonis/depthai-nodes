@@ -63,13 +63,7 @@ class XFeatBaseParser(BaseParser):
         self.max_keypoints = max_keypoints
 
         self._logger.debug(
-            "XFeatBaseParser initialized with output_layer_feats='%s', output_layer_keypoints='%s', output_layer_heatmaps='%s', original_size=%s, input_size=%s, max_keypoints=%d",
-            output_layer_feats,
-            output_layer_keypoints,
-            output_layer_heatmaps,
-            original_size,
-            input_size,
-            max_keypoints,
+            f"XFeatBaseParser initialized with output_layer_feats='{output_layer_feats}', output_layer_keypoints='{output_layer_keypoints}', output_layer_heatmaps='{output_layer_heatmaps}', original_size={original_size}, input_size={input_size}, max_keypoints={max_keypoints}"
         )
 
     @property
@@ -102,7 +96,7 @@ class XFeatBaseParser(BaseParser):
             raise ValueError("Output layer containing features must be a string!")
         self.output_layer_feats = output_layer_feats
         self._logger.debug(
-            "Output layer containing features set to '%s'", self.output_layer_feats
+            f"Output layer containing features set to '{self.output_layer_feats}'"
         )
 
     def setOutputLayerKeypoints(self, output_layer_keypoints: str) -> None:
@@ -115,7 +109,7 @@ class XFeatBaseParser(BaseParser):
             raise ValueError("Output layer containing keypoints must be a string!")
         self.output_layer_keypoints = output_layer_keypoints
         self._logger.debug(
-            "Output layer containing keypoints set to '%s'", self.output_layer_keypoints
+            f"Output layer containing keypoints set to '{self.output_layer_keypoints}'"
         )
 
     def setOutputLayerHeatmaps(self, output_layer_heatmaps: str) -> None:
@@ -128,7 +122,7 @@ class XFeatBaseParser(BaseParser):
             raise ValueError("Output layer containing heatmaps must be a string!")
         self.output_layer_heatmaps = output_layer_heatmaps
         self._logger.debug(
-            "Output layer containing heatmaps set to '%s'", self.output_layer_heatmaps
+            f"Output layer containing heatmaps set to '{self.output_layer_heatmaps}'"
         )
 
     def setOriginalSize(self, original_size: Tuple[int, int]) -> None:
@@ -143,7 +137,7 @@ class XFeatBaseParser(BaseParser):
             if not isinstance(size, int):
                 raise ValueError("Original image size must be a tuple of two ints!")
         self.original_size = original_size
-        self._logger.debug("Original image size set to %s", self.original_size)
+        self._logger.debug(f"Original image size set to {self.original_size}")
 
     def setInputSize(self, input_size: Tuple[int, int]) -> None:
         """Sets the input image size.
@@ -157,7 +151,7 @@ class XFeatBaseParser(BaseParser):
             if not isinstance(size, int):
                 raise ValueError("Input image size must be a tuple of two ints!")
         self.input_size = input_size
-        self._logger.debug("Input image size set to %s", self.input_size)
+        self._logger.debug(f"Input image size set to {self.input_size}")
 
     def setMaxKeypoints(self, max_keypoints: int) -> None:
         """Sets the maximum number of keypoints to keep.
@@ -168,7 +162,7 @@ class XFeatBaseParser(BaseParser):
         if not isinstance(max_keypoints, int):
             raise ValueError("Maximum number of keypoints must be an int!")
         self.max_keypoints = max_keypoints
-        self._logger.debug("Maximum number of keypoints set to %d", self.max_keypoints)
+        self._logger.debug(f"Maximum number of keypoints set to {self.max_keypoints}")
 
     def build(
         self,
@@ -201,13 +195,7 @@ class XFeatBaseParser(BaseParser):
         self.max_keypoints = head_config.get("max_keypoints", self.max_keypoints)
 
         self._logger.debug(
-            "XFeatBaseParser built with output_layer_feats='%s', output_layer_keypoints='%s', output_layer_heatmaps='%s', original_size=%s, input_size=%s, max_keypoints=%d",
-            self.output_layer_feats,
-            self.output_layer_keypoints,
-            self.output_layer_heatmaps,
-            self.original_size,
-            self.input_size,
-            self.max_keypoints,
+            f"XFeatBaseParser built with output_layer_feats='{self.output_layer_feats}', output_layer_keypoints='{self.output_layer_keypoints}', output_layer_heatmaps='{self.output_layer_heatmaps}', original_size={self.original_size}, input_size={self.input_size}, max_keypoints={self.max_keypoints}"
         )
 
         return self
@@ -335,19 +323,13 @@ class XFeatMonoParser(XFeatBaseParser):
         self.trigger = False
 
         self._logger.debug(
-            "XFeatMonoParser initialized with output_layer_feats='%s', output_layer_keypoints='%s', output_layer_heatmaps='%s', original_size=%s, input_size=%s, max_keypoints=%d",
-            output_layer_feats,
-            output_layer_keypoints,
-            output_layer_heatmaps,
-            original_size,
-            input_size,
-            max_keypoints,
+            f"XFeatMonoParser initialized with output_layer_feats='{output_layer_feats}', output_layer_keypoints='{output_layer_keypoints}', output_layer_heatmaps='{output_layer_heatmaps}', original_size={original_size}, input_size={input_size}, max_keypoints={max_keypoints}"
         )
 
     def setTrigger(self) -> None:
         """Sets the trigger to set the reference frame."""
         self.trigger = True
-        self._logger.debug("Trigger set to %s", self.trigger)
+        self._logger.debug(f"Trigger set to {self.trigger}")
 
     def run(self):
         self._logger.debug("XFeatMonoParser run started")
@@ -363,7 +345,7 @@ class XFeatMonoParser(XFeatBaseParser):
                 break  # Pipeline was stopped
 
             self._logger.debug(
-                "Processing input with layers: %s", output.getAllLayerNames()
+                f"Processing input with layers: {output.getAllLayerNames()}"
             )
             feats, keypoints, heatmaps = self.extractTensors(output)
 
@@ -487,13 +469,7 @@ class XFeatStereoParser(XFeatBaseParser):
         )
 
         self._logger.debug(
-            "XFeatStereoParser initialized with output_layer_feats='%s', output_layer_keypoints='%s', output_layer_heatmaps='%s', original_size=%s, input_size=%s, max_keypoints=%d",
-            output_layer_feats,
-            output_layer_keypoints,
-            output_layer_heatmaps,
-            original_size,
-            input_size,
-            max_keypoints,
+            f"XFeatStereoParser initialized with output_layer_feats='{output_layer_feats}', output_layer_keypoints='{output_layer_keypoints}', output_layer_heatmaps='{output_layer_heatmaps}', original_size={original_size}, input_size={input_size}, max_keypoints={max_keypoints}"
         )
 
     def run(self):
@@ -511,12 +487,10 @@ class XFeatStereoParser(XFeatBaseParser):
                 break  # Pipeline was stopped
 
             self._logger.debug(
-                "Processing reference input with layers: %s",
-                reference_output.getAllLayerNames(),
+                f"Processing reference input with layers: {reference_output.getAllLayerNames()}"
             )
             self._logger.debug(
-                "Processing target input with layers: %s",
-                target_output.getAllLayerNames(),
+                f"Processing target input with layers: {target_output.getAllLayerNames()}"
             )
 
             (
