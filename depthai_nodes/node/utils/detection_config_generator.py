@@ -39,7 +39,7 @@ def generate_script_content(
         raise ValueError("Unsupported resize mode")
 
     cfg_content = f"""
-            cfg = ImageManipConfigV2()
+            cfg = ImageManipConfig()
             rect = RotatedRect()
             rect.center.x = (det.xmin + det.xmax) / 2
             rect.center.y = (det.ymin + det.ymax) / 2
@@ -50,7 +50,7 @@ def generate_script_content(
             rect.angle = 0
 
             cfg.addCropRotatedRect(rect, True)
-            cfg.setOutputSize({resize_width}, {resize_height}, ImageManipConfigV2.ResizeMode.{resize_mode})
+            cfg.setOutputSize({resize_width}, {resize_height}, ImageManipConfig.ResizeMode.{resize_mode})
         """
     validate_label = (
         f"""
