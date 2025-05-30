@@ -16,14 +16,14 @@ def resize_height():
     return 256
 
 
-class ImageManipConfigV2(dai.ImageManipConfigV2):
+class ImageManipConfig(dai.ImageManipConfig):
     def __init__(self):
         super().__init__()
         self._output_size: Optional[tuple[int, int]] = None
         self._crop_rotated_rect: Optional[dai.RotatedRect] = None
 
     def setOutputSize(
-        self, w, h, mode: Optional[dai.ImageManipConfigV2.ResizeMode] = None
+        self, w, h, mode: Optional[dai.ImageManipConfig.ResizeMode] = None
     ):
         self._output_size = w, h
         if mode:
@@ -214,7 +214,7 @@ def test_output_size(node, resize):
     except Warning:
         output_cfg = get_output_config(node)
         for cfg in output_cfg:
-            assert isinstance(cfg, ImageManipConfigV2)
+            assert isinstance(cfg, ImageManipConfig)
             assert cfg.getOutputSize() == resize
 
 
@@ -238,7 +238,7 @@ def test_crop(node, node_input_detections, padding, resize_width, resize_height)
     except Warning:
         output_cfg = get_output_config(node)
         for cfg, expected_rect in zip(output_cfg, expected_rects):
-            assert isinstance(cfg, ImageManipConfigV2)
+            assert isinstance(cfg, ImageManipConfig)
             rotated_rect = cfg.getCropRotatedRect()
             assert rotated_rect
             assert rotated_rect.angle == expected_rect.angle
@@ -256,7 +256,7 @@ def run_script(node, script):
         None,
         {
             "node": node,
-            "ImageManipConfigV2": ImageManipConfigV2,
+            "ImageManipConfig": ImageManipConfig,
             "RotatedRect": dai.RotatedRect,
         },
     )
@@ -268,5 +268,5 @@ def get_output_frames(node: Node) -> List[Frame]:
 
 def get_output_config(
     node: Node,
-) -> List[ImageManipConfigV2]:
+) -> List[ImageManipConfig]:
     return node.outputs[Node.OUTPUT_CONFIG_KEY].items
