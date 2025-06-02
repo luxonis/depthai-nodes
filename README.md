@@ -11,7 +11,7 @@
 
 ## 🌟 Overview
 
-DepthAI Nodes is a Python "contrib" library designed to simplify host-side development with a growing collection of modular, high-level nodes. These cover a range of common needs - from neural network post-processing and I/O patterns to utility nodes for faster prototyping. With just a few lines of code, you can scaffold sophisticated pipelines, saving time and reducing boilerplate. In order to use this nodes you need to have your pipeline written with `DepthAIv3`.
+DepthAI Nodes is a Python "contrib" library designed to simplify host-side development with a growing collection of modular, high-level nodes. These cover a range of common needs - from neural network post-processing and I/O patterns to utility nodes for faster prototyping. With just a few lines of code, you can scaffold sophisticated pipelines, saving time and reducing boilerplate. In order to use these nodes you need to have your pipeline written with `DepthAIv3`.
 
 **NOTE**:
 We are always listening to the community so feel free to report and feedback, issues or contribute to the library with our own host nodes.
@@ -37,7 +37,7 @@ pip install depthai-nodes
 
 ### Manual installation
 
-If you want to manually install the package from GitHub repositoory you can run:
+If you want to manually install the package from the GitHub repository you can run:
 
 ```bash
 git clone git@github.com:luxonis/depthai-nodes.git
@@ -70,7 +70,7 @@ The `node` module provides a collection of ready-to-use host-side nodes that abs
 - **Helper nodes** - Like ParsingNeuralNetwork and ParserGenerator which help manage simple or complex model outputs more efficiently.
 - **Utility nodes** – Perform common operations like detection filtering, drawing overlays, applying segmentation colormaps, and more—all in just a few lines of code.
 
-This modular approach allows you to rapidly prototype and scale complex applications with less effort, while keeping your code clean and maintainable.
+This modular approach allows you to rapidly prototype and scale complex applications with less effort while keeping your code clean and maintainable.
 
 ## 🤝 Contributing
 
