@@ -3,6 +3,7 @@ from typing import Dict, Optional, Type, TypeVar, Union, overload
 
 import depthai as dai
 
+from depthai_nodes.logging import get_logger
 from depthai_nodes.node.parser_generator import ParserGenerator
 from depthai_nodes.node.parsers import BaseParser
 
@@ -43,6 +44,8 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         self._nn = self._pipeline.create(dai.node.NeuralNetwork)
         self._parsers: Dict[int, BaseParser] = {}
         self._internal_sync: Optional[dai.node.Sync] = None
+        self._logger = get_logger(__name__)
+        self._logger.debug("ParsingNeuralNetwork initialized")
 
     @property
     def input(self) -> dai.Node.Input:
@@ -277,6 +280,10 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         if len(self._parsers) > 1:
             self._createSyncNode()
 
+        self._logger.debug(
+            f"ParsingNeuralNetwork built with fps={fps}, type_of_nn_source={type(nn_source).__name__}, parsers={len(self._parsers)}"
+        )
+
         return self
 
     def run(self) -> None:
@@ -359,3 +366,4 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         outputs = [parser.out for parser in list(self._parsers.values())]
         for ix, output in enumerate(outputs):
             output.link(self._internal_sync.inputs[str(ix)])
+        self._logger.debug(f"Internal Sync node created with {len(outputs)} outputs")

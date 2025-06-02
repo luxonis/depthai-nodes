@@ -38,6 +38,9 @@ class DepthMerger(BaseHostNode):
         )
 
         self.shrinking_factor = shrinking_factor
+        self._logger.debug(
+            f"DepthMerger initialized with shrinking_factor={shrinking_factor}"
+        )
 
     def build(
         self,
@@ -50,11 +53,17 @@ class DepthMerger(BaseHostNode):
         self.link_args(output_2d, output_depth)
         self.shrinking_factor = shrinking_factor
         self.host_spatials_calc = HostSpatialsCalc(calib_data, depth_alignment_socket)
+        self._logger.debug(
+            f"DepthMerger built with shrinking_factor={shrinking_factor}"
+        )
         return self
 
     def process(self, message_2d: dai.Buffer, depth: dai.ImgFrame) -> None:
+        self._logger.debug("Processing new input")
         spatial_dets = self._transform(message_2d, depth)
+        self._logger.debug("Spatial detections message created")
         self.output.send(spatial_dets)  # type: ignore
+        self._logger.debug("Message sent successfully")
 
     def _transform(
         self, message_2d: dai.Buffer, depth: dai.ImgFrame

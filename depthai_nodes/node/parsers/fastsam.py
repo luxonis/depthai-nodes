@@ -112,6 +112,9 @@ class FastSAMParser(BaseParser):
             else mask_outputs
         )
         self.protos_output = protos_output
+        self._logger.debug(
+            f"FastSAMParser initialized with conf_threshold={conf_threshold}, n_classes={n_classes}, iou_threshold={iou_threshold}, mask_conf={mask_conf}, prompt='{prompt}', points={points}, point_label={point_label}, bbox={bbox}, yolo_outputs={yolo_outputs}, mask_outputs={mask_outputs}, protos_output='{protos_output}'"
+        )
 
     def setConfidenceThreshold(self, threshold: float) -> None:
         """Sets the confidence score threshold.
@@ -124,6 +127,7 @@ class FastSAMParser(BaseParser):
         if threshold < 0 or threshold > 1:
             raise ValueError("Confidence threshold must be between 0 and 1.")
         self.conf_threshold = threshold
+        self._logger.debug(f"Confidence threshold set to {self.conf_threshold}")
 
     def setNumClasses(self, n_classes: int) -> None:
         """Sets the number of classes in the model.
@@ -134,6 +138,7 @@ class FastSAMParser(BaseParser):
         if not isinstance(n_classes, int):
             raise ValueError("Number of classes must be an integer.")
         self.n_classes = n_classes
+        self._logger.debug(f"Number of classes set to {self.n_classes}")
 
     def setIouThreshold(self, iou_threshold: float) -> None:
         """Sets the intersection over union threshold.
@@ -146,6 +151,9 @@ class FastSAMParser(BaseParser):
         if iou_threshold < 0 or iou_threshold > 1:
             raise ValueError("IOU threshold must be between 0 and 1.")
         self.iou_threshold = iou_threshold
+        self._logger.debug(
+            f"Intersection over union threshold set to {self.iou_threshold}"
+        )
 
     def setMaskConfidence(self, mask_conf: float) -> None:
         """Sets the mask confidence threshold.
@@ -158,6 +166,7 @@ class FastSAMParser(BaseParser):
         if mask_conf < 0 or mask_conf > 1:
             raise ValueError("Mask confidence must be between 0 and 1.")
         self.mask_conf = mask_conf
+        self._logger.debug(f"Mask confidence threshold set to {self.mask_conf}")
 
     def setPrompt(self, prompt: str) -> None:
         """Sets the prompt type.
@@ -170,6 +179,7 @@ class FastSAMParser(BaseParser):
         if prompt not in ["everything", "bbox", "point"]:
             raise ValueError("Prompt must be one of 'everything', 'bbox', or 'point'")
         self.prompt = prompt
+        self._logger.debug(f"Prompt set to '{self.prompt}'")
 
     def setPoints(self, points: Tuple[int, int]) -> None:
         """Sets the points.
@@ -184,6 +194,7 @@ class FastSAMParser(BaseParser):
         if not all(isinstance(p, int) for p in points):
             raise ValueError("Point elements must be integers.")
         self.points = points
+        self._logger.debug(f"Points set to {self.points}")
 
     def setPointLabel(self, point_label: int) -> None:
         """Sets the point label.
@@ -194,6 +205,7 @@ class FastSAMParser(BaseParser):
         if not isinstance(point_label, int):
             raise ValueError("Point label must be an integer.")
         self.point_label = point_label
+        self._logger.debug(f"Point label set to {self.point_label}")
 
     def setBoundingBox(self, bbox: Tuple[int, int, int, int]) -> None:
         """Sets the bounding box.
@@ -208,6 +220,7 @@ class FastSAMParser(BaseParser):
         if not all(isinstance(b, int) for b in bbox):
             raise ValueError("Bounding box elements must be integers.")
         self.bbox = bbox
+        self._logger.debug(f"Bounding box set to {self.bbox}")
 
     def setYoloOutputs(self, yolo_outputs: List[str]) -> None:
         """Sets the YOLO outputs.
@@ -220,6 +233,7 @@ class FastSAMParser(BaseParser):
         if not all(isinstance(o, str) for o in yolo_outputs):
             raise ValueError("YOLO outputs must be a list of strings.")
         self.yolo_outputs = yolo_outputs
+        self._logger.debug(f"YOLO outputs set to {self.yolo_outputs}")
 
     def setMaskOutputs(self, mask_outputs: List[str]) -> None:
         """Sets the mask outputs.
@@ -232,6 +246,7 @@ class FastSAMParser(BaseParser):
         if not all(isinstance(o, str) for o in mask_outputs):
             raise ValueError("Mask outputs must be a list of strings.")
         self.mask_outputs = mask_outputs
+        self._logger.debug(f"Mask outputs set to {self.mask_outputs}")
 
     def setProtosOutput(self, protos_output: str) -> None:
         """Sets the protos output.
@@ -242,6 +257,7 @@ class FastSAMParser(BaseParser):
         if not isinstance(protos_output, str):
             raise ValueError("Protos output must be a string.")
         self.protos_output = protos_output
+        self._logger.debug(f"Protos output set to '{self.protos_output}'")
 
     def build(self, head_config: Dict[str, Any]) -> "FastSAMParser":
         """Configures the parser.
@@ -272,9 +288,14 @@ class FastSAMParser(BaseParser):
         self.point_label = head_config.get("point_label", self.point_label)
         self.bbox = head_config.get("bbox", self.bbox)
 
+        self._logger.debug(
+            f"FastSAMParser built with conf_threshold={self.conf_threshold}, n_classes={self.n_classes}, iou_threshold={self.iou_threshold}, mask_conf={self.mask_conf}, prompt='{self.prompt}', points={self.points}, point_label={self.point_label}, bbox={self.bbox}, yolo_outputs={self.yolo_outputs}, mask_outputs={self.mask_outputs}, protos_output='{self.protos_output}'"
+        )
+
         return self
 
     def run(self):
+        self._logger.debug("FastSAMParser run started")
         if self.prompt not in ["everything", "bbox", "point"]:
             raise ValueError("Prompt must be one of 'everything', 'bbox', or 'point'")
 
@@ -285,6 +306,7 @@ class FastSAMParser(BaseParser):
                 break  # Pipeline was stopped, no more data
 
             outputs_names = sorted([name for name in self.yolo_outputs])
+            self._logger.debug(f"Processing input with layers: {outputs_names}")
             outputs_values = [
                 output.getTensor(
                     o, dequantize=True, storageOrder=dai.TensorInfo.StorageOrder.NCHW
@@ -357,4 +379,10 @@ class FastSAMParser(BaseParser):
             segmentation_message.setTimestamp(output.getTimestamp())
             segmentation_message.setSequenceNum(output.getSequenceNum())
 
+            self._logger.debug(
+                f"Created segmentation message with {len(results_masks)} masks"
+            )
+
             self.out.send(segmentation_message)
+
+            self._logger.debug("Segmentation message sent successfully")

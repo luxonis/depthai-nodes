@@ -79,6 +79,9 @@ class YuNetParser(DetectionParser):
         self.iou_output_layer_name = iou_output_layer_name
         self.input_size = input_size
         self.label_names = ["Face"]
+        self._logger.debug(
+            f"YuNetParser initialized with conf_threshold={self.conf_threshold}, iou_threshold={self.iou_threshold}, max_det={self.max_det}"
+        )
 
     def setInputSize(self, input_size: Tuple[int, int]) -> None:
         """Sets the input size of the model.
@@ -91,6 +94,9 @@ class YuNetParser(DetectionParser):
         if not all(isinstance(size, int) for size in input_size):
             raise ValueError("Input size must be a tuple of integers.")
         self.input_size = input_size
+        self._logger.debug(
+            f"Input size updated to (width={input_size[0]}, height={input_size[1]})"
+        )
 
     def setOutputLayerLoc(self, loc_output_layer_name: str) -> None:
         """Sets the name of the output layer containing the location predictions.
@@ -101,6 +107,9 @@ class YuNetParser(DetectionParser):
         if not isinstance(loc_output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
         self.loc_output_layer_name = loc_output_layer_name
+        self._logger.debug(
+            f"Location output layer name set to '{self.loc_output_layer_name}'"
+        )
 
     def setOutputLayerConf(self, conf_output_layer_name: str) -> None:
         """Sets the name of the output layer containing the confidence predictions.
@@ -111,6 +120,9 @@ class YuNetParser(DetectionParser):
         if not isinstance(conf_output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
         self.conf_output_layer_name = conf_output_layer_name
+        self._logger.debug(
+            f"Confidence output layer name set to '{self.conf_output_layer_name}'"
+        )
 
     def setOutputLayerIou(self, iou_output_layer_name: str) -> None:
         """Sets the name of the output layer containing the IoU predictions.
@@ -121,6 +133,9 @@ class YuNetParser(DetectionParser):
         if not isinstance(iou_output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
         self.iou_output_layer_name = iou_output_layer_name
+        self._logger.debug(
+            f"IoU output layer name set to '{self.iou_output_layer_name}'"
+        )
 
     def build(
         self,
@@ -163,9 +178,13 @@ class YuNetParser(DetectionParser):
                 f"Input layout {self.layout} not supported for input_size extraction."
             )
 
+        self._logger.debug(
+            f"YuNetParser built with input_size={self.input_size}, layout='{self.layout}'"
+        )
         return self
 
     def run(self):
+        self._logger.debug("YuNetParser run started")
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
@@ -173,6 +192,7 @@ class YuNetParser(DetectionParser):
                 break  # Pipeline was stopped
 
             output_layer_names = output.getAllLayerNames()
+            self._logger.debug(f"Processing input with layers: {output_layer_names}")
 
             # get loc
             if self.loc_output_layer_name:
@@ -316,4 +336,8 @@ class YuNetParser(DetectionParser):
             detections_message.setTransformation(output.getTransformation())
             detections_message.setSequenceNum(output.getSequenceNum())
 
+            self._logger.debug(f"Created detections message with {len(bboxes)} faces")
+
             self.out.send(detections_message)
+
+            self._logger.debug("Detections message sent successfully")

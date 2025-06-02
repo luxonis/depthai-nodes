@@ -62,6 +62,10 @@ class XFeatBaseParser(BaseParser):
         self.input_size = input_size
         self.max_keypoints = max_keypoints
 
+        self._logger.debug(
+            f"XFeatBaseParser initialized with output_layer_feats='{output_layer_feats}', output_layer_keypoints='{output_layer_keypoints}', output_layer_heatmaps='{output_layer_heatmaps}', original_size={original_size}, input_size={input_size}, max_keypoints={max_keypoints}"
+        )
+
     @property
     def reference_input(self) -> Optional[dai.Node.Input]:
         """Returns the reference input."""
@@ -91,6 +95,9 @@ class XFeatBaseParser(BaseParser):
         if not isinstance(output_layer_feats, str):
             raise ValueError("Output layer containing features must be a string!")
         self.output_layer_feats = output_layer_feats
+        self._logger.debug(
+            f"Output layer containing features set to '{self.output_layer_feats}'"
+        )
 
     def setOutputLayerKeypoints(self, output_layer_keypoints: str) -> None:
         """Sets the output layer containing keypoints.
@@ -101,6 +108,9 @@ class XFeatBaseParser(BaseParser):
         if not isinstance(output_layer_keypoints, str):
             raise ValueError("Output layer containing keypoints must be a string!")
         self.output_layer_keypoints = output_layer_keypoints
+        self._logger.debug(
+            f"Output layer containing keypoints set to '{self.output_layer_keypoints}'"
+        )
 
     def setOutputLayerHeatmaps(self, output_layer_heatmaps: str) -> None:
         """Sets the output layer containing heatmaps.
@@ -111,6 +121,9 @@ class XFeatBaseParser(BaseParser):
         if not isinstance(output_layer_heatmaps, str):
             raise ValueError("Output layer containing heatmaps must be a string!")
         self.output_layer_heatmaps = output_layer_heatmaps
+        self._logger.debug(
+            f"Output layer containing heatmaps set to '{self.output_layer_heatmaps}'"
+        )
 
     def setOriginalSize(self, original_size: Tuple[int, int]) -> None:
         """Sets the original image size.
@@ -124,6 +137,7 @@ class XFeatBaseParser(BaseParser):
             if not isinstance(size, int):
                 raise ValueError("Original image size must be a tuple of two ints!")
         self.original_size = original_size
+        self._logger.debug(f"Original image size set to {self.original_size}")
 
     def setInputSize(self, input_size: Tuple[int, int]) -> None:
         """Sets the input image size.
@@ -137,6 +151,7 @@ class XFeatBaseParser(BaseParser):
             if not isinstance(size, int):
                 raise ValueError("Input image size must be a tuple of two ints!")
         self.input_size = input_size
+        self._logger.debug(f"Input image size set to {self.input_size}")
 
     def setMaxKeypoints(self, max_keypoints: int) -> None:
         """Sets the maximum number of keypoints to keep.
@@ -147,6 +162,7 @@ class XFeatBaseParser(BaseParser):
         if not isinstance(max_keypoints, int):
             raise ValueError("Maximum number of keypoints must be an int!")
         self.max_keypoints = max_keypoints
+        self._logger.debug(f"Maximum number of keypoints set to {self.max_keypoints}")
 
     def build(
         self,
@@ -177,6 +193,10 @@ class XFeatBaseParser(BaseParser):
         self.original_size = head_config.get("original_size", self.original_size)
         self.input_size = head_config.get("input_size", self.input_size)
         self.max_keypoints = head_config.get("max_keypoints", self.max_keypoints)
+
+        self._logger.debug(
+            f"XFeatBaseParser built with output_layer_feats='{self.output_layer_feats}', output_layer_keypoints='{self.output_layer_keypoints}', output_layer_heatmaps='{self.output_layer_heatmaps}', original_size={self.original_size}, input_size={self.input_size}, max_keypoints={self.max_keypoints}"
+        )
 
         return self
 
@@ -302,11 +322,17 @@ class XFeatMonoParser(XFeatBaseParser):
         self.previous_results = None
         self.trigger = False
 
+        self._logger.debug(
+            f"XFeatMonoParser initialized with output_layer_feats='{output_layer_feats}', output_layer_keypoints='{output_layer_keypoints}', output_layer_heatmaps='{output_layer_heatmaps}', original_size={original_size}, input_size={input_size}, max_keypoints={max_keypoints}"
+        )
+
     def setTrigger(self) -> None:
         """Sets the trigger to set the reference frame."""
         self.trigger = True
+        self._logger.debug(f"Trigger set to {self.trigger}")
 
     def run(self):
+        self._logger.debug("XFeatMonoParser run started")
         self.validateParams()
 
         resize_rate_w = self.original_size[0] / self.input_size[0]
@@ -318,6 +344,9 @@ class XFeatMonoParser(XFeatBaseParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
+            self._logger.debug(
+                f"Processing input with layers: {output.getAllLayerNames()}"
+            )
             feats, keypoints, heatmaps = self.extractTensors(output)
 
             result = detect_and_compute(
@@ -336,7 +365,11 @@ class XFeatMonoParser(XFeatBaseParser):
                 matched_points = dai.TrackedFeatures()
                 matched_points.setTimestamp(output.getTimestamp())
                 matched_points.setSequenceNum(output.getSequenceNum())
+                self._logger.debug(
+                    "No keypoints found, sending TrackedFeatures message"
+                )
                 self.out.send(matched_points)
+                self._logger.debug("TrackedFeatures message sent")
                 continue
 
             if self.previous_results is not None:
@@ -344,14 +377,18 @@ class XFeatMonoParser(XFeatBaseParser):
                 matched_points = create_tracked_features_message(mkpts0, mkpts1)
                 matched_points.setTimestamp(output.getTimestamp())
                 matched_points.setSequenceNum(output.getSequenceNum())
-
+                self._logger.debug("Keypoints found, sending TrackedFeatures message")
                 self.out.send(matched_points)
+                self._logger.debug("TrackedFeatures message sent")
             else:
                 matched_points = dai.TrackedFeatures()
                 matched_points.setTimestamp(output.getTimestamp())
                 matched_points.setSequenceNum(output.getSequenceNum())
-
+                self._logger.debug(
+                    "No previous results, sending TrackedFeatures message"
+                )
                 self.out.send(matched_points)
+                self._logger.debug("TrackedFeatures message sent")
 
             if self.trigger:
                 self.previous_results = result
@@ -431,7 +468,12 @@ class XFeatStereoParser(XFeatBaseParser):
             max_keypoints,
         )
 
+        self._logger.debug(
+            f"XFeatStereoParser initialized with output_layer_feats='{output_layer_feats}', output_layer_keypoints='{output_layer_keypoints}', output_layer_heatmaps='{output_layer_heatmaps}', original_size={original_size}, input_size={input_size}, max_keypoints={max_keypoints}"
+        )
+
     def run(self):
+        self._logger.debug("XFeatStereoParser run started")
         self.validateParams()
 
         resize_rate_w = self.original_size[0] / self.input_size[0]
@@ -443,6 +485,13 @@ class XFeatStereoParser(XFeatBaseParser):
                 target_output: dai.NNData = self.target_input.get()
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
+
+            self._logger.debug(
+                f"Processing reference input with layers: {reference_output.getAllLayerNames()}"
+            )
+            self._logger.debug(
+                f"Processing target input with layers: {target_output.getAllLayerNames()}"
+            )
 
             (
                 reference_feats,
@@ -479,8 +528,11 @@ class XFeatStereoParser(XFeatBaseParser):
                 matched_points = dai.TrackedFeatures()
                 matched_points.setTimestamp(reference_output.getTimestamp())
                 matched_points.setSequenceNum(reference_output.getSequenceNum())
-
+                self._logger.debug(
+                    "No reference keypoints found, sending TrackedFeatures message"
+                )
                 self.out.send(matched_points)
+                self._logger.debug("TrackedFeatures message sent")
                 continue
 
             if target_result is not None:
@@ -489,8 +541,11 @@ class XFeatStereoParser(XFeatBaseParser):
                 matched_points = dai.TrackedFeatures()
                 matched_points.setTimestamp(target_output.getTimestamp())
                 matched_points.setSequenceNum(reference_output.getSequenceNum())
-
+                self._logger.debug(
+                    "No target keypoints found, sending TrackedFeatures message"
+                )
                 self.out.send(matched_points)
+                self._logger.debug("TrackedFeatures message sent")
                 continue
 
             mkpts0, mkpts1 = match(reference_result, target_result)
@@ -498,4 +553,6 @@ class XFeatStereoParser(XFeatBaseParser):
             matched_points.setTimestamp(target_output.getTimestamp())
             matched_points.setSequenceNum(reference_output.getSequenceNum())
 
+            self._logger.debug("Keypoints found, sending TrackedFeatures message")
             self.out.send(matched_points)
+            self._logger.debug("TrackedFeatures message sent")

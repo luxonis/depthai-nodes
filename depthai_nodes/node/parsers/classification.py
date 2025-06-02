@@ -53,6 +53,9 @@ class ClassificationParser(BaseParser):
         self.classes = classes or []
         self.n_classes = len(self.classes)
         self.is_softmax = is_softmax
+        self._logger.debug(
+            f"ClassificationParser initialized with output_layer_name='{output_layer_name}', classes={classes}, is_softmax={is_softmax}"
+        )
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
@@ -63,6 +66,7 @@ class ClassificationParser(BaseParser):
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
         self.output_layer_name = output_layer_name
+        self._logger.debug(f"Output layer name set to '{self.output_layer_name}'")
 
     def setClasses(self, classes: List[str]) -> None:
         """Sets the class names for the classification model.
@@ -78,6 +82,7 @@ class ClassificationParser(BaseParser):
                 raise ValueError("Each class name must be a string.")
         self.classes = classes if classes is not None else []
         self.n_classes = len(self.classes)
+        self._logger.debug(f"Classes set to {self.classes}")
 
     def setSoftmax(self, is_softmax: bool) -> None:
         """Sets the softmax flag for the classification model.
@@ -89,6 +94,7 @@ class ClassificationParser(BaseParser):
         if not isinstance(is_softmax, bool):
             raise ValueError("is_softmax must be a boolean.")
         self.is_softmax = is_softmax
+        self._logger.debug(f"Softmax set to {self.is_softmax}")
 
     def build(
         self,
@@ -112,9 +118,13 @@ class ClassificationParser(BaseParser):
         self.n_classes = head_config.get("n_classes", self.n_classes)
         self.is_softmax = head_config.get("is_softmax", self.is_softmax)
 
+        self._logger.debug(
+            f"ClassificationParser built with output_layer_name='{self.output_layer_name}', classes={self.classes}, n_classes={self.n_classes}, is_softmax={self.is_softmax}"
+        )
         return self
 
     def run(self):
+        self._logger.debug("ClassificationParser run started")
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
@@ -122,6 +132,7 @@ class ClassificationParser(BaseParser):
                 break
 
             layers = output.getAllLayerNames()
+            self._logger.debug(f"Processing input with layers: {layers}")
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":
@@ -145,4 +156,8 @@ class ClassificationParser(BaseParser):
             msg.setTimestamp(output.getTimestamp())
             msg.setSequenceNum(output.getSequenceNum())
 
+            self._logger.debug(f"Created message with {len(msg.classes)} classes")
+
             self.out.send(msg)
+
+            self._logger.debug("Classification message sent successfully")

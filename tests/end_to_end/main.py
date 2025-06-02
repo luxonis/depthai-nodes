@@ -6,6 +6,10 @@ import sys
 import pytest
 from utils import find_slugs_from_zoo, get_model_slugs_from_zoo
 
+from depthai_nodes.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 def main():
     arg_parser = argparse.ArgumentParser()
@@ -55,17 +59,19 @@ def main():
     else:
         run_all = False
         model = supported_models[args.depthai_nodes_version]
-        print(
+        logger.info(
             f"\nRunning on release version {args.depthai_nodes_version} with preselected {len(model)} models."
         )
 
     if model:
         run_all = False
 
-    print(f"\nRun all tests: {run_all}")
-    print(f"RVC2 IP: {os.getenv('RVC2_IP', '')}")
-    print(f"RVC4 IP: {os.getenv('RVC4_IP', '')}")
-    print(f"RVC platform: {'RVC2 & RVC4' if rvc_platform == '' else rvc_platform}")
+    logger.info(f"\nRun all tests: {run_all}")
+    logger.info(f"RVC2 IP: {os.getenv('RVC2_IP', '')}")
+    logger.info(f"RVC4 IP: {os.getenv('RVC4_IP', '')}")
+    logger.info(
+        f"RVC platform: {'RVC2 & RVC4' if rvc_platform == '' else rvc_platform}"
+    )
 
     if run_all and (nn_archive_path or model):
         raise ValueError("You can't pass both -all and -nn_archive_path or -model")
@@ -78,7 +84,7 @@ def main():
         if len(model) == 0:
             raise ValueError(f"No models found for parser {parser}")
         else:
-            print(f"Found models for parser {parser}: {model}")
+            logger.info(f"Found models for parser {parser}: {model}")
 
     if not nn_archive_path and not model:
         raise ValueError("You have to pass either path to NNArchive or model")

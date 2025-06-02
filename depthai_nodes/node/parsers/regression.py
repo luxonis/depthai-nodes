@@ -34,6 +34,9 @@ class RegressionParser(BaseParser):
         """
         super().__init__()
         self.output_layer_name = output_layer_name
+        self._logger.debug(
+            f"RegressionParser initialized with output_layer_name='{output_layer_name}'"
+        )
 
     def setOutputLayerName(self, output_layer_name: str):
         """Sets the name of the output layer.
@@ -44,6 +47,7 @@ class RegressionParser(BaseParser):
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
         self.output_layer_name = output_layer_name
+        self._logger.debug(f"Output layer name set to '{self.output_layer_name}'")
 
     def build(
         self,
@@ -64,9 +68,14 @@ class RegressionParser(BaseParser):
             )
         self.output_layer_name = output_layers[0]
 
+        self._logger.debug(
+            f"RegressionParser built with output_layer_name='{self.output_layer_name}'"
+        )
+
         return self
 
     def run(self):
+        self._logger.debug("RegressionParser run started")
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
@@ -74,6 +83,7 @@ class RegressionParser(BaseParser):
                 break  # Pipeline was stopped
 
             layers = output.getAllLayerNames()
+            self._logger.debug(f"Processing input with layers: {layers}")
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":
@@ -91,4 +101,10 @@ class RegressionParser(BaseParser):
             regression_message.setTransformation(output.getTransformation())
             regression_message.setSequenceNum(output.getSequenceNum())
 
+            self._logger.debug(
+                f"Created regression message with {len(predictions)} values"
+            )
+
             self.out.send(regression_message)
+
+            self._logger.debug("Regression message sent successfully")

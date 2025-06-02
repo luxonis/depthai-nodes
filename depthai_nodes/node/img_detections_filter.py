@@ -36,6 +36,7 @@ class ImgDetectionsFilter(BaseHostNode):
         self._confidence_threshold = None
         self._max_detections = None
         self._sort_by_confidence = False
+        self._logger.debug("ImgDetectionsFilter initialized")
 
     def setLabels(self, labels: List[int], keep: bool) -> None:
         """Sets the labels to keep or reject.
@@ -57,6 +58,10 @@ class ImgDetectionsFilter(BaseHostNode):
             self._labels_to_keep = None
             self._labels_to_reject = labels
 
+        self._logger.debug(
+            f"Labels set to {self._labels_to_keep if keep else self._labels_to_reject}"
+        )
+
     def setConfidenceThreshold(self, confidence_threshold: float) -> None:
         """Sets the confidence threshold.
 
@@ -69,6 +74,7 @@ class ImgDetectionsFilter(BaseHostNode):
         ):
             raise ValueError("confidence_threshold must be a float.")
         self._confidence_threshold = confidence_threshold
+        self._logger.debug(f"Confidence threshold set to {self._confidence_threshold}")
 
     def setMaxDetections(self, max_detections: int) -> None:
         """Sets the maximum number of detections.
@@ -79,6 +85,7 @@ class ImgDetectionsFilter(BaseHostNode):
         if not isinstance(max_detections, int) and max_detections is not None:
             raise ValueError("max_detections must be an integer.")
         self._max_detections = max_detections
+        self._logger.debug(f"Max detections set to {self._max_detections}")
 
     def setSortByConfidence(self, sort_by_confidence: bool) -> None:
         """Sets whether to sort the detections by confidence before subsetting.
@@ -89,6 +96,7 @@ class ImgDetectionsFilter(BaseHostNode):
         if not isinstance(sort_by_confidence, bool):
             raise ValueError("sort_by_confidence must be a boolean.")
         self._sort_by_confidence = sort_by_confidence
+        self._logger.debug(f"Sort by confidence set to {self._sort_by_confidence}")
 
     def build(
         self,
@@ -120,9 +128,14 @@ class ImgDetectionsFilter(BaseHostNode):
 
         self.setSortByConfidence(sort_by_confidence)
 
+        self._logger.debug(
+            f"ImgDetectionsFilter built with labels_to_keep={labels_to_keep}, labels_to_reject={labels_to_reject}, confidence_threshold={confidence_threshold}, max_detections={max_detections}, sort_by_confidence={sort_by_confidence}"
+        )
+
         return self
 
     def process(self, msg: dai.Buffer) -> None:
+        self._logger.debug("Processing new input")
         assert isinstance(
             msg,
             (
@@ -159,4 +172,8 @@ class ImgDetectionsFilter(BaseHostNode):
 
         msg_new.detections = filtered_detections[: self._max_detections]
 
+        self._logger.debug("Detections message created")
+
         self.out.send(msg_new)
+
+        self._logger.debug("Message sent successfully")

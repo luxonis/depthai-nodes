@@ -74,6 +74,9 @@ class ClassificationSequenceParser(ClassificationParser):
         self.ignored_indexes = ignored_indexes if ignored_indexes is not None else []
         self.remove_duplicates = remove_duplicates
         self.concatenate_classes = concatenate_classes
+        self._logger.debug(
+            f"ClassificationSequenceParser initialized with output_layer_name='{output_layer_name}', classes={classes}, is_softmax={is_softmax}, ignored_indexes={ignored_indexes}, remove_duplicates={remove_duplicates}, concatenate_classes={concatenate_classes}"
+        )
 
     def setRemoveDuplicates(self, remove_duplicates: bool) -> None:
         """Sets the remove_duplicates flag for the classification sequence model.
@@ -85,6 +88,7 @@ class ClassificationSequenceParser(ClassificationParser):
         if not isinstance(remove_duplicates, bool):
             raise ValueError("remove_duplicates must be a boolean.")
         self.remove_duplicates = remove_duplicates
+        self._logger.debug(f"Remove duplicates set to {remove_duplicates}")
 
     def setIgnoredIndexes(self, ignored_indexes: List[int]) -> None:
         """Sets the ignored_indexes for the classification sequence model.
@@ -98,6 +102,7 @@ class ClassificationSequenceParser(ClassificationParser):
         if not all(isinstance(index, int) for index in ignored_indexes):
             raise ValueError("All ignored indexes must be integers.")
         self.ignored_indexes = ignored_indexes
+        self._logger.debug(f"Ignored indexes set to {ignored_indexes}")
 
     def setConcatenateClasses(self, concatenate_classes: bool) -> None:
         """Sets the concatenate_classes flag for the classification sequence model.
@@ -109,6 +114,7 @@ class ClassificationSequenceParser(ClassificationParser):
         if not isinstance(concatenate_classes, bool):
             raise ValueError("concatenate_classes must be a boolean.")
         self.concatenate_classes = concatenate_classes
+        self._logger.debug(f"Concatenate classes set to {concatenate_classes}")
 
     def build(self, head_config: Dict[str, Any]) -> "ClassificationSequenceParser":
         """Configures the parser.
@@ -129,9 +135,14 @@ class ClassificationSequenceParser(ClassificationParser):
             "concatenate_classes", self.concatenate_classes
         )
 
+        self._logger.debug(
+            f"ClassificationSequenceParser built with ignored_indexes={self.ignored_indexes}, remove_duplicates={self.remove_duplicates}, concatenate_classes={self.concatenate_classes}"
+        )
+
         return self
 
     def run(self):
+        self._logger.debug("ClassificationSequenceParser run started")
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
@@ -140,6 +151,7 @@ class ClassificationSequenceParser(ClassificationParser):
                 break
 
             layers = output.getAllLayerNames()
+            self._logger.debug(f"Processing input with layers: {layers}")
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":
@@ -183,4 +195,8 @@ class ClassificationSequenceParser(ClassificationParser):
             msg.setTimestamp(output.getTimestamp())
             msg.setSequenceNum(output.getSequenceNum())
 
+            self._logger.debug(f"Created message with {len(msg.classes)} classes")
+
             self.out.send(msg)
+
+            self._logger.debug("Classification message sent successfully")

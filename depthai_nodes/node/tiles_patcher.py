@@ -39,6 +39,7 @@ class TilesPatcher(BaseHostNode):
         self.tile_buffer = []
         self.current_timestamp = None
         self.expected_tiles_count = 0
+        self._logger.debug("TilesPatcher initialized")
 
     def build(
         self, tile_manager: Tiling, nn: dai.Node.Output, conf_thresh=0.3, iou_thresh=0.4
@@ -72,6 +73,9 @@ class TilesPatcher(BaseHostNode):
         self.expected_tiles_count = len(self.tile_manager.tile_positions)
         self.sendProcessingToPipeline(True)
         self.link_args(nn)
+        self._logger.debug(
+            f"TilesPatcher built with conf_thresh={conf_thresh}, iou_thresh={iou_thresh}"
+        )
         return self
 
     def process(self, nn_output: dai.ImgDetections) -> None:
@@ -82,6 +86,7 @@ class TilesPatcher(BaseHostNode):
         @param nn_output: The detections from the neural network's output.
         @type nn_output: dai.ImgDetections
         """
+        self._logger.debug("Processing new input")
         timestamp = nn_output.getTimestamp()
         device_timestamp = nn_output.getTimestampDevice()
 
@@ -230,4 +235,8 @@ class TilesPatcher(BaseHostNode):
         detections.setTimestampDevice(device_timestamp)
         detections.detections = detection_list
 
+        self._logger.debug("Detections message created")
+
         self.out.send(detections)
+
+        self._logger.debug("Message sent successfully")

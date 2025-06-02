@@ -3,7 +3,6 @@ from typing import Callable, Dict, List, Optional, Union
 
 import depthai as dai
 
-from depthai_nodes.logging import get_logger
 from depthai_nodes.node.base_host_node import BaseHostNode
 
 ProcessFnFrameOnlyType = Callable[["SnapsProducerFrameOnly", dai.ImgFrame], None]
@@ -45,7 +44,9 @@ class SnapsProducerFrameOnly(BaseHostNode):
         else:
             self.setProcessFn(process_fn)
 
-        self._logger = get_logger(__name__)
+        self._logger.debug(
+            f"SnapsProducerFrameOnly initialized with time_interval={time_interval}"
+        )
 
     def setToken(self, token: str):
         """Sets the Hub API token.
@@ -56,6 +57,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
         if not isinstance(token, str):
             raise ValueError("token must of of type string.")
         self._em.setToken(token)
+        self._logger.debug(f"Token set to {token}")
 
     def setUrl(self, url: str):
         """Set the URL of the events service. By default, the URL is set to https://events-ingest.cloud.luxonis.com.
@@ -66,6 +68,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
         if not isinstance(url, str):
             raise ValueError("url must of of type string.")
         self._em.setUrl(url)
+        self._logger.debug(f"Url set to {url}")
 
     def setTimeInterval(self, time_interval: Union[int, float]):
         """Sets time interval between snaps. Only relevant if using default processing.
@@ -78,6 +81,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
             raise ValueError("time_interval must be of type int or float.")
 
         self.time_interval = time_interval
+        self._logger.debug(f"Time interval set to {time_interval}")
 
     def setProcessFn(self, process_fn: ProcessFnFrameOnlyType):
         """Sets custom processing function.
@@ -89,6 +93,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
             raise ValueError("process_fn must be a function.")
 
         self._process_fn = process_fn
+        self._logger.debug("Process function set")
 
     def build(
         self,
@@ -112,6 +117,9 @@ class SnapsProducerFrameOnly(BaseHostNode):
         self.setTimeInterval(time_interval)
         if process_fn is not None:
             self.setProcessFn(process_fn)
+        self._logger.debug(
+            f"SnapsProducerFrameOnly built with time_interval={time_interval}"
+        )
         return self
 
     def process(self, frame: dai.Buffer):
@@ -122,6 +130,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
         @param frame: The input message for snap creation.
         @type frame: dai.ImgFrame
         """
+        self._logger.debug("Processing new input")
         assert isinstance(frame, dai.ImgFrame)
         if self._process_fn is None:
             self.sendSnap("frame", frame)
@@ -203,6 +212,7 @@ class SnapsProducer(SnapsProducerFrameOnly):
             raise ValueError("process_fn must be a function.")
 
         self._process_fn = process_fn
+        self._logger.debug("Process function set")
 
     def build(
         self,
@@ -230,6 +240,7 @@ class SnapsProducer(SnapsProducerFrameOnly):
         self.setTimeInterval(time_interval)
         if process_fn is not None:
             self.setProcessFn(process_fn)
+        self._logger.debug(f"SnapsProducer built with time_interval={time_interval}")
         return self
 
     def process(self, frame: dai.Buffer, msg: dai.Buffer):
@@ -242,6 +253,7 @@ class SnapsProducer(SnapsProducerFrameOnly):
         @param frame: The additional input message for snap creation.
         @type frame: dai.Buffer
         """
+        self._logger.debug("Processing new input")
         assert isinstance(frame, dai.ImgFrame)
         if self._process_fn is None:
             self.sendSnap("frame", frame)

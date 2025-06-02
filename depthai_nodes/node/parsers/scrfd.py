@@ -72,6 +72,9 @@ class SCRFDParser(DetectionParser):
         self.num_anchors = num_anchors
         self.input_size = input_size
         self.label_names = ["Face"]
+        self._logger.debug(
+            f"SCRFDParser initialized with output_layer_names={output_layer_names}, conf_threshold={conf_threshold}, iou_threshold={iou_threshold}, max_det={max_det}, input_size={input_size}, feat_stride_fpn={feat_stride_fpn}, num_anchors={num_anchors}"
+        )
 
     def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
         """Sets the output layer name(s) for the parser.
@@ -84,6 +87,7 @@ class SCRFDParser(DetectionParser):
         if not all(isinstance(layer, str) for layer in output_layer_names):
             raise ValueError("Output layer names must be a list of strings.")
         self.output_layer_names = output_layer_names
+        self._logger.debug(f"Output layer names set to {self.output_layer_names}")
 
     def setInputSize(self, input_size: Tuple[int, int]) -> None:
         """Sets the input size of the model.
@@ -96,6 +100,7 @@ class SCRFDParser(DetectionParser):
         if not all(isinstance(size, int) for size in input_size):
             raise ValueError("Input size must be a tuple of integers.")
         self.input_size = input_size
+        self._logger.debug(f"Input size set to {self.input_size}")
 
     def setFeatStrideFPN(self, feat_stride_fpn: List[int]) -> None:
         """Sets the feature stride of the FPN.
@@ -108,6 +113,7 @@ class SCRFDParser(DetectionParser):
         if not all(isinstance(stride, int) for stride in feat_stride_fpn):
             raise ValueError("Feature stride must be a list of integers.")
         self.feat_stride_fpn = feat_stride_fpn
+        self._logger.debug(f"Feature stride set to {self.feat_stride_fpn}")
 
     def setNumAnchors(self, num_anchors: int) -> None:
         """Sets the number of anchors.
@@ -118,6 +124,7 @@ class SCRFDParser(DetectionParser):
         if not isinstance(num_anchors, int):
             raise ValueError("Number of anchors must be an integer.")
         self.num_anchors = num_anchors
+        self._logger.debug(f"Number of anchors set to {self.num_anchors}")
 
     def build(
         self,
@@ -149,9 +156,14 @@ class SCRFDParser(DetectionParser):
         self.feat_stride_fpn = head_config.get("feat_stride_fpn", self.feat_stride_fpn)
         self.num_anchors = head_config.get("num_anchors", self.num_anchors)
 
+        self._logger.debug(
+            f"SCRFDParser built with output_layer_names={self.output_layer_names}, feat_stride_fpn={self.feat_stride_fpn}, num_anchors={self.num_anchors}"
+        )
+
         return self
 
     def run(self):
+        self._logger.debug("SCRFDParser run started")
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
@@ -164,6 +176,10 @@ class SCRFDParser(DetectionParser):
 
             if len(self.output_layer_names) == 0:
                 self.output_layer_names = output.getAllLayerNames()
+
+            self._logger.debug(
+                f"Processing input with layers: {output.getAllLayerNames()}"
+            )
 
             for stride in self.feat_stride_fpn:
                 score_layer_name = f"score_{stride}"
@@ -233,4 +249,10 @@ class SCRFDParser(DetectionParser):
             message.setTransformation(output.getTransformation())
             message.setSequenceNum(output.getSequenceNum())
 
+            self._logger.debug(
+                f"Created detection message with {len(bboxes)} detections"
+            )
+
             self.out.send(message)
+
+            self._logger.debug("Detection message sent successfully")

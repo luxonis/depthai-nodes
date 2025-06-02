@@ -3,6 +3,8 @@ from typing import Any, Dict
 
 import depthai as dai
 
+from depthai_nodes.logging import get_logger
+
 
 class BaseMeta(ABCMeta, type(dai.node.ThreadedHostNode)):
     pass
@@ -28,6 +30,7 @@ class BaseParser(dai.node.ThreadedHostNode, metaclass=BaseMeta):
         super().__init__()
         self._input = self.createInput()
         self._out = self.createOutput()
+        self._logger = get_logger(self.__class__.__name__)
 
     @property
     @abstractmethod

@@ -39,6 +39,9 @@ class MapOutputParser(BaseParser):
         super().__init__()
         self.min_max_scaling = min_max_scaling
         self.output_layer_name = output_layer_name
+        self._logger.debug(
+            f"MapOutputParser initialized with output_layer_name='{output_layer_name}', min_max_scaling={min_max_scaling}"
+        )
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
@@ -49,6 +52,7 @@ class MapOutputParser(BaseParser):
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
         self.output_layer_name = output_layer_name
+        self._logger.debug(f"Output layer name set to '{self.output_layer_name}'")
 
     def setMinMaxScaling(self, min_max_scaling: bool) -> None:
         """Sets the min_max_scaling flag.
@@ -59,6 +63,7 @@ class MapOutputParser(BaseParser):
         if not isinstance(min_max_scaling, bool):
             raise ValueError("min_max_scaling must be a boolean.")
         self.min_max_scaling = min_max_scaling
+        self._logger.debug(f"Min max scaling set to {self.min_max_scaling}")
 
     def build(
         self,
@@ -80,9 +85,14 @@ class MapOutputParser(BaseParser):
         self.output_layer_name = output_layers[0]
         self.min_max_scaling = head_config.get("min_max_scaling", self.min_max_scaling)
 
+        self._logger.debug(
+            f"MapOutputParser built with output_layer_name='{self.output_layer_name}', min_max_scaling={self.min_max_scaling}"
+        )
+
         return self
 
     def run(self):
+        self._logger.debug("MapOutputParser run started")
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
@@ -90,6 +100,7 @@ class MapOutputParser(BaseParser):
                 break  # Pipeline was stopped
 
             layers = output.getAllLayerNames()
+            self._logger.debug(f"Processing input with layers: {layers}")
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":
@@ -109,4 +120,8 @@ class MapOutputParser(BaseParser):
             map_message.setTransformation(output.getTransformation())
             map_message.setSequenceNum(output.getSequenceNum())
 
+            self._logger.debug("Created Map message.")
+
             self.out.send(map_message)
+
+            self._logger.debug("Map message sent successfully")

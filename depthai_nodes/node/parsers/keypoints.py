@@ -73,6 +73,9 @@ class KeypointParser(BaseParser):
         self.score_threshold = score_threshold
         self.label_names = label_names
         self.edges = edges
+        self._logger.debug(
+            f"KeypointParser initialized with output_layer_name='{output_layer_name}', scale_factor={scale_factor}, n_keypoints={n_keypoints}, score_threshold={score_threshold}, label_names={label_names}, edges={edges}"
+        )
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
@@ -83,6 +86,7 @@ class KeypointParser(BaseParser):
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
         self.output_layer_name = output_layer_name
+        self._logger.debug(f"Output layer name set to '{self.output_layer_name}'")
 
     def setScaleFactor(self, scale_factor: float) -> None:
         """Sets the scale factor to divide the keypoints by.
@@ -97,6 +101,7 @@ class KeypointParser(BaseParser):
             raise ValueError("Scale factor must be greater than 0.")
 
         self.scale_factor = scale_factor
+        self._logger.debug(f"Scale factor set to {self.scale_factor}")
 
     def setNumKeypoints(self, n_keypoints: int) -> None:
         """Sets the number of keypoints.
@@ -111,6 +116,7 @@ class KeypointParser(BaseParser):
             raise ValueError("Number of keypoints must be greater than 0.")
 
         self.n_keypoints = n_keypoints
+        self._logger.debug(f"Number of keypoints set to {self.n_keypoints}")
 
     def setScoreThreshold(self, threshold: float) -> None:
         """Sets the confidence score threshold for the detected body keypoints.
@@ -125,6 +131,7 @@ class KeypointParser(BaseParser):
             raise ValueError("Confidence threshold must be between 0 and 1.")
 
         self.score_threshold = threshold
+        self._logger.debug(f"Score threshold set to {self.score_threshold}")
 
     def setLabelNames(self, label_names: List[str]) -> None:
         """Sets the label names for the keypoints.
@@ -137,6 +144,7 @@ class KeypointParser(BaseParser):
         if not all(isinstance(label, str) for label in label_names):
             raise ValueError("Label names must be a list of strings.")
         self.label_names = label_names
+        self._logger.debug(f"Label names set to {self.label_names}")
 
     def setEdges(self, edges: List[Tuple[int, int]]) -> None:
         """Sets the edges for the keypoints.
@@ -156,6 +164,7 @@ class KeypointParser(BaseParser):
         ):
             raise ValueError("Edges must be a list of tuples of integers.")
         self.edges = edges
+        self._logger.debug(f"Edges set to {self.edges}")
 
     def build(
         self,
@@ -183,9 +192,14 @@ class KeypointParser(BaseParser):
         if keypoint_edges:
             self.edges = [tuple(edge) for edge in keypoint_edges]
 
+        self._logger.debug(
+            f"KeypointParser built with output_layer_name='{self.output_layer_name}', scale_factor={self.scale_factor}, n_keypoints={self.n_keypoints}, score_threshold={self.score_threshold}, label_names={self.label_names}, edges={self.edges}"
+        )
+
         return self
 
     def run(self):
+        self._logger.debug("KeypointParser run started")
         if self.n_keypoints is None:
             raise ValueError("Number of keypoints must be specified!")
 
@@ -196,6 +210,7 @@ class KeypointParser(BaseParser):
                 break  # Pipeline was stopped
 
             layers = output.getAllLayerNames()
+            self._logger.debug(f"Processing input with layers: {layers}")
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":
@@ -226,4 +241,10 @@ class KeypointParser(BaseParser):
             msg.setTransformation(output.getTransformation())
             msg.setSequenceNum(output.getSequenceNum())
 
+            self._logger.debug(
+                f"Created keypoints message with {len(keypoints)} points"
+            )
+
             self.out.send(msg)
+
+            self._logger.debug("Keypoints message sent successfully")

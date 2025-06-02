@@ -56,6 +56,9 @@ class HRNetParser(KeypointParser):
             label_names=label_names,
             edges=edges,
         )
+        self._logger.debug(
+            f"HRNetParser initialized with output_layer_name='{output_layer_name}', score_threshold={score_threshold}, label_names={label_names}, edges={edges}"
+        )
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
@@ -66,6 +69,7 @@ class HRNetParser(KeypointParser):
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
         self.output_layer_name = output_layer_name
+        self._logger.debug(f"Output layer name set to '{self.output_layer_name}'")
 
     def build(
         self,
@@ -80,10 +84,11 @@ class HRNetParser(KeypointParser):
         """
 
         super().build(head_config)
-
+        self._logger.debug("HRNetParser built successfully")
         return self
 
     def run(self):
+        self._logger.debug("HRNetParser run started")
         while self.isRunning():
             try:
                 output: dai.NNData = self.input.get()
@@ -91,6 +96,7 @@ class HRNetParser(KeypointParser):
                 break  # Pipeline was stopped
 
             layers = output.getAllLayerNames()
+            self._logger.debug(f"Processing input with layers: {layers}")
             if len(layers) == 1 and self.output_layer_name == "":
                 self.output_layer_name = layers[0]
             elif len(layers) != 1 and self.output_layer_name == "":
@@ -139,4 +145,10 @@ class HRNetParser(KeypointParser):
             keypoints_message.setTransformation(output.getTransformation())
             keypoints_message.setSequenceNum(output.getSequenceNum())
 
+            self._logger.debug(
+                f"Created keypoints message with {len(keypoints)} points"
+            )
+
             self.out.send(keypoints_message)
+
+            self._logger.debug("Keypoints message sent successfully")
