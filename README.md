@@ -19,11 +19,11 @@ We are always listening to the community so feel free to report and feedback, is
 ## 📜 Table of Contents
 
 - [🌟 Overview](#overview)
-- [🛠️ Installation](#installation)
-- [📦 Content](#content)
-  - [📨 Message](#message)
-  - [🧩 Node](#node)
-- [🤝 Contributing](#contributing)
+- [🛠️ Installation](#-installation)
+- [📦 Content](#-content)
+  - [📨 Message](#-message)
+  - [🧩 Node](#-node)
+- [🤝 Contributing](#-contributing)
 
 ## 🛠️ Installation
 
