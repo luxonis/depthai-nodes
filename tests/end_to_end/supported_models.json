@@ -229,7 +229,7 @@
         "mediapipe-face-landmarker:192x192",
         "scrfd-face-detection:10g-640x640"
     ],
-    "v1.0.0": [
+    "v0.3.0-beta": [
         "barcode-detection:768x576",
         "barcode-detection:512x384",
         "yolov8-instance-segmentation-large:coco-640x480",
