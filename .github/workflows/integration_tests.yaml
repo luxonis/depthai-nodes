@@ -31,9 +31,6 @@ jobs:
         python-version: ${{ matrix.python-version }}
         cache: pip
 
-    - name: Install depthai
-      run: pip install --extra-index-url ${{ secrets.LUXONIS_EXTRA_INDEX_URL }} depthai==3.0.0b1
-
     - name: Install package
       run: pip install -e .[dev]
 
