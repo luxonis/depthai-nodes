@@ -19,7 +19,7 @@ class SegmentationParser(BaseParser):
 
     Output Message/s
     ----------------
-    **Type**: dai.ImgFrame
+    **Type**: SegmentationMask
 
     **Description**: Segmentation message containing the segmentation mask. Every pixel belongs to exactly one class. Unassigned pixels are represented with "-1" and class pixels with non-negative integers.
 
