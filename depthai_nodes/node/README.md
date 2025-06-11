@@ -1,5 +1,23 @@
 # Nodes
 
+## Table of Contents
+
+- [Parser Nodes](#parser-nodes)
+  - [Object Detection](#object-detection)
+  - [Classification](#classification)
+  - [Segmentation](#segmentation)
+  - [Keypoints](#keypoints)
+  - [Feature Matching](#feature-matching)
+  - [Other](#other)
+- [Utility & Helper Nodes](#utility--helper-nodes)
+  - [Base Classes](#base-classes)
+  - [Image Processing Nodes](#image-processing-nodes)
+  - [Neural Network Processing](#neural-network-processing)
+  - [Detection and Filtering](#detection-and-filtering)
+  - [Data Management](#data-management)
+- [Usage](#usage)
+  - [Example](#example)
+
 ## Parser Nodes
 
 Parser nodes are used to parse the output of a neural network. The main purpose of these nodes is to hide all postprocessing logic from the user. The node will send out a message with the parsed data (e.g. detections, keypoints, etc.).
