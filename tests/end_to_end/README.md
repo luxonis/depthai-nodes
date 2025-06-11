@@ -13,7 +13,7 @@ There are 3 required parameters that need to be set when triggering the Github a
 
 - `additional-parameter`: The parameter that specifies the desired test. Default is `-all` which runs tests on all public models. The available options are: `-all`, `-p <parser_name>`, `-m <model_1> <model_2> ...`.
 - `depthai-nodes-version`: The branch or release on which the tests will be run. Default is `main`.
-- `depthai-version`: The version of the DepthAI that will be used for the tests. Default is `3.0.0rc1`.
+- `depthai-version`: The version of the DepthAI that will be used for the tests. Default is `3.0.0rc2`.
 
 ## Running the tests locally
 

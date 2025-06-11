@@ -73,7 +73,7 @@ You would need the B2 credentials to download the tests from the bucket and set 
 The stability tests are triggered in every PR. But you can also trigger them manually. Required parameters are:
 
 - `additional-parameter`: The parameter that specifies the desired test. Default is `-all` which runs tests on all parsers. The available options are: `-all`, `-p <parser_name>`.
-- `depthai-version`: The version of the DepthAI that will be used for the tests. Default is `3.0.0rc1`.
+- `depthai-version`: The version of the DepthAI that will be used for the tests. Default is `3.0.0rc2`.
 - `duration`: The duration of each test in seconds. Default is `10` seconds.
 
 ## How to create test for Host node or parser
