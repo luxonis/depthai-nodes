@@ -72,6 +72,8 @@ The `node` module provides a collection of ready-to-use host-side nodes that abs
 
 This modular approach allows you to rapidly prototype and scale complex applications with less effort while keeping your code clean and maintainable.
 
+To read more about the nodes and see simple examples, please refer to the [nodes documentation](./depthai_nodes/node/README.md).
+
 ## 🤝 Contributing
 
 If you want to contribute to this project, read the instructions in [CONTRIBUTING.md](./CONTRIBUTING.md)
