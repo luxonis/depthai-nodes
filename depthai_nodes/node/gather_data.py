@@ -29,8 +29,6 @@ TGathered = TypeVar("TGathered", bound=dai.Buffer)
 
 
 class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
-    FPS_TOLERANCE_DIVISOR = 2.0
-    INPUT_CHECKS_PER_FPS = 100
     """A class for gathering data. Gathers n messages based on reference_data. To
     determine n, wait_count_fn function is used. The default wait_count_fn function is
     waiting for len(TReference.detection). This means the node works out-of-the-box with
@@ -49,6 +47,9 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     output: dai.Node.Output
         Output for gathered data.
     """
+
+    FPS_TOLERANCE_DIVISOR = 2.0
+    INPUT_CHECKS_PER_FPS = 100
 
     def __init__(self) -> None:
         """Initializes the GatherData node."""
@@ -79,32 +80,19 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     ) -> "GatherData[TReference, TGathered]":
         """Builds and configures the GatherData node with the specified parameters.
 
-        Parameters
-        ----------
-        camera_fps : int
-            The frames per second (FPS) setting for the camera. This affects the rate
-            at which data is gathered.
+        @param camera_fps: The frames per second (FPS) setting for the camera.
+        @param wait_count_fn: A function that takes a reference and returns how many frames to wait.
+        @type camera_fps: int
+        @type wait_count_fn: Optional[Callable[[TReference], int]]
 
-        wait_count_fn : Optional[Callable[[TReference], int]], default=None
-            A function that takes a reference and returns the number of frames to wait
-            before gathering data. This allows customizing the waiting behavior based on the reference data.
-            If None, the default wait count function will be used. The default function matches based on length of TReference.detections array.
+        @return: The configured GatherData node instance.
+        @rtype: GatherData[TReference, TGathered]
 
-        Returns
-        -------
-        GatherData[TReference, TGathered]
-            The configured GatherData node instance.
-
-        Examples
-        --------
-        >>> gather_node = GatherData()
-        >>> # Build with default wait count function
-        >>> gather_node.build(camera_fps=30)
-        >>>
-        >>> # Build with custom wait count function that always waits for 2 messages
-        >>> def custom_wait(ref):
-        >>>     return 2
-        >>> gather_node.build(camera_fps=60, wait_count_fn=custom_wait)
+        @example:
+            >>> gather_node = GatherData()
+            >>> gather_node.build(camera_fps=30)
+            >>> def custom_wait(ref): return 2
+            >>> gather_node.build(camera_fps=60, wait_count_fn=custom_wait)
         """
         self.set_camera_fps(camera_fps)
         if wait_count_fn is None:
