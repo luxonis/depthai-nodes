@@ -78,3 +78,39 @@ Parser nodes are used to parse the output of a neural network. The main purpose 
 These nodes are designed to be used within DepthAI V3 pipelines to process and manipulate data from OAK devices. Each node provides specific functionality and can be combined to create complex processing pipelines.
 
 For detailed usage examples and specific node configurations, please refer to the individual node documentation.
+
+### Example
+
+The entry point for using neural networks is usually the `ParsingNeuralNetwork` node, which accepts a model reference from Model ZOO (or the NN archive) and creates everything needed to run the model in the pipeline. You can read more about the NN archive in our documentation [here](https://docs.luxonis.com/software-v3/ai-inference/nn-archive/).
+
+Example usage of `ParsingNeuralNetwork` node:
+
+```python
+from depthai_nodes.node import ParsingNeuralNetwork
+
+camera_node = pipeline.create(dai.node.Camera).build()
+
+nn = pipeline.create(ParsingNeuralNetwork).build(
+    camera_node, model_source="luxonis/mediapipe-selfie-segmentation:256x144"
+)
+```
+
+As `model_source` you can provide local NN Archive, model reference from Model ZOO or `dai.NNModelDescription` object.
+
+This code section creates the `dai.NeuralNetwork` and `SegmentationParser` nodes required for postprocessing the results. Additionally, the `ParsingNeuralNetwork` node handles all the necessary connections: It connects the `Camera` node to the `NeuralNetwork` node, the `NeuralNetwork` node to the `SegmentationParser` node, and passes the `SegmentationParser` output to the `nn.out`.
+
+Similarly, you can create any other utility, helper or parser node. For example, if you want to filter out the detections based on the label, you can use the `ImgDetectionsFilter` node.
+
+```python
+from depthai_nodes.node import ParsingNeuralNetwork, ImgDetectionsFilter
+
+camera_node = pipeline.create(dai.node.Camera).build()
+
+nn = pipeline.create(ParsingNeuralNetwork).build(
+    camera_node, model_source="luxonis/yolov6-nano:r2-coco-512x288"
+)
+
+filter_node = pipeline.create(ImgDetectionsFilter).build(nn.out, labels_to_keep=[0])
+```
+
+This code section will pass the detections from the `nn.out` to the `filter_node` and filter out the detections with label `0`.
