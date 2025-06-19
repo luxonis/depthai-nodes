@@ -1,3 +1,5 @@
+from typing import Union
+
 import cv2
 import depthai as dai
 import numpy as np
@@ -13,8 +15,8 @@ class ApplyColormap(BaseHostNode):
 
     Attributes
     ----------
-    colormap_value : Optional[int]
-        OpenCV colormap enum value. Determines the applied color mapping.
+    colormap_value : Optional[Union[int, np.ndarray]
+        OpenCV colormap enum value or a custom, OpenCV compatible, colormap. Determines the applied color mapping.
     max_value : Optional[int]
         Maximum value to consider for normalization. If set lower than the map's actual maximum, the map's maximum will be used instead.
     instance_to_semantic_mask : Optional[bool]
@@ -27,7 +29,7 @@ class ApplyColormap(BaseHostNode):
 
     def __init__(
         self,
-        colormap_value: int = cv2.COLORMAP_JET,
+        colormap_value: Union[int, np.ndarray] = cv2.COLORMAP_JET,
         max_value: int = 0,
         instance_to_semantic_mask: bool = False,
     ) -> None:
@@ -43,18 +45,29 @@ class ApplyColormap(BaseHostNode):
             f"ApplyColormap initialized with colormap_value={colormap_value}, max_value={max_value}, instance_to_semantic_mask={instance_to_semantic_mask}",
         )
 
-    def setColormap(self, colormap_value: int) -> None:
+    def setColormap(self, colormap_value: Union[int, np.ndarray]) -> None:
         """Sets the applied color mapping.
 
-        @param colormap_value: OpenCV colormap enum value (e.g. cv2.COLORMAP_HOT)
-        @type colormap_value: int
+        @param colormap_value: OpenCV colormap enum value (e.g. cv2.COLORMAP_HOT) or a
+            custom, OpenCV compatible, colormap definition
+        @type colormap_value: Union[int, np.ndarray]
         """
-        if not isinstance(colormap_value, int):
-            raise ValueError("colormap_value must be an integer.")
-        colormap = cv2.applyColorMap(np.arange(256, dtype=np.uint8), colormap_value)
-        colormap[0] = [0, 0, 0]  # Set zero values to black
-        self._colormap = colormap
-        self._logger.debug(f"Colormap set to {self._colormap}")
+        if isinstance(colormap_value, int):
+            colormap = cv2.applyColorMap(np.arange(256, dtype=np.uint8), colormap_value)
+            colormap[0] = [0, 0, 0]  # Set zero values to black
+            self._colormap = colormap
+            self._logger.debug(f"Colormap set to {self._colormap}")
+        elif (
+            isinstance(colormap_value, np.ndarray)
+            and colormap_value.shape == (256, 1, 3)
+            and colormap_value.dtype == np.uint8
+        ):
+            self._colormap = colormap_value
+            self._logger.debug("Colormap set to custom")
+        else:
+            raise ValueError(
+                "colormap_value must be an integer or an OpenCV compatible colormap definition."
+            )
 
     def setMaxValue(self, max_value: int) -> None:
         """Sets the maximum frame value for normalization.
