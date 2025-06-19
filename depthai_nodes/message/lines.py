@@ -4,6 +4,7 @@ from typing import List
 import depthai as dai
 
 from depthai_nodes import PRIMARY_COLOR
+from depthai_nodes.logging import get_logger
 
 from .utils import (
     copy_message,
@@ -29,6 +30,7 @@ class Line(dai.Buffer):
         self._start_point: dai.Point2f = None
         self._end_point: dai.Point2f = None
         self._confidence: float = None
+        self._logger = get_logger(__name__)
 
     def copy(self):
         """Creates a new instance of the Line class and copies the attributes.
@@ -103,12 +105,17 @@ class Line(dai.Buffer):
 
         @param value: Confidence of the line.
         @type value: float
-        @raise TypeError: If value is not of type float.
+        @raise TypeError: If value is not a float.
+        @raise ValueError: If value is not between 0 and 1.
         """
         if not isinstance(value, float):
-            raise TypeError(
-                f"Confidence must be of type float, instead got {type(value)}."
-            )
+            raise TypeError("Confidence must be a float.")
+        if value < -0.1 or value > 1.1:
+            raise ValueError("Confidence must be between 0 and 1.")
+        if not (0 <= value <= 1):
+            value = max(0.0, min(1.0, value))
+            self._logger.info("Confidence value was clipped to [0, 1].")
+
         self._confidence = value
 
 

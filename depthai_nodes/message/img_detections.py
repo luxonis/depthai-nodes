@@ -60,7 +60,7 @@ class ImgDetectionExtended(dai.Buffer):
             self._rotated_rect.angle,
         )
         new_obj.rotated_rect = copy.deepcopy(rectangle)
-        new_obj.confidence = float(copy.deepcopy(self.confidence))
+        new_obj.confidence = copy.deepcopy(self.confidence)
         new_obj.label = copy.deepcopy(self.label)
         new_obj.label_name = copy.deepcopy(self.label_name)
         new_obj.keypoints = self._keypoints.copy()
@@ -110,7 +110,7 @@ class ImgDetectionExtended(dai.Buffer):
         if value < -0.1 or value > 1.1:
             raise ValueError("Confidence must be between 0 and 1.")
         if not (0 <= value <= 1):
-            value = max(0, min(1, value))
+            value = max(0.0, min(1.0, value))
             self._logger.info("Confidence value was clipped to [0, 1].")
 
         self._confidence = value
