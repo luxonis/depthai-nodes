@@ -41,7 +41,7 @@ jobs:
         run: pip install pydoctor
 
       - name: Build docs
-        run: pydoctor --docformat=epytext depthai_nodes
+        run: pydoctor --docformat=plaintext depthai_nodes
 
   tests:
     needs:
