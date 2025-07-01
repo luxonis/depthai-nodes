@@ -62,6 +62,7 @@ def decode_scrfd(
     num_anchors,
     score_threshold,
     nms_threshold,
+    anchors,
 ):
     """Decode the detection results of SCRFD.
 
@@ -81,6 +82,8 @@ def decode_scrfd(
     @type score_threshold: float
     @param nms_threshold: Non-maximum suppression threshold.
     @type nms_threshold: float
+    @param anchors: Dictionary of anchors.
+    @type anchors: dict[int, np.ndarray]
     @return: Bounding boxes, confidence scores, and keypoints of detected objects.
     @rtype: tuple[np.ndarray, np.ndarray, np.ndarray]
     """
@@ -96,14 +99,7 @@ def decode_scrfd(
         height = input_size[0] // stride
         width = input_size[1] // stride
 
-        anchor_centers = np.stack(np.mgrid[:height, :width][::-1], axis=-1).astype(
-            np.float32
-        )
-        anchor_centers = (anchor_centers * stride).reshape((-1, 2))
-        if num_anchors > 1:
-            anchor_centers = np.stack([anchor_centers] * num_anchors, axis=1).reshape(
-                (-1, 2)
-            )
+        anchor_centers = anchors[stride]
 
         pos_inds = np.where(scores >= score_threshold)[0]
         bboxes = distance2bbox(anchor_centers, bbox_preds)

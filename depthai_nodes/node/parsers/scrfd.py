@@ -72,6 +72,9 @@ class SCRFDParser(DetectionParser):
         self.num_anchors = num_anchors
         self.input_size = input_size
         self.label_names = ["Face"]
+        self._cached_anchors = self.compute_anchor_centers(
+            self.feat_stride_fpn, self.input_size, self.num_anchors
+        )
         self._logger.debug(
             f"SCRFDParser initialized with output_layer_names={output_layer_names}, conf_threshold={conf_threshold}, iou_threshold={iou_threshold}, max_det={max_det}, input_size={input_size}, feat_stride_fpn={feat_stride_fpn}, num_anchors={num_anchors}"
         )
@@ -155,6 +158,9 @@ class SCRFDParser(DetectionParser):
         self.output_layer_names = output_layers
         self.feat_stride_fpn = head_config.get("feat_stride_fpn", self.feat_stride_fpn)
         self.num_anchors = head_config.get("num_anchors", self.num_anchors)
+        self._cached_anchors = self.compute_anchor_centers(
+            self.feat_stride_fpn, self.input_size, self.num_anchors
+        )
 
         self._logger.debug(
             f"SCRFDParser built with output_layer_names={self.output_layer_names}, feat_stride_fpn={self.feat_stride_fpn}, num_anchors={self.num_anchors}"
@@ -227,6 +233,7 @@ class SCRFDParser(DetectionParser):
                 num_anchors=self.num_anchors,
                 score_threshold=self.conf_threshold,
                 nms_threshold=self.iou_threshold,
+                anchors=self._cached_anchors,
             )
             bboxes = xyxy_to_xywh(bboxes)
             bboxes = np.clip(bboxes, 0, 1)
@@ -256,3 +263,33 @@ class SCRFDParser(DetectionParser):
             self.out.send(message)
 
             self._logger.debug("Detection message sent successfully")
+
+    def compute_anchor_centers(
+        self, strides: List[int], input_size: Tuple[int, int], num_anchors: int
+    ) -> Dict[int, np.ndarray]:
+        """Compute the anchor centers for a given list of strides, input size, and
+        number of anchors.
+
+        @param strides: List of strides.
+        @type strides: List[int]
+        @param input_size: Input size.
+        @type input_size: Tuple[int, int]
+        @param num_anchors: Number of anchors.
+        @type num_anchors: int
+        @return: Dictionary of anchor centers.
+        @rtype: Dict[int, np.ndarray]
+        """
+        anchor_centers_dict = {}
+        for stride in strides:
+            height = input_size[0] // stride
+            width = input_size[1] // stride
+            anchor_centers = np.stack(np.mgrid[:height, :width][::-1], axis=-1).astype(
+                np.float32
+            )
+            anchor_centers = (anchor_centers * stride).reshape((-1, 2))
+            if num_anchors > 1:
+                anchor_centers = np.stack(
+                    [anchor_centers] * num_anchors, axis=1
+                ).reshape((-1, 2))
+            anchor_centers_dict[stride] = anchor_centers
+        return anchor_centers_dict
