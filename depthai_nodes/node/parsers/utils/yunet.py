@@ -199,3 +199,82 @@ def format_detections(
     scores = np.array([scores]).flatten()
 
     return bboxes, keypoints, scores
+
+
+def decode_and_prune_detections(
+    input_size: Tuple[int, int],
+    loc: np.ndarray,
+    conf: np.ndarray,
+    iou: np.ndarray,
+    conf_threshold: float,
+    anchors: np.ndarray,
+    variance: Optional[List[float]] = None,
+):
+    """Optimized function that combines decode_detections and prune_detections. Performs
+    early pruning to avoid processing low-confidence detections.
+
+    @param input_size: The size of the input image (width, height).
+    @param loc: The predicted locations (or offsets) of the bounding boxes.
+    @param conf: The predicted class confidence scores.
+    @param iou: The predicted IoU (Intersection over Union) scores.
+    @param conf_threshold: The confidence threshold for pruning.
+    @param anchors: Pre-computed anchors to avoid regeneration.
+    @param variance: A list of variances used to decode the bounding box predictions.
+    @return: A tuple of bboxes, keypoints, and scores.
+    """
+    w, h = input_size
+
+    if variance is None:
+        variance = [0.1, 0.2]
+
+    # Convert variance to numpy arrays for vectorized operations
+    var0 = variance[0]
+    var1 = variance[1]
+
+    # Get scores and apply early pruning
+    cls_scores = conf[:, 1]
+    iou_scores = np.clip(iou[:, 0], 0.0, 1.0)  # Clip in one operation
+    scores = np.sqrt(cls_scores * iou_scores)
+
+    # Early pruning - only process detections above threshold
+    keep_mask = scores > conf_threshold
+    if not np.any(keep_mask):
+        # Return empty arrays if no detections pass threshold
+        return (
+            np.empty((0, 4), dtype=np.float32),
+            np.empty((0, 10), dtype=np.float32),
+            np.empty((0, 1), dtype=np.float32),
+        )
+
+    # Filter all inputs early
+    loc_filtered = loc[keep_mask]
+    anchors_filtered = anchors[keep_mask]
+    scores_filtered = scores[keep_mask]
+
+    # Pre-compute scale and anchor components
+    scale = np.array([w, h], dtype=np.float32)
+    anchor_xy = anchors_filtered[:, 0:2]
+    anchor_wh = anchors_filtered[:, 2:4]
+
+    # Compute bounding boxes with vectorized operations
+    # Center coordinates
+    center_xy = (anchor_xy + loc_filtered[:, 0:2] * var0 * anchor_wh) * scale
+    # Width and height
+    wh = (anchor_wh * np.exp(loc_filtered[:, 2:4] * var1)) * scale
+    # Convert to top-left format
+    top_left = center_xy - wh / 2
+    bboxes = np.hstack((top_left, wh))
+
+    # Vectorized keypoint computation
+    keypoints = np.zeros((len(anchors_filtered), 10), dtype=np.float32)
+    for i in range(5):
+        start_idx = 4 + i * 2
+        end_idx = start_idx + 2
+        keypoint_xy = (
+            anchor_xy + loc_filtered[:, start_idx:end_idx] * var0 * anchor_wh
+        ) * scale
+        keypoints[:, i * 2 : (i + 1) * 2] = keypoint_xy
+
+    scores_filtered = scores_filtered[:, np.newaxis]
+
+    return bboxes, keypoints, scores_filtered

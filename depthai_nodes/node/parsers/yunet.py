@@ -8,9 +8,9 @@ from depthai_nodes.node.parsers.detection import DetectionParser
 from depthai_nodes.node.parsers.utils import top_left_wh_to_xywh
 from depthai_nodes.node.parsers.utils.nms import nms_cv2
 from depthai_nodes.node.parsers.utils.yunet import (
-    decode_detections,
+    decode_and_prune_detections,
     format_detections,
-    prune_detections,
+    generate_anchors,
 )
 
 
@@ -82,6 +82,10 @@ class YuNetParser(DetectionParser):
         self._logger.debug(
             f"YuNetParser initialized with conf_threshold={self.conf_threshold}, iou_threshold={self.iou_threshold}, max_det={self.max_det}"
         )
+
+        # Cache for anchors to avoid regeneration
+        self._cached_anchors = None
+        self._cached_input_size = None
 
     def setInputSize(self, input_size: Tuple[int, int]) -> None:
         """Sets the input size of the model.
@@ -183,6 +187,13 @@ class YuNetParser(DetectionParser):
         )
         return self
 
+    def _get_cached_anchors(self):
+        """Get cached anchors or generate new ones if input_size changed."""
+        if self._cached_anchors is None or self._cached_input_size != self.input_size:
+            self._cached_anchors = generate_anchors(self.input_size)
+            self._cached_input_size = self.input_size
+        return self._cached_anchors
+
     def run(self):
         self._logger.debug("YuNetParser run started")
         while self.isRunning():
@@ -275,21 +286,31 @@ class YuNetParser(DetectionParser):
             conf = output.getTensor(self.conf_output_layer_name, dequantize=True)
             iou = output.getTensor(self.iou_output_layer_name, dequantize=True)
 
-            # decode detections
-            bboxes, keypoints, scores = decode_detections(
+            # Use optimized combined decode and prune function
+            anchors = self._get_cached_anchors()
+            bboxes, keypoints, scores = decode_and_prune_detections(
                 input_size=self.input_size,
                 loc=loc,
                 conf=conf,
                 iou=iou,
+                conf_threshold=self.conf_threshold,
+                anchors=anchors,
             )
 
-            # prune detections
-            bboxes, keypoints, scores = prune_detections(
-                bboxes=bboxes,
-                keypoints=keypoints,
-                scores=scores,
-                conf_threshold=self.conf_threshold,
-            )
+            # Skip further processing if no detections
+            if len(bboxes) == 0:
+                detections_message = create_detection_message(
+                    bboxes=np.array([]),
+                    scores=np.array([]),
+                    keypoints=np.array([]),
+                    labels=np.array([]),
+                    label_names=[],
+                )
+                detections_message.setTimestamp(output.getTimestamp())
+                detections_message.setTransformation(output.getTransformation())
+                detections_message.setSequenceNum(output.getSequenceNum())
+                self.out.send(detections_message)
+                continue
 
             # format detections
             bboxes, keypoints, scores = format_detections(
