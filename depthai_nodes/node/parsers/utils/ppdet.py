@@ -101,6 +101,91 @@ def _unclip(
     return box
 
 
+# def parse_paddle_detection_outputs(
+#     predictions: np.ndarray,
+#     mask_threshold: float = 0.25,
+#     bbox_threshold: float = 0.5,
+#     max_detections: int = 100,
+#     width: Optional[int] = None,
+#     height: Optional[int] = None,
+# ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+#     """Parse the output of a PaddlePaddle Text Detection model from a mask of text
+#     probabilities into rotated bounding boxes with additional corners saved as
+#     keypoints.
+
+#     @param predictions: The output of a PaddlePaddle Text Detection model.
+#     @type predictions: np.ndarray
+#     @param mask_threshold: The threshold for the mask.
+#     @type mask_threshold: float
+#     @param bbox_threshold: The threshold for bounding boxes.
+#     @type bbox_threshold: float
+#     @param max_detections: The maximum number of candidate bounding boxes.
+#     @type max_detections: int
+#     @return: A touple containing the rotated bounding boxes, corners and scores.
+#     @rtype: Touple[np.ndarray, np.ndarray, np.ndarray]
+#     """
+
+#     if len(predictions.shape) == 4:
+#         if predictions.shape[0] == 1 and predictions.shape[1] == 1:
+#             predictions = predictions[0, 0]
+#         elif predictions.shape[0] == 1 and predictions.shape[3] == 1:
+#             predictions = predictions[0, :, :, 0]
+#         else:
+#             raise ValueError(
+#                 f"Predictions should be either (1, 1, H, W) or (1, H, W, 1), got {predictions.shape}."
+#             )
+#     else:
+#         raise ValueError(
+#             f"Predictions should be 4D array of shape (1, 1, H, W) or (1, H, W, 1), got {predictions.shape}."
+#         )
+
+#     mask = predictions > mask_threshold
+#     kernel = np.ones((5, 5), np.uint8)
+#     mask = cv2.dilate(mask.astype(np.uint8), kernel, iterations=1)
+
+#     outs = cv2.findContours(
+#         (mask * 255).astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE
+#     )
+
+#     if len(outs) == 3:
+#         _, contours, _ = outs[0], outs[1], outs[2]
+#     elif len(outs) == 2:
+#         contours, _ = outs[0], outs[1]
+#     contours = sorted(contours, key=cv2.contourArea, reverse=True)
+
+#     num_contours = min(len(contours), max_detections)
+
+#     boxes = []
+#     scores = []
+#     angles = []
+#     for contour in contours[:num_contours]:
+#         box, corners = _get_mini_boxes(contour)
+#         if min(box[2], box[3]) < 8:
+#             continue
+
+#         score = _box_score(predictions, corners.reshape(-1, 2))
+#         if score < bbox_threshold:
+#             continue
+
+#         box = _unclip(box)
+#         boxes.append(box[:4])
+#         scores.append(score)
+#         angles.append(box[4])
+
+#     boxes = np.array(boxes)
+#     if boxes.size > 0:
+#         boxes[:, 0] /= width
+#         boxes[:, 1] /= height
+#         boxes[:, 2] /= width
+#         boxes[:, 3] /= height
+
+#     boxes = np.clip(boxes, 0.0, 1.0)
+#     angles = np.array(angles)
+#     angles = np.round(angles, 0)
+
+#     return boxes, angles, np.array(scores)
+
+
 def parse_paddle_detection_outputs(
     predictions: np.ndarray,
     mask_threshold: float = 0.25,
@@ -139,48 +224,47 @@ def parse_paddle_detection_outputs(
             f"Predictions should be 4D array of shape (1, 1, H, W) or (1, H, W, 1), got {predictions.shape}."
         )
 
-    mask = predictions > mask_threshold
-    kernel = np.ones((5, 5), np.uint8)
-    mask = cv2.dilate(mask.astype(np.uint8), kernel, iterations=1)
+    H, W = predictions.shape
+    if width is None:
+        width = W
+    if height is None:
+        height = H
 
-    outs = cv2.findContours(
-        (mask * 255).astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE
-    )
+    # Binary mask, already np.uint8
+    mask = (predictions > mask_threshold).astype(np.uint8)
+    mask = cv2.dilate(
+        mask, np.ones((3, 3), np.uint8), iterations=1
+    )  # Smaller kernel is usually enough
 
-    if len(outs) == 3:
-        _, contours, _ = outs[0], outs[1], outs[2]
-    elif len(outs) == 2:
-        contours, _ = outs[0], outs[1]
-    contours = sorted(contours, key=cv2.contourArea, reverse=True)
+    # Find contours - OpenCV 3/4 API compatibility
+    contours, _ = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    # Pre-filter small contours (skip sorting all small blobs)
+    contours = [c for c in contours if cv2.contourArea(c) > 8]
 
-    num_contours = min(len(contours), max_detections)
+    # If too many, pick largest by area only
+    if len(contours) > max_detections:
+        contour_areas = np.array([cv2.contourArea(c) for c in contours])
+        top_indices = np.argpartition(-contour_areas, max_detections)[:max_detections]
+        contours = [contours[i] for i in top_indices]
+    # else just use all
 
-    boxes = []
-    scores = []
-    angles = []
-    for contour in contours[:num_contours]:
+    boxes, angles, scores = [], [], []
+    for contour in contours:
         box, corners = _get_mini_boxes(contour)
-        if min(box[2], box[3]) < 8:
+        if min(box[2], box[3]) < 8:  # Skip tiny boxes
             continue
-
         score = _box_score(predictions, corners.reshape(-1, 2))
         if score < bbox_threshold:
             continue
-
         box = _unclip(box)
-        boxes.append(box[:4])
+        # Save (x, y, w, h)
+        boxes.append([box[0] / width, box[1] / height, box[2] / width, box[3] / height])
+        angles.append(round(box[4], 0))
         scores.append(score)
-        angles.append(box[4])
 
-    boxes = np.array(boxes)
+    boxes = np.array(boxes, dtype=np.float32)
+    angles = np.array(angles, dtype=np.float32)
+    scores = np.array(scores, dtype=np.float32)
     if boxes.size > 0:
-        boxes[:, 0] /= width
-        boxes[:, 1] /= height
-        boxes[:, 2] /= width
-        boxes[:, 3] /= height
-
-    boxes = np.clip(boxes, 0.0, 1.0)
-    angles = np.array(angles)
-    angles = np.round(angles, 0)
-
-    return boxes, angles, np.array(scores)
+        boxes = np.clip(boxes, 0.0, 1.0)
+    return boxes, angles, scores
