@@ -1,6 +1,4 @@
-from itertools import (
-    product,  # NOTE: you can use manual_product function instead of itertools.product
-)
+from itertools import product
 from typing import List, Optional, Tuple
 
 import numpy as np
