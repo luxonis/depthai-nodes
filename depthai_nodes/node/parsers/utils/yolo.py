@@ -182,54 +182,6 @@ def non_max_suppression(
     return output
 
 
-def parse_yolo_outputs(
-    outputs: List[np.ndarray],
-    strides: List[int],
-    num_outputs: int,
-    anchors: Optional[np.ndarray] = None,
-    kpts: Optional[List[np.ndarray]] = None,
-    det_mode: bool = False,
-    subtype: YOLOSubtype = YOLOSubtype.DEFAULT,
-) -> np.ndarray:
-    """Parse all outputs of an YOLO model (all channels).
-
-    @param outputs: List of outputs of an YOLO model.
-    @type outputs: List[np.ndarray]
-    @param strides: List of strides.
-    @type strides: List[int]
-    @param num_outputs: Number of outputs of the model.
-    @type num_outputs: int
-    @param anchors: An optional array of anchors.
-    @type anchors: Optional[np.ndarray]
-    @param kpts: An optional list of keypoints for each output.
-    @type kpts: Optional[List[np.ndarray]]
-    @param det_mode: Detection only mode.
-    @type det_mode: bool
-    @param subtype: YOLO version.
-    @type subtype: YOLOSubtype
-    @return: Parsed output.
-    @rtype: np.ndarray
-    """
-    output = None
-
-    for i, (out_head, stride) in enumerate(zip(outputs, strides)):
-        kpt = kpts[i] if kpts else None
-        anchors_head = anchors[i] if anchors is not None else None
-        out = parse_yolo_output(
-            out_head,
-            stride,
-            num_outputs,
-            anchors_head,
-            head_id=i,
-            kpts=kpt,
-            det_mode=det_mode,
-            subtype=subtype,
-        )
-        output = out if output is None else np.concatenate((output, out), axis=1)
-
-    return output
-
-
 def parse_yolo_output(
     out: np.ndarray,
     stride: int,
@@ -385,7 +337,7 @@ def decode_yolo_output(
     num_classes: int = 1,
     det_mode: bool = False,
     subtype: YOLOSubtype = YOLOSubtype.DEFAULT,
-    max_nms: int = 3000,  # NEW: limit candidate boxes to speed up NMS
+    max_nms: int = 3000,
 ) -> np.ndarray:
     """Decode the output of an YOLO instance segmentation or pose estimation model.
 
@@ -431,8 +383,6 @@ def decode_yolo_output(
             subtype=subtype,
         )
         # Early filter: keep only predictions with objectness > conf_thres
-        # out shape: (bs, N, num_outputs) or (N, num_outputs)
-        # Apply sigmoid to objectness (if needed), else just filter
         obj_scores = out[..., 4]
         mask = obj_scores > conf_thres
         if np.any(mask):
@@ -443,7 +393,6 @@ def decode_yolo_output(
 
     # 2. Concatenate all kept candidates at once
     output = np.concatenate(filtered_outputs, axis=0)
-    # Optional: Keep only top-N boxes for NMS for further speedup
     if output.shape[0] > max_nms:
         idx = np.argsort(output[:, 4])[::-1][:max_nms]  # sort by objectness
         output = output[idx]
