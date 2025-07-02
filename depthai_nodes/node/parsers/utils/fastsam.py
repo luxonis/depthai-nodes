@@ -5,8 +5,7 @@ import numpy as np
 
 from depthai_nodes.node.parsers.utils import sigmoid
 from depthai_nodes.node.parsers.utils.yolo import (
-    non_max_suppression,
-    parse_yolo_outputs,
+    decode_yolo_output,
 )
 
 
@@ -249,16 +248,13 @@ def decode_fastsam_output(
     @return: NMS output
     @rtype: np.ndarray
     """
-    output = parse_yolo_outputs(
-        outputs=outputs, strides=strides, num_outputs=6, anchors=anchors, kpts=None
-    )
-    output_nms = non_max_suppression(
-        output,
+    output_nms = decode_yolo_output(
+        yolo_outputs=outputs,
+        strides=strides,
+        anchors=anchors,
+        kpts=None,
         conf_thres=conf_thres,
-        iou_thres=iou_thres,
-        num_classes=num_classes,
-        kpts_mode=False,
-    )[0]
+    )
 
     full_box = np.zeros(output_nms.shape[1])
     full_box[2], full_box[3], full_box[4], full_box[6:] = (
