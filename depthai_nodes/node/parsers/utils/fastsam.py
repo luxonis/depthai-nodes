@@ -254,6 +254,8 @@ def decode_fastsam_output(
         anchors=anchors,
         kpts=None,
         conf_thres=conf_thres,
+        iou_thres=iou_thres,
+        num_classes=num_classes,
     )
 
     full_box = np.zeros(output_nms.shape[1])
