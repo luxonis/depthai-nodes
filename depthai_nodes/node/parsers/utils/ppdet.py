@@ -143,12 +143,6 @@ def parse_paddle_detection_outputs(
             f"Predictions should be 4D array of shape (1, 1, H, W) or (1, H, W, 1), got {predictions.shape}."
         )
 
-    H, W = predictions.shape
-    if width is None:
-        width = W
-    if height is None:
-        height = H
-
     mask = (predictions > mask_threshold).astype(np.uint8)
     mask = cv2.dilate(mask, np.ones((3, 3), np.uint8), iterations=1)
 
