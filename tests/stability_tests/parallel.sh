@@ -11,7 +11,7 @@ BRANCH=${BRANCH:-"main"}
 TEST_DURATION=${TEST_DURATION:-"10"}
 
 # Define all available testbeds
-testbeds=("slo4132-stability")
+testbeds=("slo4132-4d")
 
 # Delay between iterations in seconds
 LOOP_DELAY=2
