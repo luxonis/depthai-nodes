@@ -47,7 +47,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.12]
+        # python-version: [3.12]
         platform: [rvc2, rvc4]
 
     steps:
@@ -68,7 +68,7 @@ jobs:
           
       - name: Run Test
         run: |
-          export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#${{ matrix.python-version}}"
+          # export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
 
             if [[ -n "${{ github.event.inputs.reservation_name }}" ]]; then
