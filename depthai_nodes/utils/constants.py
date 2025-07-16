@@ -1,6 +1,5 @@
 import depthai as dai
 
-OUTLINE_COLOR = dai.Color(0.0, 1.0, 0.0, 1.0)
 TEXT_COLOR = dai.Color(1, 1, 1, 1)
 TEXT_SIZE_PER_HEIGHT = 1 / 30
 SMALLER_TEXT_SIZE_PER_HEIGHT = TEXT_SIZE_PER_HEIGHT / 2
