@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from depthai_nodes.ml.messages import Map2D
-from depthai_nodes.ml.messages.creators.map import create_map_message
+from depthai_nodes import Map2D
+from depthai_nodes.message.creators import create_map_message
 
 MAP_ARRAY = np.random.rand(1, 480, 640).astype(np.float32)
 

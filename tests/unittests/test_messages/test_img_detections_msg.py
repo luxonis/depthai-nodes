@@ -2,10 +2,11 @@ import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes.ml.messages import (
+from depthai_nodes import (
     ImgDetectionExtended,
     ImgDetectionsExtended,
     Keypoint,
+    Keypoints,
 )
 
 
@@ -25,7 +26,6 @@ def test_img_detection_extended_initialization(
     assert img_detection_extended.confidence == -1.0
     assert img_detection_extended.label == -1
     assert img_detection_extended.label_name == ""
-    assert img_detection_extended.keypoints == []
 
 
 def test_img_detection_extended_set_rotated_rect(
@@ -45,6 +45,10 @@ def test_img_detection_extended_set_confidence(
 ):
     img_detection_extended.confidence = 0.9
     assert img_detection_extended.confidence == 0.9
+
+    img_detection_extended.confidence = 1.05
+    assert img_detection_extended.confidence == 1.0
+    assert isinstance(img_detection_extended.confidence, float)
 
     with pytest.raises(TypeError):
         img_detection_extended.confidence = "not a float"
@@ -83,16 +87,15 @@ def test_img_detection_extended_set_keypoints(
     kp2.y = 0.4
     keypoints.append(kp1)
     keypoints.append(kp2)
-    img_detection_extended.keypoints = keypoints
+    kpts = Keypoints()
+    kpts.keypoints = keypoints
+    img_detection_extended.keypoints = kpts
     for i, kp in enumerate(img_detection_extended.keypoints):
         assert kp.x == keypoints[i].x
         assert kp.y == keypoints[i].y
 
-    with pytest.raises(ValueError):
-        img_detection_extended.keypoints = "not a list"
-
-    with pytest.raises(ValueError):
-        img_detection_extended.keypoints = [Keypoint(), "not a Keypoint"]
+    with pytest.raises(TypeError):
+        img_detection_extended.keypoints = "not a Keypoints object"
 
 
 def test_img_detections_extended_initialization(

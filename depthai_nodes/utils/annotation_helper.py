@@ -4,6 +4,10 @@ from typing import List, Optional, Tuple, Union
 import depthai as dai
 import numpy as np
 
+from depthai_nodes.constants import (
+    PRIMARY_COLOR,
+    TRANSPARENT_PRIMARY_COLOR,
+)
 from depthai_nodes.utils.viewport_clipper import ViewportClipper
 
 Point = Tuple[float, float]
@@ -28,8 +32,8 @@ class AnnotationHelper:
         self,
         pt1: Union[Point, dai.Point2f],
         pt2: Union[Point, dai.Point2f],
-        color: Union[ColorRGBA, dai.Color],
-        thickness: float,
+        color: Union[ColorRGBA, dai.Color] = PRIMARY_COLOR,
+        thickness: float = 2.0,
         clip_to_viewport: bool = False,
     ) -> "AnnotationHelper":
         """Draws a line between two points.
@@ -71,9 +75,11 @@ class AnnotationHelper:
     def draw_polyline(
         self,
         points: Union[List[Point], List[dai.Point2f]],
-        outline_color: Union[ColorRGBA, dai.Color],
-        fill_color: Union[Optional[ColorRGBA], Optional[dai.Color]] = None,
-        thickness: float = 1,
+        outline_color: Union[ColorRGBA, dai.Color] = PRIMARY_COLOR,
+        fill_color: Union[
+            Optional[ColorRGBA], Optional[dai.Color]
+        ] = TRANSPARENT_PRIMARY_COLOR,
+        thickness: float = 1.0,
         closed: bool = False,
     ) -> "AnnotationHelper":
         """Draws a polyline.
@@ -113,8 +119,8 @@ class AnnotationHelper:
     def draw_points(
         self,
         points: Union[List[Point], List[dai.Point2f]],
-        color: Union[ColorRGBA, dai.Color],
-        thickness: float = 2,
+        color: Union[ColorRGBA, dai.Color] = PRIMARY_COLOR,
+        thickness: float = 2.0,
     ) -> "AnnotationHelper":
         """Draws points.
 
@@ -143,9 +149,9 @@ class AnnotationHelper:
         self,
         center: Union[Point, dai.Point2f],
         radius: float,
-        outline_color: Union[ColorRGBA, dai.Color],
+        outline_color: Union[ColorRGBA, dai.Color] = PRIMARY_COLOR,
         fill_color: Union[Optional[ColorRGBA], Optional[dai.Color]] = None,
-        thickness: float = 1,
+        thickness: float = 1.0,
     ) -> "AnnotationHelper":
         """Draws a circle.
 
@@ -182,9 +188,11 @@ class AnnotationHelper:
         self,
         top_left: Union[Point, dai.Point2f],
         bottom_right: Union[Point, dai.Point2f],
-        outline_color: Union[ColorRGBA, dai.Color],
-        fill_color: Union[Optional[ColorRGBA], Optional[dai.Color]] = None,
-        thickness: float = 1,
+        outline_color: Union[ColorRGBA, dai.Color] = PRIMARY_COLOR,
+        fill_color: Union[
+            Optional[ColorRGBA], Optional[dai.Color]
+        ] = TRANSPARENT_PRIMARY_COLOR,
+        thickness: float = 1.0,
         clip_to_viewport: bool = False,
     ) -> "AnnotationHelper":
         """Draws a rectangle.
@@ -224,7 +232,7 @@ class AnnotationHelper:
         self,
         text: str,
         position: Union[Point, dai.Point2f],
-        color: Union[ColorRGBA, dai.Color],
+        color: Union[ColorRGBA, dai.Color] = PRIMARY_COLOR,
         background_color: Union[Optional[ColorRGBA], Optional[dai.Color]] = None,
         size: float = 32,
     ) -> "AnnotationHelper":
@@ -264,9 +272,11 @@ class AnnotationHelper:
         center: Union[Point, dai.Point2f],
         size: Union[Tuple[float, float], dai.Size2f],
         angle: float,
-        outline_color: Union[ColorRGBA, dai.Color],
-        fill_color: Union[Optional[ColorRGBA], Optional[dai.Color]] = None,
-        thickness: float = 1,
+        outline_color: Union[ColorRGBA, dai.Color] = PRIMARY_COLOR,
+        fill_color: Union[
+            Optional[ColorRGBA], Optional[dai.Color]
+        ] = TRANSPARENT_PRIMARY_COLOR,
+        thickness: float = 1.0,
         clip_to_viewport: bool = False,
     ) -> "AnnotationHelper":
         """Draws a rotated rectangle.

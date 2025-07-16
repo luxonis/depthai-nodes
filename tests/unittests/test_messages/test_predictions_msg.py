@@ -1,7 +1,7 @@
 import depthai as dai
 import pytest
 
-from depthai_nodes.ml.messages import Prediction, Predictions
+from depthai_nodes import Prediction, Predictions
 
 
 @pytest.fixture

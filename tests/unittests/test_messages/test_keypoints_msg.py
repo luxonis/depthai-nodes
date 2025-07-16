@@ -1,7 +1,7 @@
 import depthai as dai
 import pytest
 
-from depthai_nodes.ml.messages import Keypoint, Keypoints
+from depthai_nodes import Keypoint, Keypoints
 
 
 @pytest.fixture
@@ -25,22 +25,32 @@ def test_keypoint_set_x(keypoint: Keypoint):
     keypoint.x = 0.5
     assert keypoint.x == 0.5
 
+    keypoint.x = 1.15
+    assert keypoint.x == 1.0
+    assert isinstance(keypoint.x, float)
+
+    keypoint.x = -0.15
+    assert keypoint.x == 0.0
+    assert isinstance(keypoint.x, float)
+
     with pytest.raises(TypeError):
         keypoint.x = "not a float"
-
-    with pytest.raises(ValueError):
-        keypoint.x = 1.5
 
 
 def test_keypoint_set_y(keypoint: Keypoint):
     keypoint.y = 0.5
     assert keypoint.y == 0.5
 
+    keypoint.y = 1.15
+    assert keypoint.y == 1.0
+    assert isinstance(keypoint.y, float)
+
+    keypoint.y = -0.15
+    assert keypoint.y == 0.0
+    assert isinstance(keypoint.y, float)
+
     with pytest.raises(TypeError):
         keypoint.y = "not a float"
-
-    with pytest.raises(ValueError):
-        keypoint.y = 1.5
 
 
 def test_keypoint_set_z(keypoint: Keypoint):
@@ -54,6 +64,14 @@ def test_keypoint_set_z(keypoint: Keypoint):
 def test_keypoint_set_confidence(keypoint: Keypoint):
     keypoint.confidence = 0.9
     assert keypoint.confidence == 0.9
+
+    keypoint.confidence = 1.05
+    assert keypoint.confidence == 1.0
+    assert isinstance(keypoint.confidence, float)
+
+    keypoint.confidence = -0.05
+    assert keypoint.confidence == 0.0
+    assert isinstance(keypoint.confidence, float)
 
     with pytest.raises(TypeError):
         keypoint.confidence = "not a float"

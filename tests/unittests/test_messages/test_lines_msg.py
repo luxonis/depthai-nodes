@@ -2,7 +2,7 @@ import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes.ml.messages import Line, Lines
+from depthai_nodes import Line, Lines
 
 
 @pytest.fixture
@@ -45,8 +45,19 @@ def test_line_set_confidence(line: Line):
     line.confidence = 0.9
     assert line.confidence == 0.9
 
+    line.confidence = 1.05
+    assert line.confidence == 1.0
+    assert isinstance(line.confidence, float)
+
+    line.confidence = -0.05
+    assert line.confidence == 0.0
+    assert isinstance(line.confidence, float)
+
     with pytest.raises(TypeError):
         line.confidence = "not a float"
+
+    with pytest.raises(ValueError):
+        line.confidence = 1.5
 
 
 def test_lines_initialization(lines: Lines):

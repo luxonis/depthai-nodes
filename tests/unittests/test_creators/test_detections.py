@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from depthai_nodes.ml.messages import ImgDetectionExtended, ImgDetectionsExtended
-from depthai_nodes.ml.messages.creators import (
+from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
+from depthai_nodes.message.creators import (
     create_detection_message,
 )
 

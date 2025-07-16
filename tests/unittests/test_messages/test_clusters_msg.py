@@ -1,7 +1,7 @@
 import depthai as dai
 import pytest
 
-from depthai_nodes.ml.messages import Cluster, Clusters
+from depthai_nodes import Cluster, Clusters
 
 
 @pytest.fixture

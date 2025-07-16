@@ -10,12 +10,12 @@ HUBAI_TEAM_SLUG = os.getenv("HUBAI_TEAM_SLUG", None)
 
 if not API_KEY:
     raise ValueError(
-        "You must specify your HubAI API key in order to get the model config."
+        "You must specify your HubAI API key (HUBAI_API_KEY) in order to get the model config."
     )
 
 if not HUBAI_TEAM_SLUG:
     raise ValueError(
-        "You must specify your HubAI team ID in order to get the model config."
+        "You must specify your HubAI team slug (HUBAI_TEAM_SLUG) in order to get the model config."
     )
 
 HEADERS = {"Authorization": f"Bearer {API_KEY}"}
@@ -190,7 +190,9 @@ def find_slugs_from_zoo(parser: str) -> List[str]:
     already_checked = []
 
     for ix, instance in enumerate(model_instances):
-        sys.stdout.write(f"\r[{ix+1}/{len(model_instances)}] Checking model configs...")
+        sys.stdout.write(
+            f"\r[{ix + 1}/{len(model_instances)}] Checking model configs..."
+        )
         sys.stdout.flush()
         model_config = get_model_config_parser(instance["instance_id"])
         if model_config is None:
