@@ -313,6 +313,8 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
     def _removeOldParserNodes(self) -> None:
         for parser in self._parsers.values():
             self._pipeline.remove(parser)
+        if self._internal_sync is not None:
+            self._pipeline.remove(self._internal_sync)
 
     def _getParserNodes(self, nnArchive: dai.NNArchive) -> Dict[int, BaseParser]:
         parser_generator = self._pipeline.create(ParserGenerator)
