@@ -5,11 +5,11 @@ import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
 
+from depthai_nodes import PRIMARY_COLOR
 from depthai_nodes.logging import get_logger
 from depthai_nodes.utils.annotation_helper import AnnotationHelper
 from depthai_nodes.utils.annotation_sizes import AnnotationSizes
 from depthai_nodes.utils.constants import (
-    DETECTION_CORNER_COLOR,
     DETECTION_FILL_COLOR,
     KEYPOINT_COLOR,
     SMALLER_DETECTION_THRESHOLD,
@@ -203,6 +203,8 @@ class ImgDetectionsExtended(dai.Buffer):
     transformation : dai.ImgTransformation
         Image transformation object.
     """
+
+    DETECTION_CORNER_COLOR = PRIMARY_COLOR
 
     def __init__(self) -> None:
         """Initializes the ImgDetectionsExtended object."""
@@ -422,14 +424,14 @@ class ImgDetectionsExtended(dai.Buffer):
             annotation_builder.draw_line(
                 corner_to_previous_pt,
                 current_pt,
-                color=DETECTION_CORNER_COLOR,
+                color=self.DETECTION_CORNER_COLOR,
                 thickness=annotation_sizes.border_thickness,
                 clip_to_viewport=True,
             )
             annotation_builder.draw_line(
                 current_pt,
                 corner_to_next_pt,
-                color=DETECTION_CORNER_COLOR,
+                color=self.DETECTION_CORNER_COLOR,
                 thickness=annotation_sizes.border_thickness,
                 clip_to_viewport=True,
             )
