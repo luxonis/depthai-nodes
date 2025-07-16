@@ -5,12 +5,11 @@ import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
 
-from depthai_nodes import PRIMARY_COLOR
+from depthai_nodes import PRIMARY_COLOR, TRANSPARENT_PRIMARY_COLOR
 from depthai_nodes.logging import get_logger
 from depthai_nodes.utils.annotation_helper import AnnotationHelper
 from depthai_nodes.utils.annotation_sizes import AnnotationSizes
 from depthai_nodes.utils.constants import (
-    DETECTION_FILL_COLOR,
     KEYPOINT_COLOR,
     SMALLER_DETECTION_THRESHOLD,
     TEXT_BACKGROUND_COLOR,
@@ -205,6 +204,7 @@ class ImgDetectionsExtended(dai.Buffer):
     """
 
     DETECTION_CORNER_COLOR = PRIMARY_COLOR
+    DETECTION_FILL_COLOR = TRANSPARENT_PRIMARY_COLOR
 
     def __init__(self) -> None:
         """Initializes the ImgDetectionsExtended object."""
@@ -368,7 +368,7 @@ class ImgDetectionsExtended(dai.Buffer):
             center=detection.rotated_rect.center,
             size=detection.rotated_rect.size,
             angle=detection.rotated_rect.angle,
-            fill_color=DETECTION_FILL_COLOR,
+            fill_color=self.DETECTION_FILL_COLOR,
             thickness=0,
             clip_to_viewport=True,
         )
