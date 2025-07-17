@@ -175,6 +175,15 @@ class ImgDetectionExtended(dai.Buffer):
         """
         return self._keypoints.keypoints
 
+    @property
+    def edges(self) -> List[Tuple[int, int]]:
+        """Returns the edges of the keypoints.
+
+        @return: List of edges.
+        @rtype: List[Tuple[int, int]]
+        """
+        return self._keypoints.edges
+
     @keypoints.setter
     def keypoints(
         self,
