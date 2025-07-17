@@ -8,7 +8,7 @@ from depthai_nodes.constants import (
     PRIMARY_COLOR,
     TRANSPARENT_PRIMARY_COLOR,
 )
-from depthai_nodes.utils import ViewportClipper
+from depthai_nodes.utils.viewport_clipper import ViewportClipper
 
 Point = Tuple[float, float]
 ColorRGBA = Tuple[float, float, float, float]

@@ -11,11 +11,9 @@ from depthai_nodes import (
     SMALLER_DETECTION_THRESHOLD,
     TRANSPARENT_PRIMARY_COLOR,
 )
-from depthai_nodes.utils import (
-    AnnotationHelper,
-    AnnotationSizes,
-    SmallerAnnotationSizes,
-)
+from depthai_nodes.utils.annotation_helper import AnnotationHelper
+from depthai_nodes.utils.annotation_sizes import AnnotationSizes
+from depthai_nodes.utils.smaller_annotation_sizes import SmallerAnnotationSizes
 
 if TYPE_CHECKING:
     from depthai_nodes import ImgDetectionExtended
