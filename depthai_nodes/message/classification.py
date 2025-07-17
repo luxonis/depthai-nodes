@@ -5,7 +5,7 @@ import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
 
-from depthai_nodes import PRIMARY_COLOR, SECONDARY_COLOR
+from depthai_nodes import TEXT_BACKGROUND_COLOR, TEXT_COLOR
 from depthai_nodes.utils import AnnotationHelper, AnnotationSizes
 
 
@@ -173,8 +173,8 @@ class Classifications(dai.Buffer):
                     x_offset,
                     y_position,
                 ),
-                color=PRIMARY_COLOR if i == 0 else SECONDARY_COLOR,
-                background_color=None,  # TODO: add
+                color=TEXT_COLOR,
+                background_color=TEXT_BACKGROUND_COLOR,
                 size=annotation_sizes.text_size,  # TODO: rename to font size
             )
         return annotation_helper.build(
