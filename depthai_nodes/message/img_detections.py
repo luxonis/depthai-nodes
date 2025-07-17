@@ -5,16 +5,17 @@ import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
 
-from depthai_nodes import PRIMARY_COLOR, TRANSPARENT_PRIMARY_COLOR
-from depthai_nodes.logging import get_logger
-from depthai_nodes.utils.annotation_helper import AnnotationHelper
-from depthai_nodes.utils.annotation_sizes import AnnotationSizes
-from depthai_nodes.utils.constants import (
+from depthai_nodes import (
     KEYPOINT_COLOR,
+    PRIMARY_COLOR,
     SMALLER_DETECTION_THRESHOLD,
     TEXT_BACKGROUND_COLOR,
     TEXT_COLOR,
+    TRANSPARENT_PRIMARY_COLOR,
 )
+from depthai_nodes.logging import get_logger
+from depthai_nodes.utils.annotation_helper import AnnotationHelper
+from depthai_nodes.utils.annotation_sizes import AnnotationSizes  # TODO: merge imports
 from depthai_nodes.utils.smaller_annotation_sizes import SmallerAnnotationSizes
 from depthai_nodes.utils.viewport_clipper import ViewportClipper
 

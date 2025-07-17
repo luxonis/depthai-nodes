@@ -1,4 +1,4 @@
-from depthai_nodes.utils.constants import (
+from depthai_nodes.constants import (
     DETECTION_BORDER_THICKNESS_PER_RESOLUTION,
     DETECTION_CORNER_SIZE,
     KEYPOINT_THICKNESS_PER_RESOLUTION,
