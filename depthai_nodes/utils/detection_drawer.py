@@ -32,6 +32,21 @@ class DetectionDrawer:
         self._width, self._height = size
 
     def draw(self, detection: "ImgDetectionExtended") -> None:
+        """Draws a detection on the image with all its visual components.
+
+        This method renders the complete visual representation of a detection including:
+        - Semi-transparent filled overlay of the bounding box
+        - Corner lines at each corner of the rotated rectangle
+        - Label text with confidence percentage
+        - Keypoints and their connecting edges (if available)
+
+        The annotation size is automatically adjusted based on the detection size,
+        using smaller annotations for detections below the threshold defined by
+        SMALLER_DETECTION_THRESHOLD.
+
+        @param detection: The detection to draw with bounding box, confidence, label, and optional keypoints
+        @type detection: ImgDetectionExtended
+        """
         annotation_sizes = (
             AnnotationSizes(self._width, self._height)
             if not self._is_small_detection(detection)
