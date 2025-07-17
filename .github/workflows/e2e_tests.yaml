@@ -68,7 +68,7 @@ jobs:
           
       - name: Run Test
         run: |
-          # export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#${{ matrix.platform }}"
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
 
             if [[ -n "${{ github.event.inputs.reservation_name }}" ]]; then
@@ -78,16 +78,10 @@ jobs:
             fi
 
             if [[ "${{ github.event.inputs.bom_mode }}" == 'true' ]]; then
-              echo "BOM mode is enabled"
-              echo "Reservation name is $RESERVATION_NAME"
               exec hil --hold-reservation --models 'oak4_s or oak4_pro or oak4_d' --wait $RESERVATION_OPTION --dockerfile ./tests/end_to_end/Dockerfile --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=${{ github.event.inputs.depthai-version }} --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=${{ github.event.inputs.depthai-nodes-version }} --env FLAGS=\"${{ github.event.inputs.additional-parameter }} -v ${{ github.event.inputs.depthai-nodes-version }}\""
             else
-              echo "BOM mode is disabled"
-              echo "Reservation name is $RESERVATION_NAME"
-              exec hil --platforms ${{ matrix.platform }} --wait --reservation-name depthai-nodes-testing-hil-optimization --before-docker-pull "echo ${{secrets.GHCR_PAT}} | docker login ghcr.io -u ${{secrets.GHCR_USER}} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=${{ github.event.inputs.depthai-version }} --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=${{ github.event.inputs.depthai-nodes-version }} --env FLAGS=\"${{ github.event.inputs.additional-parameter }} -v ${{ github.event.inputs.depthai-nodes-version }} --platform ${{ matrix.platform }}\""
+              exec hil --platforms ${{ matrix.platform }} --wait $RESERVATION_OPTION --before-docker-pull "echo ${{secrets.GHCR_PAT}} | docker login ghcr.io -u ${{secrets.GHCR_USER}} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=${{ github.event.inputs.depthai-version }} --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=${{ github.event.inputs.depthai-nodes-version }} --env FLAGS=\"${{ github.event.inputs.additional-parameter }} -v ${{ github.event.inputs.depthai-nodes-version }} --platform ${{ matrix.platform }}\""
             fi
           else
-            echo "Workflow dispatch is disabled"
-            echo "Reservation name is $RESERVATION_NAME"
             exec hil --platforms ${{ matrix.platform }} --wait --reservation-name $RESERVATION_NAME --before-docker-pull "echo ${{secrets.GHCR_PAT}} | docker login ghcr.io -u ${{secrets.GHCR_USER}} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=\"3.0.0rc3\" --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=\"main\" --env FLAGS=\"-all --platform ${{ matrix.platform }}\""
           fi
