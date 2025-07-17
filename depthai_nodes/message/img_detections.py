@@ -499,6 +499,22 @@ class ImgDetectionsExtended(dai.Buffer):
             color=KEYPOINT_COLOR,
             thickness=annotation_sizes.keypoint_thickness,
         )
+        if detection.edges:
+            self._draw_edges(annotation_builder, detection)
+
+    def _draw_edges(
+        self, annotation_builder: AnnotationHelper, detection: ImgDetectionExtended
+    ):
+        for edge in detection.edges:
+            pt1_ix, pt2_ix = edge
+            pt1 = detection.keypoints[pt1_ix]
+            pt2 = detection.keypoints[pt2_ix]
+            annotation_builder.draw_line(
+                pt1=(pt1.x, pt1.y),
+                pt2=(pt2.x, pt2.y),
+                color=PRIMARY_COLOR,
+                thickness=1,
+            )
 
     # TODO: move the method to AnnotationsBuilder?
     def _get_partial_line(
