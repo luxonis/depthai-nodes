@@ -26,8 +26,8 @@ class AnnotationSizes:
     def font_size(self):
         return self._get_size_per_height(FONT_SIZE_PER_HEIGHT)
 
-    def _get_size_per_height(self, size_per_heigh):
-        return size_per_heigh * self._height
+    def _get_size_per_height(self, size_per_height):
+        return size_per_height * self._height
 
     @property
     def relative_font_size(self):
