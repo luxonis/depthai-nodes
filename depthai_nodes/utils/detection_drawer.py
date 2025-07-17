@@ -22,12 +22,42 @@ if TYPE_CHECKING:
 
 
 class DetectionDrawer:
+    """A utility class for drawing visual annotations of object detections on images.
+
+    This class provides functionality to render complete visual representations of object
+    detections including bounding boxes, labels, confidence scores, and keypoints. It handles
+    both regular and rotated bounding boxes, automatically adjusting annotation sizes based
+    on detection dimensions.
+
+    The drawer supports the following visual components:
+    - Semi-transparent filled overlays for bounding boxes
+    - Corner lines at each corner of rotated rectangles
+    - Label text with confidence percentages
+    - Keypoints with optional connecting edges
+    - Adaptive sizing for small detections
+
+    Attributes
+    ----------
+    DETECTION_CORNER_COLOR : dai.Color
+        Color used for drawing corner lines of bounding boxes.
+    DETECTION_FILL_COLOR : dai.Color
+        Semi-transparent color used for filling bounding box overlays.
+    """
+
     DETECTION_CORNER_COLOR = PRIMARY_COLOR
     DETECTION_FILL_COLOR = TRANSPARENT_PRIMARY_COLOR
 
     def __init__(
         self, annotation_helper: AnnotationHelper, size: Tuple[int, int]
     ) -> None:
+        """Initializes the DetectionDrawer with an annotation helper and image
+        dimensions.
+
+        @param annotation_helper: Helper object for drawing annotations on the image
+        @type annotation_helper: AnnotationHelper
+        @param size: Image dimensions as (width, height) tuple
+        @type size: Tuple[int, int]
+        """
         self._annotation_helper = annotation_helper
         self._width, self._height = size
 
