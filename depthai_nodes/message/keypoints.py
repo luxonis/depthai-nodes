@@ -3,7 +3,7 @@ from typing import List, Tuple
 
 import depthai as dai
 
-from depthai_nodes import PRIMARY_COLOR, SECONDARY_COLOR
+from depthai_nodes import KEYPOINT_COLOR, PRIMARY_COLOR
 from depthai_nodes.logging import get_logger
 from depthai_nodes.utils import AnnotationHelper
 
@@ -310,7 +310,7 @@ class Keypoints(dai.Buffer):
         """Creates a default visualization message for the keypoints."""
         annotation_helper = AnnotationHelper()
         annotation_helper.draw_points(
-            points=self.getPoints2f(), color=PRIMARY_COLOR, thickness=1
+            points=self.getPoints2f(), color=KEYPOINT_COLOR, thickness=1
         )
         for edge in self.edges:
             pt1_ix, pt2_ix = edge
@@ -319,7 +319,7 @@ class Keypoints(dai.Buffer):
             annotation_helper.draw_line(
                 pt1=(pt1.x, pt1.y),
                 pt2=(pt2.x, pt2.y),
-                color=SECONDARY_COLOR,
+                color=PRIMARY_COLOR,
                 thickness=1,
             )
         return annotation_helper.build(
