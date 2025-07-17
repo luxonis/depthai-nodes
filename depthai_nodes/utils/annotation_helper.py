@@ -118,7 +118,7 @@ class AnnotationHelper:
 
     def draw_points(
         self,
-        points: Union[List[Point], List[dai.Point2f]],
+        points: Union[List[Point], List[dai.Point2f], dai.VectorPoint2f],
         color: Union[ColorRGBA, dai.Color] = PRIMARY_COLOR,
         thickness: float = 2.0,
     ) -> "AnnotationHelper":

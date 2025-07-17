@@ -5,6 +5,7 @@ import depthai as dai
 
 from depthai_nodes import PRIMARY_COLOR, SECONDARY_COLOR
 from depthai_nodes.logging import get_logger
+from depthai_nodes.utils import AnnotationHelper
 
 
 class Keypoint(dai.Buffer):
@@ -307,31 +308,20 @@ class Keypoints(dai.Buffer):
 
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
         """Creates a default visualization message for the keypoints."""
-        img_annotations = dai.ImgAnnotations()
-        annotation = dai.ImgAnnotation()
-
-        pointsAnnotation = dai.PointsAnnotation()
-        pointsAnnotation.type = dai.PointsAnnotationType.POINTS
-        pointsAnnotation.points = self.getPoints2f()
-        pointsAnnotation.outlineColor = PRIMARY_COLOR
-        pointsAnnotation.fillColor = PRIMARY_COLOR
-        pointsAnnotation.thickness = 1
-        annotation.points.append(pointsAnnotation)
-
+        annotation_helper = AnnotationHelper()
+        annotation_helper.draw_points(
+            points=self.getPoints2f(), color=PRIMARY_COLOR, thickness=1
+        )
         for edge in self.edges:
             pt1_ix, pt2_ix = edge
             pt1 = self.keypoints[pt1_ix]
             pt2 = self.keypoints[pt2_ix]
-            pointsAnnotation = dai.PointsAnnotation()
-            pointsAnnotation.type = dai.PointsAnnotationType.LINE_STRIP
-            pointsAnnotation.points = dai.VectorPoint2f(
-                [dai.Point2f(pt1.x, pt1.y), dai.Point2f(pt2.x, pt2.y)]
+            annotation_helper.draw_line(
+                pt1=(pt1.x, pt1.y),
+                pt2=(pt2.x, pt2.y),
+                color=SECONDARY_COLOR,
+                thickness=1,
             )
-            pointsAnnotation.outlineColor = SECONDARY_COLOR
-            pointsAnnotation.fillColor = SECONDARY_COLOR
-            pointsAnnotation.thickness = 1
-            annotation.points.append(pointsAnnotation)
-
-        img_annotations.annotations.append(annotation)
-        img_annotations.setTimestamp(self.getTimestamp())
-        return img_annotations
+        return annotation_helper.build(
+            timestamp=self.getTimestamp(), sequence_num=self.getSequenceNum()
+        )
