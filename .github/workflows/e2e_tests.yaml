@@ -47,7 +47,6 @@ jobs:
 
     strategy:
       matrix:
-        # python-version: [3.12]
         platform: [rvc2, rvc4]
 
     steps:
