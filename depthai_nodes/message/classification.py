@@ -6,7 +6,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from depthai_nodes import PRIMARY_COLOR, SECONDARY_COLOR
-from depthai_nodes.utils import AnnotationHelper
+from depthai_nodes.utils import AnnotationHelper, AnnotationSizes
 
 
 class Classifications(dai.Buffer):
@@ -156,19 +156,26 @@ class Classifications(dai.Buffer):
         image.
         """
         w, h = self.transformation.getSize()
-
-        font_size = h / 30
+        annotation_sizes = AnnotationSizes(w, h)
         x_offset = 2 / w
         y_offset = 2 / h
 
         annotation_helper = AnnotationHelper()
         for i in range(min(5, len(self._classes))):
+            y_position = (
+                y_offset
+                + (annotation_sizes.relative_text_size)
+                + i * (annotation_sizes.relative_text_size)
+            )
             annotation_helper.draw_text(
                 text=f"{self._classes[i]} {self._scores[i] * 100:.0f}%",
-                position=(x_offset, y_offset + (font_size / h) + i * (font_size / h)),
+                position=(
+                    x_offset,
+                    y_position,
+                ),
                 color=PRIMARY_COLOR if i == 0 else SECONDARY_COLOR,
                 background_color=None,  # TODO: add
-                size=font_size,
+                size=annotation_sizes.text_size,  # TODO: rename to font size
             )
         return annotation_helper.build(
             timestamp=self.getTimestamp(), sequence_num=self.getSequenceNum()
