@@ -5,7 +5,7 @@ import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
 
-from depthai_nodes import TEXT_BACKGROUND_COLOR, TEXT_COLOR
+from depthai_nodes import FONT_BACKGROUND_COLOR, FONT_COLOR
 from depthai_nodes.utils import AnnotationHelper, AnnotationSizes
 
 
@@ -164,8 +164,8 @@ class Classifications(dai.Buffer):
         for i in range(min(5, len(self._classes))):
             y_position = (
                 y_offset
-                + (annotation_sizes.relative_text_size)
-                + i * (annotation_sizes.relative_text_size)
+                + (annotation_sizes.relative_font_size)
+                + i * (annotation_sizes.relative_font_size)
             )
             annotation_helper.draw_text(
                 text=f"{self._classes[i]} {self._scores[i] * 100:.0f}%",
@@ -173,9 +173,9 @@ class Classifications(dai.Buffer):
                     x_offset,
                     y_position,
                 ),
-                color=TEXT_COLOR,
-                background_color=TEXT_BACKGROUND_COLOR,
-                size=annotation_sizes.text_size,  # TODO: rename to font size
+                color=FONT_COLOR,
+                background_color=FONT_BACKGROUND_COLOR,
+                size=annotation_sizes.font_size,
             )
         return annotation_helper.build(
             timestamp=self.getTimestamp(), sequence_num=self.getSequenceNum()

@@ -6,11 +6,11 @@ import numpy as np
 from numpy.typing import NDArray
 
 from depthai_nodes import (
+    FONT_BACKGROUND_COLOR,
+    FONT_COLOR,
     KEYPOINT_COLOR,
     PRIMARY_COLOR,
     SMALLER_DETECTION_THRESHOLD,
-    TEXT_BACKGROUND_COLOR,
-    TEXT_COLOR,
     TRANSPARENT_PRIMARY_COLOR,
 )
 from depthai_nodes.logging import get_logger
@@ -446,21 +446,21 @@ class ImgDetectionsExtended(dai.Buffer):
         pts = self._get_points(detection)
         text_position = min(pts, key=lambda pt: (pt.y, pt.x))
         if detection.rotated_rect.angle == 0:
-            text_position_x = text_position.x + annotation_sizes.text_space
+            text_position_x = text_position.x + annotation_sizes.font_space
             text_position_y = (
                 text_position.y
-                + annotation_sizes.text_space
-                + annotation_sizes.relative_text_size
+                + annotation_sizes.font_space
+                + annotation_sizes.relative_font_size
             )
         else:
             text_position_x = text_position.x
-            text_position_y = text_position.y - annotation_sizes.text_space
-            if text_position_y - annotation_sizes.relative_text_size < 0:
+            text_position_y = text_position.y - annotation_sizes.font_space
+            if text_position_y - annotation_sizes.relative_font_size < 0:
                 text_position = min(pts, key=lambda pt: (-pt.y, pt.x))
                 text_position_y = (
                     text_position.y
-                    + annotation_sizes.text_space
-                    + annotation_sizes.relative_text_size
+                    + annotation_sizes.font_space
+                    + annotation_sizes.relative_font_size
                 )
         text_position_x = max(min(text_position_x, 1), 0)
 
@@ -470,9 +470,9 @@ class ImgDetectionsExtended(dai.Buffer):
                 text_position_x,
                 text_position_y,
             ),
-            color=TEXT_COLOR,
-            background_color=TEXT_BACKGROUND_COLOR,
-            size=annotation_sizes.text_size,
+            color=FONT_COLOR,
+            background_color=FONT_BACKGROUND_COLOR,
+            size=annotation_sizes.font_size,
         )
 
     def _get_points(self, detection: ImgDetectionExtended) -> List[dai.Point2f]:
