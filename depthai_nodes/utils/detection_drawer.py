@@ -1,3 +1,4 @@
+import math
 from typing import TYPE_CHECKING, List, Tuple
 
 import depthai as dai
@@ -237,7 +238,7 @@ class DetectionDrawer:
         dy = direction_point[1] - start_point[1]
 
         # Calculate the total length of the full line
-        total_length = (dx**2 + dy**2) ** 0.5
+        total_length = math.hypot(dx, dy)  # equivalent to sqrt(dx^2 + dy^2)
 
         # If total_length is 0, return start_point to avoid division by zero
         if total_length == 0:
@@ -257,7 +258,9 @@ class DetectionDrawer:
     ) -> float:
         x1, y1 = point1
         x2, y2 = point2
-        return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
+        return math.hypot(
+            x2 - x1, y2 - y1
+        )  # equivalent to sqrt((x2 - x1)^2 + (y2 - y1)^2)
 
     def _scale_to_aspect(
         self, pt1: Tuple[float, float], pt2: Tuple[float, float], aspect_ratio: float
