@@ -5,6 +5,7 @@ import depthai as dai
 
 from depthai_nodes import PRIMARY_COLOR
 from depthai_nodes.logging import get_logger
+from depthai_nodes.utils import AnnotationHelper
 
 from .utils import (
     copy_message,
@@ -213,19 +214,14 @@ class Lines(dai.Buffer):
 
         The message adds lines to the image.
         """
-        img_annotation = dai.ImgAnnotations()
-        annotation = dai.ImgAnnotation()
-
+        annotation_helper = AnnotationHelper()
         for line in self.lines:
-            pointsAnnotation = dai.PointsAnnotation()
-            pointsAnnotation.type = dai.PointsAnnotationType.LINE_STRIP
-            pointsAnnotation.points = dai.VectorPoint2f(
-                [line.start_point, line.end_point]
+            annotation_helper.draw_line(
+                pt1=line.start_point,
+                pt2=line.end_point,
+                color=PRIMARY_COLOR,
+                thickness=2.0,
             )
-            pointsAnnotation.outlineColor = PRIMARY_COLOR
-            pointsAnnotation.thickness = 2.0
-            annotation.points.append(pointsAnnotation)
-
-        img_annotation.annotations.append(annotation)
-        img_annotation.setTimestamp(self.getTimestamp())
-        return img_annotation
+        return annotation_helper.build(
+            timestamp=self.getTimestamp(), sequence_num=self.getSequenceNum()
+        )

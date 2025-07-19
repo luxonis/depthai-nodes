@@ -117,6 +117,7 @@ class MapOutputParser(BaseParser):
                 map=map, min_max_scaling=self.min_max_scaling
             )
             map_message.setTimestamp(output.getTimestamp())
+            map_message.setTimestampDevice(output.getTimestampDevice())
             map_message.setTransformation(output.getTransformation())
             map_message.setSequenceNum(output.getSequenceNum())
 
