@@ -6,7 +6,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from depthai_nodes.logging import get_logger
-from depthai_nodes.utils import AnnotationHelper, DetectionDrawer, ViewportClipper
+from depthai_nodes.utils import AnnotationHelper, DetectionDrawer
 
 from .keypoints import Keypoint, Keypoints
 from .segmentation import SegmentationMask
@@ -208,9 +208,6 @@ class ImgDetectionsExtended(dai.Buffer):
         self._detections: List[ImgDetectionExtended] = []
         self._masks: SegmentationMask = SegmentationMask()
         self._transformation: dai.ImgTransformation = None
-        self._viewport_clipper = ViewportClipper(
-            min_x=0.0, min_y=0.0, max_x=1.0, max_y=1.0
-        )
 
     def copy(self):
         """Creates a new instance of the ImgDetectionsExtended class and copies the
@@ -335,7 +332,7 @@ class ImgDetectionsExtended(dai.Buffer):
 
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
         w, h = self.transformation.getSize()
-        annotation_builder = AnnotationHelper(self._viewport_clipper)
+        annotation_builder = AnnotationHelper()
         detection_drawer = DetectionDrawer(annotation_builder, (w, h))
         for detection in self.detections:
             detection_drawer.draw(detection)
