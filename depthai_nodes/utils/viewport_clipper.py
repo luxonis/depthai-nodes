@@ -82,16 +82,28 @@ class ViewportClipper:
 
             # Find intersection point
             if location & self._PointLocation.TOP.value:
-                x = x1 + (x2 - x1) * (1 - y1) / (y2 - y1)
+                if y2 == y1:  # Horizontal line
+                    x = x1
+                else:
+                    x = x1 + (x2 - x1) * (self._max_y - y1) / (y2 - y1)
                 y = self._max_y
             elif location & self._PointLocation.BOTTOM.value:
-                x = x1 + (x2 - x1) * (0 - y1) / (y2 - y1)
+                if y2 == y1:  # Horizontal line
+                    x = x1
+                else:
+                    x = x1 + (x2 - x1) * (self._min_y - y1) / (y2 - y1)
                 y = self._min_y
             elif location & self._PointLocation.RIGHT.value:
-                y = y1 + (y2 - y1) * (1 - x1) / (x2 - x1)
+                if x2 == x1:  # Vertical line
+                    y = y1
+                else:
+                    y = y1 + (y2 - y1) * (self._max_x - x1) / (x2 - x1)
                 x = self._max_x
             elif location & self._PointLocation.LEFT.value:
-                y = y1 + (y2 - y1) * (0 - x1) / (x2 - x1)
+                if x2 == x1:  # Vertical line
+                    y = y1
+                else:
+                    y = y1 + (y2 - y1) * (self._min_x - x1) / (x2 - x1)
                 x = self._min_x
 
             # Replace outside point
