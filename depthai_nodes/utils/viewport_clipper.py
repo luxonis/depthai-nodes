@@ -61,60 +61,61 @@ class ViewportClipper:
         """
 
         # Compute codes for both points
-        x1, y1 = pt1
-        x2, y2 = pt2
-        location1 = self._get_location(x1, y1)
-        location2 = self._get_location(x2, y2)
+        location1 = self._get_location(pt1)
+        location2 = self._get_location(pt2)
 
         while True:
             if (
                 location1 == self._PointLocation.INSIDE.value
                 and location2 == self._PointLocation.INSIDE.value
             ):
-                return (x1, y1), (x2, y2)
-
+                return pt1, pt2
             # Line completely outside viewport
             if location1 & location2 != self._PointLocation.INSIDE.value:
                 return None
-
             # Pick an outside point
             location = location1 if location1 != 0 else location2
-
             # Find intersection point
-            if location & self._PointLocation.TOP.value:
-                if y2 == y1:  # Horizontal line
-                    x = x1
-                else:
-                    x = x1 + (x2 - x1) * (self._max_y - y1) / (y2 - y1)
-                y = self._max_y
-            elif location & self._PointLocation.BOTTOM.value:
-                if y2 == y1:  # Horizontal line
-                    x = x1
-                else:
-                    x = x1 + (x2 - x1) * (self._min_y - y1) / (y2 - y1)
-                y = self._min_y
-            elif location & self._PointLocation.RIGHT.value:
-                if x2 == x1:  # Vertical line
-                    y = y1
-                else:
-                    y = y1 + (y2 - y1) * (self._max_x - x1) / (x2 - x1)
-                x = self._max_x
-            elif location & self._PointLocation.LEFT.value:
-                if x2 == x1:  # Vertical line
-                    y = y1
-                else:
-                    y = y1 + (y2 - y1) * (self._min_x - x1) / (x2 - x1)
-                x = self._min_x
-
+            x, y = self._calculate_intersection(pt1, pt2, location)
             # Replace outside point
             if location == location1:
-                x1, y1 = x, y
-                location1 = self._get_location(x1, y1)
+                pt1 = x, y
+                location1 = self._get_location(pt1)
             else:
-                x2, y2 = x, y
-                location2 = self._get_location(x2, y2)
+                pt2 = x, y
+                location2 = self._get_location(pt2)
 
-    def _get_location(self, x: float, y: float) -> int:
+    def _calculate_intersection(
+        self, pt1: Tuple[float, float], pt2: Tuple[float, float], location: int
+    ) -> Tuple[float, float]:
+        x1, y1 = pt1
+        x2, y2 = pt2
+        if location & self._PointLocation.TOP.value:
+            x = self._interpolate(x1, x2, y1, y2, self._max_y)
+            y = self._max_y
+        elif location & self._PointLocation.BOTTOM.value:
+            x = self._interpolate(x1, x2, y1, y2, self._min_y)
+            y = self._min_y
+        elif location & self._PointLocation.RIGHT.value:
+            y = self._interpolate(y1, y2, x1, x2, self._max_x)
+            x = self._max_x
+        elif location & self._PointLocation.LEFT.value:
+            y = self._interpolate(y1, y2, x1, x2, self._min_x)
+            x = self._min_x
+        else:
+            # Should not happen if location is valid
+            x, y = x1, y1
+        return x, y
+
+    def _interpolate(
+        self, a1: float, a2: float, b1: float, b2: float, b_target: float
+    ) -> float:
+        if b2 == b1:  # No change in b dimension, return original a coordinate
+            return a1
+        return a1 + (a2 - a1) * (b_target - b1) / (b2 - b1)
+
+    def _get_location(self, pt: Tuple[float, float]) -> int:
+        x, y = pt
         location = self._PointLocation.INSIDE.value
         if x < self._min_x:
             location |= self._PointLocation.LEFT.value
