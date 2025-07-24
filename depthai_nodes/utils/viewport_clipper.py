@@ -74,7 +74,7 @@ class ViewportClipper:
         self, point: Tuple[float, float], boundary: "_PointLocation"
     ) -> bool:
         location = self._get_location(point)
-        return not (location & boundary.value)
+        return self._location_inside_boundary(location, boundary)
 
     def _intersect_boundary(
         self,
@@ -85,16 +85,21 @@ class ViewportClipper:
         location1 = self._get_location(p1)
         location2 = self._get_location(p2)
 
-        if location1 & boundary.value and not (location2 & boundary.value):
-            # p1 is outside this boundary, p2 is inside
+        p1_inside = self._location_inside_boundary(location1, boundary)
+        p2_inside = self._location_inside_boundary(location2, boundary)
+
+        if not p1_inside and p2_inside:
             return self._calculate_intersection(p1, p2, location1 & boundary.value)
-        elif location2 & boundary.value and not (location1 & boundary.value):
-            # p2 is outside this boundary, p1 is inside
+        elif not p2_inside and p1_inside:
             return self._calculate_intersection(p1, p2, location2 & boundary.value)
-        elif (location1 & boundary.value) and (location2 & boundary.value):
-            # Both points are outside this boundary - find the intersection
+        elif not p1_inside and not p2_inside:
             return self._calculate_intersection(p1, p2, location1 & boundary.value)
         return None
+
+    def _location_inside_boundary(
+        self, location: int, boundary: "_PointLocation"
+    ) -> bool:
+        return not (location & boundary.value)
 
     def clip_line(self, pt1: Tuple[float, float], pt2: Tuple[float, float]):
         """Clips a line segment to viewport (0,1).
