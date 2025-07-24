@@ -22,29 +22,79 @@ class ViewportClipper:
     def clip_rect(self, points: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
         """Clips a rectangle defined by points to viewport.
 
-        Uses Cohen-Sutherland line clipping algorithm for each edge of the polygon.
+        Uses Sutherland-Hodgman polygon clipping algorithm.
 
         @param points: List of points defining the polygon vertices
         @type points: List[Tuple[float, float]]
         @return: List of points defining the clipped polygon vertices
         @rtype: List[Tuple[float, float]]
         """
-        clipped_points: List[Tuple[float, float]] = []
-        points_len = len(points)
-        for i in range(points_len):
-            current_point = points[i]
-            next_point = points[(i + 1) % points_len]
-            clipped_line_pts = self.clip_line(current_point, next_point)
-            if not clipped_line_pts:
-                continue
-            start, end = clipped_line_pts
-            if start != current_point:
-                clipped_points.append(start)
-            else:
-                clipped_points.append(current_point)
-            if end != next_point:
-                clipped_points.append(end)
-        return clipped_points
+        if not points:
+            return []
+
+        clipped = list(points)
+        for boundary in [
+            self._PointLocation.LEFT,
+            self._PointLocation.RIGHT,
+            self._PointLocation.BOTTOM,
+            self._PointLocation.TOP,
+        ]:
+            clipped = self._clip_against_boundary(clipped, boundary)
+            if not clipped:
+                return []
+        return clipped
+
+    def _clip_against_boundary(
+        self, points: List[Tuple[float, float]], boundary: "_PointLocation"
+    ) -> List[Tuple[float, float]]:
+        if not points:
+            return []
+        result = []
+        for i in range(len(points)):
+            current = points[i]
+            next_pt = points[(i + 1) % len(points)]
+
+            current_inside = self._point_inside_boundary(current, boundary)
+            next_inside = self._point_inside_boundary(next_pt, boundary)
+
+            if current_inside and next_inside:
+                result.append(next_pt)
+            elif current_inside and not next_inside:
+                intersection = self._intersect_boundary(current, next_pt, boundary)
+                if intersection:
+                    result.append(intersection)
+            elif not current_inside and next_inside:
+                intersection = self._intersect_boundary(current, next_pt, boundary)
+                if intersection:
+                    result.append(intersection)
+                result.append(next_pt)
+        return result
+
+    def _point_inside_boundary(
+        self, point: Tuple[float, float], boundary: "_PointLocation"
+    ) -> bool:
+        location = self._get_location(point)
+        return not (location & boundary.value)
+
+    def _intersect_boundary(
+        self,
+        p1: Tuple[float, float],
+        p2: Tuple[float, float],
+        boundary: "_PointLocation",
+    ) -> Tuple[float, float] | None:
+        location1 = self._get_location(p1)
+        location2 = self._get_location(p2)
+
+        if location1 & boundary.value and not (location2 & boundary.value):
+            # p1 is outside this boundary, p2 is inside
+            return self._calculate_intersection(p1, p2, location1 & boundary.value)
+        elif location2 & boundary.value and not (location1 & boundary.value):
+            # p2 is outside this boundary, p1 is inside
+            return self._calculate_intersection(p1, p2, location2 & boundary.value)
+        elif (location1 & boundary.value) and (location2 & boundary.value):
+            # Both points are outside this boundary - find the intersection
+            return self._calculate_intersection(p1, p2, location1 & boundary.value)
+        return None
 
     def clip_line(self, pt1: Tuple[float, float], pt2: Tuple[float, float]):
         """Clips a line segment to viewport (0,1).
@@ -59,8 +109,6 @@ class ViewportClipper:
             completely outside of the viewport
         @rtype: tuple[tuple[float, float], tuple[float, float]] | None
         """
-
-        # Compute codes for both points
         location1 = self._get_location(pt1)
         location2 = self._get_location(pt2)
 
@@ -103,14 +151,13 @@ class ViewportClipper:
             y = self._interpolate(y1, y2, x1, x2, self._min_x)
             x = self._min_x
         else:
-            # Should not happen if location is valid
             x, y = x1, y1
         return x, y
 
     def _interpolate(
         self, a1: float, a2: float, b1: float, b2: float, b_target: float
     ) -> float:
-        if b2 == b1:  # No change in b dimension, return original a coordinate
+        if b2 == b1:
             return a1
         return a1 + (a2 - a1) * (b_target - b1) / (b2 - b1)
 
