@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
@@ -15,6 +16,31 @@ from depthai_nodes.utils.detection_drawer import DetectionDrawer
 
 Point = Tuple[float, float]
 ColorRGBA = Tuple[float, float, float, float]
+
+
+def is_close(a: float, b: float, rel_tol: float = 1e-9, abs_tol: float = 1e-15) -> bool:
+    """Check if two floating-point numbers are approximately equal."""
+    return math.isclose(a, b, rel_tol=rel_tol, abs_tol=abs_tol)
+
+
+def points_equal(point1: Point, point2: Point) -> bool:
+    """Check if two points are approximately equal."""
+    return is_close(point1[0], point2[0]) and is_close(point1[1], point2[1])
+
+
+def colors_equal(
+    color1: Union[ColorRGBA, dai.Color, None], color2: Union[ColorRGBA, dai.Color, None]
+) -> bool:
+    """Check if two colors are approximately equal."""
+    if color1 is None and color2 is None:
+        return True
+    if color1 is None or color2 is None:
+        return False
+
+    c1_tuple = color_to_tuple(color1) if not isinstance(color1, tuple) else color1
+    c2_tuple = color_to_tuple(color2) if not isinstance(color2, tuple) else color2
+
+    return all(is_close(a, b) for a, b in zip(c1_tuple, c2_tuple))
 
 
 def color_to_tuple(
@@ -41,31 +67,25 @@ class RotatedRectData:
         return (
             self._points_equal(self.center, other.center)
             and self._sizes_equal(self.size, other.size)
-            and self.angle == other.angle
+            and is_close(self.angle, other.angle)
             and self._colors_equal(self.outline_color, other.outline_color)
             and self._colors_equal(self.fill_color, other.fill_color)
-            and self.thickness == other.thickness
+            and is_close(self.thickness, other.thickness)
             and self.clip_to_viewport == other.clip_to_viewport
         )
 
     def _points_equal(self, point1, point2):
         p1 = (point1.x, point1.y) if isinstance(point1, dai.Point2f) else point1
         p2 = (point2.x, point2.y) if isinstance(point2, dai.Point2f) else point2
-        return p1 == p2
+        return points_equal(p1, p2)
 
     def _sizes_equal(self, size1, size2):
         s1 = (size1.width, size1.height) if isinstance(size1, dai.Size2f) else size1
         s2 = (size2.width, size2.height) if isinstance(size2, dai.Size2f) else size2
-        return s1 == s2
+        return is_close(s1[0], s2[0]) and is_close(s1[1], s2[1])
 
     def _colors_equal(self, color1, color2):
-        if color1 is None and color2 is None:
-            return True
-        if color1 is None or color2 is None:
-            return False
-        c1_tuple = color_to_tuple(color1) if not isinstance(color1, tuple) else color1
-        c2_tuple = color_to_tuple(color2) if not isinstance(color2, tuple) else color2
-        return c1_tuple == c2_tuple
+        return colors_equal(color1, color2)
 
 
 @dataclass
@@ -79,21 +99,11 @@ class LineData:
     def __eq__(self, other):
         if not isinstance(other, LineData):
             return False
-        color1_tuple = (
-            color_to_tuple(self.color)
-            if not isinstance(self.color, tuple)
-            else self.color
-        )
-        color2_tuple = (
-            color_to_tuple(other.color)
-            if not isinstance(other.color, tuple)
-            else other.color
-        )
         return (
-            self.pt1 == other.pt1
-            and self.pt2 == other.pt2
-            and color1_tuple == color2_tuple
-            and self.thickness == other.thickness
+            points_equal(self.pt1, other.pt1)
+            and points_equal(self.pt2, other.pt2)
+            and colors_equal(self.color, other.color)
+            and is_close(self.thickness, other.thickness)
             and self.clip_to_viewport == other.clip_to_viewport
         )
 
@@ -109,40 +119,12 @@ class TextData:
     def __eq__(self, other):
         if not isinstance(other, TextData):
             return False
-        color1_tuple = (
-            color_to_tuple(self.color)
-            if not isinstance(self.color, tuple)
-            else self.color
-        )
-        color2_tuple = (
-            color_to_tuple(other.color)
-            if not isinstance(other.color, tuple)
-            else other.color
-        )
-        bg_color1 = (
-            None
-            if self.background_color is None
-            else (
-                color_to_tuple(self.background_color)
-                if not isinstance(self.background_color, tuple)
-                else self.background_color
-            )
-        )
-        bg_color2 = (
-            None
-            if other.background_color is None
-            else (
-                color_to_tuple(other.background_color)
-                if not isinstance(other.background_color, tuple)
-                else other.background_color
-            )
-        )
         return (
             self.text == other.text
-            and self.position == other.position
-            and color1_tuple == color2_tuple
-            and bg_color1 == bg_color2
-            and self.size == other.size
+            and points_equal(self.position, other.position)
+            and colors_equal(self.color, other.color)
+            and colors_equal(self.background_color, other.background_color)
+            and is_close(self.size, other.size)
         )
 
 
@@ -156,21 +138,11 @@ class PointData:
     def __eq__(self, other):
         if not isinstance(other, PointData):
             return False
-        color1_tuple = (
-            color_to_tuple(self.color)
-            if not isinstance(self.color, tuple)
-            else self.color
-        )
-        color2_tuple = (
-            color_to_tuple(other.color)
-            if not isinstance(other.color, tuple)
-            else other.color
-        )
         return (
-            self.center == other.center
-            and self.radius == other.radius
-            and color1_tuple == color2_tuple
-            and self.thickness == other.thickness
+            points_equal(self.center, other.center)
+            and is_close(self.radius, other.radius)
+            and colors_equal(self.color, other.color)
+            and is_close(self.thickness, other.thickness)
         )
 
 
