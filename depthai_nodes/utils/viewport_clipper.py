@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 
 class ViewportClipper:
@@ -81,7 +81,7 @@ class ViewportClipper:
         p1: Tuple[float, float],
         p2: Tuple[float, float],
         boundary: "_PointLocation",
-    ) -> Tuple[float, float] | None:
+    ) -> Optional[Tuple[float, float]]:
         location1 = self._get_location(p1)
         location2 = self._get_location(p2)
 
