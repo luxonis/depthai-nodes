@@ -5,12 +5,8 @@ import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
 
-from depthai_nodes import (
-    PRIMARY_COLOR,
-    SECONDARY_COLOR,
-    TRANSPARENT_PRIMARY_COLOR,
-)
 from depthai_nodes.logging import get_logger
+from depthai_nodes.utils import AnnotationHelper, DetectionDrawer
 
 from .keypoints import Keypoint, Keypoints
 from .segmentation import SegmentationMask
@@ -167,6 +163,15 @@ class ImgDetectionExtended(dai.Buffer):
         @rtype: Keypoints
         """
         return self._keypoints.keypoints
+
+    @property
+    def edges(self) -> List[Tuple[int, int]]:
+        """Returns the edges of the keypoints.
+
+        @return: List of edges.
+        @rtype: List[Tuple[int, int]]
+        """
+        return self._keypoints.edges
 
     @keypoints.setter
     def keypoints(
@@ -326,63 +331,9 @@ class ImgDetectionsExtended(dai.Buffer):
         return self.transformation
 
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
-        img_annotations = dai.ImgAnnotations()
-        annotation = dai.ImgAnnotation()
-        transformation = self.transformation
-        w, h = transformation.getSize()
-
+        w, h = self.transformation.getSize()
+        annotation_builder = AnnotationHelper()
+        detection_drawer = DetectionDrawer(annotation_builder, (w, h))
         for detection in self.detections:
-            detection: ImgDetectionExtended = detection
-            rotated_rect = detection.rotated_rect
-            rotated_rect = rotated_rect.denormalize(w, h)
-            points = rotated_rect.getPoints()
-            points = [dai.Point2f(point.x / w, point.y / h) for point in points]
-            pointsAnnotation = dai.PointsAnnotation()
-            pointsAnnotation.type = dai.PointsAnnotationType.LINE_LOOP
-            pointsAnnotation.points = dai.VectorPoint2f(points)
-            pointsAnnotation.outlineColor = PRIMARY_COLOR
-            pointsAnnotation.fillColor = TRANSPARENT_PRIMARY_COLOR
-            pointsAnnotation.thickness = 1.0
-            annotation.points.append(pointsAnnotation)
-
-            text = dai.TextAnnotation()
-            text.position = points[0]
-            font_size = h / 30
-            text.position.y += font_size / h
-            text.position.x += 1 / w
-            text.position.y += 1 / h
-            text.text = f"{detection.label_name} {int(detection.confidence * 100)}%"
-            text.fontSize = font_size
-            text.textColor = SECONDARY_COLOR
-            annotation.texts.append(text)
-
-            if len(detection.keypoints) > 0:
-                keypoints = [
-                    dai.Point2f(keypoint.x, keypoint.y)
-                    for keypoint in detection.keypoints
-                ]
-                keypointAnnotation = dai.PointsAnnotation()
-                keypointAnnotation.type = dai.PointsAnnotationType.POINTS
-                keypointAnnotation.points = dai.VectorPoint2f(keypoints)
-                keypointAnnotation.outlineColor = PRIMARY_COLOR
-                keypointAnnotation.fillColor = PRIMARY_COLOR
-                keypointAnnotation.thickness = 2
-                annotation.points.append(keypointAnnotation)
-
-                if detection._keypoints.edges is not None:
-                    for edge in detection._keypoints.edges:
-                        skeletonAnnotation = dai.PointsAnnotation()
-                        skeletonAnnotation.type = dai.PointsAnnotationType.LINE_STRIP
-                        pt1 = keypoints[edge[0]]
-                        pt2 = keypoints[edge[1]]
-                        skeletonAnnotation.points = dai.VectorPoint2f(
-                            [dai.Point2f(pt1.x, pt1.y), dai.Point2f(pt2.x, pt2.y)]
-                        )
-                        skeletonAnnotation.outlineColor = SECONDARY_COLOR
-                        skeletonAnnotation.fillColor = SECONDARY_COLOR
-                        skeletonAnnotation.thickness = 1
-                        annotation.points.append(skeletonAnnotation)
-
-        img_annotations.annotations.append(annotation)
-        img_annotations.setTimestamp(self.getTimestamp())
-        return img_annotations
+            detection_drawer.draw(detection)
+        return annotation_builder.build(self.getTimestamp(), self.getSequenceNum())
