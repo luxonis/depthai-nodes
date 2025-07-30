@@ -127,6 +127,10 @@ class Map2D(dai.Buffer):
         """Returns default visualization message for 2D maps in the form of a
         colormapped image."""
         img_frame = dai.ImgFrame()
+        img_frame.setTimestamp(self.getTimestamp())
+        img_frame.setTimestampDevice(self.getTimestampDevice())
+        img_frame.setTransformation(self.transformation)
+        img_frame.setSequenceNum(self.getSequenceNum())
         mask = self._map.copy()
         if np.any(mask < 1):
             mask = mask * 255

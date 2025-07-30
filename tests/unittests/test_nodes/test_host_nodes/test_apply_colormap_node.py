@@ -72,6 +72,19 @@ def test_parameter_setting(
     # test isinstance(colormap_value, int)
     with pytest.raises(ValueError):
         colorizer.setColormap("not an integer")
+    # custom colormap
+    custom_colormap = np.random.randint(0, 256, size=(256, 1, 3), dtype=np.uint8)
+    colorizer.setColormap(custom_colormap)
+    # test wrong shape
+    with pytest.raises(ValueError):
+        colorizer.setColormap(
+            np.random.randint(0, 256, size=(255, 1, 3), dtype=np.uint8)
+        )
+    with pytest.raises(ValueError):
+        colorizer.setColormap(np.random.randint(0, 256, size=(256, 3), dtype=np.uint8))
+    # test wrong dtype
+    with pytest.raises(ValueError):
+        colorizer.setColormap(np.random.rand(256, 1, 3).astype(np.float32))
 
     # max_value
     colorizer.setMaxValue(max_value)
@@ -105,7 +118,7 @@ def test_processing(
     while time.time() - start_time < modified_duration:
         if time.time() - last_log_time > LOG_INTERVAL:
             print(
-                f"Test running... {time.time()-start_time:.1f}s elapsed, {modified_duration-time.time()+start_time:.1f}s remaining"
+                f"Test running... {time.time() - start_time:.1f}s elapsed, {modified_duration - time.time() + start_time:.1f}s remaining"
             )
             last_log_time = time.time()
         q_arr.send(arr)

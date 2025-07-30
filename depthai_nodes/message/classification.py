@@ -5,7 +5,8 @@ import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
 
-from depthai_nodes import PRIMARY_COLOR, SECONDARY_COLOR
+from depthai_nodes import FONT_BACKGROUND_COLOR, FONT_COLOR
+from depthai_nodes.utils import AnnotationHelper, AnnotationSizes
 
 
 class Classifications(dai.Buffer):
@@ -154,26 +155,28 @@ class Classifications(dai.Buffer):
         The message adds the top five classes and their scores to the right side of the
         image.
         """
-        img_annotations = dai.ImgAnnotations()
-        annotation = dai.ImgAnnotation()
         w, h = self.transformation.getSize()
-
-        font_size = h / 30
+        annotation_sizes = AnnotationSizes(w, h)
         x_offset = 2 / w
         y_offset = 2 / h
 
+        annotation_helper = AnnotationHelper()
         for i in range(min(5, len(self._classes))):
-            text = dai.TextAnnotation()
-            text.position = dai.Point2f(
-                x_offset,
-                y_offset + (font_size / h) + i * (font_size / h),
-                normalized=True,
+            y_position = (
+                y_offset
+                + (annotation_sizes.relative_font_size)
+                + i * (annotation_sizes.relative_font_size)
             )
-            text.text = f"{self._classes[i]} {self._scores[i] * 100:.0f}%"
-            text.fontSize = font_size
-            text.textColor = PRIMARY_COLOR if i == 0 else SECONDARY_COLOR
-            annotation.texts.append(text)
-
-        img_annotations.annotations.append(annotation)
-        img_annotations.setTimestamp(self.getTimestamp())
-        return img_annotations
+            annotation_helper.draw_text(
+                text=f"{self._classes[i]} {self._scores[i] * 100:.0f}%",
+                position=(
+                    x_offset,
+                    y_position,
+                ),
+                color=FONT_COLOR,
+                background_color=FONT_BACKGROUND_COLOR,
+                size=annotation_sizes.font_size,
+            )
+        return annotation_helper.build(
+            timestamp=self.getTimestamp(), sequence_num=self.getSequenceNum()
+        )

@@ -3,9 +3,8 @@ from typing import List
 
 import depthai as dai
 
-from depthai_nodes import (
-    PRIMARY_COLOR,
-)
+from depthai_nodes import FONT_BACKGROUND_COLOR, FONT_COLOR
+from depthai_nodes.utils import AnnotationHelper, AnnotationSizes
 
 
 class Prediction(dai.Buffer):
@@ -161,27 +160,27 @@ class Predictions(dai.Buffer):
 
         The message adds text representing the predictions to the right of the image.
         """
-        img_annotations = dai.ImgAnnotations()
-        annotation = dai.ImgAnnotation()
-
         w, h = self.transformation.getSize()
+        annotation_helper = AnnotationHelper()
+        annotation_sizes = AnnotationSizes(w, h)
 
-        font_size = h / 30
         x_offset = 3 / w
         y_offset = 3 / h
 
         for i, prediction in enumerate(self.predictions):
-            text = dai.TextAnnotation()
-            text.position = dai.Point2f(
-                x_offset,
-                y_offset + (font_size / h) + i * (font_size / h),
-                normalized=True,
+            y_position = (
+                y_offset
+                + (annotation_sizes.relative_font_size)
+                + i * (annotation_sizes.relative_font_size)
             )
-            text.text = f"{prediction.prediction:.2f}"
-            text.fontSize = font_size
-            text.textColor = PRIMARY_COLOR
-            annotation.texts.append(text)
-
-        img_annotations.annotations.append(annotation)
-        img_annotations.setTimestamp(self.getTimestamp())
-        return img_annotations
+            annotation_helper.draw_text(
+                text=f"{prediction.prediction:.2f}",
+                position=(x_offset, y_position),
+                color=FONT_COLOR,
+                background_color=FONT_BACKGROUND_COLOR,
+                size=annotation_sizes.font_size,
+            )
+        return annotation_helper.build(
+            timestamp=self.getTimestamp(),
+            sequence_num=self.getSequenceNum(),
+        )
