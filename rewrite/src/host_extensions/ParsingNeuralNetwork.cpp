@@ -46,7 +46,7 @@ void ParsingNeuralNetwork::updateParsers(const NNArchive& nnArchive) {
 void ParsingNeuralNetwork::removeOldParserNodes() {
     for(const auto& entry : parsers) {
         if(std::holds_alternative<std::shared_ptr<BaseParser>>(entry)) {
-            auto parser = std::get<std::shared_ptr<DetectionParser>>(entry);
+            auto parser = std::get<std::shared_ptr<BaseParser>>(entry);
             getParentPipeline().remove(parser);
         } else if(std::holds_alternative<std::shared_ptr<DetectionParser>>(entry)) {
             auto parser = std::get<std::shared_ptr<DetectionParser>>(entry);
@@ -64,7 +64,7 @@ std::vector<HostOrDeviceParser> ParsingNeuralNetwork::getParserNodes(const NNArc
     for(std::size_t idx = 0; idx < newParsers.size(); ++idx) {
         // Link NN output to parser input (adjust as needed for output types)
         if(const auto& entry = newParsers[idx]; std::holds_alternative<std::shared_ptr<BaseParser>>(entry)) {
-            auto parser = std::get<std::shared_ptr<DetectionParser>>(entry);
+            auto parser = std::get<std::shared_ptr<BaseParser>>(entry);
             nn->out.link(parser->input);
             parser->out.link(inputs[std::to_string(idx)]);
         } else if(std::holds_alternative<std::shared_ptr<DetectionParser>>(entry)) {

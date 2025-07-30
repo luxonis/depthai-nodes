@@ -29,7 +29,7 @@ void KeypointParser::buildImpl(const nn_archive::v1::Head& head, const nn_archiv
     const uint8_t ko_sz = keypointsOutputs.size();
     if(ko_sz < 1 || ko_sz > 3) {
         const std::string where = fallback ? "During fallback to use all outputs" : "Configured keypoints_outputs";
-        throw std::runtime_error(fmt::format("{w}: size {sz} must satisfy 1 <= {sz} <= 3 ", fmt::arg("r", where), fmt::arg("sz", ko_sz)));
+        throw std::runtime_error(fmt::format("{w}: size {sz} must satisfy 1 <= {sz} <= 3 ", fmt::arg("w", where), fmt::arg("sz", ko_sz)));
     }
 
     // take outputs size if it makes sense else default
@@ -38,7 +38,7 @@ void KeypointParser::buildImpl(const nn_archive::v1::Head& head, const nn_archiv
     DAI_CHECK_V(ko_sz == 1 || ko_sz == valuesPerKeypoint,
                 "Expected one output per keypoint dimension, or one output that contains all keypoints, got {} layers vs dimensionality {}.",
                 ko_sz,
-                nKeypoints);
+                valuesPerKeypoint);
 
     if(const auto n = head.metadata.nKeypoints) {
         nKeypoints = *n;

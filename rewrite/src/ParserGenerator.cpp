@@ -81,6 +81,7 @@ HostOrDeviceParser ParserGenerator::generateOneV1Parser(
         return device_parser;
     }
     parser_name = getHostParserName(parser_name);
+    DAI_CHECK(parserMap.contains(parser_name), "Parser " + parser_name + " not found");
     auto parser = parserMap.find(parser_name)->second()->build(head, model);
     return parser;
 }
