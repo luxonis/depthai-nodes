@@ -1,0 +1,8 @@
+{
+  "name" : "depthai-nodes",
+  "version" : "3.0.0",
+  "dependencies" : [ "fmt", "spdlog", "vcpkg-cmake", {
+    "name" : "xtensor",
+    "version>=" : "0.27.0"
+  } ]
+}
