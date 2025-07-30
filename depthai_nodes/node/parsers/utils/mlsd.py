@@ -18,16 +18,26 @@ def decode_scores_and_points(
     @return: Detected points, confidence scores for the detected points, and vector map.
     @rtype: Tuple[np.ndarray, np.ndarray, np.ndarray]
     """
-    b, c, h, w = tpMap.shape
-    displacement = tpMap[:, 1:5, :, :][0]
+    _, _, h, w = tpMap.shape
+    displacement = tpMap[0, 1:5]  # shape (4, h, w)
 
-    indices_np = np.argpartition(heat, -topk_n)[-topk_n:]
-    pts_score = heat[indices_np]
-    yy_np = np.floor_divide(indices_np, w).reshape(-1, 1)
-    xx_np = np.fmod(indices_np, w).reshape(-1, 1)
-    pts = np.hstack((yy_np, xx_np))
+    # Flatten heatmap for fast topk
+    heat_flat = heat.flatten()
+    if topk_n > heat_flat.size:
+        topk_n = heat_flat.size
 
-    vmap = displacement.transpose((1, 2, 0))
+    # Top-K indices (unsorted)
+    indices_np = np.argpartition(heat_flat, -topk_n)[-topk_n:]
+    # Optionally: sort true top-k in descending score order
+    sorted_idx = indices_np[np.argsort(-heat_flat[indices_np])]
+    pts_score = heat_flat[sorted_idx]
+
+    # Convert flat indices to 2D (y, x)
+    yy_np, xx_np = np.divmod(sorted_idx, w)
+    pts = np.stack((yy_np, xx_np), axis=1)
+
+    vmap = np.transpose(displacement, (1, 2, 0))  # (h, w, 4)
+
     return pts, pts_score, vmap
 
 
@@ -57,24 +67,21 @@ def get_lines(
     @return: Detected lines and their confidence scores.
     @rtype: Tuple[np.ndarray, List[float]]
     """
-    start = vmap[:, :, :2]
-    end = vmap[:, :, 2:]
-    dist_map = np.sqrt(np.sum((start - end) ** 2, axis=-1))
+    # Extract coordinates for all points
+    ys, xs = pts[:, 0], pts[:, 1]
+    # Vectorized gather
+    disp = vmap[ys, xs, :]  # shape: (num_pts, 4)
+    start_xy = np.stack([xs + disp[:, 0], ys + disp[:, 1]], axis=1)
+    end_xy = np.stack([xs + disp[:, 2], ys + disp[:, 3]], axis=1)
 
-    segments_list = []
-    line_scores = []
-    for center, score in zip(pts, pts_score):
-        y, x = center
-        distance = dist_map[y, x]
-        if score > score_thr and distance > dist_thr:
-            disp_x_start, disp_y_start, disp_x_end, disp_y_end = vmap[y, x, :]
-            x_start = x + disp_x_start
-            y_start = y + disp_y_start
-            x_end = x + disp_x_end
-            y_end = y + disp_y_end
-            segments_list.append([x_start, y_start, x_end, y_end])
-            line_scores.append(score)
+    # Compute line length (distance)
+    dists = np.linalg.norm(start_xy - end_xy, axis=1)
 
-    lines = 2 * np.array(segments_list)  # 256 > 512
-    lines /= input_size
-    return lines, line_scores
+    # Apply both thresholds in one go
+    keep = (pts_score > score_thr) & (dists > dist_thr)
+
+    # Stack lines and normalize to [0,1] for input_size
+    lines = np.hstack([start_xy[keep], end_xy[keep]]).astype(np.float32)
+    lines = 2 * lines / input_size  # scale: 256→512
+
+    return lines, pts_score[keep].tolist()

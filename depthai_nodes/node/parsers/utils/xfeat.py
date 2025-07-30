@@ -222,6 +222,8 @@ def detect_and_compute(
     @type feats: np.ndarray
     @param kpts: Keypoints.
     @type kpts: np.ndarray
+    @param heatmaps: Heatmaps.
+    @type heatmaps: np.ndarray
     @param resize_rate_w: Resize rate for width.
     @type resize_rate_w: float
     @param resize_rate_h: Resize rate for height.

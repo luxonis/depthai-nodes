@@ -61,7 +61,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         if len(self._parsers) != 1:
             raise RuntimeError(
                 f"Property out is only available when there is exactly one model head. \
-                               The model has {self._getModelHeadsLen()} heads. Use {self.getOutput.__name__} method or {self.outputs.__name__} property instead."
+                               The model has {self._getModelHeadsLen()} heads. Use {self.getOutput.__name__} method or outputs property instead."
             )
         return list(self._parsers.values())[0].out
 

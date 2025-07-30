@@ -6,7 +6,10 @@ import numpy as np
 
 from depthai_nodes.message.creators import create_detection_message
 from depthai_nodes.node.parsers.detection import DetectionParser
-from depthai_nodes.node.parsers.utils.medipipe import generate_anchors_and_decode
+from depthai_nodes.node.parsers.utils.medipipe import (
+    decode,
+    generate_handtracker_anchors,
+)
 
 
 class MPPalmDetectionParser(DetectionParser):
@@ -69,6 +72,7 @@ class MPPalmDetectionParser(DetectionParser):
         self.max_det = max_det
         self.scale = scale
         self.label_names = ["Palm"]
+        self._anchors = generate_handtracker_anchors(scale, scale)
         self._logger.debug(
             f"MPPalmDetectionParser initialized with output_layer_names={output_layer_names}, conf_threshold={conf_threshold}, iou_threshold={iou_threshold}, max_det={max_det}, scale={scale}"
         )
@@ -122,6 +126,7 @@ class MPPalmDetectionParser(DetectionParser):
             )
         self.output_layer_names = output_layers
         self.scale = head_config.get("scale", self.scale)
+        self._anchors = generate_handtracker_anchors(self.scale, self.scale)
 
         self._logger.debug(
             f"MPPalmDetectionParser built with output_layer_names={self.output_layer_names}, scale={self.scale}"
@@ -162,9 +167,10 @@ class MPPalmDetectionParser(DetectionParser):
             if bboxes is None or scores is None:
                 raise ValueError("No valid output tensors found.")
 
-            decoded_bboxes = generate_anchors_and_decode(
+            decoded_bboxes = decode(
                 bboxes=bboxes,
                 scores=scores,
+                anchors=self._anchors,
                 threshold=self.conf_threshold,
                 scale=self.scale,
             )

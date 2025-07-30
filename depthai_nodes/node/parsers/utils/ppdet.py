@@ -121,6 +121,10 @@ def parse_paddle_detection_outputs(
     @type bbox_threshold: float
     @param max_detections: The maximum number of candidate bounding boxes.
     @type max_detections: int
+    @param width: The width of the image.
+    @type width: Optional[int]
+    @param height: The height of the image.
+    @type height: Optional[int]
     @return: A touple containing the rotated bounding boxes, corners and scores.
     @rtype: Touple[np.ndarray, np.ndarray, np.ndarray]
     """
@@ -139,48 +143,35 @@ def parse_paddle_detection_outputs(
             f"Predictions should be 4D array of shape (1, 1, H, W) or (1, H, W, 1), got {predictions.shape}."
         )
 
-    mask = predictions > mask_threshold
-    kernel = np.ones((5, 5), np.uint8)
-    mask = cv2.dilate(mask.astype(np.uint8), kernel, iterations=1)
+    mask = (predictions > mask_threshold).astype(np.uint8)
+    mask = cv2.dilate(mask, np.ones((3, 3), np.uint8), iterations=1)
 
-    outs = cv2.findContours(
-        (mask * 255).astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE
-    )
+    contours, _ = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    # Pre-filter small contours (skip sorting all small blobs)
+    contours = [c for c in contours if cv2.contourArea(c) > 8]
 
-    if len(outs) == 3:
-        _, contours, _ = outs[0], outs[1], outs[2]
-    elif len(outs) == 2:
-        contours, _ = outs[0], outs[1]
-    contours = sorted(contours, key=cv2.contourArea, reverse=True)
+    # If too many, pick largest by area only
+    if len(contours) > max_detections:
+        contour_areas = np.array([cv2.contourArea(c) for c in contours])
+        top_indices = np.argpartition(-contour_areas, max_detections)[:max_detections]
+        contours = [contours[i] for i in top_indices]
 
-    num_contours = min(len(contours), max_detections)
-
-    boxes = []
-    scores = []
-    angles = []
-    for contour in contours[:num_contours]:
+    boxes, angles, scores = [], [], []
+    for contour in contours:
         box, corners = _get_mini_boxes(contour)
-        if min(box[2], box[3]) < 8:
+        if min(box[2], box[3]) < 8:  # Skip tiny boxes
             continue
-
         score = _box_score(predictions, corners.reshape(-1, 2))
         if score < bbox_threshold:
             continue
-
         box = _unclip(box)
-        boxes.append(box[:4])
+        boxes.append([box[0] / width, box[1] / height, box[2] / width, box[3] / height])
+        angles.append(round(box[4], 0))
         scores.append(score)
-        angles.append(box[4])
 
-    boxes = np.array(boxes)
+    boxes = np.array(boxes, dtype=np.float32)
+    angles = np.array(angles, dtype=np.float32)
+    scores = np.array(scores, dtype=np.float32)
     if boxes.size > 0:
-        boxes[:, 0] /= width
-        boxes[:, 1] /= height
-        boxes[:, 2] /= width
-        boxes[:, 3] /= height
-
-    boxes = np.clip(boxes, 0.0, 1.0)
-    angles = np.array(angles)
-    angles = np.round(angles, 0)
-
-    return boxes, angles, np.array(scores)
+        boxes = np.clip(boxes, 0.0, 1.0)
+    return boxes, angles, scores

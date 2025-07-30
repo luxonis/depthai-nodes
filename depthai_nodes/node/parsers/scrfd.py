@@ -6,7 +6,7 @@ import numpy as np
 from depthai_nodes.message.creators import create_detection_message
 from depthai_nodes.node.parsers.detection import DetectionParser
 from depthai_nodes.node.parsers.utils import xyxy_to_xywh
-from depthai_nodes.node.parsers.utils.scrfd import decode_scrfd
+from depthai_nodes.node.parsers.utils.scrfd import compute_anchor_centers, decode_scrfd
 
 
 class SCRFDParser(DetectionParser):
@@ -72,6 +72,9 @@ class SCRFDParser(DetectionParser):
         self.num_anchors = num_anchors
         self.input_size = input_size
         self.label_names = ["Face"]
+        self._cached_anchors = compute_anchor_centers(
+            self.feat_stride_fpn, self.input_size, self.num_anchors
+        )
         self._logger.debug(
             f"SCRFDParser initialized with output_layer_names={output_layer_names}, conf_threshold={conf_threshold}, iou_threshold={iou_threshold}, max_det={max_det}, input_size={input_size}, feat_stride_fpn={feat_stride_fpn}, num_anchors={num_anchors}"
         )
@@ -155,6 +158,9 @@ class SCRFDParser(DetectionParser):
         self.output_layer_names = output_layers
         self.feat_stride_fpn = head_config.get("feat_stride_fpn", self.feat_stride_fpn)
         self.num_anchors = head_config.get("num_anchors", self.num_anchors)
+        self._cached_anchors = compute_anchor_centers(
+            self.feat_stride_fpn, self.input_size, self.num_anchors
+        )
 
         self._logger.debug(
             f"SCRFDParser built with output_layer_names={self.output_layer_names}, feat_stride_fpn={self.feat_stride_fpn}, num_anchors={self.num_anchors}"
@@ -227,6 +233,7 @@ class SCRFDParser(DetectionParser):
                 num_anchors=self.num_anchors,
                 score_threshold=self.conf_threshold,
                 nms_threshold=self.iou_threshold,
+                anchors=self._cached_anchors,
             )
             bboxes = xyxy_to_xywh(bboxes)
             bboxes = np.clip(bboxes, 0, 1)

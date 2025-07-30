@@ -4,6 +4,8 @@ from typing import List
 import depthai as dai
 
 from depthai_nodes import PRIMARY_COLOR
+from depthai_nodes.logging import get_logger
+from depthai_nodes.utils import AnnotationHelper
 
 from .utils import (
     copy_message,
@@ -29,6 +31,7 @@ class Line(dai.Buffer):
         self._start_point: dai.Point2f = None
         self._end_point: dai.Point2f = None
         self._confidence: float = None
+        self._logger = get_logger(__name__)
 
     def copy(self):
         """Creates a new instance of the Line class and copies the attributes.
@@ -103,12 +106,17 @@ class Line(dai.Buffer):
 
         @param value: Confidence of the line.
         @type value: float
-        @raise TypeError: If value is not of type float.
+        @raise TypeError: If value is not a float.
+        @raise ValueError: If value is not between 0 and 1.
         """
         if not isinstance(value, float):
-            raise TypeError(
-                f"Confidence must be of type float, instead got {type(value)}."
-            )
+            raise TypeError("Confidence must be a float.")
+        if value < -0.1 or value > 1.1:
+            raise ValueError("Confidence must be between 0 and 1.")
+        if not (0 <= value <= 1):
+            value = float(max(0.0, min(1.0, value)))
+            self._logger.info("Confidence value was clipped to [0, 1].")
+
         self._confidence = value
 
 
@@ -206,19 +214,14 @@ class Lines(dai.Buffer):
 
         The message adds lines to the image.
         """
-        img_annotation = dai.ImgAnnotations()
-        annotation = dai.ImgAnnotation()
-
+        annotation_helper = AnnotationHelper()
         for line in self.lines:
-            pointsAnnotation = dai.PointsAnnotation()
-            pointsAnnotation.type = dai.PointsAnnotationType.LINE_STRIP
-            pointsAnnotation.points = dai.VectorPoint2f(
-                [line.start_point, line.end_point]
+            annotation_helper.draw_line(
+                pt1=line.start_point,
+                pt2=line.end_point,
+                color=PRIMARY_COLOR,
+                thickness=2.0,
             )
-            pointsAnnotation.outlineColor = PRIMARY_COLOR
-            pointsAnnotation.thickness = 2.0
-            annotation.points.append(pointsAnnotation)
-
-        img_annotation.annotations.append(annotation)
-        img_annotation.setTimestamp(self.getTimestamp())
-        return img_annotation
+        return annotation_helper.build(
+            timestamp=self.getTimestamp(), sequence_num=self.getSequenceNum()
+        )

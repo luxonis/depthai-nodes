@@ -46,6 +46,10 @@ def test_img_detection_extended_set_confidence(
     img_detection_extended.confidence = 0.9
     assert img_detection_extended.confidence == 0.9
 
+    img_detection_extended.confidence = 1.05
+    assert img_detection_extended.confidence == 1.0
+    assert isinstance(img_detection_extended.confidence, float)
+
     with pytest.raises(TypeError):
         img_detection_extended.confidence = "not a float"
 

@@ -182,54 +182,6 @@ def non_max_suppression(
     return output
 
 
-def parse_yolo_outputs(
-    outputs: List[np.ndarray],
-    strides: List[int],
-    num_outputs: int,
-    anchors: Optional[np.ndarray] = None,
-    kpts: Optional[List[np.ndarray]] = None,
-    det_mode: bool = False,
-    subtype: YOLOSubtype = YOLOSubtype.DEFAULT,
-) -> np.ndarray:
-    """Parse all outputs of an YOLO model (all channels).
-
-    @param outputs: List of outputs of an YOLO model.
-    @type outputs: List[np.ndarray]
-    @param strides: List of strides.
-    @type strides: List[int]
-    @param num_outputs: Number of outputs of the model.
-    @type num_outputs: int
-    @param anchors: An optional array of anchors.
-    @type anchors: Optional[np.ndarray]
-    @param kpts: An optional list of keypoints for each output.
-    @type kpts: Optional[List[np.ndarray]]
-    @param det_mode: Detection only mode.
-    @type det_mode: bool
-    @param subtype: YOLO version.
-    @type subtype: YOLOSubtype
-    @return: Parsed output.
-    @rtype: np.ndarray
-    """
-    output = None
-
-    for i, (out_head, stride) in enumerate(zip(outputs, strides)):
-        kpt = kpts[i] if kpts else None
-        anchors_head = anchors[i] if anchors is not None else None
-        out = parse_yolo_output(
-            out_head,
-            stride,
-            num_outputs,
-            anchors_head,
-            head_id=i,
-            kpts=kpt,
-            det_mode=det_mode,
-            subtype=subtype,
-        )
-        output = out if output is None else np.concatenate((output, out), axis=1)
-
-    return output
-
-
 def parse_yolo_output(
     out: np.ndarray,
     stride: int,
@@ -385,6 +337,7 @@ def decode_yolo_output(
     num_classes: int = 1,
     det_mode: bool = False,
     subtype: YOLOSubtype = YOLOSubtype.DEFAULT,
+    max_nms: int = 3000,
 ) -> np.ndarray:
     """Decode the output of an YOLO instance segmentation or pose estimation model.
 
@@ -407,19 +360,50 @@ def decode_yolo_output(
     @type det_mode: bool
     @param subtype: YOLO version.
     @type subtype: YOLOSubtype
+    @param max_nms: Maximum number of boxes to keep after NMS.
+    @type max_nms: int
     @return: NMS output.
     @rtype: np.ndarray
     """
     num_outputs = num_classes + 5
-    output = parse_yolo_outputs(
-        yolo_outputs, strides, num_outputs, anchors, kpts, det_mode, subtype
-    )
+
+    # 1. Parse and concatenate all head outputs efficiently
+    filtered_outputs = []
+    for i, (out_head, stride) in enumerate(zip(yolo_outputs, strides)):
+        kpt = kpts[i] if kpts else None
+        anchors_head = anchors[i] if anchors is not None else None
+        out = parse_yolo_output(
+            out_head,
+            stride,
+            num_outputs,
+            anchors_head,
+            head_id=i,
+            kpts=kpt,
+            det_mode=det_mode,
+            subtype=subtype,
+        )
+        # Early filter: keep only predictions with objectness > conf_thres
+        obj_scores = out[..., 4]
+        mask = obj_scores > conf_thres
+        if np.any(mask):
+            filtered_outputs.append(out[mask])
+
+    if not filtered_outputs:
+        return np.zeros((0, num_outputs))  # no detections
+
+    # 2. Concatenate all kept candidates at once
+    output = np.concatenate(filtered_outputs, axis=0)
+    if output.shape[0] > max_nms:
+        idx = np.argsort(output[:, 4])[::-1][:max_nms]  # sort by objectness
+        output = output[idx]
+
+    # 3. Run NMS on filtered predictions (single batch)
     output_nms = non_max_suppression(
-        output,
+        output[None, ...],  # batch dim
         conf_thres=conf_thres,
         iou_thres=iou_thres,
         num_classes=num_classes,
-        kpts_mode=kpts is not None,
+        max_nms=max_nms,
         det_mode=det_mode,
     )[0]
 
