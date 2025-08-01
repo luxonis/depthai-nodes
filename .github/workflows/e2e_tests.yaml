@@ -26,6 +26,10 @@ on:
         description: 'Version of depthai to install. Default: 3.0.0rc3'
         required: true
         default: '3.0.0rc3'
+      platform:
+        description: 'Platform to use for testing. By default both RVC2 and RVC4 are used but you can use only one by passing only `rvc2` or `rvc4`(use lowercase).'
+        default: "all"
+        required: false
   push:
     branches:
       - main
@@ -47,7 +51,7 @@ jobs:
 
     strategy:
       matrix:
-        platform: [rvc2, rvc4]
+        platform: ${{ fromJSON(github.event_name == 'workflow_dispatch' && (github.event.inputs.platform == 'all' && '["rvc2", "rvc4"]' || format('["{0}"]', github.event.inputs.platform)) || '["rvc2", "rvc4"]') }}
 
     steps:
       - uses: actions/checkout@v3
