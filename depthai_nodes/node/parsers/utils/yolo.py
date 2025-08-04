@@ -393,7 +393,7 @@ def decode_yolo_output(
 
     # 2. Concatenate all kept candidates at once
     output = np.concatenate(filtered_outputs, axis=0)
-    if not np.all(output[:, 4] == np.max(output[:, 4])) and output.shape[0] > max_nms:
+    if not np.unique(output[:, 4]).size == 1 and output.shape[0] > max_nms:
         idx = np.argsort(output[:, 4])[::-1][:max_nms]  # sort by objectness
         output = output[idx]
 
