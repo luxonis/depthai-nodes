@@ -64,10 +64,10 @@ class DetectionDrawer:
         """Draws a detection on the image with all its visual components.
 
         This method renders the complete visual representation of a detection including:
-        - Semi-transparent filled overlay of the bounding box
-        - Corner lines at each corner of the rotated rectangle
-        - Label text with confidence percentage
-        - Keypoints and their connecting edges (if available)
+            - Semi-transparent filled overlay of the bounding box
+            - Corner lines at each corner of the rotated rectangle
+            - Label text with confidence percentage
+            - Keypoints and their connecting edges (if available)
 
         The annotation size is automatically adjusted based on the detection size,
         using smaller annotations for detections below the threshold defined by
