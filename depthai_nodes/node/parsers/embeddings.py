@@ -76,6 +76,11 @@ class EmbeddingsParser(BaseParser):
                 len(output_names) == 1
             ), "Embeddings head should have only one output layer"
             output.setSequenceNum(output.getSequenceNum())
+            output.setTimestamp(output.getTimestamp())
+            output.setTimestampDevice(output.getTimestampDevice())
+            transformation = output.getTransformation()
+            if transformation is not None:
+                output.setTransformation(transformation)
 
             self.out.send(output)
 

@@ -253,8 +253,11 @@ class SCRFDParser(DetectionParser):
                 keypoints=keypoints,
             )
             message.setTimestamp(output.getTimestamp())
-            message.setTransformation(output.getTransformation())
             message.setSequenceNum(output.getSequenceNum())
+            message.setTimestampDevice(output.getTimestampDevice())
+            transformation = output.getTransformation()
+            if transformation is not None:
+                message.setTransformation(transformation)
 
             self._logger.debug(
                 f"Created detection message with {len(bboxes)} detections"

@@ -135,7 +135,7 @@ class Lines(dai.Buffer):
         """Initializes the Lines object."""
         super().__init__()
         self._lines: List[Line] = []
-        self._transformation: dai.ImgTransformation = None
+        self._transformation: dai.ImgTransformation | None = None
 
     def copy(self):
         """Creates a new instance of the Lines class and copies the attributes.
@@ -176,7 +176,7 @@ class Lines(dai.Buffer):
         self._lines = value
 
     @property
-    def transformation(self) -> dai.ImgTransformation:
+    def transformation(self) -> dai.ImgTransformation | None:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.
@@ -185,7 +185,7 @@ class Lines(dai.Buffer):
         return self._transformation
 
     @transformation.setter
-    def transformation(self, value: dai.ImgTransformation):
+    def transformation(self, value: dai.ImgTransformation | None):
         """Sets the Image Transformation object.
 
         @param value: The Image Transformation object.
@@ -200,7 +200,7 @@ class Lines(dai.Buffer):
                 )
         self._transformation = value
 
-    def setTransformation(self, transformation: dai.ImgTransformation):
+    def setTransformation(self, transformation: dai.ImgTransformation | None):
         """Sets the Image Transformation object.
 
         @param transformation: The Image Transformation object.

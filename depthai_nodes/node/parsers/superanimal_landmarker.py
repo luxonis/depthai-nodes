@@ -126,8 +126,11 @@ class SuperAnimalParser(KeypointParser):
                 edges=self.edges,
             )
             msg.setTimestamp(output.getTimestamp())
-            msg.setTransformation(output.getTransformation())
             msg.setSequenceNum(output.getSequenceNum())
+            msg.setTimestampDevice(output.getTimestampDevice())
+            transformation = output.getTransformation()
+            if transformation is not None:
+                msg.setTransformation(transformation)
 
             self._logger.debug(
                 f"Created keypoints message with {len(keypoints)} points"

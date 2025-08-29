@@ -120,7 +120,7 @@ class Tiling(BaseHostNode):
             self._logger.debug(f"Message {index} sent successfully")
 
     def _crop_to_nn_shape(
-        self, frame: np.ndarray, scaled_width, scaled_height
+        self, frame: np.ndarray, scaled_width: int, scaled_height: int
     ) -> np.ndarray:
         """Crops and resizes the input tile to fit the neural network's input shape.
         Adds padding if necessary to preserve aspect ratio.
@@ -150,7 +150,12 @@ class Tiling(BaseHostNode):
         return frame_padded
 
     def _create_img_frame(
-        self, tile: np.ndarray, frame, tile_index, scaled_width, scaled_height
+        self,
+        tile: np.ndarray,
+        frame: dai.ImgFrame,
+        tile_index: int,
+        scaled_width: int,
+        scaled_height: int,
     ) -> dai.ImgFrame:
         """Creates an ImgFrame from the cropped tile and prepares it for input into the
         neural network. This ImgFrame contains the tiled image in a planar format ready
@@ -185,10 +190,15 @@ class Tiling(BaseHostNode):
         img_frame.setTimestampDevice(frame.getTimestampDevice())
         img_frame.setInstanceNum(frame.getInstanceNum())
         img_frame.setSequenceNum(tile_index)
+        transformation = frame.getTransformation()
+        if transformation is not None:
+            img_frame.setTransformation(transformation)
 
         return img_frame
 
-    def _calculate_tiles(self, grid_size, img_shape, overlap):
+    def _calculate_tiles(
+        self, grid_size: Tuple, img_shape: Tuple, overlap: float
+    ) -> np.ndarray:
         """Calculates the dimensions (x, y) of each tile given the grid size, image
         shape, and overlap.
 

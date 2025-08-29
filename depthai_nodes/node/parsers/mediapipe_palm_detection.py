@@ -223,8 +223,11 @@ class MPPalmDetectionParser(DetectionParser):
                 label_names=label_names,
             )
             detections_msg.setTimestamp(output.getTimestamp())
-            detections_msg.setTransformation(output.getTransformation())
             detections_msg.setSequenceNum(output.getSequenceNum())
+            detections_msg.setTimestampDevice(output.getTimestampDevice())
+            transformation = output.getTransformation()
+            if transformation is not None:
+                detections_msg.setTransformation(transformation)
 
             self._logger.debug(
                 f"Created detection message with {len(bboxes)} detections"

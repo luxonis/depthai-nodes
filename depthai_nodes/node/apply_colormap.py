@@ -163,8 +163,10 @@ class ApplyColormap(BaseHostNode):
 
         frame.setTimestamp(msg.getTimestamp())
         frame.setSequenceNum(msg.getSequenceNum())
-        frame.setTransformation(msg.getTransformation())
         frame.setTimestampDevice(msg.getTimestampDevice())
+        transformation = msg.getTransformation()
+        if transformation is not None:
+            frame.setTransformation(transformation)
 
         self._logger.debug("ImgFrame message created")
 

@@ -99,6 +99,10 @@ class ImgFrameOverlay(BaseHostNode):
         )
         overlay.setTimestamp(frame1.getTimestamp())
         overlay.setSequenceNum(frame1.getSequenceNum())
+        overlay.setTimestampDevice(frame1.getTimestampDevice())
+        transformation = frame1.getTransformation()
+        if transformation is not None:
+            overlay.setTransformation(transformation)
 
         self._logger.debug("ImgFrame message created")
 

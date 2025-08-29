@@ -178,9 +178,12 @@ class DetectionParser(BaseParser):
                 scores = np.array([])
 
             message = create_detection_message(bboxes=bboxes, scores=scores)
-            message.transformation = output.getTransformation()
+            transformation = output.getTransformation()
+            if transformation is not None:
+                message.setTransformation(transformation)
             message.setTimestamp(output.getTimestamp())
             message.setSequenceNum(output.getSequenceNum())
+            message.setTimestampDevice(output.getTimestampDevice())
 
             self._logger.debug(f"Created detections message with {len(bboxes)} objects")
             self.out.send(message)

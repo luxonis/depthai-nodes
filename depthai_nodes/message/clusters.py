@@ -99,7 +99,7 @@ class Clusters(dai.Buffer):
         """Initializes the Clusters object."""
         super().__init__()
         self._clusters: List[Cluster] = []
-        self._transformation: dai.ImgTransformation = None
+        self._transformation: dai.ImgTransformation | None = None
 
     def copy(self):
         """Creates a new instance of the Clusters class and copies the attributes.
@@ -140,7 +140,7 @@ class Clusters(dai.Buffer):
         self._clusters = value
 
     @property
-    def transformation(self) -> dai.ImgTransformation:
+    def transformation(self) -> dai.ImgTransformation | None:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.
@@ -149,7 +149,7 @@ class Clusters(dai.Buffer):
         return self._transformation
 
     @transformation.setter
-    def transformation(self, value: dai.ImgTransformation):
+    def transformation(self, value: dai.ImgTransformation | None):
         """Sets the Image Transformation object.
 
         @param value: The Image Transformation object.
@@ -164,7 +164,7 @@ class Clusters(dai.Buffer):
                 )
         self._transformation = value
 
-    def setTransformation(self, transformation: dai.ImgTransformation):
+    def setTransformation(self, transformation: dai.ImgTransformation | None):
         """Sets the Image Transformation object.
 
         @param transformation: The Image Transformation object.
@@ -172,6 +172,14 @@ class Clusters(dai.Buffer):
         @raise TypeError: If value is not a dai.ImgTransformation object.
         """
         self.transformation = transformation
+
+    def getTransformation(self) -> dai.ImgTransformation | None:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self.transformation
 
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
         """Creates a default visualization message for clusters and colors each one
@@ -198,4 +206,6 @@ class Clusters(dai.Buffer):
 
         img_annotations.annotations.append(annotation)
         img_annotations.setTimestamp(self.getTimestamp())
+        img_annotations.setSequenceNum(self.getSequenceNum())
+        img_annotations.setTimestampDevice(self.getTimestampDevice())
         return img_annotations

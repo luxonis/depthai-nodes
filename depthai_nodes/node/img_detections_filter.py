@@ -148,6 +148,14 @@ class ImgDetectionsFilter(BaseHostNode):
         msg_new = copy_message(
             msg
         )  # we don't want to modify the original message as it might be used by other nodes
+        assert isinstance(
+            msg_new,
+            (
+                dai.ImgDetections,
+                ImgDetectionsExtended,
+                dai.SpatialImgDetections,
+            ),
+        )
 
         filtered_detections = []
         for detection in msg.detections:

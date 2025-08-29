@@ -307,7 +307,10 @@ class YuNetParser(DetectionParser):
                     label_names=[],
                 )
                 detections_message.setTimestamp(output.getTimestamp())
-                detections_message.setTransformation(output.getTransformation())
+                detections_message.setTimestampDevice(output.getTimestampDevice())
+                transformation = output.getTransformation()
+                if transformation is not None:
+                    detections_message.setTransformation(transformation)
                 detections_message.setSequenceNum(output.getSequenceNum())
                 self.out.send(detections_message)
                 continue
@@ -354,8 +357,11 @@ class YuNetParser(DetectionParser):
             )
 
             detections_message.setTimestamp(output.getTimestamp())
-            detections_message.setTransformation(output.getTransformation())
             detections_message.setSequenceNum(output.getSequenceNum())
+            detections_message.setTimestampDevice(output.getTimestampDevice())
+            transformation = output.getTransformation()
+            if transformation is not None:
+                detections_message.setTransformation(transformation)
 
             self._logger.debug(f"Created detections message with {len(bboxes)} faces")
 

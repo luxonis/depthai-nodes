@@ -1,3 +1,4 @@
+import datetime
 from typing import List
 
 import depthai as dai
@@ -89,13 +90,17 @@ class TilesPatcher(BaseHostNode):
         self._logger.debug("Processing new input")
         timestamp = nn_output.getTimestamp()
         device_timestamp = nn_output.getTimestampDevice()
+        sequence_num = nn_output.getSequenceNum()
+        transformation = nn_output.getTransformation()
 
         if self.current_timestamp is None:
             self.current_timestamp = timestamp
 
         if self.current_timestamp != timestamp and len(self.tile_buffer) > 0:
             # new frame started, send the output for the previous frame
-            self._send_output(self.current_timestamp, device_timestamp)
+            self._send_output(
+                self.current_timestamp, device_timestamp, transformation, sequence_num
+            )
             self.tile_buffer = []
 
         self.current_timestamp = timestamp
@@ -106,7 +111,7 @@ class TilesPatcher(BaseHostNode):
         self.tile_buffer.append(mapped_bboxes)
 
         if len(self.tile_buffer) == self.expected_tiles_count:
-            self._send_output(timestamp, device_timestamp)
+            self._send_output(timestamp, device_timestamp, transformation, sequence_num)
             self.tile_buffer = []
 
     def _map_bboxes_to_global_frame(
@@ -209,7 +214,13 @@ class TilesPatcher(BaseHostNode):
             return None
         return self.tile_manager.tile_positions[tile_index]
 
-    def _send_output(self, timestamp, device_timestamp):
+    def _send_output(
+        self,
+        timestamp: datetime.timedelta,
+        device_timestamp: datetime.timedelta,
+        transformation: dai.ImgTransformation | None,
+        sequence_num: int,
+    ) -> None:
         """Send the final combined bounding boxes as output when all tiles for a frame
         are processed.
 
@@ -233,6 +244,9 @@ class TilesPatcher(BaseHostNode):
         detections = dai.ImgDetections()
         detections.setTimestamp(timestamp)
         detections.setTimestampDevice(device_timestamp)
+        detections.setSequenceNum(sequence_num)
+        if transformation is not None:
+            detections.setTransformation(transformation)
         detections.detections = detection_list
 
         self._logger.debug("Detections message created")

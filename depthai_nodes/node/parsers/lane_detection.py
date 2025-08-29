@@ -217,8 +217,11 @@ class LaneDetectionParser(BaseParser):
 
             msg = create_cluster_message(points)
             msg.setTimestamp(output.getTimestamp())
-            msg.setTransformation(output.getTransformation())
             msg.setSequenceNum(output.getSequenceNum())
+            msg.setTimestampDevice(output.getTimestampDevice())
+            transformation = output.getTransformation()
+            if transformation is not None:
+                msg.setTransformation(transformation)
 
             self._logger.debug(
                 f"Created lane detection message with {len(points)} points"

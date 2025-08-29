@@ -70,7 +70,7 @@ class Predictions(dai.Buffer):
         """Initializes the Predictions object."""
         super().__init__()
         self._predictions: List[Prediction] = []
-        self._transformation: dai.ImgTransformation = None
+        self._transformation: dai.ImgTransformation | None = None
 
     def copy(self):
         """Creates a new instance of the Predictions class and copies the attributes.
@@ -122,7 +122,7 @@ class Predictions(dai.Buffer):
         return self._predictions[0].prediction
 
     @property
-    def transformation(self) -> dai.ImgTransformation:
+    def transformation(self) -> dai.ImgTransformation | None:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.
@@ -131,7 +131,7 @@ class Predictions(dai.Buffer):
         return self._transformation
 
     @transformation.setter
-    def transformation(self, value: dai.ImgTransformation):
+    def transformation(self, value: dai.ImgTransformation | None):
         """Sets the Image Transformation object.
 
         @param value: The Image Transformation object.
@@ -146,7 +146,7 @@ class Predictions(dai.Buffer):
                 )
         self._transformation = value
 
-    def setTransformation(self, transformation: dai.ImgTransformation):
+    def setTransformation(self, transformation: dai.ImgTransformation | None):
         """Sets the Image Transformation object.
 
         @param transformation: The Image Transformation object.
@@ -155,11 +155,21 @@ class Predictions(dai.Buffer):
         """
         self.transformation = transformation
 
+    def getTransformation(self) -> dai.ImgTransformation | None:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self.transformation
+
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
         """Returns the visualization message for the predictions.
 
         The message adds text representing the predictions to the right of the image.
         """
+        if self.transformation is None:
+            raise ValueError("Transformation must be set to get visualization message.")
         w, h = self.transformation.getSize()
         annotation_helper = AnnotationHelper()
         annotation_sizes = AnnotationSizes(w, h)
