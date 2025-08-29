@@ -123,6 +123,14 @@ class Map2D(dai.Buffer):
         """
         self.transformation = transformation
 
+    def getTransformation(self) -> dai.ImgTransformation:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self.transformation
+
     def getVisualizationMessage(self) -> dai.ImgFrame:
         """Returns default visualization message for 2D maps in the form of a
         colormapped image."""
