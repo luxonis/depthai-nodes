@@ -103,15 +103,18 @@ def non_max_suppression(
     pred_candidates = prediction[..., 4] > conf_thres  # candidates
 
     # Check the parameters.
-    assert (
-        num_classes == num_classes_check
-    ), f"Number of classes {num_classes} does not match the model {num_classes_check}"
-    assert (
-        0 <= conf_thres <= 1
-    ), f"Invalid Confidence threshold {conf_thres}, valid values are between 0.0 and 1.0"
-    assert (
-        0 <= iou_thres <= 1
-    ), f"Invalid IoU {iou_thres}, valid values are between 0.0 and 1.0"
+    if num_classes != num_classes_check:
+        raise ValueError(
+            f"Number of classes {num_classes} does not match the model {num_classes_check}."
+        )
+    if conf_thres < 0 or conf_thres > 1:
+        raise ValueError(
+            f"Invalid Confidence threshold {conf_thres}, valid values are between 0.0 and 1.0."
+        )
+    if iou_thres < 0 or iou_thres > 1:
+        raise ValueError(
+            f"Invalid IoU {iou_thres}, valid values are between 0.0 and 1.0."
+        )
 
     # Function settings.
     time_limit = 2.0 + max_time_img * bs  # seconds to quit after
