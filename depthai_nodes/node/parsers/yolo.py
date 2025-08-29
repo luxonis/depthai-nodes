@@ -144,6 +144,9 @@ class YOLOExtendedParser(BaseParser):
         if not isinstance(threshold, float):
             raise ValueError("Confidence score threshold must be a float.")
 
+        if threshold < 0 or threshold > 1:
+            raise ValueError("Confidence score threshold must be between 0 and 1.")
+
         self.conf_threshold = threshold
         self._logger.debug(f"Confidence score threshold set to {self.conf_threshold}")
 
