@@ -118,8 +118,10 @@ class MapOutputParser(BaseParser):
             )
             map_message.setTimestamp(output.getTimestamp())
             map_message.setTimestampDevice(output.getTimestampDevice())
-            map_message.setTransformation(output.getTransformation())
             map_message.setSequenceNum(output.getSequenceNum())
+            transformation = output.getTransformation()
+            if transformation is not None:
+                map_message.setTransformation(transformation)
 
             self._logger.debug("Created Map message.")
 

@@ -1,5 +1,5 @@
 import copy
-from typing import List
+from typing import List, Optional
 
 import depthai as dai
 import numpy as np
@@ -27,7 +27,7 @@ class Classifications(dai.Buffer):
         dai.Buffer.__init__(self)
         self._classes: List[str] = []
         self._scores: NDArray[np.float32] = np.array([])
-        self._transformation: dai.ImgTransformation = None
+        self._transformation: Optional[dai.ImgTransformation] = None
 
     def copy(self):
         """Creates a new instance of the Classifications class and copies the
@@ -116,7 +116,7 @@ class Classifications(dai.Buffer):
         return self._scores[0]
 
     @property
-    def transformation(self) -> dai.ImgTransformation:
+    def transformation(self) -> Optional[dai.ImgTransformation]:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.
@@ -125,7 +125,7 @@ class Classifications(dai.Buffer):
         return self._transformation
 
     @transformation.setter
-    def transformation(self, value: dai.ImgTransformation):
+    def transformation(self, value: Optional[dai.ImgTransformation]):
         """Sets the Image Transformation object.
 
         @param value: The Image Transformation object.
@@ -140,7 +140,7 @@ class Classifications(dai.Buffer):
                 )
         self._transformation = value
 
-    def setTransformation(self, transformation: dai.ImgTransformation):
+    def setTransformation(self, transformation: Optional[dai.ImgTransformation]):
         """Sets the Image Transformation object.
 
         @param transformation: The Image Transformation object.
@@ -149,12 +149,23 @@ class Classifications(dai.Buffer):
         """
         self.transformation = transformation
 
+    def getTransformation(self) -> Optional[dai.ImgTransformation]:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self.transformation
+
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
         """Returns default visualization message for classification.
 
         The message adds the top five classes and their scores to the right side of the
         image.
         """
+        if self.transformation is None:
+            raise ValueError("Transformation must be set to get visualization message.")
+
         w, h = self.transformation.getSize()
         annotation_sizes = AnnotationSizes(w, h)
         x_offset = 2 / w

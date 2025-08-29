@@ -142,8 +142,11 @@ class HRNetParser(KeypointParser):
                 label_names=self.label_names,
             )
             keypoints_message.setTimestamp(output.getTimestamp())
-            keypoints_message.setTransformation(output.getTransformation())
             keypoints_message.setSequenceNum(output.getSequenceNum())
+            keypoints_message.setTimestampDevice(output.getTimestampDevice())
+            transformation = output.getTransformation()
+            if transformation is not None:
+                keypoints_message.setTransformation(transformation)
 
             self._logger.debug(
                 f"Created keypoints message with {len(keypoints)} points"

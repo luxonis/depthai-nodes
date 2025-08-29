@@ -148,6 +148,10 @@ class DepthMerger(BaseHostNode):
         ]
         new_dets.setSequenceNum(detections.getSequenceNum())
         new_dets.setTimestamp(detections.getTimestamp())
+        new_dets.setTimestampDevice(detections.getTimestampDevice())
+        transformation = detections.getTransformation()
+        if transformation is not None:
+            new_dets.setTransformation(transformation)
         return new_dets
 
     def _get_index(self, relative_coord: float, dimension_len: int) -> int:

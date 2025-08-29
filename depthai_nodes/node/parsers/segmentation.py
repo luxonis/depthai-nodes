@@ -164,8 +164,11 @@ class SegmentationParser(BaseParser):
 
             mask_message = create_segmentation_message(class_map)
             mask_message.setTimestamp(output.getTimestamp())
-            mask_message.setTransformation(output.getTransformation())
             mask_message.setSequenceNum(output.getSequenceNum())
+            mask_message.setTimestampDevice(output.getTimestampDevice())
+            transformation = output.getTransformation()
+            if transformation is not None:
+                mask_message.setTransformation(transformation)
 
             self._logger.debug(
                 f"Created segmentation message with {class_map.shape[0]} classes"

@@ -552,7 +552,7 @@ class XFeatStereoParser(XFeatBaseParser):
             matched_points = create_tracked_features_message(mkpts0, mkpts1)
             matched_points.setTimestamp(target_output.getTimestamp())
             matched_points.setSequenceNum(reference_output.getSequenceNum())
-
+            matched_points.setTimestampDevice(target_output.getTimestampDevice())
             self._logger.debug("Keypoints found, sending TrackedFeatures message")
             self.out.send(matched_points)
             self._logger.debug("TrackedFeatures message sent")

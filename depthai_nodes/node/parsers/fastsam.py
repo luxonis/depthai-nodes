@@ -375,9 +375,12 @@ class FastSAMParser(BaseParser):
             results_masks = merge_masks(results_masks)
 
             segmentation_message = create_segmentation_message(results_masks)
-            segmentation_message.setTransformation(output.getTransformation())
+            transformation = output.getTransformation()
+            if transformation is not None:
+                segmentation_message.setTransformation(transformation)
             segmentation_message.setTimestamp(output.getTimestamp())
             segmentation_message.setSequenceNum(output.getSequenceNum())
+            segmentation_message.setTimestampDevice(output.getTimestampDevice())
 
             self._logger.debug(
                 f"Created segmentation message with {len(results_masks)} masks"

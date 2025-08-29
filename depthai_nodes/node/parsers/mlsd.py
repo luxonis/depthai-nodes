@@ -187,8 +187,11 @@ class MLSDParser(BaseParser):
 
             message = create_line_detection_message(lines, np.array(scores))
             message.setTimestamp(output.getTimestamp())
-            message.setTransformation(output.getTransformation())
             message.setSequenceNum(output.getSequenceNum())
+            message.setTimestampDevice(output.getTimestampDevice())
+            transformation = output.getTransformation()
+            if transformation is not None:
+                message.setTransformation(transformation)
 
             self._logger.debug(
                 f"Created line detection message with {len(lines)} lines"

@@ -101,7 +101,10 @@ class ImgDetectionsBridge(BaseHostNode):
 
         msg_transformed.setTimestamp(msg.getTimestamp())
         msg_transformed.setSequenceNum(msg.getSequenceNum())
-        msg_transformed.setTransformation(msg.getTransformation())
+        msg_transformed.setTimestampDevice(msg.getTimestampDevice())
+        transformation = msg.getTransformation()
+        if transformation is not None:
+            msg_transformed.setTransformation(transformation)
 
         self._logger.debug("Detection message created")
 

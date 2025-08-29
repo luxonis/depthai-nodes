@@ -191,9 +191,12 @@ class ClassificationSequenceParser(ClassificationParser):
                 ignored_indexes=self.ignored_indexes,
                 concatenate_classes=self.concatenate_classes,
             )
-            msg.setTransformation(output.getTransformation())
             msg.setTimestamp(output.getTimestamp())
             msg.setSequenceNum(output.getSequenceNum())
+            msg.setTimestampDevice(output.getTimestampDevice())
+            transformation = output.getTransformation()
+            if transformation is not None:
+                msg.setTransformation(transformation)
 
             self._logger.debug(f"Created message with {len(msg.classes)} classes")
 

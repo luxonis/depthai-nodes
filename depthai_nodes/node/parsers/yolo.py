@@ -523,8 +523,11 @@ class YOLOExtendedParser(BaseParser):
                 )
 
             detections_message.setTimestamp(output.getTimestamp())
-            detections_message.setTransformation(output.getTransformation())
+            detections_message.setTimestampDevice(output.getTimestampDevice())
             detections_message.setSequenceNum(output.getSequenceNum())
+            transformation = output.getTransformation()
+            if transformation is not None:
+                detections_message.setTransformation(transformation)
 
             self._logger.debug(
                 f"Created detection message with {len(bboxes)} detections"

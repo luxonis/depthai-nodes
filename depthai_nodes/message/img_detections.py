@@ -1,5 +1,5 @@
 import copy
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import depthai as dai
 import numpy as np
@@ -207,7 +207,7 @@ class ImgDetectionsExtended(dai.Buffer):
         super().__init__()
         self._detections: List[ImgDetectionExtended] = []
         self._masks: SegmentationMask = SegmentationMask()
-        self._transformation: dai.ImgTransformation = None
+        self._transformation: Optional[dai.ImgTransformation] = None
 
     def copy(self):
         """Creates a new instance of the ImgDetectionsExtended class and copies the
@@ -219,7 +219,6 @@ class ImgDetectionsExtended(dai.Buffer):
         new_obj = ImgDetectionsExtended()
         new_obj.detections = [det.copy() for det in self.detections]
         new_obj.masks = self._masks.copy()
-        new_obj.transformation = self.transformation
         new_obj.setSequenceNum(self.getSequenceNum())
         new_obj.setTimestamp(self.getTimestamp())
         new_obj.setTimestampDevice(self.getTimestampDevice())
@@ -288,7 +287,7 @@ class ImgDetectionsExtended(dai.Buffer):
             raise TypeError("Mask must be a numpy array or a SegmentationMask object.")
 
     @property
-    def transformation(self) -> dai.ImgTransformation:
+    def transformation(self) -> Optional[dai.ImgTransformation]:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.
@@ -297,7 +296,7 @@ class ImgDetectionsExtended(dai.Buffer):
         return self._transformation
 
     @transformation.setter
-    def transformation(self, value: dai.ImgTransformation):
+    def transformation(self, value: Optional[dai.ImgTransformation]):
         """Sets the Image Transformation object.
 
         @param value: The Image Transformation object.
@@ -311,7 +310,7 @@ class ImgDetectionsExtended(dai.Buffer):
                 )
         self._transformation = value
 
-    def setTransformation(self, transformation: dai.ImgTransformation):
+    def setTransformation(self, transformation: Optional[dai.ImgTransformation]):
         """Sets the Image Transformation object.
 
         @param transformation: The Image Transformation object.
@@ -322,7 +321,7 @@ class ImgDetectionsExtended(dai.Buffer):
             assert isinstance(transformation, dai.ImgTransformation)
         self.transformation = transformation
 
-    def getTransformation(self) -> dai.ImgTransformation:
+    def getTransformation(self) -> Optional[dai.ImgTransformation]:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.
@@ -331,6 +330,9 @@ class ImgDetectionsExtended(dai.Buffer):
         return self.transformation
 
     def getVisualizationMessage(self) -> dai.ImgAnnotations:
+        if self.transformation is None:
+            raise ValueError("Transformation must be set to get visualization message.")
+
         w, h = self.transformation.getSize()
         annotation_builder = AnnotationHelper()
         detection_drawer = DetectionDrawer(annotation_builder, (w, h))

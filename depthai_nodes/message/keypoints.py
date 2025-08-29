@@ -1,5 +1,5 @@
 import copy
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import depthai as dai
 
@@ -187,7 +187,7 @@ class Keypoints(dai.Buffer):
         super().__init__()
         self._keypoints: List[Keypoint] = []
         self._edges: List[Tuple[int, int]] = []
-        self._transformation: dai.ImgTransformation = None
+        self._transformation: Optional[dai.ImgTransformation] = None
 
     def copy(self):
         """Creates a new instance of the Keypoints class and copies the attributes.
@@ -258,7 +258,7 @@ class Keypoints(dai.Buffer):
         self._edges = value
 
     @property
-    def transformation(self) -> dai.ImgTransformation:
+    def transformation(self) -> Optional[dai.ImgTransformation]:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.
@@ -267,7 +267,7 @@ class Keypoints(dai.Buffer):
         return self._transformation
 
     @transformation.setter
-    def transformation(self, value: dai.ImgTransformation):
+    def transformation(self, value: Optional[dai.ImgTransformation]):
         """Sets the Image Transformation object.
 
         @param value: The Image Transformation object.
@@ -282,7 +282,7 @@ class Keypoints(dai.Buffer):
                 )
         self._transformation = value
 
-    def setTransformation(self, transformation: dai.ImgTransformation):
+    def setTransformation(self, transformation: Optional[dai.ImgTransformation]):
         """Sets the Image Transformation object.
 
         @param transformation: The Image Transformation object.
@@ -290,6 +290,14 @@ class Keypoints(dai.Buffer):
         @raise TypeError: If value is not a dai.ImgTransformation object.
         """
         self.transformation = transformation
+
+    def getTransformation(self) -> Optional[dai.ImgTransformation]:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self.transformation
 
     def getPoints2f(self) -> dai.VectorPoint2f:
         """Returns the keypoints in the form of a dai.VectorPoint2f object."""

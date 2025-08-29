@@ -98,8 +98,11 @@ class RegressionParser(BaseParser):
 
             regression_message = create_regression_message(predictions=predictions)
             regression_message.setTimestamp(output.getTimestamp())
-            regression_message.setTransformation(output.getTransformation())
+            regression_message.setTimestampDevice(output.getTimestampDevice())
             regression_message.setSequenceNum(output.getSequenceNum())
+            transformation = output.getTransformation()
+            if transformation is not None:
+                regression_message.setTransformation(transformation)
 
             self._logger.debug(
                 f"Created regression message with {len(predictions)} values"

@@ -133,9 +133,11 @@ class ImageOutputParser(BaseParser):
                 ),
             )
             image_message.setTimestamp(output.getTimestamp())
-            if output.getTransformation():
-                image_message.setTransformation(output.getTransformation())
             image_message.setSequenceNum(output.getSequenceNum())
+            image_message.setTimestampDevice(output.getTimestampDevice())
+            transformation = output.getTransformation()
+            if transformation is not None:
+                image_message.setTransformation(transformation)
 
             self._logger.debug(f"Created image message with shape {image.shape}")
 
