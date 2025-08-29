@@ -160,8 +160,11 @@ class ApplyColormap(BaseHostNode):
             color_arr,
             self._img_frame_type,
         )
+
         frame.setTimestamp(msg.getTimestamp())
         frame.setSequenceNum(msg.getSequenceNum())
+        frame.setTransformation(msg.getTransformation())
+        frame.setTimestampDevice(msg.getTimestampDevice())
 
         self._logger.debug("ImgFrame message created")
 

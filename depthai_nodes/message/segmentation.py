@@ -104,6 +104,14 @@ class SegmentationMask(dai.Buffer):
         """
         self.transformation = transformation
 
+    def getTransformation(self) -> dai.ImgTransformation:
+        """Returns the Image Transformation object.
+
+        @return: The Image Transformation object.
+        @rtype: dai.ImgTransformation
+        """
+        return self.transformation
+
     def getVisualizationMessage(self) -> dai.ImgFrame:
         """Returns the default visualization message for segmentation masks."""
         img_frame = dai.ImgFrame()
