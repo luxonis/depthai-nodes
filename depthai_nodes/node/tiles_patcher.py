@@ -1,5 +1,5 @@
 import datetime
-from typing import List
+from typing import List, Optional
 
 import depthai as dai
 
@@ -218,7 +218,7 @@ class TilesPatcher(BaseHostNode):
         self,
         timestamp: datetime.timedelta,
         device_timestamp: datetime.timedelta,
-        transformation: dai.ImgTransformation | None,
+        transformation: Optional[dai.ImgTransformation],
         sequence_num: int,
     ) -> None:
         """Send the final combined bounding boxes as output when all tiles for a frame

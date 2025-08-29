@@ -1,5 +1,5 @@
 import copy
-from typing import List
+from typing import List, Optional
 
 import depthai as dai
 import numpy as np
@@ -27,7 +27,7 @@ class Classifications(dai.Buffer):
         dai.Buffer.__init__(self)
         self._classes: List[str] = []
         self._scores: NDArray[np.float32] = np.array([])
-        self._transformation: dai.ImgTransformation | None = None
+        self._transformation: Optional[dai.ImgTransformation] = None
 
     def copy(self):
         """Creates a new instance of the Classifications class and copies the
@@ -116,7 +116,7 @@ class Classifications(dai.Buffer):
         return self._scores[0]
 
     @property
-    def transformation(self) -> dai.ImgTransformation | None:
+    def transformation(self) -> Optional[dai.ImgTransformation]:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.
@@ -125,7 +125,7 @@ class Classifications(dai.Buffer):
         return self._transformation
 
     @transformation.setter
-    def transformation(self, value: dai.ImgTransformation | None):
+    def transformation(self, value: Optional[dai.ImgTransformation]):
         """Sets the Image Transformation object.
 
         @param value: The Image Transformation object.
@@ -134,13 +134,13 @@ class Classifications(dai.Buffer):
         """
 
         if value is not None:
-            if not isinstance(value, dai.ImgTransformation | None):
+            if not isinstance(value, dai.ImgTransformation):
                 raise TypeError(
                     f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
                 )
         self._transformation = value
 
-    def setTransformation(self, transformation: dai.ImgTransformation | None):
+    def setTransformation(self, transformation: Optional[dai.ImgTransformation]):
         """Sets the Image Transformation object.
 
         @param transformation: The Image Transformation object.
@@ -149,7 +149,7 @@ class Classifications(dai.Buffer):
         """
         self.transformation = transformation
 
-    def getTransformation(self) -> dai.ImgTransformation | None:
+    def getTransformation(self) -> Optional[dai.ImgTransformation]:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.

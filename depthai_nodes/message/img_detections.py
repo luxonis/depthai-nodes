@@ -1,5 +1,5 @@
 import copy
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import depthai as dai
 import numpy as np
@@ -207,7 +207,7 @@ class ImgDetectionsExtended(dai.Buffer):
         super().__init__()
         self._detections: List[ImgDetectionExtended] = []
         self._masks: SegmentationMask = SegmentationMask()
-        self._transformation: dai.ImgTransformation | None = None
+        self._transformation: Optional[dai.ImgTransformation] = None
 
     def copy(self):
         """Creates a new instance of the ImgDetectionsExtended class and copies the
@@ -287,7 +287,7 @@ class ImgDetectionsExtended(dai.Buffer):
             raise TypeError("Mask must be a numpy array or a SegmentationMask object.")
 
     @property
-    def transformation(self) -> dai.ImgTransformation | None:
+    def transformation(self) -> Optional[dai.ImgTransformation]:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.
@@ -296,7 +296,7 @@ class ImgDetectionsExtended(dai.Buffer):
         return self._transformation
 
     @transformation.setter
-    def transformation(self, value: dai.ImgTransformation | None):
+    def transformation(self, value: Optional[dai.ImgTransformation]):
         """Sets the Image Transformation object.
 
         @param value: The Image Transformation object.
@@ -310,7 +310,7 @@ class ImgDetectionsExtended(dai.Buffer):
                 )
         self._transformation = value
 
-    def setTransformation(self, transformation: dai.ImgTransformation | None):
+    def setTransformation(self, transformation: Optional[dai.ImgTransformation]):
         """Sets the Image Transformation object.
 
         @param transformation: The Image Transformation object.
@@ -321,7 +321,7 @@ class ImgDetectionsExtended(dai.Buffer):
             assert isinstance(transformation, dai.ImgTransformation)
         self.transformation = transformation
 
-    def getTransformation(self) -> dai.ImgTransformation | None:
+    def getTransformation(self) -> Optional[dai.ImgTransformation]:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.
