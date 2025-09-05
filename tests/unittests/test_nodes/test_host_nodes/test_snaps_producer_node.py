@@ -138,7 +138,7 @@ def test_processing_frame_only(
     caplog,
 ):
     o_snaps = OutputMock()
-    snaps_producer_frame_only.build(o_snaps, time_interval=0)
+    snaps_producer_frame_only.build(o_snaps, time_interval=LOG_INTERVAL)
     q_snaps = o_snaps.createOutputQueue()
 
     start_time = time.time()
@@ -150,13 +150,15 @@ def test_processing_frame_only(
             )
             last_log_time = time.time()
 
-        frame = create_img_frame(FRAME)
-        q_snaps.send(frame)
+            frame = create_img_frame(FRAME)
+            q_snaps.send(frame)
 
-        with caplog.at_level("INFO"):
-            snaps_producer_frame_only.process(q_snaps.get())
+            with caplog.at_level("INFO"):
+                snaps_producer_frame_only.process(q_snaps.get())
 
-        snaps_producer_frame_only._logger.info.assert_called_with("Snap `frame` sent")
+            snaps_producer_frame_only._logger.info.assert_called_with(
+                "Snap `frame` sent"
+            )
 
 
 def test_processing_frame_only_custom_process_fn(
@@ -167,7 +169,7 @@ def test_processing_frame_only_custom_process_fn(
 ):
     o_snaps = OutputMock()
     snaps_producer_frame_only.build(
-        o_snaps, time_interval=0, process_fn=simple_process_fn_frame_only
+        o_snaps, time_interval=LOG_INTERVAL, process_fn=simple_process_fn_frame_only
     )
     q_snaps = o_snaps.createOutputQueue()
 
@@ -180,13 +182,15 @@ def test_processing_frame_only_custom_process_fn(
             )
             last_log_time = time.time()
 
-        frame = create_img_frame(FRAME)
-        q_snaps.send(frame)
+            frame = create_img_frame(FRAME)
+            q_snaps.send(frame)
 
-        with caplog.at_level("INFO"):
-            snaps_producer_frame_only.process(q_snaps.get())
+            with caplog.at_level("INFO"):
+                snaps_producer_frame_only.process(q_snaps.get())
 
-        snaps_producer_frame_only._logger.info.assert_called_with("Snap `test` sent")
+            snaps_producer_frame_only._logger.info.assert_called_with(
+                "Snap `test` sent"
+            )
 
 
 def test_processing(
@@ -196,7 +200,7 @@ def test_processing(
 ):
     o_snaps_frame = OutputMock()
     o_snaps_msg = OutputMock()
-    snaps_producer.build(o_snaps_frame, o_snaps_msg, time_interval=0)
+    snaps_producer.build(o_snaps_frame, o_snaps_msg, time_interval=LOG_INTERVAL)
     q_snaps_frame = o_snaps_frame.createOutputQueue()
     q_snaps_msg = o_snaps_msg.createOutputQueue()
 
@@ -209,15 +213,15 @@ def test_processing(
             )
             last_log_time = time.time()
 
-        frame = create_img_frame(FRAME)
-        q_snaps_frame.send(frame)
-        detection = create_img_detection()
-        q_snaps_msg.send(detection)
+            frame = create_img_frame(FRAME)
+            q_snaps_frame.send(frame)
+            detection = create_img_detection()
+            q_snaps_msg.send(detection)
 
-        with caplog.at_level("INFO"):
-            snaps_producer.process(q_snaps_frame.get(), q_snaps_msg.get())
+            with caplog.at_level("INFO"):
+                snaps_producer.process(q_snaps_frame.get(), q_snaps_msg.get())
 
-        snaps_producer._logger.info.assert_called_with("Snap `frame` sent")
+            snaps_producer._logger.info.assert_called_with("Snap `frame` sent")
 
 
 def test_processing_custom_process_fn(
@@ -229,7 +233,10 @@ def test_processing_custom_process_fn(
     o_snaps_frame = OutputMock()
     o_snaps_msg = OutputMock()
     snaps_producer.build(
-        o_snaps_frame, o_snaps_msg, time_interval=0, process_fn=simple_process_fn
+        o_snaps_frame,
+        o_snaps_msg,
+        time_interval=LOG_INTERVAL,
+        process_fn=simple_process_fn,
     )
     q_snaps_frame = o_snaps_frame.createOutputQueue()
     q_snaps_msg = o_snaps_msg.createOutputQueue()
@@ -243,15 +250,15 @@ def test_processing_custom_process_fn(
             )
             last_log_time = time.time()
 
-        frame = create_img_frame(FRAME)
-        q_snaps_frame.send(frame)
-        detection = create_img_detection()
-        q_snaps_msg.send(detection)
+            frame = create_img_frame(FRAME)
+            q_snaps_frame.send(frame)
+            detection = create_img_detection()
+            q_snaps_msg.send(detection)
 
-        with caplog.at_level("INFO"):
-            snaps_producer.process(q_snaps_frame.get(), q_snaps_msg.get())
+            with caplog.at_level("INFO"):
+                snaps_producer.process(q_snaps_frame.get(), q_snaps_msg.get())
 
-        snaps_producer._logger.info.assert_called_with("Snap `test` sent")
+            snaps_producer._logger.info.assert_called_with("Snap `test` sent")
 
 
 def test_partial_process_fn(
@@ -267,7 +274,9 @@ def test_partial_process_fn(
 
     o_snaps = OutputMock()
     snaps_producer_frame_only.build(
-        o_snaps, time_interval=0, process_fn=partial(partial_process_fn, threshold=1)
+        o_snaps,
+        time_interval=LOG_INTERVAL,
+        process_fn=partial(partial_process_fn, threshold=1),
     )
     q_snaps = o_snaps.createOutputQueue()
 
@@ -280,12 +289,12 @@ def test_partial_process_fn(
             )
             last_log_time = time.time()
 
-        frame = create_img_frame(FRAME)
-        q_snaps.send(frame)
+            frame = create_img_frame(FRAME)
+            q_snaps.send(frame)
 
-        with caplog.at_level("INFO"):
-            snaps_producer_frame_only.process(q_snaps.get())
+            with caplog.at_level("INFO"):
+                snaps_producer_frame_only.process(q_snaps.get())
 
-        snaps_producer_frame_only._logger.info.assert_called_with(
-            "Snap `threshold_snap` sent"
-        )
+            snaps_producer_frame_only._logger.info.assert_called_with(
+                "Snap `threshold_snap` sent"
+            )
