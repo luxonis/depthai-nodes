@@ -101,28 +101,41 @@ class ImgFrameOverlay(BaseHostNode):
             interpolation=cv2.INTER_LINEAR,
         )
 
-        if self._mask_background:
+        if self._mask_background and foreground_frame is not None:
             # overlay only where foreground > 0
             if len(foreground_frame.shape) == 2:
                 mask_bool = foreground_frame > 0
-                foreground_frame_rgb = cv2.cvtColor(foreground_frame.astype("uint8"), cv2.COLOR_GRAY2BGR)
+                if mask_bool.any():
+                    foreground_frame_rgb = cv2.cvtColor(foreground_frame.astype("uint8"), cv2.COLOR_GRAY2BGR)
+                    overlay_frame = background_frame.copy()
+                    overlay_frame[mask_bool] = cv2.addWeighted(
+                        background_frame[mask_bool],
+                        self._alpha,
+                        foreground_frame_rgb[mask_bool],
+                        1 - self._alpha,
+                        0,
+                    )
+                else:
+                    overlay_frame = background_frame.copy()
             else:
                 mask_bool = foreground_frame.max(axis=2) > 0
-                foreground_frame_rgb = foreground_frame
-
-            overlay_frame = background_frame.copy()
-            overlay_frame[mask_bool] = cv2.addWeighted(
-                background_frame[mask_bool],
-                self._alpha,
-                foreground_frame_rgb[mask_bool],
-                1 - self._alpha,
-                0,
-            )
+                if mask_bool.any():
+                    foreground_frame_rgb = foreground_frame
+                    overlay_frame = background_frame.copy()
+                    overlay_frame[mask_bool] = cv2.addWeighted(
+                        background_frame[mask_bool],
+                        self._alpha,
+                        foreground_frame_rgb[mask_bool],
+                        1 - self._alpha,
+                        0,
+                    )
+                else:
+                    overlay_frame = background_frame.copy()
         else:
             overlay_frame = cv2.addWeighted(
                 background_frame,
                 self._alpha,
-                foreground_frame,
+                foreground_frame if foreground_frame is not None else background_frame,
                 1 - self._alpha,
                 0,
             )
