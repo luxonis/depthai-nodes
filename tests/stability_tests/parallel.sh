@@ -108,7 +108,7 @@ run_test() {
         echo "Running $model_name test on testbed $testbed (ID: $test_id)"
         echo "--------------------------------"
         
-        command_to_run="hil --testbed $testbed --skip-sanity-check --stability-test --stability-name=depthai-nodes--$test_id-$model_name --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"DOCKER_CONFIG=$DOCKER_CONFIG_DIR\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--memory=$memory --env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env MAIN_COMMAND=\"python main.py -m $test_content --duration $TEST_DURATION\"'"
+        command_to_run="hil_runner --testbed $testbed --skip-sanity-check --stability-test --stability-name=depthai-nodes--$test_id-$model_name --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"DOCKER_CONFIG=$DOCKER_CONFIG_DIR\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--memory=$memory --env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env MAIN_COMMAND=\"python main.py -m $test_content --duration $TEST_DURATION\"'"
     else
         # Handle host node or threaded host node test
         test_file_name=$(basename "$test_content" .py)
@@ -120,7 +120,7 @@ run_test() {
         echo "Running $test_file_name test on testbed $testbed (ID: $test_id)"
         echo "--------------------------------"
         
-        command_to_run="hil --testbed $testbed --skip-sanity-check --stability-test --stability-name=depthai-nodes--$test_id-$test_file_name --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"DOCKER_CONFIG=$DOCKER_CONFIG_DIR\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--memory=$memory --env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env MAIN_COMMAND=\"pytest $test_content --duration $TEST_DURATION -r a --log-cli-level=DEBUG --color=yes -s\"'"
+        command_to_run="hil_runner --testbed $testbed --skip-sanity-check --stability-test --stability-name=depthai-nodes--$test_id-$test_file_name --wait --reservation-name $RESERVATION_NAME --before-docker-pull \"DOCKER_CONFIG=$DOCKER_CONFIG_DIR\" --docker-image ghcr.io/luxonis/depthai-nodes-stability-tests --docker-run-args '--memory=$memory --env LUXONIS_EXTRA_INDEX_URL=$LUXONIS_EXTRA_INDEX_URL --env DEPTHAI_VERSION=$DEPTHAI_VERSION --env B2_APPLICATION_KEY=$B2_APPLICATION_KEY --env B2_APPLICATION_KEY_ID=$B2_APPLICATION_KEY_ID --env BRANCH=$BRANCH --env MAIN_COMMAND=\"pytest $test_content --duration $TEST_DURATION -r a --log-cli-level=DEBUG --color=yes -s\"'"
     fi
     
     echo "$command_to_run"
