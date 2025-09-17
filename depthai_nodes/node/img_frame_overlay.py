@@ -27,7 +27,9 @@ class ImgFrameOverlay(BaseHostNode):
         super().__init__()
         self.setAlpha(alpha)
         self._mask_background = mask_background
-        self._logger.debug(f"ImgFrameOverlay initialized with alpha={alpha}, mask_background={mask_background}")
+        self._logger.debug(
+            f"ImgFrameOverlay initialized with alpha={alpha}, mask_background={mask_background}"
+        )
 
     def setAlpha(self, alpha: float) -> None:
         """Sets the alpha.
@@ -45,7 +47,8 @@ class ImgFrameOverlay(BaseHostNode):
     def setMaskBackground(self, mask_background: bool) -> None:
         """Sets the mask_background flag.
 
-        @param mask_background: If True, zero areas in the foreground frame do not darken the background.
+        @param mask_background: If True, zero areas in the foreground frame do not
+            darken the background.
         @type mask_background: bool
         """
         if not isinstance(mask_background, bool):
@@ -53,7 +56,11 @@ class ImgFrameOverlay(BaseHostNode):
         self._mask_background = mask_background
 
     def build(
-        self, frame1: dai.Node.Output, frame2: dai.Node.Output, alpha: float = None, mask_background: bool = None
+        self,
+        frame1: dai.Node.Output,
+        frame2: dai.Node.Output,
+        alpha: float = None,
+        mask_background: bool = None,
     ) -> "ImgFrameOverlay":
         """Configures the node connections.
 
@@ -63,7 +70,8 @@ class ImgFrameOverlay(BaseHostNode):
         @type frame2: dai.Node.Output
         @param alpha: The weight of the background frame in the overlay.
         @type alpha: float
-        @param mask_background: If True, zero areas in the foreground frame do not darken the background.
+        @param mask_background: If True, zero areas in the foreground frame do not
+            darken the background.
         @type mask_background: bool
         @return: The node object with the background and foreground streams overlaid.
         @rtype: ImgFrameOverlay
@@ -75,7 +83,9 @@ class ImgFrameOverlay(BaseHostNode):
         if mask_background is not None:
             self.setMaskBackground(mask_background)
 
-        self._logger.debug(f"ImgFrameOverlay built with alpha={alpha}, mask_background={mask_background}")
+        self._logger.debug(
+            f"ImgFrameOverlay built with alpha={alpha}, mask_background={mask_background}"
+        )
 
         return self
 
@@ -106,7 +116,9 @@ class ImgFrameOverlay(BaseHostNode):
             if len(foreground_frame.shape) == 2:
                 mask_bool = foreground_frame > 0
                 if mask_bool.any():
-                    foreground_frame_rgb = cv2.cvtColor(foreground_frame.astype("uint8"), cv2.COLOR_GRAY2BGR)
+                    foreground_frame_rgb = cv2.cvtColor(
+                        foreground_frame.astype("uint8"), cv2.COLOR_GRAY2BGR
+                    )
                     overlay_frame = background_frame.copy()
                     overlay_frame[mask_bool] = cv2.addWeighted(
                         background_frame[mask_bool],
