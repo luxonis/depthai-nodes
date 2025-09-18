@@ -1,3 +1,5 @@
+from typing import Optional
+
 import cv2
 import depthai as dai
 
@@ -17,18 +19,18 @@ class ImgFrameOverlay(BaseHostNode):
     alpha: float
         The weight of the background frame in the overlay. By default, the weight is 0.5
             which means that both frames are represented equally in the overlay.
-    mask_background: bool
-        If True, zero areas in the foreground frame do not darken the background during overlay.
+    preserve_background: bool
+        If True, zero areas in the foreground frame do not darken the background during overlay. Default is False.
     out : dai.ImgFrame
         The output message for the overlay frame.
     """
 
-    def __init__(self, alpha: float = 0.5, mask_background: bool = False) -> None:
+    def __init__(self, alpha: float = 0.5, preserve_background: bool = False) -> None:
         super().__init__()
         self.setAlpha(alpha)
-        self._mask_background = mask_background
+        self.setPreserveBackground(preserve_background)
         self._logger.debug(
-            f"ImgFrameOverlay initialized with alpha={alpha}, mask_background={mask_background}"
+            f"ImgFrameOverlay initialized with alpha={alpha}, preserve_background={preserve_background}"
         )
 
     def setAlpha(self, alpha: float) -> None:
@@ -44,23 +46,23 @@ class ImgFrameOverlay(BaseHostNode):
         self._alpha = alpha
         self._logger.debug(f"Alpha set to {self._alpha}")
 
-    def setMaskBackground(self, mask_background: bool) -> None:
-        """Sets the mask_background flag.
+    def setPreserveBackground(self, preserve_background: bool) -> None:
+        """Sets the preserve_background flag.
 
-        @param mask_background: If True, zero areas in the foreground frame do not
+        @param preserve_background: If True, zero areas in the foreground frame do not
             darken the background.
-        @type mask_background: bool
+        @type preserve_background: bool
         """
-        if not isinstance(mask_background, bool):
-            raise ValueError("mask_background must be a boolean")
-        self._mask_background = mask_background
+        if not isinstance(preserve_background, bool):
+            raise ValueError("preserve_background must be a boolean")
+        self._preserve_background = preserve_background
 
     def build(
         self,
         frame1: dai.Node.Output,
         frame2: dai.Node.Output,
-        alpha: float = None,
-        mask_background: bool = None,
+        alpha: Optional[float] = None,
+        preserve_background: Optional[bool] = None,
     ) -> "ImgFrameOverlay":
         """Configures the node connections.
 
@@ -70,9 +72,9 @@ class ImgFrameOverlay(BaseHostNode):
         @type frame2: dai.Node.Output
         @param alpha: The weight of the background frame in the overlay.
         @type alpha: float
-        @param mask_background: If True, zero areas in the foreground frame do not
+        @param preserve_background: If True, zero areas in the foreground frame do not
             darken the background.
-        @type mask_background: bool
+        @type preserve_background: bool
         @return: The node object with the background and foreground streams overlaid.
         @rtype: ImgFrameOverlay
         """
@@ -80,11 +82,11 @@ class ImgFrameOverlay(BaseHostNode):
 
         if alpha is not None:
             self.setAlpha(alpha)
-        if mask_background is not None:
-            self.setMaskBackground(mask_background)
+        if preserve_background is not None:
+            self.setPreserveBackground(preserve_background)
 
         self._logger.debug(
-            f"ImgFrameOverlay built with alpha={alpha}, mask_background={mask_background}"
+            f"ImgFrameOverlay built with alpha={alpha}, preserve_background={preserve_background}"
         )
 
         return self
@@ -111,7 +113,7 @@ class ImgFrameOverlay(BaseHostNode):
             interpolation=cv2.INTER_LINEAR,
         )
 
-        if self._mask_background and foreground_frame is not None:
+        if self._preserve_background and foreground_frame is not None:
             # Ensure foreground is 3-channel RGB
             if len(foreground_frame.shape) == 2:  # grayscale
                 foreground_rgb = cv2.cvtColor(
