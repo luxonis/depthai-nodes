@@ -20,7 +20,7 @@ class ImgFrameOverlay(BaseHostNode):
         The weight of the background frame in the overlay. By default, the weight is 0.5
             which means that both frames are represented equally in the overlay.
     preserve_background: bool
-        If True, zero areas in the foreground frame do not darken the background during overlay. Default is False.
+        If True, zero areas in the foreground frame are ignored in the output overlay frame. Default is False.
     out : dai.ImgFrame
         The output message for the overlay frame.
     """
@@ -49,8 +49,8 @@ class ImgFrameOverlay(BaseHostNode):
     def setPreserveBackground(self, preserve_background: bool) -> None:
         """Sets the preserve_background flag.
 
-        @param preserve_background: If True, zero areas in the foreground frame do not
-            darken the background.
+        @param preserve_background: If True, zero areas in the foreground frame are
+            ignored in the output overlay frame.
         @type preserve_background: bool
         """
         if not isinstance(preserve_background, bool):
@@ -72,8 +72,8 @@ class ImgFrameOverlay(BaseHostNode):
         @type frame2: dai.Node.Output
         @param alpha: The weight of the background frame in the overlay.
         @type alpha: float
-        @param preserve_background: If True, zero areas in the foreground frame do not
-            darken the background.
+        @param preserve_background: If True, zero areas in the foreground frame are
+            ignored in the output overlay frame.
         @type preserve_background: bool
         @return: The node object with the background and foreground streams overlaid.
         @rtype: ImgFrameOverlay
