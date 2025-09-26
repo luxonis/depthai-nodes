@@ -7,8 +7,7 @@ license = { file = "LICENSE" }
 authors = [{ name = "Luxonis", email = "support@luxonis.com" }]
 maintainers = [{ name = "Luxonis", email = "support@luxonis.com" }]
 keywords = ["ml", "postprocessing", "luxonis", "oak"]
-# keep ONLY this dynamic declaration (no 'dependencies' here)
-dynamic = ["optional-dependencies", "version"]
+dynamic = ["dependencies", "optional-dependencies", "version"]
 classifiers = [
   "License :: OSI Approved :: Apache Software License",
   "Development Status :: 3 - Alpha",
@@ -18,27 +17,21 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Image Recognition",
 ]
 
-dependencies = [
-  "depthai>=3.0,<3.1,!=3.0a*,!=3.0b*,!=3.0rc0,!=3.0rc1",
-  "opencv-python-headless~=4.10.0",
-  "numpy>=1.22",
-]
-
 [project.urls]
 repository = "https://github.com/luxonis/depthai-nodes"
 issues = "https://github.com/luxonis/depthai-nodes/issues"
 
 [build-system]
-# ensure a PEP 621–aware setuptools
-requires = ["setuptools>=61", "wheel"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
 
 [tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
 optional-dependencies = { dev = { file = ["requirements-dev.txt"] } }
-version = { attr = "depthai_nodes.__version__" }
+version = {attr = "depthai_nodes.__version__"}
 
 [tool.ruff]
 target-version = "py38"
