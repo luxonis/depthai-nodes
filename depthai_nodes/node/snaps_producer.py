@@ -31,6 +31,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
     def __init__(
         self,
         time_interval: Union[int, float] = 60.0,
+        running: bool = True,
         process_fn: Optional[ProcessFnFrameOnlyType] = None,
     ):
         super().__init__()
@@ -39,6 +40,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
         self._em = dai.EventsManager()
         self._em.setLogResponse(True)
         self.setTimeInterval(time_interval)
+        self.setRunning(running)
         if process_fn is None:
             self._process_fn = None
         else:
@@ -83,6 +85,14 @@ class SnapsProducerFrameOnly(BaseHostNode):
         self.time_interval = time_interval
         self._logger.debug(f"Time interval set to {time_interval}")
 
+    def setRunning(self, running: bool):
+        """Sets whether snaps are being sent or not.
+
+        @param running: If True then snaps are being sent, if False then they aren't.
+        @type running: bool
+        """
+        self._running = running
+
     def setProcessFn(self, process_fn: ProcessFnFrameOnlyType):
         """Sets custom processing function.
 
@@ -99,6 +109,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
         self,
         frame: dai.Node.Output,
         time_interval: Union[int, float] = 60.0,
+        running: bool = True,
         process_fn: Optional[ProcessFnFrameOnlyType] = None,
     ) -> "SnapsProducerFrameOnly":
         """Configures the node.
@@ -106,8 +117,11 @@ class SnapsProducerFrameOnly(BaseHostNode):
         @param frame: The input message for snap creation.
         @type frame: dai.Node.Output
         @param time_interval: Time interval between snaps for default sending in
-            seconds. Defualts to 60.
+            seconds. Defaults to 60.
         @type time_interval: Union[int, float]
+        @param running: If True then snaps are being sent, if False then they aren't.
+            Defaults to True.
+        @type running: bool
         @param process_fn: Custom snaps processing function. Defaults to None.
         @type process_fn: Callable[['SnapsProducerFrameOnly', dai.ImgFrame], None]
         @return: The node object which handles snap creation and sending.
@@ -115,6 +129,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
         """
         self.link_args(frame)
         self.setTimeInterval(time_interval)
+        self.setRunning(running)
         if process_fn is not None:
             self.setProcessFn(process_fn)
         self._logger.debug(
@@ -130,8 +145,9 @@ class SnapsProducerFrameOnly(BaseHostNode):
         @param frame: The input message for snap creation.
         @type frame: dai.ImgFrame
         """
-        self._logger.debug("Processing new input")
         assert isinstance(frame, dai.ImgFrame)
+        self._logger.debug("Processing new input")
+
         if self._process_fn is None:
             self.sendSnap("frame", frame)
         else:
@@ -141,9 +157,8 @@ class SnapsProducerFrameOnly(BaseHostNode):
         self,
         name: str,
         frame: dai.ImgFrame,
-        data: List[dai.EventData] = [],  # noqa: B006
         tags: List[str] = [],  # noqa: B006
-        extra_data: Dict[str, str] = {},  # noqa: B006
+        extras: Dict[str, str] = {},  # noqa: B006
         device_serial_num: str = "",
     ) -> bool:
         """Function that creates the snap and sends it out if time from last snap is
@@ -154,26 +169,26 @@ class SnapsProducerFrameOnly(BaseHostNode):
         @type name: str
         @param frame: Image frame to send.
         @type frame: dai.ImgFrame
-        @param data: List of EventData objects to send. Defualts to [].
-        @type data: List[dai.EventData]
         @param tags: List of tags to send. Defaults to [].
         @type tags: List[str]
         @param extra_data: Extra data to send. Defaults to {}.
         @type extra_data: Dict[str, str]
-        @param device_serial_num: Device serial number. Defualts to ''.
+        @param device_serial_num: Device serial number. Defaults to ''.
         @type device_serial_num: str
         @return: True if snap was sent out else False.
         @rtype: bool
         """
+        if not self._running:
+            return False
+
         now = time.time()
         if now > self.last_update + self.time_interval:
             out = self._em.sendSnap(
                 name=name,
-                imgFrame=frame,
-                data=data,
                 tags=tags,
-                extraData=extra_data,
+                extras=extras,
                 deviceSerialNo=device_serial_num,
+                fileGroup=[frame],
             )
             if out:
                 self._logger.info(f"Snap `{name}` sent")
@@ -219,6 +234,7 @@ class SnapsProducer(SnapsProducerFrameOnly):
         frame: dai.Node.Output,
         msg: dai.Node.Output,
         time_interval: Union[int, float] = 60.0,
+        running: bool = True,
         process_fn: Optional[ProcessFnType] = None,
     ) -> "SnapsProducer":
         """Configures the node.
@@ -228,8 +244,11 @@ class SnapsProducer(SnapsProducerFrameOnly):
         @param msg: The additonal input message for snap creation.
         @type msg: dai.Node.Output
         @param time_interval: Time interval between snaps for default sending in
-            seconds. Defualts to 60.
+            seconds. Defaults to 60.
         @type time_interval: Union[int, float]
+        @param running: If True then snaps are being sent, if False then they aren't.
+            Defaults to True.
+        @type running: bool
         @param process_fn: Custom snaps processing function. Defaults to None.
         @type process_fn: Optional[Callable[['SnapsProducer', dai.ImgFrame, dai.Buffer],
             None]]
@@ -238,6 +257,7 @@ class SnapsProducer(SnapsProducerFrameOnly):
         """
         self.link_args(frame, msg)
         self.setTimeInterval(time_interval)
+        self.setRunning(running)
         if process_fn is not None:
             self.setProcessFn(process_fn)
         self._logger.debug(f"SnapsProducer built with time_interval={time_interval}")
