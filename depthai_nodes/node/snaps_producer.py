@@ -149,14 +149,14 @@ class SnapsProducerFrameOnly(BaseHostNode):
         self._logger.debug("Processing new input")
 
         if self._process_fn is None:
-            self.sendSnap("frame", frame)
+            self.sendSnap("frame", file_group=[dai.FileData(frame, "frame")])
         else:
             self._process_fn(self, frame)
 
     def sendSnap(
         self,
         name: str,
-        frame: dai.ImgFrame,
+        file_group: List[dai.FileData],
         tags: List[str] = [],  # noqa: B006
         extras: Dict[str, str] = {},  # noqa: B006
         device_serial_num: str = "",
@@ -167,8 +167,8 @@ class SnapsProducerFrameOnly(BaseHostNode):
 
         @param name: Name of the snap.
         @type name: str
-        @param frame: Image frame to send.
-        @type frame: dai.ImgFrame
+        @param file_group: Files to send.
+        @type file_group: List[dai.FileData]
         @param tags: List of tags to send. Defaults to [].
         @type tags: List[str]
         @param extra_data: Extra data to send. Defaults to {}.
@@ -188,7 +188,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
                 tags=tags,
                 extras=extras,
                 deviceSerialNo=device_serial_num,
-                fileGroup=[frame],
+                fileGroup=file_group,
             )
             if out:
                 self._logger.info(f"Snap `{name}` sent")
@@ -276,6 +276,6 @@ class SnapsProducer(SnapsProducerFrameOnly):
         self._logger.debug("Processing new input")
         assert isinstance(frame, dai.ImgFrame)
         if self._process_fn is None:
-            self.sendSnap("frame", frame)
+            self.sendSnap("frame", file_group=[dai.FileData(frame, "frame")])
         else:
             self._process_fn(self, frame, msg)
