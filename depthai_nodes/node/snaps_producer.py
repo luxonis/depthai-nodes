@@ -45,7 +45,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
             self._process_fn = None
         else:
             self.setProcessFn(process_fn)
-
+        self._logger.setLevel("DEBUG")
         self._logger.debug(
             f"SnapsProducerFrameOnly initialized with time_interval={time_interval}"
         )
