@@ -19,7 +19,7 @@ def get_logger(name: Optional[str] = None) -> logging.Logger:
     return logger
 
 
-def setup_logging(level: Optional[str] = None, file: Optional[str] = None):
+def setup_logging(level: Optional[str] = "DEBUG", file: Optional[str] = None):
     """Globally configures logging for depthai_nodes package.
 
     @type level: str or None
