@@ -333,7 +333,7 @@ class TilesPatcher(BaseHostNode):
 
     def _stitch_segmentation_maps(
         self,
-        segmentation_maps: List[tuple[np.ndarray, int]],
+        segmentation_maps: List[Tuple[np.ndarray, int]],
     ) -> np.ndarray:
         """Stitches segmentation maps from tiles back into the global frame and returns
         the full segmentation map.
