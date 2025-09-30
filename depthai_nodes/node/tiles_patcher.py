@@ -46,6 +46,7 @@ class TilesPatcher(BaseHostNode):
         self.iou_thresh = 0.4
 
         self.tile_buffer = []
+        self.segmentation_buffer = []
         self.current_timestamp = None
         self.expected_tiles_count = 0
         self._input_class = dai.ImgDetections
@@ -119,10 +120,13 @@ class TilesPatcher(BaseHostNode):
                 type(nn_output),
             )
             self.tile_buffer = []
+            self.segmentation_buffer = []
 
         self.current_timestamp = timestamp
         tile_index = nn_output.getSequenceNum()
 
+        if isinstance(nn_output, ImgDetectionsExtended):
+            self.segmentation_buffer.append((nn_output.masks, tile_index))
         bboxes: Union[
             List[dai.ImgDetection], List[ImgDetectionExtended]
         ] = nn_output.detections
@@ -138,6 +142,7 @@ class TilesPatcher(BaseHostNode):
                 type(nn_output),
             )
             self.tile_buffer = []
+            self.segmentation_buffer = []
 
     def _map_img_detection_to_global_frame(
         self, detection: dai.ImgDetection, tile_info: dict, nn_shape: Tuple[int, int]
@@ -326,6 +331,65 @@ class TilesPatcher(BaseHostNode):
 
         return global_bboxes
 
+    def _stitch_segmentation_maps(
+        self,
+        segmentation_maps: List[tuple[np.ndarray, int]],
+    ) -> np.ndarray:
+        """Stitches segmentation maps from tiles back into the global frame and returns
+        the full segmentation map.
+
+        @param segmentation_maps: List of segmentation maps and their corresponding tile
+            indices.
+        @type segmentation_maps: list[tuple[np.ndarray, int]]
+        @return: Stitched segmentation map.
+        @rtype: np.ndarray
+        """
+        if self.tile_manager is None or self.tile_manager.nn_shape is None:
+            raise RuntimeError("Tile manager or tile positions not initialized.")
+        full_seg_map = np.zeros(
+            (self.tile_manager.img_shape[1], self.tile_manager.img_shape[0]),  # type: ignore
+            np.int16,
+        )
+        if len(segmentation_maps) == 0:
+            return np.empty(0, dtype=np.int16)
+        for seg_map, tile_index in segmentation_maps:
+            if seg_map.size == 0:
+                return np.empty(0, dtype=np.int16)
+            tile_info = self._get_tile_info(tile_index)
+            if tile_info is None:
+                raise ValueError("Tile information not found.")
+
+            nn_width, nn_height = self.tile_manager.nn_shape
+
+            tile_x1, tile_y1, tile_x2, tile_y2 = tile_info["coords"]
+            tile_actual_width = tile_x2 - tile_x1
+            tile_actual_height = tile_y2 - tile_y1
+
+            # Scaled dimensions (after resizing to fit NN input)
+            scaled_width, scaled_height = tile_info["scaled_size"]
+
+            # Offsets due to padding
+            x_offset = (nn_width - scaled_width) // 2
+            y_offset = (nn_height - scaled_height) // 2
+
+            # Remove padding from segmentation map
+            unpadded_seg_map = seg_map[
+                y_offset : y_offset + scaled_height, x_offset : x_offset + scaled_width
+            ]
+            resized_seg_map = cv2.resize(
+                unpadded_seg_map,
+                (tile_actual_width, tile_actual_height),
+                interpolation=cv2.INTER_NEAREST,
+            )
+
+            # Use this mask to ensure zero values do not overwrite non-zero values
+            # in the full segmentation map
+            non_zero_seg_map = resized_seg_map != 0
+            full_seg_map[tile_y1:tile_y2, tile_x1:tile_x2][
+                non_zero_seg_map
+            ] = resized_seg_map[non_zero_seg_map]
+        return full_seg_map
+
     def _get_tile_info(self, tile_index: int):
         """Retrieves the tile's coordinates and scaled dimensions based on the tile
         index.
@@ -364,22 +428,34 @@ class TilesPatcher(BaseHostNode):
                 conf_thresh=self.conf_thresh,
                 iou_thresh=self.iou_thresh,
             )
+            detections = dai.ImgDetections()
+            detections.detections = detection_list
+        elif not combined_bboxes and input_type == dai.ImgDetections:
+            detections = dai.ImgDetections()
+            detections.detections = []
         elif combined_bboxes and input_type == ImgDetectionsExtended:
-            detection_list = nms_detections_extended(
+            detections = ImgDetectionsExtended()
+            detections.masks = self._stitch_segmentation_maps(self.segmentation_buffer)
+            detections.detections = nms_detections_extended(
                 combined_bboxes,  # type: ignore
                 conf_thresh=self.conf_thresh,
                 iou_thresh=self.iou_thresh,
             )
+        elif not combined_bboxes and input_type == ImgDetectionsExtended:
+            detections = ImgDetectionsExtended()
+            detections.masks = np.zeros(
+                (self.tile_manager.img_shape[0], self.tile_manager.img_shape[1]),  # type: ignore
+                np.int16,
+            )
+            detections.detections = []
         else:
-            detection_list = []
+            raise ValueError("Unsupported input type")
 
-        detections = input_type()
         detections.setTimestamp(timestamp)
         detections.setTimestampDevice(device_timestamp)
         detections.setSequenceNum(sequence_num)
         if transformation is not None:
             detections.setTransformation(transformation)
-        detections.detections = detection_list
 
         self._logger.debug("Detections message created")
 
