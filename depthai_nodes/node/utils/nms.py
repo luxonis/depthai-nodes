@@ -61,14 +61,14 @@ def nms_detections_extended(
 ):
     """Applies Non-Maximum Suppression (NMS) on a list of dai.ImgDetection objects.
 
-    @param detections: List of dai.ImgDetection objects. @type
-    detections: list[dai.ImgDetection] @param conf_thresh: Confidence
+    @param detections: List of ImgDetectionExtended objects. @type
+    detections: list[ImgDetectionExtended] @param conf_thresh: Confidence
     threshold for filtering boxes. @type conf_thresh: float @param
     iou_thresh: IoU threshold for Non-Maximum Suppression (NMS). @type
     iou_thresh: float
 
-    @return: A list of dai.ImgDetection objects after applying NMS.
-    @rtype: list[dai.ImgDetectionExtended]
+    @return: A list of ImgDetectionExtended objects after applying NMS.
+    @rtype: list[ImgDetectionExtended]
     """
     if len(detections) == 0:
         return []
