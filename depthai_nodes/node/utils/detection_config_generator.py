@@ -98,17 +98,17 @@ def generate_script_content(
     )
 
     return f"""
-    try:
-        while True:
-            frame = node.inputs['preview'].get()
-            dets  = node.inputs['det_in'].get()
+try:
+    while True:
+        frame = node.inputs['preview'].get()
+        dets  = node.inputs['det_in'].get()
 
-            for det in dets.detections:
-                {validate_label.strip()} 
+        for det in dets.detections:
+            {validate_label.strip()} 
 
-                {cfg_content.strip()}
-                node.outputs['manip_cfg'].send(cfg)
-                node.outputs['manip_img'].send(frame)
-    except Exception as e:
-        node.warn(str(e))
-    """
+            {cfg_content.strip()}
+            node.outputs['manip_cfg'].send(cfg)
+            node.outputs['manip_img'].send(frame)
+except Exception as e:
+    node.warn(str(e))
+"""
