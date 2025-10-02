@@ -43,8 +43,16 @@ class ImageManipConfig(dai.ImageManipConfig):
 
 
 class Frame:
-    def __init__(self, sequence_num: int):
+    def __init__(self, sequence_num: int, width=640, height=480):
         self.sequence_num = sequence_num
+        self.width = width
+        self.height = height
+
+    def getWidth(self):
+        return self.width
+
+    def getHeight(self):
+        return self.height
 
 
 class Node:
