@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 import depthai as dai
 import numpy as np
@@ -6,7 +6,11 @@ import numpy as np
 from depthai_nodes.message.img_detections import ImgDetectionExtended
 
 
-def nms_detections(detections: List[dai.ImgDetection], conf_thresh=0.3, iou_thresh=0.4):
+def nms_detections(
+    detections: Union[List[dai.ImgDetection], List[ImgDetectionExtended]],
+    conf_thresh=0.3,
+    iou_thresh=0.4,
+):
     """Applies Non-Maximum Suppression (NMS) on a list of dai.ImgDetection objects.
 
     @param detections: List of dai.ImgDetection objects. @type
@@ -19,13 +23,13 @@ def nms_detections(detections: List[dai.ImgDetection], conf_thresh=0.3, iou_thre
     @rtype: list[dai.ImgDetection]
     """
     # Filter out detections below confidence threshold
-    detections = [det for det in detections if det.confidence >= conf_thresh]
-    if len(detections) == 0:
+    filtered_detections = [det for det in detections if det.confidence >= conf_thresh]
+    if len(filtered_detections) == 0:
         return []
 
     # Organize detections by class
     detections_by_class = {}
-    for det in detections:
+    for det in filtered_detections:
         label = det.label
         if label not in detections_by_class:
             detections_by_class[label] = []
@@ -37,56 +41,10 @@ def nms_detections(detections: List[dai.ImgDetection], conf_thresh=0.3, iou_thre
         scores = []
         for det in dets:
             # Coordinates are normalized between 0 and 1
-            boxes.append([det.xmin, det.ymin, det.xmax, det.ymax])
-            scores.append(det.confidence)
-
-        boxes = np.array(boxes)
-        scores = np.array(scores)
-
-        # Perform NMS
-        keep_indices = nms(boxes, scores, iou_thresh)
-
-        # Keep the detections after NMS
-        final_dets = [dets[i] for i in keep_indices]
-        final_detections.extend(final_dets)
-
-    return final_detections
-
-
-def nms_detections_extended(
-    detections: List[ImgDetectionExtended], conf_thresh=0.3, iou_thresh=0.4
-):
-    """Applies Non-Maximum Suppression (NMS) on a list of dai.ImgDetection objects.
-
-    @param detections: List of ImgDetectionExtended objects. @type
-    detections: list[ImgDetectionExtended] @param conf_thresh: Confidence
-    threshold for filtering boxes. @type conf_thresh: float @param
-    iou_thresh: IoU threshold for Non-Maximum Suppression (NMS). @type
-    iou_thresh: float
-
-    @return: A list of ImgDetectionExtended objects after applying NMS.
-    @rtype: list[ImgDetectionExtended]
-    """
-    # Filter out detections below confidence threshold
-    detections = [det for det in detections if det.confidence >= conf_thresh]
-    if len(detections) == 0:
-        return []
-
-    # Organize detections by class
-    detections_by_class: dict[int, List[ImgDetectionExtended]] = {}
-    for det in detections:
-        label = det.label
-        if label not in detections_by_class:
-            detections_by_class[label] = []
-        detections_by_class[label].append(det)
-
-    final_detections = []
-    for _, dets in detections_by_class.items():
-        boxes = []
-        scores = []
-        for det in dets:
-            # Coordinates are normalized between 0 and 1
-            boxes.append(det.rotated_rect.getOuterRect())
+            if isinstance(det, dai.ImgDetection):
+                boxes.append([det.xmin, det.ymin, det.xmax, det.ymax])
+            elif isinstance(det, ImgDetectionExtended):
+                boxes.append(det.rotated_rect.getOuterRect())
             scores.append(det.confidence)
 
         boxes = np.array(boxes)

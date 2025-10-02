@@ -12,7 +12,6 @@ from depthai_nodes.message.img_detections import (
 from depthai_nodes.message.keypoints import Keypoints
 from depthai_nodes.node.base_host_node import BaseHostNode
 from depthai_nodes.node.utils import nms_detections
-from depthai_nodes.node.utils.nms import nms_detections_extended
 
 from .tiling import Tiling
 
@@ -425,22 +424,18 @@ class TilesPatcher(BaseHostNode):
         for bboxes in self.tile_buffer:
             combined_bboxes.extend(bboxes)
 
+        detection_list = nms_detections(
+            combined_bboxes,
+            conf_thresh=self.conf_thresh,
+            iou_thresh=self.iou_thresh,
+        )
         if input_type == dai.ImgDetections:
-            detection_list = nms_detections(
-                combined_bboxes,
-                conf_thresh=self.conf_thresh,
-                iou_thresh=self.iou_thresh,
-            )
             detections = dai.ImgDetections()
             detections.detections = detection_list
         elif input_type == ImgDetectionsExtended:
             detections = ImgDetectionsExtended()
             detections.masks = self._stitch_segmentation_maps(self.segmentation_buffer)
-            detections.detections = nms_detections_extended(
-                combined_bboxes,  # type: ignore
-                conf_thresh=self.conf_thresh,
-                iou_thresh=self.iou_thresh,
-            )
+            detections.detections = detection_list
         else:
             raise ValueError("Unsupported input type")
 
