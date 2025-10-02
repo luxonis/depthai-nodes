@@ -351,9 +351,9 @@ class TilesPatcher(BaseHostNode):
         )
         if len(segmentation_maps) == 0:
             return np.empty(0, dtype=np.int16)
+        if all([seg_map.size == 0 for seg_map, _ in segmentation_maps]):
+            return np.empty(0, dtype=np.int16)
         for seg_map, tile_index in segmentation_maps:
-            if seg_map.size == 0:
-                return np.empty(0, dtype=np.int16)
             tile_info = self._get_tile_info(tile_index)
             if tile_info is None:
                 raise ValueError("Tile information not found.")
@@ -370,6 +370,10 @@ class TilesPatcher(BaseHostNode):
             # Offsets due to padding
             x_offset = (nn_width - scaled_width) // 2
             y_offset = (nn_height - scaled_height) // 2
+
+            # Create empty segmentation map if it doesn't exist
+            if seg_map.size == 0:
+                seg_map = np.zeros((nn_width, nn_height), dtype=np.int16)
 
             # Remove padding from segmentation map
             unpadded_seg_map = seg_map[
