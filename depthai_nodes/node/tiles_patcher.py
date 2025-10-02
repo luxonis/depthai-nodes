@@ -162,11 +162,17 @@ class TilesPatcher(BaseHostNode):
         scale_x = tile_actual_width / scaled_width
         scale_y = tile_actual_height / scaled_height
 
+        # Ensure xmin < xmax and ymin < ymax
+        xmin = min(detection.xmin, detection.xmax)
+        ymin = min(detection.ymin, detection.ymax)
+        xmax = max(detection.xmin, detection.xmax)
+        ymax = max(detection.ymin, detection.ymax)
+
         # Convert bbox coordinates from normalized to NN input dimensions
-        bbox_xmin_nn = detection.xmin * nn_width
-        bbox_ymin_nn = detection.ymin * nn_height
-        bbox_xmax_nn = detection.xmax * nn_width
-        bbox_ymax_nn = detection.ymax * nn_height
+        bbox_xmin_nn = xmin * nn_width
+        bbox_ymin_nn = ymin * nn_height
+        bbox_xmax_nn = xmax * nn_width
+        bbox_ymax_nn = ymax * nn_height
 
         # Adjust for padding offsets to get coordinates in the scaled tile
         bbox_xmin_scaled = bbox_xmin_nn - x_offset
