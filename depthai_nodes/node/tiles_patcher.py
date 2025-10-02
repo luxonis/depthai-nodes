@@ -123,14 +123,13 @@ class TilesPatcher(BaseHostNode):
             self.segmentation_buffer = []
 
         self.current_timestamp = timestamp
-        tile_index = nn_output.getSequenceNum()
 
         if isinstance(nn_output, ImgDetectionsExtended):
-            self.segmentation_buffer.append((nn_output.masks, tile_index))
+            self.segmentation_buffer.append((nn_output.masks, sequence_num))
         bboxes: Union[
             List[dai.ImgDetection], List[ImgDetectionExtended]
         ] = nn_output.detections
-        mapped_bboxes = self._map_bboxes_to_global_frame(bboxes, tile_index)
+        mapped_bboxes = self._map_bboxes_to_global_frame(bboxes, sequence_num)
         self.tile_buffer.append(mapped_bboxes)
 
         if len(self.tile_buffer) == self.expected_tiles_count:
