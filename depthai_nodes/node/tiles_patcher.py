@@ -425,7 +425,7 @@ class TilesPatcher(BaseHostNode):
         for bboxes in self.tile_buffer:
             combined_bboxes.extend(bboxes)
 
-        if combined_bboxes and input_type == dai.ImgDetections:
+        if input_type == dai.ImgDetections:
             detection_list = nms_detections(
                 combined_bboxes,
                 conf_thresh=self.conf_thresh,
@@ -433,10 +433,7 @@ class TilesPatcher(BaseHostNode):
             )
             detections = dai.ImgDetections()
             detections.detections = detection_list
-        elif not combined_bboxes and input_type == dai.ImgDetections:
-            detections = dai.ImgDetections()
-            detections.detections = []
-        elif combined_bboxes and input_type == ImgDetectionsExtended:
+        elif input_type == ImgDetectionsExtended:
             detections = ImgDetectionsExtended()
             detections.masks = self._stitch_segmentation_maps(self.segmentation_buffer)
             detections.detections = nms_detections_extended(
@@ -444,13 +441,6 @@ class TilesPatcher(BaseHostNode):
                 conf_thresh=self.conf_thresh,
                 iou_thresh=self.iou_thresh,
             )
-        elif not combined_bboxes and input_type == ImgDetectionsExtended:
-            detections = ImgDetectionsExtended()
-            detections.masks = np.zeros(
-                (self.tile_manager.img_shape[0], self.tile_manager.img_shape[1]),  # type: ignore
-                np.int16,
-            )
-            detections.detections = []
         else:
             raise ValueError("Unsupported input type")
 
