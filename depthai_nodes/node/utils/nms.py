@@ -18,9 +18,6 @@ def nms_detections(detections: List[dai.ImgDetection], conf_thresh=0.3, iou_thre
     @return: A list of dai.ImgDetection objects after applying NMS.
     @rtype: list[dai.ImgDetection]
     """
-    if len(detections) == 0:
-        return []
-
     # Filter out detections below confidence threshold
     detections = [det for det in detections if det.confidence >= conf_thresh]
     if len(detections) == 0:
@@ -70,9 +67,6 @@ def nms_detections_extended(
     @return: A list of ImgDetectionExtended objects after applying NMS.
     @rtype: list[ImgDetectionExtended]
     """
-    if len(detections) == 0:
-        return []
-
     # Filter out detections below confidence threshold
     detections = [det for det in detections if det.confidence >= conf_thresh]
     if len(detections) == 0:
