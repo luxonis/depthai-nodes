@@ -104,6 +104,10 @@ except Exception as e:
 
         clamped_bbox = [max(0, min(1, x)) for x in bbox]
         xmin, ymin, xmax, ymax = clamped_bbox
+        if xmin > xmax:
+            xmin, xmax = xmax, xmin
+        if ymin > ymax:
+            ymin, ymax = ymax, ymin
         rect = dai.RotatedRect()
         rect.center.x = (xmin + xmax) / 2
         rect.center.y = (ymin + ymax) / 2
