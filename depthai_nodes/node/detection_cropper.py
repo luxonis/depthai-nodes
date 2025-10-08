@@ -52,8 +52,8 @@ except Exception as e:
         detections: dai.Node.Output,
         img_frames: dai.Node.Output,
         output_size: tuple[int, int],
+        resize_mode: dai.ImageManipConfig.ResizeMode,
         padding: float = 0,
-        resize_mode: dai.ImageManipConfig.ResizeMode = dai.ImageManipConfig.ResizeMode.STRETCH,
     ) -> "DetectionCropper":
         self.link_args(detections)
 
