@@ -81,31 +81,19 @@ except Exception as e:
         self._sendDetectionCount(detections)
         for detection in detections.detections:
             if isinstance(detection, ImgDetectionExtended):
-                cfg = self._generateCropCfgImgDetectionExtended(detection)
+                bbox = detection.rotated_rect.getOuterRect()
             else:
-                cfg = self._generateCropCfgImgDetection(detection)
+                bbox = [detection.xmin, detection.ymin, detection.xmax, detection.ymax]
+            cfg = self._generateCropCfg(bbox)
             cfg.setTimestamp(detections.getTimestamp())
             cfg.setTimestampDevice(detections.getTimestampDevice())
             cfg.setSequenceNum(detections.getSequenceNum())
             self._cfg_out.send(cfg)
 
-    def _generateCropCfgImgDetectionExtended(
-        self, detection: ImgDetectionExtended
-    ) -> dai.ImageManipConfig:
-        rect = self._getCropRectFromBbox(detection.rotated_rect.getOuterRect())
-        cfg = dai.ImageManipConfig()
-        cfg.addCropRotatedRect(rect, normalizedCoords=True)
-        cfg.setOutputSize(self._output_size[0], self._output_size[1], self._resize_mode)
-        cfg.setFrameType(self._img_frame_type)
-        return cfg
-
-    def _generateCropCfgImgDetection(
-        self, detection: dai.ImgDetection
-    ) -> dai.ImageManipConfig:
-        bbox = [detection.xmin, detection.ymin, detection.xmax, detection.ymax]
+    def _generateCropCfg(self, bbox: List[float]) -> dai.ImageManipConfig:
         rect = self._getCropRectFromBbox(bbox)
         cfg = dai.ImageManipConfig()
-        cfg.addCropRotatedRect(rect, True)
+        cfg.addCropRotatedRect(rect, normalizedCoords=True)
         cfg.setOutputSize(self._output_size[0], self._output_size[1], self._resize_mode)
         cfg.setFrameType(self._img_frame_type)
         return cfg
