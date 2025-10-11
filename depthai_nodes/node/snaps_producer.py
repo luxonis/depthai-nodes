@@ -1,5 +1,5 @@
 import time
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, Optional, Union
 
 import depthai as dai
 
@@ -148,15 +148,18 @@ class SnapsProducerFrameOnly(BaseHostNode):
         self._logger.debug("Processing new input")
 
         if self._process_fn is None:
-            self.sendSnap("frame", file_group=[dai.FileData(frame, "frame")])
+            file_group = dai.FileGroup()
+            file_group.clearFiles()
+            file_group.addFile("frame", frame)
+            self.sendSnap("frame", file_group)
         else:
             self._process_fn(self, frame)
 
     def sendSnap(
         self,
         name: str,
-        file_group: List[dai.FileData],
-        tags: List[str] = [],  # noqa: B006
+        file_group: dai.FileGroup,
+        tags=None,  # noqa: B006
         extras: Dict[str, str] = {},  # noqa: B006
         device_serial_num: str = "",
     ) -> bool:
@@ -167,7 +170,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
         @param name: Name of the snap.
         @type name: str
         @param file_group: Files to send.
-        @type file_group: List[dai.FileData]
+        @type file_group: dai.FileGroup
         @param tags: List of tags to send. Defaults to [].
         @type tags: List[str]
         @param extra_data: Extra data to send. Defaults to {}.
@@ -177,6 +180,8 @@ class SnapsProducerFrameOnly(BaseHostNode):
         @return: True if snap was sent out else False.
         @rtype: bool
         """
+        if tags is None:
+            tags = []
         if not self._running:
             return False
 
@@ -184,10 +189,10 @@ class SnapsProducerFrameOnly(BaseHostNode):
         if now > self.last_update + self.time_interval:
             out = self._em.sendSnap(
                 name=name,
+                imgFrame=file_group,
                 tags=tags,
                 extras=extras,
                 deviceSerialNo=device_serial_num,
-                fileGroup=file_group,
             )
             if out:
                 self._logger.info(f"Snap `{name}` sent")
@@ -275,6 +280,9 @@ class SnapsProducer(SnapsProducerFrameOnly):
         self._logger.debug("Processing new input")
         assert isinstance(frame, dai.ImgFrame)
         if self._process_fn is None:
-            self.sendSnap("frame", file_group=[dai.FileData(frame, "frame")])
+            file_group = dai.FileGroup()
+            file_group.clearFiles()
+            file_group.addFile("frame", frame)
+            self.sendSnap("frame", file_group)
         else:
             self._process_fn(self, frame, msg)
