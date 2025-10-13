@@ -187,13 +187,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
 
         now = time.time()
         if now > self.last_update + self.time_interval:
-            out = self._em.sendSnap(
-                name=name,
-                imgFrame=file_group,
-                tags=tags,
-                extras=extras,
-                deviceSerialNo=device_serial_num,
-            )
+            out = self._em.sendSnap(name, file_group, tags, extras)
             if out:
                 self._logger.info(f"Snap `{name}` sent")
                 self.last_update = now
