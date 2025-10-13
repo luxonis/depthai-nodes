@@ -158,7 +158,9 @@ class SnapsProducerFrameOnly(BaseHostNode):
     def sendSnap(
         self,
         name: str,
-        file_group: dai.FileGroup,
+        file_name: str,
+        frame: dai.ImgFrame,
+        detections: dai.ImgDetections,
         tags=None,  # noqa: B006
         extras: Dict[str, str] = {},  # noqa: B006
         device_serial_num: str = "",
@@ -187,7 +189,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
 
         now = time.time()
         if now > self.last_update + self.time_interval:
-            out = self._em.sendSnap(name, file_group, tags, extras)
+            out = self._em.sendSnap(name, file_name, frame, detections, tags, extras)
             if out:
                 self._logger.info(f"Snap `{name}` sent")
                 self.last_update = now
