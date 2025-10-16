@@ -1,22 +1,24 @@
 import datetime
-from typing import List, Optional, Tuple, Type, Union
+from typing import List, Optional, Type, Union
 
 import cv2
 import depthai as dai
 import numpy as np
 
+from depthai_nodes.logging import get_logger
 from depthai_nodes.message.img_detections import (
     ImgDetectionExtended,
     ImgDetectionsExtended,
 )
-from depthai_nodes.message.keypoints import Keypoints
-from depthai_nodes.node.base_host_node import BaseHostNode
+from depthai_nodes.message.keypoints import Keypoint, Keypoints
 from depthai_nodes.node.utils import nms_detections
 
 from .tiling import Tiling
 
+UNASSIGNED_MASK_LABEL = -1
 
-class TilesPatcher(BaseHostNode):
+
+class TilesPatcher(dai.node.ThreadedHostNode):
     """Handles the processing of tiled frames from neural network (NN) outputs, maps the
     detections from tiles back into the global frame, and sends out the combined
     detections for further processing.
@@ -35,24 +37,49 @@ class TilesPatcher(BaseHostNode):
     @type expected_tiles_count: int
     """
 
+    SCRIPT_CONTENT = """
+# Strip ImgFrame image data and send only ImgTransformation
+# Reduces the amount of date being sent between host and device
+import depthai as dai
+
+try:
+    while True:
+        frame = node.inputs['preview'].get()
+        transformation = frame.getTransformation()
+        empty_frame = dai.ImgFrame()
+        empty_frame.setTransformation(transformation)
+        empty_frame.setTimestamp(frame.getTimestamp())
+        empty_frame.setTimestampDevice(frame.getTimestampDevice())
+        node.outputs['transformation'].send(empty_frame)
+except Exception as e:
+    node.warn(str(e))
+"""
+
     def __init__(self) -> None:
         """Initializes the TilesPatcher node, sets default thresholds for confidence and
         IOU, and initializes buffers for tile processing."""
         super().__init__()
+        self._pipeline = self.getParentPipeline()
+        self._logger = get_logger(self.__class__.__name__)
         self.name = "TilesPatcher"
         self.tile_manager = None
         self.conf_thresh = 0.3
         self.iou_thresh = 0.4
 
-        self.tile_buffer = []
-        self.segmentation_buffer = []
-        self.current_timestamp = None
-        self.expected_tiles_count = 0
-        self._input_class = dai.ImgDetections
+        self._nn_input = self.createInput()
+        self._img_input = self.createInput()
+        self.out = self.createOutput()
+        self._script = self._pipeline.create(dai.node.Script)
+        self._script.setScript(self.SCRIPT_CONTENT)
         self._logger.debug("TilesPatcher initialized")
 
     def build(
-        self, tile_manager: Tiling, nn: dai.Node.Output, conf_thresh=0.3, iou_thresh=0.4
+        self,
+        tile_manager: Tiling,
+        img_frames: dai.Node.Output,
+        nn: dai.Node.Output,
+        conf_thresh=0.3,
+        iou_thresh=0.4,
     ) -> "TilesPatcher":
         """Configures the TilesPatcher node with the tile manager and links the neural
         network's output.
@@ -74,346 +101,196 @@ class TilesPatcher(BaseHostNode):
         self.conf_thresh = conf_thresh
         self.iou_thresh = iou_thresh
         self.tile_manager = tile_manager
-        if (
-            self.tile_manager.x is None
-            or self.tile_manager.grid_size is None
-            or self.tile_manager.overlap is None
-        ):
-            raise ValueError("Tile dimensions, grid size, or overlap not initialized.")
-        self.expected_tiles_count = len(self.tile_manager.tile_positions)
-        self.sendProcessingToPipeline(True)
-        self.link_args(nn)
-        self._logger.debug(
-            f"TilesPatcher built with conf_thresh={conf_thresh}, iou_thresh={iou_thresh}"
-        )
+
+        img_frames.link(self._script.inputs["preview"])
+        self._script.outputs["transformation"].link(self._img_input)
+        nn.link(self._nn_input)
         return self
 
-    def process(self, nn_output: dai.Buffer) -> None:
-        """Processes each neural network output (detections) by mapping them from tiled
-        patches back into the global frame and buffering them until all tiles for the
-        current frame are processed.
+    def run(self):
+        if self.tile_manager is None:
+            raise ValueError("Tile manager not initialized.")
+        while self.isRunning():
+            img = self._img_input.get()
+            assert isinstance(img, dai.ImgFrame)
 
-        @param nn_output: The detections from the neural network's output.
-        @type nn_output: dai.ImgDetections
-        """
-        assert isinstance(
-            nn_output, (dai.ImgDetections, ImgDetectionsExtended)
-        ), "Invalid input type"
+            nn_msgs: List[Union[dai.ImgDetections, ImgDetectionsExtended]] = []
+            for _ in range(self.tile_manager.tile_count):
+                nn_msg = self._nn_input.get()
+                assert isinstance(nn_msg, (dai.ImgDetections, ImgDetectionsExtended))
+                nn_msgs.append(nn_msg)
 
-        self._logger.debug("Processing new input")
-        timestamp = nn_output.getTimestamp()
-        device_timestamp = nn_output.getTimestampDevice()
-        sequence_num = nn_output.getSequenceNum()
-        transformation = nn_output.getTransformation()
-
-        if self.current_timestamp is None:
-            self.current_timestamp = timestamp
-
-        if self.current_timestamp != timestamp and len(self.tile_buffer) > 0:
-            # new frame started, send the output for the previous frame
-            self._send_output(
-                self.current_timestamp,
-                device_timestamp,
-                transformation,
-                sequence_num,
-                type(nn_output),
-            )
-            self.tile_buffer = []
-            self.segmentation_buffer = []
-
-        self.current_timestamp = timestamp
-
-        if isinstance(nn_output, ImgDetectionsExtended):
-            self.segmentation_buffer.append((nn_output.masks, sequence_num))
-        bboxes: Union[
-            List[dai.ImgDetection], List[ImgDetectionExtended]
-        ] = nn_output.detections
-        mapped_bboxes = self._map_bboxes_to_global_frame(bboxes, sequence_num)
-        self.tile_buffer.append(mapped_bboxes)
-
-        if len(self.tile_buffer) == self.expected_tiles_count:
-            self._send_output(
-                timestamp,
-                device_timestamp,
-                transformation,
-                sequence_num,
-                type(nn_output),
-            )
-            self.tile_buffer = []
-            self.segmentation_buffer = []
-
-    def _map_img_detection_to_global_frame(
-        self, detection: dai.ImgDetection, tile_info: dict, nn_shape: Tuple[int, int]
-    ):
-        nn_width, nn_height = nn_shape
-
-        tile_x1, tile_y1, tile_x2, tile_y2 = tile_info["coords"]
-        tile_actual_width = tile_x2 - tile_x1
-        tile_actual_height = tile_y2 - tile_y1
-
-        # Scaled dimensions (after resizing to fit NN input)
-        scaled_width, scaled_height = tile_info["scaled_size"]
-
-        # Offsets due to padding
-        x_offset = (nn_width - scaled_width) // 2
-        y_offset = (nn_height - scaled_height) // 2
-
-        # Scaling factors from scaled tile back to original tile dimensions
-        scale_x = tile_actual_width / scaled_width
-        scale_y = tile_actual_height / scaled_height
-
-        # Ensure xmin < xmax and ymin < ymax
-        xmin = min(detection.xmin, detection.xmax)
-        ymin = min(detection.ymin, detection.ymax)
-        xmax = max(detection.xmin, detection.xmax)
-        ymax = max(detection.ymin, detection.ymax)
-
-        # Convert bbox coordinates from normalized to NN input dimensions
-        bbox_xmin_nn = xmin * nn_width
-        bbox_ymin_nn = ymin * nn_height
-        bbox_xmax_nn = xmax * nn_width
-        bbox_ymax_nn = ymax * nn_height
-
-        # Adjust for padding offsets to get coordinates in the scaled tile
-        bbox_xmin_scaled = bbox_xmin_nn - x_offset
-        bbox_ymin_scaled = bbox_ymin_nn - y_offset
-        bbox_xmax_scaled = bbox_xmax_nn - x_offset
-        bbox_ymax_scaled = bbox_ymax_nn - y_offset
-
-        # Ensure coordinates are within the scaled tile dimensions
-        bbox_xmin_scaled = max(0, min(bbox_xmin_scaled, scaled_width))
-        bbox_ymin_scaled = max(0, min(bbox_ymin_scaled, scaled_height))
-        bbox_xmax_scaled = max(0, min(bbox_xmax_scaled, scaled_width))
-        bbox_ymax_scaled = max(0, min(bbox_ymax_scaled, scaled_height))
-
-        # Map to original tile coordinates
-        bbox_xmin_tile = bbox_xmin_scaled * scale_x
-        bbox_ymin_tile = bbox_ymin_scaled * scale_y
-        bbox_xmax_tile = bbox_xmax_scaled * scale_x
-        bbox_ymax_tile = bbox_ymax_scaled * scale_y
-
-        # Map to global image coordinates
-        x1_global = tile_x1 + bbox_xmin_tile
-        y1_global = tile_y1 + bbox_ymin_tile
-        x2_global = tile_x1 + bbox_xmax_tile
-        y2_global = tile_y1 + bbox_ymax_tile
-
-        # Normalize global coordinates
-        img_width, img_height = self.tile_manager.img_shape  # type: ignore
-        normalized_detection = dai.ImgDetection()
-        normalized_detection.label = detection.label
-        normalized_detection.confidence = detection.confidence
-        normalized_detection.xmin = x1_global / img_width
-        normalized_detection.ymin = y1_global / img_height
-        normalized_detection.xmax = x2_global / img_width
-        normalized_detection.ymax = y2_global / img_height
-
-        return normalized_detection
-
-    def _map_img_detection_extended_to_global_frame(
-        self,
-        detection: ImgDetectionExtended,
-        tile_info: dict,
-        nn_shape: Tuple[int, int],
-    ):
-        points = detection.rotated_rect.getPoints()
-        mapped_corner_pts = [
-            self._map_point_to_global_frame((pt.x, pt.y), tile_info, nn_shape)
-            for pt in points
-        ]
-        (center_x, center_y), (width, height), angle = cv2.minAreaRect(
-            np.array(mapped_corner_pts, dtype=np.float32)
-        )
-        normalized_detection = detection.copy()
-        normalized_detection.rotated_rect = (center_x, center_y, width, height, angle)
-        kpts = Keypoints()
-        mapped_kpts = []
-        for kpt in detection.keypoints:
-            coords = self._map_point_to_global_frame(
-                (kpt.x, kpt.y), tile_info, nn_shape
-            )
-            new_kpt = kpt.copy()
-            new_kpt.x = coords[0]
-            new_kpt.y = coords[1]
-            mapped_kpts.append(new_kpt)
-
-        kpts.keypoints = mapped_kpts
-        normalized_detection.keypoints = kpts
-        return normalized_detection
-
-    def _map_point_to_global_frame(
-        self,
-        point: Tuple[float, float],
-        tile_info: dict,
-        nn_shape: Tuple[int, int],
-    ):
-        nn_width, nn_height = nn_shape
-
-        tile_x1, tile_y1, tile_x2, tile_y2 = tile_info["coords"]
-        tile_actual_width = tile_x2 - tile_x1
-        tile_actual_height = tile_y2 - tile_y1
-
-        # Scaled dimensions (after resizing to fit NN input)
-        scaled_width, scaled_height = tile_info["scaled_size"]
-
-        # Offsets due to padding
-        x_offset = (nn_width - scaled_width) // 2
-        y_offset = (nn_height - scaled_height) // 2
-
-        # Scaling factors from scaled tile back to original tile dimensions
-        scale_x = tile_actual_width / scaled_width
-        scale_y = tile_actual_height / scaled_height
-
-        # Convert point coordinates from normalized to NN input dimensions
-        point_nn = (point[0] * nn_width, point[1] * nn_height)
-
-        # Adjust for padding offsets to get coordinates in the scaled tile
-        point_scaled = (point_nn[0] - x_offset, point_nn[1] - y_offset)
-
-        # Ensure coordinates are within the scaled tile dimensions
-        point_scaled = (
-            max(0, min(point_scaled[0], scaled_width)),
-            max(0, min(point_scaled[1], scaled_height)),
-        )
-
-        # Map to original tile coordinates
-        point_tile = (point_scaled[0] * scale_x, point_scaled[1] * scale_y)
-
-        # Map to global image coordinates
-        point_global = (tile_x1 + point_tile[0], tile_y1 + point_tile[1])
-
-        # Normalize global coordinates
-        img_width, img_height = self.tile_manager.img_shape  # type: ignore
-        point_global_normalized = (
-            point_global[0] / img_width,
-            point_global[1] / img_height,
-        )
-
-        return point_global_normalized
-
-    def _map_bboxes_to_global_frame(
-        self,
-        bboxes: Union[List[dai.ImgDetection], List[ImgDetectionExtended]],
-        tile_index: int,
-    ) -> Union[List[dai.ImgDetection], List[ImgDetectionExtended]]:
-        """Maps bounding boxes from their local tile coordinates back to the global
-        frame of the full image.
-
-        @param bboxes: The bounding boxes to be mapped.
-        @type bboxes: list[dai.ImgDetection]
-        @param tile_index: The index of the tile being processed.
-        @type tile_index: int
-        @return: Mapped bounding boxes in the global image frame.
-        @rtype: list[dai.ImgDetection]
-        """
-        tile_info = self._get_tile_info(tile_index)
-        if (
-            self.tile_manager is None
-            or self.tile_manager.nn_shape is None
-            or tile_info is None
-        ):
-            return []
-        if tile_info is None:
-            return []
-
-        global_bboxes = []
-        for bbox in bboxes:
-            if isinstance(bbox, dai.ImgDetection):
-                normalized_bbox = self._map_img_detection_to_global_frame(
-                    bbox, tile_info, self.tile_manager.nn_shape
+            remapped_detections: List[
+                Union[dai.ImgDetection, ImgDetectionExtended]
+            ] = []
+            for nn_msg in nn_msgs:
+                mapped_dets = self._remapDetections(
+                    nn_msg.getTransformation(),  # type: ignore
+                    img.getTransformation(),
+                    nn_msg.detections,
                 )
-            elif isinstance(bbox, ImgDetectionExtended):
-                normalized_bbox = self._map_img_detection_extended_to_global_frame(
-                    bbox, tile_info, self.tile_manager.nn_shape
-                )
+                remapped_detections.extend(mapped_dets)
+
+            if all(isinstance(nn_msg, ImgDetectionsExtended) for nn_msg in nn_msgs):
+                remapped_seg_maps = []
+                for nn_msg in nn_msgs:
+                    if nn_msg.masks.size == 0:  # type: ignore
+                        continue
+                    remapped_seg_map = self._remapSegmentationMap(
+                        nn_msg.getTransformation(),  # type: ignore
+                        img.getTransformation(),
+                        nn_msg.masks,  # type: ignore
+                    )
+                    remapped_seg_maps.append(remapped_seg_map)
+                if len(remapped_seg_maps) == 0:
+                    full_seg_map = np.empty(0, dtype=np.int16)
+                else:
+                    full_seg_map = self._stitchSegmentationMaps(remapped_seg_maps)
             else:
-                raise TypeError(
-                    f"Expected dai.ImgDetection or ImgDetectionExtended, got {type(bbox)}"
-                )
+                full_seg_map = None
 
-            global_bboxes.append(normalized_bbox)
-
-        return global_bboxes
-
-    def _stitch_segmentation_maps(
-        self,
-        segmentation_maps: List[Tuple[np.ndarray, int]],
-    ) -> np.ndarray:
-        """Stitches segmentation maps from tiles back into the global frame and returns
-        the full segmentation map.
-
-        @param segmentation_maps: List of segmentation maps and their corresponding tile
-            indices.
-        @type segmentation_maps: list[tuple[np.ndarray, int]]
-        @return: Stitched segmentation map.
-        @rtype: np.ndarray
-        """
-        if self.tile_manager is None or self.tile_manager.nn_shape is None:
-            raise RuntimeError("Tile manager or tile positions not initialized.")
-        full_seg_map = np.zeros(
-            (self.tile_manager.img_shape[1], self.tile_manager.img_shape[0]),  # type: ignore
-            np.int16,
-        )
-        if len(segmentation_maps) == 0:
-            return np.empty(0, dtype=np.int16)
-        if all([seg_map.size == 0 for seg_map, _ in segmentation_maps]):
-            return np.empty(0, dtype=np.int16)
-        for seg_map, tile_index in segmentation_maps:
-            tile_info = self._get_tile_info(tile_index)
-            if tile_info is None:
-                raise ValueError("Tile information not found.")
-
-            nn_width, nn_height = self.tile_manager.nn_shape
-
-            tile_x1, tile_y1, tile_x2, tile_y2 = tile_info["coords"]
-            tile_actual_width = tile_x2 - tile_x1
-            tile_actual_height = tile_y2 - tile_y1
-
-            # Scaled dimensions (after resizing to fit NN input)
-            scaled_width, scaled_height = tile_info["scaled_size"]
-
-            # Offsets due to padding
-            x_offset = (nn_width - scaled_width) // 2
-            y_offset = (nn_height - scaled_height) // 2
-
-            # Create empty segmentation map if it doesn't exist
-            if seg_map.size == 0:
-                seg_map = np.zeros((nn_width, nn_height), dtype=np.int16)
-
-            # Remove padding from segmentation map
-            unpadded_seg_map = seg_map[
-                y_offset : y_offset + scaled_height, x_offset : x_offset + scaled_width
-            ]
-            resized_seg_map = cv2.resize(
-                unpadded_seg_map,
-                (tile_actual_width, tile_actual_height),
-                interpolation=cv2.INTER_NEAREST,
+            self._sendOutput(
+                remapped_detections,
+                full_seg_map,
+                img.getTimestamp(),
+                img.getTimestampDevice(),
+                img.getTransformation(),
+                img.getSequenceNum(),
+                type(nn_msgs[0]),
             )
 
-            # Use this mask to ensure zero values do not overwrite non-zero values
-            # in the full segmentation map
-            non_zero_seg_map = resized_seg_map != 0
-            full_seg_map[tile_y1:tile_y2, tile_x1:tile_x2][
-                non_zero_seg_map
-            ] = resized_seg_map[non_zero_seg_map]
+    def _stitchSegmentationMaps(self, segmentation_maps: List[np.ndarray]):
+        full_seg_map = np.full_like(segmentation_maps[0], UNASSIGNED_MASK_LABEL)
+        for seg_map in segmentation_maps:
+            full_seg_map[seg_map != UNASSIGNED_MASK_LABEL] = seg_map[
+                seg_map != UNASSIGNED_MASK_LABEL
+            ]
         return full_seg_map
 
-    def _get_tile_info(self, tile_index: int):
-        """Retrieves the tile's coordinates and scaled dimensions based on the tile
-        index.
-
-        @param tile_index: The index of the tile.
-        @type tile_index: int
-        @return: Tile information for the given index.
-        """
-        if self.tile_manager is None or self.tile_manager.tile_positions is None:
-            raise ValueError("Tile manager or tile positions not initialized.")
-        if tile_index >= len(self.tile_manager.tile_positions):
-            return None
-        return self.tile_manager.tile_positions[tile_index]
-
-    def _send_output(
+    def _remapSegmentationMap(
         self,
+        src_transformation: dai.ImgTransformation,
+        dst_transformation: dai.ImgTransformation,
+        seg_map: np.ndarray,
+    ):
+        dst_matrix = np.array(dst_transformation.getMatrix())
+        src_matrix = np.array(src_transformation.getMatrixInv())
+        trans_matrix = dst_matrix @ src_matrix
+        trans_matrix = trans_matrix
+        res = cv2.warpPerspective(
+            seg_map,
+            trans_matrix,
+            dst_transformation.getSize(),
+            flags=cv2.INTER_NEAREST,
+            borderMode=cv2.BORDER_CONSTANT,
+            borderValue=UNASSIGNED_MASK_LABEL,  # type: ignore
+        )
+        return res
+
+    def _remapDetection(
+        self,
+        src_transformation: dai.ImgTransformation,
+        dst_transformation: dai.ImgTransformation,
+        detection: dai.ImgDetection,
+    ):
+        new_det = dai.ImgDetection()
+        min_pt = src_transformation.remapPointTo(
+            dst_transformation,
+            dai.Point2f(np.clip(detection.xmin, 0, 1), np.clip(detection.ymin, 0, 1)),
+        )
+        max_pt = src_transformation.remapPointTo(
+            dst_transformation,
+            dai.Point2f(np.clip(detection.xmax, 0, 1), np.clip(detection.ymax, 0, 1)),
+        )
+        new_det.xmin = max(0, min(min_pt.x, 1))
+        new_det.ymin = max(0, min(min_pt.y, 1))
+        new_det.xmax = max(0, min(max_pt.x, 1))
+        new_det.ymax = max(0, min(max_pt.y, 1))
+        new_det.label = detection.label
+        new_det.confidence = detection.confidence
+        return new_det
+
+    def _remapDetectionExtended(
+        self,
+        src_transformation: dai.ImgTransformation,
+        dst_transformation: dai.ImgTransformation,
+        detection: ImgDetectionExtended,
+    ):
+        new_det = ImgDetectionExtended()
+
+        if detection.rotated_rect.angle == 0:
+            new_rect = src_transformation.remapRectTo(
+                dst_transformation, detection.rotated_rect
+            )
+            new_det.rotated_rect = (
+                new_rect.center.x,
+                new_rect.center.y,
+                new_rect.size.width,
+                new_rect.size.height,
+                new_rect.angle,
+            )
+        else:
+            # TODO: This is a temporary fix - DepthAI doesn't handle rotated rects with angle != 0 correctly
+            pts = detection.rotated_rect.getPoints()
+            pts = [dai.Point2f(np.clip(pt.x, 0, 1), np.clip(pt.y, 0, 1)) for pt in pts]
+            remapped_pts = [
+                src_transformation.remapPointTo(dst_transformation, pt) for pt in pts
+            ]
+            remapped_pts = [
+                (np.clip(pt.x, 0, 1), np.clip(pt.y, 0, 1)) for pt in remapped_pts
+            ]
+            (center_x, center_y), (width, height), angle = cv2.minAreaRect(
+                np.array(remapped_pts, dtype=np.float32)
+            )
+            new_det.rotated_rect = (
+                center_x,
+                center_y,
+                width,
+                height,
+                angle,
+            )
+        new_det.confidence = detection.confidence
+        new_det.label = detection.label
+        new_det.label_name = detection.label_name
+
+        new_kpts_list = []
+        for kpt in detection.keypoints:
+            remapped_kpt = src_transformation.remapPointTo(
+                dst_transformation, dai.Point2f(kpt.x, kpt.y)
+            )
+            new_kpt = Keypoint()
+            new_kpt.x = remapped_kpt.x
+            new_kpt.y = remapped_kpt.y
+            new_kpt.z = kpt.z
+            new_kpts_list.append(new_kpt)
+        new_kpts = Keypoints()
+        new_kpts.keypoints = new_kpts_list
+        new_det.keypoints = new_kpts
+        return new_det
+
+    def _remapDetections(
+        self,
+        src_transformation: dai.ImgTransformation,
+        dst_transformation: dai.ImgTransformation,
+        detections: Union[List[dai.ImgDetection], List[ImgDetectionExtended]],
+    ) -> Union[List[dai.ImgDetection], List[ImgDetectionExtended]]:
+        new_dets = []
+        for det in detections:
+            if isinstance(det, dai.ImgDetection):
+                new_det = self._remapDetection(
+                    src_transformation, dst_transformation, det
+                )
+            elif isinstance(det, ImgDetectionExtended):
+                new_det = self._remapDetectionExtended(
+                    src_transformation, dst_transformation, det
+                )
+            new_dets.append(new_det)
+        return new_dets
+
+    def _sendOutput(
+        self,
+        remapped_detections: List[Union[dai.ImgDetection, ImgDetectionExtended]],
+        seg_map: np.ndarray | None,
         timestamp: datetime.timedelta,
         device_timestamp: datetime.timedelta,
         transformation: Optional[dai.ImgTransformation],
@@ -426,12 +303,8 @@ class TilesPatcher(BaseHostNode):
         @param timestamp: The timestamp of the frame.
         @param device_timestamp: The timestamp of the frame on the device.
         """
-        combined_bboxes: Union[List[dai.ImgDetection], List[ImgDetectionExtended]] = []
-        for bboxes in self.tile_buffer:
-            combined_bboxes.extend(bboxes)
-
         detection_list = nms_detections(
-            combined_bboxes,
+            remapped_detections,
             conf_thresh=self.conf_thresh,
             iou_thresh=self.iou_thresh,
         )
@@ -440,7 +313,8 @@ class TilesPatcher(BaseHostNode):
             detections.detections = detection_list
         elif input_type == ImgDetectionsExtended:
             detections = ImgDetectionsExtended()
-            detections.masks = self._stitch_segmentation_maps(self.segmentation_buffer)
+            if seg_map is not None:
+                detections.masks = seg_map
             detections.detections = detection_list
         else:
             raise ValueError("Unsupported input type")
