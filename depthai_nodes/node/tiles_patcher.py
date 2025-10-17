@@ -175,7 +175,6 @@ except Exception as e:
         dst_matrix = np.array(dst_transformation.getMatrix())
         src_matrix = np.array(src_transformation.getMatrixInv())
         trans_matrix = dst_matrix @ src_matrix
-        trans_matrix = trans_matrix
         res = cv2.warpPerspective(
             seg_map,
             trans_matrix,
