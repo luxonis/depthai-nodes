@@ -40,13 +40,12 @@ class TilesPatcher(dai.node.ThreadedHostNode):
     SCRIPT_CONTENT = """
 # Strip ImgFrame image data and send only ImgTransformation
 # Reduces the amount of date being sent between host and device
-import depthai as dai
 
 try:
     while True:
         frame = node.inputs['preview'].get()
         transformation = frame.getTransformation()
-        empty_frame = dai.ImgFrame()
+        empty_frame = ImgFrame()
         empty_frame.setTransformation(transformation)
         empty_frame.setTimestamp(frame.getTimestamp())
         empty_frame.setTimestampDevice(frame.getTimestampDevice())
