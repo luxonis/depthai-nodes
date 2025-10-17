@@ -7,7 +7,7 @@ from depthai_nodes.message.img_detections import ImgDetectionExtended
 
 
 def nms_detections(
-    detections: Union[List[dai.ImgDetection], List[ImgDetectionExtended]],
+    detections: List[Union[dai.ImgDetection, ImgDetectionExtended]],
     conf_thresh=0.3,
     iou_thresh=0.4,
 ):
