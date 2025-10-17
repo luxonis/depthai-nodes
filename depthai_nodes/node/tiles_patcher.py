@@ -289,7 +289,7 @@ except Exception as e:
     def _sendOutput(
         self,
         remapped_detections: List[Union[dai.ImgDetection, ImgDetectionExtended]],
-        seg_map: np.ndarray | None,
+        seg_map: Optional[np.ndarray],
         timestamp: datetime.timedelta,
         device_timestamp: datetime.timedelta,
         transformation: Optional[dai.ImgTransformation],

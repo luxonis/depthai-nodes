@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import depthai as dai
 import numpy as np
@@ -78,7 +78,7 @@ except Exception as e:
         nn_shape: Tuple[int, int],
         resize_mode: dai.ImageManipConfig.ResizeMode,
         global_detection: bool = False,
-        grid_matrix: np.ndarray | List | None = None,
+        grid_matrix: Union[np.ndarray, List, None] = None,
     ) -> "Tiling":
         """Configures the Tiling node with grid size, overlap, image and neural network
         shapes, and other necessary parameters.
@@ -138,7 +138,7 @@ except Exception as e:
         nn_shape: Tuple[int, int],
         resize_mode: dai.ImageManipConfig.ResizeMode,
         global_detection: bool = False,
-        grid_matrix: np.ndarray | List | None = None,
+        grid_matrix: Union[np.ndarray, List, None] = None,
     ):
         """Initializes the ImgManipConfig cropping configurations for the tiles."""
         tile_positions = self._computeTilePositions(
@@ -204,7 +204,7 @@ except Exception as e:
         overlap: float,
         grid_size: Tuple,
         img_shape: Tuple,
-        grid_matrix: np.ndarray | List | None,
+        grid_matrix: Union[np.ndarray, List, None],
         global_detection: bool,
     ):
         """Computes and stores the tile positions and their scaled dimensions based on
