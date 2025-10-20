@@ -192,7 +192,6 @@ class SnapsProducerFrameOnly(BaseHostNode):
                 imgFrame=file_group,
                 tags=tags,
                 extras=extras,
-                deviceSerialNo=device_serial_num,
             )
             if out:
                 self._logger.info(f"Snap `{name}` sent")
