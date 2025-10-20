@@ -158,10 +158,10 @@ class SnapsProducerFrameOnly(BaseHostNode):
     def sendSnap(
         self,
         name: str,
-        file_group: dai.FileGroup,
+        file: dai.FileGroup,
+        detection: dai.ImgDetections = None,
         tags=None,  # noqa: B006
         extras: Dict[str, str] = {},  # noqa: B006
-        device_serial_num: str = "",
     ) -> bool:
         """Function that creates the snap and sends it out if time from last snap is
         greater than time_interval. Make sure to call this function from any custom
@@ -188,10 +188,12 @@ class SnapsProducerFrameOnly(BaseHostNode):
         now = time.time()
         if now > self.last_update + self.time_interval:
             out = self._em.sendSnap(
-                name=name,
-                imgFrame=file_group,
-                tags=tags,
-                extras=extras,
+                name,
+                "",
+                file,
+                detection,
+                tags,
+                extras,
             )
             if out:
                 self._logger.info(f"Snap `{name}` sent")
