@@ -287,6 +287,9 @@ except Exception as e:
             new_dets.append(new_det)
         return new_dets
 
+    def setConfidenceThreshold(self, confidence_threshold: float) -> None:
+        self.conf_thresh = confidence_threshold
+
     def _sendOutput(
         self,
         remapped_detections: List[Union[dai.ImgDetection, ImgDetectionExtended]],
