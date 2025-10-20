@@ -158,7 +158,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
     def sendSnap(
         self,
         name: str,
-        file: dai.FileGroup,
+        frame: dai.ImgFrame,
         detection: dai.ImgDetections = None,
         tags=None,  # noqa: B006
         extras: Dict[str, str] = {},  # noqa: B006
@@ -190,7 +190,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
             out = self._em.sendSnap(
                 name,
                 "",
-                file,
+                frame,
                 detection,
                 tags,
                 extras,
