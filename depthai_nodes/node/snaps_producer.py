@@ -189,7 +189,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
         if now > self.last_update + self.time_interval:
             out = self._em.sendSnap(
                 name,
-                None,
+                "",
                 frame,
                 detection,
                 tags,
