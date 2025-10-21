@@ -1,17 +1,15 @@
 import datetime
-from typing import List, Optional, Type, Union
+from typing import List, Optional, Union
 
-import cv2
 import depthai as dai
 import numpy as np
 
 from depthai_nodes.logging import get_logger
 from depthai_nodes.message.img_detections import (
-    ImgDetectionExtended,
     ImgDetectionsExtended,
 )
-from depthai_nodes.message.keypoints import Keypoint, Keypoints
 from depthai_nodes.node.utils import nms_detections
+from depthai_nodes.node.utils.detection_remapping import remap_message
 
 UNASSIGNED_MASK_LABEL = -1
 
@@ -120,45 +118,50 @@ except Exception as e:
                     break
                 nn_msgs.append(nn_msg)
 
-            remapped_detections: List[
-                Union[dai.ImgDetection, ImgDetectionExtended]
-            ] = []
-            for nn_msg in nn_msgs:
-                mapped_dets = self._remapDetections(
+            remapped_messages = [
+                remap_message(
                     nn_msg.getTransformation(),  # type: ignore
                     img.getTransformation(),
-                    nn_msg.detections,
+                    nn_msg,
                 )
-                remapped_detections.extend(mapped_dets)
+                for nn_msg in nn_msgs
+            ]
+            merged_detections = self._mergeMessages(remapped_messages)
 
-            if all(isinstance(nn_msg, ImgDetectionsExtended) for nn_msg in nn_msgs):
-                remapped_seg_maps = []
-                for nn_msg in nn_msgs:
-                    if nn_msg.masks.size == 0:  # type: ignore
-                        continue
-                    remapped_seg_map = self._remapSegmentationMap(
-                        nn_msg.getTransformation(),  # type: ignore
-                        img.getTransformation(),
-                        nn_msg.masks,  # type: ignore
-                    )
-                    remapped_seg_maps.append(remapped_seg_map)
-                if len(remapped_seg_maps) == 0:
-                    full_seg_map = np.empty(0, dtype=np.int16)
-                else:
-                    full_seg_map = self._stitchSegmentationMaps(remapped_seg_maps)
+            self._sendOutput(
+                merged_detections,
+                img.getTimestamp(),
+                img.getTimestampDevice(),
+                img.getTransformation(),
+                img.getSequenceNum(),
+            )
+
+    def _mergeMessages(
+        self, detections: List[Union[dai.ImgDetections, ImgDetectionsExtended]]
+    ):
+        if all(isinstance(det, ImgDetectionsExtended) for det in detections):
+            new_msg = ImgDetectionsExtended()
+            new_dets = []
+            new_masks = []
+            for det in detections:
+                new_dets.extend(det.detections)
+                if det.masks.size > 0:  # type: ignore
+                    new_masks.append(det.masks)  # type: ignore
+            if len(new_masks) > 0:
+                new_msg.masks = self._stitchSegmentationMaps(new_masks)
             else:
-                full_seg_map = None
-
-            if len(nn_msgs) > 0:
-                self._sendOutput(
-                    remapped_detections,
-                    full_seg_map,
-                    img.getTimestamp(),
-                    img.getTimestampDevice(),
-                    img.getTransformation(),
-                    img.getSequenceNum(),
-                    type(nn_msgs[0]),
-                )
+                new_msg.masks = np.empty(0, dtype=np.int16)
+            new_msg.detections = new_dets
+            return new_msg
+        elif all(isinstance(det, dai.ImgDetections) for det in detections):
+            new_msg = dai.ImgDetections()
+            new_dets = []
+            for det in detections:
+                new_dets.extend(det.detections)
+            new_msg.detections = new_dets
+            return new_msg
+        else:
+            raise ValueError("Unsupported message type")
 
     def _stitchSegmentationMaps(self, segmentation_maps: List[np.ndarray]):
         full_seg_map = np.full_like(segmentation_maps[0], UNASSIGNED_MASK_LABEL)
@@ -168,137 +171,16 @@ except Exception as e:
             ]
         return full_seg_map
 
-    def _remapSegmentationMap(
-        self,
-        src_transformation: dai.ImgTransformation,
-        dst_transformation: dai.ImgTransformation,
-        seg_map: np.ndarray,
-    ):
-        dst_matrix = np.array(dst_transformation.getMatrix())
-        src_matrix = np.array(src_transformation.getMatrixInv())
-        trans_matrix = dst_matrix @ src_matrix
-        res = cv2.warpPerspective(
-            seg_map,
-            trans_matrix,
-            dst_transformation.getSize(),
-            flags=cv2.INTER_NEAREST,
-            borderMode=cv2.BORDER_CONSTANT,
-            borderValue=UNASSIGNED_MASK_LABEL,  # type: ignore
-        )
-        return res
-
-    def _remapDetection(
-        self,
-        src_transformation: dai.ImgTransformation,
-        dst_transformation: dai.ImgTransformation,
-        detection: dai.ImgDetection,
-    ):
-        new_det = dai.ImgDetection()
-        min_pt = src_transformation.remapPointTo(
-            dst_transformation,
-            dai.Point2f(np.clip(detection.xmin, 0, 1), np.clip(detection.ymin, 0, 1)),
-        )
-        max_pt = src_transformation.remapPointTo(
-            dst_transformation,
-            dai.Point2f(np.clip(detection.xmax, 0, 1), np.clip(detection.ymax, 0, 1)),
-        )
-        new_det.xmin = max(0, min(min_pt.x, 1))
-        new_det.ymin = max(0, min(min_pt.y, 1))
-        new_det.xmax = max(0, min(max_pt.x, 1))
-        new_det.ymax = max(0, min(max_pt.y, 1))
-        new_det.label = detection.label
-        new_det.confidence = detection.confidence
-        return new_det
-
-    def _remapDetectionExtended(
-        self,
-        src_transformation: dai.ImgTransformation,
-        dst_transformation: dai.ImgTransformation,
-        detection: ImgDetectionExtended,
-    ):
-        new_det = ImgDetectionExtended()
-
-        if detection.rotated_rect.angle == 0:
-            new_rect = src_transformation.remapRectTo(
-                dst_transformation, detection.rotated_rect
-            )
-            new_det.rotated_rect = (
-                new_rect.center.x,
-                new_rect.center.y,
-                new_rect.size.width,
-                new_rect.size.height,
-                new_rect.angle,
-            )
-        else:
-            # TODO: This is a temporary fix - DepthAI doesn't handle rotated rects with angle != 0 correctly
-            pts = detection.rotated_rect.getPoints()
-            pts = [dai.Point2f(np.clip(pt.x, 0, 1), np.clip(pt.y, 0, 1)) for pt in pts]
-            remapped_pts = [
-                src_transformation.remapPointTo(dst_transformation, pt) for pt in pts
-            ]
-            remapped_pts = [
-                (np.clip(pt.x, 0, 1), np.clip(pt.y, 0, 1)) for pt in remapped_pts
-            ]
-            (center_x, center_y), (width, height), angle = cv2.minAreaRect(
-                np.array(remapped_pts, dtype=np.float32)
-            )
-            new_det.rotated_rect = (
-                center_x,
-                center_y,
-                width,
-                height,
-                angle,
-            )
-        new_det.confidence = detection.confidence
-        new_det.label = detection.label
-        new_det.label_name = detection.label_name
-
-        new_kpts_list = []
-        for kpt in detection.keypoints:
-            remapped_kpt = src_transformation.remapPointTo(
-                dst_transformation, dai.Point2f(kpt.x, kpt.y)
-            )
-            new_kpt = Keypoint()
-            new_kpt.x = remapped_kpt.x
-            new_kpt.y = remapped_kpt.y
-            new_kpt.z = kpt.z
-            new_kpts_list.append(new_kpt)
-        new_kpts = Keypoints()
-        new_kpts.keypoints = new_kpts_list
-        new_det.keypoints = new_kpts
-        return new_det
-
-    def _remapDetections(
-        self,
-        src_transformation: dai.ImgTransformation,
-        dst_transformation: dai.ImgTransformation,
-        detections: Union[List[dai.ImgDetection], List[ImgDetectionExtended]],
-    ) -> Union[List[dai.ImgDetection], List[ImgDetectionExtended]]:
-        new_dets = []
-        for det in detections:
-            if isinstance(det, dai.ImgDetection):
-                new_det = self._remapDetection(
-                    src_transformation, dst_transformation, det
-                )
-            elif isinstance(det, ImgDetectionExtended):
-                new_det = self._remapDetectionExtended(
-                    src_transformation, dst_transformation, det
-                )
-            new_dets.append(new_det)
-        return new_dets
-
     def setConfidenceThreshold(self, confidence_threshold: float) -> None:
         self.conf_thresh = confidence_threshold
 
     def _sendOutput(
         self,
-        remapped_detections: List[Union[dai.ImgDetection, ImgDetectionExtended]],
-        seg_map: Optional[np.ndarray],
+        merged_detections: Union[ImgDetectionsExtended, dai.ImgDetections],
         timestamp: datetime.timedelta,
         device_timestamp: datetime.timedelta,
         transformation: Optional[dai.ImgTransformation],
         sequence_num: int,
-        input_type: Type[Union[dai.ImgDetections, ImgDetectionsExtended]],
     ) -> None:
         """Send the final combined bounding boxes as output when all tiles for a frame
         are processed.
@@ -306,30 +188,19 @@ except Exception as e:
         @param timestamp: The timestamp of the frame.
         @param device_timestamp: The timestamp of the frame on the device.
         """
-        detection_list = nms_detections(
-            remapped_detections,
+        merged_detections.detections = nms_detections(
+            merged_detections.detections,  # type: ignore
             conf_thresh=self.conf_thresh,
             iou_thresh=self.iou_thresh,
         )
-        if input_type == dai.ImgDetections:
-            detections = dai.ImgDetections()
-            detections.detections = detection_list
-        elif input_type == ImgDetectionsExtended:
-            detections = ImgDetectionsExtended()
-            if seg_map is not None:
-                detections.masks = seg_map
-            detections.detections = detection_list
-        else:
-            raise ValueError("Unsupported input type")
-
-        detections.setTimestamp(timestamp)
-        detections.setTimestampDevice(device_timestamp)
-        detections.setSequenceNum(sequence_num)
+        merged_detections.setTimestamp(timestamp)
+        merged_detections.setTimestampDevice(device_timestamp)
+        merged_detections.setSequenceNum(sequence_num)
         if transformation is not None:
-            detections.setTransformation(transformation)
+            merged_detections.setTransformation(transformation)
 
         self._logger.debug("Detections message created")
 
-        self.out.send(detections)
+        self.out.send(merged_detections)
 
         self._logger.debug("Message sent successfully")
