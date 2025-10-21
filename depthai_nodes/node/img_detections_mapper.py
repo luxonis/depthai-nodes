@@ -1,12 +1,7 @@
 import depthai as dai
 
-from depthai_nodes.message.img_detections import (
-    ImgDetectionsExtended,
-)
 from depthai_nodes.node.base_host_node import BaseHostNode
 from depthai_nodes.node.utils.detection_remapping import remap_message
-
-UNASSIGNED_MASK_LABEL = -1
 
 
 class ImgDetectionsMapper(BaseHostNode):
@@ -47,11 +42,12 @@ except Exception as e:
         return self
 
     def process(self, img: dai.ImgFrame, nn: dai.Buffer) -> None:
-        assert isinstance(
-            nn, (dai.ImgDetections, ImgDetectionsExtended)
-        ), "Expected ImgDetections or ImgDetectionsExtended"
-
-        nn_trans = nn.getTransformation()
+        try:
+            nn_trans = nn.getTransformation()
+        except Exception as e:
+            raise RuntimeError(
+                "Could not get transformation from received message."
+            ) from e
         if nn_trans is None:
             raise RuntimeError("Received detection message without transformation")
         message = remap_message(nn_trans, img.getTransformation(), nn)

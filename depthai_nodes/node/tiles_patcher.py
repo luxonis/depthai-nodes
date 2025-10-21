@@ -1,17 +1,21 @@
 import datetime
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import depthai as dai
-import numpy as np
 
 from depthai_nodes.logging import get_logger
+from depthai_nodes.message.clusters import Clusters
 from depthai_nodes.message.img_detections import (
     ImgDetectionsExtended,
 )
+from depthai_nodes.message.keypoints import Keypoints
+from depthai_nodes.message.lines import Lines
+from depthai_nodes.message.map import Map2D
+from depthai_nodes.message.prediction import Predictions
+from depthai_nodes.message.segmentation import SegmentationMask
 from depthai_nodes.node.utils import nms_detections
+from depthai_nodes.node.utils.detection_merging import merge_messages
 from depthai_nodes.node.utils.detection_remapping import remap_message
-
-UNASSIGNED_MASK_LABEL = -1
 
 
 class TilesPatcher(dai.node.ThreadedHostNode):
@@ -30,6 +34,17 @@ class TilesPatcher(dai.node.ThreadedHostNode):
     @ivar expected_tiles_count: Number of tiles expected per frame.
     @type expected_tiles_count: int
     """
+
+    SUPPORTED_MESSAGES = (
+        dai.ImgDetections,
+        ImgDetectionsExtended,
+        Keypoints,
+        SegmentationMask,
+        Clusters,
+        Map2D,
+        Lines,
+        Predictions,
+    )
 
     SCRIPT_CONTENT = """
 # Strip ImgFrame image data and send only ImgTransformation
@@ -103,7 +118,7 @@ except Exception as e:
             img = self._img_input.get()
             assert isinstance(img, dai.ImgFrame)
 
-            nn_msgs: List[Union[dai.ImgDetections, ImgDetectionsExtended]] = []
+            nn_msgs = []
             if (
                 last_nn_msg is not None
                 and last_nn_msg.getTimestamp() == img.getTimestamp()
@@ -112,7 +127,9 @@ except Exception as e:
                 last_nn_msg = None
             while True:
                 nn_msg = self._nn_input.get()
-                assert isinstance(nn_msg, (dai.ImgDetections, ImgDetectionsExtended))
+                assert isinstance(
+                    nn_msg, self.SUPPORTED_MESSAGES
+                ), f"Message type {type(nn_msg)} is not supported."
                 if nn_msg.getTimestamp() != img.getTimestamp():
                     last_nn_msg = nn_msg
                     break
@@ -126,7 +143,7 @@ except Exception as e:
                 )
                 for nn_msg in nn_msgs
             ]
-            merged_detections = self._mergeMessages(remapped_messages)
+            merged_detections = merge_messages(remapped_messages)
 
             self._sendOutput(
                 merged_detections,
@@ -136,47 +153,21 @@ except Exception as e:
                 img.getSequenceNum(),
             )
 
-    def _mergeMessages(
-        self, detections: List[Union[dai.ImgDetections, ImgDetectionsExtended]]
-    ):
-        if all(isinstance(det, ImgDetectionsExtended) for det in detections):
-            new_msg = ImgDetectionsExtended()
-            new_dets = []
-            new_masks = []
-            for det in detections:
-                new_dets.extend(det.detections)
-                if det.masks.size > 0:  # type: ignore
-                    new_masks.append(det.masks)  # type: ignore
-            if len(new_masks) > 0:
-                new_msg.masks = self._stitchSegmentationMaps(new_masks)
-            else:
-                new_msg.masks = np.empty(0, dtype=np.int16)
-            new_msg.detections = new_dets
-            return new_msg
-        elif all(isinstance(det, dai.ImgDetections) for det in detections):
-            new_msg = dai.ImgDetections()
-            new_dets = []
-            for det in detections:
-                new_dets.extend(det.detections)
-            new_msg.detections = new_dets
-            return new_msg
-        else:
-            raise ValueError("Unsupported message type")
-
-    def _stitchSegmentationMaps(self, segmentation_maps: List[np.ndarray]):
-        full_seg_map = np.full_like(segmentation_maps[0], UNASSIGNED_MASK_LABEL)
-        for seg_map in segmentation_maps:
-            full_seg_map[seg_map != UNASSIGNED_MASK_LABEL] = seg_map[
-                seg_map != UNASSIGNED_MASK_LABEL
-            ]
-        return full_seg_map
-
     def setConfidenceThreshold(self, confidence_threshold: float) -> None:
         self.conf_thresh = confidence_threshold
 
     def _sendOutput(
         self,
-        merged_detections: Union[ImgDetectionsExtended, dai.ImgDetections],
+        merged_detections: Union[
+            dai.ImgDetections,
+            ImgDetectionsExtended,
+            Keypoints,
+            SegmentationMask,
+            Clusters,
+            Map2D,
+            Lines,
+            Predictions,
+        ],
         timestamp: datetime.timedelta,
         device_timestamp: datetime.timedelta,
         transformation: Optional[dai.ImgTransformation],
@@ -188,11 +179,12 @@ except Exception as e:
         @param timestamp: The timestamp of the frame.
         @param device_timestamp: The timestamp of the frame on the device.
         """
-        merged_detections.detections = nms_detections(
-            merged_detections.detections,  # type: ignore
-            conf_thresh=self.conf_thresh,
-            iou_thresh=self.iou_thresh,
-        )
+        if isinstance(merged_detections, (dai.ImgDetections, ImgDetectionsExtended)):
+            merged_detections.detections = nms_detections(
+                merged_detections.detections,  # type: ignore
+                conf_thresh=self.conf_thresh,
+                iou_thresh=self.iou_thresh,
+            )
         merged_detections.setTimestamp(timestamp)
         merged_detections.setTimestampDevice(device_timestamp)
         merged_detections.setSequenceNum(sequence_num)

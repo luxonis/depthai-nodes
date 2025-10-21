@@ -18,9 +18,10 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
     1. Automatic input resizing to the neural network input size.
     2. Remapping of detection coordinates from neural network output to input frame coordinates.
     3. Neural network output filtering based on confidence threshold and labels.
+    (Only supported for ImgDetectionsExtended and ImgDetections messages).
     4. Input tiling.
 
-    Supports only single model heads with ImgDetections or ImgDetectionsExtended messages.
+    Supports only single model heads.
 
     Attributes
     ----------
@@ -48,7 +49,7 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
 
         self._logger = get_logger(self.__class__.__name__)
 
-        self._confidence_threshold = 0.0
+        self._confidence_threshold = None
         self._labels_to_keep = None
         self._labels_to_reject = None
         self._max_detections = None
@@ -65,6 +66,7 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         self.detections_filter: Optional[ImgDetectionsFilter] = None
         self.nn_resize: Optional[dai.node.ImageManip] = None
         self.img_detections_mapper: Optional[ImgDetectionsMapper] = None
+        self._out: Optional[dai.Node.Output] = None
 
     @overload
     def build(
@@ -74,6 +76,7 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         input_resize_mode: dai.ImageManipConfig.ResizeMode,
         enable_tiling: Literal[False] = False,
         input_size: None = None,
+        enable_detection_filtering: bool = False,
     ) -> "ExtendedNeuralNetwork":
         ...
 
@@ -85,6 +88,7 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         input_resize_mode: dai.ImageManipConfig.ResizeMode,
         enable_tiling: Literal[True],
         input_size: Tuple[int, int],
+        enable_detection_filtering: bool = False,
     ) -> "ExtendedNeuralNetwork":
         ...
 
@@ -95,6 +99,7 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         input_resize_mode: dai.ImageManipConfig.ResizeMode,
         enable_tiling: bool = False,
         input_size: Optional[Tuple[int, int]] = None,
+        enable_detection_filtering: bool = False,
     ) -> "ExtendedNeuralNetwork":
         """Builds the underlying nodes.
 
@@ -108,6 +113,9 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         @type enable_tiling: bool
         @param input_size: ImgFrame input size for tiling. Must be provided if tiling is enabled.
         @type input_size: Tuple[int, int]
+        @param enable_detection_filtering: If True, enables detection filtering based on labels and confidence threshold
+            (only supported for ImgDetectionsExtended and ImgDetections messages).
+        @type enable_detection_filtering: bool
         @return: Returns the ExtendedNeuralNetwork object.
         @rtype: ExtendedNeuralNetwork
         @raise ValueError: If tiling is enabled and input_size is not provided.
@@ -124,13 +132,18 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
             )
         else:
             nn_out = self._createBasicPipeline(input, input_resize_mode, nn_source)
-        self.detections_filter = self._pipeline.create(ImgDetectionsFilter).build(
-            nn_out,
-            labels_to_keep=self._labels_to_keep,  # type: ignore
-            labels_to_reject=self._labels_to_reject,  # type: ignore
-            confidence_threshold=self._confidence_threshold,
-            max_detections=self._max_detections,  # type: ignore
-        )
+        if enable_detection_filtering:
+            self.detections_filter = self._pipeline.create(ImgDetectionsFilter).build(
+                nn_out,
+                labels_to_keep=self._labels_to_keep,  # type: ignore
+                labels_to_reject=self._labels_to_reject,  # type: ignore
+                confidence_threshold=self._confidence_threshold,
+                max_detections=self._max_detections,  # type: ignore
+            )
+            self._out = self.detections_filter.out
+        else:
+            self.detections_filter = None
+            self._out = nn_out
         return self
 
     def run(self):
@@ -192,7 +205,7 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         self.patcher = self._pipeline.create(TilesPatcher).build(
             img_frames=input,
             nn=self.nn.out,
-            conf_thresh=self._confidence_threshold,
+            conf_thresh=self._confidence_threshold or 0.0,
             iou_thresh=self._tiling_iou_threshold,
         )
         return self.patcher.out
@@ -265,9 +278,9 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
 
     @property
     def out(self):
-        if self.detections_filter is None:
+        if self._out is None:
             raise RuntimeError("Stage1Node not initialized")
-        return self.detections_filter.out
+        return self._out
 
     @property
     def nn_passthrough(self):

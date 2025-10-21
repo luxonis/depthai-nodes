@@ -1,23 +1,19 @@
-from typing import TypeVar, Union
-
 import cv2
 import depthai as dai
 import numpy as np
 
+from depthai_nodes.message.classification import Classifications
+from depthai_nodes.message.clusters import Cluster, Clusters
 from depthai_nodes.message.img_detections import (
     ImgDetectionExtended,
     ImgDetectionsExtended,
 )
 from depthai_nodes.message.keypoints import Keypoint, Keypoints
+from depthai_nodes.message.lines import Line, Lines
+from depthai_nodes.message.map import Map2D
+from depthai_nodes.message.prediction import Prediction, Predictions
 from depthai_nodes.message.segmentation import SegmentationMask
-
-UNASSIGNED_MASK_LABEL = -1
-
-
-GMessage = TypeVar(
-    "GMessage",
-    bound=Union[dai.ImgDetections, ImgDetectionsExtended, Keypoints, SegmentationMask],
-)
+from depthai_nodes.node.utils.util_constants import UNASSIGNED_MASK_LABEL, GMessage
 
 
 def remap_message(
@@ -35,6 +31,16 @@ def remap_message(
         return remap_img_detections_extended(
             src_transformation, dst_transformation, message
         )
+    elif isinstance(message, Clusters):
+        return remap_clusters(src_transformation, dst_transformation, message)
+    elif isinstance(message, Map2D):
+        return remap_map2d(src_transformation, dst_transformation, message)
+    elif isinstance(message, Lines):
+        return remap_lines(src_transformation, dst_transformation, message)
+    elif isinstance(message, Predictions):
+        return remap_predictions(src_transformation, dst_transformation, message)
+    elif isinstance(message, Classifications):
+        return remap_classifications(src_transformation, dst_transformation, message)
     else:
         raise TypeError(f"Unsupported message type: {type(message)}")
 
@@ -62,9 +68,12 @@ def remap_img_detections_extended(
         remap_img_detection_extended(src_transformation, dst_transformation, det)
         for det in detections.detections
     ]
-    new_detections.masks = remap_segmentation_mask_array(
-        src_transformation, dst_transformation, detections.masks
-    )
+    if detections.masks.size > 0:
+        new_detections.masks = remap_segmentation_mask_array(
+            src_transformation, dst_transformation, detections.masks
+        )
+    else:
+        new_detections.masks = np.empty(0, dtype=np.int16)
     return new_detections
 
 
@@ -208,3 +217,104 @@ def remap_keypoints(
     new_kpts = Keypoints()
     new_kpts.keypoints = new_kpts_list
     return new_kpts
+
+
+def remap_clusters(
+    src_transformation: dai.ImgTransformation,
+    dst_transformation: dai.ImgTransformation,
+    clusters: Clusters,
+) -> Clusters:
+    new_clusters = Clusters()
+    new_clusters.clusters = [
+        remap_cluster(src_transformation, dst_transformation, cluster)
+        for cluster in clusters.clusters
+    ]
+    return new_clusters
+
+
+def remap_cluster(
+    src_transformation: dai.ImgTransformation,
+    dst_transformation: dai.ImgTransformation,
+    cluster: Cluster,
+) -> Cluster:
+    new_cluster = Cluster()
+    new_cluster.label = cluster.label
+    new_cluster.points = [
+        src_transformation.remapPointTo(dst_transformation, pt) for pt in cluster.points
+    ]
+    return new_cluster
+
+
+def remap_map2d(
+    src_transformation: dai.ImgTransformation,
+    dst_transformation: dai.ImgTransformation,
+    map2d: Map2D,
+) -> Map2D:
+    new_map2d = Map2D()
+    new_map_arr = remap_segmentation_mask_array(
+        src_transformation, dst_transformation, map2d.map
+    )
+    new_map2d.map = new_map_arr
+    return new_map2d
+
+
+def remap_lines(
+    src_transformation: dai.ImgTransformation,
+    dst_transformation: dai.ImgTransformation,
+    lines: Lines,
+) -> Lines:
+    new_lines = Lines()
+    new_lines.lines = [
+        remap_line(src_transformation, dst_transformation, line) for line in lines.lines
+    ]
+    return new_lines
+
+
+def remap_line(
+    src_transformation: dai.ImgTransformation,
+    dst_transformation: dai.ImgTransformation,
+    line: Line,
+) -> Line:
+    new_line = Line()
+    new_line.confidence = line.confidence
+    new_line.start_point = src_transformation.remapPointTo(
+        dst_transformation, line.start_point
+    )
+    new_line.end_point = src_transformation.remapPointTo(
+        dst_transformation, line.end_point
+    )
+    return new_line
+
+
+def remap_predictions(
+    src_transformation: dai.ImgTransformation,
+    dst_transformation: dai.ImgTransformation,
+    predictions: Predictions,
+) -> Predictions:
+    new_predictions = Predictions()
+    new_predictions.predictions = [
+        remap_prediction(src_transformation, dst_transformation, prediction)
+        for prediction in predictions.predictions
+    ]
+    return new_predictions
+
+
+def remap_prediction(
+    src_transformation: dai.ImgTransformation,
+    dst_transformation: dai.ImgTransformation,
+    prediction: Prediction,
+) -> Prediction:
+    new_prediction = Prediction()
+    new_prediction.prediction = prediction.prediction
+    return new_prediction
+
+
+def remap_classifications(
+    src_transformation: dai.ImgTransformation,
+    dst_transformation: dai.ImgTransformation,
+    classifications: Classifications,
+) -> Classifications:
+    new_classifications = Classifications()
+    new_classifications.classes = classifications.classes
+    new_classifications.scores = classifications.scores
+    return new_classifications
