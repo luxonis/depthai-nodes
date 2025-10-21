@@ -13,8 +13,6 @@ from depthai_nodes.message.img_detections import (
 from depthai_nodes.message.keypoints import Keypoint, Keypoints
 from depthai_nodes.node.utils import nms_detections
 
-from .tiling import Tiling
-
 UNASSIGNED_MASK_LABEL = -1
 
 
@@ -27,8 +25,6 @@ class TilesPatcher(dai.node.ThreadedHostNode):
     @type conf_thresh: float
     @ivar iou_thresh: IOU threshold for non-max suppression.
     @type iou_thresh: float
-    @ivar tile_manager: Manager responsible for handling tiling configurations.
-    @type tile_manager: Tiling
     @ivar tile_buffer: Buffer to store tile detections temporarily.
     @type tile_buffer: list
     @ivar current_timestamp: Timestamp for the current frame being processed.
@@ -61,7 +57,6 @@ except Exception as e:
         self._pipeline = self.getParentPipeline()
         self._logger = get_logger(self.__class__.__name__)
         self.name = "TilesPatcher"
-        self.tile_manager = None
         self.conf_thresh = 0.3
         self.iou_thresh = 0.4
 
@@ -74,7 +69,6 @@ except Exception as e:
 
     def build(
         self,
-        tile_manager: Tiling,
         img_frames: dai.Node.Output,
         nn: dai.Node.Output,
         conf_thresh=0.3,
@@ -83,9 +77,6 @@ except Exception as e:
         """Configures the TilesPatcher node with the tile manager and links the neural
         network's output.
 
-        @param tile_manager: The tiling manager responsible for tile positions and
-            dimensions.
-        @type tile_manager: Tiling
         @param nn: The output of the neural network node from which detections are
             received.
         @type nn: dai.Node.Output
@@ -99,7 +90,6 @@ except Exception as e:
         """
         self.conf_thresh = conf_thresh
         self.iou_thresh = iou_thresh
-        self.tile_manager = tile_manager
 
         img_frames.link(self._script.inputs["preview"])
         self._script.outputs["transformation"].link(self._img_input)
@@ -107,16 +97,24 @@ except Exception as e:
         return self
 
     def run(self):
-        if self.tile_manager is None:
-            raise ValueError("Tile manager not initialized.")
+        last_nn_msg = None
         while self.isRunning():
             img = self._img_input.get()
             assert isinstance(img, dai.ImgFrame)
 
             nn_msgs: List[Union[dai.ImgDetections, ImgDetectionsExtended]] = []
-            for _ in range(self.tile_manager.tile_count):
+            if (
+                last_nn_msg is not None
+                and last_nn_msg.getTimestamp() == img.getTimestamp()
+            ):
+                nn_msgs.append(last_nn_msg)
+                last_nn_msg = None
+            while True:
                 nn_msg = self._nn_input.get()
                 assert isinstance(nn_msg, (dai.ImgDetections, ImgDetectionsExtended))
+                if nn_msg.getTimestamp() != img.getTimestamp():
+                    last_nn_msg = nn_msg
+                    break
                 nn_msgs.append(nn_msg)
 
             remapped_detections: List[
@@ -148,15 +146,16 @@ except Exception as e:
             else:
                 full_seg_map = None
 
-            self._sendOutput(
-                remapped_detections,
-                full_seg_map,
-                img.getTimestamp(),
-                img.getTimestampDevice(),
-                img.getTransformation(),
-                img.getSequenceNum(),
-                type(nn_msgs[0]),
-            )
+            if len(nn_msgs) > 0:
+                self._sendOutput(
+                    remapped_detections,
+                    full_seg_map,
+                    img.getTimestamp(),
+                    img.getTimestampDevice(),
+                    img.getTransformation(),
+                    img.getSequenceNum(),
+                    type(nn_msgs[0]),
+                )
 
     def _stitchSegmentationMaps(self, segmentation_maps: List[np.ndarray]):
         full_seg_map = np.full_like(segmentation_maps[0], UNASSIGNED_MASK_LABEL)
