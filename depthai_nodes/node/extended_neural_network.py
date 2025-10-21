@@ -10,7 +10,7 @@ from depthai_nodes.node import (
     TilesPatcher,
     Tiling,
 )
-from depthai_nodes.node.img_detections_mapper import ImgDetectionsMapper
+from depthai_nodes.node.detections_mapper import DetectionsMapper
 
 
 class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
@@ -65,7 +65,7 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         self.patcher: Optional[TilesPatcher] = None
         self.detections_filter: Optional[ImgDetectionsFilter] = None
         self.nn_resize: Optional[dai.node.ImageManip] = None
-        self.img_detections_mapper: Optional[ImgDetectionsMapper] = None
+        self.img_detections_mapper: Optional[DetectionsMapper] = None
         self._out: Optional[dai.Node.Output] = None
 
     @overload
@@ -170,7 +170,7 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         self.nn_resize.setMaxOutputFrameSize(nn_w * nn_h * 3)
         self.nn_resize.initialConfig.setFrameType(self._img_frame_type)
 
-        self.img_detections_mapper = self._pipeline.create(ImgDetectionsMapper).build(
+        self.img_detections_mapper = self._pipeline.create(DetectionsMapper).build(
             input, self.nn.out
         )
         return self.img_detections_mapper.out

@@ -4,8 +4,8 @@ from depthai_nodes.node.base_host_node import BaseHostNode
 from depthai_nodes.node.utils.detection_remapping import remap_message
 
 
-class ImgDetectionsMapper(BaseHostNode):
-    """Remap ImgDetections to ImgFrame coordinates."""
+class DetectionsMapper(BaseHostNode):
+    """Remap NN detection messages to ImgFrame coordinates."""
 
     SCRIPT_CONTENT = """
 # Strip ImgFrame image data and send only ImgTransformation
@@ -33,7 +33,7 @@ except Exception as e:
 
     def build(
         self, img_input: dai.Node.Output, nn_input: dai.Node.Output
-    ) -> "ImgDetectionsMapper":
+    ) -> "DetectionsMapper":
         img_input.link(self._script.inputs["preview"])
         self._script.outputs["transformation"].setPossibleDatatypes(
             [(dai.DatatypeEnum.ImgFrame, True)]
