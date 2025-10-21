@@ -32,6 +32,7 @@ from .parsers.yunet import YuNetParser
 from .parsing_neural_network import ParsingNeuralNetwork
 from .snaps_producer import (
     SnapsProducer,
+    SnapsProducer2Buffered,
     SnapsProducerFrameOnly,
 )
 from .tiles_patcher import TilesPatcher
@@ -74,5 +75,6 @@ __all__ = [
     "ImgDetectionsFilter",
     "SnapsProducerFrameOnly",
     "SnapsProducer",
+    "SnapsProducer2Buffered",
     "BaseHostNode",
 ]
