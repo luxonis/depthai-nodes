@@ -7,6 +7,9 @@ from depthai_nodes.node.base_host_node import BaseHostNode
 
 ProcessFnFrameOnlyType = Callable[["SnapsProducerFrameOnly", dai.ImgFrame], None]
 ProcessFnType = Callable[["SnapsProducer", dai.ImgFrame, dai.Buffer], None]
+ProcessFn2BufferType = Callable[
+    ["SnapsProducer", dai.ImgFrame, dai.Buffer, dai.Buffer], None
+]
 
 
 class SnapsProducerFrameOnly(BaseHostNode):
@@ -148,10 +151,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
         self._logger.debug("Processing new input")
 
         if self._process_fn is None:
-            file_group = dai.FileGroup()
-            file_group.clearFiles()
-            file_group.addFile("frame", frame)
-            self.sendSnap("frame", file_group)
+            self.sendSnap("frame", frame)
         else:
             self._process_fn(self, frame)
 
@@ -281,9 +281,91 @@ class SnapsProducer(SnapsProducerFrameOnly):
         self._logger.debug("Processing new input")
         assert isinstance(frame, dai.ImgFrame)
         if self._process_fn is None:
-            file_group = dai.FileGroup()
-            file_group.clearFiles()
-            file_group.addFile("frame", frame)
-            self.sendSnap("frame", file_group)
+            self.sendSnap("frame", frame)
         else:
             self._process_fn(self, frame, msg)
+
+
+class SnapsProducer2Buffered(SnapsProducerFrameOnly):
+    """A host node that helps with creating and sending snaps. If you only have frame as
+    input consider using `SnapsProducerFrameOnly` node instead.
+
+    Attributes:
+    ----------
+    frame : dai.ImgFrame
+        The frame input message for snap creation.
+    msg : dai.Buffer
+        The additional input message for snap creation.
+    time_interval : float
+        Time interval between snaps if no custom process function is provided. Defaults to 60s.
+    process_fn : Callable[['SnapsProducer', dai.ImgFrame, dai.Buffer], None]
+        Custom processing function for business logic regarding snaps. If None defaults to sending only frames on time intervals.
+    token : str
+        Hub API token of the team you want to save snaps under. Can be also set through `DEPTHAI_HUB_API_KEY` env variable.
+    url : str
+        Custom URL for events service. By default, the URL is set to https://events-ingest.cloud.luxonis.com
+    """
+
+    def setProcessFn(self, process_fn: ProcessFn2BufferType):
+        """Sets custom processing function.
+
+        @param process_fn: Custom snaps processing function.
+        @type process_fn: Callable[['SnapsProducer', dai.ImgFrame, dai.Buffer], None]
+        """
+        if not isinstance(process_fn, Callable):
+            raise ValueError("process_fn must be a function.")
+
+        self._process_fn = process_fn
+        self._logger.debug("Process function set")
+
+    def build(
+        self,
+        frame: dai.Node.Output,
+        msg: dai.Node.Output,
+        msg2: dai.Node.Output,
+        time_interval: Union[int, float] = 60.0,
+        running: bool = True,
+        process_fn: Optional[ProcessFn2BufferType] = None,
+    ) -> "SnapsProducer":
+        """Configures the node.
+
+        @param frame: The frame input message for snap creation.
+        @type frame: dai.Node.Output
+        @param msg: The additonal input message for snap creation.
+        @type msg: dai.Node.Output
+        @param time_interval: Time interval between snaps for default sending in
+            seconds. Defaults to 60.
+        @type time_interval: Union[int, float]
+        @param running: If True then snaps are being sent, if False then they aren't.
+            Defaults to True.
+        @type running: bool
+        @param process_fn: Custom snaps processing function. Defaults to None.
+        @type process_fn: Optional[Callable[['SnapsProducer', dai.ImgFrame, dai.Buffer],
+            None]]
+        @return: The node object which handles snap creation and sending.
+        @rtype: SnapsProducer
+        """
+        self.link_args(frame, msg, msg2)
+        self.setTimeInterval(time_interval)
+        self.setRunning(running)
+        if process_fn is not None:
+            self.setProcessFn(process_fn)
+        self._logger.debug(f"SnapsProducer built with time_interval={time_interval}")
+        return self
+
+    def process(self, frame: dai.Buffer, msg: dai.Buffer, msg2: dai.Buffer):
+        """Processes incoming frames and sends out snaps. If not custom process function
+        is set then it sends only one frame every `time_interval` seconds. If using
+        custom process function make sure to call `self.sendSnap()` at the end.
+
+        @param frame: The frame input message for snap creation.
+        @type frame: dai.ImgFrame
+        @param frame: The additional input message for snap creation.
+        @type frame: dai.Buffer
+        """
+        self._logger.debug("Processing new input")
+        assert isinstance(frame, dai.ImgFrame)
+        if self._process_fn is None:
+            self.sendSnap("frame", frame)
+        else:
+            self._process_fn(self, frame, msg, msg2)
