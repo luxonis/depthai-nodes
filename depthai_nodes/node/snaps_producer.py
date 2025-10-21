@@ -151,7 +151,10 @@ class SnapsProducerFrameOnly(BaseHostNode):
         self._logger.debug("Processing new input")
 
         if self._process_fn is None:
-            self.sendSnap("frame", frame)
+            file_group = dai.FileGroup()
+            file_group.clearFiles()
+            file_group.addFile("frame", frame)
+            self.sendSnap("frame", file_group)
         else:
             self._process_fn(self, frame)
 
@@ -281,7 +284,10 @@ class SnapsProducer(SnapsProducerFrameOnly):
         self._logger.debug("Processing new input")
         assert isinstance(frame, dai.ImgFrame)
         if self._process_fn is None:
-            self.sendSnap("frame", frame)
+            file_group = dai.FileGroup()
+            file_group.clearFiles()
+            file_group.addFile("frame", frame)
+            self.sendSnap("frame", file_group)
         else:
             self._process_fn(self, frame, msg)
 
@@ -366,6 +372,9 @@ class SnapsProducer2Buffered(SnapsProducerFrameOnly):
         self._logger.debug("Processing new input")
         assert isinstance(frame, dai.ImgFrame)
         if self._process_fn is None:
-            self.sendSnap("frame", frame)
+            file_group = dai.FileGroup()
+            file_group.clearFiles()
+            file_group.addFile("frame", frame)
+            self.sendSnap("frame", file_group)
         else:
             self._process_fn(self, frame, msg, msg2)
