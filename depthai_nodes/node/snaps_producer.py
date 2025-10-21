@@ -151,10 +151,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
         self._logger.debug("Processing new input")
 
         if self._process_fn is None:
-            file_group = dai.FileGroup()
-            file_group.clearFiles()
-            file_group.addFile("frame", frame)
-            self.sendSnap("frame", file_group)
+            self.sendSnap("frame", frame)
         else:
             self._process_fn(self, frame)
 
@@ -191,12 +188,12 @@ class SnapsProducerFrameOnly(BaseHostNode):
         now = time.time()
         if now > self.last_update + self.time_interval:
             out = self._em.sendSnap(
-                name,
-                "",
-                frame,
-                detection,
-                tags,
-                extras,
+                name=name,
+                fileName=None,
+                imgFrame=frame,
+                imgDetections=detection,
+                tags=tags,
+                extras=extras,
             )
             if out:
                 self._logger.info(f"Snap `{name}` sent")
@@ -284,10 +281,7 @@ class SnapsProducer(SnapsProducerFrameOnly):
         self._logger.debug("Processing new input")
         assert isinstance(frame, dai.ImgFrame)
         if self._process_fn is None:
-            file_group = dai.FileGroup()
-            file_group.clearFiles()
-            file_group.addFile("frame", frame)
-            self.sendSnap("frame", file_group)
+            self.sendSnap("frame", frame)
         else:
             self._process_fn(self, frame, msg)
 
@@ -372,9 +366,6 @@ class SnapsProducer2Buffered(SnapsProducerFrameOnly):
         self._logger.debug("Processing new input")
         assert isinstance(frame, dai.ImgFrame)
         if self._process_fn is None:
-            file_group = dai.FileGroup()
-            file_group.clearFiles()
-            file_group.addFile("frame", frame)
-            self.sendSnap("frame", file_group)
+            self.sendSnap("frame", frame)
         else:
             self._process_fn(self, frame, msg, msg2)
