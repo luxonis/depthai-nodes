@@ -32,6 +32,13 @@ with dai.Pipeline(device) as pipeline:
 
     logger.debug(f"(3) Platform: {platform}")
 
+    img_frame_type = (
+        dai.ImgFrame.Type.BGR888p
+        if platform == dai.Platform.RVC2
+        else dai.ImgFrame.Type.BGR888i
+    )
+    logger.debug(f"(3.1) Image frame type: {img_frame_type}")
+
     try:
         model_description = dai.NNModelDescription(
             "luxonis/yunet:640x360", platform.name
@@ -46,9 +53,7 @@ with dai.Pipeline(device) as pipeline:
     cam = pipeline.create(dai.node.Camera).build()
     logger.debug("(5) Camera node created.")
 
-    cam_out = cam.requestOutput(
-        IMG_SHAPE, type=dai.ImgFrame.Type.BGR888p, fps=FPS_LIMIT
-    )
+    cam_out = cam.requestOutput(IMG_SHAPE, type=img_frame_type, fps=FPS_LIMIT)
     logger.debug("(6) Camera output created.")
 
     tiling = pipeline.create(Tiling).build(
