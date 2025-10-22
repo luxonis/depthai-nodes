@@ -69,12 +69,27 @@ def test_pipelines(IP: str, ip_platform: str, nn_archive_path, model):
 
     try:
         if model:
-            subprocess.run(
-                f"python manual.py -m {model} {'-ip' if IP else ''} {IP}",
-                shell=True,
-                check=True,
-                timeout=90,
-            )
+            if model == "detection_cropper":
+                subprocess.run(
+                    f"python host_nodes/test_detection_cropper.py {'-ip' if IP else ''} {IP}",
+                    shell=True,
+                    check=True,
+                    timeout=90,
+                )
+            elif model == "tiling":
+                subprocess.run(
+                    f"python host_nodes/test_tiling.py {'-ip' if IP else ''} {IP}",
+                    shell=True,
+                    check=True,
+                    timeout=90,
+                )
+            else:
+                subprocess.run(
+                    f"python manual.py -m {model} {'-ip' if IP else ''} {IP}",
+                    shell=True,
+                    check=True,
+                    timeout=90,
+                )
         else:
             subprocess.run(
                 f"python manual.py -nn {nn_archive_path} {'-ip' if IP else ''} {IP}",

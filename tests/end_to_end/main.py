@@ -78,6 +78,8 @@ def main():
 
     if run_all:
         model = get_model_slugs_from_zoo()
+        model.append("detection_cropper")
+        model.append("tiling")
 
     if parser:
         model = find_slugs_from_zoo(parser)

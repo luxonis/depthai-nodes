@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import depthai as dai
 import numpy as np
@@ -51,7 +51,7 @@ except Exception as e:
         self,
         detections: dai.Node.Output,
         img_frames: dai.Node.Output,
-        output_size: tuple[int, int],
+        output_size: Tuple[int, int],
         resize_mode: dai.ImageManipConfig.ResizeMode,
         padding: float = 0,
     ) -> "DetectionCropper":
