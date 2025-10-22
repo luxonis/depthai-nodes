@@ -182,6 +182,7 @@ def remap_img_detection_extended(
         new_kpt = remap_keypoint(src_transformation, dst_transformation, kpt)
         new_kpts_list.append(new_kpt)
     new_kpts = Keypoints()
+    new_kpts.edges = detection.edges
     new_kpts.keypoints = new_kpts_list
     new_det.keypoints = new_kpts
     return new_det
@@ -216,6 +217,7 @@ def remap_keypoints(
         new_kpts_list.append(new_kpt)
     new_kpts = Keypoints()
     new_kpts.keypoints = new_kpts_list
+    new_kpts.edges = keypoints.edges
     return new_kpts
 
 
