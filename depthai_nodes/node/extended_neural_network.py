@@ -21,7 +21,7 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
     (Only supported for ImgDetectionsExtended and ImgDetections messages).
     4. Input tiling.
 
-    Supports only single model heads.
+    Supports only single head models.
 
     Attributes
     ----------
