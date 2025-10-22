@@ -18,7 +18,7 @@ from depthai_nodes.node.utils.util_constants import UNASSIGNED_MASK_LABEL, GMess
 def merge_messages(
     messages: List[GMessage],
 ) -> GMessage:
-    if len(messages) <= 1:
+    if len(messages) == 0:
         raise ValueError("Not enough messages to merge")
     if len({type(x) for x in messages}) != 1:
         raise TypeError("Cannot merge messages of different types")
