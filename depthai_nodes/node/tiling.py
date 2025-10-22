@@ -113,6 +113,7 @@ except Exception as e:
         self._cfg_out.link(self._script.inputs["cfg"])
         self._cfg_count.link(self._script.inputs["cfg_count"])
         img_output.link(self._script.inputs["preview"])
+        self.cropper_image_manip.setMaxOutputFrameSize(img_shape[0] * img_shape[1] * 3)
         self._script.outputs["manip_cfg"].link(self.cropper_image_manip.inputConfig)
         self._script.outputs["manip_img"].link(self.cropper_image_manip.inputImage)
 
