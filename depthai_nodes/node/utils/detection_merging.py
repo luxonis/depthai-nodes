@@ -94,10 +94,16 @@ def merge_keypoints(
     keypoints: List[Keypoints],
 ) -> Keypoints:
     new_kpts_list = []
+    edges_list = []
     for kpts in keypoints:
+        new_edges = [
+            (p1 + len(new_kpts_list), p2 + len(new_kpts_list)) for p1, p2 in kpts.edges
+        ]
+        edges_list.extend(new_edges)
         new_kpts_list.extend(kpts.keypoints)
     new_kpts = Keypoints()
     new_kpts.keypoints = new_kpts_list
+    new_kpts.edges = edges_list
     return new_kpts
 
 
