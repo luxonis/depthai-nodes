@@ -9,11 +9,11 @@ def generate_script_content(
     padding: float = 0.0,
     valid_labels: Optional[List[int]] = None,
 ) -> str:
-    """The function generates the script content for the dai.Script node.
+    """Generates the script content for the dai.Script node.
 
-    It is used to crop and resize the input image based on the detected object. It can
-    also work with padding around the detection bounding box and filter detections by
-    labels.
+    It crops and resizes the input image based on the detected object, with optional
+    padding and label filtering. If a zero-area detection is encountered, an error
+    message is issued.
 
     @param resize_width: Target width for the resized image
     @type resize_width: int
@@ -43,46 +43,26 @@ def generate_script_content(
 cfg = ImageManipConfig()
 rect = RotatedRect()
 
-# frame size (for epsilon). Works on device and in tests.
-try:
-    fw = float(frame.getWidth()); fh = float(frame.getHeight())
-except Exception:
-    try:
-        fw = float(getattr(frame, "width")); fh = float(getattr(frame, "height"))
-    except Exception:
-        fw = float({resize_width}); fh = float({resize_height})
-if fw <= 0: fw = float({resize_width})
-if fh <= 0: fh = float({resize_height})
-
-# read & order bbox
-xmin = det.xmin; ymin = det.ymin; xmax = det.xmax; ymax = det.ymax
-if xmin > xmax: xmin, xmax = xmax, xmin
-if ymin > ymax: ymin, ymax = ymax, ymin
-
-# legacy center + padding-as-size (no clamping)
-cx = 0.5 * (xmin + xmax)
-cy = 0.5 * (ymin + ymax)
-w  = (xmax - xmin) + 2*({padding})
-h  = (ymax - ymin) + 2*({padding})
-
-# only rescue true zero-area (avoid ImageManip 'Colinear points')
-if w == 0.0 or h == 0.0:
-    safety_px = 2.0
-    eps = max(safety_px/fw, safety_px/fh)
-    if w == 0.0: w = eps
-    if h == 0.0: h = eps
-
-rect.center.x = cx
-rect.center.y = cy
-rect.size.width  = w
-rect.size.height = h
+rect.center.x = (det.xmin + det.xmax) / 2
+rect.center.y = (det.ymin + det.ymax) / 2
+rect.size.width = (det.xmax - det.xmin) + {padding} * 2
+rect.size.height = (det.ymax - det.ymin) + {padding} * 2
 rect.angle = 0
+
+# Detect zero-area detections and issue an error
+if rect.size.width <= 0.0 or rect.size.height <= 0.0:
+    raise ValueError(
+        f"Got zero-area detection (w={{rect.size.width}}, h={{rect.size.height}}). "
+        f"Consider using ImgDetectionsFilter with min_area > 0 "
+        f"to exclude such detections before cropping."
+    )
 
 cfg.addCropRotatedRect(rect, True)
 cfg.setOutputSize({resize_width}, {resize_height}, ImageManipConfig.ResizeMode.{resize_mode})
 """
 
     cfg_content = textwrap.indent(cfg_core, " " * 12)
+
     if valid_labels is not None:
         validate_label = f"if det.label not in {valid_labels}: continue\n"
         indented_validate_label = textwrap.indent(validate_label, " " * 12)
@@ -93,12 +73,13 @@ cfg.setOutputSize({resize_width}, {resize_height}, ImageManipConfig.ResizeMode.{
 try:
     while True:
         frame = node.inputs['preview'].get()
-        dets  = node.inputs['det_in'].get()
-        for det in dets.detections:
-{indented_validate_label}
-{cfg_content}
+        dets = node.inputs['det_in'].get()
+
+        for i, det in enumerate(dets.detections):
+{indented_validate_label}{cfg_content}
             node.outputs['manip_cfg'].send(cfg)
             node.outputs['manip_img'].send(frame)
+
 except Exception as e:
     node.warn(str(e))
 """
