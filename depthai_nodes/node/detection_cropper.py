@@ -39,6 +39,8 @@ except Exception as e:
         super().__init__()
         self._pipeline = self.getParentPipeline()
 
+        self._padding = 0.0
+
         self.cropper_image_manip = self._pipeline.create(dai.node.ImageManip)
         self._script = self._pipeline.create(dai.node.Script)
         self._script.setScript(self.SCRIPT_CONTENT)
@@ -125,6 +127,9 @@ except Exception as e:
         buff = dai.Buffer()
         buff.setData(np.array([len(detections.detections)], dtype=np.uint8))
         self._det_count_out.send(buff)
+
+    def setPadding(self, padding: float) -> None:
+        self._padding = padding
 
     @property
     def out(self) -> dai.Node.Output:
