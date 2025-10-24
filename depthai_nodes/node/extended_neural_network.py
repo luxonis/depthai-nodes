@@ -47,6 +47,11 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
                 f"No dai.ImgFrame.Type defined for platform {self._platform}."
             ) from e
 
+        if self._platform == dai.Platform.RVC2:
+            raise RuntimeError(
+                "ExtendedNeuralNetwork node is currently not supported on RVC2."
+            )
+
         self._logger = get_logger(self.__class__.__name__)
 
         self._confidence_threshold = None

@@ -27,6 +27,10 @@ except Exception as e:
     def __init__(self) -> None:
         super().__init__()
         self._pipeline = self.getParentPipeline()
+        if self._pipeline.getDefaultDevice().getPlatform() == dai.Platform.RVC2:
+            raise RuntimeError(
+                "DetectionsMapper node is currently not supported on RVC2."
+            )
         self._script = self._pipeline.create(dai.node.Script)
         self._script.setScript(self.SCRIPT_CONTENT)
         self._logger.debug("ImgDetectionsMapper initialized")
