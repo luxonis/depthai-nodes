@@ -55,6 +55,9 @@ except Exception as e:
         IOU, and initializes buffers for tile processing."""
         super().__init__()
         self._pipeline = self.getParentPipeline()
+        platform = self._pipeline.getDefaultDevice().getPlatform()
+        if platform == dai.Platform.RVC2:
+            raise RuntimeError("TilesPatcher node is currently not supported on RVC2.")
         self._logger = get_logger(self.__class__.__name__)
         self.name = "TilesPatcher"
         self.conf_thresh = 0.3
