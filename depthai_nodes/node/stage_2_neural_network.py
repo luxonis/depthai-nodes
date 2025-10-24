@@ -47,6 +47,12 @@ except Exception as e:
         self._padding = 0.0
 
         self._pipeline = self.getParentPipeline()
+
+        if self._platform == dai.Platform.RVC2:
+            raise RuntimeError(
+                "Stage2NeuralNetwork node is currently not supported on RVC2."
+            )
+
         self._remap_detections = False
         self.nn = self._pipeline.create(ParsingNeuralNetwork)
         self.detection_cropper = self._pipeline.create(DetectionCropper)
