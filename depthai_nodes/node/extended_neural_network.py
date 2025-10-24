@@ -167,6 +167,10 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         self.nn = self._pipeline.create(ParsingNeuralNetwork).build(
             self.nn_resize.out, nn_source
         )
+        if self.nn._getModelHeadsLen() != 1:
+            raise RuntimeError(
+                f"ExtendedNeuralNetwork only supports single head models. The model has {self.nn._getModelHeadsLen()} heads."
+            )
         nn_w = self.nn._nn_archive.getInputWidth()
         nn_h = self.nn._nn_archive.getInputHeight()
         if nn_w is None or nn_h is None:
@@ -193,6 +197,10 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         self.nn = self._pipeline.create(ParsingNeuralNetwork).build(
             self.tiling.out, nn_source
         )
+        if self.nn._getModelHeadsLen() != 1:
+            raise RuntimeError(
+                f"ExtendedNeuralNetwork only supports single head models. The model has {self.nn._getModelHeadsLen()} heads."
+            )
         nn_size = self.nn._nn_archive.getInputSize()
         if nn_size is None:
             raise ValueError("NNArchive does not contain input size")
