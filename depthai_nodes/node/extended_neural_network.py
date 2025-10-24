@@ -292,11 +292,11 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
     @property
     def out(self):
         if self._out is None:
-            raise RuntimeError("Stage1Node not initialized")
+            raise RuntimeError("ExtendedNeuralNetwork not initialized")
         return self._out
 
     @property
     def nn_passthrough(self):
         if self.nn is None:
-            raise RuntimeError("Stage1Node not initialized")
+            raise RuntimeError("ExtendedNeuralNetwork not initialized")
         return self.nn.passthrough
