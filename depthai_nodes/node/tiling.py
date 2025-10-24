@@ -1,4 +1,4 @@
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import depthai as dai
 import numpy as np
@@ -69,6 +69,15 @@ except Exception as e:
         self._crop_configs: List[dai.ImageManipConfig] = []
         self._logger.debug("Tiling initialized")
 
+        self._overlap: Optional[float] = None
+        self._grid_size: Optional[Tuple[int, int]] = None
+        self._img_shape: Optional[Tuple[int, int]] = None
+        self._nn_shape: Optional[Tuple[int, int]] = None
+        self._resize_mode: Optional[dai.ImageManipConfig.ResizeMode] = None
+        self._global_detection: bool = False
+        self._grid_matrix: Union[np.ndarray, List, None] = None
+        self._img_frame_type: Optional[dai.ImgFrame.Type] = None
+
     def build(
         self,
         overlap: float,
@@ -100,15 +109,15 @@ except Exception as e:
         @return: Returns self for method chaining.
         @rtype: Tiling
         """
-        self._initCropConfigs(
-            overlap=overlap,
-            grid_size=grid_size,
-            img_shape=img_shape,
-            nn_shape=nn_shape,
-            resize_mode=resize_mode,
-            global_detection=global_detection,
-            grid_matrix=grid_matrix,
-        )
+        self._overlap = overlap
+        self._grid_size = grid_size
+        self._img_shape = img_shape
+        self._nn_shape = nn_shape
+        self._resize_mode = resize_mode
+        self._global_detection = global_detection
+        self._grid_matrix = grid_matrix
+
+        self._initCropConfigs()
 
         self._cfg_out.link(self._script.inputs["cfg"])
         self._cfg_count.link(self._script.inputs["cfg_count"])
@@ -130,26 +139,29 @@ except Exception as e:
         for cfg in self._crop_configs:
             self._cfg_out.send(cfg)
 
-    def _initCropConfigs(
-        self,
-        overlap: float,
-        grid_size: Tuple,
-        img_shape: Tuple,
-        nn_shape: Tuple[int, int],
-        resize_mode: dai.ImageManipConfig.ResizeMode,
-        global_detection: bool = False,
-        grid_matrix: Union[np.ndarray, List, None] = None,
-    ):
+    @property
+    def is_initialized(self):
+        return (
+            self._overlap is not None
+            and self._grid_size is not None
+            and self._img_shape is not None
+            and self._nn_shape is not None
+            and self._resize_mode is not None
+        )
+
+    def _initCropConfigs(self):
         """Initializes the ImgManipConfig cropping configurations for the tiles."""
+        if not self.is_initialized:
+            raise RuntimeError("TilesPatcher not initialized")
         tile_positions = self._computeTilePositions(
-            overlap=overlap,
-            grid_size=grid_size,
-            img_shape=img_shape,
-            grid_matrix=grid_matrix,
-            global_detection=global_detection,
+            overlap=self._overlap,
+            grid_size=self._grid_size,
+            img_shape=self._img_shape,
+            grid_matrix=self._grid_matrix,
+            global_detection=self._global_detection,
         )
         self._crop_configs = self._generateManipConfigs(
-            tile_positions, nn_shape, resize_mode
+            tile_positions, self._nn_shape, self._resize_mode, self._img_frame_type
         )
 
     def _getManipConfig(
@@ -317,13 +329,45 @@ except Exception as e:
         tile_positions: List[Tuple[int, int, int, int]],
         nn_shape: Tuple[int, int],
         resize_mode: dai.ImageManipConfig.ResizeMode,
+        frame_type: Optional[dai.ImgFrame.Type],
     ):
         """Creates ImageManipConfig from tile positions."""
         crop_configs = []
         for tile_info in tile_positions:
             cfg = self._getManipConfig(tile_info, nn_shape, resize_mode)
             crop_configs.append(cfg)
+            if frame_type is not None:
+                cfg.setFrameType(frame_type)
         return crop_configs
+
+    def setOverlap(self, overlap: float) -> None:
+        self._overlap = overlap
+        if self.is_initialized:
+            self._initCropConfigs()
+
+    def setGridSize(self, grid_size: Tuple[int, int]) -> None:
+        self._grid_size = grid_size
+        if self.is_initialized:
+            self._initCropConfigs()
+
+    def setGlobalDetection(self, global_detection: bool) -> None:
+        self._global_detection = global_detection
+        if self.is_initialized:
+            self._initCropConfigs()
+
+    def setGridMatrix(self, grid_matrix: Union[np.ndarray, List, None]) -> None:
+        self._grid_matrix = grid_matrix
+        if self.is_initialized:
+            self._initCropConfigs()
+
+    def setFrameType(self, frame_type: Optional[dai.ImgFrame.Type]) -> None:
+        """Sets the frame type for the cropping configurations.
+
+        If None, frame type of the input frame is used.
+        """
+        self._img_frame_type = frame_type
+        if self.is_initialized:
+            self._initCropConfigs()
 
     @property
     def tile_count(self):
