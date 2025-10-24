@@ -15,7 +15,8 @@ ProcessFn2BufferType = Callable[
 class SnapsProducerFrameOnly(BaseHostNode):
     """A host node that helps with creating and sending snaps. If you also have
     additional message as input (e.g. detections) consider using `SnapsProducer` node
-    instead.
+    instead. If you are using two additional messages (e.g detections + tracker)
+    consider using `SnapsProducer2Buffered`
 
     Attributes:
     ----------
@@ -169,8 +170,10 @@ class SnapsProducerFrameOnly(BaseHostNode):
 
         @param name: Name of the snap.
         @type name: str
-        @param file_group: Files to send.
-        @type file_group: dai.FileGroup
+        @param frame: Frame to send.
+        @type frame: dai.ImgFrame
+        @param detection: Detections to send. Defaults to None.
+        @type detection: dai.ImgDetections
         @param tags: List of tags to send. Defaults to [].
         @type tags: List[str]
         @param extra_data: Extra data to send. Defaults to {}.
@@ -275,8 +278,8 @@ class SnapsProducer(SnapsProducerFrameOnly):
 
         @param frame: The frame input message for snap creation.
         @type frame: dai.ImgFrame
-        @param frame: The additional input message for snap creation.
-        @type frame: dai.Buffer
+        @param msg: The additional input message for snap creation.
+        @type msg: dai.Buffer
         """
         self._logger.debug("Processing new input")
         assert isinstance(frame, dai.ImgFrame)
@@ -296,6 +299,8 @@ class SnapsProducer2Buffered(SnapsProducerFrameOnly):
         The frame input message for snap creation.
     msg : dai.Buffer
         The additional input message for snap creation.
+    msg2 : dai.Buffer
+        The second additional input message for snap creation.
     time_interval : float
         Time interval between snaps if no custom process function is provided. Defaults to 60s.
     process_fn : Callable[['SnapsProducer', dai.ImgFrame, dai.Buffer], None]
@@ -333,6 +338,8 @@ class SnapsProducer2Buffered(SnapsProducerFrameOnly):
         @type frame: dai.Node.Output
         @param msg: The additonal input message for snap creation.
         @type msg: dai.Node.Output
+        @param msg2: The second additonal input message for snap creation.
+        @type msg2: dai.Node.Output
         @param time_interval: Time interval between snaps for default sending in
             seconds. Defaults to 60.
         @type time_interval: Union[int, float]
