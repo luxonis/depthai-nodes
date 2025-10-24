@@ -6,6 +6,7 @@ import pytest
 from pytest import FixtureRequest
 
 from depthai_nodes import ImgDetectionsExtended
+from depthai_nodes.message.utils import compute_area
 from depthai_nodes.node import ImgDetectionsFilter
 from tests.utils import (
     DETECTIONS,
@@ -19,6 +20,7 @@ LABELS = [1]
 CONF_THRES = 0.5
 MAX_DET = 1
 SORT = True
+MIN_AREA = 0.2
 
 img_det_types = ["img_detections", "img_detections_extended"]
 
@@ -52,6 +54,7 @@ def test_initialization(filter: ImgDetectionsFilter):
     assert filter._confidence_threshold is None
     assert filter._max_detections is None
     assert filter._sort_by_confidence is False
+    assert filter._min_area is None
 
 
 def test_building(filter: ImgDetectionsFilter):
@@ -61,6 +64,7 @@ def test_building(filter: ImgDetectionsFilter):
     assert filter._confidence_threshold is None
     assert filter._max_detections is None
     assert filter._sort_by_confidence is False
+    assert filter._min_area is None
 
     # labels to keep
     filter.build(OutputMock(), labels_to_keep=LABELS)
@@ -104,6 +108,13 @@ def test_building(filter: ImgDetectionsFilter):
     )
     assert filter._sort_by_confidence == SORT
 
+    # min_area
+    filter.build(
+        OutputMock(),
+        min_area=MIN_AREA,
+    )
+    assert filter._min_area == MIN_AREA
+
 
 def test_parameter_setting(filter: ImgDetectionsFilter):
     filter.build(OutputMock())
@@ -137,6 +148,12 @@ def test_parameter_setting(filter: ImgDetectionsFilter):
     with pytest.raises(ValueError):
         filter.setSortByConfidence("not a boolean")
 
+    # min_area
+    filter.setMinArea(MIN_AREA)
+    assert filter._min_area == MIN_AREA
+    with pytest.raises(ValueError):
+        filter.setMinArea("not a float")
+
 
 @pytest.mark.parametrize(
     "img_detections_type",
@@ -164,7 +181,7 @@ def test_processing(
     while time.time() - start_time < modified_duration:
         if time.time() - last_log_time > LOG_INTERVAL:
             print(
-                f"Test running... {time.time()-start_time:.1f}s elapsed, {modified_duration-time.time()+start_time:.1f}s remaining"
+                f"Test running... {time.time() - start_time:.1f}s elapsed, {modified_duration - time.time() + start_time:.1f}s remaining"
             )
             last_log_time = time.time()
         # default filtering
@@ -228,3 +245,12 @@ def test_processing(
                 dets_filtered.detections, key=lambda x: x.confidence, reverse=True
             )
         filter.setSortByConfidence(False)
+
+        # filter by min_area
+        filter.setMinArea(MIN_AREA)
+        q_dets.send(dets)
+        filter.process(q_dets.get())
+        dets_filtered = q_dets_filtered.get()
+        for det in dets_filtered.detections:
+            assert compute_area(det) >= MIN_AREA
+        filter.setMinArea(None)

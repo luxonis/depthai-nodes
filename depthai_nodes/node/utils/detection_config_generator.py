@@ -1,3 +1,4 @@
+import textwrap
 from typing import List, Optional
 
 
@@ -5,14 +6,14 @@ def generate_script_content(
     resize_width: int,
     resize_height: int,
     resize_mode: str = "STRETCH",
-    padding: float = 0,
+    padding: float = 0.0,
     valid_labels: Optional[List[int]] = None,
 ) -> str:
-    """The function generates the script content for the dai.Script node.
+    """Generates the script content for the dai.Script node.
 
-    It is used to crop and resize the input image based on the detected object. It can
-    also work with padding around the detection bounding box and filter detections by
-    labels.
+    It crops and resizes the input image based on the detected object, with optional
+    padding and label filtering. If a zero-area detection is encountered, an error
+    message is issued.
 
     @param resize_width: Target width for the resized image
     @type resize_width: int
@@ -38,42 +39,49 @@ def generate_script_content(
     if resize_mode not in ["CENTER_CROP", "LETTERBOX", "NONE", "STRETCH"]:
         raise ValueError("Unsupported resize mode")
 
-    cfg_content = f"""
-            cfg = ImageManipConfig()
-            rect = RotatedRect()
-            rect.center.x = (det.xmin + det.xmax) / 2
-            rect.center.y = (det.ymin + det.ymax) / 2
-            rect.size.width = det.xmax - det.xmin
-            rect.size.height = det.ymax - det.ymin
-            rect.size.width = rect.size.width + {padding} * 2
-            rect.size.height = rect.size.height + {padding} * 2
-            rect.angle = 0
+    cfg_core = f"""\
+cfg = ImageManipConfig()
+rect = RotatedRect()
 
-            cfg.addCropRotatedRect(rect, True)
-            cfg.setOutputSize({resize_width}, {resize_height}, ImageManipConfig.ResizeMode.{resize_mode})
-        """
-    validate_label = (
-        f"""
-            if det.label not in {valid_labels}:
-                continue
-        """
-        if valid_labels
-        else ""
+rect.center.x = (det.xmin + det.xmax) / 2
+rect.center.y = (det.ymin + det.ymax) / 2
+rect.size.width = (det.xmax - det.xmin) + {padding} * 2
+rect.size.height = (det.ymax - det.ymin) + {padding} * 2
+rect.angle = 0
+
+# Detect zero-area detections and issue an error
+if rect.size.width <= 0.0 or rect.size.height <= 0.0:
+    raise ValueError(
+        f"Got zero-area detection (w={{rect.size.width}}, h={{rect.size.height}}). "
+        f"Consider using ImgDetectionsFilter with min_area > 0 "
+        f"to exclude such detections before cropping."
     )
-    return f"""
+
+cfg.addCropRotatedRect(rect, True)
+cfg.setOutputSize({resize_width}, {resize_height}, ImageManipConfig.ResizeMode.{resize_mode})
+"""
+
+    cfg_content = textwrap.indent(cfg_core, " " * 12)
+
+    if valid_labels is not None:
+        validate_label = f"if det.label not in {valid_labels}: continue\n"
+        indented_validate_label = textwrap.indent(validate_label, " " * 12)
+    else:
+        indented_validate_label = ""
+
+    outer = f"""\
 try:
     while True:
         frame = node.inputs['preview'].get()
         dets = node.inputs['det_in'].get()
 
         for i, det in enumerate(dets.detections):
-            {validate_label.strip()}
-
-            {cfg_content.strip()}
-
+{indented_validate_label}{cfg_content}
             node.outputs['manip_cfg'].send(cfg)
             node.outputs['manip_img'].send(frame)
 
 except Exception as e:
     node.warn(str(e))
 """
+
+    return textwrap.dedent(outer).lstrip()
