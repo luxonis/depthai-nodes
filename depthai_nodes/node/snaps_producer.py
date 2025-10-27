@@ -186,6 +186,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
         if tags is None:
             tags = []
         if not self._running:
+            self._logger.info("Not running. Snap not sent.")
             return False
 
         now = time.time()
@@ -202,6 +203,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
                 self._logger.info(f"Snap `{name}` sent")
                 self.last_update = now
             return out
+        self._logger.info("Time interval not reached. Snap not sent.")
         return False
 
 
