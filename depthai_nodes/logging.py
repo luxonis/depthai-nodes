@@ -37,7 +37,7 @@ def setup_logging(level: Optional[str] = None, file: Optional[str] = None):
 
     used_level = passed_level or env_dai_nodes_level or env_dai_level
     if not used_level:
-        used_level = LogLevel.WARN
+        used_level = LogLevel.DEBUG
 
     format = (
         file_format
