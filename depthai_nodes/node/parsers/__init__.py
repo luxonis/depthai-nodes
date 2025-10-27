@@ -1,6 +1,7 @@
 from .base_parser import BaseParser
 from .classification import ClassificationParser
 from .classification_sequence import ClassificationSequenceParser
+from .transformer_classification import TransformerClassificationParser
 from .detection import DetectionParser
 from .embeddings import EmbeddingsParser
 from .fastsam import FastSAMParser
@@ -43,4 +44,5 @@ __all__ = [
     "BaseParser",
     "DetectionParser",
     "EmbeddingsParser",
+    "TransformerClassificationParser"
 ]

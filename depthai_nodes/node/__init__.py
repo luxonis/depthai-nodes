@@ -10,6 +10,7 @@ from .img_frame_overlay import ImgFrameOverlay
 from .parser_generator import ParserGenerator
 from .parsers.base_parser import BaseParser
 from .parsers.classification import ClassificationParser
+from .parsers.transformer_classification import TransformerClassificationParser
 from .parsers.classification_sequence import ClassificationSequenceParser
 from .parsers.detection import DetectionParser
 from .parsers.embeddings import EmbeddingsParser
@@ -72,4 +73,5 @@ __all__ = [
     "SnapsProducerFrameOnly",
     "SnapsProducer",
     "BaseHostNode",
+    "TransformerClassificationParser"
 ]
