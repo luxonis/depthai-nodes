@@ -152,7 +152,11 @@ class SnapsProducerFrameOnly(BaseHostNode):
         self._logger.debug("Processing new input")
 
         if self._process_fn is None:
-            self.sendSnap("frame", frame)
+            now = time.time()
+            if now > self.last_update + self.time_interval:
+                self.sendSnap("frame", frame)
+            else:
+                self._logger.info("Time interval not reached. Snap not sent.")
         else:
             self._process_fn(self, frame)
 
@@ -185,26 +189,27 @@ class SnapsProducerFrameOnly(BaseHostNode):
         """
         if tags is None:
             tags = []
+
         if not self._running:
             self._logger.info("Not running. Snap not sent.")
             return False
 
-        now = time.time()
-        if now > self.last_update + self.time_interval:
-            out = self._em.sendSnap(
-                name=name,
-                fileName=None,
-                imgFrame=frame,
-                imgDetections=detection,
-                tags=tags,
-                extras=extras,
-            )
-            if out:
-                self._logger.info(f"Snap `{name}` sent")
-                self.last_update = now
-            return out
-        self._logger.info("Time interval not reached. Snap not sent.")
-        return False
+        out = self._em.sendSnap(
+            name=name,
+            fileName=None,
+            imgFrame=frame,
+            imgDetections=detection,
+            tags=tags,
+            extras=extras,
+        )
+
+        if out:
+            self._logger.info(f"Snap `{name}` sent")
+            now = time.time()
+            self.last_update = now
+        else:
+            self._logger.error(f"Failed to send snap `{name}`")
+        return out
 
 
 class SnapsProducer(SnapsProducerFrameOnly):
@@ -286,7 +291,11 @@ class SnapsProducer(SnapsProducerFrameOnly):
         self._logger.debug("Processing new input")
         assert isinstance(frame, dai.ImgFrame)
         if self._process_fn is None:
-            self.sendSnap("frame", frame)
+            now = time.time()
+            if now > self.last_update + self.time_interval:
+                self.sendSnap("frame", frame)
+            else:
+                self._logger.info("Time interval not reached. Snap not sent.")
         else:
             self._process_fn(self, frame, msg)
 
@@ -375,6 +384,10 @@ class SnapsProducer2Buffered(SnapsProducerFrameOnly):
         self._logger.debug("Processing new input")
         assert isinstance(frame, dai.ImgFrame)
         if self._process_fn is None:
-            self.sendSnap("frame", frame)
+            now = time.time()
+            if now > self.last_update + self.time_interval:
+                self.sendSnap("frame", frame)
+            else:
+                self._logger.info("Time interval not reached. Snap not sent.")
         else:
             self._process_fn(self, frame, msg, msg2)
