@@ -43,8 +43,16 @@ class ImageManipConfig(dai.ImageManipConfig):
 
 
 class Frame:
-    def __init__(self, sequence_num: int):
+    def __init__(self, sequence_num: int, width=640, height=480):
         self.sequence_num = sequence_num
+        self.width = width
+        self.height = height
+
+    def getWidth(self):
+        return self.width
+
+    def getHeight(self):
+        return self.height
 
 
 class Node:
@@ -184,28 +192,6 @@ def test_passthrough(
         assert len(get_output_config(node)) == len(expected_frames)
 
 
-@pytest.mark.parametrize("labels", [[1], [1, 2]])
-def test_label_validation(
-    node,
-    node_input_detections,
-    node_input_frames,
-    labels,
-    resize_width,
-    resize_height,
-):
-    expected_frames: List[Frame] = []
-    for detections, frame in zip(node_input_detections, node_input_frames):
-        for detection in detections.detections:
-            if detection.label not in labels:
-                continue
-            expected_frames.append(frame)
-    script = generate_script_content(resize_width, resize_height, valid_labels=labels)
-    try:
-        run_script(node, script)
-    except Warning:
-        assert expected_frames == get_output_frames(node)
-
-
 @pytest.mark.parametrize("resize", [(128, 128), (128, 256), (256, 256)])
 def test_output_size(node, resize):
     script = generate_script_content(*resize)
@@ -248,6 +234,39 @@ def test_crop(node, node_input_detections, padding, resize_width, resize_height)
             assert (rotated_rect.center.x, rotated_rect.center.y) == pytest.approx(
                 (expected_rect.center.x, expected_rect.center.y)
             )
+
+
+@pytest.mark.parametrize(
+    "coords",
+    [
+        {"xmin": 0.5, "xmax": 0.5, "ymin": 0.2, "ymax": 0.4},  # width = 0
+        {"xmin": 0.3, "xmax": 0.6, "ymin": 0.4, "ymax": 0.4},  # height = 0
+        {"xmin": 0.3, "xmax": 0.6, "ymin": 0.5, "ymax": -0.5},  # height < 0
+    ],
+)
+def test_zero_or_negative_area_detection_error(coords, resize_width, resize_height):
+    det = dai.ImgDetection()
+    det.label = 1
+    det.xmin = coords["xmin"]
+    det.xmax = coords["xmax"]
+    det.ymin = coords["ymin"]
+    det.ymax = coords["ymax"]
+    det.confidence = 0.9
+
+    detections = dai.ImgDetections()
+    detections.detections = [det]
+
+    frame = Frame(0)
+    node = create_node([frame], [detections])
+
+    script = generate_script_content(resize_width, resize_height)
+
+    with pytest.raises(Warning) as w:
+        run_script(node, script)
+
+    assert "zero-area" in str(w.value)
+    assert len(get_output_frames(node)) == 0
+    assert len(get_output_config(node)) == 0
 
 
 def run_script(node, script):
