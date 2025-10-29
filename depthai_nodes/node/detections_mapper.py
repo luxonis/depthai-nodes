@@ -1,7 +1,7 @@
 import depthai as dai
 
 from depthai_nodes.node.base_host_node import BaseHostNode
-from depthai_nodes.node.utils.detection_remapping import remap_message
+from depthai_nodes.node.utils.message_remapping import remap_message
 
 
 class DetectionsMapper(BaseHostNode):
