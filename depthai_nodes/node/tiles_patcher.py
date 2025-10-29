@@ -14,8 +14,8 @@ from depthai_nodes.message.map import Map2D
 from depthai_nodes.message.prediction import Predictions
 from depthai_nodes.message.segmentation import SegmentationMask
 from depthai_nodes.node.utils import nms_detections
-from depthai_nodes.node.utils.detection_merging import merge_messages
 from depthai_nodes.node.utils.detection_remapping import remap_message
+from depthai_nodes.node.utils.message_merging import merge_messages
 
 
 class TilesPatcher(dai.node.ThreadedHostNode):
