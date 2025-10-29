@@ -130,7 +130,7 @@ except Exception as e:
                 assert isinstance(
                     nn_msg, self.SUPPORTED_MESSAGES
                 ), f"Message type {type(nn_msg)} is not supported."
-                if nn_msg.getTimestamp() != img.getTimestamp():
+                if nn_msg.getTimestamp() > img.getTimestamp():
                     last_nn_msg = nn_msg
                     break
                 nn_msgs.append(nn_msg)
