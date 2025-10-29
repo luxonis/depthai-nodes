@@ -126,6 +126,8 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         @raise ValueError: If tiling is enabled and input_size is not provided.
         @raise ValueError: If NNArchive does not contain input size.
         """
+        if input_size is not None and any([i <= 0 for i in input_size]):
+            raise ValueError("Input size must be positive")
         if enable_tiling:
             if input_size is None:
                 raise ValueError("Input size must be provided for tiling")
