@@ -37,7 +37,7 @@ def merge_messages(
     elif all(isinstance(message, Lines) for message in messages):
         return merge_lines(messages)  # type: ignore
     elif all(isinstance(message, Predictions) for message in messages):
-        return merte_predictions(messages)  # type: ignore
+        return merge_predictions(messages)  # type: ignore
     else:
         raise TypeError(f"Unsupported message types: {type(messages[0])}")
 
@@ -134,7 +134,7 @@ def merge_lines(
     return new_lines
 
 
-def merte_predictions(predictions: List[Predictions]) -> Predictions:
+def merge_predictions(predictions: List[Predictions]) -> Predictions:
     new_predictions_list = []
     for p in predictions:
         new_predictions_list.extend(p.predictions)
