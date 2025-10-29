@@ -110,6 +110,9 @@ except Exception as e:
         img_frames.link(self._script.inputs["preview"])
         self._script.outputs["transformation"].link(self._img_input)
         nn.link(self._nn_input)
+        self._logger.debug(
+            f"TilesPatcher built with conf_thresh={conf_thresh}, iou_thresh={iou_thresh}"
+        )
         return self
 
     def run(self):
@@ -155,6 +158,7 @@ except Exception as e:
 
     def setConfidenceThreshold(self, confidence_threshold: float) -> None:
         self.conf_thresh = confidence_threshold
+        self._logger.debug(f"Confidence threshold set to {self.conf_thresh}")
 
     def _sendOutput(
         self,
