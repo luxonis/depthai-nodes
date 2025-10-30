@@ -171,7 +171,7 @@ class SegmentationParser(BaseParser):
                 mask_message.setTransformation(transformation)
 
             self._logger.debug(
-                f"Created segmentation message with {class_map.shape[0]} classes"
+                f"Created segmentation message with {segmentation_mask.shape[0]} classes"
             )
 
             self.out.send(mask_message)
