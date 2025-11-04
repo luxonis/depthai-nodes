@@ -14,7 +14,7 @@ REM     <ADDITIONAL_PARAMETER> ^
 REM     <PLATFORM>
 REM
 REM Example:
-REM   windows_end_to_end.cmd v0.8.0 abc123 myteam 3.0.0 https://idx.xxx " --foo bar" rvc4
+REM   windows_end_to_end.cmd v0.8.0 abc123 myteam 3.0.0 https://idx.xxx rvc4 " --foo bar"
 REM
 REM This maps to:
 REM   --env LUXONIS_EXTRA_INDEX_URL
@@ -31,8 +31,9 @@ set "HUBAI_API_KEY=%~2"
 set "HUBAI_TEAM_SLUG=%~3"
 set "DEPTHAI_VERSION=%~4"
 set "LUXONIS_EXTRA_INDEX_URL=%~5"
-set "ADDITIONAL_PARAMETER=%~6"
-set "PLATFORM=%~7"
+set "PLATFORM=%~6"
+set "ADDITIONAL_PARAMETER=%~7"
+
 
 REM ---- Default branch if not provided
 if "%BRANCH%"=="" (
@@ -44,7 +45,7 @@ REM ---- Basic validation (others still required)
 if "%~2"==""  ( echo [!] HUBAI_API_KEY is required & exit /b 2 )
 if "%~3"==""  ( echo [!] HUBAI_TEAM_SLUG is required & exit /b 2 )
 if "%~4"==""  ( echo [!] DEPTHAI_VERSION is required & exit /b 2 )
-if "%~7"==""  ( echo [!] PLATFORM is required (e.g., rvc4) & exit /b 2 )
+if "%~6"==""  ( echo [!] PLATFORM is required (e.g., rvc4) & exit /b 2 )
 
 REM ---- Compose FLAGS
 set "FLAGS=%ADDITIONAL_PARAMETER% -v %BRANCH% --platform %PLATFORM%"
