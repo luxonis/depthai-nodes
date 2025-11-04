@@ -123,4 +123,4 @@ jobs:
               ADDITIONAL_OPTIONS="${{ github.event.inputs.additional_options }}"
           fi
 
-          exec hil_runner --platforms rvc4 --wait $RESERVATION_OPTION -os windows --basic-sanity --commands "rmdir /S /Q depthai-nodes && git clone -b windows_tests https://github.com/luxonis/depthai-nodes.git && cd tests\end_to_end && windows_end_to_end.cmd ${{ github.event.inputs.depthai-nodes-version }} ${{ secrets.HUBAI_API_KEY }} ${{ secrets.HUBAI_TEAM_SLUG }} ${{ github.event.inputs.depthai-version }} ${{secrets.LUXONIS_EXTRA_INDEX_URL}} rvc4"
+          exec hil_runner --platforms rvc4 --wait $RESERVATION_OPTION -os windows --basic-sanity --commands "rmdir /S /Q depthai-nodes && git clone -b windows_tests https://github.com/luxonis/depthai-nodes.git && cd depthai-nodes\tests\end_to_end && windows_end_to_end.cmd ${{ github.event.inputs.depthai-nodes-version }} ${{ secrets.HUBAI_API_KEY }} ${{ secrets.HUBAI_TEAM_SLUG }} ${{ github.event.inputs.depthai-version }} ${{secrets.LUXONIS_EXTRA_INDEX_URL}} rvc4"
