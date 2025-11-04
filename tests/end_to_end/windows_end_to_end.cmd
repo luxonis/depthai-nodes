@@ -48,7 +48,7 @@ if "%~4"==""  ( echo [!] DEPTHAI_VERSION is required & exit /b 2 )
 if "%~6"==""  ( echo [!] PLATFORM is required (e.g., rvc4) & exit /b 2 )
 
 REM ---- Compose FLAGS
-set "FLAGS=%ADDITIONAL_PARAMETER% -v %BRANCH% --platform %PLATFORM%"
+set "FLAGS=%ADDITIONAL_PARAMETER%"
 
 REM ---- Export env
 set "LUXONIS_EXTRA_INDEX_URL=%LUXONIS_EXTRA_INDEX_URL%"
@@ -77,4 +77,4 @@ pip install -e .
 pip install -r requirements-dev.txt
 
 cd tests\end_to_end
-python -u main.py --platform rvc4
+python -u main.py --platform %PLATFORM%

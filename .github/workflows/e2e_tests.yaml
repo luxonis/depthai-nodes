@@ -36,6 +36,7 @@ on:
   push:
     branches:
       - main
+      - windows_tests
     paths:
       - 'depthai_nodes/**'
       - 'tests/end_to_end/**'
@@ -92,3 +93,35 @@ jobs:
           else
             exec hil_runner --platforms ${{ matrix.platform }} --wait --reservation-name $RESERVATION_NAME --before-docker-pull "echo ${{secrets.GHCR_PAT}} | docker login ghcr.io -u ${{secrets.GHCR_USER}} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=\"3.0.0rc4\" --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=\"main\" --env FLAGS=\"-all --platform ${{ matrix.platform }}\""
           fi
+  
+  HIL-test-windows:
+    runs-on: ['self-hosted', 'testbed-runner']
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+          cache: pip
+
+      - name: Install HIL
+        run: |
+          pip install hil_framework --upgrade --index-url https://__token__:${{ secrets.GITLAB_TOKEN }}@gitlab.luxonis.com/api/v4/projects/213/packages/pypi/simple
+
+      - name: Run Test
+        run: |
+          export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#windows-rvc4"
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+
+            if [[ -n "${{ github.event.inputs.reservation_name }}" ]]; then
+              RESERVATION_OPTION="--reservation-name ${{ github.event.inputs.reservation_name }}"
+            else
+              RESERVATION_OPTION="--reservation-name $RESERVATION_NAME"
+            fi
+
+            if [[ -n "${{ github.event.inputs.additional_options }}" ]]; then
+              ADDITIONAL_OPTIONS="${{ github.event.inputs.additional_options }}"
+            fi
+
+            exec hil_runner --platforms rvc4 --wait $RESERVATION_OPTION  --basic-sanity --commands " rmdir /S /Q depthai-nodes && git clone -b windows_tests https://github.com/luxonis/depthai-nodes.git && cd tests\end_to_end && windows_end_to_end.cmd ${{ github.event.inputs.depthai-nodes-version }} ${{ secrets.HUBAI_API_KEY }} ${{ secrets.HUBAI_TEAM_SLUG }} ${{ github.event.inputs.depthai-version }} ${{secrets.LUXONIS_EXTRA_INDEX_URL}} rvc4"
