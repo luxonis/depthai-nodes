@@ -69,11 +69,12 @@ git clone -b "%BRANCH%" https://github.com/luxonis/depthai-nodes.git || (
   exit /b 4
 )
 
-cd depthai-nodes\tests\end_to_end
+cd depthai-nodes\
 
 python.exe -m venv venv
 call venv\Scripts\activate.bat
 pip install -e .
 pip install -r requirements-dev.txt
 
+cd tests\end_to_end
 python -u main.py --platform rvc4
