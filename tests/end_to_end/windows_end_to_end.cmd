@@ -69,14 +69,11 @@ git clone -b "%BRANCH%" https://github.com/luxonis/depthai-nodes.git || (
   exit /b 4
 )
 
-cd depthai-nodes
+cd depthai-nodes\tests\end_to_end
 
 python.exe -m venv venv
 call venv\Scripts\activate.bat
 pip install -e .
 pip install -r requirements-dev.txt
-
-set HUB_API_KEY=%HUBAI_TOKEN%
-set HUBAI_TEAM_SLUG=%HUBAI_TEAM_SLUG%
 
 python -u main.py --platform rvc4
