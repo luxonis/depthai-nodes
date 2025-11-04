@@ -57,6 +57,7 @@ set "HUBAI_TEAM_SLUG=%HUBAI_TEAM_SLUG%"
 set "HUBAI_API_KEY=%HUBAI_API_KEY%"
 set "BRANCH=%BRANCH%"
 set "FLAGS=%FLAGS%"
+set "DEPTHAI_NODES_LEVEL=debug"
 
 echo [*] Recreating %DEST%
 rmdir /S /Q "%TEMP%\depthai-nodes" 2>nul
@@ -78,4 +79,4 @@ pip install -r requirements-dev.txt
 set HUB_API_KEY=%HUBAI_TOKEN%
 set HUBAI_TEAM_SLUG=%HUBAI_TEAM_SLUG%
 
-DEPTHAI_NODES_LEVEL=debug python -u main.py --platform rvc4
+python -u main.py --platform rvc4
