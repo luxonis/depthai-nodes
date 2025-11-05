@@ -6,10 +6,10 @@ RVC2_IP = ""
 RVC4_IP = ""
 for device in devices:
     mxid = device.getDeviceId()
-    platform = device.platform.name
-    if "RVC4" in platform:
+    dev_platform = device.platform.name
+    if "RVC4" in dev_platform:
         RVC4_IP = str(mxid)
-    if "MYRIAD" in platform:
+    if "MYRIAD" in dev_platform:
         RVC2_IP = str(mxid)
 
 system = platform.system().lower()
