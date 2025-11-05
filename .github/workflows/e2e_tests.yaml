@@ -34,7 +34,7 @@ on:
         description: 'Select which os to tests when dispatching'
         type: choice
         required: true
-        default: both
+        default: all
         options:
           - all
           - linux-only
