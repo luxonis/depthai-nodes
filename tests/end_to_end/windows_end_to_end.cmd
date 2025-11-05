@@ -75,7 +75,7 @@ python.exe -m venv venv
 call venv\Scripts\activate.bat
 pip install -e .
 pip install -r requirements-dev.txt
-pip install --extra-index-url https://artifacts.luxonis.com/artifactory/luxonis-python-snapshot-local/ --extra-index-url %LUXONIS_EXTRA_INDEX_URL%  depthai==%DEPTHAI_VERSION%
+pip install --extra-index-url https://artifacts.luxonis.com/artifactory/luxonis-python-snapshot-local/ --extra-index-url "%LUXONIS_EXTRA_INDEX_URL%"  depthai==%DEPTHAI_VERSION%
 
 cd tests\end_to_end
 for /f "delims=" %a in ('python setup_camera_ips.py') do %a
