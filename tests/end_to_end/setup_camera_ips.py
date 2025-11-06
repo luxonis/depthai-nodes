@@ -1,4 +1,5 @@
 import platform
+
 import depthai as dai
 
 devices = dai.Device.getAllAvailableDevices()
