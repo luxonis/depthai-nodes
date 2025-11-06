@@ -1,5 +1,5 @@
-import depthai as dai
 import platform
+import depthai as dai
 
 devices = dai.Device.getAllAvailableDevices()
 RVC2_IP = ""
