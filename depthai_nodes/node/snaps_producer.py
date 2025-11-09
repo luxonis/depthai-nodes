@@ -35,6 +35,11 @@ class SnapData:
     extras: Dict[str, str] = field(default_factory=dict)
 
 
+@dataclass
+class Snaps:
+    snaps: List[SnapData]
+
+
 class SnapsProducer(BaseHostNode):
     """A host node responsible solely for sending snaps to DepthAI Hub Events API.
 
@@ -59,6 +64,8 @@ class SnapsProducer(BaseHostNode):
         return self
 
     def process(self, snaps_buffer: dai.Buffer):
+        assert isinstance(snaps_buffer, Snaps)
+
         for snap in snaps_buffer:
             self._em.sendSnap(
                 name=snap.name,
