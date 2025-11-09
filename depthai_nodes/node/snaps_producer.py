@@ -59,12 +59,12 @@ class SnapsProducer(BaseHostNode):
         return self
 
     def process(self, snaps_buffer: dai.Buffer):
-        for snap in snaps_buffer:
-            self._em.sendSnap(
-                name=snap.name,
-                fileName=snap.file_name,
-                imgFrame=snap.frame,
-                imgDetections=snap.detections,
-                tags=snap.tags,
-                extras=snap.extras,
-            )
+        assert isinstance(snaps_buffer, SnapData)
+        self._em.sendSnap(
+            name=snaps_buffer.name,
+            fileName=snaps_buffer.file_name,
+            imgFrame=snaps_buffer.frame,
+            imgDetections=snaps_buffer.detections,
+            tags=snaps_buffer.tags,
+            extras=snaps_buffer.extras,
+        )
