@@ -43,8 +43,6 @@ class SnapsProducer(BaseHostNode):
     ----------
     _em : dai.EventsManager
         Internal DepthAI EventsManager instance used for snap transmission.
-    _running : bool
-        Flag indicating whether snap sending is currently enabled.
     """
 
     def __init__(self):
