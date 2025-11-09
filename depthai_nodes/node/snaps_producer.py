@@ -1,5 +1,4 @@
 import os
-import pickle
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
@@ -60,9 +59,7 @@ class SnapsProducer(BaseHostNode):
         return self
 
     def process(self, snaps_buffer: dai.Buffer):
-        snaps: list[SnapData] = pickle.loads(snaps_buffer.getData())
-
-        for snap in snaps:
+        for snap in snaps_buffer:
             self._em.sendSnap(
                 name=snap.name,
                 fileName=snap.file_name,
