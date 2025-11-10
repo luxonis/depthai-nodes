@@ -7,7 +7,7 @@ import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes.node import SnapsProducer, SnapsProducerFrameOnly
+from depthai_nodes.node import SnapsProducerFrameOnly, SnapsUploader
 from tests.utils import LOG_INTERVAL, OutputMock, create_img_detection, create_img_frame
 
 HEIGHT, WIDTH = 100, 100
@@ -31,7 +31,7 @@ def snaps_producer_frame_only():
 
 @pytest.fixture
 def snaps_producer():
-    producer = SnapsProducer()
+    producer = SnapsUploader()
     producer._logger = MagicMock()
     return producer
 
@@ -56,7 +56,7 @@ def test_building_frame_only(snaps_producer_frame_only: SnapsProducerFrameOnly):
     snaps_producer_frame_only.build(OutputMock())
 
 
-def test_building(snaps_producer: SnapsProducer):
+def test_building(snaps_producer: SnapsUploader):
     snaps_producer.build(OutputMock(), OutputMock())
 
 
@@ -97,7 +97,7 @@ def test_parameter_setting_frame_only(
 
 
 def test_parameter_setting(
-    snaps_producer: SnapsProducer,
+    snaps_producer: SnapsUploader,
     recwarn,
     token: str = "test_token",
     url: str = "test_url",
@@ -194,7 +194,7 @@ def test_processing_frame_only_custom_process_fn(
 
 
 def test_processing(
-    snaps_producer: SnapsProducer,
+    snaps_producer: SnapsUploader,
     duration: float,
     caplog,
 ):
@@ -225,7 +225,7 @@ def test_processing(
 
 
 def test_processing_custom_process_fn(
-    snaps_producer: SnapsProducer,
+    snaps_producer: SnapsUploader,
     simple_process_fn: Callable,
     duration: float,
     caplog,
