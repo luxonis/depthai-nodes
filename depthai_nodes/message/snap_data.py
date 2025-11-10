@@ -8,7 +8,7 @@ class SnapData(dai.Buffer):
 
     Attributes
     ----------
-    name : str
+    snap_name : str
         Logical name of the snap.
     file_name : str
         File name for the snap image.
