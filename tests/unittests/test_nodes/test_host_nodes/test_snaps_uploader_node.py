@@ -1,300 +1,103 @@
-import time
-from functools import partial
-from typing import Callable
+import os
 from unittest.mock import MagicMock
 
 import depthai as dai
-import numpy as np
 import pytest
 
-from depthai_nodes.node import SnapsProducerFrameOnly, SnapsUploader
-from tests.utils import LOG_INTERVAL, OutputMock, create_img_detection, create_img_frame
-
-HEIGHT, WIDTH = 100, 100
-FRAME = np.random.randint(0, 255, (HEIGHT, WIDTH, 3), dtype=np.uint8)
-
-
-@pytest.fixture(scope="session")
-def duration(request):
-    d = request.config.getoption("--duration")
-    if d is None:
-        return 1e-6
-    return d
+from depthai_nodes.message import SnapData
+from depthai_nodes.node import SnapsUploader
+from tests.utils.nodes.mocks import OutputMock
 
 
 @pytest.fixture
-def snaps_producer_frame_only():
-    producer = SnapsProducerFrameOnly()
-    producer._logger = MagicMock()
-    return producer
+def frame() -> dai.ImgFrame:
+    frame = dai.ImgFrame()
+    frame.setSequenceNum(1)
+    return frame
 
 
 @pytest.fixture
-def snaps_producer():
-    producer = SnapsUploader()
-    producer._logger = MagicMock()
-    return producer
+def detections() -> dai.ImgDetections:
+    dets = dai.ImgDetections()
+    det = dai.ImgDetection()
+    det.label = 1
+    det.confidence = 0.9
+    dets.detections = [det]
+    return dets
 
 
 @pytest.fixture
-def simple_process_fn_frame_only():
-    def filter_detections_frame_only(producer, frame):
-        producer.sendSnap(name="test", frame=frame)
-
-    return filter_detections_frame_only
-
-
-@pytest.fixture
-def simple_process_fn():
-    def filter_detections(producer, frame, msg):
-        producer.sendSnap(name="test", frame=frame)
-
-    return filter_detections
-
-
-def test_building_frame_only(snaps_producer_frame_only: SnapsProducerFrameOnly):
-    snaps_producer_frame_only.build(OutputMock())
-
-
-def test_building(snaps_producer: SnapsUploader):
-    snaps_producer.build(OutputMock(), OutputMock())
-
-
-def test_parameter_setting_frame_only(
-    snaps_producer_frame_only: SnapsProducerFrameOnly,
-    recwarn,
-    token: str = "test_token",
-    url: str = "test_url",
-    time_interval: float = 1.0,
-    process_fn: Callable = simple_process_fn_frame_only,
-):
-    # token
-    snaps_producer_frame_only.setToken(token)
-    assert not recwarn.list, "Unexpected warnings raised on .setToken"
-    with pytest.raises(ValueError):
-        snaps_producer_frame_only.setToken(1)
-
-    # url
-    snaps_producer_frame_only.setUrl(url)
-    assert not recwarn.list, "Unexpected warnings raised on .setUrl"
-    with pytest.raises(ValueError):
-        snaps_producer_frame_only.setUrl(1)
-
-    # time_interval
-    snaps_producer_frame_only.setTimeInterval(time_interval)
-    assert snaps_producer_frame_only.time_interval == time_interval
-    snaps_producer_frame_only.setTimeInterval(int(time_interval))
-    assert snaps_producer_frame_only.time_interval == int(time_interval)
-    with pytest.raises(ValueError):
-        snaps_producer_frame_only.setTimeInterval("not an integer or float")
-
-    # process_fn
-    snaps_producer_frame_only.setProcessFn(process_fn)
-    with pytest.raises(ValueError):
-        snaps_producer_frame_only.setProcessFn("not a function")
-    with pytest.raises(ValueError):
-        snaps_producer_frame_only.setProcessFn(None)
-
-
-def test_parameter_setting(
-    snaps_producer: SnapsUploader,
-    recwarn,
-    token: str = "test_token",
-    url: str = "test_url",
-    time_interval: float = 1.0,
-    process_fn: Callable = simple_process_fn,
-):
-    # token
-    snaps_producer.setToken(token)
-    assert not recwarn.list, "Unexpected warnings raised on .setToken"
-    with pytest.raises(ValueError):
-        snaps_producer.setToken(1)
-
-    # url
-    snaps_producer.setUrl(url)
-    assert not recwarn.list, "Unexpected warnings raised on .setUrl"
-    with pytest.raises(ValueError):
-        snaps_producer.setUrl(1)
-
-    # time_interval
-    snaps_producer.setTimeInterval(time_interval)
-    assert snaps_producer.time_interval == time_interval
-    snaps_producer.setTimeInterval(int(time_interval))
-    assert snaps_producer.time_interval == int(time_interval)
-    with pytest.raises(ValueError):
-        snaps_producer.setTimeInterval("not an integer or float")
-
-    # process_fn
-    snaps_producer.setProcessFn(process_fn)
-    with pytest.raises(ValueError):
-        snaps_producer.setProcessFn("not a function")
-    with pytest.raises(ValueError):
-        snaps_producer.setProcessFn(None)
-
-
-def test_processing_frame_only(
-    snaps_producer_frame_only: SnapsProducerFrameOnly,
-    duration: float,
-    caplog,
-):
-    o_snaps = OutputMock()
-    snaps_producer_frame_only.build(o_snaps, time_interval=LOG_INTERVAL)
-    q_snaps = o_snaps.createOutputQueue()
-
-    start_time = time.time()
-    last_log_time = time.time()
-    while time.time() - start_time < duration:
-        if time.time() - last_log_time > LOG_INTERVAL:
-            print(
-                f"Test running... {time.time() - start_time:.1f}s elapsed, {duration - time.time() + start_time:.1f}s remaining"
-            )
-            last_log_time = time.time()
-
-            frame = create_img_frame(FRAME)
-            q_snaps.send(frame)
-
-            with caplog.at_level("INFO"):
-                snaps_producer_frame_only.process(q_snaps.get())
-
-            snaps_producer_frame_only._logger.info.assert_called_with(
-                "Snap `frame` sent"
-            )
-
-
-def test_processing_frame_only_custom_process_fn(
-    snaps_producer_frame_only: SnapsProducerFrameOnly,
-    simple_process_fn_frame_only: Callable,
-    duration: float,
-    caplog,
-):
-    o_snaps = OutputMock()
-    snaps_producer_frame_only.build(
-        o_snaps, time_interval=LOG_INTERVAL, process_fn=simple_process_fn_frame_only
+def snap_data(frame, detections) -> SnapData:
+    return SnapData(
+        snap_name="test_snap",
+        file_name="test_snap_001.jpg",
+        frame=frame,
+        detections=detections,
+        tags=["low_conf"],
+        extras={"reason": "unit_test"},
     )
-    q_snaps = o_snaps.createOutputQueue()
-
-    start_time = time.time()
-    last_log_time = time.time()
-    while time.time() - start_time < duration:
-        if time.time() - last_log_time > LOG_INTERVAL:
-            print(
-                f"Test running... {time.time() - start_time:.1f}s elapsed, {duration - time.time() + start_time:.1f}s remaining"
-            )
-            last_log_time = time.time()
-
-            frame = create_img_frame(FRAME)
-            q_snaps.send(frame)
-
-            with caplog.at_level("INFO"):
-                snaps_producer_frame_only.process(q_snaps.get())
-
-            snaps_producer_frame_only._logger.info.assert_called_with(
-                "Snap `test` sent"
-            )
 
 
-def test_processing(
-    snaps_producer: SnapsUploader,
-    duration: float,
-    caplog,
-):
-    o_snaps_frame = OutputMock()
-    o_snaps_msg = OutputMock()
-    snaps_producer.build(o_snaps_frame, o_snaps_msg, time_interval=LOG_INTERVAL)
-    q_snaps_frame = o_snaps_frame.createOutputQueue()
-    q_snaps_msg = o_snaps_msg.createOutputQueue()
-
-    start_time = time.time()
-    last_log_time = time.time()
-    while time.time() - start_time < duration:
-        if time.time() - last_log_time > LOG_INTERVAL:
-            print(
-                f"Test running... {time.time() - start_time:.1f}s elapsed, {duration - time.time() + start_time:.1f}s remaining"
-            )
-            last_log_time = time.time()
-
-            frame = create_img_frame(FRAME)
-            q_snaps_frame.send(frame)
-            detection = create_img_detection()
-            q_snaps_msg.send(detection)
-
-            with caplog.at_level("INFO"):
-                snaps_producer.process(q_snaps_frame.get(), q_snaps_msg.get())
-
-            snaps_producer._logger.info.assert_called_with("Snap `frame` sent")
+@pytest.fixture
+def uploader() -> SnapsUploader:
+    uploader = SnapsUploader()
+    uploader._logger = MagicMock()
+    uploader._em = MagicMock()
+    return uploader
 
 
-def test_processing_custom_process_fn(
-    snaps_producer: SnapsUploader,
-    simple_process_fn: Callable,
-    duration: float,
-    caplog,
-):
-    o_snaps_frame = OutputMock()
-    o_snaps_msg = OutputMock()
-    snaps_producer.build(
-        o_snaps_frame,
-        o_snaps_msg,
-        time_interval=LOG_INTERVAL,
-        process_fn=simple_process_fn,
-    )
-    q_snaps_frame = o_snaps_frame.createOutputQueue()
-    q_snaps_msg = o_snaps_msg.createOutputQueue()
-
-    start_time = time.time()
-    last_log_time = time.time()
-    while time.time() - start_time < duration:
-        if time.time() - last_log_time > LOG_INTERVAL:
-            print(
-                f"Test running... {time.time() - start_time:.1f}s elapsed, {duration - time.time() + start_time:.1f}s remaining"
-            )
-            last_log_time = time.time()
-
-            frame = create_img_frame(FRAME)
-            q_snaps_frame.send(frame)
-            detection = create_img_detection()
-            q_snaps_msg.send(detection)
-
-            with caplog.at_level("INFO"):
-                snaps_producer.process(q_snaps_frame.get(), q_snaps_msg.get())
-
-            snaps_producer._logger.info.assert_called_with("Snap `test` sent")
+def test_build(uploader):
+    mock_output = OutputMock()
+    uploader.build(mock_output)
 
 
-def test_partial_process_fn(
-    snaps_producer_frame_only: SnapsProducerFrameOnly,
-    duration: float,
-    caplog,
-):
-    def partial_process_fn(
-        producer: SnapsProducerFrameOnly, frame: dai.ImgFrame, threshold: float
-    ):
-        if frame.getWidth() > threshold:
-            producer.sendSnap("threshold_snap", frame)
+def test_set_token_and_url(monkeypatch):
+    uploader = SnapsUploader()
 
-    o_snaps = OutputMock()
-    snaps_producer_frame_only.build(
-        o_snaps,
-        time_interval=LOG_INTERVAL,
-        process_fn=partial(partial_process_fn, threshold=1),
-    )
-    q_snaps = o_snaps.createOutputQueue()
+    uploader.set_token("test_token")
+    assert os.environ["DEPTHAI_HUB_API_KEY"] == "test_token"
 
-    start_time = time.time()
-    last_log_time = time.time()
-    while time.time() - start_time < duration:
-        if time.time() - last_log_time > LOG_INTERVAL:
-            print(
-                f"Test running... {time.time() - start_time:.1f}s elapsed, {duration - time.time() + start_time:.1f}s remaining"
-            )
-            last_log_time = time.time()
+    uploader.set_url("test-url")
+    assert os.environ["DEPTHAI_HUB_EVENTS_BASE_URL"] == "test-url"
 
-            frame = create_img_frame(FRAME)
-            q_snaps.send(frame)
+    # Repeated calls shouldn't overwrite (uses setdefault)
+    uploader.set_token("new_token")
+    assert os.environ["DEPTHAI_HUB_API_KEY"] == "test_token"
 
-            with caplog.at_level("INFO"):
-                snaps_producer_frame_only.process(q_snaps.get())
 
-            snaps_producer_frame_only._logger.info.assert_called_with(
-                "Snap `threshold_snap` sent"
-            )
+def test_process_success(uploader, snap_data):
+    """Test successful snap upload."""
+    uploader._em.sendSnap.return_value = True
+
+    uploader.process(snap_data)
+
+    uploader._em.sendSnap.assert_called_once()
+    uploader._logger.info.assert_called_with("Snap 'test_snap' sent successfully.")
+
+
+def test_process_failure(uploader, snap_data):
+    """Test failed snap upload logging."""
+    uploader._em.sendSnap.return_value = False
+
+    uploader.process(snap_data)
+
+    uploader._logger.error.assert_called_with("Failed to send snap 'test_snap'.")
+
+
+def test_process_invalid_type(uploader):
+    """Should raise if message is not SnapData."""
+    with pytest.raises(AssertionError):
+        uploader.process(dai.Buffer())
+
+
+def test_environment_variable_setting(monkeypatch):
+    """Test that set_token and set_url correctly set environment variables."""
+    monkeypatch.delenv("DEPTHAI_HUB_API_KEY", raising=False)
+    monkeypatch.delenv("DEPTHAI_HUB_EVENTS_BASE_URL", raising=False)
+
+    uploader = SnapsUploader()
+    uploader.set_token("my_token")
+    uploader.set_url("my_url")
+
+    assert os.environ["DEPTHAI_HUB_API_KEY"] == "my_token"
+    assert os.environ["DEPTHAI_HUB_EVENTS_BASE_URL"] == "my_url"
