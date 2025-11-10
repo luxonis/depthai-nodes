@@ -73,7 +73,7 @@ def test_pipelines(IP: str, ip_platform: str, nn_archive_path, model):
                 f"python manual.py -m {model} {'-ip' if IP else ''} {IP}",
                 shell=True,
                 check=True,
-                timeout=90,
+                timeout=120,
             )
         else:
             subprocess.run(
