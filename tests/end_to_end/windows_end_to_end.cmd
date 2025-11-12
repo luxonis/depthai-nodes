@@ -58,6 +58,7 @@ set "HUBAI_API_KEY=%HUBAI_API_KEY%"
 set "BRANCH=%BRANCH%"
 set "FLAGS=%FLAGS%"
 set "DEPTHAI_NODES_LEVEL=debug"
+set "DEPTHAI_DEBUG=1"
 
 echo [*] Recreating %DEST%
 rmdir /S /Q "%TEMP%\depthai-nodes" 2>nul
