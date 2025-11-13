@@ -21,6 +21,10 @@ if args.model:
         logger.warning("XFeat model is not supported in this test.")
         exit(8)
 
+    if "convnext" in args.model:
+        logger.warning("ConvNext model is not supported in this test.")
+        exit(8)
+
 if not (args.nn_archive or args.model):
     raise ValueError("You have to pass either path to NNArchive or model.")
 
