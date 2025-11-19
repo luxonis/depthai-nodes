@@ -25,7 +25,7 @@ class SnapData(dai.Buffer):
     def __init__(
         self,
         snap_name: str,
-        frame: dai.ImgFrame,
+        frame: dai.ImgFrame | dai.EncodedFrame,
         file_name: str = "",
         detections: Optional[dai.ImgDetections] = None,
         tags: Optional[List[str]] = None,
