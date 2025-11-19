@@ -1,9 +1,12 @@
+import logging
 import os
 
 import depthai as dai
 
 from depthai_nodes.message import SnapData
 from depthai_nodes.node.base_host_node import BaseHostNode
+
+logger = logging.getLogger(__name__)
 
 
 class SnapsUploader(BaseHostNode):
@@ -27,18 +30,23 @@ class SnapsUploader(BaseHostNode):
     def process(self, snap: dai.Buffer):
         assert isinstance(snap, SnapData), f"Expected SnapData, got {type(snap)}"
 
-        self._logger.debug(f"Sending snap: {snap.snap_name} -> {snap.file_name}")
-
+        logger.debug(f"Sending snap: {snap.snap_name} -> {snap.file_name}")
+        fileGroup = dai.FileGroup()
+        if snap.detections:
+            fileGroup.addImageDetectionsPair(
+                snap.file_name,
+                snap.frame,
+                snap.detections
+            )
+        else:
+            fileGroup.addFile(snap.file_name, snap.frame)
         success = self._em.sendSnap(
             name=snap.snap_name,
-            fileName=snap.file_name,
-            imgFrame=snap.frame,
-            imgDetections=snap.detections,
+            fileGroup=fileGroup,
             tags=snap.tags,
             extras=snap.extras,
         )
-
         if success:
-            self._logger.info(f"Snap '{snap.snap_name}' sent successfully.")
+            logger.info(f"Snap '{snap.snap_name}' sent successfully.")
         else:
-            self._logger.error(f"Failed to send snap '{snap.snap_name}'.")
+            logger.error(f"Failed to send snap '{snap.snap_name}'.")
