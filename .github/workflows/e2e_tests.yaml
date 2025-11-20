@@ -45,7 +45,6 @@ on:
   push:
     branches:
       - main
-      - bump_python_e2e
     paths:
       - 'depthai_nodes/**'
       - 'tests/end_to_end/**'
