@@ -7,7 +7,7 @@ WORKDIR /app
 # Install git
 RUN apt-get update && apt-get install -y git
 
-RUN apt install libgl1-mesa-glx -y
+RUN apt install libgl1 -y
 RUN apt-get install ffmpeg libsm6 libxext6  -y
 
 # Clone the depthai-nodes repository
