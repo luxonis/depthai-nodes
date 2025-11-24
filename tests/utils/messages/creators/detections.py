@@ -50,7 +50,7 @@ def create_img_detections(
     """
     img_dets = dai.ImgDetections()
     img_dets.detections = [
-        create_img_detection(bbox.tolist(), label.item(), label_name,  score.item())
+        create_img_detection(bbox.tolist(), label.item(), label_name, score.item())
         for bbox, label, label_name, score in zip(bboxs, labels, label_names, scores)
     ]
     img_dets.setTimestamp(timestamp)
