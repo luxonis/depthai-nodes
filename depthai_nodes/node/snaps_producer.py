@@ -141,7 +141,7 @@ class SnapsProducerFrameOnly(BaseHostNode):
         self,
         name: str,
         frame: dai.ImgFrame,
-        data: List[dai.EventData] = [],  # noqa: B006
+        data=[],  # noqa: B006
         tags: List[str] = [],  # noqa: B006
         extra_data: Dict[str, str] = {},  # noqa: B006
         device_serial_num: str = "",
