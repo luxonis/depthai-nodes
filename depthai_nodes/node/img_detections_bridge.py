@@ -27,7 +27,7 @@ class ImgDetectionsBridge(BaseHostNode):
         self._ignore_angle = True
         self._logger.debug("ImgDetectionsBridge initialized")
 
-    def setIgnoreAngle(self, ignore_angle: bool) -> bool:
+    def setIgnoreAngle(self, ignore_angle: bool) -> None:
         """Sets whether to ignore the angle of the detections during transformation.
 
         @param ignore_angle: Whether to ignore the angle of the detections.
