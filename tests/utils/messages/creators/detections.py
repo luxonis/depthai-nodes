@@ -13,6 +13,7 @@ from .constants import ARRAYS, DETECTIONS
 def create_img_detection(
     bbox: List[float] = DETECTIONS["bboxes"][0],
     label: int = DETECTIONS["labels"][0],
+    label_name: str = DETECTIONS["label_names"][0],
     score: float = DETECTIONS["scores"][0],
 ):
     """Creates a dai.ImgDetection object.
@@ -27,6 +28,7 @@ def create_img_detection(
     img_det = dai.ImgDetection()
     img_det.xmin, img_det.ymin, img_det.xmax, img_det.ymax = bbox
     img_det.label = label
+    img_det.labelName = label_name
     img_det.confidence = score
     return img_det
 
@@ -34,6 +36,7 @@ def create_img_detection(
 def create_img_detections(
     bboxs: np.ndarray = DETECTIONS["bboxes"],
     labels: np.ndarray = DETECTIONS["labels"],
+    label_names: list[str] = DETECTIONS["label_names"],
     scores: np.ndarray = DETECTIONS["scores"],
     timestamp: int = timedelta(days=1, hours=1, minutes=1, seconds=1, milliseconds=0),
 ):
@@ -47,8 +50,8 @@ def create_img_detections(
     """
     img_dets = dai.ImgDetections()
     img_dets.detections = [
-        create_img_detection(bbox.tolist(), label.item(), score.item())
-        for bbox, label, score in zip(bboxs, labels, scores)
+        create_img_detection(bbox.tolist(), label.item(), label_name,  score.item())
+        for bbox, label, label_name, score in zip(bboxs, labels, label_names, scores)
     ]
     img_dets.setTimestamp(timestamp)
     return img_dets
@@ -57,6 +60,7 @@ def create_img_detections(
 def create_img_detection_extended(
     bbox: np.ndarray = DETECTIONS["bboxes"][0],
     label: np.ndarray = DETECTIONS["labels"][0],
+    label_name: str = DETECTIONS["label_names"][0],
     score: np.ndarray = DETECTIONS["scores"][0],
 ):
     """Creates a ImgDetectionExtended object.
@@ -74,6 +78,7 @@ def create_img_detection_extended(
     width = xmax - xmin
     height = ymax - ymin
     img_det_ext.label = label.item()
+    img_det_ext.label_name = label_name
     img_det_ext.confidence = score.item()
     img_det_ext.rotated_rect = (x_center, y_center, width, height, 0)
     return img_det_ext
@@ -84,6 +89,7 @@ def create_img_detections_extended(
     scores: np.ndarray = DETECTIONS["scores"],
     angles: np.ndarray = DETECTIONS["angles"],
     labels: np.ndarray = DETECTIONS["labels"],
+    label_names: list[str] = DETECTIONS["label_names"],
     keypoints: np.ndarray = DETECTIONS["keypoints"],
     keypoints_scores: np.ndarray = DETECTIONS["keypoints_scores"],
     masks: np.ndarray = ARRAYS["2d"],
@@ -93,6 +99,7 @@ def create_img_detections_extended(
         scores=scores,
         angles=angles,
         labels=labels,
+        label_names=label_names,
         keypoints=keypoints,
         keypoints_scores=keypoints_scores,
         masks=masks,
