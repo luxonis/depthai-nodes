@@ -88,8 +88,6 @@ Parser nodes are used to parse the output of a neural network. The main purpose 
 ### Data Management
 
 - `GatherData`: A node for gathering data. Gathers n messages based on reference_data. To determine n, wait_count_fn function is used. The default wait_count_fn function is waiting for len(TReference.detection). This means the node works out-of-the-box with dai.ImgDetections and ImgDetectionsExtended. Sends out `depthai_nodes.message.GatheredData` message.
-- `SnapsProducer`: A host node that helps with creating and sending snaps. If you only have frame as input consider using `SnapsProducerFrameOnly` node instead. Does not send out any messages.
-- `SnapsProducerFrameOnly`: A host node that helps with creating and sending snaps. If you also have additional message as input (e.g. detections) consider using `SnapsProducer` node instead. Does not send out any messages.
 
 ## Usage
 
