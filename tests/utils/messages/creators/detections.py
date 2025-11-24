@@ -36,7 +36,7 @@ def create_img_detection(
 def create_img_detections(
     bboxs: np.ndarray = DETECTIONS["bboxes"],
     labels: np.ndarray = DETECTIONS["labels"],
-    label_names: list[str] = DETECTIONS["label_names"],
+    label_names: List[str] = DETECTIONS["label_names"],
     scores: np.ndarray = DETECTIONS["scores"],
     timestamp: int = timedelta(days=1, hours=1, minutes=1, seconds=1, milliseconds=0),
 ):
@@ -89,7 +89,7 @@ def create_img_detections_extended(
     scores: np.ndarray = DETECTIONS["scores"],
     angles: np.ndarray = DETECTIONS["angles"],
     labels: np.ndarray = DETECTIONS["labels"],
-    label_names: list[str] = DETECTIONS["label_names"],
+    label_names: List[str] = DETECTIONS["label_names"],
     keypoints: np.ndarray = DETECTIONS["keypoints"],
     keypoints_scores: np.ndarray = DETECTIONS["keypoints_scores"],
     masks: np.ndarray = ARRAYS["2d"],
