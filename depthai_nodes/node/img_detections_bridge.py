@@ -25,7 +25,6 @@ class ImgDetectionsBridge(BaseHostNode):
         self._logger = get_logger()
         self._log = True
         self._ignore_angle = True
-        self._label_encoding = {}
         self._logger.debug("ImgDetectionsBridge initialized")
 
     def setIgnoreAngle(self, ignore_angle: bool) -> bool:
@@ -38,18 +37,6 @@ class ImgDetectionsBridge(BaseHostNode):
             raise ValueError("ignore_angle must be a boolean.")
         self._ignore_angle = ignore_angle
         self._logger.debug(f"Ignore angle set to {self._ignore_angle}")
-
-    def setLabelEncoding(self, label_encoding: Dict[int, str]) -> None:
-        """Sets the label encoding.
-
-        @param label_encoding: The label encoding with labels as keys and label names as
-            values.
-        @type label_encoding: Dict[int, str]
-        """
-        if not isinstance(label_encoding, Dict):
-            raise ValueError("label_encoding must be a dictionary.")
-        self._label_encoding = label_encoding
-        self._logger.debug(f"Label encoding set to {self._label_encoding}")
 
     def build(
         self,
@@ -126,9 +113,6 @@ class ImgDetectionsBridge(BaseHostNode):
             detection_transformed = ImgDetectionExtended()
             detection_transformed.label = detection.label
             detection_transformed.label_name = detection.labelName
-            label_name = self._label_encoding.get(detection.label)
-            if label_name is not None:
-                detection_transformed.label_name = label_name
             detection_transformed.confidence = detection.confidence
             x_center = (detection.xmin + detection.xmax) / 2
             y_center = (detection.ymin + detection.ymax) / 2
