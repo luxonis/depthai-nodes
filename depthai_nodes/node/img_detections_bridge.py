@@ -125,6 +125,7 @@ class ImgDetectionsBridge(BaseHostNode):
         for detection in img_dets.detections:
             detection_transformed = ImgDetectionExtended()
             detection_transformed.label = detection.label
+            detection_transformed.label_name = detection.labelName
             label_name = self._label_encoding.get(detection.label)
             if label_name is not None:
                 detection_transformed.label_name = label_name
@@ -143,7 +144,6 @@ class ImgDetectionsBridge(BaseHostNode):
             detections_transformed.append(detection_transformed)
 
         img_dets_ext.detections = detections_transformed
-
         return img_dets_ext
 
     def _img_det_ext_to_img_det(
@@ -160,6 +160,7 @@ class ImgDetectionsBridge(BaseHostNode):
             detection_transformed = dai.ImgDetection()
             if detection.label >= 0:
                 detection_transformed.label = detection.label
+                detection_transformed.labelName = detection.label_name
             detection_transformed.confidence = detection.confidence
             if not self._ignore_angle and detection.rotated_rect.angle != 0:
                 raise NotImplementedError(
