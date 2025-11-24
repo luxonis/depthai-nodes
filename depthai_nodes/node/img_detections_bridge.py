@@ -42,7 +42,6 @@ class ImgDetectionsBridge(BaseHostNode):
         self,
         msg: dai.Node.Output,
         ignore_angle: bool = True,
-        label_encoding: Optional[Dict[int, str]] = None,
     ) -> "ImgDetectionsBridge":
         """Configures the node connections.
 
@@ -50,18 +49,13 @@ class ImgDetectionsBridge(BaseHostNode):
         @type msg: dai.Node.Output
         @param ignore_angle: Whether to ignore the angle of the detections.
         @type ignore_angle: bool
-        @param label_encoding: The label encoding with labels as keys and label names as
-            values.
-        @type label_encoding: Dict[int, str]
         @return: The node object with the transformed ImgDetections object.
         @rtype: ImgDetectionsBridge
         """
         self.link_args(msg)
         self.setIgnoreAngle(ignore_angle)
-        if label_encoding is not None:
-            self.setLabelEncoding(label_encoding)
         self._logger.debug(
-            f"ImgDetectionsBridge built with ignore_angle={ignore_angle}, label_encoding={label_encoding}"
+            f"ImgDetectionsBridge built with ignore_angle={ignore_angle}"
         )
         return self
 
