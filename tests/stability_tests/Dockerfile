@@ -1,5 +1,5 @@
-# Use the official Python 3.8 image from the Docker Hub
-FROM python:3.8-slim
+# Use the official Python 3.12 image from the Docker Hub
+FROM python:3.12-slim
 
 # Set the working directory
 WORKDIR /app
@@ -7,7 +7,7 @@ WORKDIR /app
 # Install git
 RUN apt-get update && apt-get install -y git
 
-RUN apt install libgl1-mesa-glx -y
+RUN apt install libgl1 -y
 RUN apt-get install ffmpeg libsm6 libxext6  -y
 
 # Clone the depthai-nodes repository

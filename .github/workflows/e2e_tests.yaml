@@ -23,13 +23,25 @@ on:
         required: true
         default: 'main'
       depthai-version:
-        description: 'Version of depthai to install. Default: 3.0.0rc4'
+        description: 'Version of depthai to install. Default: 3.1.0'
         required: true
-        default: '3.0.0rc4'
+        default: '3.1.0'
       platform:
         description: 'Platform to use for testing. By default both RVC2 and RVC4 are used but you can use only one by passing only `rvc2` or `rvc4`(use lowercase).'
         default: "all"
         required: false
+      select-os:
+        description: 'Select which os to tests when dispatching'
+        type: choice
+        required: true
+        default: all
+        options:
+          - all
+          - linux-only
+          - windows-only
+      additional_options:
+        required: false
+        type: string
   push:
     branches:
       - main
@@ -48,7 +60,10 @@ jobs:
         run: echo ${{ github.event.inputs.distinct_id }}
   HIL-test:
     runs-on: ['self-hosted', 'testbed-runner']
-
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' &&
+       (github.event.inputs.select-os == 'all' || github.event.inputs.select-os == 'linux-only'))
     strategy:
       matrix:
         platform: ${{ fromJSON(github.event_name == 'workflow_dispatch' && (github.event.inputs.platform == 'all' && '["rvc2", "rvc4"]' || format('["{0}"]', github.event.inputs.platform)) || '["rvc2", "rvc4"]') }}
@@ -77,11 +92,56 @@ jobs:
               RESERVATION_OPTION="--reservation-name $RESERVATION_NAME"
             fi
 
+            if [[ -n "${{ github.event.inputs.additional_options }}" ]]; then
+              ADDITIONAL_OPTIONS="${{ github.event.inputs.additional_options }}"
+            fi
+
             if [[ "${{ github.event.inputs.bom_mode }}" == 'true' ]]; then
-              exec hil_runner --hold-reservation --models 'oak4_s or oak4_pro or oak4_d' --wait $RESERVATION_OPTION --dockerfile ./tests/end_to_end/Dockerfile --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=${{ github.event.inputs.depthai-version }} --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=${{ github.event.inputs.depthai-nodes-version }} --env FLAGS=\"${{ github.event.inputs.additional-parameter }} -v ${{ github.event.inputs.depthai-nodes-version }} --platform ${{ matrix.platform }}\""
+              exec hil_runner --hold-reservation $ADDITIONAL_OPTIONS --models 'oak4_s or oak4_pro or oak4_d' --wait $RESERVATION_OPTION --dockerfile ./tests/end_to_end/Dockerfile --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=${{ github.event.inputs.depthai-version }} --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=${{ github.event.inputs.depthai-nodes-version }} --env FLAGS=\"${{ github.event.inputs.additional-parameter }} -v ${{ github.event.inputs.depthai-nodes-version }} --platform ${{ matrix.platform }}\""
             else
               exec hil_runner --platforms ${{ matrix.platform }} --wait $RESERVATION_OPTION --before-docker-pull "echo ${{secrets.GHCR_PAT}} | docker login ghcr.io -u ${{secrets.GHCR_USER}} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=${{ github.event.inputs.depthai-version }} --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=${{ github.event.inputs.depthai-nodes-version }} --env FLAGS=\"${{ github.event.inputs.additional-parameter }} -v ${{ github.event.inputs.depthai-nodes-version }} --platform ${{ matrix.platform }}\""
             fi
           else
-            exec hil_runner --platforms ${{ matrix.platform }} --wait --reservation-name $RESERVATION_NAME --before-docker-pull "echo ${{secrets.GHCR_PAT}} | docker login ghcr.io -u ${{secrets.GHCR_USER}} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=\"3.0.0rc4\" --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=\"main\" --env FLAGS=\"-all --platform ${{ matrix.platform }}\""
+            exec hil_runner --platforms ${{ matrix.platform }} --wait --reservation-name $RESERVATION_NAME --before-docker-pull "echo ${{secrets.GHCR_PAT}} | docker login ghcr.io -u ${{secrets.GHCR_USER}} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=\"3.1.0\" --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=${{ github.ref_name}} --env FLAGS=\"-all --platform ${{ matrix.platform }}\""
+          fi
+  
+  HIL-test-windows:
+    runs-on: ['self-hosted', 'testbed-runner']
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' &&
+       (github.event.inputs.select-os == 'all' || github.event.inputs.select-os == 'windows-only'))
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+          cache: pip
+
+      - name: Install HIL
+        run: |
+          pip install hil_framework --upgrade --index-url https://__token__:${{ secrets.GITLAB_TOKEN }}@gitlab.luxonis.com/api/v4/projects/213/packages/pypi/simple
+
+      - name: Run Test
+        run: |
+          export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#windows-rvc4"
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            if [[ -n "${{ github.event.inputs.reservation_name }}" ]]; then
+                RESERVATION_OPTION="--reservation-name ${{ github.event.inputs.reservation_name }}"
+            else
+                RESERVATION_OPTION="--reservation-name $RESERVATION_NAME"
+            fi
+
+            if [[ -n "${{ github.event.inputs.additional_options }}" ]]; then
+                ADDITIONAL_OPTIONS="${{ github.event.inputs.additional_options }}"
+            fi
+            if [[ "${{ github.event.inputs.bom_mode }}" == 'true' ]]; then
+              exec hil_runner --hold-reservation $ADDITIONAL_OPTIONS -os windows --models 'oak4_s or oak4_pro or oak4_d' --wait $RESERVATION_OPTION --commands "rmdir /S /Q depthai-nodes & git clone https://github.com/luxonis/depthai-nodes.git && cd depthai-nodes\tests\end_to_end && windows_end_to_end.cmd ${{ github.event.inputs.depthai-nodes-version }} ${{ secrets.HUBAI_API_KEY }} ${{ secrets.HUBAI_TEAM_SLUG }} ${{ github.event.inputs.depthai-version }} ${{secrets.LUXONIS_EXTRA_INDEX_URL}} rvc4"
+            else
+              exec hil_runner --models 'oak4_s or oak4_pro or oak4_d' --wait $RESERVATION_OPTION -os windows --commands "rmdir /S /Q depthai-nodes & git clone https://github.com/luxonis/depthai-nodes.git && cd depthai-nodes\tests\end_to_end && windows_end_to_end.cmd ${{ github.event.inputs.depthai-nodes-version }} ${{ secrets.HUBAI_API_KEY }} ${{ secrets.HUBAI_TEAM_SLUG }} ${{ github.event.inputs.depthai-version }} ${{secrets.LUXONIS_EXTRA_INDEX_URL}} rvc4"
+            fi
+          else
+            exec hil_runner --models 'oak4_s or oak4_pro or oak4_d' --wait --reservation-name $RESERVATION_NAME -os windows --commands "rmdir /S /Q depthai-nodes & git clone https://github.com/luxonis/depthai-nodes.git && cd depthai-nodes\tests\end_to_end && windows_end_to_end.cmd ${{ github.ref_name}} ${{ secrets.HUBAI_API_KEY }} ${{ secrets.HUBAI_TEAM_SLUG }} 3.1.0 ${{secrets.LUXONIS_EXTRA_INDEX_URL}} rvc4"
           fi

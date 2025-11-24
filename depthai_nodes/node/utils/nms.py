@@ -1,10 +1,16 @@
-from typing import List
+from typing import List, Union
 
 import depthai as dai
 import numpy as np
 
+from depthai_nodes.message.img_detections import ImgDetectionExtended
 
-def nms_detections(detections: List[dai.ImgDetection], conf_thresh=0.3, iou_thresh=0.4):
+
+def nms_detections(
+    detections: List[Union[dai.ImgDetection, ImgDetectionExtended]],
+    conf_thresh=0.3,
+    iou_thresh=0.4,
+):
     """Applies Non-Maximum Suppression (NMS) on a list of dai.ImgDetection objects.
 
     @param detections: List of dai.ImgDetection objects. @type
@@ -16,17 +22,14 @@ def nms_detections(detections: List[dai.ImgDetection], conf_thresh=0.3, iou_thre
     @return: A list of dai.ImgDetection objects after applying NMS.
     @rtype: list[dai.ImgDetection]
     """
-    if len(detections) == 0:
-        return []
-
     # Filter out detections below confidence threshold
-    detections = [det for det in detections if det.confidence >= conf_thresh]
-    if len(detections) == 0:
+    filtered_detections = [det for det in detections if det.confidence >= conf_thresh]
+    if len(filtered_detections) == 0:
         return []
 
     # Organize detections by class
     detections_by_class = {}
-    for det in detections:
+    for det in filtered_detections:
         label = det.label
         if label not in detections_by_class:
             detections_by_class[label] = []
@@ -38,7 +41,10 @@ def nms_detections(detections: List[dai.ImgDetection], conf_thresh=0.3, iou_thre
         scores = []
         for det in dets:
             # Coordinates are normalized between 0 and 1
-            boxes.append([det.xmin, det.ymin, det.xmax, det.ymax])
+            if isinstance(det, dai.ImgDetection):
+                boxes.append([det.xmin, det.ymin, det.xmax, det.ymax])
+            elif isinstance(det, ImgDetectionExtended):
+                boxes.append(det.rotated_rect.getOuterRect())
             scores.append(det.confidence)
 
         boxes = np.array(boxes)

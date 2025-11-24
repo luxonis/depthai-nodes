@@ -1,14 +1,12 @@
-from typing import Tuple
+from typing import List, Tuple, Union
 
-import cv2
 import depthai as dai
 import numpy as np
 
-from depthai_nodes.node.base_host_node import BaseHostNode
-from depthai_nodes.node.utils import to_planar
+from depthai_nodes.logging import get_logger
 
 
-class Tiling(BaseHostNode):
+class Tiling(dai.node.ThreadedHostNode):
     """Manages tiling of input frames for neural network processing, divides frames into
     overlapping tiles based on configuration parameters, and creates ImgFrames for each
     tile to be sent to a neural network node.
@@ -31,19 +29,44 @@ class Tiling(BaseHostNode):
     @type global_detection: bool
     """
 
+    SCRIPT_CONTENT = """
+try:
+    # Get initial configurations that will be sent
+    # for every ImgFrame
+    cfg_count_msg = node.inputs['cfg_count'].get()
+    cfg_count = cfg_count_msg.getData()[0]
+    configs = []
+    for i in range(cfg_count):
+        cfg = node.inputs['cfg'].get()
+        configs.append(cfg)
+
+    while True:
+        frame = node.inputs['preview'].get()
+        for cfg in configs:
+            node.outputs['manip_cfg'].send(cfg)
+            node.outputs['manip_img'].send(frame)
+
+except Exception as e:
+    node.warn(str(e))
+"""
+
     def __init__(self) -> None:
         """Initializes the Tiling node, setting default attributes like overlap, grid
         size, and tile positions."""
         super().__init__()
+        self._logger = get_logger(self.__class__.__name__)
+
+        self._pipeline = self.getParentPipeline()
+
         self.name = "Tiling"
-        self.overlap = None
-        self.grid_size = None
-        self.grid_matrix = None
-        self.nn_shape = None
-        self.x = None  # vector [x,y] of the tile's dimensions
-        self.tile_positions = []
-        self.img_shape = None
-        self.global_detection = False
+
+        self.cropper_image_manip = self._pipeline.create(dai.node.ImageManip)
+        self._script = self._pipeline.create(dai.node.Script)
+        self._script.setScript(self.SCRIPT_CONTENT)
+
+        self._cfg_out = self.createOutput()
+        self._cfg_count = self.createOutput()
+        self._crop_configs: List[dai.ImageManipConfig] = []
         self._logger.debug("Tiling initialized")
 
     def build(
@@ -52,9 +75,10 @@ class Tiling(BaseHostNode):
         img_output: dai.Node.Output,
         grid_size: Tuple,
         img_shape: Tuple,
-        nn_shape: Tuple,
+        nn_shape: Tuple[int, int],
+        resize_mode: dai.ImageManipConfig.ResizeMode,
         global_detection: bool = False,
-        grid_matrix=None,
+        grid_matrix: Union[np.ndarray, List, None] = None,
     ) -> "Tiling":
         """Configures the Tiling node with grid size, overlap, image and neural network
         shapes, and other necessary parameters.
@@ -76,127 +100,74 @@ class Tiling(BaseHostNode):
         @return: Returns self for method chaining.
         @rtype: Tiling
         """
-        self.sendProcessingToPipeline(True)
-        self.link_args(img_output)
-        self.overlap = overlap
-        self.grid_size = grid_size
-        self.grid_matrix = grid_matrix
-        self.nn_shape = nn_shape
-        self.img_shape = img_shape
-        self.global_detection = global_detection
-        self.x = self._calculate_tiles(grid_size, img_shape, overlap)
-        self._compute_tile_positions()
+        self._initCropConfigs(
+            overlap=overlap,
+            grid_size=grid_size,
+            img_shape=img_shape,
+            nn_shape=nn_shape,
+            resize_mode=resize_mode,
+            global_detection=global_detection,
+            grid_matrix=grid_matrix,
+        )
+
+        self._cfg_out.link(self._script.inputs["cfg"])
+        self._cfg_count.link(self._script.inputs["cfg_count"])
+        img_output.link(self._script.inputs["preview"])
+        self._script.outputs["manip_cfg"].link(self.cropper_image_manip.inputConfig)
+        self._script.outputs["manip_img"].link(self.cropper_image_manip.inputImage)
 
         self._logger.debug(
             f"Tiling built with overlap={overlap}, grid_size={grid_size}, img_shape={img_shape}, nn_shape={nn_shape}, global_detection={global_detection}"
         )
-
         return self
 
-    def process(self, img_frame) -> None:
-        """Processes the input frame by cropping and tiling it, and sending each tile to
-        the neural network input.
+    def run(self):
+        """Send configuration to script node."""
+        buff = dai.Buffer()
+        buff.setData(np.array([self.tile_count], dtype=np.uint8))
+        self._cfg_count.send(buff)
 
-        @param img_frame: The frame to be sent to a neural network.
-        @type img_frame: dai.ImgFrame
-        """
-        self._logger.debug("Processing new input")
-        frame: np.ndarray = img_frame.getCvFrame()
+        for cfg in self._crop_configs:
+            self._cfg_out.send(cfg)
 
-        if self.grid_size is None or self.x is None or self.nn_shape is None:
-            raise ValueError("Grid size or tile dimensions are not initialized.")
-        if self.tile_positions is None:
-            raise ValueError("Tile positions are not initialized.")
-
-        for index, tile_info in enumerate(self.tile_positions):
-            x1, y1, x2, y2 = tile_info["coords"]
-            scaled_width, scaled_height = tile_info["scaled_size"]
-            tile = frame[y1:y2, x1:x2]
-            tile_img_frame = self._create_img_frame(
-                tile, img_frame, index, scaled_width, scaled_height
-            )
-            self._logger.debug(f"ImgFrame message {index} created")
-            self.out.send(tile_img_frame)
-            self._logger.debug(f"Message {index} sent successfully")
-
-    def _crop_to_nn_shape(
-        self, frame: np.ndarray, scaled_width: int, scaled_height: int
-    ) -> np.ndarray:
-        """Crops and resizes the input tile to fit the neural network's input shape.
-        Adds padding if necessary to preserve aspect ratio.
-
-        @param frame: The tile to be cropped and resized.
-        @type frame: np.ndarray
-        @param scaled_width: The width of the scaled tile.
-        @type scaled_width: int
-        @param scaled_height: The height of the scaled tile.
-        @type scaled_height: int
-        @return: The padded and resized tile.
-        @rtype: np.ndarray
-        """
-        if self.nn_shape is None:
-            raise ValueError("NN shape is not initialized.")
-        frame_resized = cv2.resize(
-            frame, (scaled_width, scaled_height), interpolation=cv2.INTER_NEAREST
-        )
-        frame_padded = np.zeros((self.nn_shape[1], self.nn_shape[0], 3), dtype=np.uint8)
-
-        x_offset = (self.nn_shape[0] - scaled_width) // 2
-        y_offset = (self.nn_shape[1] - scaled_height) // 2
-        frame_padded[
-            y_offset : y_offset + scaled_height, x_offset : x_offset + scaled_width
-        ] = frame_resized
-
-        return frame_padded
-
-    def _create_img_frame(
+    def _initCropConfigs(
         self,
-        tile: np.ndarray,
-        frame: dai.ImgFrame,
-        tile_index: int,
-        scaled_width: int,
-        scaled_height: int,
-    ) -> dai.ImgFrame:
-        """Creates an ImgFrame from the cropped tile and prepares it for input into the
-        neural network. This ImgFrame contains the tiled image in a planar format ready
-        for inference.
+        overlap: float,
+        grid_size: Tuple,
+        img_shape: Tuple,
+        nn_shape: Tuple[int, int],
+        resize_mode: dai.ImageManipConfig.ResizeMode,
+        global_detection: bool = False,
+        grid_matrix: Union[np.ndarray, List, None] = None,
+    ):
+        """Initializes the ImgManipConfig cropping configurations for the tiles."""
+        tile_positions = self._computeTilePositions(
+            overlap=overlap,
+            grid_size=grid_size,
+            img_shape=img_shape,
+            grid_matrix=grid_matrix,
+            global_detection=global_detection,
+        )
+        self._crop_configs = self._generateManipConfigs(
+            tile_positions, nn_shape, resize_mode
+        )
 
-        @param tile: The cropped tile.
-        @type tile: np.ndarray
-        @param frame: The original ImgFrame object, providing metadata such as
-            timestamps.
-        @param tile_index: Index of the current tile.
-        @type tile_index: int
-        @param scaled_width: Width of the scaled tile.
-        @type scaled_width: int
-        @param scaled_height: Height of the scaled tile.
-        @type scaled_height: int
-        @return: The ImgFrame object with the tile data, ready for neural network
-            inference.
-        @rtype: dai.ImgFrame
-        """
-        if self.nn_shape is None:
-            raise ValueError("NN shape is not initialized.")
-        tile_padded = self._crop_to_nn_shape(tile, scaled_width, scaled_height)
+    def _getManipConfig(
+        self,
+        tile_info: Tuple[int, int, int, int],
+        nn_shape: Tuple[int, int],
+        resize_mode: dai.ImageManipConfig.ResizeMode,
+    ) -> dai.ImageManipConfig:
+        x1, y1, x2, y2 = tile_info
+        w = x2 - x1
+        h = y2 - y1
 
-        planar_tile = to_planar(tile_padded, self.nn_shape)
+        cfg = dai.ImageManipConfig()
+        cfg.addCrop(x1, y1, w, h)
+        cfg.setOutputSize(nn_shape[0], nn_shape[1], resize_mode)
+        return cfg
 
-        img_frame = dai.ImgFrame()
-        img_frame.setData(planar_tile)
-        img_frame.setWidth(self.nn_shape[0])
-        img_frame.setHeight(self.nn_shape[1])
-        img_frame.setType(dai.ImgFrame.Type.BGR888p)
-        img_frame.setTimestamp(frame.getTimestamp())
-        img_frame.setTimestampDevice(frame.getTimestampDevice())
-        img_frame.setInstanceNum(frame.getInstanceNum())
-        img_frame.setSequenceNum(tile_index)
-        transformation = frame.getTransformation()
-        if transformation is not None:
-            img_frame.setTransformation(transformation)
-
-        return img_frame
-
-    def _calculate_tiles(
+    def _calculateTiles(
         self, grid_size: Tuple, img_shape: Tuple, overlap: float
     ) -> np.ndarray:
         """Calculates the dimensions (x, y) of each tile given the grid size, image
@@ -228,35 +199,33 @@ class Tiling(BaseHostNode):
 
         return tile_dims
 
-    def _compute_tile_positions(self):
+    def _computeTilePositions(
+        self,
+        overlap: float,
+        grid_size: Tuple,
+        img_shape: Tuple,
+        grid_matrix: Union[np.ndarray, List, None],
+        global_detection: bool,
+    ):
         """Computes and stores the tile positions and their scaled dimensions based on
         the grid matrix and overlap.
 
         This function is responsible for determining how the image is divided into tiles
         and how each tile maps back to the original image coordinates.
         """
-        if (
-            self.grid_size is None
-            or self.overlap is None
-            or self.x is None
-            or self.img_shape is None
-            or self.nn_shape is None
-        ):
-            raise ValueError(
-                "Grid size, overlap, tile dimensions, or image shape not initialized."
-            )
-        if self.grid_matrix is None:
-            n_tiles_w, n_tiles_h = self.grid_size
-            self.grid_matrix = [
+        x = self._calculateTiles(grid_size, img_shape, overlap)
+        if grid_matrix is None:
+            n_tiles_w, n_tiles_h = grid_size
+            grid_matrix = [
                 [j + i * n_tiles_w for j in range(n_tiles_w)] for i in range(n_tiles_h)
             ]
-        if self.grid_size != (len(self.grid_matrix[0]), len(self.grid_matrix)):
+        if grid_size != (len(grid_matrix[0]), len(grid_matrix)):
             raise ValueError("Grid matrix dimensions do not match the grid size.")
 
-        n_tiles_w, n_tiles_h = self.grid_size
-        img_width, img_height = self.img_shape
+        n_tiles_w, n_tiles_h = grid_size
+        img_width, img_height = img_shape
 
-        tile_width, tile_height = self.x
+        tile_width, tile_height = x
 
         # labels to keep track of visited and unvisited tiles (-1 means unvisited)
         labels = [[-1 for _ in range(n_tiles_w)] for _ in range(n_tiles_h)]
@@ -270,14 +239,14 @@ class Tiling(BaseHostNode):
                     continue
 
                 # Start a new component
-                index_value = self.grid_matrix[i][j]
+                index_value = grid_matrix[i][j]
                 queue = [(i, j)]
                 while queue:
                     ci, cj = queue.pop()
                     if labels[ci][cj] != -1:
                         # Already visited, skip
                         continue
-                    if self.grid_matrix[ci][cj] != index_value:
+                    if grid_matrix[ci][cj] != index_value:
                         # Not part of the same component, skip
                         continue
                     # this tile is part of the current component, give it a label
@@ -293,7 +262,7 @@ class Tiling(BaseHostNode):
                         if 0 <= ni < n_tiles_h and 0 <= nj < n_tiles_w:
                             if (
                                 labels[ni][nj] == -1
-                                and self.grid_matrix[ni][nj] == index_value
+                                and grid_matrix[ni][nj] == index_value
                             ):
                                 # this tile is part of the current component, add it to the queue to explore its neighbors
                                 queue.append((ni, nj))
@@ -310,18 +279,10 @@ class Tiling(BaseHostNode):
                     components[comp_id] = []
                 components[comp_id].append((i, j))
 
-        self.tile_positions = []
+        tile_positions = []
         # add a whole image as a tile with index 0 (hence the first to go)
-        if self.global_detection:
-            scale = min(self.nn_shape[0] / img_width, self.nn_shape[1] / img_height)
-            scaled_width = int(img_width * scale)
-            scaled_height = int(img_height * scale)
-            self.tile_positions.append(
-                {
-                    "coords": (0, 0, img_width, img_height),
-                    "scaled_size": (scaled_width, scaled_height),
-                }
-            )
+        if global_detection:
+            tile_positions.append((0, 0, img_width, img_height))
 
         # Compute the bounding box for each component
         for _, positions in components.items():
@@ -331,8 +292,8 @@ class Tiling(BaseHostNode):
             y2_list = []
 
             for i, j in positions:
-                x1_tile = int(j * tile_width * (1 - self.overlap))
-                y1_tile = int(i * tile_height * (1 - self.overlap))
+                x1_tile = int(j * tile_width * (1 - overlap))
+                y1_tile = int(i * tile_height * (1 - overlap))
                 x2_tile = min(int(x1_tile + tile_width), img_width)
                 y2_tile = min(int(y1_tile + tile_height), img_height)
 
@@ -347,20 +308,27 @@ class Tiling(BaseHostNode):
             x2 = max(x2_list)
             y2 = max(y2_list)
 
-            tile_actual_width = x2 - x1
-            tile_actual_height = y2 - y1
+            tile_positions.append((x1, y1, x2, y2))
 
-            # the scaled dimenstion after being resized to fit nn_shape (precomputed and saved for optimization)
-            scale_width = self.nn_shape[0] / tile_actual_width
-            scale_height = self.nn_shape[1] / tile_actual_height
-            scale = min(scale_width, scale_height)
+        return tile_positions
 
-            scaled_width = int(tile_actual_width * scale)
-            scaled_height = int(tile_actual_height * scale)
+    def _generateManipConfigs(
+        self,
+        tile_positions: List[Tuple[int, int, int, int]],
+        nn_shape: Tuple[int, int],
+        resize_mode: dai.ImageManipConfig.ResizeMode,
+    ):
+        """Creates ImageManipConfig from tile positions."""
+        crop_configs = []
+        for tile_info in tile_positions:
+            cfg = self._getManipConfig(tile_info, nn_shape, resize_mode)
+            crop_configs.append(cfg)
+        return crop_configs
 
-            self.tile_positions.append(
-                {
-                    "coords": (x1, y1, x2, y2),
-                    "scaled_size": (scaled_width, scaled_height),
-                }
-            )
+    @property
+    def tile_count(self):
+        return len(self._crop_configs)
+
+    @property
+    def out(self):
+        return self.cropper_image_manip.out
