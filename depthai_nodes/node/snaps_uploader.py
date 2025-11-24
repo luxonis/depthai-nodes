@@ -34,9 +34,7 @@ class SnapsUploader(BaseHostNode):
         fileGroup = dai.FileGroup()
         if snap.detections:
             fileGroup.addImageDetectionsPair(
-                snap.file_name,
-                snap.frame,
-                snap.detections
+                snap.file_name, snap.frame, snap.detections
             )
         else:
             fileGroup.addFile(snap.file_name, snap.frame)
