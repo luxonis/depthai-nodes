@@ -24,7 +24,7 @@ class ImgDetectionsBridge(BaseHostNode):
         super().__init__()
         self._logger = get_logger()
         self._log = True
-        self._ignore_angle = False
+        self._ignore_angle = True
         self._label_encoding = {}
         self._logger.debug("ImgDetectionsBridge initialized")
 
@@ -54,7 +54,7 @@ class ImgDetectionsBridge(BaseHostNode):
     def build(
         self,
         msg: dai.Node.Output,
-        ignore_angle: bool = False,
+        ignore_angle: bool = True,
         label_encoding: Optional[Dict[int, str]] = None,
     ) -> "ImgDetectionsBridge":
         """Configures the node connections.
@@ -163,8 +163,10 @@ class ImgDetectionsBridge(BaseHostNode):
                 detection_transformed.labelName = detection.label_name
             detection_transformed.confidence = detection.confidence
             if not self._ignore_angle and detection.rotated_rect.angle != 0:
-                raise NotImplementedError(
-                    "Unable to transform ImgDetectionsExtended with rotation."
+                raise RuntimeError(
+                    f"Unable to convert ImgDetectionsExtended to ImgDetections "
+                    f"because a detection's rotation angle is not 0: {detection.rotated_rect.angle} "
+                    f"and ignore_angle is {self._ignore_angle}"
                 )
             xmin, ymin, xmax, ymax = detection.rotated_rect.getOuterRect()
             detection_transformed.xmin = xmin
