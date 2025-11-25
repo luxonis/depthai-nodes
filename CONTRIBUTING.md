@@ -41,7 +41,7 @@ To verify that your documentation is formatted correctly, follow these steps:
 ### Editor Support
 
 - **PyCharm** - built in support for generating `epytext` docstrings
-- **Visual Studie Code** - [AI Docify](https://marketplace.visualstudio.com/items?itemName=AIC.docify) extension offers support for `epytext`
+- **Visual Studio Code** - [AI Docify](https://marketplace.visualstudio.com/items?itemName=AIC.docify) extension offers support for `epytext`
 - **NeoVim** - [vim-python-docstring](https://github.com/pixelneo/vim-python-docstring) supports `epytext` style
 
 ## Testing
