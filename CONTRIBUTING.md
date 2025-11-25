@@ -91,7 +91,7 @@ Then run the tests from the `tests/stability_tests` directory:
 python main.py -all --download --duration 2
 ```
 
-This will run the intergration tests for two seconds for each parser. You can specify the duration with `--duration` flag.
+This will run the integration tests for two seconds for each parser. You can specify the duration with `--duration` flag.
 
 ### Running end-to-end tests
 
