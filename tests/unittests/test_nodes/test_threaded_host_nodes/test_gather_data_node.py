@@ -6,9 +6,20 @@ import pytest
 
 from depthai_nodes.message import GatheredData
 from depthai_nodes.node.gather_data import GatherData
-from tests.utils import PipelineMock, create_img_detections
+from tests.utils import OutputMock, PipelineMock, create_img_detections
 
 DIFFERENT_TESTS = 3  # used for stability tests
+
+
+class LinkTrackingOutputMock(OutputMock):
+    """OutputMock that remembers what it was linked to."""
+
+    def __init__(self):
+        super().__init__()
+        self.linked_to = None
+
+    def link(self, node):
+        self.linked_to = node
 
 
 @pytest.fixture
@@ -146,6 +157,33 @@ def test_build(gather_data_generator, fps):
 
     gather_data = gather_data_generator.build(camera_fps=fps)
     assert gather_data is not None
+
+
+def test_build_linking(gather_data_generator, fps):
+    input_data = LinkTrackingOutputMock()
+    input_reference = LinkTrackingOutputMock()
+
+    gather_data = gather_data_generator.build(
+        camera_fps=fps, input_data=input_data, input_reference=input_reference
+    )
+    assert gather_data is not None
+    assert input_data.linked_to is gather_data.input_data
+    assert input_reference.linked_to is gather_data.input_reference
+
+    mock_out = OutputMock()
+    with pytest.raises(ValueError, match="input_data provided"):
+        gather_data_generator.build(
+            camera_fps=fps,
+            input_data=mock_out,
+            input_reference=None,
+        )
+
+    with pytest.raises(ValueError, match="input_reference provided"):
+        gather_data_generator.build(
+            camera_fps=fps,
+            input_data=None,
+            input_reference=mock_out,
+        )
 
 
 def test_run_without_build(gather_data_generator):
