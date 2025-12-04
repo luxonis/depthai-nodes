@@ -31,10 +31,6 @@ PLATFORM="${5:-}"
 shift $(( $# >= 5 ? 5 : $# )) || true
 ADDITIONAL_PARAMETER="${*:-}"
 
-if [[ "${1:-}" == "" ]]; then
-  echo "[*] No branch/version provided; defaulting to BRANCH=main"
-fi
-
 # ---- Basic validation
 [[ -n "$HUBAI_API_KEY" ]]   || { echo "[!] HUBAI_API_KEY is required"; exit 2; }
 [[ -n "$HUBAI_TEAM_SLUG" ]] || { echo "[!] HUBAI_TEAM_SLUG is required"; exit 2; }
