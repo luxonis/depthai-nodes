@@ -24,11 +24,10 @@ class ImgDetectionsBridge(BaseHostNode):
         super().__init__()
         self._logger = get_logger()
         self._log = True
-        self._ignore_angle = False
-        self._label_encoding = {}
+        self._ignore_angle = True
         self._logger.debug("ImgDetectionsBridge initialized")
 
-    def setIgnoreAngle(self, ignore_angle: bool) -> bool:
+    def setIgnoreAngle(self, ignore_angle: bool) -> None:
         """Sets whether to ignore the angle of the detections during transformation.
 
         @param ignore_angle: Whether to ignore the angle of the detections.
@@ -39,23 +38,10 @@ class ImgDetectionsBridge(BaseHostNode):
         self._ignore_angle = ignore_angle
         self._logger.debug(f"Ignore angle set to {self._ignore_angle}")
 
-    def setLabelEncoding(self, label_encoding: Dict[int, str]) -> None:
-        """Sets the label encoding.
-
-        @param label_encoding: The label encoding with labels as keys and label names as
-            values.
-        @type label_encoding: Dict[int, str]
-        """
-        if not isinstance(label_encoding, Dict):
-            raise ValueError("label_encoding must be a dictionary.")
-        self._label_encoding = label_encoding
-        self._logger.debug(f"Label encoding set to {self._label_encoding}")
-
     def build(
         self,
         msg: dai.Node.Output,
-        ignore_angle: bool = False,
-        label_encoding: Optional[Dict[int, str]] = None,
+        ignore_angle: bool = True,
     ) -> "ImgDetectionsBridge":
         """Configures the node connections.
 
@@ -63,18 +49,13 @@ class ImgDetectionsBridge(BaseHostNode):
         @type msg: dai.Node.Output
         @param ignore_angle: Whether to ignore the angle of the detections.
         @type ignore_angle: bool
-        @param label_encoding: The label encoding with labels as keys and label names as
-            values.
-        @type label_encoding: Dict[int, str]
         @return: The node object with the transformed ImgDetections object.
         @rtype: ImgDetectionsBridge
         """
         self.link_args(msg)
         self.setIgnoreAngle(ignore_angle)
-        if label_encoding is not None:
-            self.setLabelEncoding(label_encoding)
         self._logger.debug(
-            f"ImgDetectionsBridge built with ignore_angle={ignore_angle}, label_encoding={label_encoding}"
+            f"ImgDetectionsBridge built with ignore_angle={ignore_angle}"
         )
         return self
 
@@ -125,9 +106,7 @@ class ImgDetectionsBridge(BaseHostNode):
         for detection in img_dets.detections:
             detection_transformed = ImgDetectionExtended()
             detection_transformed.label = detection.label
-            label_name = self._label_encoding.get(detection.label)
-            if label_name is not None:
-                detection_transformed.label_name = label_name
+            detection_transformed.label_name = detection.labelName
             detection_transformed.confidence = detection.confidence
             x_center = (detection.xmin + detection.xmax) / 2
             y_center = (detection.ymin + detection.ymax) / 2
@@ -143,7 +122,6 @@ class ImgDetectionsBridge(BaseHostNode):
             detections_transformed.append(detection_transformed)
 
         img_dets_ext.detections = detections_transformed
-
         return img_dets_ext
 
     def _img_det_ext_to_img_det(
@@ -160,10 +138,13 @@ class ImgDetectionsBridge(BaseHostNode):
             detection_transformed = dai.ImgDetection()
             if detection.label >= 0:
                 detection_transformed.label = detection.label
+                detection_transformed.labelName = detection.label_name
             detection_transformed.confidence = detection.confidence
             if not self._ignore_angle and detection.rotated_rect.angle != 0:
-                raise NotImplementedError(
-                    "Unable to transform ImgDetectionsExtended with rotation."
+                raise RuntimeError(
+                    f"Unable to convert ImgDetectionsExtended to ImgDetections "
+                    f"because a detection's rotation angle is not 0: {detection.rotated_rect.angle} "
+                    f"and ignore_angle is {self._ignore_angle}"
                 )
             xmin, ymin, xmax, ymax = detection.rotated_rect.getOuterRect()
             detection_transformed.xmin = xmin

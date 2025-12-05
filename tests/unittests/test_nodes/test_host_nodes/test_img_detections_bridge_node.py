@@ -82,6 +82,7 @@ def test_processing(
             assert math.isclose(
                 img_det.confidence, img_det_ext.confidence, rel_tol=1e-6
             )
+            assert img_det.labelName == img_det_ext.label_name
 
     start_time = time.time()
     last_log_time = time.time()

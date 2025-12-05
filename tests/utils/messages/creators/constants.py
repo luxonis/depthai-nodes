@@ -34,6 +34,7 @@ DETECTIONS = {
     ),  # three bboxes
     "angles": np.array([0.0, 0.25, 0.75]),
     "labels": np.array([i for i in range(len(CLASSES))]),
+    "label_names": ["cat", "dog", "fish"],
     "scores": np.array(SCORES),
     "keypoints": np.array(
         [
