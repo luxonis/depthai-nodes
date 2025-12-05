@@ -21,7 +21,7 @@ on:
       depthai-nodes-version:
         description: 'Release or branch of depthai nodes we are testing against'
         required: true
-        default: main
+        default: 'main'
       depthai-version:
         description: 'Version of depthai to install. Default: 3.1.0'
         required: true
