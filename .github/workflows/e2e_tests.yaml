@@ -157,7 +157,7 @@ jobs:
       # Backwards compatibility for bom
       - uses: actions/checkout@v4
         with:
-          ref: "mac_tests"
+          ref: "main"
           fetch-depth: 0
 
       - uses: actions/checkout@v4
