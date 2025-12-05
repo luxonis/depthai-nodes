@@ -76,13 +76,19 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     def build(
         self,
         camera_fps: int,
+        input_data: Optional[dai.Node.Output] = None,
+        input_reference: Optional[dai.Node.Output] = None,
         wait_count_fn: Optional[Callable[[TReference], int]] = None,
     ) -> "GatherData[TReference, TGathered]":
         """Builds and configures the GatherData node with the specified parameters.
 
         @param camera_fps: The frames per second (FPS) setting for the camera.
+        @param input_data: Node output that produces the data to be gathered.
+        @param input_reference: Node output that produces the reference messages used to decide how many items to gather.
         @param wait_count_fn: A function that takes a reference and returns how many frames to wait.
         @type camera_fps: int
+        @type input_data: Optional[dai.Node.Output]
+        @type input_reference: Optional[dai.Node.Output]
         @type wait_count_fn: Optional[Callable[[TReference], int]]
 
         @return: The configured GatherData node instance.
@@ -93,11 +99,32 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
             >>> gather_node.build(camera_fps=30)
             >>> def custom_wait(ref): return 2
             >>> gather_node.build(camera_fps=60, wait_count_fn=custom_wait)
+            >>> gather_node.build(camera_fps=60, input_data=img_source, input_reference=detections_source)
         """
         self.set_camera_fps(camera_fps)
         if wait_count_fn is None:
             wait_count_fn = self._default_wait_count_fn
         self.set_wait_count_fn(wait_count_fn)
+
+        if input_data is None and input_reference is not None:
+            raise ValueError(
+                "GatherData.build: input_reference provided but input_data is None. "
+                "Provide both inputs to auto-link, or neither to link manually."
+            )
+
+        if input_data is not None and input_reference is None:
+            raise ValueError(
+                "GatherData.build: input_data provided but input_reference is None. "
+                "Provide both inputs to auto-link, or neither to link manually."
+            )
+
+        if input_data is not None and input_reference is not None:
+            input_data.link(self.input_data)
+            input_reference.link(self.input_reference)
+            self._logger.debug(
+                "Linked input_data and input_reference to GatherData inputs"
+            )
+
         self._logger.debug(f"GatherData built with camera_fps={camera_fps}")
         return self
 
