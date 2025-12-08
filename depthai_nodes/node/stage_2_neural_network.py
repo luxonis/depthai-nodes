@@ -7,7 +7,7 @@ from depthai_nodes.node.base_host_node import BaseHostNode
 from depthai_nodes.node.detection_cropper import DetectionCropper
 from depthai_nodes.node.gather_data import GatherData
 from depthai_nodes.node.parsing_neural_network import ParsingNeuralNetwork
-from depthai_nodes.node.utils.detection_remapping import remap_message
+from depthai_nodes.node.utils.message_remapping import remap_message
 
 
 class Stage2NeuralNetwork(BaseHostNode):
