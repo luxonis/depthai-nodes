@@ -14,8 +14,8 @@ from depthai_nodes.message.map import Map2D
 from depthai_nodes.message.prediction import Predictions
 from depthai_nodes.message.segmentation import SegmentationMask
 from depthai_nodes.node.utils import nms_detections
-from depthai_nodes.node.utils.detection_merging import merge_messages
-from depthai_nodes.node.utils.detection_remapping import remap_message
+from depthai_nodes.node.utils.message_merging import merge_messages
+from depthai_nodes.node.utils.message_remapping import remap_message
 
 
 class TilesPatcher(dai.node.ThreadedHostNode):
@@ -110,6 +110,9 @@ except Exception as e:
         img_frames.link(self._script.inputs["preview"])
         self._script.outputs["transformation"].link(self._img_input)
         nn.link(self._nn_input)
+        self._logger.debug(
+            f"TilesPatcher built with conf_thresh={conf_thresh}, iou_thresh={iou_thresh}"
+        )
         return self
 
     def run(self):
@@ -130,7 +133,7 @@ except Exception as e:
                 assert isinstance(
                     nn_msg, self.SUPPORTED_MESSAGES
                 ), f"Message type {type(nn_msg)} is not supported."
-                if nn_msg.getTimestamp() != img.getTimestamp():
+                if nn_msg.getTimestamp() > img.getTimestamp():
                     last_nn_msg = nn_msg
                     break
                 nn_msgs.append(nn_msg)
@@ -155,6 +158,7 @@ except Exception as e:
 
     def setConfidenceThreshold(self, confidence_threshold: float) -> None:
         self.conf_thresh = confidence_threshold
+        self._logger.debug(f"Confidence threshold set to {self.conf_thresh}")
 
     def _sendOutput(
         self,

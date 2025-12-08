@@ -1,7 +1,7 @@
 import depthai as dai
 
 from depthai_nodes.node.base_host_node import BaseHostNode
-from depthai_nodes.node.utils.detection_remapping import remap_message
+from depthai_nodes.node.utils.message_remapping import remap_message
 
 
 class DetectionsMapper(BaseHostNode):
@@ -31,6 +31,7 @@ except Exception as e:
             raise RuntimeError(
                 "DetectionsMapper node is currently not supported on RVC2."
             )
+        self._logger.debug("Creating Script node")
         self._script = self._pipeline.create(dai.node.Script)
         self._script.setScript(self.SCRIPT_CONTENT)
         self._logger.debug("ImgDetectionsMapper initialized")
@@ -43,6 +44,7 @@ except Exception as e:
             [(dai.DatatypeEnum.ImgFrame, True)]
         )
         self.link_args(self._script.outputs["transformation"], nn_input)
+        self._logger.debug("ImgDetectionsMapper built")
         return self
 
     def process(self, img: dai.ImgFrame, nn: dai.Buffer) -> None:

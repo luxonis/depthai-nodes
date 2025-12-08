@@ -126,6 +126,8 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         @raise ValueError: If tiling is enabled and input_size is not provided.
         @raise ValueError: If NNArchive does not contain input size.
         """
+        if input_size is not None and any([i <= 0 for i in input_size]):
+            raise ValueError("Input size must be positive")
         if enable_tiling:
             if input_size is None:
                 raise ValueError("Input size must be provided for tiling")
@@ -149,6 +151,7 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         else:
             self.detections_filter = None
             self._out = nn_out
+        self._logger.debug("ExtendedNeuralNetwork built")
         return self
 
     def run(self):
@@ -162,8 +165,11 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
     ):
         """Create inner nodes, when tiling is disabled."""
 
+        self._logger.debug("Creating basic pipeline")
+        self._logger.debug("Creating ImageManip node for resizing NN input")
         self.nn_resize = self._pipeline.create(dai.node.ImageManip)
         input.link(self.nn_resize.inputImage)
+        self._logger.debug("Building ParsingNeuralNetwork")
         self.nn = self._pipeline.create(ParsingNeuralNetwork).build(
             self.nn_resize.out, nn_source
         )
@@ -179,6 +185,7 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         self.nn_resize.setMaxOutputFrameSize(nn_w * nn_h * 3)
         self.nn_resize.initialConfig.setFrameType(self._img_frame_type)
 
+        self._logger.debug("Building DetectionsMapper")
         self.img_detections_mapper = self._pipeline.create(DetectionsMapper).build(
             input, self.nn.out
         )
@@ -193,7 +200,9 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
     ):
         """Create inner nodes, when tiling is enabled."""
 
+        self._logger.debug("Creating tiling pipeline")
         self.tiling = self._pipeline.create(Tiling)
+        self._logger.debug("Building ParsingNeuralNetwork")
         self.nn = self._pipeline.create(ParsingNeuralNetwork).build(
             self.tiling.out, nn_source
         )
@@ -204,6 +213,7 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         nn_size = self.nn._nn_archive.getInputSize()
         if nn_size is None:
             raise ValueError("NNArchive does not contain input size")
+        self._logger.debug("Building Tiling")
         self.tiling.build(
             img_output=input,
             img_shape=input_size,
@@ -215,6 +225,7 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
             nn_shape=nn_size,
         )
         self.tiling.setFrameType(self._img_frame_type)
+        self._logger.debug("Building TilesPatcher")
         self.patcher = self._pipeline.create(TilesPatcher).build(
             img_frames=input,
             nn=self.nn.out,
@@ -232,6 +243,7 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         self._tiling_grid_size = grid_size
         if self.tiling is not None:
             self.tiling.setGridSize(grid_size)
+        self._logger.debug(f"Tiling grid size set to {self._tiling_grid_size}")
 
     def setTilingOverlap(self, overlap: float) -> None:
         """Set tile overlap.
@@ -242,6 +254,7 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         self._tiling_overlap = overlap
         if self.tiling is not None:
             self.tiling.setOverlap(overlap)
+        self._logger.debug(f"Tiling overlap set to {self._tiling_overlap}")
 
     def setTilingGlobalDetection(self, global_detection: bool) -> None:
         """Set global detection flag for tiling.
@@ -252,6 +265,9 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         self._tiling_global_detection = global_detection
         if self.tiling is not None:
             self.tiling.setGlobalDetection(global_detection)
+        self._logger.debug(
+            f"Tiling global detection set to {self._tiling_global_detection}"
+        )
 
     def setTilingGridMatrix(self, grid_matrix: Union[np.ndarray, List, None]) -> None:
         """Set grid matrix for tiling.
@@ -262,6 +278,7 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         self._tiling_grid_matrix = grid_matrix
         if self.tiling is not None:
             self.tiling.setGridMatrix(grid_matrix)
+        self._logger.debug(f"Tiling grid matrix set to {self._tiling_grid_matrix}")
 
     def setLabels(self, labels: List[int] | None, keep: bool) -> None:
         """Set labels to keep or reject."""
@@ -272,6 +289,7 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
             self._labels_to_reject = labels
         if self.detections_filter is not None:
             self.detections_filter.setLabels(labels, keep)  # type: ignore
+        self._logger.debug(f"Labels set to {self._labels_to_keep}")
 
     def setMaxDetections(self, max_detections: int) -> None:
         """Set maximum number of detections to keep."""
@@ -279,6 +297,7 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
         self._max_detections = max_detections
         if self.detections_filter is not None:
             self.detections_filter.setMaxDetections(max_detections)
+        self._logger.debug(f"Max detections set to {self._max_detections}")
 
     def setConfidenceThreshold(self, confidence_threshold: float) -> None:
         """Set confidence threshold."""
@@ -288,15 +307,16 @@ class ExtendedNeuralNetwork(dai.node.ThreadedHostNode):
             self.detections_filter.setConfidenceThreshold(confidence_threshold)
         if self.patcher is not None:
             self.patcher.setConfidenceThreshold(confidence_threshold)
+        self._logger.debug(f"Confidence threshold set to {self._confidence_threshold}")
 
     @property
     def out(self):
         if self._out is None:
-            raise RuntimeError("Stage1Node not initialized")
+            raise RuntimeError("ExtendedNeuralNetwork not initialized")
         return self._out
 
     @property
     def nn_passthrough(self):
         if self.nn is None:
-            raise RuntimeError("Stage1Node not initialized")
+            raise RuntimeError("ExtendedNeuralNetwork not initialized")
         return self.nn.passthrough
