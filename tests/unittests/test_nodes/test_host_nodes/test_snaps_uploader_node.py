@@ -12,7 +12,16 @@ from tests.utils.nodes.mocks import OutputMock
 @pytest.fixture
 def frame() -> dai.ImgFrame:
     frame = dai.ImgFrame()
+    frame.setWidth(10)
+    frame.setHeight(10)
     frame.setSequenceNum(1)
+
+    # Create dummy image data
+    import numpy as np
+
+    img = np.zeros((10, 10, 3), dtype=np.uint8)
+
+    frame.setData(img)
     return frame
 
 
@@ -46,6 +55,15 @@ def uploader() -> SnapsUploader:
     return uploader
 
 
+@pytest.fixture()
+def mock_snaps_uploader_logger(monkeypatch):
+    """Automatically mock the module-level logger used inside SnapsUploader for all
+    tests in this file."""
+    mock_logger = MagicMock()
+    monkeypatch.setattr("depthai_nodes.node.snaps_uploader.logger", mock_logger)
+    return mock_logger
+
+
 def test_build(uploader):
     mock_output = OutputMock()
     uploader.build(mock_output)
@@ -60,28 +78,29 @@ def test_set_token_and_url(monkeypatch):
     uploader.set_url("test-url")
     assert os.environ["DEPTHAI_HUB_EVENTS_BASE_URL"] == "test-url"
 
-    # Repeated calls shouldn't overwrite (uses setdefault)
     uploader.set_token("new_token")
     assert os.environ["DEPTHAI_HUB_API_KEY"] == "test_token"
 
 
-def test_process_success(uploader, snap_data):
+def test_process_success(uploader, snap_data, mock_snaps_uploader_logger):
     """Test successful snap upload."""
     uploader._em.sendSnap.return_value = True
-
     uploader.process(snap_data)
 
     uploader._em.sendSnap.assert_called_once()
-    uploader._logger.info.assert_called_with("Snap 'test_snap' sent successfully.")
+    mock_snaps_uploader_logger.info.assert_called_with(
+        "Snap 'test_snap' sent successfully."
+    )
 
 
-def test_process_failure(uploader, snap_data):
+def test_process_failure(uploader, snap_data, mock_snaps_uploader_logger):
     """Test failed snap upload logging."""
     uploader._em.sendSnap.return_value = False
-
     uploader.process(snap_data)
 
-    uploader._logger.error.assert_called_with("Failed to send snap 'test_snap'.")
+    mock_snaps_uploader_logger.error.assert_called_with(
+        "Failed to send snap 'test_snap'."
+    )
 
 
 def test_process_invalid_type(uploader):
