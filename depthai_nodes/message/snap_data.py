@@ -26,7 +26,7 @@ class SnapData(dai.Buffer):
         self,
         snap_name: str,
         frame: dai.ImgFrame | dai.EncodedFrame,
-        file_name: str = "",
+        file_name: str = "snap_file",
         detections: Optional[dai.ImgDetections] = None,
         tags: Optional[List[str]] = None,
         extras: Optional[Dict[str, str]] = None,
