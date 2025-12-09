@@ -2,7 +2,7 @@
 name = "depthai-nodes"
 description = "Community on-host nodes for DepthAI."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [{ name = "Luxonis", email = "support@luxonis.com" }]
 maintainers = [{ name = "Luxonis", email = "support@luxonis.com" }]
@@ -11,7 +11,7 @@ dynamic = ["dependencies", "optional-dependencies", "version"]
 classifiers = [
   "License :: OSI Approved :: Apache Software License",
   "Development Status :: 3 - Alpha",
-  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.10",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
   "Topic :: Scientific/Engineering :: Image Processing",
   "Topic :: Scientific/Engineering :: Image Recognition",
@@ -34,7 +34,7 @@ optional-dependencies = { dev = { file = ["requirements-dev.txt"] } }
 version = {attr = "depthai_nodes.__version__"}
 
 [tool.ruff]
-target-version = "py38"
+target-version = "py310"
 line-length = 88
 indent-width = 4
 
@@ -46,7 +46,7 @@ select = ["E4", "E7", "E9", "F", "W", "B", "I"]
 black = true
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.10"
 ignore_missing_imports = true
 
 [tool.pyright]
