@@ -37,5 +37,5 @@ class BaseHostNode(dai.node.HostNode, metaclass=CombinedMeta):
 
         self._logger = get_logger(self.__class__.__name__)
 
-    def process(self) -> None:
+    def process(self, *msgs: dai.Buffer) -> None:
         pass
