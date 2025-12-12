@@ -1,3 +1,4 @@
+import time
 from typing import Any, Dict, List, Optional, Tuple
 
 import depthai as dai
@@ -300,11 +301,17 @@ class FastSAMParser(BaseParser):
             raise ValueError("Prompt must be one of 'everything', 'bbox', or 'point'")
 
         while self.isRunning():
+            t0 = time.perf_counter()
             try:
                 output: dai.NNData = self.input.get()
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped, no more data
 
+            self._logger.warning(
+                f"[TIMING] input.get() took {(time.perf_counter() - t0) * 1000:.2f} ms"
+            )
+
+            t1 = time.perf_counter()
             outputs_names = sorted([name for name in self.yolo_outputs])
             self._logger.debug(f"Processing input with layers: {outputs_names}")
             outputs_values = [
@@ -313,12 +320,20 @@ class FastSAMParser(BaseParser):
                 ).astype(np.float32)
                 for o in outputs_names
             ]
+            self._logger.warning(
+                f"[TIMING] extract tensors took {(time.perf_counter() - t1) * 1000:.2f} ms"
+            )
+
+            t2 = time.perf_counter()
             # Get the segmentation outputs
             (
                 masks_outputs_values,
                 protos_output,
                 protos_len,
             ) = get_segmentation_outputs(output, self.mask_outputs, self.protos_output)
+            self._logger.warning(
+                f"[TIMING] segmentation outputs took {(time.perf_counter() - t2) * 1000:.2f} ms"
+            )
 
             # determine the input shape of the model from the first output
             width = outputs_values[0].shape[3] * 8
@@ -326,6 +341,7 @@ class FastSAMParser(BaseParser):
             input_shape = (width, height)
 
             # Decode the outputs
+            t3 = time.perf_counter()
             results = decode_fastsam_output(
                 outputs_values,
                 [8, 16, 32],
@@ -335,7 +351,11 @@ class FastSAMParser(BaseParser):
                 iou_thres=self.iou_threshold,
                 num_classes=self.n_classes,
             )
+            self._logger.warning(
+                f"[TIMING] decode_fastsam_output took {(time.perf_counter() - t3) * 1000:.2f} ms"
+            )
 
+            t4 = time.perf_counter()
             bboxes, masks = [], []
             for i in range(results.shape[0]):
                 bbox, conf, label, seg_coeff = (
@@ -356,12 +376,20 @@ class FastSAMParser(BaseParser):
 
             results_bboxes = np.array(bboxes)
             results_masks = np.array(masks)
+            self._logger.warning(
+                f"[TIMING] mask loop took {(time.perf_counter() - t4) * 1000:.2f} ms"
+            )
 
             if self.prompt == "bbox":
+                t5 = time.perf_counter()
                 results_masks = box_prompt(
                     results_masks, bbox=self.bbox, orig_shape=input_shape[::-1]
                 )
+                self._logger.warning(
+                    f"[TIMING] box_prompt took {(time.perf_counter() - t5) * 1000:.2f} ms"
+                )
             elif self.prompt == "point":
+                t6 = time.perf_counter()
                 results_masks = point_prompt(
                     results_bboxes,
                     results_masks,
@@ -369,11 +397,19 @@ class FastSAMParser(BaseParser):
                     pointlabel=self.point_label,
                     orig_shape=input_shape[::-1],
                 )
+                self._logger.warning(
+                    f"[TIMING] point_prompt took {(time.perf_counter() - t6) * 1000:.2f} ms"
+                )
 
+            t7 = time.perf_counter()
             if len(results_masks) == 0:
                 results_masks = np.full((1, height, width), -1, dtype=np.int16)
             results_masks = merge_masks(results_masks)
+            self._logger.warning(
+                f"[TIMING] merge_masks took {(time.perf_counter() - t7) * 1000:.2f} ms"
+            )
 
+            t8 = time.perf_counter()
             segmentation_message = create_segmentation_message(results_masks)
             transformation = output.getTransformation()
             if transformation is not None:
@@ -389,3 +425,6 @@ class FastSAMParser(BaseParser):
             self.out.send(segmentation_message)
 
             self._logger.debug("Segmentation message sent successfully")
+            self._logger.warning(
+                f"[TIMING] message build + send took {(time.perf_counter() - t8) * 1000:.2f} ms"
+            )
