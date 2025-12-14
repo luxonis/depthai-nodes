@@ -164,7 +164,7 @@ class YOLOExtendedParser(BaseParser):
         self.n_classes = n_classes
         self._logger.debug(f"Number of classes set to {self.n_classes}")
 
-    def setIouThreshold(self, iou_threshold: float) -> None:
+    def setIoUThreshold(self, iou_threshold: float) -> None:
         """Sets the intersection over union threshold.
 
         @param iou_threshold: The intersection over union threshold.
