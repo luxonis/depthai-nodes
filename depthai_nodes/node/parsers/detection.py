@@ -77,7 +77,7 @@ class DetectionParser(BaseParser):
         self.conf_threshold = threshold
         self._logger.debug(f"Confidence threshold updated to {threshold}")
 
-    def setIoUThreshold(self, threshold: float) -> None:
+    def setIouThreshold(self, threshold: float) -> None:
         """Sets the non-maximum suppression threshold.
 
         @param threshold: Non-maximum suppression threshold.
