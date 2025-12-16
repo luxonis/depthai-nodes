@@ -12,7 +12,6 @@ from depthai_nodes.node.parsers.utils.fastsam import (
     decode_fastsam_output,
     merge_masks,
     point_prompt,
-    process_single_mask,
 )
 from depthai_nodes.node.parsers.utils.masks_utils import get_segmentation_outputs
 
@@ -381,26 +380,14 @@ class FastSAMParser(BaseParser):
             self.averager.add("decode_fastsam_output", dt)
 
             t4 = time.perf_counter()
-            bboxes, masks = [], []
-            for i in range(results.shape[0]):
-                bbox, conf, label, seg_coeff = (
-                    results[i, :4].astype(int),
-                    results[i, 4],
-                    results[i, 5].astype(int),
-                    results[i, 6:].astype(int),
-                )
-                bboxes.append(bbox.tolist() + [conf, int(label)])
-                hi, ai, xi, yi = seg_coeff
-                mask_coeff = masks_outputs_values[hi][
-                    0, ai * protos_len : (ai + 1) * protos_len, yi, xi
-                ]
-                mask = process_single_mask(
-                    protos_output[0], mask_coeff, self.mask_conf, input_shape, bbox
-                )
-                masks.append(mask)
 
-            results_bboxes = np.array(bboxes)
-            results_masks = np.array(masks)
+            results_bboxes = build_results_bboxes(results)
+            mask_coeffs = build_mask_coeffs(
+                results, masks_outputs_values, protos_len, protos_output.dtype
+            )
+            results_masks = render_masks(
+                results, mask_coeffs, protos_output[0], input_shape, self.mask_conf
+            )
 
             dt = (time.perf_counter() - t4) * 1000
             self.averager.add("mask loop", dt)
@@ -452,3 +439,94 @@ class FastSAMParser(BaseParser):
             self.averager.add("message build + send", dt)
 
             self.averager.maybe_log(self._logger)
+
+
+import cv2
+
+from depthai_nodes.node.parsers.utils import sigmoid
+
+
+def build_results_bboxes(results: np.ndarray) -> np.ndarray:
+    """Return concatenated bbox/score/label array matching the original format."""
+    return np.concatenate(
+        [
+            results[:, :4].astype(int),
+            results[:, 4:5],
+            results[:, 5:6].astype(int),
+        ],
+        axis=1,
+    )
+
+
+def build_mask_coeffs(
+    results: np.ndarray,
+    masks_outputs_values: list[np.ndarray],
+    protos_len: int,
+    protos_dtype,
+) -> np.ndarray:
+    """Gather mask coefficients for all detections, grouped by head."""
+    num_results = results.shape[0]
+    seg_coeffs = results[:, 6:].astype(int)
+    hi = seg_coeffs[:, 0]
+    ai = seg_coeffs[:, 1]
+    xi = seg_coeffs[:, 2]
+    yi = seg_coeffs[:, 3]
+
+    mask_coeffs = np.empty((num_results, protos_len), dtype=protos_dtype)
+    coeff_indices = np.arange(protos_len)
+    for head_idx, mask_values in enumerate(masks_outputs_values):
+        selected = np.where(hi == head_idx)[0]
+        if selected.size == 0:
+            continue
+        channel_indices = ai[selected, None] * protos_len + coeff_indices
+        mask_coeffs[selected] = mask_values[0][
+            channel_indices,
+            yi[selected, None],
+            xi[selected, None],
+        ]
+    return mask_coeffs
+
+
+def render_masks(
+    results: np.ndarray,
+    mask_coeffs: np.ndarray,
+    protos: np.ndarray,
+    input_shape: np.ndarray,
+    mask_conf: float,
+) -> np.ndarray:
+    """Render full-size masks for all detections using the new path."""
+    num_results = results.shape[0]
+    out_w, out_h = int(input_shape[0]), int(input_shape[1])
+
+    results_masks = np.empty((num_results, out_h, out_w), dtype=np.uint8)
+    bboxes_int = results[:, :4].astype(int)
+    bboxes_clamped = np.clip(
+        bboxes_int,
+        a_min=np.array([0, 0, 0, 0], dtype=bboxes_int.dtype),
+        a_max=np.array([out_w, out_h, out_w, out_h], dtype=bboxes_int.dtype),
+    )
+    mask_resized = np.empty((out_h, out_w), dtype=np.float32)
+
+    for idx in range(num_results):
+        mask_small = sigmoid(np.sum(protos * mask_coeffs[idx][:, None, None], axis=0))
+        cv2.resize(
+            mask_small,
+            (out_w, out_h),
+            dst=mask_resized,
+            interpolation=cv2.INTER_NEAREST,
+        )
+
+        x1, y1, x2, y2 = bboxes_clamped[idx]
+
+        if y1 > 0:
+            mask_resized[:y1, :] = 0
+        if y2 < out_h:
+            mask_resized[y2:, :] = 0
+        if x1 > 0:
+            mask_resized[:, :x1] = 0
+        if x2 < out_w:
+            mask_resized[:, x2:] = 0
+
+        np.greater(mask_resized, mask_conf, out=results_masks[idx])
+
+    return results_masks
