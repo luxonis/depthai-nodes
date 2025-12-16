@@ -1,4 +1,5 @@
 import time
+from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
 import depthai as dai
@@ -14,6 +15,33 @@ from depthai_nodes.node.parsers.utils.fastsam import (
     process_single_mask,
 )
 from depthai_nodes.node.parsers.utils.masks_utils import get_segmentation_outputs
+
+
+class TimeAverager:
+    def __init__(self, interval_sec=2.0):
+        self.interval = interval_sec
+        self.last_log = time.perf_counter()
+        self.acc = defaultdict(float)
+        self.count = defaultdict(int)
+
+    def add(self, name, duration_ms):
+        self.acc[name] += duration_ms
+        self.count[name] += 1
+
+    def maybe_log(self, logger):
+        now = time.perf_counter()
+        if now - self.last_log >= self.interval:
+            logger.warning("=== AVERAGE TIMINGS (last %.1f s) ===" % self.interval)
+            for name in sorted(self.acc.keys()):
+                avg = self.acc[name] / max(1, self.count[name])
+                logger.warning(
+                    f"[AVG] {name}: {avg:.2f} ms over {self.count[name]} calls"
+                )
+            logger.warning("====================================")
+            # reset
+            self.acc.clear()
+            self.count.clear()
+            self.last_log = now
 
 
 class FastSAMParser(BaseParser):
@@ -116,6 +144,7 @@ class FastSAMParser(BaseParser):
         self._logger.debug(
             f"FastSAMParser initialized with conf_threshold={conf_threshold}, n_classes={n_classes}, iou_threshold={iou_threshold}, mask_conf={mask_conf}, prompt='{prompt}', points={points}, point_label={point_label}, bbox={bbox}, yolo_outputs={yolo_outputs}, mask_outputs={mask_outputs}, protos_output='{protos_output}'"
         )
+        self.averager = TimeAverager(interval_sec=2.0)
 
     def setConfidenceThreshold(self, threshold: float) -> None:
         """Sets the confidence score threshold.
@@ -307,9 +336,8 @@ class FastSAMParser(BaseParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped, no more data
 
-            self._logger.warning(
-                f"[TIMING] input.get() took {(time.perf_counter() - t0) * 1000:.2f} ms"
-            )
+            dt = (time.perf_counter() - t0) * 1000
+            self.averager.add("input.get", dt)
 
             t1 = time.perf_counter()
             outputs_names = sorted([name for name in self.yolo_outputs])
@@ -320,9 +348,8 @@ class FastSAMParser(BaseParser):
                 ).astype(np.float32)
                 for o in outputs_names
             ]
-            self._logger.warning(
-                f"[TIMING] extract tensors took {(time.perf_counter() - t1) * 1000:.2f} ms"
-            )
+            dt = (time.perf_counter() - t1) * 1000
+            self.averager.add("extract tensors", dt)
 
             t2 = time.perf_counter()
             # Get the segmentation outputs
@@ -331,9 +358,8 @@ class FastSAMParser(BaseParser):
                 protos_output,
                 protos_len,
             ) = get_segmentation_outputs(output, self.mask_outputs, self.protos_output)
-            self._logger.warning(
-                f"[TIMING] segmentation outputs took {(time.perf_counter() - t2) * 1000:.2f} ms"
-            )
+            dt = (time.perf_counter() - t2) * 1000
+            self.averager.add("segmentation outputs", dt)
 
             # determine the input shape of the model from the first output
             width = outputs_values[0].shape[3] * 8
@@ -351,9 +377,8 @@ class FastSAMParser(BaseParser):
                 iou_thres=self.iou_threshold,
                 num_classes=self.n_classes,
             )
-            self._logger.warning(
-                f"[TIMING] decode_fastsam_output took {(time.perf_counter() - t3) * 1000:.2f} ms"
-            )
+            dt = (time.perf_counter() - t3) * 1000
+            self.averager.add("decode_fastsam_output", dt)
 
             t4 = time.perf_counter()
             bboxes, masks = [], []
@@ -376,18 +401,18 @@ class FastSAMParser(BaseParser):
 
             results_bboxes = np.array(bboxes)
             results_masks = np.array(masks)
-            self._logger.warning(
-                f"[TIMING] mask loop took {(time.perf_counter() - t4) * 1000:.2f} ms"
-            )
+
+            dt = (time.perf_counter() - t4) * 1000
+            self.averager.add("mask loop", dt)
 
             if self.prompt == "bbox":
                 t5 = time.perf_counter()
                 results_masks = box_prompt(
                     results_masks, bbox=self.bbox, orig_shape=input_shape[::-1]
                 )
-                self._logger.warning(
-                    f"[TIMING] box_prompt took {(time.perf_counter() - t5) * 1000:.2f} ms"
-                )
+                dt = (time.perf_counter() - t5) * 1000
+                self.averager.add("box_prompt", dt)
+
             elif self.prompt == "point":
                 t6 = time.perf_counter()
                 results_masks = point_prompt(
@@ -397,17 +422,15 @@ class FastSAMParser(BaseParser):
                     pointlabel=self.point_label,
                     orig_shape=input_shape[::-1],
                 )
-                self._logger.warning(
-                    f"[TIMING] point_prompt took {(time.perf_counter() - t6) * 1000:.2f} ms"
-                )
+                dt = (time.perf_counter() - t6) * 1000
+                self.averager.add("point_prompt", dt)
 
             t7 = time.perf_counter()
             if len(results_masks) == 0:
                 results_masks = np.full((1, height, width), -1, dtype=np.int16)
             results_masks = merge_masks(results_masks)
-            self._logger.warning(
-                f"[TIMING] merge_masks took {(time.perf_counter() - t7) * 1000:.2f} ms"
-            )
+            dt = (time.perf_counter() - t7) * 1000
+            self.averager.add("merge_masks", dt)
 
             t8 = time.perf_counter()
             segmentation_message = create_segmentation_message(results_masks)
@@ -425,6 +448,7 @@ class FastSAMParser(BaseParser):
             self.out.send(segmentation_message)
 
             self._logger.debug("Segmentation message sent successfully")
-            self._logger.warning(
-                f"[TIMING] message build + send took {(time.perf_counter() - t8) * 1000:.2f} ms"
-            )
+            dt = (time.perf_counter() - t8) * 1000
+            self.averager.add("message build + send", dt)
+
+            self.averager.maybe_log(self._logger)
