@@ -15,12 +15,20 @@ class ApplyColormap(BaseHostNode):
 
     Attributes
     ----------
-    colormap_value : Optional[Union[int, np.ndarray]
+    colormap_value : Union[int, np.ndarray]
         OpenCV colormap enum value or a custom, OpenCV compatible, colormap. Determines the applied color mapping.
-    max_value : Optional[int]
+    max_value : int
         Maximum value to consider for normalization. If set lower than the map's actual maximum, the map's maximum will be used instead.
-    instance_to_semantic_mask : Optional[bool]
+    instance_to_semantic_mask : bool
         If True, converts instance segmentation masks to semantic segmentation masks. Note that this is only relevant for ImgDetectionsExtended messages.
+    normalization : str
+        Normalization mode. "max" (default) uses maximum value; "percentile" uses percentile clipping (useful for depth maps).
+    percentile_low : float
+        Lower percentile [0-100] for clipping when normalization="percentile".
+    percentile_high : float
+        Higher percentile [0-100] for clipping when normalization="percentile".
+    ignore_zero_in_percentile : bool
+        If True, 0 values are ignored when calculating percentiles (useful for depth).
     arr : dai.ImgFrame or Map2D or ImgDetectionsExtended
         The input message with a 2D array.
     output : dai.ImgFrame
@@ -37,12 +45,56 @@ class ApplyColormap(BaseHostNode):
 
         self.out.setPossibleDatatypes([(dai.DatatypeEnum.ImgFrame, True)])
 
+        self._normalization: str = "max"  # "max" | "percentile"
+        self._percentile_low: float = 2.0
+        self._percentile_high: float = 98.0
+        self._ignore_zero_in_percentile: bool = False
+
         self.setColormap(colormap_value)
         self.setMaxValue(max_value)
         self.setInstanceToSemanticMask(instance_to_semantic_mask)
 
         self._logger.debug(
             f"ApplyColormap initialized with colormap_value={colormap_value}, max_value={max_value}, instance_to_semantic_mask={instance_to_semantic_mask}",
+        )
+
+    def setDepthPreset(self) -> None:
+        """Enables depth-friendly normalization to reduce flickering.
+
+        Uses percentile clipping (2-98%) and ignores invalid depth (0).
+        """
+        self._normalization = "percentile"
+        self._percentile_low = 2.0
+        self._percentile_high = 98.0
+        self._ignore_zero_in_percentile = True
+        self._logger.debug("Depth preset enabled")
+
+    def setNormalization(self, normalization: str) -> None:
+        """Sets the normalization mode.
+
+        @param normalization: "max" | "percentile".
+        @type normalization: str
+        """
+        normalization = str(normalization).lower().strip()
+        if normalization not in ("max", "percentile"):
+            raise ValueError("normalization must be one of: 'max', 'percentile'.")
+        self._normalization = normalization
+        self._logger.debug(f"Normalization set to {self._normalization}")
+
+    def setPercentileRange(self, low: float, high: float) -> None:
+        """Sets percentile range used when normalization='percentile'.
+
+        @param low: Lower percentile in [0, 100).
+        @param high: Higher percentile in (0, 100].
+        """
+        low = float(low)
+        high = float(high)
+        if not (0.0 <= low < high <= 100.0):
+            raise ValueError("Percentile range must satisfy 0 <= low < high <= 100.")
+        self._percentile_low = low
+        self._percentile_high = high
+        self._logger.debug(
+            f"Percentile range set to low={self._percentile_low}, high={self._percentile_high}"
         )
 
     def setColormap(self, colormap_value: Union[int, np.ndarray]) -> None:
@@ -141,19 +193,42 @@ class ApplyColormap(BaseHostNode):
             raise ValueError(f"Unsupported input type {type(msg)}.")
 
         # make sure that min value == 0 to ensure proper normalization
-        arr += np.abs(arr.min()) if arr.min() < 0 else 0
+        if not self._ignore_zero_in_percentile:
+            arr += np.abs(arr.min()) if arr.min() < 0 else 0
 
-        max_value = max(self._max_value, arr.max())
-        if max_value == 0:
+        # Calculate Normalization Bounds
+        low_value, high_value = 0.0, 0.0
+
+        if self._normalization == "max":
+            high_value = float(max(self._max_value, int(arr.max())))
+
+        elif self._normalization == "percentile":
+            if self._ignore_zero_in_percentile:
+                valid = arr[arr > 0]
+            else:
+                valid = arr.reshape(-1)
+
+            if valid.size > 0:
+                low_value = float(np.percentile(valid, self._percentile_low))
+                high_value = float(np.percentile(valid, self._percentile_high))
+
+                # If user set a manual max_value, ensure high_value is at least that
+                if self._max_value > 0:
+                    high_value = max(high_value, float(self._max_value))
+        else:
+            raise ValueError(f"Unsupported normalization mode {self._normalization}.")
+
+        if high_value <= low_value:
             color_arr = np.zeros(
                 (arr.shape[0], arr.shape[1], 3),
                 dtype=np.uint8,
             )
         else:
-            color_arr = cv2.applyColorMap(
-                ((arr / max_value) * 255).astype(np.uint8),
-                self._colormap,
-            )
+            scaled = (
+                (arr.astype(np.float32) - low_value) / (high_value - low_value)
+            ) * 255.0
+            scaled = np.clip(scaled, 0, 255).astype(np.uint8)
+            color_arr = cv2.applyColorMap(scaled, self._colormap)
 
         frame = dai.ImgFrame()
         frame.setCvFrame(
