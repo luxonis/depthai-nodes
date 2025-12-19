@@ -7,10 +7,11 @@ from depthai_nodes.message.creators import create_segmentation_message
 from depthai_nodes.node.parsers.base_parser import BaseParser
 from depthai_nodes.node.parsers.utils.fastsam import (
     box_prompt,
+    build_mask_coeffs,
     decode_fastsam_output,
     merge_masks,
     point_prompt,
-    process_single_mask,
+    process_masks,
 )
 from depthai_nodes.node.parsers.utils.masks_utils import get_segmentation_outputs
 
@@ -55,7 +56,7 @@ class FastSAMParser(BaseParser):
 
     def __init__(
         self,
-        conf_threshold: int = 0.5,
+        conf_threshold: float = 0.5,
         n_classes: int = 1,
         iou_threshold: float = 0.5,
         mask_conf: float = 0.5,
@@ -313,6 +314,7 @@ class FastSAMParser(BaseParser):
                 ).astype(np.float32)
                 for o in outputs_names
             ]
+
             # Get the segmentation outputs
             (
                 masks_outputs_values,
@@ -336,31 +338,32 @@ class FastSAMParser(BaseParser):
                 num_classes=self.n_classes,
             )
 
-            bboxes, masks = [], []
-            for i in range(results.shape[0]):
-                bbox, conf, label, seg_coeff = (
-                    results[i, :4].astype(int),
-                    results[i, 4],
-                    results[i, 5].astype(int),
-                    results[i, 6:].astype(int),
-                )
-                bboxes.append(bbox.tolist() + [conf, int(label)])
-                hi, ai, xi, yi = seg_coeff
-                mask_coeff = masks_outputs_values[hi][
-                    0, ai * protos_len : (ai + 1) * protos_len, yi, xi
-                ]
-                mask = process_single_mask(
-                    protos_output[0], mask_coeff, self.mask_conf, input_shape, bbox
-                )
-                masks.append(mask)
-
-            results_bboxes = np.array(bboxes)
-            results_masks = np.array(masks)
+            results_bboxes = np.concatenate(
+                [
+                    results[:, :4].astype(int),
+                    results[:, 4:5],
+                    results[:, 5:6].astype(int),
+                ],
+                axis=1,
+            )
+            mask_coeffs = build_mask_coeffs(
+                parsed_results=results,
+                masks_outputs_values=masks_outputs_values,
+                protos_len=protos_len,
+            )
+            results_masks = process_masks(
+                parsed_results=results,
+                mask_coeffs=mask_coeffs,
+                protos=protos_output[0],
+                orig_shape=input_shape,
+                mask_conf=self.mask_conf,
+            )
 
             if self.prompt == "bbox":
                 results_masks = box_prompt(
                     results_masks, bbox=self.bbox, orig_shape=input_shape[::-1]
                 )
+
             elif self.prompt == "point":
                 results_masks = point_prompt(
                     results_bboxes,
