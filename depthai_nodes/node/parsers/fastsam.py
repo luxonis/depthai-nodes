@@ -338,40 +338,44 @@ class FastSAMParser(BaseParser):
                 num_classes=self.n_classes,
             )
 
-            results_bboxes = np.concatenate(
-                [
-                    results[:, :4].astype(int),
-                    results[:, 4:5],
-                    results[:, 5:6].astype(int),
-                ],
-                axis=1,
-            )
-            mask_coeffs = build_mask_coeffs(
-                parsed_results=results,
-                masks_outputs_values=masks_outputs_values,
-                protos_len=protos_len,
-            )
-            results_masks = process_masks(
-                parsed_results=results,
-                mask_coeffs=mask_coeffs,
-                protos=protos_output[0],
-                orig_shape=input_shape,
-                mask_conf=self.mask_conf,
-            )
-
-            if self.prompt == "bbox":
-                results_masks = box_prompt(
-                    results_masks, bbox=self.bbox, orig_shape=input_shape[::-1]
+            if results.shape[0] == 0:
+                results_bboxes = np.array([])
+                results_masks = np.array([])
+            else:
+                results_bboxes = np.concatenate(
+                    [
+                        results[:, :4].astype(int),
+                        results[:, 4:5],
+                        results[:, 5:6].astype(int),
+                    ],
+                    axis=1,
+                )
+                mask_coeffs = build_mask_coeffs(
+                    parsed_results=results,
+                    masks_outputs_values=masks_outputs_values,
+                    protos_len=protos_len,
+                )
+                results_masks = process_masks(
+                    parsed_results=results,
+                    mask_coeffs=mask_coeffs,
+                    protos=protos_output[0],
+                    orig_shape=input_shape,
+                    mask_conf=self.mask_conf,
                 )
 
-            elif self.prompt == "point":
-                results_masks = point_prompt(
-                    results_bboxes,
-                    results_masks,
-                    points=self.points,
-                    pointlabel=self.point_label,
-                    orig_shape=input_shape[::-1],
-                )
+                if self.prompt == "bbox":
+                    results_masks = box_prompt(
+                        results_masks, bbox=self.bbox, orig_shape=input_shape[::-1]
+                    )
+
+                elif self.prompt == "point":
+                    results_masks = point_prompt(
+                        results_bboxes,
+                        results_masks,
+                        points=self.points,
+                        pointlabel=self.point_label,
+                        orig_shape=input_shape[::-1],
+                    )
 
             if len(results_masks) == 0:
                 results_masks = np.full((1, height, width), -1, dtype=np.int16)
