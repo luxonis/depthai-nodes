@@ -299,7 +299,7 @@ def build_mask_coeffs(
     xi = seg_coeffs[:, 2]
     yi = seg_coeffs[:, 3]
 
-    mask_coeffs = np.empty((num_results, protos_len))
+    mask_coeffs = np.empty((num_results, protos_len), dtype=np.float32)
     coeff_indices = np.arange(protos_len)
     for head_idx, mask_values in enumerate(masks_outputs_values):
         selected = np.where(hi == head_idx)[0]
