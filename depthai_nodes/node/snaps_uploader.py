@@ -31,16 +31,10 @@ class SnapsUploader(BaseHostNode):
         assert isinstance(snap, SnapData), f"Expected SnapData, got {type(snap)}"
 
         logger.debug(f"Sending snap: {snap.snap_name} -> {snap.file_name}")
-        fileGroup = dai.FileGroup()
-        if snap.detections:
-            fileGroup.addImageDetectionsPair(
-                snap.file_name, snap.frame, snap.detections
-            )
-        else:
-            fileGroup.addFile(snap.file_name, snap.frame)
+
         success = self._em.sendSnap(
             name=snap.snap_name,
-            fileGroup=fileGroup,
+            fileGroup=snap.file_group,
             tags=snap.tags,
             extras=snap.extras,
         )
