@@ -269,11 +269,13 @@ def decode_fastsam_output(
     critical_iou_index = bbox_iou(
         full_box[0][:4], output_nms[:, :4], iou_thres=0.9, image_shape=img_shape
     )
-
     if critical_iou_index.size > 0:
-        full_box[0][4] = output_nms[critical_iou_index][:, 4]
-        full_box[0][6:] = output_nms[critical_iou_index][:, 6:]
-        output_nms[critical_iou_index] = full_box
+        idxs = critical_iou_index
+        idx = idxs[np.argmax(output_nms[idxs, 4])]  # best confidence
+
+        full_box[0, 4] = output_nms[idx, 4]
+        full_box[0, 6:] = output_nms[idx, 6:]
+        output_nms[idx] = full_box[0]
 
     return output_nms
 
