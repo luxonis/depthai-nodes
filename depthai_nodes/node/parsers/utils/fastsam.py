@@ -269,59 +269,108 @@ def decode_fastsam_output(
     critical_iou_index = bbox_iou(
         full_box[0][:4], output_nms[:, :4], iou_thres=0.9, image_shape=img_shape
     )
-
     if critical_iou_index.size > 0:
-        full_box[0][4] = output_nms[critical_iou_index][:, 4]
-        full_box[0][6:] = output_nms[critical_iou_index][:, 6:]
-        output_nms[critical_iou_index] = full_box
+        idxs = critical_iou_index
+        idx = idxs[np.argmax(output_nms[idxs, 4])]  # best confidence
+
+        full_box[0, 4] = output_nms[idx, 4]
+        full_box[0, 6:] = output_nms[idx, 6:]
+        output_nms[idx] = full_box[0]
 
     return output_nms
 
 
-def crop_mask(masks: np.ndarray, box: np.ndarray) -> np.ndarray:
-    """It takes a mask and a bounding box, and returns a mask that is cropped to the
-    bounding box.
-
-    @param masks: [h, w] array of masks
-    @type masks: np.ndarray
-    @param box: An array of bbox coordinates in (x1, y1, x2, y2) format
-    @type box: np.ndarray
-    @return: The masks are being cropped to the bounding box.
-    @rtype: np.ndarray
-    """
-    h, w = masks.shape
-    x1, y1, x2, y2 = box
-    r = np.arange(w).reshape(1, w)
-    c = np.arange(h).reshape(h, 1)
-    return masks * ((r >= x1) * (r < x2) * (c >= y1) * (c < y2))
-
-
-def process_single_mask(
-    protos: np.ndarray,
-    mask_coeff: np.ndarray,
-    mask_conf: float,
-    img_shape: Tuple[int, int],
-    bbox: Tuple[int, int, int, int],
+def build_mask_coeffs(
+    parsed_results: np.ndarray,
+    masks_outputs_values: list[np.ndarray],
+    protos_len: int,
 ) -> np.ndarray:
-    """Processes a single mask.
+    """Gather mask coefficients for all detections, grouped by head.
 
-    @param protos: Prototypes
+    @param parsed_results: FastSAM decoded outputs
+    @type parsed_results: np.ndarray
+    @param masks_outputs_values: Model mask outputs
+    @type masks_outputs_values: list[np.ndarray]
+    @param protos_len: Number of protos
+    @type protos_len: int
+    """
+    num_results = parsed_results.shape[0]
+    seg_coeffs = parsed_results[:, 6:].astype(int)
+    hi = seg_coeffs[:, 0]
+    ai = seg_coeffs[:, 1]
+    xi = seg_coeffs[:, 2]
+    yi = seg_coeffs[:, 3]
+
+    mask_coeffs = np.empty((num_results, protos_len), dtype=np.float32)
+    coeff_indices = np.arange(protos_len)
+    for head_idx, mask_values in enumerate(masks_outputs_values):
+        selected = np.where(hi == head_idx)[0]
+        if selected.size == 0:
+            continue
+        channel_indices = ai[selected, None] * protos_len + coeff_indices
+        mask_coeffs[selected] = mask_values[0][
+            channel_indices,
+            yi[selected, None],
+            xi[selected, None],
+        ]
+    return mask_coeffs
+
+
+def process_masks(
+    parsed_results: np.ndarray,
+    mask_coeffs: np.ndarray,
+    protos: np.ndarray,
+    orig_shape: Tuple[int, int],
+    mask_conf: float,
+) -> np.ndarray:
+    """Process output into full-size masks for all detections.
+
+    @param parsed_results: FastSAM decoded outputs
+    @type parsed_results: np.ndarray
+    @param mask_coeffs: Mask coefficients
+    @type mask_coeffs: np.ndarray
+    @param protos: Protos from model output
     @type protos: np.ndarray
-    @param mask_coeff: Mask coefficients
-    @type mask_coeff: np.ndarray
+    @param orig_shape: Input shape of the model
+    @type orig_shape: np.ndarray
     @param mask_conf: Mask confidence
     @type mask_conf: float
-    @param img_shape: Image shape
-    @type img_shape: Tuple[int, int]
-    @param bbox: Bounding box
-    @type bbox: Tuple[int, int, int, int]
-    @return: Processed mask
-    @rtype: np.ndarray
     """
-    mask = sigmoid(np.sum(protos * mask_coeff[..., np.newaxis, np.newaxis], axis=0))
-    mask = cv2.resize(mask, img_shape, interpolation=cv2.INTER_NEAREST)
-    mask = crop_mask(mask, np.array(bbox))
-    return (mask > mask_conf).astype(np.uint8)
+    num_results = parsed_results.shape[0]
+    out_w, out_h = orig_shape[0], orig_shape[1]
+
+    results_masks = np.empty((num_results, out_h, out_w), dtype=np.uint8)
+    bboxes_int = parsed_results[:, :4].astype(int)
+    bboxes_clamped = np.clip(
+        bboxes_int,
+        a_min=np.array([0, 0, 0, 0], dtype=bboxes_int.dtype),
+        a_max=np.array([out_w, out_h, out_w, out_h], dtype=bboxes_int.dtype),
+    )
+    mask_resized = np.empty((out_h, out_w), dtype=np.float32)
+
+    for idx in range(num_results):
+        mask_small = sigmoid(np.sum(protos * mask_coeffs[idx][:, None, None], axis=0))
+        cv2.resize(
+            mask_small,
+            (out_w, out_h),
+            dst=mask_resized,
+            interpolation=cv2.INTER_NEAREST,
+        )
+
+        x1, y1, x2, y2 = bboxes_clamped[idx]
+
+        if y1 > 0:
+            mask_resized[:y1, :] = 0
+        if y2 < out_h:
+            mask_resized[y2:, :] = 0
+        if x1 > 0:
+            mask_resized[:, :x1] = 0
+        if x2 < out_w:
+            mask_resized[:, x2:] = 0
+
+        np.greater(mask_resized, mask_conf, out=results_masks[idx])
+
+    return results_masks
 
 
 def merge_masks(masks: np.ndarray) -> np.ndarray:
