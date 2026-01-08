@@ -40,9 +40,9 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         Divisor for the FPS tolerance.
     INPUT_CHECKS_PER_FPS: int
         Number of input checks per FPS.
-    input_data: dai.Node.Input
+    data_input: dai.Node.Input
         Input to be gathered.
-    input_reference: dai.Node.Input
+    reference_input: dai.Node.Input
         Input to determine how many gathered items to wait for.
     output: dai.Node.Output
         Output for gathered data.
@@ -61,8 +61,8 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         self._ready_timestamps = PriorityQueue()
         self._wait_count_fn = self._default_wait_count_fn
 
-        self.input_data = self.createInput()
-        self.input_reference = self.createInput()
+        self._data_input = self.createInput()
+        self._reference_input = self.createInput()
         self.out = self.createOutput()
 
         self._logger = get_logger(__name__)
@@ -76,8 +76,8 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     def build(
         self,
         camera_fps: int,
-        input_data: Optional[dai.Node.Output] = None,
-        input_reference: Optional[dai.Node.Output] = None,
+        input_data: dai.Node.Output,
+        input_reference: dai.Node.Output,
         wait_count_fn: Optional[Callable[[TReference], int]] = None,
     ) -> "GatherData[TReference, TGathered]":
         """Builds and configures the GatherData node with the specified parameters.
@@ -106,24 +106,11 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
             wait_count_fn = self._default_wait_count_fn
         self.set_wait_count_fn(wait_count_fn)
 
-        if input_data is None and input_reference is not None:
-            raise ValueError(
-                "GatherData.build: input_reference provided but input_data is None. "
-                "Provide both inputs to auto-link, or neither to link manually."
-            )
-
-        if input_data is not None and input_reference is None:
-            raise ValueError(
-                "GatherData.build: input_data provided but input_reference is None. "
-                "Provide both inputs to auto-link, or neither to link manually."
-            )
-
-        if input_data is not None and input_reference is not None:
-            input_data.link(self.input_data)
-            input_reference.link(self.input_reference)
-            self._logger.debug(
-                "Linked input_data and input_reference to GatherData inputs"
-            )
+        input_data.link(self._data_input)
+        input_reference.link(self._reference_input)
+        self._logger.debug(
+            "Linked input_data and input_reference to GatherData inputs"
+        )
 
         self._logger.debug(f"GatherData built with camera_fps={camera_fps}")
         return self
@@ -141,17 +128,18 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
 
         while self.isRunning():
             try:
-                input_data: TGathered = self.input_data.tryGet()
-                input_reference: TReference = self.input_reference.tryGet()
-            except dai.MessageQueue.QueueException:
+                data: TGathered = self._data_input.tryGet()  # noqa
+                reference: TReference = self._reference_input.tryGet()  # noqa
+            except dai.MessageQueue.QueueException as e:
+                self._logger.error(f"GatherData failed to read data from queues. Exception: {e}")
                 break
-            if input_data:
-                self._logger.debug("Input data received")
-                self._add_data(input_data)
+            if data:
+                self._logger.debug("Data input received")
+                self._add_data(data)
                 self._send_ready_data()
-            if input_reference:
-                self._logger.debug("Input reference received")
-                self._add_reference(input_reference)
+            if reference:
+                self._logger.debug("Reference input received")
+                self._add_reference(reference)
                 self._send_ready_data()
 
             time.sleep(1 / self.INPUT_CHECKS_PER_FPS / self._camera_fps)
