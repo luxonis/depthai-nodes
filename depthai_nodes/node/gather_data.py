@@ -40,9 +40,9 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         Divisor for the FPS tolerance.
     INPUT_CHECKS_PER_FPS: int
         Number of input checks per FPS.
-    data_input: dai.Node.Input
+    _data_input: dai.Node.Input
         Input to be gathered.
-    reference_input: dai.Node.Input
+    _reference_input: dai.Node.Input
         Input to determine how many gathered items to wait for.
     output: dai.Node.Output
         Output for gathered data.
