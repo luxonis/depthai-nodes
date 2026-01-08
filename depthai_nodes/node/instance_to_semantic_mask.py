@@ -21,7 +21,7 @@ class InstanceToSemanticMask(BaseHostNode):
 
     def __init__(self) -> None:
         super().__init__()
-        self.out.setPossibleDatatypes([(ImgDetectionsExtended, True)])
+        self.out.setPossibleDatatypes([(dai.DatatypeEnum.ImgDetections, True)])
 
     def build(self, detections: dai.Node.Output) -> "InstanceToSemanticMask":
         self.link_args(detections)
