@@ -10,8 +10,11 @@ from depthai_nodes.node.base_host_node import BaseHostNode
 
 
 class ApplyColormap(BaseHostNode):
-    """A host node that applies a colormap to a given 2D array (e.g. depth maps,
-    segmentation masks, heatmaps, etc.).
+    """
+    A host node that applies a colormap to a 2D array (e.g. depth maps, segmentation masks, heatmaps, etc.).
+
+    This node is generic and uses per-frame max-value normalization. For depth visualization prefer 'ApplyDepthColormap'
+    to avoid flicker caused by the changing normalization range.
 
     Attributes
     ----------
@@ -19,17 +22,7 @@ class ApplyColormap(BaseHostNode):
         OpenCV colormap enum value or a custom, OpenCV compatible, colormap. Determines the applied color mapping.
     max_value : int
         Maximum value to consider for normalization. If set lower than the map's actual maximum, the map's maximum will be used instead.
-    instance_to_semantic_mask : bool
-        If True, converts instance segmentation masks to semantic segmentation masks. Note that this is only relevant for ImgDetectionsExtended messages.
-    normalization : str
-        Normalization mode. "max" (default) uses maximum value; "percentile" uses percentile clipping (useful for depth maps).
-    percentile_low : float
-        Lower percentile [0-100] for clipping when normalization="percentile".
-    percentile_high : float
-        Higher percentile [0-100] for clipping when normalization="percentile".
-    ignore_zero_in_percentile : bool
-        If True, 0 values are ignored when calculating percentiles (useful for depth).
-    arr : dai.ImgFrame or Map2D or ImgDetectionsExtended
+    frame : dai.ImgFrame or Map2D or ImgDetectionsExtended or SegmentationMask
         The input message with a 2D array.
     output : dai.ImgFrame
         The output message for a colorized frame.
@@ -39,66 +32,44 @@ class ApplyColormap(BaseHostNode):
         self,
         colormap_value: Union[int, np.ndarray] = cv2.COLORMAP_JET,
         max_value: int = 0,
-        instance_to_semantic_mask: bool = False,
     ) -> None:
         super().__init__()
 
         self.out.setPossibleDatatypes([(dai.DatatypeEnum.ImgFrame, True)])
 
-        self._normalization: str = "max"  # "max" | "percentile"
-        self._percentile_low: float = 2.0
-        self._percentile_high: float = 98.0
-        self._ignore_zero_in_percentile: bool = False
-
         self.setColormap(colormap_value)
         self.setMaxValue(max_value)
-        self.setInstanceToSemanticMask(instance_to_semantic_mask)
 
         self._logger.debug(
-            f"ApplyColormap initialized with colormap_value={colormap_value}, max_value={max_value}, instance_to_semantic_mask={instance_to_semantic_mask}",
+            f"ApplyColormap initialized with colormap_value={colormap_value}, max_value={max_value}",
         )
 
-    def setDepthPreset(self) -> None:
-        """Enables depth-friendly normalization to reduce flickering.
-
-        Uses percentile clipping (2-98%) and ignores invalid depth (0).
+    def build(self, frame: dai.Node.Output) -> "ApplyColormap":
         """
-        self._normalization = "percentile"
-        self._percentile_low = 2.0
-        self._percentile_high = 98.0
-        self._ignore_zero_in_percentile = True
-        self._logger.debug("Depth preset enabled")
+        Configures the node connections.
 
-    def setNormalization(self, normalization: str) -> None:
-        """Sets the normalization mode.
-
-        @param normalization: "max" | "percentile".
-        @type normalization: str
+        @param frame: Output with 2D array.
+        @type frame: depthai.Node.Output
+        @return: The node object with input stream connected
+        @rtype: ApplyColormap
         """
-        normalization = str(normalization).lower().strip()
-        if normalization not in ("max", "percentile"):
-            raise ValueError("normalization must be one of: 'max', 'percentile'.")
-        self._normalization = normalization
-        self._logger.debug(f"Normalization set to {self._normalization}")
+        self.link_args(frame)
+        self._logger.debug("ApplyColormap built")
+        return self
 
-    def setPercentileRange(self, low: float, high: float) -> None:
-        """Sets percentile range used when normalization='percentile'.
+    def process(self, msg: dai.Buffer) -> None:
+        self._logger.debug("Processing new input")
+        input_map = self._get_input_map(msg)
 
-        @param low: Lower percentile in [0, 100).
-        @param high: Higher percentile in (0, 100].
-        """
-        low = float(low)
-        high = float(high)
-        if not (0.0 <= low < high <= 100.0):
-            raise ValueError("Percentile range must satisfy 0 <= low < high <= 100.")
-        self._percentile_low = low
-        self._percentile_high = high
-        self._logger.debug(
-            f"Percentile range set to low={self._percentile_low}, high={self._percentile_high}"
-        )
+        color_map = self._colorize(input_map)
+
+        out = self._build_output_frame(color_map, msg)
+        self.out.send(out)
+        self._logger.debug("Message sent successfully")
 
     def setColormap(self, colormap_value: Union[int, np.ndarray]) -> None:
-        """Sets the applied color mapping.
+        """
+        Sets the applied color mapping.
 
         @param colormap_value: OpenCV colormap enum value (e.g. cv2.COLORMAP_HOT) or a
             custom, OpenCV compatible, colormap definition
@@ -108,7 +79,7 @@ class ApplyColormap(BaseHostNode):
             colormap = cv2.applyColorMap(np.arange(256, dtype=np.uint8), colormap_value)
             colormap[0] = [0, 0, 0]  # Set zero values to black
             self._colormap = colormap
-            self._logger.debug(f"Colormap set to {self._colormap}")
+            self._logger.debug(f"Colormap set to {colormap_value}")
         elif (
             isinstance(colormap_value, np.ndarray)
             and colormap_value.shape == (256, 1, 3)
@@ -122,7 +93,8 @@ class ApplyColormap(BaseHostNode):
             )
 
     def setMaxValue(self, max_value: int) -> None:
-        """Sets the maximum frame value for normalization.
+        """
+        Sets the maximum frame value for normalization.
 
         @param max_value: Maximum frame value.
         @type max_value: int
@@ -132,119 +104,55 @@ class ApplyColormap(BaseHostNode):
         self._max_value = max_value
         self._logger.debug(f"Max value set to {self._max_value}")
 
-    def setInstanceToSemanticMask(self, instance_to_semantic_mask: bool) -> None:
-        """Sets the instance to semantic mask flag.
-
-        @param instance_to_semantic_mask: If True, converts instance segmentation masks
-            to semantic segmentation masks.
-        @type instance_to_semantic_mask: bool
-        """
-        if not isinstance(instance_to_semantic_mask, bool):
-            raise ValueError("instance_to_semantic_mask must be a boolean.")
-        self._instance_to_semantic_mask = instance_to_semantic_mask
-        self._logger.debug(
-            f"Instance to semantic mask set to {self._instance_to_semantic_mask}"
-        )
-
-    def build(self, arr: dai.Node.Output) -> "ApplyColormap":
-        """Configures the node connections.
-
-        @param frame: Output with 2D array.
-        @type frame: depthai.Node.Output
-        @return: The node object with input stream connected
-        @rtype: ApplyColormap
-        """
-        self.link_args(arr)
-        self._logger.debug("ApplyColormap built")
-        return self
-
-    def process(self, msg: dai.Buffer) -> None:
-        """Processes incoming 2D arrays and converts them to colored frames.
-
-        @param msg: The input message with a 2D array.
-        @type msg: dai.ImgFrame or Map2D or ImgDetectionsExtended
-        @param instance_to_semantic_segmentation: If True, converts instance
-            segmentation masks to semantic segmentation masks.
-        @type instance_to_semantic_segmentation: bool
-        """
-        self._logger.debug("Processing new input")
-        msg_copy = copy_message(msg)
-
-        if isinstance(msg, SegmentationMask):
-            arr = msg_copy.mask
-        elif isinstance(msg, dai.ImgFrame):
+    def _get_input_map(self, msg: dai.Buffer) -> np.ndarray:
+        if isinstance(msg, dai.ImgFrame):
             if not msg.getType().name.startswith("RAW"):
                 raise TypeError(f"Expected image type RAW, got {msg.getType().name}")
-            arr = msg.getCvFrame()
-        elif isinstance(msg, Map2D):
-            arr = msg_copy.map
-        elif isinstance(msg, ImgDetectionsExtended):
-            if self._instance_to_semantic_mask:
-                labels = {
-                    idx: detection.label for idx, detection in enumerate(msg.detections)
-                }
-                labels[-1] = -1  # background class
-                arr = np.vectorize(lambda x: labels.get(x, -1))(
-                    msg_copy.masks  # instance segmentation mask
-                )  # semantic segmentation mask
-            else:
-                arr = msg_copy.masks  # semantic segmentation mask
-        else:
-            raise ValueError(f"Unsupported input type {type(msg)}.")
+            return msg.getCvFrame()
 
+        msg_copy = copy_message(msg)
+
+        if isinstance(msg_copy, SegmentationMask):
+            return msg_copy.mask
+
+        if isinstance(msg_copy, Map2D):
+            return msg_copy.map
+
+        if isinstance(msg_copy, ImgDetectionsExtended):
+            return msg_copy.masks
+
+        raise ValueError(f"Unsupported input type {type(msg_copy)}.")
+
+    def _colorize(self, input_map: np.ndarray) -> np.ndarray:
         # make sure that min value == 0 to ensure proper normalization
-        if not self._ignore_zero_in_percentile:
-            arr += np.abs(arr.min()) if arr.min() < 0 else 0
+        if input_map.min() < 0:
+            input_map = input_map + np.abs(input_map.min())
 
-        # Calculate Normalization Bounds
-        low_value, high_value = 0.0, 0.0
-
-        if self._normalization == "max":
-            high_value = float(max(self._max_value, int(arr.max())))
-
-        elif self._normalization == "percentile":
-            if self._ignore_zero_in_percentile:
-                valid = arr[arr > 0]
-            else:
-                valid = arr.reshape(-1)
-
-            if valid.size > 0:
-                low_value = float(np.percentile(valid, self._percentile_low))
-                high_value = float(np.percentile(valid, self._percentile_high))
-
-                # If user set a manual max_value, ensure high_value is at least that
-                if self._max_value > 0:
-                    high_value = max(high_value, float(self._max_value))
-        else:
-            raise ValueError(f"Unsupported normalization mode {self._normalization}.")
-
-        if high_value <= low_value:
-            color_arr = np.zeros(
-                (arr.shape[0], arr.shape[1], 3),
+        max_value = max(self._max_value, input_map.max())
+        if max_value == 0:
+            color_map = np.zeros(
+                (input_map.shape[0], input_map.shape[1], 3),
                 dtype=np.uint8,
             )
         else:
-            scaled = (
-                (arr.astype(np.float32) - low_value) / (high_value - low_value)
-            ) * 255.0
-            scaled = np.clip(scaled, 0, 255).astype(np.uint8)
-            color_arr = cv2.applyColorMap(scaled, self._colormap)
+            color_map = cv2.applyColorMap(
+                ((input_map / max_value) * 255).astype(np.uint8),
+                self._colormap,
+            )
 
+        return color_map
+
+    def _build_output_frame(self, color_map: np.ndarray, src_frame: dai.Buffer) -> dai.ImgFrame:
         frame = dai.ImgFrame()
-        frame.setCvFrame(
-            color_arr,
-            self._img_frame_type,
-        )
+        frame.setCvFrame(color_map, self._img_frame_type)
 
-        frame.setTimestamp(msg.getTimestamp())
-        frame.setSequenceNum(msg.getSequenceNum())
-        frame.setTimestampDevice(msg.getTimestampDevice())
-        transformation = msg.getTransformation()
+        frame.setTimestamp(src_frame.getTimestamp())
+        frame.setSequenceNum(src_frame.getSequenceNum())
+        frame.setTimestampDevice(src_frame.getTimestampDevice())
+
+        transformation = src_frame.getTransformation()
         if transformation is not None:
             frame.setTransformation(transformation)
 
         self._logger.debug("ImgFrame message created")
-
-        self.out.send(frame)
-
-        self._logger.debug("Message sent successfully")
+        return frame
