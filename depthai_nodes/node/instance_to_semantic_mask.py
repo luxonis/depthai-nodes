@@ -1,5 +1,5 @@
-import numpy as np
 import depthai as dai
+import numpy as np
 
 from depthai_nodes.message import ImgDetectionsExtended
 from depthai_nodes.message.utils import copy_message
@@ -7,9 +7,8 @@ from depthai_nodes.node.base_host_node import BaseHostNode
 
 
 class InstanceToSemanticMask(BaseHostNode):
-    """
-    Converts an ImgDetectionsExtended instance mask into a semantic mask by
-    mapping unique instance IDs to detection class labels.
+    """Converts an ImgDetectionsExtended instance mask into a semantic mask by mapping
+    unique instance IDs to detection class labels.
 
     Attributes
     ----------
@@ -29,7 +28,9 @@ class InstanceToSemanticMask(BaseHostNode):
 
     def process(self, msg: dai.Buffer) -> None:
         if not isinstance(msg, ImgDetectionsExtended):
-            raise TypeError(f"Expected ImgDetectionsExtended input type, got {type(msg)}.")
+            raise TypeError(
+                f"Expected ImgDetectionsExtended input type, got {type(msg)}."
+            )
 
         msg_copy = copy_message(msg)
         masks = msg_copy.masks

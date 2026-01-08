@@ -1,4 +1,4 @@
-from typing import Union, Tuple, Optional
+from typing import Tuple, Union
 
 import cv2
 import depthai as dai
@@ -8,8 +8,8 @@ from depthai_nodes.node.base_host_node import BaseHostNode
 
 
 class ApplyDepthColormap(BaseHostNode):
-    """
-    A host node that applies a colormap to a depth map using percentile-based normalization to reduce flicker.
+    """A host node that applies a colormap to a depth map using percentile-based
+    normalization to reduce flicker.
 
     Invalid depth values (<= 0) are ignored when computing percentiles and are rendered as black in the output.
 
@@ -21,42 +21,26 @@ class ApplyDepthColormap(BaseHostNode):
         Lower normalization percentile in [0, 100). Default 2.0.
     p_high : float
         Upper normalization percentile in (0, 100]. Default 98.0.
-    min_depth_mm : Optional[float]
-        Optional fixed minimum depth bound in millimeters. If set, overrides the percentile-derived low bound.
-    max_depth_mm : Optional[float]
-        Optional fixed maximum depth bound in millimeters. If set, overrides the percentile-derived high bound.
     frame : dai.ImgFrame
         The input message with a 2D array.
     output : dai.ImgFrame
         The output message for a colorized frame.
     """
+
     def __init__(
         self,
         colormap_value: Union[int, np.ndarray] = cv2.COLORMAP_JET,
         p_low: float = 2.0,
         p_high: float = 98.0,
-        min_depth_mm: Optional[float] = None,
-        max_depth_mm: Optional[float] = None,
     ) -> None:
         super().__init__()
         self.out.setPossibleDatatypes([(dai.DatatypeEnum.ImgFrame, True)])
-
-        self._min_depth_mm = None if min_depth_mm is None else float(min_depth_mm)
-        self._max_depth_mm = None if max_depth_mm is None else float(max_depth_mm)
-
-        if self._min_depth_mm is not None and self._max_depth_mm is not None:
-            if self._max_depth_mm <= self._min_depth_mm:
-                raise ValueError(
-                    f"max_depth_mm must be > min_depth_mm. Got min_depth_mm={self._min_depth_mm}, "
-                    f"max_depth_mm={self._max_depth_mm}."
-                )
 
         self.setPercentileRange(low=p_low, high=p_high)
         self.setColormap(colormap_value)
 
     def build(self, frame: dai.Node.Output) -> "ApplyDepthColormap":
-        """
-        Configures the node connections.
+        """Configures the node connections.
 
         @param frame: Node output that produces a RAW depth dai.ImgFrame.
         @type frame: dai.Node.Output
@@ -115,8 +99,7 @@ class ApplyDepthColormap(BaseHostNode):
             )
 
     def setPercentileRange(self, low: float, high: float) -> None:
-        """
-        Set the percentile clipping range used when normalization is PERCENTILE.
+        """Set the percentile clipping range used when normalization is PERCENTILE.
 
         @param low: Lower percentile in [0, 100).
         @param high: Higher percentile in (0, 100].
@@ -133,20 +116,18 @@ class ApplyDepthColormap(BaseHostNode):
 
     def _get_depth_map(self, msg: dai.Buffer) -> np.ndarray:
         if not isinstance(msg, dai.ImgFrame):
-            raise TypeError(f"Unsupported input type {type(msg)}, expected dai.ImgFrame.")
+            raise TypeError(
+                f"Unsupported input type {type(msg)}, expected dai.ImgFrame."
+            )
         if not msg.getType().name.startswith("RAW"):
             raise TypeError(f"Expected image type RAW, got {msg.getType().name}")
         return msg.getCvFrame()
 
-    def _compute_normalization_bounds(self, valid_depth_values: np.ndarray) -> Tuple[float, float]:
+    def _compute_normalization_bounds(
+        self, valid_depth_values: np.ndarray
+    ) -> Tuple[float, float]:
         low = float(np.percentile(valid_depth_values, self._p_low))
         high = float(np.percentile(valid_depth_values, self._p_high))
-
-        if self._min_depth_mm is not None:
-            low = self._min_depth_mm
-        if self._max_depth_mm is not None:
-            high = self._max_depth_mm
-
         return low, high
 
     def _colorize(
@@ -157,8 +138,7 @@ class ApplyDepthColormap(BaseHostNode):
         max_value: float,
     ) -> np.ndarray:
         depth = depth.astype(np.float32, copy=False)
-        depth = np.clip(depth, min_value, max_value)
-        scaled = ((depth - min_value) / (max_value - min_value) * 255.0)
+        scaled = (depth - min_value) / (max_value - min_value) * 255.0
         scaled = np.clip(scaled, 0, 255).astype(np.uint8)
         scaled[invalid_depth_mask] = 0  # invalid -> 0 so it becomes black
 
@@ -166,7 +146,9 @@ class ApplyDepthColormap(BaseHostNode):
         color[invalid_depth_mask] = 0
         return color
 
-    def _build_output_frame(self, color_map: np.ndarray, src_frame: dai.Buffer) -> dai.ImgFrame:
+    def _build_output_frame(
+        self, color_map: np.ndarray, src_frame: dai.Buffer
+    ) -> dai.ImgFrame:
         frame = dai.ImgFrame()
         frame.setCvFrame(color_map, self._img_frame_type)
 

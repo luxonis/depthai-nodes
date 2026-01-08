@@ -10,8 +10,8 @@ from depthai_nodes.node.base_host_node import BaseHostNode
 
 
 class ApplyColormap(BaseHostNode):
-    """
-    A host node that applies a colormap to a 2D array (e.g. depth maps, segmentation masks, heatmaps, etc.).
+    """A host node that applies a colormap to a 2D array (e.g. depth maps, segmentation
+    masks, heatmaps, etc.).
 
     This node is generic and uses per-frame max-value normalization. For depth visualization prefer 'ApplyDepthColormap'
     to avoid flicker caused by the changing normalization range.
@@ -45,8 +45,7 @@ class ApplyColormap(BaseHostNode):
         )
 
     def build(self, frame: dai.Node.Output) -> "ApplyColormap":
-        """
-        Configures the node connections.
+        """Configures the node connections.
 
         @param frame: Output with 2D array.
         @type frame: depthai.Node.Output
@@ -68,8 +67,7 @@ class ApplyColormap(BaseHostNode):
         self._logger.debug("Message sent successfully")
 
     def setColormap(self, colormap_value: Union[int, np.ndarray]) -> None:
-        """
-        Sets the applied color mapping.
+        """Sets the applied color mapping.
 
         @param colormap_value: OpenCV colormap enum value (e.g. cv2.COLORMAP_HOT) or a
             custom, OpenCV compatible, colormap definition
@@ -93,8 +91,7 @@ class ApplyColormap(BaseHostNode):
             )
 
     def setMaxValue(self, max_value: int) -> None:
-        """
-        Sets the maximum frame value for normalization.
+        """Sets the maximum frame value for normalization.
 
         @param max_value: Maximum frame value.
         @type max_value: int
@@ -142,7 +139,9 @@ class ApplyColormap(BaseHostNode):
 
         return color_map
 
-    def _build_output_frame(self, color_map: np.ndarray, src_frame: dai.Buffer) -> dai.ImgFrame:
+    def _build_output_frame(
+        self, color_map: np.ndarray, src_frame: dai.Buffer
+    ) -> dai.ImgFrame:
         frame = dai.ImgFrame()
         frame.setCvFrame(color_map, self._img_frame_type)
 
