@@ -1,13 +1,88 @@
 from typing import List, Optional, Tuple
 
+import depthai as dai
 import numpy as np
 
-from depthai_nodes import (
-    ImgDetectionExtended,
-    ImgDetectionsExtended,
-)
+# from depthai_nodes import (
+#     ImgDetectionExtended,
+#     ImgDetectionsExtended,
+# )
 
-from .keypoints import create_keypoints_message
+# from .keypoints import create_keypoints_message
+
+
+def _create_keypoints(keypoints: np.ndarray, scores: np.ndarray) -> list[dai.Keypoint]:
+    if not isinstance(keypoints, (np.ndarray, list)):
+        raise ValueError(
+            f"Keypoints should be numpy array or list, got {type(keypoints)}."
+        )
+
+    if scores is not None:
+        if not isinstance(scores, (np.ndarray, list)):
+            raise ValueError(
+                f"Scores should be numpy array or list, got {type(scores)}."
+            )
+        scores = np.array(scores)
+
+        if len(keypoints) != len(scores):
+            raise ValueError(
+                "Keypoints and scores should have the same length. Got {} keypoints and {} scores.".format(
+                    len(keypoints), len(scores)
+                )
+            )
+
+        if not all(isinstance(score, (float, np.floating)) for score in scores):
+            raise ValueError("Scores should only contain float values.")
+        if not all(0 <= score <= 1 for score in scores):
+            raise ValueError("Scores should only contain values between 0 and 1.")
+
+    if len(keypoints) != 0:
+        dimension = len(keypoints[0])
+        if dimension != 2 and dimension != 3:
+            raise ValueError(
+                f"All keypoints should be of dimension 2 or 3, got dimension {dimension}."
+            )
+
+    if isinstance(keypoints, list):
+        for keypoint in keypoints:
+            if not isinstance(keypoint, list):
+                raise ValueError(
+                    f"Keypoints should be list of lists or np.array, got list of {type(keypoint)}."
+                )
+            if len(keypoint) != dimension:
+                raise ValueError(
+                    "All keypoints have to be of same dimension e.g. [x, y] or [x, y, z], got mixed inner dimensions."
+                )
+            for coord in keypoint:
+                if not isinstance(coord, (float, np.floating)):
+                    raise ValueError(
+                        f"Keypoints inner list should contain only float, got {type(coord)}."
+                    )
+        keypoints = np.array(keypoints)
+
+    if len(keypoints) != 0:
+        if len(keypoints.shape) != 2:
+            raise ValueError(
+                f"Keypoints should be of shape (N,2 or 3) got {keypoints.shape}."
+            )
+
+        use_3d = keypoints.shape[1] == 3
+
+    keypoints_list = []
+
+    for i, keypoint in enumerate(keypoints):
+        pt = dai.Keypoint()
+        pt.imageCoordinates = dai.Point3f(
+            float(keypoint[0]),
+            float(keypoint[1]),
+            float(keypoint[2]) if use_3d else 0.0,
+        )
+        if scores is not None:
+            pt.confidence = float(scores[i])
+        keypoints_list.append(pt)
+
+    return keypoints_list
+    # keypoints_msg.keypoints = points
 
 
 def create_detection_message(
@@ -18,10 +93,10 @@ def create_detection_message(
     label_names: Optional[List[str]] = None,
     keypoints: np.ndarray = None,
     keypoints_scores: np.ndarray = None,
-    keypoint_label_names: Optional[List[str]] = None,
+    # keypoint_label_names: Optional[List[str]] = None,
     keypoint_edges: Optional[List[Tuple[int, int]]] = None,
     masks: np.ndarray = None,
-) -> ImgDetectionsExtended:
+) -> dai.ImgDetections:
     """Create a DepthAI message for object detection. The message contains the bounding
     boxes in X_center, Y_center, Width, Height format with optional angles, labels and
     detected object keypoints and masks.
@@ -77,9 +152,12 @@ def create_detection_message(
         raise ValueError(f"Bounding boxes should be a numpy array, got {type(bboxes)}.")
 
     if len(bboxes) == 0:
-        img_detections = ImgDetectionsExtended()
+        # img_detections = ImgDetectionsExtended()
+        img_detections = dai.ImgDetections()
         if masks is not None:
-            img_detections.masks = masks
+            # img_detections.masks = masks
+            masks = masks.astype(np.uint8)
+            img_detections.setCvSegmentationMask(masks)
         return img_detections
 
     if len(bboxes.shape) != 2:
@@ -172,15 +250,15 @@ def create_detection_message(
         if not all(0 <= score <= 1 for score in keypoints_scores.flatten()):
             raise ValueError("Keypoints scores should be between 0 and 1.")
 
-    if keypoint_label_names is not None:
-        if not isinstance(keypoint_label_names, list):
-            raise ValueError(
-                f"Keypoint label names should be a list, got {type(keypoint_label_names)}."
-            )
-        if not all(isinstance(label, str) for label in keypoint_label_names):
-            raise ValueError(
-                f"Keypoint label names should be a list of strings, got {keypoint_label_names}."
-            )
+    # if keypoint_label_names is not None:
+    #     if not isinstance(keypoint_label_names, list):
+    #         raise ValueError(
+    #             f"Keypoint label names should be a list, got {type(keypoint_label_names)}."
+    #         )
+    #     if not all(isinstance(label, str) for label in keypoint_label_names):
+    #         raise ValueError(
+    #             f"Keypoint label names should be a list of strings, got {keypoint_label_names}."
+    #         )
 
     if keypoint_edges is not None:
         if not isinstance(keypoint_edges, list):
@@ -204,48 +282,66 @@ def create_detection_message(
         if len(masks.shape) != 2:
             raise ValueError(f"Masks should be of shape (H, W), got {masks.shape}.")
 
-        if masks.dtype != np.int16:
-            masks = masks.astype(np.int16)
+        if masks.dtype != np.uint8:
+            masks = masks.astype(np.uint8)
 
     detections = []
     for detection_idx in range(n_bboxes):
-        detection = ImgDetectionExtended()
+        # detection = ImgDetectionExtended()
+        detection = dai.ImgDetection()
 
         x_center, y_center, width, height = bboxes[detection_idx]
         angle = 0
         if angles is not None:
             angle = float(angles[detection_idx])
-        detection.rotated_rect = (
-            float(x_center),
-            float(y_center),
-            float(width),
-            float(height),
-            angle,
+
+        bounding_box = dai.RotatedRect()
+        bounding_box.center = dai.Point2f(
+            float(x_center), float(y_center), normalized=True
         )
+        bounding_box.size = dai.Size2f(float(width), float(height), normalized=True)
+        bounding_box.angle = float(angle)
+        detection.setBoundingBox(bounding_box)
+        # detection.rotated_rect = (
+        #     float(x_center),
+        #     float(y_center),
+        #     float(width),
+        #     float(height),
+        #     angle,
+        # )
         detection.confidence = float(scores[detection_idx])
 
         if labels is not None:
             detection.label = int(labels[detection_idx])
             if label_names is not None:
-                detection.label_name = label_names[detection_idx]
+                detection.labelName = label_names[detection_idx]
         if keypoints is not None:
-            keypoints_msg = create_keypoints_message(
-                keypoints=keypoints[detection_idx],
-                scores=(
-                    None
-                    if keypoints_scores is None
-                    else keypoints_scores[detection_idx]
-                ),
-                label_names=keypoint_label_names,
-                edges=keypoint_edges,
+            keypoints_list = _create_keypoints(
+                keypoints[detection_idx],
+                None if keypoints_scores is None else keypoints_scores[detection_idx],
             )
-            detection.keypoints = keypoints_msg
+            # keypoints_msg = create_keypoints_message(
+            #     keypoints=keypoints[detection_idx],
+            #     scores=(
+            #         None
+            #         if keypoints_scores is None
+            #         else keypoints_scores[detection_idx]
+            #     ),
+            #     # label_names=keypoint_label_names,
+            #     edges=keypoint_edges,
+            # )
+            if keypoint_edges is not None:
+                detection.setKeypoints(keypoints_list, edges=keypoint_edges)
+            else:
+                detection.setKeypoints(keypoints_list)
+            # detection.keypoints = keypoints_msg
         detections.append(detection)
 
-    detections_msg = ImgDetectionsExtended()
+    detections_msg = dai.ImgDetections()
     detections_msg.detections = detections
 
     if masks is not None:
-        detections_msg.masks = masks
+        # detections_msg.masks = masks
+        detections_msg.setCvSegmentationMask(masks)
 
     return detections_msg

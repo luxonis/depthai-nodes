@@ -447,7 +447,7 @@ class YOLOExtendedParser(BaseParser):
             )
 
             bboxes, labels, label_names, scores, additional_output = [], [], [], [], []
-            final_mask = np.full(input_shape, -1, dtype=np.int16)
+            final_mask = np.full(input_shape, 255, dtype=np.uint8)
             for i in range(results.shape[0]):
                 bbox, conf, label, other = (
                     results[i, :4],
@@ -506,7 +506,7 @@ class YOLOExtendedParser(BaseParser):
                     label_names=label_names,
                     keypoints=keypoints,
                     keypoints_scores=keypoints_scores,
-                    keypoint_label_names=self.keypoint_label_names,
+                    # keypoint_label_names=self.keypoint_label_names,
                     keypoint_edges=self.keypoint_edges,
                 )
             elif mode == self._SEG_MODE:

@@ -137,6 +137,23 @@ class ApplyColormap(BaseHostNode):
                 )  # semantic segmentation mask
             else:
                 arr = msg_copy.masks  # semantic segmentation mask
+        elif isinstance(msg, dai.ImgDetections):
+            if self._instance_to_semantic_mask:
+                labels = {
+                    idx: detection.label for idx, detection in enumerate(msg.detections)
+                }
+                labels[255] = 255  # background class
+                arr = np.vectorize(lambda x: labels.get(x, 255))(
+                    msg_copy.getCvSegmentationMask()
+                )
+            else:
+                assert isinstance(msg_copy, dai.ImgDetections)
+                arr = msg_copy.getCvSegmentationMask()
+
+            # Remap 255 (background) to 0 and shift other values up by 1
+            # This ensures background gets the lowest color value
+            remapped_arr = np.where(arr == 255, 0, arr + 1)
+            arr = remapped_arr
         else:
             raise ValueError(f"Unsupported input type {type(msg)}.")
 
