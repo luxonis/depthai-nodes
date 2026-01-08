@@ -3,13 +3,6 @@ from typing import List, Optional, Tuple
 import depthai as dai
 import numpy as np
 
-# from depthai_nodes import (
-#     ImgDetectionExtended,
-#     ImgDetectionsExtended,
-# )
-
-# from .keypoints import create_keypoints_message
-
 
 def _create_keypoints(keypoints: np.ndarray, scores: np.ndarray) -> list[dai.Keypoint]:
     if not isinstance(keypoints, (np.ndarray, list)):
@@ -82,7 +75,6 @@ def _create_keypoints(keypoints: np.ndarray, scores: np.ndarray) -> list[dai.Key
         keypoints_list.append(pt)
 
     return keypoints_list
-    # keypoints_msg.keypoints = points
 
 
 def create_detection_message(
@@ -93,7 +85,6 @@ def create_detection_message(
     label_names: Optional[List[str]] = None,
     keypoints: np.ndarray = None,
     keypoints_scores: np.ndarray = None,
-    # keypoint_label_names: Optional[List[str]] = None,
     keypoint_edges: Optional[List[Tuple[int, int]]] = None,
     masks: np.ndarray = None,
 ) -> dai.ImgDetections:
@@ -118,8 +109,6 @@ def create_detection_message(
     @param keypoints_scores: Confidence scores of detected keypoints of shape (N,
         n_keypoints). Defaults to None.
     @type keypoints_scores: Optional[np.ndarray]
-    @param keypoint_label_names: Labels of keypoints. Defaults to None.
-    @type keypoint_label_names: Optional[List[str]]
     @param keypoint_edges: Connection pairs of keypoints. Defaults to None. Example:
         [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint 1,
         keypoint 1 is connected to keypoint 2, etc.
@@ -128,7 +117,7 @@ def create_detection_message(
     @type masks: Optional[np.ndarray]
     @return: Message containing the bounding boxes, labels, confidence scores, and
         keypoints of detected objects.
-    @rtype: ImgDetectionsExtended
+    @rtype: dai.ImgDetections
     @raise ValueError: If the bboxes are not a numpy array.
     @raise ValueError: If the bboxes are not of shape (N,4).
     @raise ValueError: If the scores are not a numpy array.
@@ -152,10 +141,8 @@ def create_detection_message(
         raise ValueError(f"Bounding boxes should be a numpy array, got {type(bboxes)}.")
 
     if len(bboxes) == 0:
-        # img_detections = ImgDetectionsExtended()
         img_detections = dai.ImgDetections()
         if masks is not None:
-            # img_detections.masks = masks
             masks = masks.astype(np.uint8)
             img_detections.setCvSegmentationMask(masks)
         return img_detections
@@ -250,16 +237,6 @@ def create_detection_message(
         if not all(0 <= score <= 1 for score in keypoints_scores.flatten()):
             raise ValueError("Keypoints scores should be between 0 and 1.")
 
-    # if keypoint_label_names is not None:
-    #     if not isinstance(keypoint_label_names, list):
-    #         raise ValueError(
-    #             f"Keypoint label names should be a list, got {type(keypoint_label_names)}."
-    #         )
-    #     if not all(isinstance(label, str) for label in keypoint_label_names):
-    #         raise ValueError(
-    #             f"Keypoint label names should be a list of strings, got {keypoint_label_names}."
-    #         )
-
     if keypoint_edges is not None:
         if not isinstance(keypoint_edges, list):
             raise ValueError(
@@ -287,7 +264,6 @@ def create_detection_message(
 
     detections = []
     for detection_idx in range(n_bboxes):
-        # detection = ImgDetectionExtended()
         detection = dai.ImgDetection()
 
         x_center, y_center, width, height = bboxes[detection_idx]
@@ -302,13 +278,6 @@ def create_detection_message(
         bounding_box.size = dai.Size2f(float(width), float(height), normalized=True)
         bounding_box.angle = float(angle)
         detection.setBoundingBox(bounding_box)
-        # detection.rotated_rect = (
-        #     float(x_center),
-        #     float(y_center),
-        #     float(width),
-        #     float(height),
-        #     angle,
-        # )
         detection.confidence = float(scores[detection_idx])
 
         if labels is not None:
@@ -320,28 +289,15 @@ def create_detection_message(
                 keypoints[detection_idx],
                 None if keypoints_scores is None else keypoints_scores[detection_idx],
             )
-            # keypoints_msg = create_keypoints_message(
-            #     keypoints=keypoints[detection_idx],
-            #     scores=(
-            #         None
-            #         if keypoints_scores is None
-            #         else keypoints_scores[detection_idx]
-            #     ),
-            #     # label_names=keypoint_label_names,
-            #     edges=keypoint_edges,
-            # )
+            detection.setKeypoints(keypoints_list)
             if keypoint_edges is not None:
-                detection.setKeypoints(keypoints_list, edges=keypoint_edges)
-            else:
-                detection.setKeypoints(keypoints_list)
-            # detection.keypoints = keypoints_msg
+                detection.setEdges(keypoint_edges)
         detections.append(detection)
 
     detections_msg = dai.ImgDetections()
     detections_msg.detections = detections
 
     if masks is not None:
-        # detections_msg.masks = masks
         detections_msg.setCvSegmentationMask(masks)
 
     return detections_msg
