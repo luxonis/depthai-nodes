@@ -74,7 +74,9 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         img_dets_copy = _copy_metadata(img_dets)
         if isinstance(img_dets, dai.ImgDetections):
             assert isinstance(img_dets_copy, dai.ImgDetections)
-            img_dets_copy.setCvSegmentationMask(img_dets.getCvSegmentationMask())
+            masks = img_dets.getCvSegmentationMask()
+            if masks is not None:
+                img_dets_copy.setCvSegmentationMask(masks)
         img_dets_copy.detections = [
             _copy_img_detection(img_det) for img_det in img_dets.detections
         ]
@@ -88,7 +90,6 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         point2f_copy = _copy_metadata(point2f)
         point2f_copy.x = point2f.x
         point2f_copy.y = point2f.y
-        # TODO: set the value for .isNormalized()
         return point2f_copy
 
     def _copy_size2f(size2f: dai.Size2f) -> dai.Size2f:
