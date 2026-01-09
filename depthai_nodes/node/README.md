@@ -24,11 +24,11 @@ Parser nodes are used to parse the output of a neural network. The main purpose 
 
 ### Object Detection
 
-- `YOLOExtendedParser`: Extended YOLO detection parser that supports all YOLO models and tasks (detection, pose estimation, instance segmentation). It will output the [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message with the detections.
-- `YuNetParser`: YuNet face detection parser that will output the [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message with the detections.
-- `SCRFDParser`: SCRFD parser for parsing family of SCRFD models that will output the [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message with the detections.
-- `MPPalmDetectionParser`: MediaPipe palm detection parser that will output the [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message with the detections.
-- `PPTextDetectionParser`: Parser for parsing the output of the Paddle Text Detection model. It will output the [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message with the detections.
+- `YOLOExtendedParser`: Extended YOLO detection parser that supports all YOLO models and tasks (detection, pose estimation, instance segmentation). It will output the [`depthai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) message with the detections.
+- `YuNetParser`: YuNet face detection parser that will output the [`depthai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) message with the detections.
+- `SCRFDParser`: SCRFD parser for parsing family of SCRFD models that will output the [`depthai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) message with the detections.
+- `MPPalmDetectionParser`: MediaPipe palm detection parser that will output the [`depthai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) message with the detections.
+- `PPTextDetectionParser`: Parser for parsing the output of the Paddle Text Detection model. It will output the [`depthai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) message with the detections.
 
 ### Classification
 
