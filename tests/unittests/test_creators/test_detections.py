@@ -1,7 +1,7 @@
+import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.message.creators import (
     create_detection_message,
 )
@@ -31,37 +31,41 @@ def test_valid_input():
         masks=MASKS,
     )
 
-    assert isinstance(message, ImgDetectionsExtended)
+    assert isinstance(message, dai.ImgDetections)
     assert len(message.detections) == 3
 
     for i, detection in enumerate(message.detections):
-        assert isinstance(detection, ImgDetectionExtended)
-        assert detection.confidence == SCORES[i]
+        assert isinstance(detection, dai.ImgDetection)
+        assert np.allclose(detection.confidence, float(SCORES[i]), atol=1e-3)
         assert detection.label == LABELS[i]
-        assert detection.rotated_rect.angle == ANGLES[i]
+        assert detection.getBoundingBox().angle == ANGLES[i]
 
-        assert np.allclose(detection.rotated_rect.center.x, BBOXES[i][0], atol=1e-3)
-        assert np.allclose(detection.rotated_rect.center.y, BBOXES[i][1], atol=1e-3)
-        assert np.allclose(detection.rotated_rect.size.width, BBOXES[i][2], atol=1e-3)
-        assert np.allclose(detection.rotated_rect.size.height, BBOXES[i][3], atol=1e-3)
+        assert np.allclose(detection.getBoundingBox().center.x, BBOXES[i][0], atol=1e-3)
+        assert np.allclose(detection.getBoundingBox().center.y, BBOXES[i][1], atol=1e-3)
+        assert np.allclose(
+            detection.getBoundingBox().size.width, BBOXES[i][2], atol=1e-3
+        )
+        assert np.allclose(
+            detection.getBoundingBox().size.height, BBOXES[i][3], atol=1e-3
+        )
 
-        for j, keypoint in enumerate(detection.keypoints):
-            assert keypoint.x == KPTS[i][j][0]
-            assert keypoint.y == KPTS[i][j][1]
-            assert keypoint.confidence == KPTS_SCORES[i][j]
+        for j, keypoint in enumerate(detection.getKeypoints()):
+            assert np.allclose(keypoint.imageCoordinates.x, KPTS[i][j][0], atol=1e-3)
+            assert np.allclose(keypoint.imageCoordinates.y, KPTS[i][j][1], atol=1e-3)
+            assert np.allclose(keypoint.confidence, float(KPTS_SCORES[i][j]), atol=1e-3)
 
-    assert np.allclose(message.masks, MASKS, atol=1e-3)
+    assert np.allclose(message.getCvSegmentationMask(), MASKS, atol=1e-3)
 
 
 def test_valid_input_no_optional():
     message = create_detection_message(BBOXES, SCORES)
 
-    assert isinstance(message, ImgDetectionsExtended)
+    assert isinstance(message, dai.ImgDetections)
     assert len(message.detections) == 3
 
     for i, detection in enumerate(message.detections):
-        assert isinstance(detection, ImgDetectionExtended)
-        assert detection.confidence == SCORES[i]
+        assert isinstance(detection, dai.ImgDetection)
+        assert np.allclose(detection.confidence, float(SCORES[i]), atol=1e-3)
 
 
 def test_bboxes_scores_labels():
@@ -74,19 +78,19 @@ def test_bboxes_scores_labels():
 def test_bboxes_scores_keypoints():
     message = create_detection_message(bboxes=BBOXES, scores=SCORES, keypoints=KPTS)
 
-    assert isinstance(message, ImgDetectionsExtended)
+    assert isinstance(message, dai.ImgDetections)
 
     for i, detection in enumerate(message.detections):
-        for ii, keypoint in enumerate(detection.keypoints):
-            assert keypoint.x == KPTS[i][ii][0]
-            assert keypoint.y == KPTS[i][ii][1]
+        for ii, keypoint in enumerate(detection.getKeypoints()):
+            assert np.allclose(keypoint.imageCoordinates.x, KPTS[i][ii][0], atol=1e-3)
+            assert np.allclose(keypoint.imageCoordinates.y, KPTS[i][ii][1], atol=1e-3)
 
 
 def test_bboxes_masks():
     message = create_detection_message(bboxes=BBOXES, scores=SCORES, masks=MASKS)
 
-    assert isinstance(message, ImgDetectionsExtended)
-    assert np.array_equal(message.masks, MASKS)
+    assert isinstance(message, dai.ImgDetections)
+    assert np.array_equal(message.getCvSegmentationMask(), MASKS)
 
 
 def test_no_bboxes_masks():
@@ -95,19 +99,19 @@ def test_no_bboxes_masks():
 
     message = create_detection_message(bboxes=bboxes, scores=scores, masks=MASKS)
 
-    assert isinstance(message, ImgDetectionsExtended)
-    assert np.array_equal(message.masks, MASKS)
+    assert isinstance(message, dai.ImgDetections)
+    assert np.array_equal(message.getCvSegmentationMask(), MASKS)
 
 
 def test_no_masks_no_bboxes():
     bboxes = np.array([])
     scores = np.array([])
-    mask = np.array([[]], dtype=np.int16)
+    mask = np.array([[]], dtype=np.uint8)
 
     message = create_detection_message(bboxes=bboxes, scores=scores, masks=mask)
 
-    assert isinstance(message, ImgDetectionsExtended)
-    assert np.array_equal(message.masks, mask)
+    assert isinstance(message, dai.ImgDetections)
+    assert message.getCvSegmentationMask() is None
 
 
 def test_empty_bboxes():
@@ -115,7 +119,7 @@ def test_empty_bboxes():
     scores = np.array([])
     message = create_detection_message(bboxes, scores)
 
-    assert isinstance(message, ImgDetectionsExtended)
+    assert isinstance(message, dai.ImgDetections)
     assert len(message.detections) == 0
 
 

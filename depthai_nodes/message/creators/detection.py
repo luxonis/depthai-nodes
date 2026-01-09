@@ -4,7 +4,9 @@ import depthai as dai
 import numpy as np
 
 
-def _create_keypoints(keypoints: np.ndarray, scores: np.ndarray) -> list[dai.Keypoint]:
+def _create_keypoints(
+    keypoints: np.ndarray, scores: np.ndarray = None
+) -> list[dai.Keypoint]:
     if not isinstance(keypoints, (np.ndarray, list)):
         raise ValueError(
             f"Keypoints should be numpy array or list, got {type(keypoints)}."
@@ -72,6 +74,8 @@ def _create_keypoints(keypoints: np.ndarray, scores: np.ndarray) -> list[dai.Key
         )
         if scores is not None:
             pt.confidence = float(scores[i])
+        else:
+            pt.confidence = -1.0
         keypoints_list.append(pt)
 
     return keypoints_list
