@@ -11,6 +11,9 @@ class ApplyDepthColormap(BaseHostNode):
     """A host node that applies a colormap to a depth map using percentile-based
     normalization to reduce flicker.
 
+    Works with RAW 2D dai.ImgFrame outputs such as stereo.depth and stereo.disparity frames.
+    The node treats the input values as a generic range map (larger value -> farther, depending on the source).
+
     Invalid depth values (<= 0) are ignored when computing percentiles and are rendered as black in the output.
 
     Attributes
@@ -38,41 +41,6 @@ class ApplyDepthColormap(BaseHostNode):
 
         self.setPercentileRange(low=p_low, high=p_high)
         self.setColormap(colormap_value)
-
-    def build(self, frame: dai.Node.Output) -> "ApplyDepthColormap":
-        """Configures the node connections.
-
-        @param frame: Node output that produces a RAW depth dai.ImgFrame.
-        @type frame: dai.Node.Output
-        @return: The configured node instance.
-        @rtype: ApplyDepthColormap
-
-        @example:
-            >>> depth_color = ApplyDepthColormap(p_low=2, p_high=98).build(depth_out)
-            >>> depth_color.setColormap(cv2.COLORMAP_JET)
-        """
-        self.link_args(frame)
-        self._logger.debug("ApplyDepthColormap built")
-        return self
-
-    def process(self, msg: dai.Buffer) -> None:
-        depth = self._get_depth_map(msg)
-
-        invalid_depth_mask = depth <= 0
-        valid = depth[~invalid_depth_mask]
-        if valid.size == 0:
-            color = np.zeros((depth.shape[0], depth.shape[1], 3), dtype=np.uint8)
-            self.out.send(self._build_output_frame(color, msg))
-            return
-
-        low, high = self._compute_normalization_bounds(valid)
-        if high <= low or low <= 0:
-            color = np.zeros((depth.shape[0], depth.shape[1], 3), dtype=np.uint8)
-            self.out.send(self._build_output_frame(color, msg))
-            return
-
-        color = self._colorize(depth, invalid_depth_mask, low, high)
-        self.out.send(self._build_output_frame(color, msg))
 
     def setColormap(self, colormap_value: Union[int, np.ndarray]) -> None:
         """Sets the applied color mapping.
@@ -113,6 +81,47 @@ class ApplyDepthColormap(BaseHostNode):
         self._logger.debug(
             f"Percentile range set to low={self._p_low}, high={self._p_high}"
         )
+
+    def build(self, frame: dai.Node.Output) -> "ApplyDepthColormap":
+        """Configures the node connections.
+
+        @param frame: Node output that produces a RAW depth dai.ImgFrame.
+        @type frame: dai.Node.Output
+        @return: The configured node instance.
+        @rtype: ApplyDepthColormap
+
+        @example:
+            >>> depth_color = ApplyDepthColormap(p_low=2, p_high=98).build(depth_out)
+            >>> depth_color.setColormap(cv2.COLORMAP_JET)
+        """
+        self.link_args(frame)
+        self._logger.debug("ApplyDepthColormap built")
+        return self
+
+    def process(self, frame: dai.Buffer) -> None:
+        self._logger.debug("Processing new input")
+        depth = self._get_depth_map(frame)
+
+        invalid_depth_mask = depth <= 0
+        valid = depth[~invalid_depth_mask]
+        if valid.size == 0:
+            color = np.zeros((depth.shape[0], depth.shape[1], 3), dtype=np.uint8)
+            self.out.send(self._build_output_frame(color, frame))
+            return
+
+        low, high = self._compute_normalization_bounds(valid)
+        if high <= low or low <= 0:
+            color = np.zeros((depth.shape[0], depth.shape[1], 3), dtype=np.uint8)
+            self.out.send(self._build_output_frame(color, frame))
+            return
+
+        color = self._colorize(depth, invalid_depth_mask, low, high)
+
+        out = self._build_output_frame(color, frame)
+        self._logger.debug("ImgFrame message created")
+
+        self.out.send(out)
+        self._logger.debug("Message sent successfully")
 
     def _get_depth_map(self, msg: dai.Buffer) -> np.ndarray:
         if not isinstance(msg, dai.ImgFrame):

@@ -44,28 +44,6 @@ class ApplyColormap(BaseHostNode):
             f"ApplyColormap initialized with colormap_value={colormap_value}, max_value={max_value}",
         )
 
-    def build(self, frame: dai.Node.Output) -> "ApplyColormap":
-        """Configures the node connections.
-
-        @param frame: Output with 2D array.
-        @type frame: depthai.Node.Output
-        @return: The node object with input stream connected
-        @rtype: ApplyColormap
-        """
-        self.link_args(frame)
-        self._logger.debug("ApplyColormap built")
-        return self
-
-    def process(self, msg: dai.Buffer) -> None:
-        self._logger.debug("Processing new input")
-        input_map = self._get_input_map(msg)
-
-        color_map = self._colorize(input_map)
-
-        out = self._build_output_frame(color_map, msg)
-        self.out.send(out)
-        self._logger.debug("Message sent successfully")
-
     def setColormap(self, colormap_value: Union[int, np.ndarray]) -> None:
         """Sets the applied color mapping.
 
@@ -100,6 +78,30 @@ class ApplyColormap(BaseHostNode):
             raise ValueError("max_value must be an integer.")
         self._max_value = max_value
         self._logger.debug(f"Max value set to {self._max_value}")
+
+    def build(self, frame: dai.Node.Output) -> "ApplyColormap":
+        """Configures the node connections.
+
+        @param frame: Output with 2D array.
+        @type frame: depthai.Node.Output
+        @return: The node object with input stream connected
+        @rtype: ApplyColormap
+        """
+        self.link_args(frame)
+        self._logger.debug("ApplyColormap built")
+        return self
+
+    def process(self, frame: dai.Buffer) -> None:
+        self._logger.debug("Processing new input")
+        input_map = self._get_input_map(frame)
+
+        color_map = self._colorize(input_map)
+
+        out = self._build_output_frame(color_map, frame)
+        self._logger.debug("ImgFrame message created")
+
+        self.out.send(out)
+        self._logger.debug("Message sent successfully")
 
     def _get_input_map(self, msg: dai.Buffer) -> np.ndarray:
         if isinstance(msg, dai.ImgFrame):
