@@ -25,7 +25,7 @@ class PPTextDetectionParser(DetectionParser):
     Output Message/s
     -------
     **Type**: dai.ImgDetections
-    **Description**: ImgDetections message containing bounding boxes and the respective confidence scores of detected text.
+    **Description**: dai.ImgDetections message containing bounding boxes and the respective confidence scores of detected text.
     """
 
     def __init__(

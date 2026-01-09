@@ -51,9 +51,9 @@ class YOLOExtendedParser(BaseParser):
 
     Output Message/s
     ----------------
-    **Type**: ImgDetectionsExtended
+    **Type**: dai.ImgDetections
 
-    **Description**: Message containing bounding boxes, labels, label names, confidence scores, and keypoints or masks and protos of the detected objects.
+    **Description**: dai.ImgDetections message containing bounding boxes, labels, label names, confidence scores, and keypoints or masks and protos of the detected objects.
     """
 
     _DET_MODE = 0

@@ -36,9 +36,9 @@ class YuNetParser(DetectionParser):
 
     Output Message/s
     ----------------
-    **Type**: ImgDetectionsExtended
+    **Type**: dai.ImgDetections
 
-    **Description**: Message containing bounding boxes, labels, confidence scores, and keypoints of detected faces.
+    **Description**: dai.ImgDetections message containing bounding boxes, labels, confidence scores, and keypoints of detected faces.
     """
 
     def __init__(

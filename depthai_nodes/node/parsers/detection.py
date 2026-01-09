@@ -35,9 +35,9 @@ class DetectionParser(BaseParser):
 
     Output Message/s
         -------
-        **Type**: ImgDetectionsExtended
+        **Type**: dai.ImgDetections
 
-        **Description**: ImgDetectionsExtended message containing bounding boxes and confidence scores of detected objects.
+        **Description**: dai.ImgDetections message containing bounding boxes and confidence scores of detected objects.
     ----------------
     """
 

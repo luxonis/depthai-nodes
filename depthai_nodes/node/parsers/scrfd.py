@@ -33,7 +33,7 @@ class SCRFDParser(DetectionParser):
     ----------------
     **Type**: dai.ImgDetections
 
-    **Description**: ImgDetections message containing bounding boxes, labels, and confidence scores of detected faces.
+    **Description**: dai.ImgDetections message containing bounding boxes, labels, and confidence scores of detected faces.
     """
 
     def __init__(
