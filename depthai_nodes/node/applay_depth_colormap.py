@@ -12,7 +12,7 @@ class ApplyDepthColormap(BaseHostNode):
     normalization to reduce flicker.
 
     Works with RAW 2D dai.ImgFrame outputs such as stereo.depth and stereo.disparity frames.
-    The node treats the input values as a generic range map (larger value -> farther, depending on the source).
+    The node treats the input values as a generic range map and normalizes them per-frame using percentiles.
 
     Invalid depth values (<= 0) are ignored when computing percentiles and are rendered as black in the output.
 
@@ -51,7 +51,6 @@ class ApplyDepthColormap(BaseHostNode):
         """
         if isinstance(colormap_value, int):
             colormap = cv2.applyColorMap(np.arange(256, dtype=np.uint8), colormap_value)
-            colormap[0] = [0, 0, 0]  # Set zero values to black
             self._colormap = colormap
             self._logger.debug(f"Colormap set to {colormap_value}")
         elif (
