@@ -1,5 +1,5 @@
-from .applay_depth_colormap import ApplyDepthColormap
 from .apply_colormap import ApplyColormap
+from .apply_depth_colormap import ApplyDepthColormap
 from .base_host_node import BaseHostNode
 from .depth_merger import DepthMerger
 from .gather_data import GatherData

@@ -16,18 +16,25 @@ class ApplyDepthColormap(BaseHostNode):
 
     Invalid depth values (<= 0) are ignored when computing percentiles and are rendered as black in the output.
 
-    Attributes
+    Parameters
     ----------
-    colormap_value : Union[int, np.ndarray]
-        OpenCV colormap enum value or a custom, OpenCV compatible, colormap. Determines the applied color mapping.
-    p_low : float
+    colormap_value : Union[int, np.ndarray], optional
+        OpenCV colormap enum (e.g. cv2.COLORMAP_JET) or a custom OpenCV-compatible
+        colormap LUT. Default is cv2.COLORMAP_JET.
+    p_low : float, optional
         Lower normalization percentile in [0, 100). Default 2.0.
-    p_high : float
+    p_high : float, optional
         Upper normalization percentile in (0, 100]. Default 98.0.
+
+    Inputs
+    ------
     frame : dai.ImgFrame
-        The input message with a 2D array.
+        Input message containing a 2D array to be colorized.
+
+    Outputs
+    -------
     output : dai.ImgFrame
-        The output message for a colorized frame.
+        Colorized output frame (3-channel BGR).
     """
 
     def __init__(
@@ -39,8 +46,15 @@ class ApplyDepthColormap(BaseHostNode):
         super().__init__()
         self.out.setPossibleDatatypes([(dai.DatatypeEnum.ImgFrame, True)])
 
-        self.setPercentileRange(low=p_low, high=p_high)
-        self.setColormap(colormap_value)
+        self._colormap = self._make_colormap(colormap_value)
+        self._p_low, self._p_high = self._validate_percentile_range(p_low, p_high)
+
+        self._logger.debug(
+            "ApplyDepthColormap initialized with colormap_value=%s, p_low=%s, p_high=%s",
+            colormap_value,
+            self._p_low,
+            self._p_high,
+        )
 
     def setColormap(self, colormap_value: Union[int, np.ndarray]) -> None:
         """Sets the applied color mapping.
@@ -49,21 +63,11 @@ class ApplyDepthColormap(BaseHostNode):
             custom, OpenCV compatible, colormap definition
         @type colormap_value: Union[int, np.ndarray]
         """
+        self._colormap = self._make_colormap(colormap_value)
         if isinstance(colormap_value, int):
-            colormap = cv2.applyColorMap(np.arange(256, dtype=np.uint8), colormap_value)
-            self._colormap = colormap
-            self._logger.debug(f"Colormap set to {colormap_value}")
-        elif (
-            isinstance(colormap_value, np.ndarray)
-            and colormap_value.shape == (256, 1, 3)
-            and colormap_value.dtype == np.uint8
-        ):
-            self._colormap = colormap_value
-            self._logger.debug("Colormap set to custom")
+            self._logger.debug("Colormap set to OpenCV enum: %s", colormap_value)
         else:
-            raise ValueError(
-                "colormap_value must be an integer or an OpenCV compatible colormap definition."
-            )
+            self._logger.debug("Colormap set to custom LUT")
 
     def setPercentileRange(self, low: float, high: float) -> None:
         """Set the percentile clipping range used when normalization is PERCENTILE.
@@ -71,14 +75,9 @@ class ApplyDepthColormap(BaseHostNode):
         @param low: Lower percentile in [0, 100).
         @param high: Higher percentile in (0, 100].
         """
-        low = float(low)
-        high = float(high)
-        if not (0.0 <= low < high <= 100.0):
-            raise ValueError("Percentile range must satisfy 0 <= low < high <= 100.")
-        self._p_low = low
-        self._p_high = high
+        self._p_low, self._p_high = self._validate_percentile_range(low, high)
         self._logger.debug(
-            f"Percentile range set to low={self._p_low}, high={self._p_high}"
+            "Percentile range set to low=%s, high=%s", self._p_low, self._p_high
         )
 
     def build(self, frame: dai.Node.Output) -> "ApplyDepthColormap":
@@ -122,6 +121,32 @@ class ApplyDepthColormap(BaseHostNode):
         self.out.send(out)
         self._logger.debug("Message sent successfully")
 
+    def _validate_percentile_range(
+        self, low: float, high: float
+    ) -> Tuple[float, float]:
+        low = float(low)
+        high = float(high)
+        if not (0.0 <= low < high <= 100.0):
+            raise ValueError("Percentile range must satisfy 0 <= low < high <= 100.")
+        return low, high
+
+    def _make_colormap(self, colormap_value: Union[int, np.ndarray]) -> np.ndarray:
+        if isinstance(colormap_value, int):
+            colormap = cv2.applyColorMap(np.arange(256, dtype=np.uint8), colormap_value)
+            colormap[0] = [0, 0, 0]  # Set zero values to black
+            return colormap
+
+        if (
+            isinstance(colormap_value, np.ndarray)
+            and colormap_value.shape == (256, 1, 3)
+            and colormap_value.dtype == np.uint8
+        ):
+            return colormap_value
+
+        raise ValueError(
+            "colormap_value must be an integer or an OpenCV compatible colormap definition."
+        )
+
     def _get_depth_map(self, msg: dai.Buffer) -> np.ndarray:
         if not isinstance(msg, dai.ImgFrame):
             raise TypeError(
@@ -159,7 +184,6 @@ class ApplyDepthColormap(BaseHostNode):
     ) -> dai.ImgFrame:
         frame = dai.ImgFrame()
         frame.setCvFrame(color_map, self._img_frame_type)
-
         frame.setTimestamp(src_frame.getTimestamp())
         frame.setSequenceNum(src_frame.getSequenceNum())
         frame.setTimestampDevice(src_frame.getTimestampDevice())
