@@ -12,7 +12,7 @@ class ApplyDepthColormap(BaseHostNode):
     normalization to reduce flicker.
 
     Works with RAW 2D dai.ImgFrame outputs such as stereo.depth and stereo.disparity frames.
-    The node treats the input values as a generic range map and normalizes them per-frame using percentiles.
+    Percentile normalization is typically more beneficial for stereo.depth since disparity often has a fixed output range.
 
     Invalid depth values (<= 0) are ignored when computing percentiles and are rendered as black in the output.
 
