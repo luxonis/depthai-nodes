@@ -151,6 +151,8 @@ except Exception as e:
                 global UNASSIGNED_MASK_LABEL
                 UNASSIGNED_MASK_LABEL = 255
                 for nn_msg in nn_msgs:
+                    if nn_msg.getCvSegmentationMask() is None:
+                        continue
                     if nn_msg.getCvSegmentationMask().size == 0:  # type: ignore
                         continue
 
