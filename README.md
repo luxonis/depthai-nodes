@@ -68,7 +68,7 @@ The `node` module provides a collection of ready-to-use host-side nodes that abs
 
 - **Parser nodes** - Handle post-processing for specific model architectures such as YOLO, MediaPipe, YuNet, etc.
 - **Helper nodes** - Like ParsingNeuralNetwork and ParserGenerator which help manage simple or complex model outputs more efficiently.
-- **Utility nodes** – Perform common operations like detection filtering, drawing overlays, applying segmentation colormaps, and more—all in just a few lines of code.
+- **Utility nodes** – Perform common operations like detection filtering, drawing overlays, applying segmentation colormaps, and more - all in just a few lines of code.
 
 This modular approach allows you to rapidly prototype and scale complex applications with less effort while keeping your code clean and maintainable.
 
