@@ -34,7 +34,6 @@ def duration(request):
 
 def make_colormap(colormap_value: int) -> np.ndarray:
     colormap = cv2.applyColorMap(np.arange(256, dtype=np.uint8), colormap_value)
-    colormap[0] = [0, 0, 0]  # Set zero values to black
     return colormap
 
 
