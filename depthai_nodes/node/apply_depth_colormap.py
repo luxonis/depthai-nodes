@@ -133,7 +133,6 @@ class ApplyDepthColormap(BaseHostNode):
     def _make_colormap(self, colormap_value: Union[int, np.ndarray]) -> np.ndarray:
         if isinstance(colormap_value, int):
             colormap = cv2.applyColorMap(np.arange(256, dtype=np.uint8), colormap_value)
-            colormap[0] = [0, 0, 0]  # Set zero values to black
             return colormap
 
         if (
