@@ -35,7 +35,7 @@ class TilesPatcher(dai.node.ThreadedHostNode):
 
     SCRIPT_CONTENT = """
 # Strip ImgFrame image data and send only ImgTransformation
-# Reduces the amount of date being sent between host and device
+# Reduces the amount of data being sent between host and device
 
 try:
     while True:
@@ -146,6 +146,24 @@ except Exception as e:
                     full_seg_map = np.empty(0, dtype=np.int16)
                 else:
                     full_seg_map = self._stitchSegmentationMaps(remapped_seg_maps)
+            elif all(isinstance(nn_msg, dai.ImgDetections) for nn_msg in nn_msgs):
+                remapped_seg_maps = []
+                global UNASSIGNED_MASK_LABEL
+                UNASSIGNED_MASK_LABEL = 255
+                for nn_msg in nn_msgs:
+                    if nn_msg.getCvSegmentationMask().size == 0:  # type: ignore
+                        continue
+
+                    remapped_seg_map = self._remapSegmentationMap(
+                        nn_msg.getTransformation(),  # type: ignore
+                        img.getTransformation(),
+                        nn_msg.getCvSegmentationMask(),  # type: ignore
+                    )
+                    remapped_seg_maps.append(remapped_seg_map)
+                if len(remapped_seg_maps) == 0:
+                    full_seg_map = np.empty(255, dtype=np.uint8)
+                else:
+                    full_seg_map = self._stitchSegmentationMaps(remapped_seg_maps)
             else:
                 full_seg_map = None
 
@@ -207,7 +225,25 @@ except Exception as e:
         new_det.xmax = max(0, min(max_pt.x, 1))
         new_det.ymax = max(0, min(max_pt.y, 1))
         new_det.label = detection.label
+        new_det.labelName = detection.labelName
         new_det.confidence = detection.confidence
+
+        new_kpts_list = []
+        for kpt in detection.getKeypoints():
+            remapped_kpt = src_transformation.remapPointTo(
+                dst_transformation,
+                dai.Point2f(kpt.imageCoordinates.x, kpt.imageCoordinates.y),
+            )
+            new_kpt = dai.Keypoint()
+            new_kpt.imageCoordinates.x = remapped_kpt.x
+            new_kpt.imageCoordinates.y = remapped_kpt.y
+            new_kpt.imageCoordinates.z = kpt.imageCoordinates.z
+            new_kpt.confidence = kpt.confidence
+            new_kpts_list.append(new_kpt)
+
+        new_det.setKeypoints(new_kpts_list)
+        new_det.setEdges(detection.getEdges())
+
         return new_det
 
     def _remapDetectionExtended(
