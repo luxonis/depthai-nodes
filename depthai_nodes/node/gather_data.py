@@ -29,23 +29,58 @@ TGathered = TypeVar("TGathered", bound=dai.Buffer)
 
 
 class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
-    """A class for gathering data. Gathers n messages based on reference_data. To
-    determine n, wait_count_fn function is used. The default wait_count_fn function is
-    waiting for len(TReference.detection). This means the node works out-of-the-box with
-    dai.ImgDetections and ImgDetectionsExtended.
+    """
+    Threaded host node that groups (“gathers”) multiple data messages around a
+    single reference message, matched by timestamp.
 
-    Attributes
-    ----------
-    FPS_TOLERANCE_DIVISOR: float
-        Divisor for the FPS tolerance.
-    INPUT_CHECKS_PER_FPS: int
-        Number of input checks per FPS.
-    _data_input: dai.Node.Input
-        Input to be gathered.
-    _reference_input: dai.Node.Input
-        Input to determine how many gathered items to wait for.
-    output: dai.Node.Output
-        Output for gathered data.
+    The node receives two input streams:
+
+    - **reference_input**: reference messages (e.g., detections) that define a
+      grouping key (timestamp) and determine how many data items should be
+      gathered for that reference.
+    - **data_input**: messages to be collected for the nearest reference timestamp
+      within a tolerance derived from the camera FPS.
+
+    For each reference timestamp, the node waits until the number of gathered
+    data messages equals `wait_count_fn(reference)`. Once ready, it emits a
+    :class:`depthai_nodes.GatheredData` message containing the reference message
+    and the gathered list.
+
+    The default `wait_count_fn` uses ``len(reference.detections)``, which works
+    out-of-the-box for messages that expose a ``detections`` attribute (e.g.
+    ``dai.ImgDetections`` and ``ImgDetectionsExtended``).
+
+    Notes
+    -----
+    - Timestamp matching uses ``Buffer.getTimestamp().total_seconds()`` and a
+      tolerance of ``1 / (camera_fps * FPS_TOLERANCE_DIVISOR)``.
+    - If ``wait_count_fn(reference) == 0``, the node emits immediately for that
+      reference (with an empty gathered list).
+    - The node periodically polls inputs using ``tryGet()`` at a rate derived
+      from ``camera_fps`` and ``INPUT_CHECKS_PER_FPS``.
+
+    Inputs
+    ------
+    _data_input : dai.Node.Input
+        Stream of data messages to be gathered (type ``TGathered``).
+    _reference_input : dai.Node.Input
+        Stream of reference messages used for grouping and deciding how many
+        items to gather (type ``TReference``).
+
+    Outputs
+    -------
+    out : dai.Node.Output
+        Emits :class:`depthai_nodes.GatheredData` objects with:
+        ``reference_data`` (the matched reference) and ``gathered`` (list of data).
+
+    Class Attributes
+    ---------------
+    FPS_TOLERANCE_DIVISOR : float
+        Divides the per-frame time interval to compute timestamp matching tolerance.
+        Higher values make matching stricter.
+    INPUT_CHECKS_PER_FPS : int
+        Number of polling iterations per frame interval. Effective loop sleep is
+        ``1 / (INPUT_CHECKS_PER_FPS * camera_fps)``.
     """
 
     FPS_TOLERANCE_DIVISOR = 2.0
@@ -63,18 +98,23 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
 
         self._data_input = self.createInput()
         self._reference_input = self.createInput()
-        self.out = self.createOutput()
+        self._out = self.createOutput()
 
         self._logger = get_logger(__name__)
         self._logger.debug("GatherData initialized")
 
     @property
-    def data_input(self) -> dai.Node.Input:
-        return self._data_input
+    def out(self) -> dai.Node.Output:
+        return self._out
 
-    @property
-    def reference_input(self) -> dai.Node.Input:
-        return self._reference_input
+    def setCameraFps(self, fps: int) -> None:
+        if fps <= 0:
+            raise ValueError(f"Camera FPS must be positive, got {fps}")
+        self._camera_fps = fps
+        self._logger.debug(f"Camera FPS set to {fps}")
+
+    def setWaitCountFn(self, fn: Callable[[TReference], int]) -> None:
+        self._wait_count_fn = fn
 
     @staticmethod
     def _default_wait_count_fn(reference: TReference) -> int:
@@ -88,31 +128,59 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         input_reference: dai.Node.Output,
         wait_count_fn: Optional[Callable[[TReference], int]] = None,
     ) -> "GatherData[TReference, TGathered]":
-        """Builds and configures the GatherData node with the specified parameters.
-
-        @param camera_fps: The frames per second (FPS) setting for the camera.
-        @param input_data: Node output that produces the data to be gathered.
-        @param input_reference: Node output that produces the reference messages used to decide how many items to gather.
-        @param wait_count_fn: A function that takes a reference and returns how many frames to wait.
-        @type camera_fps: int
-        @type input_data: Optional[dai.Node.Output]
-        @type input_reference: Optional[dai.Node.Output]
-        @type wait_count_fn: Optional[Callable[[TReference], int]]
-
-        @return: The configured GatherData node instance.
-        @rtype: GatherData[TReference, TGathered]
-
-        @example:
-            >>> gather_node = GatherData()
-            >>> gather_node.build(camera_fps=30)
-            >>> def custom_wait(ref): return 2
-            >>> gather_node.build(camera_fps=60, wait_count_fn=custom_wait)
-            >>> gather_node.build(camera_fps=60, input_data=img_source, input_reference=detections_source)
         """
-        self.set_camera_fps(camera_fps)
+        Configure the node and link pipeline outputs to this node's inputs.
+
+        This method must be called before the pipeline is started.
+
+        Parameters
+        ----------
+        camera_fps : int
+            Camera frame rate used to derive timestamp matching tolerance and
+            polling interval. Must be positive.
+        input_data : dai.Node.Output
+            Upstream output producing the data messages to gather.
+        input_reference : dai.Node.Output
+            Upstream output producing the reference messages.
+        wait_count_fn : Callable[[TReference], int], optional
+            Function that returns how many data messages are expected for a given
+            reference message. If not provided, defaults to ``len(reference.detections)``.
+            Returning 0 causes immediate emission for that reference.
+
+        Returns
+        -------
+        GatherData[TReference, TGathered]
+            The configured node instance (for chaining).
+
+        Raises
+        ------
+        ValueError
+            If ``camera_fps`` is not positive.
+
+        Examples
+        --------
+        Use default behavior (wait for number of detections in the reference):
+
+        >>> gather = pipeline.create(GatherData).build(
+        ...     camera_fps=30,
+        ...     input_data=some_data_out,
+        ...     input_reference=detections_out,
+        ... )
+
+        Custom wait count:
+
+        >>> def wait_two(_ref): return 2
+        >>> gather = GatherData().build(
+        ...     camera_fps=60,
+        ...     input_data=some_data_out,
+        ...     input_reference=detections_out,
+        ...     wait_count_fn=wait_two,
+        ... )
+        """
+        self.setCameraFps(camera_fps)
         if wait_count_fn is None:
             wait_count_fn = self._default_wait_count_fn
-        self.set_wait_count_fn(wait_count_fn)
+        self.setWaitCountFn(wait_count_fn)
 
         input_data.link(self._data_input)
         input_reference.link(self._reference_input)
@@ -123,16 +191,10 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         self._logger.debug(f"GatherData built with camera_fps={camera_fps}")
         return self
 
-    def set_camera_fps(self, fps: int) -> None:
-        if fps <= 0:
-            raise ValueError(f"Camera FPS must be positive, got {fps}")
-        self._camera_fps = fps
-        self._logger.debug(f"Camera FPS set to {fps}")
-
     def run(self) -> None:
         self._logger.debug("GatherData run started")
         if not self._camera_fps:
-            raise ValueError("Camera FPS not set. Call build() before run().")
+            raise ValueError("Camera FPS not set. Call build() before starting the pipeine.")
 
         while self.isRunning():
             try:
@@ -152,13 +214,6 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
 
             time.sleep(1 / self.INPUT_CHECKS_PER_FPS / self._camera_fps)
 
-    def _send_ready_data(self) -> None:
-        ready_data = self._pop_ready_data()
-        if ready_data:
-            self._clear_old_data(ready_data)
-            self.out.send(ready_data)
-            self._logger.debug("Gathered data sent")
-
     def _add_data(self, data: TGathered) -> None:
         data_ts = self._get_total_seconds_ts(data)
         best_matching_reference_ts = self._get_matching_reference_ts(data_ts)
@@ -169,12 +224,6 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         else:
             self._unmatched_data.append(data)
 
-    def _get_matching_reference_ts(self, data_ts: float) -> Optional[float]:
-        for reference_ts in self._reference_data.keys():
-            if self._timestamps_in_tolerance(reference_ts, data_ts):
-                return reference_ts
-        return None
-
     def _add_reference(
         self,
         reference: TReference,
@@ -183,6 +232,33 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         self._reference_data[reference_ts] = reference
         self._try_match_data(reference_ts)
         self._update_ready_timestamps(reference_ts)
+
+    def _send_ready_data(self) -> None:
+        ready_data = self._pop_ready_data()
+        if ready_data:
+            self._clear_old_data(ready_data)
+            self.out.send(ready_data)
+            self._logger.debug("Gathered data sent")
+
+    def _get_total_seconds_ts(self, buffer_like: dai.Buffer) -> float:
+        return buffer_like.getTimestamp().total_seconds()
+
+    def _get_matching_reference_ts(self, data_ts: float) -> Optional[float]:
+        for reference_ts in self._reference_data.keys():
+            if self._timestamps_in_tolerance(reference_ts, data_ts):
+                return reference_ts
+        return None
+
+    def _add_data_by_reference_ts(self, data: TGathered, reference_ts: float) -> None:
+        if reference_ts in self._data_by_reference_ts:
+            self._data_by_reference_ts[reference_ts].append(data)
+        else:
+            self._data_by_reference_ts[reference_ts] = [data]
+
+    def _update_ready_timestamps(self, timestamp: float) -> None:
+        if not self._timestamp_ready(timestamp):
+            return
+        self._ready_timestamps.put(timestamp)
 
     def _try_match_data(self, reference_ts: float) -> None:
         matched_data: List[TGathered] = []
@@ -198,18 +274,6 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     def _timestamps_in_tolerance(self, timestamp1: float, timestamp2: float) -> bool:
         difference = abs(timestamp1 - timestamp2)
         return difference < (1 / self._camera_fps / self.FPS_TOLERANCE_DIVISOR)
-
-    def _add_data_by_reference_ts(self, data: TGathered, reference_ts: float) -> None:
-        if reference_ts in self._data_by_reference_ts:
-            self._data_by_reference_ts[reference_ts].append(data)
-        else:
-            self._data_by_reference_ts[reference_ts] = [data]
-
-    def _update_ready_timestamps(self, timestamp: float) -> None:
-        if not self._timestamp_ready(timestamp):
-            return
-
-        self._ready_timestamps.put(timestamp)
 
     def _timestamp_ready(self, timestamp: float) -> bool:
         reference = self._reference_data.get(timestamp)
@@ -253,9 +317,6 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         for unmatched_data in unmatched_data_to_remove:
             self._unmatched_data.remove(unmatched_data)
 
-    def _get_total_seconds_ts(self, buffer_like: dai.Buffer) -> float:
-        return buffer_like.getTimestamp().total_seconds()
-
     def _clear_old_references(self, current_timestamp: float) -> None:
         reference_keys_to_pop = []
         for reference_ts in self._reference_data.keys():
@@ -265,6 +326,3 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         for reference_ts in reference_keys_to_pop:
             self._reference_data.pop(reference_ts)
             self._data_by_reference_ts.pop(reference_ts, None)
-
-    def set_wait_count_fn(self, fn: Callable[[TReference], int]) -> None:
-        self._wait_count_fn = fn
