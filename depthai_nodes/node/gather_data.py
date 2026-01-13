@@ -68,6 +68,14 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         self._logger = get_logger(__name__)
         self._logger.debug("GatherData initialized")
 
+    @property
+    def data_input(self) -> dai.Node.Input:
+        return self._data_input
+
+    @property
+    def reference_input(self) -> dai.Node.Input:
+        return self._reference_input
+
     @staticmethod
     def _default_wait_count_fn(reference: TReference) -> int:
         assert isinstance(reference, HasDetections)
