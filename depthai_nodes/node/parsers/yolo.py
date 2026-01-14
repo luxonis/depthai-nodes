@@ -506,7 +506,7 @@ class YOLOExtendedParser(BaseParser):
                     label_names=label_names,
                     keypoints=keypoints,
                     keypoints_scores=keypoints_scores,
-                    # keypoint_label_names=self.keypoint_label_names,
+                    keypoint_label_names=self.keypoint_label_names,
                     keypoint_edges=self.keypoint_edges,
                 )
             elif mode == self._SEG_MODE:
