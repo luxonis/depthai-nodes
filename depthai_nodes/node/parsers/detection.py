@@ -177,7 +177,9 @@ class DetectionParser(BaseParser):
                 bboxes = np.array([])
                 scores = np.array([])
 
-            message = create_detection_message(bboxes=bboxes, scores=scores)
+            message = create_detection_message(
+                bboxes=bboxes, scores=scores, label_names=self.label_names
+            )
             transformation = output.getTransformation()
             if transformation is not None:
                 message.setTransformation(transformation)

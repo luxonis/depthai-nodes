@@ -109,6 +109,7 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         keypoint_copy = _copy_metadata(keypoint)
         keypoint_copy.imageCoordinates = _copy_point3f(keypoint.imageCoordinates)
         keypoint_copy.confidence = keypoint.confidence
+        keypoint_copy.labelName = keypoint.labelName
         return keypoint_copy
 
     def _copy_rotated_rect(rotated_rect: dai.RotatedRect) -> dai.RotatedRect:
