@@ -17,42 +17,36 @@ class SnapsUploader(BaseHostNode):
         super().__init__()
         self._em = dai.EventsManager()
 
-    def set_token(self, token: str):
-        os.environ.setdefault("DEPTHAI_HUB_API_KEY", token)
+    def setToken(self, token: str):
+        os.environ["DEPTHAI_HUB_API_KEY"] = token
 
-    def set_cache_dir(self, cache_dir):
+    def setCacheDir(self, cacheDir: str):
         """Set the cache directory for storing cached data.
 
         By default, the cache directory is set to /internal/private
         """
 
-        self._em.setCacheDir(cache_dir)
-        logger.info(f"Set cache directory to: {cache_dir}")
+        self._em.setCacheDir(cacheDir)
+        logger.info(f"Set cache directory to: {cacheDir}")
 
-    def set_cache_if_cannot_send(self, cache_if_cannot_upload):
+    def setCacheIfCannotSend(self, cacheIfCannotUpload: bool):
         """Set whether to cache data if it cannot be sent.
 
         By default, cacheIfCannotSend is set to false
         """
 
-        self._em.setCacheIfCannotSend(cache_if_cannot_upload)
-        if cache_if_cannot_upload:
-            logger.info("Enabled caching if snaps cannot be sent.")
-        else:
-            logger.info("Disabled caching if snaps cannot be sent.")
+        self._em.setCacheIfCannotSend(cacheIfCannotUpload)
+        logger.info(f"Cache snaps if they cannot be uploaded: {cacheIfCannotUpload}")
 
-    def set_log_response(self, log_response):
+    def setLogResponse(self, logResponse: bool):
         """Set whether to log the responses from the server.
 
         By default, logResponse is set to false. Logs are visible in depthAI logs with
         INFO level.
         """
 
-        self._em.setLogResponse(log_response)
-        if log_response:
-            logger.info("Enabled logging of server responses.")
-        else:
-            logger.info("Disabled logging of server responses.")
+        self._em.setLogResponse(logResponse)
+        logger.info(f"Log server responses: {logResponse}")
 
     def build(self, snaps: dai.Node.Output):
         self.link_args(snaps)
