@@ -114,10 +114,14 @@ class ImgDetectionsBridge(BaseHostNode):
                 if all(score == -1 for score in scores_list):
                     scores_list = None
                 edges_list = [(edge[0], edge[1]) for edge in detection.getEdges()]
+                keypoint_label_names_list = [kp.labelName for kp in kpts]
+                if any(label_name is None for label_name in keypoint_label_names_list):
+                    keypoint_label_names_list = None
                 keypoints_msg = create_keypoints_message(
                     keypoints=kpts_list,
                     scores=scores_list,
                     edges=edges_list,
+                    label_names=keypoint_label_names_list,
                 )
                 detection_transformed.keypoints = keypoints_msg
             detections_transformed.append(detection_transformed)

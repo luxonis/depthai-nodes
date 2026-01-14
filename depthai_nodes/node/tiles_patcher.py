@@ -241,6 +241,7 @@ except Exception as e:
             new_kpt.imageCoordinates.y = remapped_kpt.y
             new_kpt.imageCoordinates.z = kpt.imageCoordinates.z
             new_kpt.confidence = kpt.confidence
+            new_kpt.labelName = kpt.labelName
             new_kpts_list.append(new_kpt)
 
         new_det.setKeypoints(new_kpts_list)
