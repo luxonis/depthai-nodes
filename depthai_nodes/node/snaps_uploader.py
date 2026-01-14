@@ -41,8 +41,8 @@ class SnapsUploader(BaseHostNode):
     def setLogResponse(self, logResponse: bool):
         """Set whether to log the responses from the server.
 
-        By default, logResponse is set to false. Logs are visible in depthAI logs with
-        INFO level.
+        By default, logResponse is set to false. Logs are visible in DepthAI logs with
+        INFO level
         """
 
         self._em.setLogResponse(logResponse)
