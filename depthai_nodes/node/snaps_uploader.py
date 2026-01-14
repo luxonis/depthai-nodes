@@ -20,8 +20,39 @@ class SnapsUploader(BaseHostNode):
     def set_token(self, token: str):
         os.environ.setdefault("DEPTHAI_HUB_API_KEY", token)
 
-    def set_url(self, url: str):
-        os.environ.setdefault("DEPTHAI_HUB_EVENTS_BASE_URL", url)
+    def set_cache_dir(self, cache_dir):
+        """Set the cache directory for storing cached data.
+
+        By default, the cache directory is set to /internal/private
+        """
+
+        self._em.setCacheDir(cache_dir)
+        logger.info(f"Set cache directory to: {cache_dir}")
+
+    def set_cache_if_cannot_send(self, cache_if_cannot_upload):
+        """Set whether to cache data if it cannot be sent.
+
+        By default, cacheIfCannotSend is set to false
+        """
+
+        self._em.setCacheIfCannotSend(cache_if_cannot_upload)
+        if cache_if_cannot_upload:
+            logger.info("Enabled caching if snaps cannot be sent.")
+        else:
+            logger.info("Disabled caching if snaps cannot be sent.")
+
+    def set_log_response(self, log_response):
+        """Set whether to log the responses from the server.
+
+        By default, logResponse is set to false. Logs are visible in depthAI logs with
+        INFO level.
+        """
+
+        self._em.setLogResponse(log_response)
+        if log_response:
+            logger.info("Enabled logging of server responses.")
+        else:
+            logger.info("Disabled logging of server responses.")
 
     def build(self, snaps: dai.Node.Output):
         self.link_args(snaps)
@@ -30,17 +61,10 @@ class SnapsUploader(BaseHostNode):
     def process(self, snap: dai.Buffer):
         assert isinstance(snap, SnapData), f"Expected SnapData, got {type(snap)}"
 
-        logger.debug(f"Sending snap: {snap.snap_name} -> {snap.file_name}")
-        fileGroup = dai.FileGroup()
-        if snap.detections:
-            fileGroup.addImageDetectionsPair(
-                snap.file_name, snap.frame, snap.detections
-            )
-        else:
-            fileGroup.addFile(snap.file_name, snap.frame)
+        logger.debug(f"Sending snap: {snap.snap_name}")
         success = self._em.sendSnap(
             name=snap.snap_name,
-            fileGroup=fileGroup,
+            fileGroup=snap.file_group,
             tags=snap.tags,
             extras=snap.extras,
         )
