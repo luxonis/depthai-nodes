@@ -21,10 +21,10 @@ class BaseThreadedHostNode(dai.node.ThreadedHostNode):
         self._platform = self.getParentPipeline().getDefaultDevice().getPlatform()
 
         try:
-            self._img_frame_type = self.IMG_FRAME_TYPES[self.platform]
+            self._img_frame_type = self.IMG_FRAME_TYPES[self._platform]
         except KeyError as e:
             raise ValueError(
-                f"No dai.ImgFrame.Type defined for platform {self.platform}."
+                f"No dai.ImgFrame.Type defined for platform {self._platform}."
             ) from e
 
         self._logger = get_logger(self.__class__.__name__)

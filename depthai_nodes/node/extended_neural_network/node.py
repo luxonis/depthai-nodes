@@ -3,14 +3,12 @@ from typing import Optional, Sequence, Tuple, Union, overload
 import depthai as dai
 import numpy as np
 
-from depthai_nodes.node import (
-    ImgDetectionsFilter,
-    ParsingNeuralNetwork,
-    TilesPatcher,
-    Tiling,
-)
 from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
-from depthai_nodes.node.detections_mapper import DetectionsMapper
+from depthai_nodes.node.coordinates_mapper import CoordinatesMapper
+from depthai_nodes.node.img_detections_filter import ImgDetectionsFilter
+from depthai_nodes.node.parsing_neural_network import ParsingNeuralNetwork
+from depthai_nodes.node.tiles_patcher import TilesPatcher
+from depthai_nodes.node.tiling import Tiling
 
 from .config import DetectionFilterConfig, TilingConfig
 
@@ -47,7 +45,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
         self.patcher: Optional[TilesPatcher] = None
         self.detections_filter: Optional[ImgDetectionsFilter] = None
         self.nn_resize: Optional[dai.node.ImageManip] = None
-        self.img_detections_mapper: Optional[DetectionsMapper] = None
+        self.img_detections_mapper: Optional[CoordinatesMapper] = None
 
     def with_tiling(
             self,
@@ -77,7 +75,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
             confidence_threshold: Optional[float] = None,
             labels_to_keep: Optional[Sequence[int]] = None,
             labels_to_reject: Optional[Sequence[int]] = None,
-            max_detections: Optional[int],
+            max_detections: Optional[int] = None,
     ):
         self._filter_config = DetectionFilterConfig(
             confidence_threshold=confidence_threshold,
@@ -86,15 +84,6 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
             max_detections=max_detections,
         )
         return self
-
-    @overload
-    def build(
-        self,
-        input: dai.Node.Output,
-        nn_source: Union[dai.NNModelDescription, dai.NNArchive, str],
-        input_resize_mode: dai.ImageManipConfig.ResizeMode,
-    ) -> "ExtendedNeuralNetwork":
-        ...
 
     def build(
         self,
@@ -158,9 +147,10 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
         self.nn_resize.setMaxOutputFrameSize(nn_w * nn_h * 3)
         self.nn_resize.initialConfig.setFrameType(self._img_frame_type)
 
-        self._logger.debug("Building DetectionsMapper")
-        self.img_detections_mapper = self._pipeline.create(DetectionsMapper).build(
-            image_input, self.nn.out
+        self._logger.debug("Building CoordinatesMapper")
+        self.img_detections_mapper = self._pipeline.create(CoordinatesMapper).build(
+            to_transformation_input=image_input,
+            from_transformation_input=self.nn.out,
         )
         output = self.img_detections_mapper.out
         if self._filter_config:

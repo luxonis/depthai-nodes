@@ -56,7 +56,7 @@ except Exception as e:
             ) from e
         if nn_trans is None:
             raise RuntimeError("Received detection message without transformation")
-        message = remap_message(nn_trans, img.getTransformation(), nn)
+        message = remap_message(message=nn, from_transformation=nn_trans,to_transformation=img.getTransformation())
         message.setTimestamp(nn.getTimestamp())
         message.setTimestampDevice(nn.getTimestampDevice())
         message.setSequenceNum(nn.getSequenceNum())

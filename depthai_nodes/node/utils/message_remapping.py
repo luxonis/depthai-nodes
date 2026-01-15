@@ -42,7 +42,7 @@ def remap_message(
     elif isinstance(message, Classifications):
         return remap_classifications(from_transformation, to_transformation, message)
     else:
-        raise TypeError(f"Cannot remap message: {message}. Unsupported message type: {type(message)}")
+        raise TypeError(f"Cannot remap message. Unsupported message type: {type(message)}")
 
 
 def remap_img_detections(
