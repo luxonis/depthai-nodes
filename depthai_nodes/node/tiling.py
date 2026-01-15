@@ -152,7 +152,7 @@ except Exception as e:
     def _initCropConfigs(self):
         """Initializes the ImgManipConfig cropping configurations for the tiles."""
         if not self.is_initialized:
-            raise RuntimeError("TilesPatcher not initialized")
+            raise RuntimeError("Tiling not initialized. Call the `build` method first.")
         tile_positions = self._computeTilePositions(
             overlap=self._overlap,
             grid_size=self._grid_size,

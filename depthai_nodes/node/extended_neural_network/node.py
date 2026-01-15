@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional, Sequence, Tuple, Union, overload
+from typing import Optional, Sequence, Tuple, Union, overload
 
 import depthai as dai
 import numpy as np
@@ -40,7 +40,6 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
         self._tiling_config: Optional[TilingConfig] = None
         self._filter_config: Optional[DetectionFilterConfig] = None
         self._input_resize_mode: Optional[dai.ImageManipConfig.ResizeMode] = None
-        self._pipeline = self.getParentPipeline()
         self._out: Optional[dai.Node.Output] = None
 
         self.nn: Optional[ParsingNeuralNetwork] = None
@@ -99,14 +98,14 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
 
     def build(
         self,
-        input: dai.Node.Output,
+        image_input: dai.Node.Output,
         nn_source: Union[dai.NNModelDescription, dai.NNArchive, str],
         input_resize_mode: dai.ImageManipConfig.ResizeMode,
     ) -> "ExtendedNeuralNetwork":
         """Builds the underlying nodes.
 
-        @param input: ImgFrame node's input. Frames are automatically resized to fit the neural network input size.
-        @type input: Node.Input
+        @param image_input: ImgFrame node's input. Frames are automatically resized to fit the neural network input size.
+        @type image_input: Node.Input
         @param nn_source: NNModelDescription object containing the HubAI model descriptors, NNArchive object of the model, or HubAI model slug in form of <model_slug>:<model_version_slug> or <model_slug>:<model_version_slug>:<model_instance_hash>.
         @type nn_source: Union[dai.NNModelDescription, dai.NNArchive, str]
         @param input_resize_mode: Resize mode for the neural network input.
@@ -118,13 +117,13 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
         self._input_resize_mode = input_resize_mode
         if self._tiling_config:
             self._out = self._createTilingPipeline(
-                input,
+                image_input,
                 self._tiling_config.input_size,
                 self._input_resize_mode,
                 nn_source,
             )
         else:
-            self._out = self._createBasicPipeline(input, self._input_resize_mode, nn_source)
+            self._out = self._createBasicPipeline(image_input, self._input_resize_mode, nn_source)
         self._logger.debug("ExtendedNeuralNetwork built")
         return self
 
@@ -133,7 +132,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
 
     def _createBasicPipeline(
         self,
-        input: dai.Node.Output,
+        image_input: dai.Node.Output,
         input_resize_mode: dai.ImageManipConfig.ResizeMode,
         nn_source: Union[dai.NNModelDescription, dai.NNArchive, str],
     ):
@@ -142,7 +141,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
         self._logger.debug("Creating basic pipeline")
         self._logger.debug("Creating ImageManip node for resizing NN input")
         self.nn_resize = self._pipeline.create(dai.node.ImageManip)
-        input.link(self.nn_resize.inputImage)
+        image_input.link(self.nn_resize.inputImage)
         self._logger.debug("Building ParsingNeuralNetwork")
         self.nn = self._pipeline.create(ParsingNeuralNetwork).build(
             self.nn_resize.out, nn_source
@@ -161,7 +160,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
 
         self._logger.debug("Building DetectionsMapper")
         self.img_detections_mapper = self._pipeline.create(DetectionsMapper).build(
-            input, self.nn.out
+            image_input, self.nn.out
         )
         output = self.img_detections_mapper.out
         if self._filter_config:
@@ -177,7 +176,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
 
     def _createTilingPipeline(
         self,
-        input: dai.Node.Output,
+        image_input: dai.Node.Output,
         input_size: Tuple[int, int],
         input_resize_mode: dai.ImageManipConfig.ResizeMode,
         nn_source: Union[dai.NNModelDescription, dai.NNArchive, str],
@@ -199,7 +198,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
             raise ValueError("NNArchive does not contain input size")
         self._logger.debug("Building Tiling")
         self.tiling.build(
-            img_output=input,
+            img_output=image_input,
             img_shape=input_size,
             overlap=self._tiling_config.overlap,
             grid_size=self._tiling_config.grid_size,
@@ -222,7 +221,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
 
         self._logger.debug("Building TilesPatcher")
         self.patcher = self._pipeline.create(TilesPatcher).build(
-            img_frames=input,
+            img_frames=image_input,
             nn=patcher_input,
             conf_thresh=0.0,  # confidence filtering is only done in the filter node if enabled
             iou_thresh=self._tiling_config.iou_threshold,

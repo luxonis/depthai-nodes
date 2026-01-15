@@ -26,7 +26,8 @@ class BaseHostNode(dai.node.HostNode, metaclass=CombinedMeta):
     def __init__(self) -> None:
         super().__init__()
 
-        self._platform = self.getParentPipeline().getDefaultDevice().getPlatform()
+        self._pipeline = self.getParentPipeline()
+        self._platform = self._pipeline.getDefaultDevice().getPlatform()
 
         try:
             self._img_frame_type = self.IMG_FRAME_TYPES[self._platform]
