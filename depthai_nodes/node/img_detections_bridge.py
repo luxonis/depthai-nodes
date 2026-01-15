@@ -157,12 +157,7 @@ class ImgDetectionsBridge(BaseHostNode):
             edges = detection.edges
             edges = [[edge[0], edge[1]] for edge in edges]
             kpts = detection.keypoints
-            kpts_list = [[kp.x, kp.y, kp.z] for kp in kpts]
-            scores_list = [kp.confidence for kp in kpts]
-            kpts_transformed = [
-                dai.Keypoint(x=kp[0], y=kp[1], z=kp[2], confidence=score)
-                for kp, score in zip(kpts_list, scores_list)
-            ]
+            kpts_transformed = [dai.Keypoint(x=kp.x, y=kp.y, z=kp.z, confidence=kp.confidence, labelName=kp.label_name) for kp in kpts]
             detection_transformed.setKeypoints(kpts_transformed, edges)
 
             detections_transformed.append(detection_transformed)
