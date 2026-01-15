@@ -121,16 +121,16 @@ class ApplyDepthColormap(BaseHostNode):
         self.out.send(out)
         self._logger.debug("Message sent successfully")
 
-    def _validate_percentile_range(
-        self, low: float, high: float
-    ) -> Tuple[float, float]:
+    @staticmethod
+    def _validate_percentile_range(low: float, high: float) -> Tuple[float, float]:
         low = float(low)
         high = float(high)
         if not (0.0 <= low < high <= 100.0):
             raise ValueError("Percentile range must satisfy 0 <= low < high <= 100.")
         return low, high
 
-    def _make_colormap(self, colormap_value: Union[int, np.ndarray]) -> np.ndarray:
+    @staticmethod
+    def _make_colormap(colormap_value: Union[int, np.ndarray]) -> np.ndarray:
         if isinstance(colormap_value, int):
             colormap = cv2.applyColorMap(np.arange(256, dtype=np.uint8), colormap_value)
             return colormap
@@ -146,7 +146,8 @@ class ApplyDepthColormap(BaseHostNode):
             "colormap_value must be an integer or an OpenCV compatible colormap definition."
         )
 
-    def _get_depth_map(self, msg: dai.Buffer) -> np.ndarray:
+    @staticmethod
+    def _get_depth_map(msg: dai.Buffer) -> np.ndarray:
         if not isinstance(msg, dai.ImgFrame):
             raise TypeError(
                 f"Unsupported input type {type(msg)}, expected dai.ImgFrame."

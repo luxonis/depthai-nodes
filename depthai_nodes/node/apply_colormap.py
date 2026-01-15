@@ -94,7 +94,8 @@ class ApplyColormap(BaseHostNode):
         self.out.send(out)
         self._logger.debug("Message sent successfully")
 
-    def _make_colormap(self, colormap_value: Union[int, np.ndarray]) -> np.ndarray:
+    @staticmethod
+    def _make_colormap(colormap_value: Union[int, np.ndarray]) -> np.ndarray:
         if isinstance(colormap_value, int):
             colormap = cv2.applyColorMap(np.arange(256, dtype=np.uint8), colormap_value)
             colormap[0] = [0, 0, 0]  # Set zero values to black
@@ -111,14 +112,16 @@ class ApplyColormap(BaseHostNode):
             "colormap_value must be an integer or an OpenCV compatible colormap definition."
         )
 
-    def _validate_max_value(self, max_value: int) -> int:
+    @staticmethod
+    def _validate_max_value(max_value: int) -> int:
         if not isinstance(max_value, int):
             raise ValueError("max_value must be an integer.")
         if max_value < 0:
             raise ValueError("max_value must be >= 0.")
         return max_value
 
-    def _get_input_map(self, msg: dai.Buffer) -> np.ndarray:
+    @staticmethod
+    def _get_input_map(msg: dai.Buffer) -> np.ndarray:
         if isinstance(msg, dai.ImgFrame):
             if not msg.getType().name.startswith("RAW"):
                 raise TypeError(f"Expected image type RAW, got {msg.getType().name}")
@@ -135,7 +138,11 @@ class ApplyColormap(BaseHostNode):
         if isinstance(msg_copy, ImgDetectionsExtended):
             return msg_copy.masks
 
-        raise ValueError(f"Unsupported input type {type(msg_copy)}.")
+        raise ValueError(
+            f"Unsupported input type {type(msg_copy)}. "
+            "ApplyColormap only accepts image-like inputs: "
+            "dai.ImgFrame, SegmentationMask, Map2D, ImgDetectionsExtended."
+        )
 
     def _colorize(self, input_map: np.ndarray) -> np.ndarray:
         # make sure that min value == 0 to ensure proper normalization
