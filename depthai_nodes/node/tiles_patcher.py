@@ -213,22 +213,15 @@ except Exception as e:
         dst_transformation: dai.ImgTransformation,
         detection: dai.ImgDetection,
     ):
-        new_det = dai.ImgDetection()
-        min_pt = src_transformation.remapPointTo(
-            dst_transformation,
-            dai.Point2f(np.clip(detection.xmin, 0, 1), np.clip(detection.ymin, 0, 1)),
+        remapped_rect = src_transformation.remapRectTo(
+            dst_transformation, detection.getBoundingBox()
         )
-        max_pt = src_transformation.remapPointTo(
-            dst_transformation,
-            dai.Point2f(np.clip(detection.xmax, 0, 1), np.clip(detection.ymax, 0, 1)),
+        new_det = dai.ImgDetection(
+            remapped_rect,
+            labelName=detection.labelName,
+            confidence=detection.confidence,
+            label=detection.label,
         )
-        new_det.xmin = max(0, min(min_pt.x, 1))
-        new_det.ymin = max(0, min(min_pt.y, 1))
-        new_det.xmax = max(0, min(max_pt.x, 1))
-        new_det.ymax = max(0, min(max_pt.y, 1))
-        new_det.label = detection.label
-        new_det.labelName = detection.labelName
-        new_det.confidence = detection.confidence
 
         new_kpts_list = []
         for kpt in detection.getKeypoints():
