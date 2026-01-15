@@ -233,9 +233,10 @@ except Exception as e:
                 remapped_kpt.x,
                 remapped_kpt.y,
                 kpt.imageCoordinates.z,
-                kpt.confidence,
-                kpt.label,
+                label=kpt.label,
             )
+            if kpt.confidence >= 0:
+                new_kpt.confidence = kpt.confidence
             new_kpt.labelName = kpt.labelName
             new_kpts_list.append(new_kpt)
 
