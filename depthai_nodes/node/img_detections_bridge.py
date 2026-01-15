@@ -88,17 +88,12 @@ class ImgDetectionsBridge(BaseHostNode):
             detection_transformed.label = detection.label
             detection_transformed.label_name = detection.labelName
             detection_transformed.confidence = detection.confidence
-            x_center = detection.getBoundingBox().center.x
-            y_center = detection.getBoundingBox().center.y
-            width = detection.getBoundingBox().size.width
-            height = detection.getBoundingBox().size.height
-            angle = detection.getBoundingBox().angle
             detection_transformed.rotated_rect = (
-                x_center,
-                y_center,
-                width,
-                height,
-                angle,
+                detection.getCenterX(),
+                detection.getCenterY(),
+                detection.getWidth(),
+                detection.getHeight(),
+                detection.getAngle(),
             )
             kpts = detection.getKeypoints()
             if kpts is not None:
@@ -157,7 +152,16 @@ class ImgDetectionsBridge(BaseHostNode):
             edges = detection.edges
             edges = [[edge[0], edge[1]] for edge in edges]
             kpts = detection.keypoints
-            kpts_transformed = [dai.Keypoint(x=kp.x, y=kp.y, z=kp.z, confidence=kp.confidence, labelName=kp.label_name) for kp in kpts]
+            kpts_transformed = [
+                dai.Keypoint(
+                    x=kp.x,
+                    y=kp.y,
+                    z=kp.z,
+                    confidence=kp.confidence,
+                    labelName=kp.label_name,
+                )
+                for kp in kpts
+            ]
             detection_transformed.setKeypoints(kpts_transformed, edges)
 
             detections_transformed.append(detection_transformed)
