@@ -229,7 +229,14 @@ except Exception as e:
                 dst_transformation,
                 dai.Point2f(kpt.imageCoordinates.x, kpt.imageCoordinates.y),
             )
-            new_kpt = dai.Keypoint(remapped_kpt.x, remapped_kpt.y, kpt.imgCoordinates.z, kpt.condifence, kpt.label, kpt.labelName)
+            new_kpt = dai.Keypoint(
+                remapped_kpt.x,
+                remapped_kpt.y,
+                kpt.imageCoordinates.z,
+                kpt.confidence,
+                kpt.label,
+            )
+            new_kpt.labelName = kpt.labelName
             new_kpts_list.append(new_kpt)
 
         new_det.setKeypoints(new_kpts_list)
