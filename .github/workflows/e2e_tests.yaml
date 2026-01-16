@@ -23,9 +23,9 @@ on:
         required: true
         default: 'main'
       depthai-version:
-        description: 'Version of depthai to install. Default: 3.2.0'
+        description: 'Version of depthai to install. Default: 3.3.0'
         required: true
-        default: '3.2.0'
+        default: '3.3.0'
       platform:
         description: 'Platform to use for testing. By default both RVC2 and RVC4 are used but you can use only one by passing only `rvc2` or `rvc4`(use lowercase).'
         default: "all"
@@ -103,7 +103,7 @@ jobs:
               exec hil_runner --platforms ${{ matrix.platform }} --wait $RESERVATION_OPTION --before-docker-pull "echo ${{secrets.GHCR_PAT}} | docker login ghcr.io -u ${{secrets.GHCR_USER}} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=${{ github.event.inputs.depthai-version }} --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=${{ github.event.inputs.depthai-nodes-version }} --env FLAGS=\"${{ github.event.inputs.additional-parameter }} -v ${{ github.event.inputs.depthai-nodes-version }} --platform ${{ matrix.platform }}\""
             fi
           else
-            exec hil_runner --platforms ${{ matrix.platform }} --wait --reservation-name $RESERVATION_NAME --before-docker-pull "echo ${{secrets.GHCR_PAT}} | docker login ghcr.io -u ${{secrets.GHCR_USER}} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=\"3.1.0\" --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=${{ github.ref_name }} --env FLAGS=\"-all --platform ${{ matrix.platform }}\""
+            exec hil_runner --platforms ${{ matrix.platform }} --wait --reservation-name $RESERVATION_NAME --before-docker-pull "echo ${{secrets.GHCR_PAT}} | docker login ghcr.io -u ${{secrets.GHCR_USER}} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=\"3.3.0\" --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=${{ github.ref_name }} --env FLAGS=\"-all --platform ${{ matrix.platform }}\""
           fi
   
   HIL-test-windows:
@@ -144,7 +144,7 @@ jobs:
               exec hil_runner --models 'oak4_s or oak4_pro or oak4_d' --wait $RESERVATION_OPTION -os windows --commands "rmdir /S /Q depthai-nodes & git clone https://github.com/luxonis/depthai-nodes.git && cd depthai-nodes\tests\end_to_end && windows_end_to_end.cmd ${{ github.event.inputs.depthai-nodes-version }} ${{ secrets.HUBAI_API_KEY }} ${{ secrets.HUBAI_TEAM_SLUG }} ${{ github.event.inputs.depthai-version }} ${{secrets.LUXONIS_EXTRA_INDEX_URL}} rvc4"
             fi
           else
-            exec hil_runner --models 'oak4_s or oak4_pro or oak4_d' --wait --reservation-name $RESERVATION_NAME -os windows --commands "rmdir /S /Q depthai-nodes & git clone https://github.com/luxonis/depthai-nodes.git && cd depthai-nodes\tests\end_to_end && windows_end_to_end.cmd ${{ github.ref_name}} ${{ secrets.HUBAI_API_KEY }} ${{ secrets.HUBAI_TEAM_SLUG }} 3.1.0 ${{secrets.LUXONIS_EXTRA_INDEX_URL}} rvc4"
+            exec hil_runner --models 'oak4_s or oak4_pro or oak4_d' --wait --reservation-name $RESERVATION_NAME -os windows --commands "rmdir /S /Q depthai-nodes & git clone https://github.com/luxonis/depthai-nodes.git && cd depthai-nodes\tests\end_to_end && windows_end_to_end.cmd ${{ github.ref_name}} ${{ secrets.HUBAI_API_KEY }} ${{ secrets.HUBAI_TEAM_SLUG }} 3.3.0 ${{secrets.LUXONIS_EXTRA_INDEX_URL}} rvc4"
           fi
 
   HIL-test-mac:
@@ -197,5 +197,5 @@ jobs:
               exec hil_runner --models 'oak4_s or oak4_pro or oak4_d' --wait $RESERVATION_OPTION -os mac --basic-sanity --sync-workspace --commands "cd /tmp/depthai-nodes && ./tests/end_to_end/run_end_to_end.sh ${{ secrets.HUBAI_API_KEY }} ${{ secrets.HUBAI_TEAM_SLUG }} ${{ github.event.inputs.depthai-version }} ${{secrets.LUXONIS_EXTRA_INDEX_URL}} rvc4"
             fi
           else
-            exec hil_runner --models 'oak4_s or oak4_pro or oak4_d' --wait --basic-sanity --reservation-name $RESERVATION_NAME -os mac --sync-workspace --commands "cd /tmp/depthai-nodes && ./tests/end_to_end/run_end_to_end.sh ${{ secrets.HUBAI_API_KEY }} ${{ secrets.HUBAI_TEAM_SLUG }} 3.2.1 ${{secrets.LUXONIS_EXTRA_INDEX_URL}} rvc4"
+            exec hil_runner --models 'oak4_s or oak4_pro or oak4_d' --wait --basic-sanity --reservation-name $RESERVATION_NAME -os mac --sync-workspace --commands "cd /tmp/depthai-nodes && ./tests/end_to_end/run_end_to_end.sh ${{ secrets.HUBAI_API_KEY }} ${{ secrets.HUBAI_TEAM_SLUG }} 3.3.0 ${{secrets.LUXONIS_EXTRA_INDEX_URL}} rvc4"
           fi

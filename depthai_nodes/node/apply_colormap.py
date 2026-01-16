@@ -138,10 +138,15 @@ class ApplyColormap(BaseHostNode):
         if isinstance(msg_copy, ImgDetectionsExtended):
             return msg_copy.masks
 
+        if isinstance(msg_copy, dai.ImgDetections):
+            mask = msg_copy.getCvSegmentationMask()
+            mask = np.where(mask == 255, 0, mask + 1)
+            return mask
+
         raise ValueError(
             f"Unsupported input type {type(msg_copy)}. "
             "ApplyColormap only accepts image-like inputs: "
-            "dai.ImgFrame, SegmentationMask, Map2D, ImgDetectionsExtended."
+            "dai.ImgFrame, SegmentationMask, Map2D, ImgDetectionsExtended and dai.ImgDetections."
         )
 
     def _colorize(self, input_map: np.ndarray) -> np.ndarray:

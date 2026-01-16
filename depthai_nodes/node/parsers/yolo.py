@@ -51,9 +51,9 @@ class YOLOExtendedParser(BaseParser):
 
     Output Message/s
     ----------------
-    **Type**: ImgDetectionsExtended
+    **Type**: dai.ImgDetections
 
-    **Description**: Message containing bounding boxes, labels, label names, confidence scores, and keypoints or masks and protos of the detected objects.
+    **Description**: dai.ImgDetections message containing bounding boxes, labels, label names, confidence scores, and keypoints or masks and protos of the detected objects.
     """
 
     _DET_MODE = 0
@@ -447,7 +447,7 @@ class YOLOExtendedParser(BaseParser):
             )
 
             bboxes, labels, label_names, scores, additional_output = [], [], [], [], []
-            final_mask = np.full(input_shape, -1, dtype=np.int16)
+            final_mask = np.full(input_shape, 255, dtype=np.uint8)
             for i in range(results.shape[0]):
                 bbox, conf, label, other = (
                     results[i, :4],
