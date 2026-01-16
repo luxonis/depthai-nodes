@@ -31,7 +31,7 @@ except Exception as e:
         super().__init__()
         if self._platform == dai.Platform.RVC2:
             raise RuntimeError(
-                "DetectionsMapper node is currently not supported on RVC2."
+                "CoordinatesMapper node is currently not supported on RVC2."
             )
 
     def build(
@@ -44,7 +44,7 @@ except Exception as e:
             [(dai.DatatypeEnum.ImgFrame, True)]
         )
         self.link_args(script.outputs["transformation"], from_transformation_input)
-        self._logger.debug("ImgDetectionsMapper built")
+        self._logger.debug("CoordinatesMapper built")
         return self
 
     def process(self, to_transformation_msg: dai.ImgFrame, from_transformation_msg: dai.Buffer) -> None:
