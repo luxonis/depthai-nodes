@@ -146,7 +146,9 @@ except Exception as e:
                 )
                 for nn_msg in nn_msgs
             ]
-            merged_detections = merge_messages(remapped_messages)
+            if len(remapped_messages) == 0:
+                return
+            merged_detections = merge_messages(messages=remapped_messages)
 
             self._sendOutput(
                 merged_detections,
