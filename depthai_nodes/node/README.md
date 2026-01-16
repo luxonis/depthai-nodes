@@ -68,7 +68,8 @@ Parser nodes are used to parse the output of a neural network. The main purpose 
 
 ### Image Processing Nodes
 
-- `ApplyColormap`: Applies color mapping to depth or other grayscale images. Sends out `dai.ImgFrame` message.
+- `ApplyColormap`: Applies a colormap to generic 2D arrays (maps/masks). Sends out `dai.ImgFrame` message.
+- `ApplyDepthColormap`: Applies a colormap to depth/disparity `dai.ImgFrame` using percentile-based normalization for more stable depth visualization. Invalid depth values (\<= 0) are ignored when computing percentiles and rendered black. Sends out `dai.ImgFrame` message.
 - `DepthMerger`: Merges detections with depth information. Sends out `dai.SpatialImgDetections` message.
 - `ImgFrameOverlay`: A host node that receives two dai.ImgFrame objects and overlays them into a single one. Sends out `dai.ImgFrame` message.
 - `Tiling`: Manages tiling of input frames for neural network processing, divides frames into overlapping tiles based on configuration parameters, and creates ImgFrames for each tile to be sent to a neural network node. Sends out `dai.ImgFrame` message.
@@ -84,6 +85,7 @@ Parser nodes are used to parse the output of a neural network. The main purpose 
 
 - `ImgDetectionsBridge`: Transforms the dai.ImgDetections to ImgDetectionsExtended object or vice versa. Sends out [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) or [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message.
 - `ImgDetectionsFilter`: Filters image detections based on various criteria. Sends out [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) or [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) or [`dai.SpatialImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/spatial_img_detections) message.
+- `InstanceToSemanticMask`: Converts instance-id masks into semantic masks by mapping instance indices to detection class labels. Sends out [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) or [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message.
 
 ### Data Management
 
