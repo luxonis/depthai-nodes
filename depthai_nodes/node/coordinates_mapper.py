@@ -5,9 +5,50 @@ from depthai_nodes.node.utils.message_remapping import remap_message
 
 
 class CoordinatesMapper(BaseHostNode):
-    """Remap coordinates to different reference frame.
+    """Host node that remaps message coordinates into a different reference frame.
 
-    Can handle any depthai message that returns dai.ImgTransformation from `getTransformation()` method.
+    The node takes two inputs:
+    - a **target transformation** (the reference frame to map coordinates *to*),
+    - a message whose coordinates should be remapped.
+
+    Any DepthAI message that provides a ``getTransformation()`` and a ``setTransformation()`` method can be
+    remapped. Internally, coordinate fields are transformed from the message’s
+    original reference frame into the target reference frame.
+
+    On-device, a lightweight Script node extracts only the
+    :class:`dai.ImgTransformation` from incoming messages and forwards it to the
+    host. This avoids transferring large image payloads and reduces
+    host–device bandwidth usage.
+
+    Message groups are handled recursively: each contained message is remapped
+    individually while preserving timestamps and sequence numbers.
+
+    Notes
+    -----
+    - Messages that do not support coordinate remapping are passed through
+      unchanged.
+    - The output message always carries the target transformation as its
+      transformation.
+    - This node is currently **not supported on RVC2**.
+
+    Inputs
+    ------
+    to_transformation_input : dai.Node.Output
+        Output producing messages that define the target reference frame.
+        Only the transformation is extracted on-device.
+    from_transformation_input : dai.Node.Output
+        Output producing messages whose coordinates should be remapped.
+
+    Outputs
+    -------
+    out : dai.Node.Output
+        Messages with coordinates remapped into the target reference frame.
+
+    Raises
+    ------
+    RuntimeError
+        If used on an unsupported platform (RVC2), or if the target
+        transformation cannot be obtained from the input message.
     """
 
     SCRIPT_CONTENT = """

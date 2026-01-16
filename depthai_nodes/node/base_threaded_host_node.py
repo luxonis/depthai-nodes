@@ -4,7 +4,7 @@ from depthai_nodes.logging import get_logger
 
 
 class BaseThreadedHostNode(dai.node.ThreadedHostNode):
-    """An abstract base class for host nodes.
+    """An abstract base class for threaded host nodes.
 
     Designed to encapsulate and abstract the configuration of platform-specific
     attributes, providing a clean and consistent interface for derived classes.
