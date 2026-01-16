@@ -14,22 +14,56 @@ from .config import DetectionFilterConfig, TilingConfig
 
 
 class ExtendedNeuralNetwork(BaseThreadedHostNode):
-    """
-    Node that wraps the ParsingNeuralNetwork node and adds following capabilities:
-        1. Automatic input resizing to the neural network input size.
-        2. Remapping of detection coordinates from neural network output to input frame coordinates.
-        3. Neural network output filtering based on confidence threshold and labels.
-        (Only supported for ImgDetectionsExtended and ImgDetections messages).
-        4. Input tiling.
+    """High-level node that builds a neural-network subgraph with optional tiling,
+    coordinate remapping, and detection filtering.
 
-    Supports only single head models.
+    This node wraps :class:`~depthai_nodes.node.parsing_neural_network.ParsingNeuralNetwork`
+    and adds common pipeline conveniences:
 
-    Properties
-    ----------
-    out : Node.Output
-        Neural network output. Detections are remapped to the input frame coordinates.
-    nn_passthrough : Node.Output
-        Neural network frame passthrough.
+    - **Automatic input resizing** to the model input resolution (via ImageManip).
+    - **Coordinate remapping** of NN outputs into the input frame's reference
+      frame (via :class:`~depthai_nodes.node.coordinates_mapper.CoordinatesMapper`).
+    - **Optional detection filtering** by confidence threshold and label allow/deny
+      lists (via :class:`~depthai_nodes.node.img_detections_filter.ImgDetectionsFilter`).
+      This is only applicable for detection-like outputs (e.g. ``ImgDetections`` /
+      ``ImgDetectionsExtended``).
+    - **Optional input tiling** where the input frame is split into overlapping tiles,
+      inference runs per-tile, and outputs are stitched back together (via
+      :class:`~depthai_nodes.node.tiling.Tiling` and
+      :class:`~depthai_nodes.node.tiles_patcher.TilesPatcher`).
+
+    Configuration is provided via the fluent methods :meth:`with_tiling` and
+    :meth:`with_detections_filter`. The pipeline nodes are constructed only once
+    :meth:`build` is called.
+
+    Notes
+    -----
+    - Only **single-head** models are supported.
+    - When tiling is enabled, outputs are combined by :class:`TilesPatcher`
+      using the configured IOU threshold.
+    - When detection filtering is enabled together with tiling, the filter is
+      applied to per-tile outputs before stitching.
+    - The final output type depends on the underlying model head / parser.
+
+    Outputs
+    -------
+    out : dai.Node.Output
+        Output stream of the underlying NN pipeline. If filtering is enabled,
+        this is the filtered output. If tiling is enabled, this is the stitched
+        output from :class:`TilesPatcher`.
+    nn_passthrough : dai.Node.Output
+        Passthrough frame stream from :class:`ParsingNeuralNetwork`.
+
+    See Also
+    --------
+    ParsingNeuralNetwork
+        Base NN wrapper used for inference and parsing.
+    Tiling, TilesPatcher
+        Nodes used when tiling is enabled.
+    CoordinatesMapper
+        Used to remap coordinates into the input frame reference frame.
+    ImgDetectionsFilter
+        Optional detection filtering node.
     """
 
     def __init__(self):
@@ -95,12 +129,14 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
 
         @param image_input: ImgFrame node's input. Frames are automatically resized to fit the neural network input size.
         @type image_input: Node.Input
-        @param nn_source: NNModelDescription object containing the HubAI model descriptors, NNArchive object of the model, or HubAI model slug in form of <model_slug>:<model_version_slug> or <model_slug>:<model_version_slug>:<model_instance_hash>.
+        @param nn_source: NNModelDescription object containing the HubAI model descriptors, NNArchive object of the model,
+            or HubAI model slug in form of <model_slug>:<model_version_slug> or <model_slug>:<model_version_slug>:<model_instance_hash>.
         @type nn_source: Union[dai.NNModelDescription, dai.NNArchive, str]
-        @param input_resize_mode: Resize mode for the neural network input.
+        @param input_resize_mode: Resize mode used when adapting frames to the model input size.
+            This is applied either by ImageManip (non-tiling path) or by the tiling pipeline.
         @type input_resize_mode: dai.ImageManipConfig.ResizeMode
         @rtype: ExtendedNeuralNetwork
-        @raise ValueError: If tiling is enabled and input_size is not provided.
+        @raise RuntimeError: If the NN model has more than one head.
         @raise ValueError: If NNArchive does not contain input size.
         """
         self._input_resize_mode = input_resize_mode
