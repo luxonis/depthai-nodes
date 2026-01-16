@@ -1,6 +1,7 @@
 from typing import List
 
 import depthai as dai
+import numpy as np
 
 from depthai_nodes import ImgDetectionsExtended
 from depthai_nodes.message.utils import compute_area, copy_message
@@ -152,22 +153,27 @@ class ImgDetectionsFilter(BaseHostNode):
         )
 
         filtered_detections = []
-        for detection in msg.detections:
+        filtered_out_ixs: List[int] = []
+        for ix, detection in enumerate(msg.detections):
             if self._labels_to_keep is not None:
                 if detection.label not in self._labels_to_keep:
+                    filtered_out_ixs.append(ix)
                     continue
 
             if self._labels_to_reject is not None:
                 if detection.label in self._labels_to_reject:
+                    filtered_out_ixs.append(ix)
                     continue
 
             if self._confidence_threshold is not None:
                 if detection.confidence < self._confidence_threshold:
+                    filtered_out_ixs.append(ix)
                     continue
 
             if self._min_area is not None:
                 area = compute_area(detection)
                 if area < self._min_area:
+                    filtered_out_ixs.append(ix)
                     continue
 
             filtered_detections.append(detection)
@@ -176,6 +182,18 @@ class ImgDetectionsFilter(BaseHostNode):
             filtered_detections = sorted(
                 filtered_detections, key=lambda x: x.confidence, reverse=True
             )
+
+        if isinstance(msg, ImgDetectionsExtended):
+            masks = msg.masks
+            if masks is not None:
+                masks = np.where(np.isin(masks, filtered_out_ixs), -1, masks)
+                msg_new.masks = masks
+
+        if isinstance(msg, dai.ImgDetections):
+            mask = msg.getCvSegmentationMask()
+            if mask is not None:
+                mask = np.where(np.isin(mask, filtered_out_ixs), 255, mask)
+                msg_new.setCvSegmentationMask(mask)
 
         msg_new.detections = filtered_detections[: self._max_detections]
 
