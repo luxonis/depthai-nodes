@@ -30,8 +30,8 @@ def _instance_to_semantic_mask(masks: np.ndarray, dets: list) -> np.ndarray:
     """Remap instance-id mask (index into det list) -> class label."""
     lut = np.array([int(det.label) for det in dets], dtype=np.int16)
 
-    semantic = np.full(masks.shape, -1, dtype=np.int16)
-    valid = (masks >= 0) & (masks < lut.size)
+    semantic = np.full(masks.shape, 255, dtype=np.int16)
+    valid = (masks < 255) & (masks < lut.size)
     if np.any(valid):
         semantic[valid] = lut[masks[valid]]
     return semantic
@@ -44,25 +44,6 @@ def test_building(converter: InstanceToSemanticMask):
 def test_wrong_input_type(converter: InstanceToSemanticMask):
     with pytest.raises(TypeError):
         converter.process(dai.ImgFrame())
-
-
-def test_passthrough_when_masks_empty(converter: InstanceToSemanticMask):
-    o = OutputMock()
-    converter.build(o)
-
-    q_in = o.createOutputQueue()
-    q_out = converter.out.createOutputQueue()
-
-    msg = create_img_detections_extended()
-    msg.masks = np.empty((0, 0), dtype=np.int16)
-
-    q_in.send(msg)
-    converter.process(q_in.get())
-    out = q_out.get()
-
-    assert isinstance(out, ImgDetectionsExtended)
-    assert out.masks.size == 0
-    assert len(out.detections) == len(msg.detections)
 
 
 def test_processing_instance_to_semantic(
@@ -81,7 +62,7 @@ def test_processing_instance_to_semantic(
     # If there are no detections in the test fixture, the mapping isn't meaningful.
     # In that case, just ensure it doesn't crash and passes through.
     if n == 0:
-        msg.masks = np.array([[0, 1], [2, 3]], dtype=np.int16)
+        msg.setCvSegmentationMask(np.array([[0, 1], [2, 3]], dtype=np.uint8))
         q_in.send(msg)
         converter.process(q_in.get())
         out = q_out.get()
@@ -93,7 +74,7 @@ def test_processing_instance_to_semantic(
     # - valid ids: 0..min(n-1, 2)
     # - invalid ids: -1, n (out of range)
     h, w = 16, 16
-    masks = np.full((h, w), -1, dtype=np.int16)
+    masks = np.full((h, w), 255, dtype=np.int16)
     masks[0:8, 0:8] = 0
     if n > 1:
         masks[0:8, 8:16] = 1
@@ -101,7 +82,7 @@ def test_processing_instance_to_semantic(
         masks[8:16, 0:8] = 2
     masks[8:16, 8:16] = n  # out of range -> should become -1
 
-    msg.masks = masks
+    msg.setCvSegmentationMask(masks.astype(np.uint8))
     semantic_mask = _instance_to_semantic_mask(masks, msg.detections)
 
     start_time = time.time()
@@ -118,9 +99,9 @@ def test_processing_instance_to_semantic(
         converter.process(q_in.get())
         out = q_out.get()
 
-        assert isinstance(out, ImgDetectionsExtended)
+        assert isinstance(out, dai.ImgDetections)
         assert len(out.detections) == n
-        np.testing.assert_array_equal(out.masks, semantic_mask)
+        np.testing.assert_array_equal(out.getCvSegmentationMask(), semantic_mask)
 
-        # sanity: out-of-range region should be -1
-        assert (out.masks[8:16, 8:16] == -1).all()
+        # sanity: out-of-range region should be 255
+        assert (out.getCvSegmentationMask()[8:16, 8:16] == 255).all()
