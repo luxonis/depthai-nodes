@@ -29,9 +29,8 @@ TGathered = TypeVar("TGathered", bound=dai.Buffer)
 
 
 class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
-    """
-    Threaded host node that groups (“gathers”) multiple data messages around a
-    single reference message, matched by timestamp.
+    """Threaded host node that groups (“gathers”) multiple data messages around a single
+    reference message, matched by timestamp.
 
     The node receives two input streams:
 
@@ -128,8 +127,7 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         input_reference: dai.Node.Output,
         wait_count_fn: Optional[Callable[[TReference], int]] = None,
     ) -> "GatherData[TReference, TGathered]":
-        """
-        Configure the node and link pipeline outputs to this node's inputs.
+        """Configure the node and link pipeline outputs to this node's inputs.
 
         This method must be called before the pipeline is started.
 
@@ -184,9 +182,7 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
 
         input_data.link(self._data_input)
         input_reference.link(self._reference_input)
-        self._logger.debug(
-            "Linked input_data and input_reference to GatherData inputs"
-        )
+        self._logger.debug("Linked input_data and input_reference to GatherData inputs")
 
         self._logger.debug(f"GatherData built with camera_fps={camera_fps}")
         return self
@@ -194,14 +190,18 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     def run(self) -> None:
         self._logger.debug("GatherData run started")
         if not self._camera_fps:
-            raise ValueError("Camera FPS not set. Call build() before starting the pipeine.")
+            raise ValueError(
+                "Camera FPS not set. Call build() before starting the pipeine."
+            )
 
         while self.isRunning():
             try:
                 data: TGathered = self._data_input.tryGet()  # noqa
                 reference: TReference = self._reference_input.tryGet()  # noqa
             except dai.MessageQueue.QueueException as e:
-                self._logger.error(f"GatherData failed to read data from queues. Exception: {e}")
+                self._logger.error(
+                    f"GatherData failed to read data from queues. Exception: {e}"
+                )
                 break
             if data:
                 self._logger.debug("Data input received")
