@@ -94,7 +94,9 @@ def old_img_detections(old_reference_timestamp):
 def setup_gather_data_node(generator, fps, duration=None):
     input_data = LinkTrackingOutputMock()
     input_reference = LinkTrackingOutputMock()
-    gather_data = generator.build(camera_fps=fps, input_data=input_data, input_reference=input_reference)
+    gather_data = generator.build(
+        camera_fps=fps, input_data=input_data, input_reference=input_reference
+    )
     if duration is not None:
         modified_duration = duration / DIFFERENT_TESTS
         gather_data._data_input._queue.duration = modified_duration
@@ -162,9 +164,13 @@ def test_build(gather_data_generator, fps):
     input_data = LinkTrackingOutputMock()
     input_reference = LinkTrackingOutputMock()
     with pytest.raises(ValueError):
-        gather_data_generator.build(camera_fps=-fps, input_data=input_data, input_reference=input_reference)
+        gather_data_generator.build(
+            camera_fps=-fps, input_data=input_data, input_reference=input_reference
+        )
 
-    gather_data = gather_data_generator.build(camera_fps=fps, input_data=input_data, input_reference=input_reference)
+    gather_data = gather_data_generator.build(
+        camera_fps=fps, input_data=input_data, input_reference=input_reference
+    )
     assert gather_data is not None
     assert input_data.linked_to is gather_data._data_input
     assert input_reference.linked_to is gather_data._reference_input
