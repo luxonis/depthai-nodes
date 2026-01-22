@@ -49,6 +49,14 @@ except Exception as e:
         self.gather_data: GatherData = self._pipeline.create(GatherData)
         self._logger.debug("Stage2NeuralNetwork initialized")
 
+    @property
+    def out(self):
+        return self.gather_data.out
+
+    @property
+    def nn_passthrough(self):
+        return self.nn.passthrough
+
     def build(
         self,
         img_frame: dai.Node.Output,
