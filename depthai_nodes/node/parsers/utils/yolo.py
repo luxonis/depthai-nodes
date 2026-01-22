@@ -27,6 +27,7 @@ class YOLOSubtype(str, Enum):
     V8 = "yolov8"
     V9 = "yolov9"
     V10 = "yolov10"
+    V26 = "yolov26"
     P = "yolo-p"
     GOLD = "yolo-gold"
     DEFAULT = ""
@@ -62,6 +63,7 @@ def non_max_suppression(
     max_wh: int = 7680,
     kpts_mode: bool = False,
     det_mode: bool = False,
+    apply_nms: bool = True,
 ) -> List[np.ndarray]:
     """Performs Non-Maximum Suppression (NMS) on inference results.
 
@@ -164,20 +166,26 @@ def non_max_suppression(
         elif num_box > max_nms:  # excess max boxes' number.
             x = x[x[:, 4].argsort()[:max_nms]]  # sort by confidence
 
-        # Batched NMS
-        class_offset = x[:, 5:6] * (0 if agnostic else max_wh)  # classes
-        boxes, scores = (
-            x[:, :4] + class_offset,
-            x[:, 4][..., np.newaxis],
-        )  # boxes (offset by class), scores
-        keep_box_idx = np.array(
-            nms(np.hstack((boxes, scores)).astype(np.float32, copy=False), iou_thres)
-        )
+        if apply_nms:
+            # Batched NMS
+            class_offset = x[:, 5:6] * (0 if agnostic else max_wh)  # classes
+            boxes, scores = (
+                x[:, :4] + class_offset,
+                x[:, 4][..., np.newaxis],
+            )  # boxes (offset by class), scores
+            keep_box_idx = np.array(
+                nms(np.hstack((boxes, scores)).astype(np.float32, copy=False), iou_thres)
+            )
 
-        if keep_box_idx.shape[0] > max_det:  # limit detections
-            keep_box_idx = keep_box_idx[:max_det]
+            if keep_box_idx.shape[0] > max_det:  # limit detections
+                keep_box_idx = keep_box_idx[:max_det]
 
-        output[img_idx] = x[keep_box_idx]
+            output[img_idx] = x[keep_box_idx]
+        else:
+            if num_box > max_det:
+                keep_box_idx = x[:, 4].argsort()[::-1][:max_det]
+                x = x[keep_box_idx]
+            output[img_idx] = x
         if (time.time() - tik) > time_limit:
             logger.info(f"NMS cost time exceed the limited {time_limit}s.")
             break  # time limit exceeded
@@ -400,7 +408,7 @@ def decode_yolo_output(
         idx = np.argsort(output[:, 4])[::-1][:max_nms]  # sort by objectness
         output = output[idx]
 
-    # 3. Run NMS on filtered predictions (single batch)
+    # 3. Run post-processing (skip NMS for YOLOv26)
     output_nms = non_max_suppression(
         output[None, ...],  # batch dim
         conf_thres=conf_thres,
@@ -408,6 +416,7 @@ def decode_yolo_output(
         num_classes=num_classes,
         max_nms=max_nms,
         det_mode=det_mode,
+        apply_nms=subtype != YOLOSubtype.V26,
     )[0]
 
     return output_nms
