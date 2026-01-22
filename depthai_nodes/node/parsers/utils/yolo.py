@@ -174,7 +174,9 @@ def postprocess_bboxes(
                 x[:, 4][..., np.newaxis],
             )  # boxes (offset by class), scores
             keep_box_idx = np.array(
-                nms(np.hstack((boxes, scores)).astype(np.float32, copy=False), iou_thres)
+                nms(
+                    np.hstack((boxes, scores)).astype(np.float32, copy=False), iou_thres
+                )
             )
 
             if keep_box_idx.shape[0] > max_det:  # limit detections
