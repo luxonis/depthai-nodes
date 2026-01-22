@@ -49,7 +49,7 @@ def make_grid_numpy(ny: int, nx: int, na: int) -> np.ndarray:
     return np.stack((xv, yv), 2).reshape(1, na, ny, nx, 2)
 
 
-def non_max_suppression(
+def postprocess_bboxes(
     prediction: np.ndarray,
     conf_thres: float = 0.5,
     iou_thres: float = 0.45,
@@ -65,7 +65,7 @@ def non_max_suppression(
     det_mode: bool = False,
     apply_nms: bool = True,
 ) -> List[np.ndarray]:
-    """Performs Non-Maximum Suppression (NMS) on inference results.
+    """Post-processes inference results, including filtering and optional NMS.
 
     @param prediction: Prediction from the model, shape = (batch_size, boxes, xy+wh+...)
     @type prediction: np.ndarray
@@ -187,7 +187,7 @@ def non_max_suppression(
                 x = x[keep_box_idx]
             output[img_idx] = x
         if (time.time() - tik) > time_limit:
-            logger.info(f"NMS cost time exceed the limited {time_limit}s.")
+            logger.info(f"Postprocess cost time exceed the limited {time_limit}s.")
             break  # time limit exceeded
 
     return output
@@ -373,7 +373,7 @@ def decode_yolo_output(
     @type subtype: YOLOSubtype
     @param max_nms: Maximum number of boxes to keep after NMS.
     @type max_nms: int
-    @return: NMS output.
+    @return: Post-processed output.
     @rtype: np.ndarray
     """
     num_outputs = num_classes + 5
@@ -409,7 +409,7 @@ def decode_yolo_output(
         output = output[idx]
 
     # 3. Run post-processing (skip NMS for YOLOv26)
-    output_nms = non_max_suppression(
+    output_post = postprocess_bboxes(
         output[None, ...],  # batch dim
         conf_thres=conf_thres,
         iou_thres=iou_thres,
@@ -419,4 +419,4 @@ def decode_yolo_output(
         apply_nms=subtype != YOLOSubtype.V26,
     )[0]
 
-    return output_nms
+    return output_post
