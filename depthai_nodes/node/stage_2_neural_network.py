@@ -57,6 +57,9 @@ except Exception as e:
     def nn_passthrough(self):
         return self.nn.passthrough
 
+    def setPadding(self, padding: float) -> None:
+        self.detection_cropper.setPadding(padding)
+
     def build(
         self,
         img_frame: dai.Node.Output,
@@ -116,6 +119,9 @@ except Exception as e:
         )
         return self
 
+    def run(self) -> None:
+        pass
+
     def _remapMessage(self, msg: dai.Buffer, to_transformation: dai.ImgTransformation):
         if isinstance(msg, dai.MessageGroup):
             new_msg_group = dai.MessageGroup()
@@ -140,16 +146,3 @@ except Exception as e:
         remapped_msg.setTimestampDevice(msg.getTimestampDevice())
         return remapped_msg
 
-    def run(self) -> None:
-        pass
-
-    def setPadding(self, padding: float) -> None:
-        self.detection_cropper.setPadding(padding)
-
-    @property
-    def out(self):
-        return self.gather_data.out
-
-    @property
-    def nn_passthrough(self):
-        return self.nn.passthrough
