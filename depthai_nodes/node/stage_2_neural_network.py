@@ -95,11 +95,8 @@ except Exception as e:
         gather_node_data_input = nn_output
 
         if remap_detections:
-            script = self._pipeline.create(dai.node.Script)
-            script.setScript(self.SCRIPT_CONTENT)
-            img_frame.link(script.inputs["preview"])
             coordinates_mapper = self._pipeline.create(CoordinatesMapper).build(
-                to_transformation_input=script.outputs["transformation"],
+                to_transformation_input=img_frame,
                 from_transformation_input=nn_output,
             )
             gather_node_data_input = coordinates_mapper.out
