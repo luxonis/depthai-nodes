@@ -6,7 +6,11 @@ import numpy as np
 
 from depthai_nodes.message.creators import create_detection_message
 from depthai_nodes.node.parsers.base_parser import BaseParser
-from depthai_nodes.node.parsers.utils import normalize_bboxes, xyxy_to_xywh
+from depthai_nodes.node.parsers.utils import (
+    normalize_bboxes,
+    xywh_to_xyxy,
+    xyxy_to_xywh,
+)
 from depthai_nodes.node.parsers.utils.masks_utils import (
     get_segmentation_outputs,
     process_single_mask,
@@ -472,6 +476,13 @@ class YOLOExtendedParser(BaseParser):
                 results = end2end_raw[0]
                 if results.shape[0] > 0:
                     results = results[results[:, 4] > self.conf_threshold]
+                    if results.shape[0] > 0:
+                        bbox = results[:, :4]
+                        if np.any(bbox[:, 0] > bbox[:, 2]) or np.any(
+                            bbox[:, 1] > bbox[:, 3]
+                        ):
+                            bbox = xywh_to_xyxy(bbox)
+                            results = np.concatenate((bbox, results[:, 4:]), axis=1)
                 else:
                     results = np.zeros((0, 6), dtype=np.float32)
             else:
