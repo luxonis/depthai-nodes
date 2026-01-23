@@ -492,7 +492,7 @@ class YOLOExtendedParser(BaseParser):
                     raise ValueError(
                         f"YOLOv26 end2end raw output expects C=4+nc, got {pred.shape[0]}."
                     )
-                boxes = pred[:4, :].T  # (N, 4) xyxy
+                boxes = pred[:4, :].T  # (N, 4) xywh (YOLOv26 end2end)
                 cls = pred[4:, :].T  # (N, nc)
                 conf = cls.max(axis=1)
                 labels = cls.argmax(axis=1)
@@ -506,6 +506,24 @@ class YOLOExtendedParser(BaseParser):
                         self._logger.info(
                             f"[YOLOv26 debug] first box raw xyxy=({b0[0]:.2f},{b0[1]:.2f},{b0[2]:.2f},{b0[3]:.2f})"
                         )
+                        lt_rb_inverted = np.mean((boxes[:, 2] < boxes[:, 0]) | (boxes[:, 3] < boxes[:, 1]))
+                        self._logger.info(
+                            f"[YOLOv26 debug] inverted lt/rb fraction={lt_rb_inverted:.3f}"
+                        )
+                        # Interpret as xywh and convert to xyxy for sanity
+                        xywh = boxes
+                        xyxy_from_xywh = np.stack(
+                            [
+                                xywh[:, 0] - xywh[:, 2] / 2,
+                                xywh[:, 1] - xywh[:, 3] / 2,
+                                xywh[:, 0] + xywh[:, 2] / 2,
+                                xywh[:, 1] + xywh[:, 3] / 2,
+                            ],
+                            axis=1,
+                        )
+                        self._logger.info(
+                            f"[YOLOv26 debug] xyxy_from_xywh min={xyxy_from_xywh.min():.4f} max={xyxy_from_xywh.max():.4f}"
+                        )
                     # Alternate orientation debug: treat tensor as (N, 4+nc)
                     alt = pred.T
                     alt_boxes = alt[:, :4]
@@ -515,6 +533,16 @@ class YOLOExtendedParser(BaseParser):
                         f"[YOLOv26 debug] alt orientation: boxes min={alt_boxes.min():.4f} "
                         f"max={alt_boxes.max():.4f} conf max={(alt_conf.max() if alt_conf.size else float('nan')):.4f}"
                     )
+                # Convert xywh -> xyxy before filtering/normalization
+                boxes = np.stack(
+                    [
+                        boxes[:, 0] - boxes[:, 2] / 2,
+                        boxes[:, 1] - boxes[:, 3] / 2,
+                        boxes[:, 0] + boxes[:, 2] / 2,
+                        boxes[:, 1] + boxes[:, 3] / 2,
+                    ],
+                    axis=1,
+                )
                 keep = conf > self.conf_threshold
                 boxes = boxes[keep]
                 conf = conf[keep]
