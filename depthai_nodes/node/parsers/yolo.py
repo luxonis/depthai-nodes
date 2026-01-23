@@ -385,12 +385,20 @@ class YOLOExtendedParser(BaseParser):
             outputs_names = sorted(
                 [name for name in layer_names if "_yolo" in name or "yolo-" in name]
             )
-            outputs_values = [
-                output.getTensor(
-                    o, dequantize=True, storageOrder=dai.TensorInfo.StorageOrder.NCHW
-                ).astype(np.float32)
-                for o in outputs_names
-            ]
+            if self.subtype == YOLOSubtype.V26 and len(outputs_names) == 1:
+                outputs_values = [
+                    output.getTensor(o, dequantize=True).astype(np.float32)
+                    for o in outputs_names
+                ]
+            else:
+                outputs_values = [
+                    output.getTensor(
+                        o,
+                        dequantize=True,
+                        storageOrder=dai.TensorInfo.StorageOrder.NCHW,
+                    ).astype(np.float32)
+                    for o in outputs_names
+                ]
             end2end_raw = None
             if self.subtype == YOLOSubtype.V26 and len(outputs_values) == 1:
                 raw = outputs_values[0]
