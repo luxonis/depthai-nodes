@@ -506,6 +506,15 @@ class YOLOExtendedParser(BaseParser):
                         self._logger.info(
                             f"[YOLOv26 debug] first box raw xyxy=({b0[0]:.2f},{b0[1]:.2f},{b0[2]:.2f},{b0[3]:.2f})"
                         )
+                    # Alternate orientation debug: treat tensor as (N, 4+nc)
+                    alt = pred.T
+                    alt_boxes = alt[:, :4]
+                    alt_cls = alt[:, 4:]
+                    alt_conf = alt_cls.max(axis=1) if alt_cls.size else np.array([])
+                    self._logger.info(
+                        f"[YOLOv26 debug] alt orientation: boxes min={alt_boxes.min():.4f} "
+                        f"max={alt_boxes.max():.4f} conf max={(alt_conf.max() if alt_conf.size else float('nan')):.4f}"
+                    )
                 keep = conf > self.conf_threshold
                 boxes = boxes[keep]
                 conf = conf[keep]
