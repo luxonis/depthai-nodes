@@ -110,6 +110,7 @@ class YOLOExtendedParser(BaseParser):
         self.max_det = 300
         self.input_size = None
         self.input_layout = None
+        self._debug_frames_left = 5
         try:
             self.subtype = YOLOSubtype(subtype.lower())
         except ValueError as err:
@@ -408,6 +409,11 @@ class YOLOExtendedParser(BaseParser):
                     raise ValueError(
                         f"Unexpected YOLOv26 end2end output shape {raw.shape}; expected (B,4+nc,N)."
                     )
+                if self._debug_frames_left > 0:
+                    self._logger.info(
+                        f"[YOLOv26 debug] raw shape={raw.shape} dtype={raw.dtype} "
+                        f"min={raw.min():.4f} max={raw.max():.4f}"
+                    )
 
             if (
                 any("kpt_output" in name for name in layer_names)
@@ -485,6 +491,16 @@ class YOLOExtendedParser(BaseParser):
                 cls = pred[4:, :].T  # (N, nc)
                 conf = cls.max(axis=1)
                 labels = cls.argmax(axis=1)
+                if self._debug_frames_left > 0:
+                    self._logger.info(
+                        f"[YOLOv26 debug] boxes min={boxes.min():.4f} max={boxes.max():.4f} "
+                        f"conf min={conf.min():.4f} max={conf.max():.4f}"
+                    )
+                    if boxes.shape[0]:
+                        b0 = boxes[0]
+                        self._logger.info(
+                            f"[YOLOv26 debug] first box raw xyxy=({b0[0]:.2f},{b0[1]:.2f},{b0[2]:.2f},{b0[3]:.2f})"
+                        )
                 keep = conf > self.conf_threshold
                 boxes = boxes[keep]
                 conf = conf[keep]
@@ -607,3 +623,5 @@ class YOLOExtendedParser(BaseParser):
             self.out.send(detections_message)
 
             self._logger.debug("Detection message sent successfully")
+            if self._debug_frames_left > 0:
+                self._debug_frames_left -= 1
