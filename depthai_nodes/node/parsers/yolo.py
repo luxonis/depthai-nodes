@@ -401,28 +401,10 @@ class YOLOExtendedParser(BaseParser):
                 if raw.ndim == 2:
                     raw = raw[None, ...]
                 if raw.ndim == 3:
-                    if raw.shape[2] == 6:
-                        end2end_raw = raw
-                    elif raw.shape[1] == 6:
-                        end2end_raw = raw.transpose(0, 2, 1)
-                    else:
-                        raise ValueError(
-                            f"Unexpected YOLOv26 end2end output shape {raw.shape}; expected (B,N,6) or (B,6,N)."
-                        )
-                elif raw.ndim == 4:
-                    if raw.shape[-1] == 6:
-                        end2end_raw = raw.reshape(raw.shape[0], -1, 6)
-                    elif raw.shape[1] == 6:
-                        end2end_raw = raw.transpose(0, 2, 3, 1).reshape(
-                            raw.shape[0], -1, 6
-                        )
-                    else:
-                        raise ValueError(
-                            f"Unexpected YOLOv26 end2end output shape {raw.shape}; expected last or channel dim = 6."
-                        )
+                    end2end_raw = raw
                 else:
                     raise ValueError(
-                        f"Unexpected YOLOv26 end2end output rank {raw.ndim}; expected 2, 3, or 4."
+                        f"Unexpected YOLOv26 end2end output shape {raw.shape}; expected (B,4+nc,N)."
                     )
 
             if (
@@ -492,9 +474,29 @@ class YOLOExtendedParser(BaseParser):
 
             # Decode the outputs
             if end2end_raw is not None and mode == self._DET_MODE:
-                results = end2end_raw[0]
-                if results.shape[0] > 0:
-                    results = results[results[:, 4] > self.conf_threshold]
+                pred = end2end_raw[0]  # (C, N)
+                if pred.shape[0] != (self.n_classes + 4):
+                    raise ValueError(
+                        f"YOLOv26 end2end raw output expects C=4+nc, got {pred.shape[0]}."
+                    )
+                boxes = pred[:4, :].T  # (N, 4) xyxy
+                cls = pred[4:, :].T  # (N, nc)
+                conf = cls.max(axis=1)
+                labels = cls.argmax(axis=1)
+                keep = conf > self.conf_threshold
+                boxes = boxes[keep]
+                conf = conf[keep]
+                labels = labels[keep]
+                if boxes.shape[0]:
+                    order = np.argsort(conf)[::-1]
+                    if self.max_det is not None:
+                        order = order[: self.max_det]
+                    boxes = boxes[order]
+                    conf = conf[order]
+                    labels = labels[order]
+                    results = np.concatenate(
+                        (boxes, conf[:, None], labels[:, None].astype(np.float32)), axis=1
+                    )
                 else:
                     results = np.zeros((0, 6), dtype=np.float32)
             else:
