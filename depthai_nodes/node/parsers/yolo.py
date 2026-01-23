@@ -107,6 +107,7 @@ class YOLOExtendedParser(BaseParser):
         self.anchors = anchors
         self.keypoint_label_names = keypoint_label_names
         self.keypoint_edges = keypoint_edges
+        self.max_det = 300
         self.input_size = None
         self.input_layout = None
         try:
@@ -329,6 +330,7 @@ class YOLOExtendedParser(BaseParser):
         self.mask_conf = head_config.get("mask_conf", self.mask_conf)
         self.anchors = head_config.get("anchors", self.anchors)
         self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
+        self.max_det = head_config.get("max_det", self.max_det)
         subtype = head_config.get("subtype", self.subtype)
         self.label_names = head_config.get("classes", self.label_names)
         self.keypoint_label_names = head_config.get(
