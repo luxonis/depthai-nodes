@@ -455,6 +455,11 @@ class YOLOExtendedParser(BaseParser):
                 input_shape = tuple(
                     dim * strides[0] for dim in outputs_values[0].shape[2:4]
                 )
+            if end2end_raw is not None and self._debug_frames_left > 0:
+                self._logger.info(
+                    f"[YOLOv26 debug] input_size={self.input_size} input_layout={self.input_layout} "
+                    f"computed_input_shape={input_shape}"
+                )
 
             # Reshape the anchors based on the model's output heads
             if end2end_raw is None and self.anchors is not None:
@@ -544,6 +549,14 @@ class YOLOExtendedParser(BaseParser):
                 bbox = normalize_bboxes(
                     bbox, height=input_shape[0], width=input_shape[1]
                 )[0]
+                if (
+                    end2end_raw is not None
+                    and self._debug_frames_left > 0
+                    and i == 0
+                ):
+                    self._logger.info(
+                        f"[YOLOv26 debug] first box normalized xywh=({bbox[0]:.4f},{bbox[1]:.4f},{bbox[2]:.4f},{bbox[3]:.4f})"
+                    )
                 bboxes.append(bbox)
                 labels.append(int(label))
                 if self.label_names:
