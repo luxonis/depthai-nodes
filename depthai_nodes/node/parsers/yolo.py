@@ -6,10 +6,7 @@ import numpy as np
 
 from depthai_nodes.message.creators import create_detection_message
 from depthai_nodes.node.parsers.base_parser import BaseParser
-from depthai_nodes.node.parsers.utils import (
-    normalize_bboxes,
-    xyxy_to_xywh,
-)
+from depthai_nodes.node.parsers.utils import normalize_bboxes, xyxy_to_xywh
 from depthai_nodes.node.parsers.utils.masks_utils import (
     get_segmentation_outputs,
     process_single_mask,
@@ -110,6 +107,8 @@ class YOLOExtendedParser(BaseParser):
         self.anchors = anchors
         self.keypoint_label_names = keypoint_label_names
         self.keypoint_edges = keypoint_edges
+        self.input_size = None
+        self.input_layout = None
         try:
             self.subtype = YOLOSubtype(subtype.lower())
         except ValueError as err:
@@ -338,6 +337,23 @@ class YOLOExtendedParser(BaseParser):
         keypoint_edges = head_config.get("skeleton_edges", self.keypoint_edges)
         if keypoint_edges:
             self.keypoint_edges = [tuple(edge) for edge in keypoint_edges]
+        inputs = head_config.get("model_inputs")
+        if inputs:
+            if len(inputs) != 1:
+                raise ValueError(
+                    f"Only one input supported for YOLOExtendedParser, got {len(inputs)} inputs."
+                )
+            input_shape = inputs[0].get("shape")
+            layout = inputs[0].get("layout")
+            if input_shape and layout == "NHWC":
+                self.input_size = (input_shape[2], input_shape[1])
+            elif input_shape and layout == "NCHW":
+                self.input_size = (input_shape[3], input_shape[2])
+            else:
+                raise ValueError(
+                    f"Input layout {layout} not supported for input size extraction."
+                )
+            self.input_layout = layout
         try:
             self.subtype = YOLOSubtype(subtype.lower())
         except ValueError as err:
@@ -371,6 +387,20 @@ class YOLOExtendedParser(BaseParser):
                 ).astype(np.float32)
                 for o in outputs_names
             ]
+            end2end_raw = None
+            if self.subtype == YOLOSubtype.V26 and len(outputs_values) == 1:
+                raw = outputs_values[0]
+                if raw.ndim == 2:
+                    raw = raw[None, ...]
+                if raw.ndim == 4:
+                    if raw.shape[-1] >= 6:
+                        raw = raw.reshape(raw.shape[0], -1, raw.shape[-1])
+                    elif raw.shape[1] >= 6:
+                        raw = raw.transpose(0, 2, 3, 1).reshape(
+                            raw.shape[0], -1, raw.shape[1]
+                        )
+                if raw.ndim == 3 and raw.shape[-1] >= 6:
+                    end2end_raw = raw
 
             if (
                 any("kpt_output" in name for name in layer_names)
@@ -406,24 +436,28 @@ class YOLOExtendedParser(BaseParser):
                 not in [YOLOSubtype.V3UT, YOLOSubtype.V3T, YOLOSubtype.V4T]
                 else [16, 32]
             )
-            input_shape = tuple(
-                dim * strides[0] for dim in outputs_values[0].shape[2:4]
-            )
+            if self.input_size:
+                input_shape = (self.input_size[1], self.input_size[0])
+            else:
+                input_shape = tuple(
+                    dim * strides[0] for dim in outputs_values[0].shape[2:4]
+                )
 
             # Reshape the anchors based on the model's output heads
-            if self.anchors is not None:
+            if end2end_raw is None and self.anchors is not None:
                 self.anchors = np.array(self.anchors).reshape(len(strides), -1)
 
             # Ensure the number of classes is correct
-            num_classes_check = (
-                outputs_values[0].shape[1] - 5
-                if self.anchors is None
-                else (outputs_values[0].shape[1] // self.anchors.shape[0]) - 5
-            )
-            if num_classes_check != self.n_classes:
-                raise ValueError(
-                    f"The provided number of classes {self.n_classes} does not match the model's {num_classes_check}."
+            if end2end_raw is None:
+                num_classes_check = (
+                    outputs_values[0].shape[1] - 5
+                    if self.anchors is None
+                    else (outputs_values[0].shape[1] // self.anchors.shape[0]) - 5
                 )
+                if num_classes_check != self.n_classes:
+                    raise ValueError(
+                        f"The provided number of classes {self.n_classes} does not match the model's {num_classes_check}."
+                    )
 
             # Ensure the number of keypoints is correct
             if mode == self._KPTS_MODE:
@@ -434,17 +468,24 @@ class YOLOExtendedParser(BaseParser):
                     )
 
             # Decode the outputs
-            results = decode_yolo_output(
-                outputs_values,
-                strides,
-                self.anchors,
-                kpts=kpts_outputs if mode == self._KPTS_MODE else None,
-                conf_thres=self.conf_threshold,
-                iou_thres=self.iou_threshold,
-                num_classes=self.n_classes,
-                det_mode=mode == self._DET_MODE,
-                subtype=self.subtype,
-            )
+            if end2end_raw is not None and mode == self._DET_MODE:
+                results = end2end_raw[0]
+                if results.shape[0] > 0:
+                    results = results[results[:, 4] > self.conf_threshold]
+                else:
+                    results = np.zeros((0, 6), dtype=np.float32)
+            else:
+                results = decode_yolo_output(
+                    outputs_values,
+                    strides,
+                    self.anchors,
+                    kpts=kpts_outputs if mode == self._KPTS_MODE else None,
+                    conf_thres=self.conf_threshold,
+                    iou_thres=self.iou_threshold,
+                    num_classes=self.n_classes,
+                    det_mode=mode == self._DET_MODE,
+                    subtype=self.subtype,
+                )
 
             bboxes, labels, label_names, scores, additional_output = [], [], [], [], []
             final_mask = np.full(input_shape, 255, dtype=np.uint8)

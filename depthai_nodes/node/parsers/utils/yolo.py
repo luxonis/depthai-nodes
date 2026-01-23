@@ -410,7 +410,7 @@ def decode_yolo_output(
         idx = np.argsort(output[:, 4])[::-1][:max_nms]  # sort by objectness
         output = output[idx]
 
-    # 3. Run post-processing (skip NMS for YOLOv26)
+    # 3. Run post-processing
     output_post = postprocess_bboxes(
         output[None, ...],  # batch dim
         conf_thres=conf_thres,
@@ -418,7 +418,7 @@ def decode_yolo_output(
         num_classes=num_classes,
         max_nms=max_nms,
         det_mode=det_mode,
-        apply_nms=subtype != YOLOSubtype.V26,
+        apply_nms=True,
     )[0]
 
     return output_post
