@@ -68,6 +68,7 @@ class YOLOExtendedParser(BaseParser):
         iou_threshold: float = 0.5,
         mask_conf: float = 0.5,
         n_keypoints: int = 17,
+        max_det: int = 300,
         anchors: Optional[List[List[List[float]]]] = None,
         subtype: str = "",
         keypoint_label_names: Optional[List[str]] = None,
@@ -107,6 +108,7 @@ class YOLOExtendedParser(BaseParser):
         self.iou_threshold = iou_threshold
         self.mask_conf = mask_conf
         self.n_keypoints = n_keypoints
+        self.max_det = max_det
         self.anchors = anchors
         self.keypoint_label_names = keypoint_label_names
         self.keypoint_edges = keypoint_edges
@@ -119,7 +121,7 @@ class YOLOExtendedParser(BaseParser):
             ) from err
 
         self._logger.debug(
-            f"YOLOExtendedParser initialized with conf_threshold={self.conf_threshold}, n_classes={self.n_classes}, label_names={self.label_names}, iou_threshold={self.iou_threshold}, mask_conf={self.mask_conf}, n_keypoints={self.n_keypoints}, anchors={self.anchors}, subtype='{self.subtype}', keypoint_label_names={self.keypoint_label_names}, keypoint_edges={self.keypoint_edges}"
+            f"YOLOExtendedParser initialized with conf_threshold={self.conf_threshold}, n_classes={self.n_classes}, label_names={self.label_names}, iou_threshold={self.iou_threshold}, mask_conf={self.mask_conf}, n_keypoints={self.n_keypoints}, max_det={self.max_det}, anchors={self.anchors}, subtype='{self.subtype}', keypoint_label_names={self.keypoint_label_names}, keypoint_edges={self.keypoint_edges}"
         )
 
     def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
@@ -317,13 +319,13 @@ class YOLOExtendedParser(BaseParser):
             ) from err
 
         if self.subtype == YOLOSubtype.V26:
-            # YOLO26 end2end export provides a single output (N, max_det, 6) without FPN heads.
+            # YOLO26 end2end export provides a single output (N, A, 4+nc) without FPN heads.
             bbox_layer_names = list(output_layers)
             kps_layer_names = []
             masks_layer_names = []
             if len(bbox_layer_names) != 1:
                 raise ValueError(
-                    "YOLO26 requires a single output layer with shape (N, max_det, 6)."
+                    "YOLO26 requires a single output layer with shape (N, A, 4+nc)."
                 )
         else:
             bbox_layer_names = [name for name in output_layers if "_yolo" in name]
@@ -349,6 +351,7 @@ class YOLOExtendedParser(BaseParser):
         self.mask_conf = head_config.get("mask_conf", self.mask_conf)
         self.anchors = head_config.get("anchors", self.anchors)
         self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
+        self.max_det = head_config.get("max_det", self.max_det)
         self.label_names = head_config.get("classes", self.label_names)
         self.keypoint_label_names = head_config.get(
             "keypoint_label_names", self.keypoint_label_names
@@ -357,6 +360,8 @@ class YOLOExtendedParser(BaseParser):
         if keypoint_edges:
             self.keypoint_edges = [tuple(edge) for edge in keypoint_edges]
         if self.subtype == YOLOSubtype.V26:
+            # For YOLO26 end2end we no longer have FPN outputs to infer input size,
+            # so we rely on model_inputs from the NN archive.
             inputs = head_config.get("model_inputs", [])
             if inputs:
                 input_shape = inputs[0].get("shape")
@@ -385,7 +390,7 @@ class YOLOExtendedParser(BaseParser):
             self._logger.debug(f"Processing input with layers: {layer_names}")
 
             if self.subtype == YOLOSubtype.V26:
-                # YOLO26 end2end output is a single NCD tensor: (N, max_det, 6).
+                # YOLO26 end2end output is a single NCD tensor: (N, A, 4+nc).
                 outputs_names = list(layer_names)
                 outputs_values = [
                     output.getTensor(o, dequantize=True).astype(np.float32)
@@ -480,20 +485,44 @@ class YOLOExtendedParser(BaseParser):
                 raw = outputs_values[0]
                 if raw.ndim != 3:
                     raise ValueError(
-                        f"YOLO26 output must be 3D (N, max_det, 6). Got shape {raw.shape}."
+                        f"YOLO26 output must be 3D (N, A, 4+nc). Got shape {raw.shape}."
                     )
-                if raw.shape[-1] != 6 and raw.shape[1] == 6:
-                    # NCD layout with D=6 stored as (N, 6, max_det)
+                expected_last_dim = 4 + self.n_classes
+                if raw.shape[-1] != expected_last_dim and raw.shape[1] == expected_last_dim:
+                    # NCD layout with D=4+nc stored as (N, 4+nc, A)
                     raw = np.transpose(raw, (0, 2, 1))
-                if raw.shape[-1] != 6:
+                if raw.shape[-1] != expected_last_dim:
                     raise ValueError(
-                        f"YOLO26 output last dim must be 6. Got shape {raw.shape}."
+                        f"YOLO26 output last dim must be 4+nc. Got shape {raw.shape}."
                     )
-                # YOLO26 end2end output is already decoded (xyxy in pixels) and top-k filtered.
-                # We only apply confidence filtering; no NMS or anchor/grid decoding here.
+                # YOLO26 end2end output is already decoded (xyxy in pixels) but not top-k filtered.
+                # Conf threshold and topK happens here
                 results = raw[0]
                 if results.size:
-                    results = results[results[:, 4] >= self.conf_threshold]
+                    boxes = results[:, :4]
+                    scores = results[:, 4:]
+                    cls_ids = scores.argmax(axis=-1).astype(np.float32)
+                    cls_scores = scores.max(axis=-1)
+                    keep = cls_scores >= self.conf_threshold
+                    if np.any(keep):
+                        boxes = boxes[keep]
+                        cls_scores = cls_scores[keep]
+                        cls_ids = cls_ids[keep]
+                        k = min(self.max_det, cls_scores.shape[0])
+                        if cls_scores.shape[0] > k:
+                            topk_idx = np.argpartition(-cls_scores, k - 1)[:k]
+                            order = np.argsort(-cls_scores[topk_idx])
+                            topk_idx = topk_idx[order]
+                        else:
+                            topk_idx = np.argsort(-cls_scores)
+                        boxes = boxes[topk_idx]
+                        cls_scores = cls_scores[topk_idx]
+                        cls_ids = cls_ids[topk_idx]
+                        results = np.concatenate(
+                            [boxes, cls_scores[:, None], cls_ids[:, None]], axis=1
+                        ).astype(np.float32)
+                    else:
+                        results = np.zeros((0, 6), dtype=np.float32)
                 else:
                     results = np.zeros((0, 6), dtype=np.float32)
             else:
