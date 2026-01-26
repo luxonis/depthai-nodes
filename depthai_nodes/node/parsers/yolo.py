@@ -110,6 +110,7 @@ class YOLOExtendedParser(BaseParser):
         self.anchors = anchors
         self.keypoint_label_names = keypoint_label_names
         self.keypoint_edges = keypoint_edges
+        self.input_shape = None
         try:
             self.subtype = YOLOSubtype(subtype.lower())
         except ValueError as err:
@@ -307,9 +308,27 @@ class YOLOExtendedParser(BaseParser):
         """
 
         output_layers = head_config.get("outputs", [])
-        bbox_layer_names = [name for name in output_layers if "_yolo" in name]
-        kps_layer_names = [name for name in output_layers if "kpt_output" in name]
-        masks_layer_names = [name for name in output_layers if "_masks" in name]
+        subtype = head_config.get("subtype", self.subtype)
+        try:
+            self.subtype = YOLOSubtype(subtype.lower())
+        except ValueError as err:
+            raise ValueError(
+                f"Invalid YOLO subtype {subtype}. Supported YOLO subtypes are {[e.value for e in YOLOSubtype][:-1]}."
+            ) from err
+
+        if self.subtype == YOLOSubtype.V26:
+            # YOLO26 end2end export provides a single output (N, max_det, 6) without FPN heads.
+            bbox_layer_names = list(output_layers)
+            kps_layer_names = []
+            masks_layer_names = []
+            if len(bbox_layer_names) != 1:
+                raise ValueError(
+                    "YOLO26 requires a single output layer with shape (N, max_det, 6)."
+                )
+        else:
+            bbox_layer_names = [name for name in output_layers if "_yolo" in name]
+            kps_layer_names = [name for name in output_layers if "kpt_output" in name]
+            masks_layer_names = [name for name in output_layers if "_masks" in name]
 
         if not bbox_layer_names:
             raise ValueError(
@@ -330,7 +349,6 @@ class YOLOExtendedParser(BaseParser):
         self.mask_conf = head_config.get("mask_conf", self.mask_conf)
         self.anchors = head_config.get("anchors", self.anchors)
         self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
-        subtype = head_config.get("subtype", self.subtype)
         self.label_names = head_config.get("classes", self.label_names)
         self.keypoint_label_names = head_config.get(
             "keypoint_label_names", self.keypoint_label_names
@@ -338,12 +356,16 @@ class YOLOExtendedParser(BaseParser):
         keypoint_edges = head_config.get("skeleton_edges", self.keypoint_edges)
         if keypoint_edges:
             self.keypoint_edges = [tuple(edge) for edge in keypoint_edges]
-        try:
-            self.subtype = YOLOSubtype(subtype.lower())
-        except ValueError as err:
-            raise ValueError(
-                f"Invalid YOLO subtype {subtype}. Supported YOLO subtypes are {[e.value for e in YOLOSubtype][:-1]}."
-            ) from err
+        if self.subtype == YOLOSubtype.V26:
+            inputs = head_config.get("model_inputs", [])
+            if inputs:
+                input_shape = inputs[0].get("shape")
+                input_layout = inputs[0].get("layout")
+                if input_shape and input_layout:
+                    if input_layout == "NCHW":
+                        self.input_shape = (input_shape[2], input_shape[3])
+                    elif input_layout == "NHWC":
+                        self.input_shape = (input_shape[1], input_shape[2])
 
         self._logger.debug(
             f"YOLOExtendedParser built with conf_threshold={self.conf_threshold}, n_classes={self.n_classes}, label_names={self.label_names}, iou_threshold={self.iou_threshold}, mask_conf={self.mask_conf}, n_keypoints={self.n_keypoints}, anchors={self.anchors}, subtype='{self.subtype}', keypoint_label_names={self.keypoint_label_names}, keypoint_edges={self.keypoint_edges}"
@@ -362,19 +384,28 @@ class YOLOExtendedParser(BaseParser):
             layer_names = self.output_layer_names or output.getAllLayerNames()
             self._logger.debug(f"Processing input with layers: {layer_names}")
 
-            outputs_names = sorted(
-                [name for name in layer_names if "_yolo" in name or "yolo-" in name]
-            )
-            outputs_values = [
-                output.getTensor(
-                    o, dequantize=True, storageOrder=dai.TensorInfo.StorageOrder.NCHW
-                ).astype(np.float32)
-                for o in outputs_names
-            ]
+            if self.subtype == YOLOSubtype.V26:
+                # YOLO26 end2end output is a single NCD tensor: (N, max_det, 6).
+                outputs_names = list(layer_names)
+                outputs_values = [
+                    output.getTensor(o, dequantize=True).astype(np.float32)
+                    for o in outputs_names
+                ]
+            else:
+                outputs_names = sorted(
+                    [name for name in layer_names if "_yolo" in name or "yolo-" in name]
+                )
+                outputs_values = [
+                    output.getTensor(
+                        o, dequantize=True, storageOrder=dai.TensorInfo.StorageOrder.NCHW
+                    ).astype(np.float32)
+                    for o in outputs_names
+                ]
 
             if (
                 any("kpt_output" in name for name in layer_names)
                 and self.subtype != YOLOSubtype.P
+                and self.subtype != YOLOSubtype.V26
             ):
                 mode = self._KPTS_MODE
                 # Get the keypoint outputs
@@ -388,6 +419,7 @@ class YOLOExtendedParser(BaseParser):
             elif (
                 any("_masks" in name for name in layer_names)
                 and self.subtype != YOLOSubtype.P
+                and self.subtype != YOLOSubtype.V26
             ):
                 mode = self._SEG_MODE
                 # Get the segmentation outputs
@@ -400,30 +432,38 @@ class YOLOExtendedParser(BaseParser):
                 mode = self._DET_MODE
 
             # Get the model's input shape
-            strides = (
-                [8, 16, 32]
-                if self.subtype
-                not in [YOLOSubtype.V3UT, YOLOSubtype.V3T, YOLOSubtype.V4T]
-                else [16, 32]
-            )
-            input_shape = tuple(
-                dim * strides[0] for dim in outputs_values[0].shape[2:4]
-            )
+            if self.subtype == YOLOSubtype.V26:
+                if self.input_shape is None:
+                    raise ValueError(
+                        "YOLO26 parsing requires model input shape in head_config."
+                    )
+                input_shape = self.input_shape
+            else:
+                strides = (
+                    [8, 16, 32]
+                    if self.subtype
+                    not in [YOLOSubtype.V3UT, YOLOSubtype.V3T, YOLOSubtype.V4T]
+                    else [16, 32]
+                )
+                input_shape = tuple(
+                    dim * strides[0] for dim in outputs_values[0].shape[2:4]
+                )
 
             # Reshape the anchors based on the model's output heads
-            if self.anchors is not None:
+            if self.subtype != YOLOSubtype.V26 and self.anchors is not None:
                 self.anchors = np.array(self.anchors).reshape(len(strides), -1)
 
             # Ensure the number of classes is correct
-            num_classes_check = (
-                outputs_values[0].shape[1] - 5
-                if self.anchors is None
-                else (outputs_values[0].shape[1] // self.anchors.shape[0]) - 5
-            )
-            if num_classes_check != self.n_classes:
-                raise ValueError(
-                    f"The provided number of classes {self.n_classes} does not match the model's {num_classes_check}."
+            if self.subtype != YOLOSubtype.V26:
+                num_classes_check = (
+                    outputs_values[0].shape[1] - 5
+                    if self.anchors is None
+                    else (outputs_values[0].shape[1] // self.anchors.shape[0]) - 5
                 )
+                if num_classes_check != self.n_classes:
+                    raise ValueError(
+                        f"The provided number of classes {self.n_classes} does not match the model's {num_classes_check}."
+                    )
 
             # Ensure the number of keypoints is correct
             if mode == self._KPTS_MODE:
@@ -434,17 +474,40 @@ class YOLOExtendedParser(BaseParser):
                     )
 
             # Decode the outputs
-            results = decode_yolo_output(
-                outputs_values,
-                strides,
-                self.anchors,
-                kpts=kpts_outputs if mode == self._KPTS_MODE else None,
-                conf_thres=self.conf_threshold,
-                iou_thres=self.iou_threshold,
-                num_classes=self.n_classes,
-                det_mode=mode == self._DET_MODE,
-                subtype=self.subtype,
-            )
+            if self.subtype == YOLOSubtype.V26:
+                if len(outputs_values) != 1:
+                    raise ValueError("YOLO26 requires a single output layer.")
+                raw = outputs_values[0]
+                if raw.ndim != 3:
+                    raise ValueError(
+                        f"YOLO26 output must be 3D (N, max_det, 6). Got shape {raw.shape}."
+                    )
+                if raw.shape[-1] != 6 and raw.shape[1] == 6:
+                    # NCD layout with D=6 stored as (N, 6, max_det)
+                    raw = np.transpose(raw, (0, 2, 1))
+                if raw.shape[-1] != 6:
+                    raise ValueError(
+                        f"YOLO26 output last dim must be 6. Got shape {raw.shape}."
+                    )
+                # YOLO26 end2end output is already decoded (xyxy in pixels) and top-k filtered.
+                # We only apply confidence filtering; no NMS or anchor/grid decoding here.
+                results = raw[0]
+                if results.size:
+                    results = results[results[:, 4] >= self.conf_threshold]
+                else:
+                    results = np.zeros((0, 6), dtype=np.float32)
+            else:
+                results = decode_yolo_output(
+                    outputs_values,
+                    strides,
+                    self.anchors,
+                    kpts=kpts_outputs if mode == self._KPTS_MODE else None,
+                    conf_thres=self.conf_threshold,
+                    iou_thres=self.iou_threshold,
+                    num_classes=self.n_classes,
+                    det_mode=mode == self._DET_MODE,
+                    subtype=self.subtype,
+                )
 
             bboxes, labels, label_names, scores, additional_output = [], [], [], [], []
             final_mask = np.full(input_shape, 255, dtype=np.uint8)
