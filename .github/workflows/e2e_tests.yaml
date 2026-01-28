@@ -141,10 +141,10 @@ jobs:
             if [[ "${{ github.event.inputs.bom_mode }}" == 'true' ]]; then
               exec hil_runner --hold-reservation $ADDITIONAL_OPTIONS -os windows --no-shell --models 'oak4_s or oak4_pro or oak4_d' --wait $RESERVATION_OPTION --commands "rmdir /S /Q depthai-nodes & git clone https://github.com/luxonis/depthai-nodes.git && cd depthai-nodes\tests\end_to_end && windows_end_to_end.cmd ${{ github.event.inputs.depthai-nodes-version }} ${{ secrets.HUBAI_API_KEY }} ${{ secrets.HUBAI_TEAM_SLUG }} ${{ github.event.inputs.depthai-version }} ${{secrets.LUXONIS_EXTRA_INDEX_URL}} rvc4"
             else
-              exec hil_runner --models 'oak4_s or oak4_pro or oak4_d' --wait $RESERVATION_OPTION -os windows --commands "rmdir /S /Q depthai-nodes & git clone https://github.com/luxonis/depthai-nodes.git && cd depthai-nodes\tests\end_to_end && windows_end_to_end.cmd ${{ github.event.inputs.depthai-nodes-version }} ${{ secrets.HUBAI_API_KEY }} ${{ secrets.HUBAI_TEAM_SLUG }} ${{ github.event.inputs.depthai-version }} ${{secrets.LUXONIS_EXTRA_INDEX_URL}} rvc4"
+              exec hil_runner --models 'oak4_s or oak4_pro or oak4_d' --wait $RESERVATION_OPTION -os windows --no-shell --commands "rmdir /S /Q depthai-nodes & git clone https://github.com/luxonis/depthai-nodes.git && cd depthai-nodes\tests\end_to_end && windows_end_to_end.cmd ${{ github.event.inputs.depthai-nodes-version }} ${{ secrets.HUBAI_API_KEY }} ${{ secrets.HUBAI_TEAM_SLUG }} ${{ github.event.inputs.depthai-version }} ${{secrets.LUXONIS_EXTRA_INDEX_URL}} rvc4"
             fi
           else
-            exec hil_runner --models 'oak4_s or oak4_pro or oak4_d' --wait --reservation-name $RESERVATION_NAME -os windows --commands "rmdir /S /Q depthai-nodes & git clone https://github.com/luxonis/depthai-nodes.git && cd depthai-nodes\tests\end_to_end && windows_end_to_end.cmd ${{ github.ref_name}} ${{ secrets.HUBAI_API_KEY }} ${{ secrets.HUBAI_TEAM_SLUG }} 3.3.0 ${{secrets.LUXONIS_EXTRA_INDEX_URL}} rvc4"
+            exec hil_runner --models 'oak4_s or oak4_pro or oak4_d' --wait --reservation-name $RESERVATION_NAME -os windows --no-shell --commands "rmdir /S /Q depthai-nodes & git clone https://github.com/luxonis/depthai-nodes.git && cd depthai-nodes\tests\end_to_end && windows_end_to_end.cmd ${{ github.ref_name}} ${{ secrets.HUBAI_API_KEY }} ${{ secrets.HUBAI_TEAM_SLUG }} 3.3.0 ${{secrets.LUXONIS_EXTRA_INDEX_URL}} rvc4"
           fi
 
   HIL-test-mac:
