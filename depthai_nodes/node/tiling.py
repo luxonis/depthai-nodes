@@ -124,6 +124,7 @@ except Exception as e:
         img_output.link(self._script.inputs["preview"])
         self._script.outputs["manip_cfg"].link(self.cropper_image_manip.inputConfig)
         self._script.outputs["manip_img"].link(self.cropper_image_manip.inputImage)
+        self.cropper_image_manip.setMaxOutputFrameSize(self._img_shape[0] * self._img_shape[1] * 3)
 
         self._logger.debug(
             f"Tiling built with overlap={overlap}, grid_size={grid_size}, img_shape={img_shape}, nn_shape={nn_shape}, global_detection={global_detection}, resize_mode={resize_mode}"

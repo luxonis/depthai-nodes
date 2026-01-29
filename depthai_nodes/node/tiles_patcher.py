@@ -138,6 +138,8 @@ except Exception as e:
                     break
                 nn_msgs.append(nn_msg)
 
+            if len(nn_msgs) == 0:
+                return
             remapped_messages = [
                 remap_message(
                     from_transformation=nn_msg.getTransformation(),  # type: ignore
@@ -146,8 +148,6 @@ except Exception as e:
                 )
                 for nn_msg in nn_msgs
             ]
-            if len(remapped_messages) == 0:
-                return
             merged_detections = merge_messages(messages=remapped_messages)
 
             self._sendOutput(

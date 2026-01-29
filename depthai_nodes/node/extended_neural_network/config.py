@@ -7,7 +7,7 @@ import numpy as np
 
 @dataclass(kw_only=True)
 class TilingConfig:
-    input_size: Tuple[int, int]
+    image_input_shape: Tuple[int, int]
     grid_size: Tuple[int, int] = (2, 2)
     overlap: float = 0.1
     global_detection: bool = False

@@ -84,17 +84,17 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
     def with_tiling(
             self,
             *,
-            input_size: tuple[int, int],
+            image_input_shape: tuple[int, int],
             grid_size: tuple[int, int] = (2, 2),
             overlap: float = 0.1,
             iou_threshold: float = 0.2,
             grid_matrix: Optional[np.ndarray] = None,
             global_detection: bool = False,
     ):
-        if any([i <= 0 for i in input_size]):
+        if any([i <= 0 for i in image_input_shape]):
             raise ValueError("Input size must be positive")
         self._tiling_config = TilingConfig(
-            input_size=input_size,
+            image_input_shape=image_input_shape,
             grid_size=grid_size,
             overlap=overlap,
             iou_threshold=iou_threshold,
@@ -143,7 +143,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
         if self._tiling_config:
             self._out = self._createTilingPipeline(
                 image_input,
-                self._tiling_config.input_size,
+                self._tiling_config.image_input_shape,
                 self._input_resize_mode,
                 nn_source,
             )
@@ -203,7 +203,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
     def _createTilingPipeline(
         self,
         image_input: dai.Node.Output,
-        input_size: Tuple[int, int],
+        image_input_shape: Tuple[int, int],
         input_resize_mode: dai.ImageManipConfig.ResizeMode,
         nn_source: Union[dai.NNModelDescription, dai.NNArchive, str],
     ):
@@ -225,7 +225,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
         self._logger.debug("Building Tiling")
         self.tiling.build(
             img_output=image_input,
-            img_shape=input_size,
+            img_shape=image_input_shape,
             overlap=self._tiling_config.overlap,
             grid_size=self._tiling_config.grid_size,
             resize_mode=input_resize_mode,

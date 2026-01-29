@@ -62,8 +62,8 @@ except Exception as e:
 
     def build(
         self,
-        img_frame: dai.Node.Output,
-        stage_1_nn: dai.Node.Output,
+        image_input: dai.Node.Output,
+        detections_input: dai.Node.Output,
         nn_source: Union[dai.NNModelDescription, dai.NNArchive, str],
         input_resize_mode: dai.ImageManipConfig.ResizeMode,
         fps: int,
@@ -71,11 +71,11 @@ except Exception as e:
     ) -> "Stage2NeuralNetwork":
         """Configures the Stage2NeuralNetwork node and links all outputs.
 
-        @param img_frame: The input frame. Crops will be performed on this frame.
-        @type img_frame: dai.Node.Output
-        @param stage_1_nn: The output of the stage 1 neural network node. Accepts ImgDetections and
+        @param image_input: The input frame. Crops will be performed on this frame.
+        @type image_input: dai.Node.Output
+        @param detections_input: The output of the stage 1 neural network node. Accepts ImgDetections and
         ImgDetectionsExtended messages.
-        @type stage_1_nn: dai.Node.Output
+        @type detections_input: dai.Node.Output
         @param nn_source: NNModelDescription object containing the HubAI model descriptors, NNArchive object of the model, or HubAI model slug in form of <model_slug>:<model_version_slug> or <model_slug>:<model_version_slug>:<model_instance_hash>.
         @type nn_source: Union[dai.NNModelDescription, dai.NNArchive, str]
         @param input_resize_mode: How to resize the input crops.
@@ -97,8 +97,8 @@ except Exception as e:
             # Model has multiple outputs
             nn_output = self.nn.outputs
         self.detection_cropper.build(
-            stage_1_nn,
-            img_frame,
+            detections_input,
+            image_input,
             nn_size,
             input_resize_mode,
             padding=0.0,
@@ -107,7 +107,7 @@ except Exception as e:
 
         if remap_detections:
             coordinates_mapper = self._pipeline.create(CoordinatesMapper).build(
-                to_transformation_input=img_frame,
+                to_transformation_input=image_input,
                 from_transformation_input=nn_output,
             )
             gather_node_data_input = coordinates_mapper.out
@@ -115,7 +115,7 @@ except Exception as e:
         self.gather_data.build(
             camera_fps=fps,
             input_data=gather_node_data_input,
-            input_reference=stage_1_nn,
+            input_reference=detections_input,
         )
         return self
 
