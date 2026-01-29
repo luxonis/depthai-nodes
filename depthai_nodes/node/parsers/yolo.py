@@ -327,6 +327,22 @@ class YOLOExtendedParser(BaseParser):
                 raise ValueError(
                     "YOLO26 requires a single output layer with shape (N, A, 4+nc)."
                 )
+        elif self.subtype == YOLOSubtype.V26_SEG:
+            # YOLO26-SEG end2end export provides 3 outputs:
+            # - output: (N, A, 4+nc) detection output
+            # - mask_output: (N, A, nm) mask coefficients
+            # - protos_output: (N, nm, H, W) prototype masks
+            bbox_layer_names = [name for name in output_layers if name == "output"]
+            masks_layer_names = [name for name in output_layers if "mask_output" in name]
+            protos_layer_names = [name for name in output_layers if "protos" in name]
+            kps_layer_names = []
+            self._protos_layer_name = protos_layer_names[0] if protos_layer_names else "protos_output"
+            if len(bbox_layer_names) != 1 or len(masks_layer_names) != 1:
+                raise ValueError(
+                    "YOLO26-SEG requires 3 outputs: 'output', 'mask_output', and 'protos_output'."
+                )
+            # Include protos in output_layer_names for proper layer retrieval
+            masks_layer_names = masks_layer_names + protos_layer_names
         else:
             bbox_layer_names = [name for name in output_layers if "_yolo" in name]
             kps_layer_names = [name for name in output_layers if "kpt_output" in name]
@@ -359,8 +375,8 @@ class YOLOExtendedParser(BaseParser):
         keypoint_edges = head_config.get("skeleton_edges", self.keypoint_edges)
         if keypoint_edges:
             self.keypoint_edges = [tuple(edge) for edge in keypoint_edges]
-        if self.subtype == YOLOSubtype.V26:
-            # For YOLO26 end2end we no longer have FPN outputs to infer input size,
+        if self.subtype in (YOLOSubtype.V26, YOLOSubtype.V26_SEG):
+            # For YOLO26/YOLO26-SEG end2end we no longer have FPN outputs to infer input size,
             # so we rely on model_inputs from the NN archive.
             inputs = head_config.get("model_inputs", [])
             if inputs:
@@ -371,6 +387,9 @@ class YOLOExtendedParser(BaseParser):
                         self.input_shape = (input_shape[2], input_shape[3])
                     elif input_layout == "NHWC":
                         self.input_shape = (input_shape[1], input_shape[2])
+            # Get n_prototypes for V26_SEG
+            if self.subtype == YOLOSubtype.V26_SEG:
+                self.n_prototypes = head_config.get("n_prototypes", 32)
 
         self._logger.debug(
             f"YOLOExtendedParser built with conf_threshold={self.conf_threshold}, n_classes={self.n_classes}, label_names={self.label_names}, iou_threshold={self.iou_threshold}, mask_conf={self.mask_conf}, n_keypoints={self.n_keypoints}, anchors={self.anchors}, subtype='{self.subtype}', keypoint_label_names={self.keypoint_label_names}, keypoint_edges={self.keypoint_edges}"
@@ -396,6 +415,23 @@ class YOLOExtendedParser(BaseParser):
                     output.getTensor(o, dequantize=True).astype(np.float32)
                     for o in outputs_names
                 ]
+            elif self.subtype == YOLOSubtype.V26_SEG:
+                # YOLO26-SEG end2end outputs:
+                # - output: (N, A, 4+nc) detection output
+                # - mask_output: (N, A, nm) mask coefficients
+                # - protos_output: (N, nm, H, W) prototype masks
+                outputs_names = ["output"]
+                outputs_values = [
+                    output.getTensor("output", dequantize=True).astype(np.float32)
+                ]
+                # Get mask coefficients and protos separately
+                self._mask_coeffs = output.getTensor(
+                    "mask_output", dequantize=True
+                ).astype(np.float32)
+                self._protos = output.getTensor(
+                    self._protos_layer_name, dequantize=True,
+                    storageOrder=dai.TensorInfo.StorageOrder.NCHW
+                ).astype(np.float32)
             else:
                 outputs_names = sorted(
                     [name for name in layer_names if "_yolo" in name or "yolo-" in name]
@@ -410,7 +446,7 @@ class YOLOExtendedParser(BaseParser):
             if (
                 any("kpt_output" in name for name in layer_names)
                 and self.subtype != YOLOSubtype.P
-                and self.subtype != YOLOSubtype.V26
+                and self.subtype not in (YOLOSubtype.V26, YOLOSubtype.V26_SEG)
             ):
                 mode = self._KPTS_MODE
                 # Get the keypoint outputs
@@ -421,6 +457,9 @@ class YOLOExtendedParser(BaseParser):
                     output.getTensor(o, dequantize=True).astype(np.float32)
                     for o in kpts_output_names
                 ]
+            elif self.subtype == YOLOSubtype.V26_SEG:
+                # V26_SEG is always segmentation mode
+                mode = self._SEG_MODE
             elif (
                 any("_masks" in name for name in layer_names)
                 and self.subtype != YOLOSubtype.P
@@ -437,10 +476,10 @@ class YOLOExtendedParser(BaseParser):
                 mode = self._DET_MODE
 
             # Get the model's input shape
-            if self.subtype == YOLOSubtype.V26:
+            if self.subtype in (YOLOSubtype.V26, YOLOSubtype.V26_SEG):
                 if self.input_shape is None:
                     raise ValueError(
-                        "YOLO26 parsing requires model input shape in head_config."
+                        "YOLO26/YOLO26-SEG parsing requires model input shape in head_config."
                     )
                 input_shape = self.input_shape
             else:
@@ -455,11 +494,11 @@ class YOLOExtendedParser(BaseParser):
                 )
 
             # Reshape the anchors based on the model's output heads
-            if self.subtype != YOLOSubtype.V26 and self.anchors is not None:
+            if self.subtype not in (YOLOSubtype.V26, YOLOSubtype.V26_SEG) and self.anchors is not None:
                 self.anchors = np.array(self.anchors).reshape(len(strides), -1)
 
             # Ensure the number of classes is correct
-            if self.subtype != YOLOSubtype.V26:
+            if self.subtype not in (YOLOSubtype.V26, YOLOSubtype.V26_SEG):
                 num_classes_check = (
                     outputs_values[0].shape[1] - 5
                     if self.anchors is None
@@ -525,6 +564,80 @@ class YOLOExtendedParser(BaseParser):
                         results = np.zeros((0, 6), dtype=np.float32)
                 else:
                     results = np.zeros((0, 6), dtype=np.float32)
+            elif self.subtype == YOLOSubtype.V26_SEG:
+                # YOLO26-SEG end2end decoding with mask coefficients
+                if len(outputs_values) != 1:
+                    raise ValueError("YOLO26-SEG requires detection output layer.")
+                raw = outputs_values[0]
+                mask_coeffs_raw = self._mask_coeffs
+                protos = self._protos[0]  # (nm, H, W)
+
+                if raw.ndim != 3:
+                    raise ValueError(
+                        f"YOLO26-SEG detection output must be 3D (N, A, 4+nc). Got shape {raw.shape}."
+                    )
+                expected_last_dim = 4 + self.n_classes
+                if raw.shape[-1] != expected_last_dim and raw.shape[1] == expected_last_dim:
+                    raw = np.transpose(raw, (0, 2, 1))
+                if raw.shape[-1] != expected_last_dim:
+                    raise ValueError(
+                        f"YOLO26-SEG detection output last dim must be 4+nc. Got shape {raw.shape}."
+                    )
+
+                # Handle mask_coeffs layout: should be (N, A, nm)
+                if mask_coeffs_raw.ndim != 3:
+                    raise ValueError(
+                        f"YOLO26-SEG mask_coeffs must be 3D (N, A, nm). Got shape {mask_coeffs_raw.shape}."
+                    )
+                if mask_coeffs_raw.shape[1] != raw.shape[1] and mask_coeffs_raw.shape[2] == raw.shape[1]:
+                    # Layout is (N, nm, A), transpose to (N, A, nm)
+                    mask_coeffs_raw = np.transpose(mask_coeffs_raw, (0, 2, 1))
+
+                det_results = raw[0]  # (A, 4+nc)
+                mask_coeffs_all = mask_coeffs_raw[0]  # (A, nm)
+                kept_mask_coeffs = []
+
+                if det_results.size:
+                    boxes = det_results[:, :4]
+                    scores = det_results[:, 4:]
+                    cls_ids = scores.argmax(axis=-1).astype(np.float32)
+                    cls_scores = scores.max(axis=-1)
+                    keep = cls_scores >= self.conf_threshold
+
+                    if np.any(keep):
+                        # Get indices of kept detections for mask retrieval
+                        keep_indices = np.where(keep)[0]
+                        boxes = boxes[keep]
+                        cls_scores = cls_scores[keep]
+                        cls_ids = cls_ids[keep]
+                        mask_coeffs_kept = mask_coeffs_all[keep_indices]
+
+                        k = min(self.max_det, cls_scores.shape[0])
+                        if cls_scores.shape[0] > k:
+                            topk_idx = np.argpartition(-cls_scores, k - 1)[:k]
+                            order = np.argsort(-cls_scores[topk_idx])
+                            topk_idx = topk_idx[order]
+                        else:
+                            topk_idx = np.argsort(-cls_scores)
+
+                        boxes = boxes[topk_idx]
+                        cls_scores = cls_scores[topk_idx]
+                        cls_ids = cls_ids[topk_idx]
+                        kept_mask_coeffs = mask_coeffs_kept[topk_idx]
+
+                        results = np.concatenate(
+                            [boxes, cls_scores[:, None], cls_ids[:, None]], axis=1
+                        ).astype(np.float32)
+                    else:
+                        results = np.zeros((0, 6), dtype=np.float32)
+                        kept_mask_coeffs = np.zeros((0, mask_coeffs_all.shape[1]), dtype=np.float32)
+                else:
+                    results = np.zeros((0, 6), dtype=np.float32)
+                    kept_mask_coeffs = np.zeros((0, mask_coeffs_all.shape[1]), dtype=np.float32)
+
+                # Store for SEG_MODE processing
+                self._v26_seg_mask_coeffs = kept_mask_coeffs
+                self._v26_seg_protos = protos
             else:
                 results = decode_yolo_output(
                     outputs_values,
@@ -562,14 +675,22 @@ class YOLOExtendedParser(BaseParser):
                     kpts = parse_kpts(other, self.n_keypoints, input_shape)
                     additional_output.append(kpts)
                 elif mode == self._SEG_MODE:
-                    seg_coeff = other.astype(int)
-                    hi, ai, xi, yi = seg_coeff
-                    mask_coeff = masks_outputs_values[hi][
-                        0, ai * protos_len : (ai + 1) * protos_len, yi, xi
-                    ]
-                    mask = process_single_mask(
-                        protos_output[0], mask_coeff, self.mask_conf, bbox
-                    )
+                    if self.subtype == YOLOSubtype.V26_SEG:
+                        # V26_SEG: mask coefficients are directly available
+                        mask_coeff = self._v26_seg_mask_coeffs[i]
+                        mask = process_single_mask(
+                            self._v26_seg_protos, mask_coeff, self.mask_conf, bbox
+                        )
+                    else:
+                        # Other YOLO versions: extract mask coefficients from indexed outputs
+                        seg_coeff = other.astype(int)
+                        hi, ai, xi, yi = seg_coeff
+                        mask_coeff = masks_outputs_values[hi][
+                            0, ai * protos_len : (ai + 1) * protos_len, yi, xi
+                        ]
+                        mask = process_single_mask(
+                            protos_output[0], mask_coeff, self.mask_conf, bbox
+                        )
                     # Resize mask to input shape
                     resized_mask = cv2.resize(
                         mask,
