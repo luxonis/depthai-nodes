@@ -60,6 +60,18 @@ Parser nodes are used to parse the output of a neural network. The main purpose 
 - `MapOutputParser`: Special parser for parsing the output of the model that produces a map (like depth estimation). It will output the [`depthai_nodes.message.Map2D`](../message/README.md#map2d) message.
 - `ImageOutputParser`: Special parser for parsing the output of the model that produces an image (like super-resolution models). It will output the `dai.ImgFrame` message.
 
+
+## High Level Nodes
+
+High level nodes combine multiple lower-level nodes into reusable building blocks that cover common pipeline patterns.
+They are designed to significantly reduce boilerplate when building more complex pipelines, while still exposing configuration for advanced use cases.
+
+- `ExtendedNeuralNetwork`: A high-level neural network wrapper that builds a complete inference subgraph on the host with optional tiling, coordinate remapping, and detection filtering.
+This node extends ParsingNeuralNetwork￼ with commonly needed pipeline features
+- `Stage2NeuralNetwork`:  A high-level node for building two-stage neural network pipelines, where detections from a stage-1 model are cropped and fed into a stage-2 model.
+This node creates a crop based on detections from the stage-1 model and runs inference on each of them. The output is remapped to the original frame coordinates,
+grouped together and output as `GatheredData`.
+
 ## Utility & Helper Nodes
 
 ### Base Classes

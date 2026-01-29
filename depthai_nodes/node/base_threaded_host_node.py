@@ -1,18 +1,10 @@
-from abc import ABCMeta
-
 import depthai as dai
 
 from depthai_nodes.logging import get_logger
 
-HostNodeMeta = type(dai.node.HostNode)  # metaclass of dai.node.HostNode
 
-
-class CombinedMeta(ABCMeta, HostNodeMeta):
-    pass
-
-
-class BaseHostNode(dai.node.HostNode, metaclass=CombinedMeta):
-    """An abstract base class for host nodes.
+class BaseThreadedHostNode(dai.node.ThreadedHostNode):
+    """An abstract base class for threaded host nodes.
 
     Designed to encapsulate and abstract the configuration of platform-specific
     attributes, providing a clean and consistent interface for derived classes.
@@ -25,9 +17,8 @@ class BaseHostNode(dai.node.HostNode, metaclass=CombinedMeta):
 
     def __init__(self) -> None:
         super().__init__()
-
         self._pipeline = self.getParentPipeline()
-        self._platform = self._pipeline.getDefaultDevice().getPlatform()
+        self._platform = self.getParentPipeline().getDefaultDevice().getPlatform()
 
         try:
             self._img_frame_type = self.IMG_FRAME_TYPES[self._platform]
@@ -38,5 +29,5 @@ class BaseHostNode(dai.node.HostNode, metaclass=CombinedMeta):
 
         self._logger = get_logger(self.__class__.__name__)
 
-    def process(self) -> None:
+    def run(self) -> None:
         pass

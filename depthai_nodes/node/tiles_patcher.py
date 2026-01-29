@@ -138,15 +138,17 @@ except Exception as e:
                     break
                 nn_msgs.append(nn_msg)
 
+            if len(nn_msgs) == 0:
+                return
             remapped_messages = [
                 remap_message(
-                    nn_msg.getTransformation(),  # type: ignore
-                    img.getTransformation(),
-                    nn_msg,
+                    from_transformation=nn_msg.getTransformation(),  # type: ignore
+                    to_transformation=img.getTransformation(),
+                    message=nn_msg,
                 )
                 for nn_msg in nn_msgs
             ]
-            merged_detections = merge_messages(remapped_messages)
+            merged_detections = merge_messages(messages=remapped_messages)
 
             self._sendOutput(
                 merged_detections,
