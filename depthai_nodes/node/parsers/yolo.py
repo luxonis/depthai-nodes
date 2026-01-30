@@ -598,8 +598,8 @@ class YOLOExtendedParser(BaseParser):
                         f"The provided number of classes {self.n_classes} does not match the model's {num_classes_check}."
                     )
 
-            # Ensure the number of keypoints is correct
-            if mode == self._KPTS_MODE:
+            # Ensure the number of keypoints is correct (skip for V26_POSE which handles kpts differently)
+            if mode == self._KPTS_MODE and self.subtype != YOLOSubtype.V26_POSE:
                 num_keypoints_check = kpts_outputs[0].shape[1] // 3
                 if num_keypoints_check != self.n_keypoints:
                     raise ValueError(
