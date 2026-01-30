@@ -29,6 +29,8 @@ class YOLOSubtype(str, Enum):
     V10 = "yolov10"
     V26 = "yolo26"
     V26_SEG = "yolo26-seg"
+    V26_POSE = "yolo26-pose"
+    V26_OBB = "yolo26-obb"
     P = "yolo-p"
     GOLD = "yolo-gold"
     DEFAULT = ""
