@@ -30,7 +30,6 @@ class YOLOSubtype(str, Enum):
     V26 = "yolo26"
     V26_SEG = "yolo26-seg"
     V26_POSE = "yolo26-pose"
-    V26_OBB = "yolo26-obb"
     P = "yolo-p"
     GOLD = "yolo-gold"
     DEFAULT = ""
@@ -312,7 +311,7 @@ def parse_yolo_output(
 
 def parse_kpts(
     kpts: np.ndarray, n_keypoints: int, img_shape: Tuple[int, int]
-) -> List[Tuple[int, int, float]]:
+) -> List[Tuple[float, float, float]]:
     """Parse keypoints.
 
     @param kpts: Result keypoints.
@@ -322,7 +321,7 @@ def parse_kpts(
     @param img_shape: Image shape of the model input in (height, width) format.
     @type img_shape: Tuple[int, int]
     @return: Parsed keypoints.
-    @rtype: List[Tuple[int, int, float]]
+    @rtype: List[Tuple[float, float, float]]
     """
     h, w = img_shape
     kps = []
@@ -332,6 +331,253 @@ def parse_kpts(
         conf = kpts[idx + 2] if ndim == 3 else 1.0
         kps.append((x, y, conf))
     return kps
+
+
+def parse_v26_kpts(
+    kpts: np.ndarray, n_keypoints: int, img_shape: Tuple[int, int]
+) -> List[Tuple[float, float, float]]:
+    """Parse keypoints from YOLO26-POSE output.
+
+    YOLO26-POSE keypoints are already decoded in pixel coordinates.
+    Format: [x1, y1, v1, x2, y2, v2, ...] where x,y are in pixels
+    and v is visibility score (already sigmoided).
+
+    @param kpts: Keypoint values for a single detection.
+    @type kpts: np.ndarray
+    @param n_keypoints: Number of keypoints.
+    @type n_keypoints: int
+    @param img_shape: Image shape (height, width).
+    @type img_shape: Tuple[int, int]
+    @return: List of (x, y, visibility) tuples normalized to [0, 1].
+    @rtype: List[Tuple[float, float, float]]
+    """
+    h, w = img_shape
+    kps = []
+    ndim = len(kpts) // n_keypoints
+    for idx in range(0, len(kpts), ndim):
+        x = kpts[idx] / w
+        y = kpts[idx + 1] / h
+        conf = kpts[idx + 2] if ndim == 3 else 1.0
+        kps.append((x, y, conf))
+    return kps
+
+
+def _normalize_yolo26_tensor(
+    raw: np.ndarray, expected_last_dim: int, name: str
+) -> np.ndarray:
+    """Normalize YOLO26 tensor layout to (N, A, D).
+
+    @param raw: Raw tensor from model output.
+    @type raw: np.ndarray
+    @param expected_last_dim: Expected last dimension size.
+    @type expected_last_dim: int
+    @param name: Name of tensor for error messages.
+    @type name: str
+    @return: Normalized tensor with shape (N, A, D).
+    @rtype: np.ndarray
+    """
+    if raw.ndim != 3:
+        raise ValueError(f"{name} must be 3D. Got shape {raw.shape}.")
+    if raw.shape[-1] != expected_last_dim and raw.shape[1] == expected_last_dim:
+        raw = np.transpose(raw, (0, 2, 1))
+    if raw.shape[-1] != expected_last_dim:
+        raise ValueError(f"{name} last dim must be {expected_last_dim}. Got shape {raw.shape}.")
+    return raw
+
+
+def _apply_conf_and_topk(
+    boxes: np.ndarray,
+    scores: np.ndarray,
+    conf_threshold: float,
+    max_det: int,
+    auxiliary: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    """Apply confidence threshold and top-k filtering.
+
+    @param boxes: Bounding boxes array (A, 4).
+    @type boxes: np.ndarray
+    @param scores: Class scores array (A, nc).
+    @type scores: np.ndarray
+    @param conf_threshold: Confidence threshold.
+    @type conf_threshold: float
+    @param max_det: Maximum number of detections.
+    @type max_det: int
+    @param auxiliary: Optional auxiliary data to filter alongside (A, ...).
+    @type auxiliary: Optional[np.ndarray]
+    @return: Tuple of (results array (K, 6), filtered auxiliary or None).
+    @rtype: Tuple[np.ndarray, Optional[np.ndarray]]
+    """
+    cls_ids = scores.argmax(axis=-1).astype(np.float32)
+    cls_scores = scores.max(axis=-1)
+    keep = cls_scores >= conf_threshold
+
+    if not np.any(keep):
+        aux_shape = (0,) + auxiliary.shape[1:] if auxiliary is not None else None
+        return np.zeros((0, 6), dtype=np.float32), (
+            np.zeros(aux_shape, dtype=np.float32) if aux_shape else None
+        )
+
+    keep_indices = np.where(keep)[0]
+    boxes = boxes[keep]
+    cls_scores = cls_scores[keep]
+    cls_ids = cls_ids[keep]
+    aux_kept = auxiliary[keep_indices] if auxiliary is not None else None
+
+    k = min(max_det, cls_scores.shape[0])
+    if cls_scores.shape[0] > k:
+        topk_idx = np.argpartition(-cls_scores, k - 1)[:k]
+        order = np.argsort(-cls_scores[topk_idx])
+        topk_idx = topk_idx[order]
+    else:
+        topk_idx = np.argsort(-cls_scores)
+
+    boxes = boxes[topk_idx]
+    cls_scores = cls_scores[topk_idx]
+    cls_ids = cls_ids[topk_idx]
+    aux_kept = aux_kept[topk_idx] if aux_kept is not None else None
+
+    results = np.concatenate(
+        [boxes, cls_scores[:, None], cls_ids[:, None]], axis=1
+    ).astype(np.float32)
+
+    return results, aux_kept
+
+
+def decode_yolo26_detection(
+    raw: np.ndarray,
+    n_classes: int,
+    conf_threshold: float,
+    max_det: int,
+) -> np.ndarray:
+    """Decode YOLO26 detection output.
+
+    YOLO26 end2end output is already decoded (xyxy in pixels) but needs
+    confidence filtering and top-k selection.
+
+    @param raw: Raw detection tensor (N, A, 4+nc) or (N, 4+nc, A).
+    @type raw: np.ndarray
+    @param n_classes: Number of classes.
+    @type n_classes: int
+    @param conf_threshold: Confidence threshold.
+    @type conf_threshold: float
+    @param max_det: Maximum number of detections.
+    @type max_det: int
+    @return: Detection results (K, 6) with [x1, y1, x2, y2, score, class_id].
+    @rtype: np.ndarray
+    """
+    expected_last_dim = 4 + n_classes
+    raw = _normalize_yolo26_tensor(raw, expected_last_dim, "YOLO26 detection output")
+
+    det_results = raw[0]  # (A, 4+nc)
+    if not det_results.size:
+        return np.zeros((0, 6), dtype=np.float32)
+
+    boxes = det_results[:, :4]
+    scores = det_results[:, 4:]
+    results, _ = _apply_conf_and_topk(boxes, scores, conf_threshold, max_det)
+    return results
+
+
+def decode_yolo26_segmentation(
+    raw: np.ndarray,
+    mask_coeffs_raw: np.ndarray,
+    n_classes: int,
+    conf_threshold: float,
+    max_det: int,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Decode YOLO26-SEG output.
+
+    @param raw: Raw detection tensor (N, A, 4+nc).
+    @type raw: np.ndarray
+    @param mask_coeffs_raw: Raw mask coefficients tensor (N, A, nm).
+    @type mask_coeffs_raw: np.ndarray
+    @param n_classes: Number of classes.
+    @type n_classes: int
+    @param conf_threshold: Confidence threshold.
+    @type conf_threshold: float
+    @param max_det: Maximum number of detections.
+    @type max_det: int
+    @return: Tuple of (detection results (K, 6), mask coefficients (K, nm)).
+    @rtype: Tuple[np.ndarray, np.ndarray]
+    """
+    expected_last_dim = 4 + n_classes
+    raw = _normalize_yolo26_tensor(raw, expected_last_dim, "YOLO26-SEG detection output")
+
+    # Handle mask_coeffs layout
+    if mask_coeffs_raw.ndim != 3:
+        raise ValueError(
+            f"YOLO26-SEG mask_coeffs must be 3D (N, A, nm). Got shape {mask_coeffs_raw.shape}."
+        )
+    if mask_coeffs_raw.shape[1] != raw.shape[1] and mask_coeffs_raw.shape[2] == raw.shape[1]:
+        mask_coeffs_raw = np.transpose(mask_coeffs_raw, (0, 2, 1))
+
+    det_results = raw[0]  # (A, 4+nc)
+    mask_coeffs_all = mask_coeffs_raw[0]  # (A, nm)
+
+    if not det_results.size:
+        return np.zeros((0, 6), dtype=np.float32), np.zeros(
+            (0, mask_coeffs_all.shape[1]), dtype=np.float32
+        )
+
+    boxes = det_results[:, :4]
+    scores = det_results[:, 4:]
+    results, kept_mask_coeffs = _apply_conf_and_topk(
+        boxes, scores, conf_threshold, max_det, mask_coeffs_all
+    )
+    return results, kept_mask_coeffs
+
+
+def decode_yolo26_pose(
+    raw: np.ndarray,
+    kpts_raw: np.ndarray,
+    n_classes: int,
+    n_keypoints: int,
+    conf_threshold: float,
+    max_det: int,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Decode YOLO26-POSE output.
+
+    @param raw: Raw detection tensor (N, A, 4+nc).
+    @type raw: np.ndarray
+    @param kpts_raw: Raw keypoints tensor (N, A, nk*3).
+    @type kpts_raw: np.ndarray
+    @param n_classes: Number of classes.
+    @type n_classes: int
+    @param n_keypoints: Number of keypoints.
+    @type n_keypoints: int
+    @param conf_threshold: Confidence threshold.
+    @type conf_threshold: float
+    @param max_det: Maximum number of detections.
+    @type max_det: int
+    @return: Tuple of (detection results (K, 6), keypoints (K, nk*3)).
+    @rtype: Tuple[np.ndarray, np.ndarray]
+    """
+    expected_last_dim = 4 + n_classes
+    raw = _normalize_yolo26_tensor(raw, expected_last_dim, "YOLO26-POSE detection output")
+
+    # Handle kpts layout
+    if kpts_raw.ndim != 3:
+        raise ValueError(
+            f"YOLO26-POSE kpts must be 3D (N, A, nk). Got shape {kpts_raw.shape}."
+        )
+    expected_nk = n_keypoints * 3
+    if kpts_raw.shape[-1] != expected_nk and kpts_raw.shape[1] == expected_nk:
+        kpts_raw = np.transpose(kpts_raw, (0, 2, 1))
+
+    det_results = raw[0]  # (A, 4+nc)
+    kpts_all = kpts_raw[0]  # (A, nk)
+
+    if not det_results.size:
+        return np.zeros((0, 6), dtype=np.float32), np.zeros(
+            (0, kpts_all.shape[1]), dtype=np.float32
+        )
+
+    boxes = det_results[:, :4]
+    scores = det_results[:, 4:]
+    results, kept_kpts = _apply_conf_and_topk(
+        boxes, scores, conf_threshold, max_det, kpts_all
+    )
+    return results, kept_kpts
 
 
 def decode_yolo_output(
