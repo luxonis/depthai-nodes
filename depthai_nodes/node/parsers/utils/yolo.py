@@ -362,29 +362,6 @@ def parse_v26_kpts(
     return kps
 
 
-def _normalize_yolo26_tensor(
-    raw: np.ndarray, expected_last_dim: int, name: str
-) -> np.ndarray:
-    """Normalize YOLO26 tensor layout to (N, A, D).
-
-    @param raw: Raw tensor from model output.
-    @type raw: np.ndarray
-    @param expected_last_dim: Expected last dimension size.
-    @type expected_last_dim: int
-    @param name: Name of tensor for error messages.
-    @type name: str
-    @return: Normalized tensor with shape (N, A, D).
-    @rtype: np.ndarray
-    """
-    if raw.ndim != 3:
-        raise ValueError(f"{name} must be 3D. Got shape {raw.shape}.")
-    if raw.shape[-1] != expected_last_dim and raw.shape[1] == expected_last_dim:
-        raw = np.transpose(raw, (0, 2, 1))
-    if raw.shape[-1] != expected_last_dim:
-        raise ValueError(f"{name} last dim must be {expected_last_dim}. Got shape {raw.shape}.")
-    return raw
-
-
 def _apply_conf_and_topk(
     boxes: np.ndarray,
     scores: np.ndarray,
@@ -402,7 +379,7 @@ def _apply_conf_and_topk(
     @type conf_threshold: float
     @param max_det: Maximum number of detections.
     @type max_det: int
-    @param auxiliary: Optional auxiliary data to filter alongside (A, ...).
+    @param auxiliary: generic parameter for task-specific data (mask coefficients for segmentation and keypoints for pose) to be filtered accroding to the detections
     @type auxiliary: Optional[np.ndarray]
     @return: Tuple of (results array (K, 6), filtered auxiliary or None).
     @rtype: Tuple[np.ndarray, Optional[np.ndarray]]
@@ -454,7 +431,7 @@ def decode_yolo26_detection(
     YOLO26 end2end output is already decoded (xyxy in pixels) but needs
     confidence filtering and top-k selection.
 
-    @param raw: Raw detection tensor (N, A, 4+nc) or (N, 4+nc, A).
+    @param raw: Raw detection tensor (N, A, 4+nc).
     @type raw: np.ndarray
     @param n_classes: Number of classes.
     @type n_classes: int
@@ -465,12 +442,7 @@ def decode_yolo26_detection(
     @return: Detection results (K, 6) with [x1, y1, x2, y2, score, class_id].
     @rtype: np.ndarray
     """
-    expected_last_dim = 4 + n_classes
-    raw = _normalize_yolo26_tensor(raw, expected_last_dim, "YOLO26 detection output")
-
     det_results = raw[0]  # (A, 4+nc)
-    if not det_results.size:
-        return np.zeros((0, 6), dtype=np.float32)
 
     boxes = det_results[:, :4]
     scores = det_results[:, 4:]
@@ -500,24 +472,8 @@ def decode_yolo26_segmentation(
     @return: Tuple of (detection results (K, 6), mask coefficients (K, nm)).
     @rtype: Tuple[np.ndarray, np.ndarray]
     """
-    expected_last_dim = 4 + n_classes
-    raw = _normalize_yolo26_tensor(raw, expected_last_dim, "YOLO26-SEG detection output")
-
-    # Handle mask_coeffs layout
-    if mask_coeffs_raw.ndim != 3:
-        raise ValueError(
-            f"YOLO26-SEG mask_coeffs must be 3D (N, A, nm). Got shape {mask_coeffs_raw.shape}."
-        )
-    if mask_coeffs_raw.shape[1] != raw.shape[1] and mask_coeffs_raw.shape[2] == raw.shape[1]:
-        mask_coeffs_raw = np.transpose(mask_coeffs_raw, (0, 2, 1))
-
     det_results = raw[0]  # (A, 4+nc)
     mask_coeffs_all = mask_coeffs_raw[0]  # (A, nm)
-
-    if not det_results.size:
-        return np.zeros((0, 6), dtype=np.float32), np.zeros(
-            (0, mask_coeffs_all.shape[1]), dtype=np.float32
-        )
 
     boxes = det_results[:, :4]
     scores = det_results[:, 4:]
@@ -552,25 +508,8 @@ def decode_yolo26_pose(
     @return: Tuple of (detection results (K, 6), keypoints (K, nk*3)).
     @rtype: Tuple[np.ndarray, np.ndarray]
     """
-    expected_last_dim = 4 + n_classes
-    raw = _normalize_yolo26_tensor(raw, expected_last_dim, "YOLO26-POSE detection output")
-
-    # Handle kpts layout
-    if kpts_raw.ndim != 3:
-        raise ValueError(
-            f"YOLO26-POSE kpts must be 3D (N, A, nk). Got shape {kpts_raw.shape}."
-        )
-    expected_nk = n_keypoints * 3
-    if kpts_raw.shape[-1] != expected_nk and kpts_raw.shape[1] == expected_nk:
-        kpts_raw = np.transpose(kpts_raw, (0, 2, 1))
-
     det_results = raw[0]  # (A, 4+nc)
-    kpts_all = kpts_raw[0]  # (A, nk)
-
-    if not det_results.size:
-        return np.zeros((0, 6), dtype=np.float32), np.zeros(
-            (0, kpts_all.shape[1]), dtype=np.float32
-        )
+    kpts_all = kpts_raw[0]  # (A, nk*3)
 
     boxes = det_results[:, :4]
     scores = det_results[:, 4:]

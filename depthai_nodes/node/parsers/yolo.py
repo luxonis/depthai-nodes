@@ -435,7 +435,6 @@ class YOLOExtendedParser(BaseParser):
                 # - output: (N, A, 4+nc) detection output
                 # - mask_output: (N, A, nm) mask coefficients
                 # - protos_output: (N, nm, H, W) prototype masks
-                outputs_names = ["output"]
                 outputs_values = [
                     output.getTensor("output", dequantize=True).astype(np.float32)
                 ]
@@ -451,7 +450,6 @@ class YOLOExtendedParser(BaseParser):
                 # YOLO26-POSE end2end outputs:
                 # - output: (N, A, 4+nc) detection output
                 # - kpt_output: (N, A, nk) decoded keypoints in pixel coordinates
-                outputs_names = ["output"]
                 outputs_values = [
                     output.getTensor("output", dequantize=True).astype(np.float32)
                 ]
