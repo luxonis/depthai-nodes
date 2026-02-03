@@ -16,10 +16,10 @@ from depthai_nodes.node.parsers.utils.masks_utils import (
 )
 from depthai_nodes.node.parsers.utils.yolo import (
     YOLOSubtype,
-    decode_yolo_output,
     decode_yolo26_detection,
     decode_yolo26_pose,
     decode_yolo26_segmentation,
+    decode_yolo_output,
     parse_kpts,
     parse_v26_kpts,
 )
@@ -337,10 +337,14 @@ class YOLOExtendedParser(BaseParser):
             # - mask_output: (N, A, nm) mask coefficients
             # - protos_output: (N, nm, H, W) prototype masks
             bbox_layer_names = [name for name in output_layers if name == "output"]
-            masks_layer_names = [name for name in output_layers if "mask_output" in name]
+            masks_layer_names = [
+                name for name in output_layers if "mask_output" in name
+            ]
             protos_layer_names = [name for name in output_layers if "protos" in name]
             kps_layer_names = []
-            self._protos_layer_name = protos_layer_names[0] if protos_layer_names else "protos_output"
+            self._protos_layer_name = (
+                protos_layer_names[0] if protos_layer_names else "protos_output"
+            )
             if len(bbox_layer_names) != 1 or len(masks_layer_names) != 1:
                 raise ValueError(
                     "YOLO26-SEG requires 3 outputs: 'output', 'mask_output', and 'protos_output'."
@@ -443,8 +447,9 @@ class YOLOExtendedParser(BaseParser):
                     "mask_output", dequantize=True
                 ).astype(np.float32)
                 self._protos = output.getTensor(
-                    self._protos_layer_name, dequantize=True,
-                    storageOrder=dai.TensorInfo.StorageOrder.NCHW
+                    self._protos_layer_name,
+                    dequantize=True,
+                    storageOrder=dai.TensorInfo.StorageOrder.NCHW,
                 ).astype(np.float32)
             elif self.subtype == YOLOSubtype.V26_POSE:
                 # YOLO26-POSE end2end outputs:
@@ -463,7 +468,9 @@ class YOLOExtendedParser(BaseParser):
                 )
                 outputs_values = [
                     output.getTensor(
-                        o, dequantize=True, storageOrder=dai.TensorInfo.StorageOrder.NCHW
+                        o,
+                        dequantize=True,
+                        storageOrder=dai.TensorInfo.StorageOrder.NCHW,
                     ).astype(np.float32)
                     for o in outputs_names
                 ]
@@ -504,7 +511,11 @@ class YOLOExtendedParser(BaseParser):
                 mode = self._DET_MODE
 
             # Get the model's input shape
-            if self.subtype in (YOLOSubtype.V26, YOLOSubtype.V26_SEG, YOLOSubtype.V26_POSE):
+            if self.subtype in (
+                YOLOSubtype.V26,
+                YOLOSubtype.V26_SEG,
+                YOLOSubtype.V26_POSE,
+            ):
                 if self.input_shape is None:
                     raise ValueError(
                         "YOLO26 variants parsing requires model input shape in head_config."
@@ -522,11 +533,19 @@ class YOLOExtendedParser(BaseParser):
                 )
 
             # Reshape the anchors based on the model's output heads
-            if self.subtype not in (YOLOSubtype.V26, YOLOSubtype.V26_SEG, YOLOSubtype.V26_POSE) and self.anchors is not None:
+            if (
+                self.subtype
+                not in (YOLOSubtype.V26, YOLOSubtype.V26_SEG, YOLOSubtype.V26_POSE)
+                and self.anchors is not None
+            ):
                 self.anchors = np.array(self.anchors).reshape(len(strides), -1)
 
             # Ensure the number of classes is correct
-            if self.subtype not in (YOLOSubtype.V26, YOLOSubtype.V26_SEG, YOLOSubtype.V26_POSE):
+            if self.subtype not in (
+                YOLOSubtype.V26,
+                YOLOSubtype.V26_SEG,
+                YOLOSubtype.V26_POSE,
+            ):
                 num_classes_check = (
                     outputs_values[0].shape[1] - 5
                     if self.anchors is None

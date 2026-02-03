@@ -379,7 +379,8 @@ def _apply_conf_and_topk(
     @type conf_threshold: float
     @param max_det: Maximum number of detections.
     @type max_det: int
-    @param auxiliary: generic parameter for task-specific data (mask coefficients for segmentation and keypoints for pose) to be filtered accroding to the detections
+    @param auxiliary: generic parameter for task-specific data (mask coefficients for
+        segmentation and keypoints for pose) to be filtered accroding to the detections
     @type auxiliary: Optional[np.ndarray]
     @return: Tuple of (results array (K, 6), filtered auxiliary or None).
     @rtype: Tuple[np.ndarray, Optional[np.ndarray]]
@@ -428,8 +429,8 @@ def decode_yolo26_detection(
 ) -> np.ndarray:
     """Decode YOLO26 detection output.
 
-    YOLO26 end2end output is already decoded (xyxy in pixels) but needs
-    confidence filtering and top-k selection.
+    YOLO26 end2end output is already decoded (xyxy in pixels) but needs confidence
+    filtering and top-k selection.
 
     @param raw: Raw detection tensor (N, A, 4+nc).
     @type raw: np.ndarray
