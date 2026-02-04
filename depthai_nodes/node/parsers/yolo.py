@@ -323,45 +323,38 @@ class YOLOExtendedParser(BaseParser):
             ) from err
 
         if self.subtype == YOLOSubtype.V26:
-            # YOLO26 end2end export provides a single output (N, A, 4+nc) without FPN heads.
-            bbox_layer_names = list(output_layers)
-            kps_layer_names = []
-            masks_layer_names = []
-            if len(bbox_layer_names) != 1:
-                raise ValueError(
-                    "YOLO26 requires a single output layer with shape (N, A, 4+nc)."
-                )
-        elif self.subtype == YOLOSubtype.V26_SEG:
-            # YOLO26-SEG end2end export provides 3 outputs:
-            # - output: (N, A, 4+nc) detection output
-            # - mask_output: (N, A, nm) mask coefficients
-            # - protos_output: (N, nm, H, W) prototype masks
-            bbox_layer_names = [name for name in output_layers if name == "output"]
+            # YOLO26 end2end: task type inferred from output layer names at runtime
+            # - Detection: single output layer (N, A, 4+nc)
+            # - Segmentation: 'output', 'mask_output', 'protos_output'
+            # - Pose: 'output', 'kpt_output'
+            kps_layer_names = [name for name in output_layers if "kpt_output" in name]
             masks_layer_names = [
                 name for name in output_layers if "mask_output" in name
             ]
             protos_layer_names = [name for name in output_layers if "protos" in name]
-            kps_layer_names = []
-            self._protos_layer_name = (
-                protos_layer_names[0] if protos_layer_names else "protos_output"
-            )
-            if len(bbox_layer_names) != 1 or len(masks_layer_names) != 1:
-                raise ValueError(
-                    "YOLO26-SEG requires 3 outputs: 'output', 'mask_output', and 'protos_output'."
+
+            if kps_layer_names:
+                bbox_layer_names = [name for name in output_layers if name == "output"]
+                if len(bbox_layer_names) != 1 or len(kps_layer_names) != 1:
+                    raise ValueError(
+                        "YOLO26 pose requires 2 outputs: 'output' and 'kpt_output'."
+                    )
+            elif masks_layer_names:
+                bbox_layer_names = [name for name in output_layers if name == "output"]
+                self._protos_layer_name = (
+                    protos_layer_names[0] if protos_layer_names else "protos_output"
                 )
-            # Include protos in output_layer_names for proper layer retrieval
-            masks_layer_names = masks_layer_names + protos_layer_names
-        elif self.subtype == YOLOSubtype.V26_POSE:
-            # YOLO26-POSE end2end export provides 2 outputs:
-            # - output: (N, A, 4+nc) detection output
-            # - kpt_output: (N, A, nk) decoded keypoints in pixel coordinates
-            bbox_layer_names = [name for name in output_layers if name == "output"]
-            kps_layer_names = [name for name in output_layers if name == "kpt_output"]
-            masks_layer_names = []
-            if len(bbox_layer_names) != 1 or len(kps_layer_names) != 1:
-                raise ValueError(
-                    "YOLO26-POSE requires 2 outputs: 'output' and 'kpt_output'."
-                )
+                if len(bbox_layer_names) != 1 or len(masks_layer_names) != 1:
+                    raise ValueError(
+                        "YOLO26 segmentation requires 3 outputs: 'output', 'mask_output', and 'protos_output'."
+                    )
+                masks_layer_names = masks_layer_names + protos_layer_names
+            else:
+                bbox_layer_names = list(output_layers)
+                if len(bbox_layer_names) != 1:
+                    raise ValueError(
+                        "YOLO26 detection requires a single output layer with shape (N, A, 4+nc)."
+                    )
         else:
             bbox_layer_names = [name for name in output_layers if "_yolo" in name]
             kps_layer_names = [name for name in output_layers if "kpt_output" in name]
@@ -394,8 +387,8 @@ class YOLOExtendedParser(BaseParser):
         keypoint_edges = head_config.get("skeleton_edges", self.keypoint_edges)
         if keypoint_edges:
             self.keypoint_edges = [tuple(edge) for edge in keypoint_edges]
-        if self.subtype in (YOLOSubtype.V26, YOLOSubtype.V26_SEG, YOLOSubtype.V26_POSE):
-            # For YOLO26 variants end2end we no longer have FPN outputs to infer input size,
+        if self.subtype == YOLOSubtype.V26:
+            # For YOLO26 end2end we no longer have FPN outputs to infer input size,
             # so we rely on model_inputs from the NN archive.
             inputs = head_config.get("model_inputs", [])
             if inputs:
@@ -406,8 +399,8 @@ class YOLOExtendedParser(BaseParser):
                         self.input_shape = (input_shape[2], input_shape[3])
                     elif input_layout == "NHWC":
                         self.input_shape = (input_shape[1], input_shape[2])
-            # Get n_prototypes for V26_SEG
-            if self.subtype == YOLOSubtype.V26_SEG:
+            # Get n_prototypes for segmentation mode
+            if any("mask_output" in name for name in output_layers):
                 self.n_prototypes = head_config.get("n_prototypes", 32)
 
         self._logger.debug(
@@ -428,40 +421,32 @@ class YOLOExtendedParser(BaseParser):
             self._logger.debug(f"Processing input with layers: {layer_names}")
 
             if self.subtype == YOLOSubtype.V26:
-                # YOLO26 end2end output is a single NCD tensor: (N, A, 4+nc).
-                outputs_names = list(layer_names)
-                outputs_values = [
-                    output.getTensor(o, dequantize=True).astype(np.float32)
-                    for o in outputs_names
-                ]
-            elif self.subtype == YOLOSubtype.V26_SEG:
-                # YOLO26-SEG end2end outputs:
-                # - output: (N, A, 4+nc) detection output
-                # - mask_output: (N, A, nm) mask coefficients
-                # - protos_output: (N, nm, H, W) prototype masks
-                outputs_values = [
-                    output.getTensor("output", dequantize=True).astype(np.float32)
-                ]
-                # Get mask coefficients and protos separately
-                self._mask_coeffs = output.getTensor(
-                    "mask_output", dequantize=True
-                ).astype(np.float32)
-                self._protos = output.getTensor(
-                    self._protos_layer_name,
-                    dequantize=True,
-                    storageOrder=dai.TensorInfo.StorageOrder.NCHW,
-                ).astype(np.float32)
-            elif self.subtype == YOLOSubtype.V26_POSE:
-                # YOLO26-POSE end2end outputs:
-                # - output: (N, A, 4+nc) detection output
-                # - kpt_output: (N, A, nk) decoded keypoints in pixel coordinates
-                outputs_values = [
-                    output.getTensor("output", dequantize=True).astype(np.float32)
-                ]
-                # Get keypoints separately (already decoded in pixel coordinates)
-                self._kpts_output = output.getTensor(
-                    "kpt_output", dequantize=True
-                ).astype(np.float32)
+                # YOLO26 end2end: infer task type from output layer names
+                if any("mask_output" in name for name in layer_names):
+                    outputs_values = [
+                        output.getTensor("output", dequantize=True).astype(np.float32)
+                    ]
+                    self._mask_coeffs = output.getTensor(
+                        "mask_output", dequantize=True
+                    ).astype(np.float32)
+                    self._protos = output.getTensor(
+                        self._protos_layer_name,
+                        dequantize=True,
+                        storageOrder=dai.TensorInfo.StorageOrder.NCHW,
+                    ).astype(np.float32)
+                elif any("kpt_output" in name for name in layer_names):
+                    outputs_values = [
+                        output.getTensor("output", dequantize=True).astype(np.float32)
+                    ]
+                    self._kpts_output = output.getTensor(
+                        "kpt_output", dequantize=True
+                    ).astype(np.float32)
+                else:
+                    outputs_names = list(layer_names)
+                    outputs_values = [
+                        output.getTensor(o, dequantize=True).astype(np.float32)
+                        for o in outputs_names
+                    ]
             else:
                 outputs_names = sorted(
                     [name for name in layer_names if "_yolo" in name or "yolo-" in name]
@@ -475,13 +460,16 @@ class YOLOExtendedParser(BaseParser):
                     for o in outputs_names
                 ]
 
-            if self.subtype == YOLOSubtype.V26_POSE:
-                # V26_POSE is always keypoints mode
-                mode = self._KPTS_MODE
+            if self.subtype == YOLOSubtype.V26:
+                if any("kpt_output" in name for name in layer_names):
+                    mode = self._KPTS_MODE
+                elif any("mask_output" in name for name in layer_names):
+                    mode = self._SEG_MODE
+                else:
+                    mode = self._DET_MODE
             elif (
                 any("kpt_output" in name for name in layer_names)
                 and self.subtype != YOLOSubtype.P
-                and self.subtype not in (YOLOSubtype.V26, YOLOSubtype.V26_SEG)
             ):
                 mode = self._KPTS_MODE
                 # Get the keypoint outputs
@@ -492,13 +480,9 @@ class YOLOExtendedParser(BaseParser):
                     output.getTensor(o, dequantize=True).astype(np.float32)
                     for o in kpts_output_names
                 ]
-            elif self.subtype == YOLOSubtype.V26_SEG:
-                # V26_SEG is always segmentation mode
-                mode = self._SEG_MODE
             elif (
                 any("_masks" in name for name in layer_names)
                 and self.subtype != YOLOSubtype.P
-                and self.subtype != YOLOSubtype.V26
             ):
                 mode = self._SEG_MODE
                 # Get the segmentation outputs
@@ -511,14 +495,10 @@ class YOLOExtendedParser(BaseParser):
                 mode = self._DET_MODE
 
             # Get the model's input shape
-            if self.subtype in (
-                YOLOSubtype.V26,
-                YOLOSubtype.V26_SEG,
-                YOLOSubtype.V26_POSE,
-            ):
+            if self.subtype == YOLOSubtype.V26:
                 if self.input_shape is None:
                     raise ValueError(
-                        "YOLO26 variants parsing requires model input shape in head_config."
+                        "YOLO26 parsing requires model input shape in head_config."
                     )
                 input_shape = self.input_shape
             else:
@@ -533,19 +513,11 @@ class YOLOExtendedParser(BaseParser):
                 )
 
             # Reshape the anchors based on the model's output heads
-            if (
-                self.subtype
-                not in (YOLOSubtype.V26, YOLOSubtype.V26_SEG, YOLOSubtype.V26_POSE)
-                and self.anchors is not None
-            ):
+            if self.subtype != YOLOSubtype.V26 and self.anchors is not None:
                 self.anchors = np.array(self.anchors).reshape(len(strides), -1)
 
             # Ensure the number of classes is correct
-            if self.subtype not in (
-                YOLOSubtype.V26,
-                YOLOSubtype.V26_SEG,
-                YOLOSubtype.V26_POSE,
-            ):
+            if self.subtype != YOLOSubtype.V26:
                 num_classes_check = (
                     outputs_values[0].shape[1] - 5
                     if self.anchors is None
@@ -556,8 +528,8 @@ class YOLOExtendedParser(BaseParser):
                         f"The provided number of classes {self.n_classes} does not match the model's {num_classes_check}."
                     )
 
-            # Ensure the number of keypoints is correct (skip for V26_POSE which handles kpts differently)
-            if mode == self._KPTS_MODE and self.subtype != YOLOSubtype.V26_POSE:
+            # Ensure the number of keypoints is correct (skip for V26 pose which handles kpts differently)
+            if mode == self._KPTS_MODE and self.subtype != YOLOSubtype.V26:
                 num_keypoints_check = kpts_outputs[0].shape[1] // 3
                 if num_keypoints_check != self.n_keypoints:
                     raise ValueError(
@@ -567,35 +539,32 @@ class YOLOExtendedParser(BaseParser):
             # Decode the outputs
             if self.subtype == YOLOSubtype.V26:
                 if len(outputs_values) != 1:
-                    raise ValueError("YOLO26 requires a single output layer.")
-                results = decode_yolo26_detection(
-                    outputs_values[0],
-                    self.n_classes,
-                    self.conf_threshold,
-                    self.max_det,
-                )
-            elif self.subtype == YOLOSubtype.V26_SEG:
-                if len(outputs_values) != 1:
-                    raise ValueError("YOLO26-SEG requires detection output layer.")
-                results, self._v26_seg_mask_coeffs = decode_yolo26_segmentation(
-                    outputs_values[0],
-                    self._mask_coeffs,
-                    self.n_classes,
-                    self.conf_threshold,
-                    self.max_det,
-                )
-                self._v26_seg_protos = self._protos[0]  # (nm, H, W)
-            elif self.subtype == YOLOSubtype.V26_POSE:
-                if len(outputs_values) != 1:
-                    raise ValueError("YOLO26-POSE requires detection output layer.")
-                results, self._v26_pose_kpts = decode_yolo26_pose(
-                    outputs_values[0],
-                    self._kpts_output,
-                    self.n_classes,
-                    self.n_keypoints,
-                    self.conf_threshold,
-                    self.max_det,
-                )
+                    raise ValueError("YOLO26 requires detection output layer.")
+                if mode == self._SEG_MODE:
+                    results, self._v26_seg_mask_coeffs = decode_yolo26_segmentation(
+                        outputs_values[0],
+                        self._mask_coeffs,
+                        self.n_classes,
+                        self.conf_threshold,
+                        self.max_det,
+                    )
+                    self._v26_seg_protos = self._protos[0]  # (nm, H, W)
+                elif mode == self._KPTS_MODE:
+                    results, self._v26_pose_kpts = decode_yolo26_pose(
+                        outputs_values[0],
+                        self._kpts_output,
+                        self.n_classes,
+                        self.n_keypoints,
+                        self.conf_threshold,
+                        self.max_det,
+                    )
+                else:
+                    results = decode_yolo26_detection(
+                        outputs_values[0],
+                        self.n_classes,
+                        self.conf_threshold,
+                        self.max_det,
+                    )
             else:
                 results = decode_yolo_output(
                     outputs_values,
@@ -630,8 +599,8 @@ class YOLOExtendedParser(BaseParser):
                 scores.append(conf)
 
                 if mode == self._KPTS_MODE:
-                    if self.subtype == YOLOSubtype.V26_POSE:
-                        # V26_POSE: keypoints are already decoded in pixel coordinates
+                    if self.subtype == YOLOSubtype.V26:
+                        # V26 pose: keypoints are already decoded in pixel coordinates
                         kpts = parse_v26_kpts(
                             self._v26_pose_kpts[i], self.n_keypoints, input_shape
                         )
@@ -639,8 +608,8 @@ class YOLOExtendedParser(BaseParser):
                         kpts = parse_kpts(other, self.n_keypoints, input_shape)
                     additional_output.append(kpts)
                 elif mode == self._SEG_MODE:
-                    if self.subtype == YOLOSubtype.V26_SEG:
-                        # V26_SEG: mask coefficients are directly available
+                    if self.subtype == YOLOSubtype.V26:
+                        # V26 segmentation: mask coefficients are directly available
                         mask_coeff = self._v26_seg_mask_coeffs[i]
                         mask = process_single_mask(
                             self._v26_seg_protos, mask_coeff, self.mask_conf, bbox
