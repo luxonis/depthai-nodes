@@ -320,10 +320,12 @@ class YOLOExtendedParser(BaseParser):
             ) from err
 
         if self.subtype == YOLOSubtype.V26:
-            # YOLO26 end2end: task type inferred from output layer names at runtime
-            # - Detection: single output layer (N, A, 4+nc)
-            # - Segmentation: 'output', 'mask_output', 'protos_output'
-            # - Pose: 'output', 'kpt_output'
+            # YOLO26 end2end: task type inferred from output layer names at runtime.
+            # Boxes are decoded to xyxy pixels, class scores are sigmoided. No NMS needed.
+            # - Detection: 'output' (N, A, 4+nc)
+            # - Segmentation: 'output' (N, A, 4+nc), 'mask_output' (N, A, nm),
+            #                 'protos_output' (N, nm, proto_h, proto_w)
+            # - Pose: 'output' (N, A, 4+nc), 'kpt_output' (N, A, nk)
             kps_layer_names = [name for name in output_layers if "kpt_output" in name]
             masks_layer_names = [
                 name for name in output_layers if "mask_output" in name
@@ -591,7 +593,6 @@ class YOLOExtendedParser(BaseParser):
 
                 if mode == self._KPTS_MODE:
                     if self.subtype == YOLOSubtype.V26:
-                        # V26 pose: keypoints are already decoded in pixel coordinates
                         kpts = parse_kpts(
                             self._v26_pose_kpts[i], self.n_keypoints, input_shape
                         )

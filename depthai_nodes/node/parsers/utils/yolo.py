@@ -349,7 +349,7 @@ def _apply_conf_and_topk(
     @param max_det: Maximum number of detections.
     @type max_det: int
     @param auxiliary: generic parameter for task-specific data (mask coefficients for
-        segmentation and keypoints for pose) to be filtered accroding to the detections
+        segmentation and keypoints for pose) to be filtered according to the detections
     @type auxiliary: Optional[np.ndarray]
     @return: Tuple of (results array (K, 6), filtered auxiliary or None).
     @rtype: Tuple[np.ndarray, Optional[np.ndarray]]
