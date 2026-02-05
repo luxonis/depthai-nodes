@@ -19,7 +19,6 @@ from depthai_nodes.node.parsers.utils.yolo import (
     decode_yolo26,
     decode_yolo_output,
     parse_kpts,
-    parse_v26_kpts,
 )
 
 
@@ -593,7 +592,7 @@ class YOLOExtendedParser(BaseParser):
                 if mode == self._KPTS_MODE:
                     if self.subtype == YOLOSubtype.V26:
                         # V26 pose: keypoints are already decoded in pixel coordinates
-                        kpts = parse_v26_kpts(
+                        kpts = parse_kpts(
                             self._v26_pose_kpts[i], self.n_keypoints, input_shape
                         )
                     else:

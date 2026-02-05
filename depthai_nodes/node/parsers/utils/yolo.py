@@ -331,35 +331,6 @@ def parse_kpts(
     return kps
 
 
-def parse_v26_kpts(
-    kpts: np.ndarray, n_keypoints: int, img_shape: Tuple[int, int]
-) -> List[Tuple[float, float, float]]:
-    """Parse keypoints from YOLO26-POSE output.
-
-    YOLO26-POSE keypoints are already decoded in pixel coordinates.
-    Format: [x1, y1, v1, x2, y2, v2, ...] where x,y are in pixels
-    and v is visibility score (already sigmoided).
-
-    @param kpts: Keypoint values for a single detection.
-    @type kpts: np.ndarray
-    @param n_keypoints: Number of keypoints.
-    @type n_keypoints: int
-    @param img_shape: Image shape (height, width).
-    @type img_shape: Tuple[int, int]
-    @return: List of (x, y, visibility) tuples normalized to [0, 1].
-    @rtype: List[Tuple[float, float, float]]
-    """
-    h, w = img_shape
-    kps = []
-    ndim = len(kpts) // n_keypoints
-    for idx in range(0, len(kpts), ndim):
-        x = kpts[idx] / w
-        y = kpts[idx + 1] / h
-        conf = kpts[idx + 2] if ndim == 3 else 1.0
-        kps.append((x, y, conf))
-    return kps
-
-
 def _apply_conf_and_topk(
     boxes: np.ndarray,
     scores: np.ndarray,
