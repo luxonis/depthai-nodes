@@ -16,9 +16,7 @@ from depthai_nodes.node.parsers.utils.masks_utils import (
 )
 from depthai_nodes.node.parsers.utils.yolo import (
     YOLOSubtype,
-    decode_yolo26_detection,
-    decode_yolo26_pose,
-    decode_yolo26_segmentation,
+    decode_yolo26,
     decode_yolo_output,
     parse_kpts,
     parse_v26_kpts,
@@ -541,30 +539,24 @@ class YOLOExtendedParser(BaseParser):
                 if len(outputs_values) != 1:
                     raise ValueError("YOLO26 requires detection output layer.")
                 if mode == self._SEG_MODE:
-                    results, self._v26_seg_mask_coeffs = decode_yolo26_segmentation(
-                        outputs_values[0],
-                        self._mask_coeffs,
-                        self.n_classes,
-                        self.conf_threshold,
-                        self.max_det,
-                    )
+                    extra_raw = self._mask_coeffs
+                elif mode == self._KPTS_MODE:
+                    extra_raw = self._kpts_output
+                else:
+                    extra_raw = None
+
+                results, extra = decode_yolo26(
+                    outputs_values[0],
+                    self.conf_threshold,
+                    self.max_det,
+                    extra_raw=extra_raw,
+                )
+
+                if mode == self._SEG_MODE:
+                    self._v26_seg_mask_coeffs = extra
                     self._v26_seg_protos = self._protos[0]  # (nm, H, W)
                 elif mode == self._KPTS_MODE:
-                    results, self._v26_pose_kpts = decode_yolo26_pose(
-                        outputs_values[0],
-                        self._kpts_output,
-                        self.n_classes,
-                        self.n_keypoints,
-                        self.conf_threshold,
-                        self.max_det,
-                    )
-                else:
-                    results = decode_yolo26_detection(
-                        outputs_values[0],
-                        self.n_classes,
-                        self.conf_threshold,
-                        self.max_det,
-                    )
+                    self._v26_pose_kpts = extra
             else:
                 results = decode_yolo_output(
                     outputs_values,

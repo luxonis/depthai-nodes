@@ -419,103 +419,39 @@ def _apply_conf_and_topk(
     return results, aux_kept
 
 
-def decode_yolo26_detection(
+def decode_yolo26(
     raw: np.ndarray,
-    n_classes: int,
     conf_threshold: float,
     max_det: int,
-) -> np.ndarray:
-    """Decode YOLO26 detection output.
+    extra_raw: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    """Decode YOLO26 output for detection, segmentation, or pose.
 
-    YOLO26 end2end output is already decoded (xyxy in pixels) but needs confidence
-    filtering and top-k selection.
+    YOLO26 end2end output is already decoded (xyxy in pixels) but needs topk and conf
+    thresholding. Optionally filters an auxiliary tensor (mask coefficients or
+    keypoints) with the detections
 
     @param raw: Raw detection tensor (N, A, 4+nc).
     @type raw: np.ndarray
-    @param n_classes: Number of classes.
-    @type n_classes: int
     @param conf_threshold: Confidence threshold.
     @type conf_threshold: float
     @param max_det: Maximum number of detections.
     @type max_det: int
-    @return: Detection results (K, 6) with [x1, y1, x2, y2, score, class_id].
-    @rtype: np.ndarray
+    @param extra_raw: Optional auxiliary tensor (N, A, M) such as mask coefficients or
+        keypoints. When provided the kept rows are returned as the second element.
+    @type extra_raw: Optional[np.ndarray]
+    @return: Tuple of (detection results (K, 6), kept auxiliary data (K, M) or None).
+    @rtype: Tuple[np.ndarray, Optional[np.ndarray]]
     """
     det_results = raw[0]  # (A, 4+nc)
+    extra = extra_raw[0] if extra_raw is not None else None
 
     boxes = det_results[:, :4]
     scores = det_results[:, 4:]
-    results, _ = _apply_conf_and_topk(boxes, scores, conf_threshold, max_det)
-    return results
-
-
-def decode_yolo26_segmentation(
-    raw: np.ndarray,
-    mask_coeffs_raw: np.ndarray,
-    n_classes: int,
-    conf_threshold: float,
-    max_det: int,
-) -> Tuple[np.ndarray, np.ndarray]:
-    """Decode YOLO26-SEG output.
-
-    @param raw: Raw detection tensor (N, A, 4+nc).
-    @type raw: np.ndarray
-    @param mask_coeffs_raw: Raw mask coefficients tensor (N, A, nm).
-    @type mask_coeffs_raw: np.ndarray
-    @param n_classes: Number of classes.
-    @type n_classes: int
-    @param conf_threshold: Confidence threshold.
-    @type conf_threshold: float
-    @param max_det: Maximum number of detections.
-    @type max_det: int
-    @return: Tuple of (detection results (K, 6), mask coefficients (K, nm)).
-    @rtype: Tuple[np.ndarray, np.ndarray]
-    """
-    det_results = raw[0]  # (A, 4+nc)
-    mask_coeffs_all = mask_coeffs_raw[0]  # (A, nm)
-
-    boxes = det_results[:, :4]
-    scores = det_results[:, 4:]
-    results, kept_mask_coeffs = _apply_conf_and_topk(
-        boxes, scores, conf_threshold, max_det, mask_coeffs_all
+    results, kept_extra = _apply_conf_and_topk(
+        boxes, scores, conf_threshold, max_det, extra
     )
-    return results, kept_mask_coeffs
-
-
-def decode_yolo26_pose(
-    raw: np.ndarray,
-    kpts_raw: np.ndarray,
-    n_classes: int,
-    n_keypoints: int,
-    conf_threshold: float,
-    max_det: int,
-) -> Tuple[np.ndarray, np.ndarray]:
-    """Decode YOLO26-POSE output.
-
-    @param raw: Raw detection tensor (N, A, 4+nc).
-    @type raw: np.ndarray
-    @param kpts_raw: Raw keypoints tensor (N, A, nk*3).
-    @type kpts_raw: np.ndarray
-    @param n_classes: Number of classes.
-    @type n_classes: int
-    @param n_keypoints: Number of keypoints.
-    @type n_keypoints: int
-    @param conf_threshold: Confidence threshold.
-    @type conf_threshold: float
-    @param max_det: Maximum number of detections.
-    @type max_det: int
-    @return: Tuple of (detection results (K, 6), keypoints (K, nk*3)).
-    @rtype: Tuple[np.ndarray, np.ndarray]
-    """
-    det_results = raw[0]  # (A, 4+nc)
-    kpts_all = kpts_raw[0]  # (A, nk*3)
-
-    boxes = det_results[:, :4]
-    scores = det_results[:, 4:]
-    results, kept_kpts = _apply_conf_and_topk(
-        boxes, scores, conf_threshold, max_det, kpts_all
-    )
-    return results, kept_kpts
+    return results, kept_extra
 
 
 def decode_yolo_output(
