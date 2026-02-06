@@ -27,6 +27,7 @@ class YOLOSubtype(str, Enum):
     V8 = "yolov8"
     V9 = "yolov9"
     V10 = "yolov10"
+    V26 = "yolo26"
     P = "yolo-p"
     GOLD = "yolo-gold"
     DEFAULT = ""
@@ -308,7 +309,7 @@ def parse_yolo_output(
 
 def parse_kpts(
     kpts: np.ndarray, n_keypoints: int, img_shape: Tuple[int, int]
-) -> List[Tuple[int, int, float]]:
+) -> List[Tuple[float, float, float]]:
     """Parse keypoints.
 
     @param kpts: Result keypoints.
@@ -318,7 +319,7 @@ def parse_kpts(
     @param img_shape: Image shape of the model input in (height, width) format.
     @type img_shape: Tuple[int, int]
     @return: Parsed keypoints.
-    @rtype: List[Tuple[int, int, float]]
+    @rtype: List[Tuple[float, float, float]]
     """
     h, w = img_shape
     kps = []
@@ -328,6 +329,100 @@ def parse_kpts(
         conf = kpts[idx + 2] if ndim == 3 else 1.0
         kps.append((x, y, conf))
     return kps
+
+
+def _apply_conf_and_topk(
+    boxes: np.ndarray,
+    scores: np.ndarray,
+    conf_threshold: float,
+    max_det: int,
+    auxiliary: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    """Apply confidence threshold and top-k filtering.
+
+    @param boxes: Bounding boxes array (A, 4).
+    @type boxes: np.ndarray
+    @param scores: Class scores array (A, nc).
+    @type scores: np.ndarray
+    @param conf_threshold: Confidence threshold.
+    @type conf_threshold: float
+    @param max_det: Maximum number of detections.
+    @type max_det: int
+    @param auxiliary: generic parameter for task-specific data (mask coefficients for
+        segmentation and keypoints for pose) to be filtered according to the detections
+    @type auxiliary: Optional[np.ndarray]
+    @return: Tuple of (results array (K, 6), filtered auxiliary or None).
+    @rtype: Tuple[np.ndarray, Optional[np.ndarray]]
+    """
+    cls_ids = scores.argmax(axis=-1).astype(np.float32)
+    cls_scores = scores.max(axis=-1)
+    keep = cls_scores >= conf_threshold
+
+    if not np.any(keep):
+        aux_shape = (0,) + auxiliary.shape[1:] if auxiliary is not None else None
+        return np.zeros((0, 6), dtype=np.float32), (
+            np.zeros(aux_shape, dtype=np.float32) if aux_shape else None
+        )
+
+    keep_indices = np.where(keep)[0]
+    boxes = boxes[keep]
+    cls_scores = cls_scores[keep]
+    cls_ids = cls_ids[keep]
+    aux_kept = auxiliary[keep_indices] if auxiliary is not None else None
+
+    k = min(max_det, cls_scores.shape[0])
+    if cls_scores.shape[0] > k:
+        topk_idx = np.argpartition(-cls_scores, k - 1)[:k]
+        order = np.argsort(-cls_scores[topk_idx])
+        topk_idx = topk_idx[order]
+    else:
+        topk_idx = np.argsort(-cls_scores)
+
+    boxes = boxes[topk_idx]
+    cls_scores = cls_scores[topk_idx]
+    cls_ids = cls_ids[topk_idx]
+    aux_kept = aux_kept[topk_idx] if aux_kept is not None else None
+
+    results = np.concatenate(
+        [boxes, cls_scores[:, None], cls_ids[:, None]], axis=1
+    ).astype(np.float32)
+
+    return results, aux_kept
+
+
+def decode_yolo26(
+    raw: np.ndarray,
+    conf_threshold: float,
+    max_det: int,
+    extra_raw: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    """Decode YOLO26 output for detection, segmentation, or pose.
+
+    YOLO26 end2end output is already decoded (xyxy in pixels) but needs topk and conf
+    thresholding. Optionally filters an auxiliary tensor (mask coefficients or
+    keypoints) with the detections
+
+    @param raw: Raw detection tensor (N, A, 4+nc).
+    @type raw: np.ndarray
+    @param conf_threshold: Confidence threshold.
+    @type conf_threshold: float
+    @param max_det: Maximum number of detections.
+    @type max_det: int
+    @param extra_raw: Optional auxiliary tensor (N, A, M) such as mask coefficients or
+        keypoints. When provided the kept rows are returned as the second element.
+    @type extra_raw: Optional[np.ndarray]
+    @return: Tuple of (detection results (K, 6), kept auxiliary data (K, M) or None).
+    @rtype: Tuple[np.ndarray, Optional[np.ndarray]]
+    """
+    det_results = raw[0]  # (A, 4+nc)
+    extra = extra_raw[0] if extra_raw is not None else None
+
+    boxes = det_results[:, :4]
+    scores = det_results[:, 4:]
+    results, kept_extra = _apply_conf_and_topk(
+        boxes, scores, conf_threshold, max_det, extra
+    )
+    return results, kept_extra
 
 
 def decode_yolo_output(
