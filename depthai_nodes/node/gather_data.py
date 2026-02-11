@@ -127,36 +127,25 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         input_reference: dai.Node.Output,
         wait_count_fn: Optional[Callable[[TReference], int]] = None,
     ) -> "GatherData[TReference, TGathered]":
-        """Configure the node and link pipeline outputs to this node's inputs.
+        """Configure the node and link pipeline outputs to this node's inputs. This
+        method must be called before the pipeline is started.
 
-        This method must be called before the pipeline is started.
-
-        Parameters
-        ----------
-        camera_fps : int
-            Camera frame rate used to derive timestamp matching tolerance and
-            polling interval. Must be positive.
-        input_data : dai.Node.Output
-            Upstream output producing the data messages to gather.
-        input_reference : dai.Node.Output
-            Upstream output producing the reference messages.
-        wait_count_fn : Callable[[TReference], int], optional
-            Function that returns how many data messages are expected for a given
+        @param camera_fps: Camera frame rate used to derive timestamp matching tolerance and polling interval. Must be positive.
+        @type camera_fps: int
+        @param input_data: Upstream output producing the data messages to gather.
+        @type input_data : dai.Node.Output
+        @param input_reference: Upstream output producing the reference messages.
+        @type input_reference: dai.Node.Output
+        @param wait_count_fn: Function that returns how many data messages are expected for a given
             reference message. If not provided, defaults to ``len(reference.detections)``.
             Returning 0 causes immediate emission for that reference.
+        @type wait_count_fn: Callable[[TReference], int], optional
+        @return The configured node instance (for chaining).
+        @rtype GatherData[TReference, TGathered]
 
-        Returns
-        -------
-        GatherData[TReference, TGathered]
-            The configured node instance (for chaining).
+        @raises ValueError: If ``camera_fps`` is not positive.
 
-        Raises
-        ------
-        ValueError
-            If ``camera_fps`` is not positive.
-
-        Examples
-        --------
+        Examples:
         Use default behavior (wait for number of detections in the reference):
 
         >>> gather = pipeline.create(GatherData).build(
