@@ -86,7 +86,7 @@ class FrameCropper(BaseThreadedHostNode):
                     cfg.setTimestamp(img_detections.getTimestamp())
                     cfg.setTimestampDevice(img_detections.getTimestampDevice())
                     cfg.setSequenceNum(img_detections.getSequenceNum())
-                    cfg.setOutputSize(OUT_WIDTH * OUT_HEIGHT * 3)
+                    cfg.setOutputSize(OUT_WIDTH, OUT_HEIGHT, RESIZE_MODE)
                     cfg.setFrameType(FRAME_TYPE)
                     node.outputs['manip_cfg'].send(cfg)
                     node.outputs['manip_img'].send(frame)
