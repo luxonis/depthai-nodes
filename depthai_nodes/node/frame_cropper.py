@@ -185,7 +185,7 @@ class FrameCropper(BaseThreadedHostNode):
                     "OUT_HEIGHT": self._output_size[1],
                     "PADDING": self._padding,
                     "FRAME_TYPE": self._img_frame_type.name,
-                    "RESIZE_MODE": resize_mode,
+                    "RESIZE_MODE": resize_mode.name,
                 }
             )
         )
