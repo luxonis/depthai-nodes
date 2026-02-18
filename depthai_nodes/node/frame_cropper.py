@@ -74,7 +74,7 @@ class FrameCropper(BaseThreadedHostNode):
             OUT_WIDTH = $OUT_WIDTH
             OUT_HEIGHT = $OUT_HEIGHT
             PADDING = $PADDING
-            FRAME_TYPE = dai.ImgFrame.Type.$FRAME_TYPE
+            FRAME_TYPE = ImgFrame.Type.$FRAME_TYPE
             while True:
                 # We receive 1 detection count message and image per frame
                 frame = node.inputs['inputImage'].get()
