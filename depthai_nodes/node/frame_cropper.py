@@ -82,9 +82,9 @@ class FrameCropper(BaseThreadedHostNode):
                 for det in img_detections.detections:
                     cfg = ImageManipConfig()
                     cfg.addCropRotatedRect(rect=det.getBoundingBox(), normalizedCoords=True)
-                    cfg.setTimestamp(det.getTimestamp())
-                    cfg.setTimestampDevice(det.getTimestampDevice())
-                    cfg.setSequenceNum(det.getSequenceNum())
+                    cfg.setTimestamp(img_detections.getTimestamp())
+                    cfg.setTimestampDevice(img_detections.getTimestampDevice())
+                    cfg.setSequenceNum(img_detections.getSequenceNum())
                     node.outputs['manip_cfg'].send(cfg)
                     node.outputs['manip_img'].send(frame)
     
