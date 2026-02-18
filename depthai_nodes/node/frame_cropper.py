@@ -8,9 +8,64 @@ from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
 
 
 class FrameCropper(BaseThreadedHostNode):
-    """Handles the cropping of detections from neural network outputs.
+    """A host node that crops detection regions from frames and outputs one
+    cropped :class:`dai.ImgFrame` per region.
 
-    Outputs 1 cropped dai.ImgFrame per detection
+    `FrameCropper` is a convenience wrapper around an internal
+    :class:`dai.node.ImageManip` configured for cropping + resizing. It supports
+    two input modes:
+
+    - **fromImgDetections**: Provide :class:`dai.ImgDetections`
+      and the node will generate :class:`dai.ImageManipConfig` messages for each
+      detection via a :class:`dai.node.Script` node. Each config is paired with
+      the corresponding input frame, producing one cropped output frame per
+      detection.
+    - **fromManipConfigs**: Provide an upstream stream of cropping configs packed
+      in :class:`~depthai_nodes.message.collection.Collection` messages. In this
+      mode `FrameCropper` runs host-side and forwards each
+      :class:`dai.ImageManipConfig` together with the current frame to the
+      internal :class:`dai.node.ImageManip`.
+
+    Configuration is provided via :meth:`fromImgDetections` or
+    :meth:`fromManipConfigs`. The pipeline nodes are constructed only once
+    :meth:`build` is called.
+
+    Notes
+    -----
+    - Exactly one configuration path must be selected: only one of
+      :meth:`fromImgDetections` and :meth:`fromManipConfigs` can be used.
+    - Output frames are always resized to `outputSize` using the provided
+      `resizeMode` (default: ``CENTER_CROP``).
+    - In `fromImgDetections` mode, a :class:`dai.node.Script` node drives the
+      cropping by emitting one :class:`dai.ImageManipConfig` per detection.
+    - In `fromManipConfigs` mode, the `inputManipConfigs` stream **must**
+      output :class:`~depthai_nodes.message.collection.Collection` messages
+      containing only :class:`dai.ImageManipConfig` items.
+
+    Parameters
+    ----------
+    fromImgDetections(padding=0.0)
+        Optional padding factor applied around each detection region.
+    build(outputSize, resizeMode)
+        Sets the crop output size and the resize mode used by ImageManip.
+
+    Outputs
+    -------
+    out : dai.Node.Output
+        Stream of cropped :class:`dai.ImgFrame` messages. One output frame is
+        produced per crop configuration (per detection in `fromImgDetections`
+        mode; per item in the received `Collection` in `fromManipConfigs` mode).
+
+    See Also
+    --------
+    dai.node.ImageManip
+        Node used to perform cropping and resizing.
+    dai.ImageManipConfig
+        Cropping configuration messages forwarded to ImageManip.
+    dai.ImgDetections
+        Detection message type used in `fromImgDetections` mode.
+    Collection
+        Container type expected by `fromManipConfigs`.
     """
 
     SCRIPT_CONTENT = Template(
@@ -24,7 +79,7 @@ class FrameCropper(BaseThreadedHostNode):
                 # We receive 1 detection count message and image per frame
                 frame = node.inputs['inputImage'].get()
                 img_detections = node.inputs['inputImgDetections'].get()
-                for det in range(img_detections.detections):
+                for det in img_detections.detections:
                     cfg = dai.ImageManipConfig()
                     cfg.addCropRotatedRect(rect=det.getBoundingBox(), normalizedCoords=True)
                     cfg.setTimestamp(det.getTimestamp())
