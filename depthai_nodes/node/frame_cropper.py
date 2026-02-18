@@ -80,7 +80,7 @@ class FrameCropper(BaseThreadedHostNode):
                 frame = node.inputs['inputImage'].get()
                 img_detections = node.inputs['inputImgDetections'].get()
                 for det in img_detections.detections:
-                    cfg = dai.ImageManipConfig()
+                    cfg = ImageManipConfig()
                     cfg.addCropRotatedRect(rect=det.getBoundingBox(), normalizedCoords=True)
                     cfg.setTimestamp(det.getTimestamp())
                     cfg.setTimestampDevice(det.getTimestampDevice())
