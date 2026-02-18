@@ -75,6 +75,7 @@ class FrameCropper(BaseThreadedHostNode):
             OUT_HEIGHT = $OUT_HEIGHT
             PADDING = $PADDING
             FRAME_TYPE = ImgFrame.Type.$FRAME_TYPE
+            RESIZE_MODE = ImageManipConfig.ResizeMode.$RESIZE_MODE
             while True:
                 # We receive 1 detection count message and image per frame
                 frame = node.inputs['inputImage'].get()
@@ -86,6 +87,7 @@ class FrameCropper(BaseThreadedHostNode):
                     cfg.setTimestampDevice(img_detections.getTimestampDevice())
                     cfg.setSequenceNum(img_detections.getSequenceNum())
                     cfg.setOutputSize(OUT_WIDTH * OUT_HEIGHT * 3)
+                    cfg.setFrameType(FRAME_TYPE)
                     node.outputs['manip_cfg'].send(cfg)
                     node.outputs['manip_img'].send(frame)
     
@@ -168,13 +170,13 @@ class FrameCropper(BaseThreadedHostNode):
         self._cropper_image_manip.initialConfig.setOutputSize(*self._output_size, mode=resizeMode)
         self._cropper_image_manip.inputConfig.setWaitForMessage(waitForMessage=True)
         if self._input_img_detections is not None:
-            self._build_detections_cropper(input_image=inputImage)
+            self._build_detections_cropper(input_image=inputImage, resize_mode=resizeMode)
         else:
             self._build_frame_cropper()
         self._logger.debug("FrameCropper built")
         return self
 
-    def _build_detections_cropper(self, input_image: dai.Node.Output):
+    def _build_detections_cropper(self, input_image: dai.Node.Output, resize_mode: dai.ImageManipConfig.ResizeMode):
         self._script = self._pipeline.create(dai.node.Script)
         self._script.setScript(
             self.SCRIPT_CONTENT.substitute(
@@ -183,6 +185,7 @@ class FrameCropper(BaseThreadedHostNode):
                     "OUT_HEIGHT": self._output_size[1],
                     "PADDING": self._padding,
                     "FRAME_TYPE": self._img_frame_type.name,
+                    "RESIZE_MODE": resize_mode,
                 }
             )
         )
