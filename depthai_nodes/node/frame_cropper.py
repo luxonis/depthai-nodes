@@ -117,6 +117,11 @@ class FrameCropper(BaseThreadedHostNode):
         return self._cropper_image_manip.out
 
     def fromImgDetections(self, inputImgDetections: dai.Node.Output, padding: float = 0.) -> "FrameCropper":
+        """Configure cropping from an ImgDetections stream.
+
+        In this mode the node generates ImageManipConfig messages per detection (via Script)
+        and outputs one cropped ImgFrame per detection. `padding` expands the crop region.
+        """
         if self._version_selected is True:
             raise RuntimeError(
                 f"FrameCropper was already configured using the `fromManipConfigs` method. "
@@ -128,6 +133,11 @@ class FrameCropper(BaseThreadedHostNode):
         return self
 
     def fromManipConfigs(self, inputManipConfigs: dai.Node.Output) -> "FrameCropper":
+        """Configure cropping from a stream of precomputed ImageManipConfig collections.
+
+        Expects `inputManipConfigs` to output Collection[ImageManipConfig]. The node will
+        forward each config paired with the current frame to ImageManip.
+        """
         if self._version_selected is True:
             raise RuntimeError(
                 f"FrameCropper was already configured using the `fromManipConfig` method. "
@@ -143,6 +153,11 @@ class FrameCropper(BaseThreadedHostNode):
         outputSize: Tuple[int, int],
         resizeMode: dai.ImageManipConfig.ResizeMode = dai.ImageManipConfig.ResizeMode.CENTER_CROP,
     ) -> "FrameCropper":
+        """Build the internal pipeline and set output size / resize behavior.
+
+        Requires that exactly one configuration path was selected via `fromImgDetections`
+        or `fromManipConfigs` before calling. Returns `self` for fluent chaining.
+        """
         if self._version_selected is False:
             raise RuntimeError(
                 f"Configure the FrameCropper by calling one of the `fromImgDetections` or `fromManipConfigs` methods first."
