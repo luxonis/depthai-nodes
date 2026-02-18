@@ -2,6 +2,7 @@ from typing import Dict, List, Optional
 
 import depthai as dai
 
+from depthai_nodes.logging import get_logger
 from depthai_nodes.node.parsers import *
 from depthai_nodes.node.parsers.base_parser import BaseParser
 from depthai_nodes.node.parsers.utils import decode_head
@@ -13,7 +14,9 @@ class ParserGenerator(dai.node.ThreadedHostNode):
     The `build` method creates parsers based on the head information stored in the NN Archive. The method then returns a dictionary of these parsers.
     """
 
+    _logger = get_logger(__name__)
     DEVICE_PARSERS = ["YOLO", "SSD"]
+    DAI_SUPPORTED_YOLO_SUBTYPES = ["yolov6", "yolov8", "yolov10", "yolov6r2", "yolo-p", ]
 
     def build(
         self,
@@ -60,6 +63,17 @@ class ParserGenerator(dai.node.ThreadedHostNode):
                     parsers[index] = parser
                     continue
 
+            if parser_name in "YOLOExtendedParser":
+                yolo_subtype = head.metadata.subtype
+                if yolo_subtype is not None:
+                    if yolo_subtype in self.DAI_SUPPORTED_YOLO_SUBTYPES:
+                        parser = pipeline.create(dai.node.DetectionParser)
+                        parser.setNNArchive(nn_archive)
+                        parsers[index] = parser
+                        if head.metadata.maskOutputs is not None and pipeline.getDefaultDevice().getPlatform() == dai.Platform.RVC2:
+                            self._logger.warning("Segmentation based model on RVC2 device (OAK 1) detected. Segmentation mask processing will be done on the host machine.")
+                            parser.setRunOnHost(True)
+                        continue
             parser = globals().get(parser_name)
 
             if parser is None:
