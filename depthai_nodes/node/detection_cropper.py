@@ -1,3 +1,4 @@
+import warnings
 from typing import List, Tuple, Union
 
 import depthai as dai
@@ -36,6 +37,12 @@ except Exception as e:
 """
 
     def __init__(self):
+        warnings.warn(
+            f"DetectionCropper is deprecated and will be removed in future versions. "
+            f"Use FrameCropper instead.",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__()
         self._pipeline = self.getParentPipeline()
 

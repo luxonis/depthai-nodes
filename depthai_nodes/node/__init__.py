@@ -1,7 +1,9 @@
 from .apply_colormap import ApplyColormap
 from .apply_depth_colormap import ApplyDepthColormap
 from .base_host_node import BaseHostNode
+from .base_threaded_host_node import BaseThreadedHostNode
 from .depth_merger import DepthMerger
+from .frame_cropper import FrameCropper
 from .gather_data import GatherData
 from .host_parsing_neural_network import HostParsingNeuralNetwork
 from .host_spatials_calc import HostSpatialsCalc
@@ -75,4 +77,6 @@ __all__ = [
     "SnapsUploader",
     "BaseHostNode",
     "InstanceToSemanticMask",
+    "FrameCropper",
+    "BaseThreadedHostNode",
 ]
