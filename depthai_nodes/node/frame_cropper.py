@@ -187,6 +187,8 @@ class FrameCropper(BaseThreadedHostNode):
         )
         input_image.link(self._script.inputs["inputImage"])
         self._input_img_detections.link(self._script.inputs["inputImgDetections"])
+        self._script.outputs["manip_cfg"].link(self._cropper_image_manip.inputConfig)
+        self._script.outputs["manip_img"].link(self._cropper_image_manip.inputImage)
 
     def _build_frame_cropper(self, input_image: dai.Node.Output):
         self._image_input = self.createInput(blocking=True)
