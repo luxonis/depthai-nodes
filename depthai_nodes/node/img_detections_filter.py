@@ -1,11 +1,23 @@
-from typing import List
+import warnings
+from dataclasses import dataclass
+from typing import Any, Callable, List, Literal, Optional, Tuple
 
 import depthai as dai
 import numpy as np
 
-from depthai_nodes import ImgDetectionsExtended
 from depthai_nodes.message.utils import compute_area, copy_message
 from depthai_nodes.node.base_host_node import BaseHostNode
+
+
+@dataclass
+class _FilterCfg:
+    labels_to_keep: Optional[List[int]] = None
+    labels_to_reject: Optional[List[int]] = None
+    min_confidence: Optional[float] = None
+    min_area: Optional[float] = None
+    sort_desc: bool = True
+    sort_disabled: bool = True
+    first_k: Optional[int] = None
 
 
 class ImgDetectionsFilter(BaseHostNode):
@@ -33,170 +45,165 @@ class ImgDetectionsFilter(BaseHostNode):
 
     def __init__(self):
         super().__init__()
-        self._labels_to_keep = None
-        self._labels_to_reject = None
-        self._confidence_threshold = None
-        self._max_detections = None
-        self._sort_by_confidence = False
-        self._min_area = None
+        self._cfg = _FilterCfg()
         self._logger.debug("ImgDetectionsFilter initialized")
 
     def setLabels(self, labels: List[int], keep: bool) -> None:
-        if not isinstance(labels, list) and labels is not None:
-            raise ValueError("Labels must be a list or None.")
-        if not isinstance(keep, bool):
-            raise ValueError("keep must be a boolean.")
-
-        if keep:
-            self._labels_to_keep = labels
-            self._labels_to_reject = None
-        else:
-            self._labels_to_keep = None
-            self._labels_to_reject = labels
-
-        self._logger.debug(
-            f"Labels set to {self._labels_to_keep if keep else self._labels_to_reject}"
+        warnings.warn(
+            "setLabels() is deprecated; use keepLabels() or rejectLabels() instead.",
+            FutureWarning,
+            stacklevel=2,
         )
+        if keep:
+            self.keepLabels(labels=labels)
+        else:
+            self.rejectLabels(labels=labels)
 
-    def setConfidenceThreshold(self, confidence_threshold: float) -> None:
-        if (
-            not isinstance(confidence_threshold, float)
-            and confidence_threshold is not None
-        ):
-            raise ValueError("confidence_threshold must be a float.")
-        self._confidence_threshold = confidence_threshold
-        self._logger.debug(f"Confidence threshold set to {self._confidence_threshold}")
+    def setConfidenceThreshold(self, confidence_threshold: float | None) -> None:
+        warnings.warn(
+            "setConfidenceThreshold() is deprecated; use minConfidence() instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        self.minConfidence(threshold=confidence_threshold)
 
     def setMaxDetections(self, max_detections: int) -> None:
-        if not isinstance(max_detections, int) and max_detections is not None:
-            raise ValueError("max_detections must be an integer.")
-        self._max_detections = max_detections
-        self._logger.debug(f"Max detections set to {self._max_detections}")
+        warnings.warn(
+            "setMaxDetections() is deprecated; use takeFirstK() instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        self.takeFirstK(k=max_detections)
 
     def setSortByConfidence(self, sort_by_confidence: bool) -> None:
-        if not isinstance(sort_by_confidence, bool):
-            raise ValueError("sort_by_confidence must be a boolean.")
-        self._sort_by_confidence = sort_by_confidence
-        self._logger.debug(f"Sort by confidence set to {self._sort_by_confidence}")
+        warnings.warn(
+            "setSortByConfidence() is deprecated; use sortByConfidence(), enableSorting() and disableSorting() instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        if sort_by_confidence is True:
+            self.enableSorting()
+        else:
+            self.disableSorting()
 
     def setMinArea(self, min_area: float) -> None:
-        if min_area is not None:
-            if not isinstance(min_area, (float)):
-                raise ValueError("min_area must be a float.")
-            if min_area < 0:
-                raise ValueError("min_area must be non-negative.")
-        self._min_area = float(min_area) if min_area is not None else None
-        self._logger.debug(f"Minimum area set to {self._min_area}")
-
-    def build(
-        self,
-        msg: dai.Node.Output,
-        labels_to_keep: List[int] = None,
-        labels_to_reject: List[int] = None,
-        confidence_threshold: float = None,
-        max_detections: int = None,
-        sort_by_confidence: bool = False,
-        min_area: float = None,
-    ) -> "ImgDetectionsFilter":
-        self.link_args(msg)
-
-        if labels_to_keep is not None:
-            if labels_to_reject is not None:
-                raise ValueError(
-                    "Cannot set labels_to_keep and labels_to_reject at the same time."
-                )
-            else:
-                self.setLabels(labels_to_keep, keep=True)
-        else:
-            if labels_to_reject is not None:
-                self.setLabels(labels_to_reject, keep=False)
-
-        if confidence_threshold is not None:
-            self.setConfidenceThreshold(confidence_threshold)
-
-        if max_detections is not None:
-            self.setMaxDetections(max_detections)
-
-        if min_area is not None:
-            self.setMinArea(min_area)
-
-        self.setSortByConfidence(sort_by_confidence)
-
-        self._logger.debug(
-            f"ImgDetectionsFilter built with labels_to_keep={labels_to_keep}, "
-            f"labels_to_reject={labels_to_reject}, confidence_threshold={confidence_threshold}, "
-            f"max_detections={max_detections}, sort_by_confidence={sort_by_confidence}, "
-            f"min_area={min_area}"
+        warnings.warn(
+            "setMinArea() is deprecated; use minArea() instead.",
+            FutureWarning,
+            stacklevel=2,
         )
+        self.minArea(area=min_area)
 
+    def keepLabels(self, labels: list[int]) -> "ImgDetectionsFilter":
+        self._cfg.labels_to_keep = labels
+        if self._cfg.labels_to_reject is not None:
+            self._logger.warn(f"Removing labels to reject. Use either `keepLabels` or `rejectLabels` but not both.")
+            self._cfg.labels_to_reject = None
+        return self
+
+    def rejectLabels(self, labels: list[int]) -> "ImgDetectionsFilter":
+        self._cfg.labels_to_reject = labels
+        if self._cfg.labels_to_keep is not None:
+            self._logger.warn(f"Removing labels to keep. Use either `keepLabels` or `rejectLabels` but not both.")
+            self._cfg.labels_to_keep = None
+        return self
+
+    def minConfidence(self, threshold: float) -> "ImgDetectionsFilter":
+        self._cfg.min_confidence = threshold
+        return self
+
+    def minArea(self, area: float) -> "ImgDetectionsFilter":
+        self._cfg.min_area = area
+        return self
+
+    def sortByConfidence(self, *, desc: bool = True) -> "ImgDetectionsFilter":
+        """Enable sorting by confidence (before top-k). Set direction via `desc`."""
+        self._cfg.sort_enabled = True
+        self._cfg.sort_desc = desc
+        return self
+
+    def enableSorting(self) -> "ImgDetectionsFilter":
+        """Enable sorting using the last configured sort settings."""
+        self._cfg.sort_enabled = True
+        return self
+
+    def disableSorting(self) -> "ImgDetectionsFilter":
+        """Disable sorting but keep the last configured sort settings."""
+        self._cfg.sort_enabled = False
+        return self
+
+    def takeFirstK(self, k: Optional[int]):
+        self._cfg.first_k = k
+        return self
+
+    def build(self, msg: dai.Node.Output) -> "ImgDetectionsFilter":
+        self.link_args(msg)
+        self._logger.debug(self._plan_string())
         return self
 
     def process(self, msg: dai.Buffer) -> None:
-        self._logger.debug("Processing new input")
-        assert isinstance(
-            msg,
-            (
-                dai.ImgDetections,
-                ImgDetectionsExtended,
-                dai.SpatialImgDetections,
-            ),
-        )
-
+        assert isinstance(msg, (dai.ImgDetections, dai.SpatialImgDetections))
         msg_new = copy_message(msg)
-        assert isinstance(
-            msg_new,
-            (
-                dai.ImgDetections,
-                ImgDetectionsExtended,
-                dai.SpatialImgDetections,
-            ),
-        )
+        assert isinstance(msg_new, (dai.ImgDetections, dai.SpatialImgDetections))
 
+        filtered_detections, filtered_out_ixs = self._filter_step(detections=msg.detections)
+        sorted_detections = self._sorting_step(detections=filtered_detections)
+        # Take first K step
+        msg_new.detections = sorted_detections[: self._cfg.first_k]
+
+        # Remove classes of filtered out detections
+        if isinstance(msg, dai.ImgDetections):
+            msg_new = self._update_segmentation_mask(msg_new=msg_new, filtered_out_ixs=filtered_out_ixs)
+
+        self.out.send(msg_new)
+
+    def _plan_string(self) -> str:
+        return f"ImgDetectionsFilter plan: filter -> sort({self._cfg.sort}) -> take_first_k({self._cfg.first_k})"
+
+    def _filter_step(
+            self,
+            detections: List[dai.ImgDetection | dai.SpatialImgDetection],
+    ) -> Tuple[List[dai.ImgDetection | dai.SpatialImgDetection], List[int]]:
         filtered_detections = []
         filtered_out_ixs: List[int] = []
-        for ix, detection in enumerate(msg.detections):
-            if self._labels_to_keep is not None:
-                if detection.label not in self._labels_to_keep:
+        for ix, detection in enumerate(detections):
+            if self._cfg.labels_to_keep is not None:
+                if detection.label not in self._cfg.labels_to_keep:
                     filtered_out_ixs.append(ix)
                     continue
 
-            if self._labels_to_reject is not None:
-                if detection.label in self._labels_to_reject:
+            elif self._cfg.labels_to_reject is not None:
+                if detection.label in self._cfg.labels_to_reject:
                     filtered_out_ixs.append(ix)
                     continue
 
-            if self._confidence_threshold is not None:
-                if detection.confidence < self._confidence_threshold:
+            if self._cfg.min_confidence is not None:
+                if detection.confidence < self._cfg.min_confidence:
                     filtered_out_ixs.append(ix)
                     continue
 
-            if self._min_area is not None:
+            if self._cfg.min_area is not None:
                 area = compute_area(detection)
-                if area < self._min_area:
+                if area < self._cfg.min_area:
                     filtered_out_ixs.append(ix)
                     continue
 
             filtered_detections.append(detection)
+        return filtered_detections, filtered_out_ixs
 
-        if self._sort_by_confidence:
-            filtered_detections = sorted(
-                filtered_detections, key=lambda x: x.confidence, reverse=True
+    def _sorting_step(self, detections: List[dai.ImgDetection | dai.SpatialImgDetection]) -> List[dai.ImgDetection | dai.SpatialImgDetection]:
+        if self._cfg.sort is not "none":
+            reverse = self._cfg.sort == "confidence_desc"
+            sorted_detections = sorted(
+                detections, key=lambda x: x.confidence, reverse=reverse
             )
+            return sorted_detections
+        return detections
 
-        if isinstance(msg, ImgDetectionsExtended):
-            masks = msg.masks
-            if masks is not None:
-                masks = np.where(np.isin(masks, filtered_out_ixs), -1, masks)
-                msg_new.masks = masks
-
-        if isinstance(msg, dai.ImgDetections):
-            mask = msg.getCvSegmentationMask()
-            if mask is not None:
-                mask = np.where(np.isin(mask, filtered_out_ixs), 255, mask)
-                msg_new.setCvSegmentationMask(mask)
-
-        msg_new.detections = filtered_detections[: self._max_detections]
-
-        self._logger.debug("Detections message created")
-        self.out.send(msg_new)
-        self._logger.debug("Message sent successfully")
+    @staticmethod
+    def _update_segmentation_mask(msg_new, filtered_out_ixs: List[int]):
+        mask = msg_new.getCvSegmentationMask()
+        if mask is not None:
+            mask = np.where(np.isin(mask, filtered_out_ixs), 255, mask)
+            msg_new.setCvSegmentationMask(mask)
+        return msg_new
