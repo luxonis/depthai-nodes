@@ -70,6 +70,12 @@ class FrameCropper(BaseThreadedHostNode):
 
     SCRIPT_CONTENT = Template(
         """
+        def pad_rotated_rect(rot: RotatedRect, p: float) -> RotatedRect:
+            return RotatedRect(
+                rot.center,
+                Size2f(width=rot.size.width + 2*p, height=rot.size.height + 2*p),
+                rot.angle
+            )
         try:
             OUT_WIDTH = $OUT_WIDTH
             OUT_HEIGHT = $OUT_HEIGHT
@@ -82,7 +88,7 @@ class FrameCropper(BaseThreadedHostNode):
                 img_detections = node.inputs['inputImgDetections'].get()
                 for det in img_detections.detections:
                     cfg = ImageManipConfig()
-                    cfg.addCropRotatedRect(rect=det.getBoundingBox(), normalizedCoords=True)
+                    cfg.addCropRotatedRect(rect=pad_rotated_rect(det.getBoundingBox(), PADDING), normalizedCoords=True)
                     cfg.setTimestamp(img_detections.getTimestamp())
                     cfg.setTimestampDevice(img_detections.getTimestampDevice())
                     cfg.setSequenceNum(img_detections.getSequenceNum())
