@@ -70,7 +70,6 @@ class FrameCropper(BaseThreadedHostNode):
 
     SCRIPT_CONTENT = Template(
         """
-        import math
         try:
             OUT_WIDTH = $OUT_WIDTH
             OUT_HEIGHT = $OUT_HEIGHT
