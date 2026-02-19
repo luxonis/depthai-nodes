@@ -384,9 +384,9 @@ def _apply_conf_and_topk(
     cls_ids = cls_ids[topk_idx]
     aux_kept = aux_kept[topk_idx] if aux_kept is not None else None
 
-    results = np.concatenate(
-        [boxes, conf[:, None], cls_ids[:, None]], axis=1
-    ).astype(np.float32)
+    results = np.concatenate([boxes, conf[:, None], cls_ids[:, None]], axis=1).astype(
+        np.float32
+    )
 
     return results, aux_kept
 
