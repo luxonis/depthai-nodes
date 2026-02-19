@@ -331,6 +331,66 @@ def parse_kpts(
     return kps
 
 
+def _apply_conf_and_topk(
+    boxes: np.ndarray,
+    conf: np.ndarray,
+    cls_ids: np.ndarray,
+    conf_threshold: float,
+    max_det: int,
+    auxiliary: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    """Apply confidence threshold and top-k filtering.
+
+    @param boxes: Bounding boxes array (A, 4).
+    @type boxes: np.ndarray
+    @param conf: Pre-computed confidence scores (A,).
+    @type conf: np.ndarray
+    @param cls_ids: Class indices (A,).
+    @type cls_ids: np.ndarray
+    @param conf_threshold: Confidence threshold.
+    @type conf_threshold: float
+    @param max_det: Maximum number of detections.
+    @type max_det: int
+    @param auxiliary: generic parameter for task-specific data (mask coefficients for
+        segmentation and keypoints for pose) to be filtered according to the detections
+    @type auxiliary: Optional[np.ndarray]
+    @return: Tuple of (results array (K, 6), filtered auxiliary or None).
+    @rtype: Tuple[np.ndarray, Optional[np.ndarray]]
+    """
+    keep = conf >= conf_threshold
+
+    if not np.any(keep):
+        aux_shape = (0,) + auxiliary.shape[1:] if auxiliary is not None else None
+        return np.zeros((0, 6), dtype=np.float32), (
+            np.zeros(aux_shape, dtype=np.float32) if aux_shape else None
+        )
+
+    keep_indices = np.where(keep)[0]
+    boxes = boxes[keep]
+    conf = conf[keep]
+    cls_ids = cls_ids[keep]
+    aux_kept = auxiliary[keep_indices] if auxiliary is not None else None
+
+    k = min(max_det, conf.shape[0])
+    if conf.shape[0] > k:
+        topk_idx = np.argpartition(-conf, k - 1)[:k]
+        order = np.argsort(-conf[topk_idx])
+        topk_idx = topk_idx[order]
+    else:
+        topk_idx = np.argsort(-conf)
+
+    boxes = boxes[topk_idx]
+    conf = conf[topk_idx]
+    cls_ids = cls_ids[topk_idx]
+    aux_kept = aux_kept[topk_idx] if aux_kept is not None else None
+
+    results = np.concatenate(
+        [boxes, conf[:, None], cls_ids[:, None]], axis=1
+    ).astype(np.float32)
+
+    return results, aux_kept
+
+
 def decode_yolo26(
     raw: np.ndarray,
     conf_threshold: float,
@@ -364,37 +424,10 @@ def decode_yolo26(
     conf = det_results[:, 4]  # pre-computed ReduceMax confidence
     cls_ids = det_results[:, 5:].argmax(axis=-1).astype(np.float32)
 
-    keep = conf >= conf_threshold
-    if not np.any(keep):
-        aux_shape = (0,) + extra.shape[1:] if extra is not None else None
-        return np.zeros((0, 6), dtype=np.float32), (
-            np.zeros(aux_shape, dtype=np.float32) if aux_shape else None
-        )
-
-    keep_indices = np.where(keep)[0]
-    boxes = boxes[keep]
-    conf = conf[keep]
-    cls_ids = cls_ids[keep]
-    aux_kept = extra[keep_indices] if extra is not None else None
-
-    k = min(max_det, conf.shape[0])
-    if conf.shape[0] > k:
-        topk_idx = np.argpartition(-conf, k - 1)[:k]
-        order = np.argsort(-conf[topk_idx])
-        topk_idx = topk_idx[order]
-    else:
-        topk_idx = np.argsort(-conf)
-
-    boxes = boxes[topk_idx]
-    conf = conf[topk_idx]
-    cls_ids = cls_ids[topk_idx]
-    aux_kept = aux_kept[topk_idx] if aux_kept is not None else None
-
-    results = np.concatenate(
-        [boxes, conf[:, None], cls_ids[:, None]], axis=1
-    ).astype(np.float32)
-
-    return results, aux_kept
+    results, kept_extra = _apply_conf_and_topk(
+        boxes, conf, cls_ids, conf_threshold, max_det, extra
+    )
+    return results, kept_extra
 
 
 def decode_yolo_output(
