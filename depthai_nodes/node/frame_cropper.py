@@ -87,10 +87,7 @@ class FrameCropper(BaseThreadedHostNode):
                 frame = node.inputs['inputImage'].get()
                 img_detections = node.inputs['inputImgDetections'].get()
                 for det in img_detections.detections:
-                    try:
-                        rot_rect = det.getBoundingBox()
-                    except:
-                        rot_rect = det.boundingBox
+                    rot_rect = det.getBoundingBox()
                     cfg = ImageManipConfig()
                     cfg.addCropRotatedRect(rect=pad_rotated_rect(rot_rect, PADDING), normalizedCoords=True)
                     cfg.setTimestamp(img_detections.getTimestamp())
