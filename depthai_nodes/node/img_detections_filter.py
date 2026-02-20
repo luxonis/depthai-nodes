@@ -192,10 +192,9 @@ class ImgDetectionsFilter(BaseHostNode):
         return filtered_detections, filtered_out_ixs
 
     def _sorting_step(self, detections: List[dai.ImgDetection | dai.SpatialImgDetection]) -> List[dai.ImgDetection | dai.SpatialImgDetection]:
-        if self._cfg.sort is not "none":
-            reverse = self._cfg.sort == "confidence_desc"
+        if not self._cfg.sort_disabled:
             sorted_detections = sorted(
-                detections, key=lambda x: x.confidence, reverse=reverse
+                detections, key=lambda x: x.confidence, reverse=self._cfg.sort_desc
             )
             return sorted_detections
         return detections
