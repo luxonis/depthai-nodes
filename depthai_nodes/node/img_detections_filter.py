@@ -158,7 +158,8 @@ class ImgDetectionsFilter(BaseHostNode):
         self.out.send(msg_new)
 
     def _plan_string(self) -> str:
-        return f"ImgDetectionsFilter plan: filter -> sort({self._cfg.sort}) -> take_first_k({self._cfg.first_k})"
+        return (f"ImgDetectionsFilter plan: filter -> sort(enabled: {not self._cfg.sort_disabled}, descending order: {self._cfg.sort_desc})"
+                f" -> take_first_k({self._cfg.first_k})")
 
     def _filter_step(
             self,
