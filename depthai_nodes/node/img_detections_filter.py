@@ -1,6 +1,6 @@
 import warnings
 from dataclasses import dataclass
-from typing import Any, Callable, List, Literal, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import depthai as dai
 import numpy as np
