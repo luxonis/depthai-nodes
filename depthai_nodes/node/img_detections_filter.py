@@ -136,8 +136,8 @@ class ImgDetectionsFilter(BaseHostNode):
         self._cfg.first_k = k
         return self
 
-    def build(self, msg: dai.Node.Output) -> "ImgDetectionsFilter":
-        self.link_args(msg)
+    def build(self, input: dai.Node.Output) -> "ImgDetectionsFilter":
+        self.link_args(input)
         self._logger.debug(self._plan_string())
         return self
 
