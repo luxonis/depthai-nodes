@@ -8,8 +8,8 @@ from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
 
 
 class FrameCropper(BaseThreadedHostNode):
-    """A host node that crops detection regions from frames and outputs one
-    cropped :class:`dai.ImgFrame` per region.
+    """A host node that crops detection regions from frames and outputs one cropped
+    :class:`dai.ImgFrame` per region.
 
     `FrameCropper` is a convenience wrapper around an internal
     :class:`dai.node.ImageManip` configured for cropping + resizing. It supports
@@ -71,11 +71,13 @@ class FrameCropper(BaseThreadedHostNode):
     SCRIPT_CONTENT = Template(
         """
         def pad_rotated_rect(rot: RotatedRect, p: float) -> RotatedRect:
-            return RotatedRect(
-                rot.center,
-                Size2f(width=rot.size.width + 2*p, height=rot.size.height + 2*p),
-                rot.angle
-            )
+            new_rect = RotatedRect()
+            new_rect.center.x = rot.center.x
+            new_rect.center.y = rot.center.y
+            new_rect.size.width = rot.size.width + 2*p
+            new_rect.size.height = rot.size.height + 2*p
+            new_rect.angle = rot.angle
+            return new_rect
         try:
             OUT_WIDTH = $OUT_WIDTH
             OUT_HEIGHT = $OUT_HEIGHT
@@ -97,7 +99,7 @@ class FrameCropper(BaseThreadedHostNode):
                     cfg.setFrameType(FRAME_TYPE)
                     node.outputs['manip_cfg'].send(cfg)
                     node.outputs['manip_img'].send(frame)
-    
+
         except Exception as e:
             node.error(str(e))
         """
@@ -126,7 +128,9 @@ class FrameCropper(BaseThreadedHostNode):
     def out(self):
         return self._cropper_image_manip.out
 
-    def fromImgDetections(self, inputImgDetections: dai.Node.Output, padding: float = 0.) -> "FrameCropper":
+    def fromImgDetections(
+        self, inputImgDetections: dai.Node.Output, padding: float = 0.0
+    ) -> "FrameCropper":
         """Configure cropping from an ImgDetections stream.
 
         In this mode the node generates ImageManipConfig messages per detection (via Script)
@@ -134,8 +138,8 @@ class FrameCropper(BaseThreadedHostNode):
         """
         if self._version_selected is True:
             raise RuntimeError(
-                f"FrameCropper was already configured using the `fromManipConfigs` method. "
-                f"Only one of `fromImgDetections` and `fromManipConfigs` can be used."
+                "FrameCropper was already configured using the `fromManipConfigs` method. "
+                "Only one of `fromImgDetections` and `fromManipConfigs` can be used."
             )
         self._version_selected = True
         self._input_img_detections = inputImgDetections
@@ -150,8 +154,8 @@ class FrameCropper(BaseThreadedHostNode):
         """
         if self._version_selected is True:
             raise RuntimeError(
-                f"FrameCropper was already configured using the `fromManipConfig` method. "
-                f"Only one of `fromImgDetections` and `fromManipConfigs` can be used."
+                "FrameCropper was already configured using the `fromManipConfig` method. "
+                "Only one of `fromImgDetections` and `fromManipConfigs` can be used."
             )
         self._version_selected = True
         self._input_manip_configs = inputManipConfigs
@@ -170,20 +174,28 @@ class FrameCropper(BaseThreadedHostNode):
         """
         if self._version_selected is False:
             raise RuntimeError(
-                f"Configure the FrameCropper by calling one of the `fromImgDetections` or `fromManipConfigs` methods first."
+                "Configure the FrameCropper by calling one of the `fromImgDetections` or `fromManipConfigs` methods first."
             )
         self._output_size = outputSize
-        self._cropper_image_manip.setMaxOutputFrameSize(self._output_size[0] * self._output_size[1] * 3)
-        self._cropper_image_manip.initialConfig.setOutputSize(*self._output_size, mode=resizeMode)
+        self._cropper_image_manip.setMaxOutputFrameSize(
+            self._output_size[0] * self._output_size[1] * 3
+        )
+        self._cropper_image_manip.initialConfig.setOutputSize(
+            *self._output_size, mode=resizeMode
+        )
         self._cropper_image_manip.inputConfig.setWaitForMessage(waitForMessage=True)
         if self._input_img_detections is not None:
-            self._build_detections_cropper(input_image=inputImage, resize_mode=resizeMode)
+            self._build_detections_cropper(
+                input_image=inputImage, resize_mode=resizeMode
+            )
         else:
             self._build_frame_cropper()
         self._logger.debug("FrameCropper built")
         return self
 
-    def _build_detections_cropper(self, input_image: dai.Node.Output, resize_mode: dai.ImageManipConfig.ResizeMode):
+    def _build_detections_cropper(
+        self, input_image: dai.Node.Output, resize_mode: dai.ImageManipConfig.ResizeMode
+    ):
         self._script = self._pipeline.create(dai.node.Script)
         self._script.setScript(
             self.SCRIPT_CONTENT.substitute(
@@ -216,14 +228,18 @@ class FrameCropper(BaseThreadedHostNode):
         if self._input_img_detections is not None:
             return
         image: dai.ImgFrame = self._image_input.get()  # noqa
-        manip_configs: Collection[dai.ImageManipConfig] = self._manip_configs_input.get()  # noqa
-        assert isinstance(manip_configs, Collection), \
-            (f"When FrameCropper is configured using `fromManipConfigs` the `inputManipConfigs` must output messages of type `Collection`."
-             f" Received: {type(manip_configs)}")
+        manip_configs: Collection[
+            dai.ImageManipConfig
+        ] = self._manip_configs_input.get()  # noqa
+        assert isinstance(manip_configs, Collection), (
+            f"When FrameCropper is configured using `fromManipConfigs` the `inputManipConfigs` must output messages of type `Collection`."
+            f" Received: {type(manip_configs)}"
+        )
 
         for manip_config in manip_configs.items:
-            assert isinstance(manip_config, dai.ImageManipConfig), \
-                (f"FrameCropper configured using `fromManipConfigs` needs the `Collection` message to contain only `ImageManipConfig`s. "
-                 f"Received {[type(m) for m in manip_configs.items]}")
+            assert isinstance(manip_config, dai.ImageManipConfig), (
+                f"FrameCropper configured using `fromManipConfigs` needs the `Collection` message to contain only `ImageManipConfig`s. "
+                f"Received {[type(m) for m in manip_configs.items]}"
+            )
             self._config_output.send(manip_config)
             self._image_output.send(image)
