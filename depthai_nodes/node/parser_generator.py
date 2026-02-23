@@ -17,21 +17,22 @@ class ParserGenerator(dai.node.ThreadedHostNode):
 
     _logger = get_logger(__name__)
     DEVICE_PARSERS = ["YOLO", "SSD"]
-    DAI_SUPPORTED_YOLO_SUBTYPES = [YOLOSubtype.V3,
-                                      YOLOSubtype.V3T,
-                                      YOLOSubtype.V3UT,
-                                      YOLOSubtype.V5,
-                                      YOLOSubtype.V5U,
-                                      YOLOSubtype.V6,
-                                      YOLOSubtype.V6R1,
-                                      YOLOSubtype.V6R2,
-                                      YOLOSubtype.V7,
-                                      YOLOSubtype.V8,
-                                      YOLOSubtype.V9,
-                                      YOLOSubtype.V10,
-                                      YOLOSubtype.P,
-                                      YOLOSubtype.GOLD
-                                      ]
+    DAI_SUPPORTED_YOLO_SUBTYPES = [
+        YOLOSubtype.V3,
+        YOLOSubtype.V3T,
+        YOLOSubtype.V3UT,
+        YOLOSubtype.V5,
+        YOLOSubtype.V5U,
+        YOLOSubtype.V6,
+        YOLOSubtype.V6R1,
+        YOLOSubtype.V6R2,
+        YOLOSubtype.V7,
+        YOLOSubtype.V8,
+        YOLOSubtype.V9,
+        YOLOSubtype.V10,
+        YOLOSubtype.P,
+        YOLOSubtype.GOLD,
+    ]
 
     def build(
         self,
@@ -88,7 +89,9 @@ class ParserGenerator(dai.node.ThreadedHostNode):
                         parser.setNNArchive(nn_archive)
                         parsers[index] = parser
                         if head.metadata.maskOutputs is not None and is_rvc2_device:
-                            self._logger.warning("Segmentation based model detected with RVC2 device. Parsing will be done on the host machine.")
+                            self._logger.warning(
+                                "Segmentation based model detected with RVC2 device. Parsing will be done on the host machine."
+                            )
                             parser.setRunOnHost(True)
                         continue
             parser = globals().get(parser_name)
