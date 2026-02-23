@@ -45,10 +45,13 @@ try:
 
         for i, det in enumerate(dets.detections):
             cfg = ImageManipConfig()
-            rect = det.getBoundingBox()
-            rect.size.width += rect.size.width * {padding} * 2
-            rect.size.height += rect.size.height * {padding} * 2
+            rect = RotatedRect()
 
+            rect.center.x = (det.xmin + det.xmax) / 2
+            rect.center.y = (det.ymin + det.ymax) / 2
+            rect.size.width = (det.xmax - det.xmin) + {padding} * 2
+            rect.size.height = (det.ymax - det.ymin) + {padding} * 2
+            rect.angle = 0
 
             # Detect zero-area detections and issue an error
             if rect.size.width <= 0.0 or rect.size.height <= 0.0:
@@ -60,7 +63,6 @@ try:
 
             cfg.addCropRotatedRect(rect, True)
             cfg.setOutputSize({resize_width}, {resize_height}, ImageManipConfig.ResizeMode.{resize_mode})
-            node.warn("We have detections!")
             node.outputs['manip_cfg'].send(cfg)
             node.outputs['manip_img'].send(frame)
 
