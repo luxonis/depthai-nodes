@@ -71,13 +71,11 @@ class FrameCropper(BaseThreadedHostNode):
     SCRIPT_CONTENT = Template(
         """
         def pad_rotated_rect(rot: RotatedRect, p: float) -> RotatedRect:
-            new_rect = RotatedRect()
-            new_rect.center.x = rot.center.x
-            new_rect.center.y = rot.center.y
-            new_rect.size.width = rot.size.width + 2*p
-            new_rect.size.height = rot.size.height + 2*p
-            new_rect.angle = rot.angle
-            return new_rect
+            return RotatedRect(
+                rot.center,
+                Size2f(width=rot.size.width + 2*p, height=rot.size.height + 2*p, normalized=True),
+                rot.angle
+            )
         try:
             OUT_WIDTH = $OUT_WIDTH
             OUT_HEIGHT = $OUT_HEIGHT
