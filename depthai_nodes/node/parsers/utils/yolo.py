@@ -333,7 +333,8 @@ def parse_kpts(
 
 def _apply_conf_and_topk(
     boxes: np.ndarray,
-    scores: np.ndarray,
+    conf: np.ndarray,
+    cls_ids: np.ndarray,
     conf_threshold: float,
     max_det: int,
     auxiliary: Optional[np.ndarray] = None,
@@ -342,8 +343,10 @@ def _apply_conf_and_topk(
 
     @param boxes: Bounding boxes array (A, 4).
     @type boxes: np.ndarray
-    @param scores: Class scores array (A, nc).
-    @type scores: np.ndarray
+    @param conf: Pre-computed confidence scores (A,).
+    @type conf: np.ndarray
+    @param cls_ids: Class indices (A,).
+    @type cls_ids: np.ndarray
     @param conf_threshold: Confidence threshold.
     @type conf_threshold: float
     @param max_det: Maximum number of detections.
@@ -354,9 +357,7 @@ def _apply_conf_and_topk(
     @return: Tuple of (results array (K, 6), filtered auxiliary or None).
     @rtype: Tuple[np.ndarray, Optional[np.ndarray]]
     """
-    cls_ids = scores.argmax(axis=-1).astype(np.float32)
-    cls_scores = scores.max(axis=-1)
-    keep = cls_scores >= conf_threshold
+    keep = conf >= conf_threshold
 
     if not np.any(keep):
         aux_shape = (0,) + auxiliary.shape[1:] if auxiliary is not None else None
@@ -366,26 +367,26 @@ def _apply_conf_and_topk(
 
     keep_indices = np.where(keep)[0]
     boxes = boxes[keep]
-    cls_scores = cls_scores[keep]
+    conf = conf[keep]
     cls_ids = cls_ids[keep]
     aux_kept = auxiliary[keep_indices] if auxiliary is not None else None
 
-    k = min(max_det, cls_scores.shape[0])
-    if cls_scores.shape[0] > k:
-        topk_idx = np.argpartition(-cls_scores, k - 1)[:k]
-        order = np.argsort(-cls_scores[topk_idx])
+    k = min(max_det, conf.shape[0])
+    if conf.shape[0] > k:
+        topk_idx = np.argpartition(-conf, k - 1)[:k]
+        order = np.argsort(-conf[topk_idx])
         topk_idx = topk_idx[order]
     else:
-        topk_idx = np.argsort(-cls_scores)
+        topk_idx = np.argsort(-conf)
 
     boxes = boxes[topk_idx]
-    cls_scores = cls_scores[topk_idx]
+    conf = conf[topk_idx]
     cls_ids = cls_ids[topk_idx]
     aux_kept = aux_kept[topk_idx] if aux_kept is not None else None
 
-    results = np.concatenate(
-        [boxes, cls_scores[:, None], cls_ids[:, None]], axis=1
-    ).astype(np.float32)
+    results = np.concatenate([boxes, conf[:, None], cls_ids[:, None]], axis=1).astype(
+        np.float32
+    )
 
     return results, aux_kept
 
@@ -398,11 +399,13 @@ def decode_yolo26(
 ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
     """Decode YOLO26 output for detection, segmentation, or pose.
 
-    YOLO26 end2end output is already decoded (xyxy in pixels) but needs topk and conf
-    thresholding. Optionally filters an auxiliary tensor (mask coefficients or
-    keypoints) with the detections
+    YOLO26 end2end output is already decoded (xyxy in pixels) with a pre-computed
+    confidence score (ReduceMax over class scores). Needs topk and conf thresholding.
+    Optionally filters an auxiliary tensor (mask coefficients or keypoints) with the
+    detections.
 
-    @param raw: Raw detection tensor (N, A, 4+nc).
+    @param raw: Raw detection tensor (N, A, 5+nc) where columns are
+        [x1, y1, x2, y2, conf, cls_0, ..., cls_nc-1].
     @type raw: np.ndarray
     @param conf_threshold: Confidence threshold.
     @type conf_threshold: float
@@ -414,13 +417,15 @@ def decode_yolo26(
     @return: Tuple of (detection results (K, 6), kept auxiliary data (K, M) or None).
     @rtype: Tuple[np.ndarray, Optional[np.ndarray]]
     """
-    det_results = raw[0]  # (A, 4+nc)
+    det_results = raw[0]  # (A, 5+nc)
     extra = extra_raw[0] if extra_raw is not None else None
 
     boxes = det_results[:, :4]
-    scores = det_results[:, 4:]
+    conf = det_results[:, 4]  # pre-computed ReduceMax confidence
+    cls_ids = det_results[:, 5:].argmax(axis=-1).astype(np.float32)
+
     results, kept_extra = _apply_conf_and_topk(
-        boxes, scores, conf_threshold, max_det, extra
+        boxes, conf, cls_ids, conf_threshold, max_det, extra
     )
     return results, kept_extra
 
