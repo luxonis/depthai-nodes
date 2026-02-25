@@ -187,7 +187,7 @@ class FrameCropper(BaseThreadedHostNode):
                 input_image=inputImage, resize_mode=resizeMode
             )
         else:
-            self._build_frame_cropper()
+            self._build_frame_cropper(input_image=inputImage)
         self._logger.debug("FrameCropper built")
         return self
 
@@ -225,19 +225,20 @@ class FrameCropper(BaseThreadedHostNode):
     def run(self) -> None:
         if self._input_img_detections is not None:
             return
-        image: dai.ImgFrame = self._image_input.get()  # noqa
-        manip_configs: Collection[
-            dai.ImageManipConfig
-        ] = self._manip_configs_input.get()  # noqa
-        assert isinstance(manip_configs, Collection), (
-            f"When FrameCropper is configured using `fromManipConfigs` the `inputManipConfigs` must output messages of type `Collection`."
-            f" Received: {type(manip_configs)}"
-        )
-
-        for manip_config in manip_configs.items:
-            assert isinstance(manip_config, dai.ImageManipConfig), (
-                f"FrameCropper configured using `fromManipConfigs` needs the `Collection` message to contain only `ImageManipConfig`s. "
-                f"Received {[type(m) for m in manip_configs.items]}"
+        while self.isRunning():
+            image: dai.ImgFrame = self._image_input.get()  # noqa
+            manip_configs: Collection[
+                dai.ImageManipConfig
+            ] = self._manip_configs_input.get()  # noqa
+            assert isinstance(manip_configs, Collection), (
+                f"When FrameCropper is configured using `fromManipConfigs` the `inputManipConfigs` must output messages of type `Collection`."
+                f" Received: {type(manip_configs)}"
             )
-            self._config_output.send(manip_config)
-            self._image_output.send(image)
+
+            for manip_config in manip_configs.items:
+                assert isinstance(manip_config, dai.ImageManipConfig), (
+                    f"FrameCropper configured using `fromManipConfigs` needs the `Collection` message to contain only `ImageManipConfig`s. "
+                    f"Received {[type(m) for m in manip_configs.items]}"
+                )
+                self._config_output.send(manip_config)
+                self._image_output.send(image)
