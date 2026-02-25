@@ -2,9 +2,11 @@ from typing import Dict, List, Optional
 
 import depthai as dai
 
+from depthai_nodes.logging import get_logger
 from depthai_nodes.node.parsers import *
 from depthai_nodes.node.parsers.base_parser import BaseParser
 from depthai_nodes.node.parsers.utils import decode_head
+from depthai_nodes.node.parsers.utils.yolo import YOLOSubtype
 
 
 class ParserGenerator(dai.node.ThreadedHostNode):
@@ -13,7 +15,24 @@ class ParserGenerator(dai.node.ThreadedHostNode):
     The `build` method creates parsers based on the head information stored in the NN Archive. The method then returns a dictionary of these parsers.
     """
 
+    _logger = get_logger(__name__)
     DEVICE_PARSERS = ["YOLO", "SSD"]
+    DAI_SUPPORTED_YOLO_SUBTYPES = [
+        YOLOSubtype.V3,
+        YOLOSubtype.V3T,
+        YOLOSubtype.V3UT,
+        YOLOSubtype.V5,
+        YOLOSubtype.V5U,
+        YOLOSubtype.V6,
+        YOLOSubtype.V6R1,
+        YOLOSubtype.V6R2,
+        YOLOSubtype.V7,
+        YOLOSubtype.V8,
+        YOLOSubtype.V9,
+        YOLOSubtype.V10,
+        YOLOSubtype.P,
+        YOLOSubtype.GOLD,
+    ]
 
     def build(
         self,
@@ -47,6 +66,7 @@ class ParserGenerator(dai.node.ThreadedHostNode):
 
         parsers = {}
         pipeline = self.getParentPipeline()
+        is_rvc2_device = pipeline.getDefaultDevice().getPlatform() == dai.Platform.RVC2
 
         for index, head in zip(indexes, heads):
             parser_name = head.parser
@@ -60,6 +80,20 @@ class ParserGenerator(dai.node.ThreadedHostNode):
                     parsers[index] = parser
                     continue
 
+            if parser_name == "YOLOExtendedParser":
+                yolo_subtype_str = head.metadata.subtype
+                if yolo_subtype_str is not None:
+                    yolo_subtype = YOLOSubtype(yolo_subtype_str.lower())
+                    if yolo_subtype in self.DAI_SUPPORTED_YOLO_SUBTYPES:
+                        parser = pipeline.create(dai.node.DetectionParser)
+                        parser.setNNArchive(nn_archive)
+                        parsers[index] = parser
+                        if head.metadata.maskOutputs is not None and is_rvc2_device:
+                            self._logger.warning(
+                                "Segmentation based model detected with RVC2 device. Parsing will be done on the host machine."
+                            )
+                            parser.setRunOnHost(True)
+                        continue
             parser = globals().get(parser_name)
 
             if parser is None:
