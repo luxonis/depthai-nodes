@@ -17,11 +17,36 @@ class SnapsUploader(BaseHostNode):
         super().__init__()
         self._em = dai.EventsManager()
 
-    def set_token(self, token: str):
-        os.environ.setdefault("DEPTHAI_HUB_API_KEY", token)
+    def setToken(self, token: str):
+        os.environ["DEPTHAI_HUB_API_KEY"] = token
 
-    def set_url(self, url: str):
-        os.environ.setdefault("DEPTHAI_HUB_EVENTS_BASE_URL", url)
+    def setCacheDir(self, cacheDir: str):
+        """Set the cache directory for storing cached data.
+
+        By default, the cache directory is set to /internal/private
+        """
+
+        self._em.setCacheDir(cacheDir)
+        logger.info(f"Set cache directory to: {cacheDir}")
+
+    def setCacheIfCannotSend(self, cacheIfCannotUpload: bool):
+        """Set whether to cache data if it cannot be sent.
+
+        By default, cacheIfCannotSend is set to false
+        """
+
+        self._em.setCacheIfCannotSend(cacheIfCannotUpload)
+        logger.info(f"Cache snaps if they cannot be uploaded: {cacheIfCannotUpload}")
+
+    def setLogResponse(self, logResponse: bool):
+        """Set whether to log the responses from the server.
+
+        By default, logResponse is set to false. Logs are visible in DepthAI logs with
+        INFO level
+        """
+
+        self._em.setLogResponse(logResponse)
+        logger.info(f"Log server responses: {logResponse}")
 
     def build(self, snaps: dai.Node.Output):
         self.link_args(snaps)
@@ -30,17 +55,10 @@ class SnapsUploader(BaseHostNode):
     def process(self, snap: dai.Buffer):
         assert isinstance(snap, SnapData), f"Expected SnapData, got {type(snap)}"
 
-        logger.debug(f"Sending snap: {snap.snap_name} -> {snap.file_name}")
-        fileGroup = dai.FileGroup()
-        if snap.detections:
-            fileGroup.addImageDetectionsPair(
-                snap.file_name, snap.frame, snap.detections
-            )
-        else:
-            fileGroup.addFile(snap.file_name, snap.frame)
+        logger.debug(f"Sending snap: {snap.snap_name}")
         success = self._em.sendSnap(
             name=snap.snap_name,
-            fileGroup=fileGroup,
+            fileGroup=snap.file_group,
             tags=snap.tags,
             extras=snap.extras,
         )

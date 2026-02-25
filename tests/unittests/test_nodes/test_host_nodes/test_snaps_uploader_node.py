@@ -2,6 +2,7 @@ import os
 from unittest.mock import MagicMock
 
 import depthai as dai
+import numpy as np
 import pytest
 
 from depthai_nodes.message import SnapData
@@ -15,13 +16,7 @@ def frame() -> dai.ImgFrame:
     frame.setWidth(10)
     frame.setHeight(10)
     frame.setSequenceNum(1)
-
-    # Create dummy image data
-    import numpy as np
-
-    img = np.zeros((10, 10, 3), dtype=np.uint8)
-
-    frame.setData(img)
+    frame.setData(np.zeros((10, 10, 3), dtype=np.uint8))
     return frame
 
 
@@ -37,11 +32,11 @@ def detections() -> dai.ImgDetections:
 
 @pytest.fixture
 def snap_data(frame, detections) -> SnapData:
+    fg = dai.FileGroup()
+    fg.addImageDetectionsPair("test_snap_001", frame, detections)
     return SnapData(
         snap_name="test_snap",
-        file_name="test_snap_001.jpg",
-        frame=frame,
-        detections=detections,
+        file_group=fg,
         tags=["low_conf"],
         extras={"reason": "unit_test"},
     )
@@ -69,32 +64,56 @@ def test_build(uploader):
     uploader.build(mock_output)
 
 
-def test_set_token_and_url(monkeypatch):
+def test_environment_variable_setting(monkeypatch):
+    monkeypatch.delenv("DEPTHAI_HUB_API_KEY", raising=False)
+
     uploader = SnapsUploader()
+    uploader.setToken("my_token")
 
-    uploader.set_token("test_token")
-    assert os.environ["DEPTHAI_HUB_API_KEY"] == "test_token"
+    assert os.environ["DEPTHAI_HUB_API_KEY"] == "my_token"
 
-    uploader.set_url("test-url")
-    assert os.environ["DEPTHAI_HUB_EVENTS_BASE_URL"] == "test-url"
 
-    uploader.set_token("new_token")
-    assert os.environ["DEPTHAI_HUB_API_KEY"] == "test_token"
+def test_set_cache_dir(uploader, mock_snaps_uploader_logger):
+    uploader.setCacheDir("/custom/cache/path")
+
+    uploader._em.setCacheDir.assert_called_once_with("/custom/cache/path")
+    mock_snaps_uploader_logger.info.assert_called_with(
+        "Set cache directory to: /custom/cache/path"
+    )
+
+
+def test_set_cache_if_cannot_send(uploader, mock_snaps_uploader_logger):
+    uploader.setCacheIfCannotSend(True)
+
+    uploader._em.setCacheIfCannotSend.assert_called_once_with(True)
+    mock_snaps_uploader_logger.info.assert_called_with(
+        "Cache snaps if they cannot be uploaded: True"
+    )
+
+
+def test_set_log_response(uploader, mock_snaps_uploader_logger):
+    uploader.setLogResponse(True)
+
+    uploader._em.setLogResponse.assert_called_once_with(True)
+    mock_snaps_uploader_logger.info.assert_called_with("Log server responses: True")
 
 
 def test_process_success(uploader, snap_data, mock_snaps_uploader_logger):
-    """Test successful snap upload."""
     uploader._em.sendSnap.return_value = True
     uploader.process(snap_data)
 
-    uploader._em.sendSnap.assert_called_once()
+    uploader._em.sendSnap.assert_called_once_with(
+        name="test_snap",
+        fileGroup=snap_data.file_group,
+        tags=["low_conf"],
+        extras={"reason": "unit_test"},
+    )
     mock_snaps_uploader_logger.info.assert_called_with(
         "Snap 'test_snap' sent successfully."
     )
 
 
 def test_process_failure(uploader, snap_data, mock_snaps_uploader_logger):
-    """Test failed snap upload logging."""
     uploader._em.sendSnap.return_value = False
     uploader.process(snap_data)
 
@@ -104,19 +123,5 @@ def test_process_failure(uploader, snap_data, mock_snaps_uploader_logger):
 
 
 def test_process_invalid_type(uploader):
-    """Should raise if message is not SnapData."""
     with pytest.raises(AssertionError):
         uploader.process(dai.Buffer())
-
-
-def test_environment_variable_setting(monkeypatch):
-    """Test that set_token and set_url correctly set environment variables."""
-    monkeypatch.delenv("DEPTHAI_HUB_API_KEY", raising=False)
-    monkeypatch.delenv("DEPTHAI_HUB_EVENTS_BASE_URL", raising=False)
-
-    uploader = SnapsUploader()
-    uploader.set_token("my_token")
-    uploader.set_url("my_url")
-
-    assert os.environ["DEPTHAI_HUB_API_KEY"] == "my_token"
-    assert os.environ["DEPTHAI_HUB_EVENTS_BASE_URL"] == "my_url"
