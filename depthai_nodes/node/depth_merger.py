@@ -133,6 +133,35 @@ class DepthMerger(BaseHostNode):
 
         spatial_img_detection.confidence = detection.confidence
         spatial_img_detection.label = 0 if detection.label == -1 else detection.label
+        spatial_img_detection.labelName = (
+            detection.label_name
+            if isinstance(detection, ImgDetectionExtended)
+            else detection.labelName
+        )
+
+        if isinstance(detection, ImgDetectionExtended):
+            kpts = detection.keypoints
+            edges = detection.edges
+            edges = [[edge[0], edge[1]] for edge in edges]
+            kpts_transformed = []
+            for kp in kpts:
+                kpt = dai.Keypoint(kp.x, kp.y, kp.z)
+                if kp.confidence >= 0:
+                    kpt.confidence = kp.confidence
+                kpt.labelName = kp.label_name if kp.label_name is not None else ""
+                kpts_transformed.append(kpt)
+            spatial_img_detection.setKeypoints(kpts_transformed)
+            spatial_img_detection.setEdges(edges)
+
+        elif isinstance(detection, dai.ImgDetection):
+            spatial_img_detection.setKeypoints(detection.getKeypoints())
+            spatial_img_detection.setEdges(detection.getEdges())
+
+        else:
+            raise ValueError(
+                f"Unknown detection type: {type(detection)}, expected ImgDetectionExtended or dai.ImgDetection"
+            )
+
         return spatial_img_detection
 
     def _detections_to_spatial(

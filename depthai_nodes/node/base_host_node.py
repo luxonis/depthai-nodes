@@ -1,4 +1,4 @@
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 
 import depthai as dai
 
@@ -37,5 +37,6 @@ class BaseHostNode(dai.node.HostNode, metaclass=CombinedMeta):
 
         self._logger = get_logger(self.__class__.__name__)
 
-    def process(self) -> None:
+    @abstractmethod
+    def process(self, *msgs: dai.Buffer) -> None:
         pass

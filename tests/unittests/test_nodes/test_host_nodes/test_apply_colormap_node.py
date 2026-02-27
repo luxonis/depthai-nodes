@@ -127,7 +127,13 @@ def test_processing(
 
         assert isinstance(arr_colored, dai.ImgFrame)
         assert arr_colored.getCvFrame().shape == (HEIGHT, WIDTH, 3)
+
+        modified_arr = (
+            np.where(ARR == 255, 0, ARR + 1)
+            if isinstance(arr, dai.ImgDetections)
+            else ARR
+        )
         assert np.array_equal(
             arr_colored.getCvFrame(),
-            apply_colormap(ARR, make_colormap(colormap_value)),
+            apply_colormap(modified_arr, make_colormap(colormap_value)),
         )

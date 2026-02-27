@@ -35,9 +35,9 @@ class DetectionParser(BaseParser):
 
     Output Message/s
         -------
-        **Type**: ImgDetectionsExtended
+        **Type**: dai.ImgDetections
 
-        **Description**: ImgDetectionsExtended message containing bounding boxes and confidence scores of detected objects.
+        **Description**: dai.ImgDetections message containing bounding boxes and confidence scores of detected objects.
     ----------------
     """
 
@@ -77,7 +77,7 @@ class DetectionParser(BaseParser):
         self.conf_threshold = threshold
         self._logger.debug(f"Confidence threshold updated to {threshold}")
 
-    def setIOUThreshold(self, threshold: float) -> None:
+    def setIouThreshold(self, threshold: float) -> None:
         """Sets the non-maximum suppression threshold.
 
         @param threshold: Non-maximum suppression threshold.
@@ -177,7 +177,9 @@ class DetectionParser(BaseParser):
                 bboxes = np.array([])
                 scores = np.array([])
 
-            message = create_detection_message(bboxes=bboxes, scores=scores)
+            message = create_detection_message(
+                bboxes=bboxes, scores=scores, label_names=self.label_names
+            )
             transformation = output.getTransformation()
             if transformation is not None:
                 message.setTransformation(transformation)

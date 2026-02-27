@@ -6,9 +6,20 @@ import pytest
 
 from depthai_nodes.message import GatheredData
 from depthai_nodes.node.gather_data import GatherData
-from tests.utils import PipelineMock, create_img_detections
+from tests.utils import OutputMock, PipelineMock, create_img_detections
 
 DIFFERENT_TESTS = 3  # used for stability tests
+
+
+class LinkTrackingOutputMock(OutputMock):
+    """OutputMock that remembers what it was linked to."""
+
+    def __init__(self):
+        super().__init__()
+        self.linked_to = None
+
+    def link(self, node):
+        self.linked_to = node
 
 
 @pytest.fixture
@@ -81,19 +92,23 @@ def old_img_detections(old_reference_timestamp):
 
 
 def setup_gather_data_node(generator, fps, duration=None):
-    gather_data = generator.build(camera_fps=fps)
+    input_data = LinkTrackingOutputMock()
+    input_reference = LinkTrackingOutputMock()
+    gather_data = generator.build(
+        camera_fps=fps, input_data=input_data, input_reference=input_reference
+    )
     if duration is not None:
         modified_duration = duration / DIFFERENT_TESTS
-        gather_data.input_data._queue.duration = modified_duration
-        gather_data.input_reference._queue.duration = modified_duration
+        gather_data._data_input._queue.duration = modified_duration
+        gather_data._reference_input._queue.duration = modified_duration
     return gather_data
 
 
 def send_data_and_run(gather_data, reference_data, data_items, checking_function=None):
     gather_data.out.createOutputQueue(checking_function=checking_function)
-    gather_data.input_reference.send(reference_data)
+    gather_data._reference_input.send(reference_data)
     for item in data_items:
-        gather_data.input_data.send(item)
+        gather_data._data_input.send(item)
     gather_data.run()
 
 
@@ -140,12 +155,25 @@ def assert_gather_data_result(
         assert isinstance(gathered, dai.Buffer)
 
 
-def test_build(gather_data_generator, fps):
-    with pytest.raises(ValueError):
-        gather_data_generator.build(camera_fps=-fps)
+def test_build_missing_required_args(gather_data_generator, fps):
+    with pytest.raises(TypeError):
+        gather_data_generator.build(camera_fps=fps)
 
-    gather_data = gather_data_generator.build(camera_fps=fps)
+
+def test_build(gather_data_generator, fps):
+    input_data = LinkTrackingOutputMock()
+    input_reference = LinkTrackingOutputMock()
+    with pytest.raises(ValueError):
+        gather_data_generator.build(
+            camera_fps=-fps, input_data=input_data, input_reference=input_reference
+        )
+
+    gather_data = gather_data_generator.build(
+        camera_fps=fps, input_data=input_data, input_reference=input_reference
+    )
     assert gather_data is not None
+    assert input_data.linked_to is gather_data._data_input
+    assert input_reference.linked_to is gather_data._reference_input
 
 
 def test_run_without_build(gather_data_generator):
@@ -194,7 +222,7 @@ def test_set_wait_count_fn(gather_data_generator, fps, duration, nn_data_in_tole
     gather_data = setup_gather_data_node(
         generator=gather_data_generator, fps=fps, duration=duration
     )
-    gather_data.set_wait_count_fn(lambda _: 1)
+    gather_data.setWaitCountFn(lambda _: 1)
     send_data_and_run(
         gather_data=gather_data,
         reference_data=nn_data_in_tolerance,
@@ -219,8 +247,8 @@ def test_clear_old_data(
     gather_data = setup_gather_data_node(
         generator=gather_data_generator, fps=fps, duration=duration
     )
-    gather_data.input_reference.send(old_img_detections)
-    gather_data.input_reference.send(img_detections)
+    gather_data._reference_input.send(old_img_detections)
+    gather_data._reference_input.send(img_detections)
     data_items = [nn_data_in_tolerance, nn_data_in_tolerance]
     send_data_and_run(
         gather_data=gather_data,

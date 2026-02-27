@@ -5,6 +5,7 @@ from .classification import (
 from .clusters import create_cluster_message
 from .detection import (
     create_detection_message,
+    create_extended_detection_message,
 )
 from .image import create_image_message
 from .keypoints import create_keypoints_message
@@ -18,6 +19,7 @@ __all__ = [
     "create_image_message",
     "create_segmentation_message",
     "create_detection_message",
+    "create_extended_detection_message",
     "create_line_detection_message",
     "create_tracked_features_message",
     "create_keypoints_message",

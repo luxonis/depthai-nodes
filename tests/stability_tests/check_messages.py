@@ -1,5 +1,5 @@
 import pickle
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import depthai as dai
 import numpy as np
@@ -7,6 +7,7 @@ import numpy as np
 from depthai_nodes import (
     Classifications,
     Clusters,
+    ImgDetectionExtended,
     ImgDetectionsExtended,
     Keypoints,
     Lines,
@@ -270,7 +271,7 @@ def check_map_msg(
 
 
 def check_detection_msg(
-    message: ImgDetectionsExtended,
+    message: Union[ImgDetectionsExtended, dai.ImgDetections],
     expected_output: Dict[str, Any],
     verbose: bool = False,
 ):
@@ -296,24 +297,45 @@ def check_detection_msg(
     }
     """
     assert isinstance(
-        message, ImgDetectionsExtended
-    ), f"The message is not a ImgDetectionsExtended. Got {type(message)}."
+        message, (ImgDetectionsExtended, dai.ImgDetections)
+    ), f"The message is not a ImgDetectionsExtended or dai.ImgDetections. Got {type(message)}."
 
     predicted_detections = []
     expected_detections: List[Dict[str, Any]] = expected_output["detections"]
 
     for detection in message.detections:
-        d = {
-            "confidence": detection.confidence,
-            "label": detection.label,
-            "x_center": detection.rotated_rect.center.x,
-            "y_center": detection.rotated_rect.center.y,
-            "width": detection.rotated_rect.size.width,
-            "height": detection.rotated_rect.size.height,
-            "angle": detection.rotated_rect.angle,
-            "keypoints": [[kp.x, kp.y, kp.confidence] for kp in detection.keypoints],
-            "mask": message.masks,
-        }
+        if isinstance(detection, ImgDetectionExtended):
+            d = {
+                "confidence": detection.confidence,
+                "label": detection.label,
+                "x_center": detection.rotated_rect.center.x,
+                "y_center": detection.rotated_rect.center.y,
+                "width": detection.rotated_rect.size.width,
+                "height": detection.rotated_rect.size.height,
+                "angle": detection.rotated_rect.angle,
+                "keypoints": [
+                    [kp.x, kp.y, kp.confidence] for kp in detection.keypoints
+                ],
+                "mask": message.masks,
+            }
+        else:
+            d = {
+                "confidence": detection.confidence,
+                "label": detection.label,
+                "x_center": detection.getBoundingBox().center.x,
+                "y_center": detection.getBoundingBox().center.y,
+                "width": detection.getBoundingBox().size.width,
+                "height": detection.getBoundingBox().size.height,
+                "angle": detection.getBoundingBox().angle,
+                "keypoints": [
+                    [kp.imageCoordinates.x, kp.imageCoordinates.y, kp.confidence]
+                    for kp in detection.getKeypoints()
+                ],
+                "mask": message.getCvSegmentationMask(),
+            }
+            if d["mask"] is not None:
+                d["mask"] = np.astype(d["mask"], np.int16)
+                d["mask"][d["mask"] == 255] = -1
         predicted_detections.append(d)
 
     assert (
@@ -332,9 +354,12 @@ def check_detection_msg(
             predicted_detection["confidence"],
             atol=0.01,
         ), f"Expected confidence {expected_detection['confidence']}, got {predicted_detection['confidence']}."
-        assert (
-            expected_detection["label"] == predicted_detection["label"]
-        ), f"Expected label {expected_detection['label']}, got {predicted_detection['label']}."
+        if not (
+            expected_detection["label"] == -1 and predicted_detection["label"] == 0
+        ):
+            assert (
+                expected_detection["label"] == predicted_detection["label"]
+            ), f"Expected label {expected_detection['label']}, got {predicted_detection['label']}."
         assert np.allclose(
             expected_detection["x_center"], predicted_detection["x_center"], atol=0.01
         ), f"Expected x_center {expected_detection['x_center']}, got {predicted_detection['x_center']}."
@@ -352,11 +377,15 @@ def check_detection_msg(
         ), f"Expected angle {expected_detection['angle']}, got {predicted_detection['angle']}."
 
         if "keypoints" in expected_detection.keys():
+            expected_keypoints = [
+                [float(value) for value in keypoint]
+                for keypoint in expected_detection["keypoints"]
+            ]
             assert np.allclose(
-                expected_detection["keypoints"],
+                expected_keypoints,
                 predicted_detection["keypoints"],
                 atol=0.01,
-            ), f"Expected keypoints {expected_detection['keypoints']}, got {predicted_detection['keypoints']}."
+            ), f"Expected keypoints {expected_keypoints}, got {predicted_detection['keypoints']}."
 
         if "mask" in expected_detection.keys():
             if verbose:

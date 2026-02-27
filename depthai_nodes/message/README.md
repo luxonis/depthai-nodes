@@ -31,6 +31,8 @@ Here are the custom message types that we introduce in this package. They are us
     - [Attributes](#attributes-11)
   - [SegmentationMask](#segmentationmask)
     - [Attributes](#attributes-12)
+  - [SnapData](#snapdata)
+    - [Attributes](#attributes-13)
 
 ## Classifications
 
@@ -148,3 +150,14 @@ SegmentationMask class for a single- or multi-object segmentation mask. Backgrou
 ### Attributes
 
 - **mask** (NDArray\[np.int16\]): Segmentation mask.
+
+## SnapData
+
+SnapData class for representing a single snap event to be uploaded to DepthAI Hub.
+
+### Attributes
+
+- **snap_name** (str): Logical name of the snap.
+- **file_group** (dai.FileGroup): Object containing the snap image and associated data (e.g., images, detections).
+- **tags** (List\[str\]): Optional list of tags for categorizing the snap.
+- **extras** (Dict\[str, str\]): Additional metadata as key-value pairs.

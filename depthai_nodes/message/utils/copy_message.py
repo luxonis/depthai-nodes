@@ -55,15 +55,16 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
     ) -> Union[dai.ImgDetection, dai.SpatialImgDetection]:
         assert isinstance(img_det, (dai.ImgDetection, dai.SpatialImgDetection))
         img_det_copy = _copy_metadata(img_det)
+        assert isinstance(img_det_copy, (dai.ImgDetection, dai.SpatialImgDetection))
         if isinstance(img_det, dai.SpatialImgDetection):
             img_det_copy.spatialCoordinates = img_det.spatialCoordinates
             img_det_copy.boundingBoxMapping = img_det.boundingBoxMapping
-        img_det_copy.xmin = img_det.xmin
-        img_det_copy.ymin = img_det.ymin
-        img_det_copy.xmax = img_det.xmax
-        img_det_copy.ymax = img_det.ymax
         img_det_copy.label = img_det.label
+        img_det_copy.labelName = img_det.labelName
         img_det_copy.confidence = img_det.confidence
+        img_det_copy.setBoundingBox(_copy_rotated_rect(img_det.getBoundingBox()))
+        img_det_copy.setKeypoints(_copy_keypoints(img_det.getKeypoints()))
+        img_det_copy.setEdges(copy.deepcopy(img_det.getEdges()))
         return img_det_copy
 
     def _copy_img_detections(
@@ -71,17 +72,52 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
     ) -> Union[dai.ImgDetections, dai.SpatialImgDetections]:
         assert isinstance(img_dets, (dai.ImgDetections, dai.SpatialImgDetections))
         img_dets_copy = _copy_metadata(img_dets)
+        if isinstance(img_dets, dai.ImgDetections):
+            assert isinstance(img_dets_copy, dai.ImgDetections)
+            masks = img_dets.getCvSegmentationMask()
+            if masks is not None:
+                img_dets_copy.setCvSegmentationMask(masks)
         img_dets_copy.detections = [
             _copy_img_detection(img_det) for img_det in img_dets.detections
         ]
         return img_dets_copy
 
+    def _copy_keypoints(keypoints: list[dai.Keypoint]) -> list[dai.Keypoint]:
+        keypoints_copy = [_copy_keypoint(keypoint) for keypoint in keypoints]
+        return keypoints_copy
+
     def _copy_point2f(point2f: dai.Point2f) -> dai.Point2f:
         point2f_copy = _copy_metadata(point2f)
         point2f_copy.x = point2f.x
         point2f_copy.y = point2f.y
-        # TODO: set the value for .isNormalized()
         return point2f_copy
+
+    def _copy_size2f(size2f: dai.Size2f) -> dai.Size2f:
+        size2f_copy = _copy_metadata(size2f)
+        size2f_copy.width = size2f.width
+        size2f_copy.height = size2f.height
+        return size2f_copy
+
+    def _copy_point3f(point3f: dai.Point3f) -> dai.Point3f:
+        point3f_copy = _copy_metadata(point3f)
+        point3f_copy.x = point3f.x
+        point3f_copy.y = point3f.y
+        point3f_copy.z = point3f.z
+        return point3f_copy
+
+    def _copy_keypoint(keypoint: dai.Keypoint) -> dai.Keypoint:
+        keypoint_copy = _copy_metadata(keypoint)
+        keypoint_copy.imageCoordinates = _copy_point3f(keypoint.imageCoordinates)
+        keypoint_copy.confidence = keypoint.confidence
+        keypoint_copy.labelName = keypoint.labelName
+        return keypoint_copy
+
+    def _copy_rotated_rect(rotated_rect: dai.RotatedRect) -> dai.RotatedRect:
+        rotated_rect_copy: dai.RotatedRect = _copy_metadata(rotated_rect)
+        rotated_rect_copy.center = _copy_point2f(rotated_rect.center)
+        rotated_rect_copy.size = _copy_size2f(rotated_rect.size)
+        rotated_rect_copy.angle = rotated_rect.angle
+        return rotated_rect_copy
 
     if isinstance(msg, dai.ImgFrame):
         return _copy_img_frame(msg)

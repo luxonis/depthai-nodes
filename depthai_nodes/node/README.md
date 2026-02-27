@@ -15,6 +15,7 @@
   - [Neural Network Processing](#neural-network-processing)
   - [Detection and Filtering](#detection-and-filtering)
   - [Data Management](#data-management)
+  - [Cloud Integration](#cloud-integration)
 - [Usage](#usage)
   - [Example](#example)
 
@@ -24,11 +25,11 @@ Parser nodes are used to parse the output of a neural network. The main purpose 
 
 ### Object Detection
 
-- `YOLOExtendedParser`: Extended YOLO detection parser that supports all YOLO models and tasks (detection, pose estimation, instance segmentation). It will output the [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message with the detections.
-- `YuNetParser`: YuNet face detection parser that will output the [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message with the detections.
-- `SCRFDParser`: SCRFD parser for parsing family of SCRFD models that will output the [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message with the detections.
-- `MPPalmDetectionParser`: MediaPipe palm detection parser that will output the [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message with the detections.
-- `PPTextDetectionParser`: Parser for parsing the output of the Paddle Text Detection model. It will output the [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message with the detections.
+- `YOLOExtendedParser`: Extended YOLO detection parser that supports all YOLO models and tasks (detection, pose estimation, instance segmentation). It will output the [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) message with the detections.
+- `YuNetParser`: YuNet face detection parser that will output the [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) message with the detections.
+- `SCRFDParser`: SCRFD parser for parsing family of SCRFD models that will output the [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) message with the detections.
+- `MPPalmDetectionParser`: MediaPipe palm detection parser that will output the [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) message with the detections.
+- `PPTextDetectionParser`: Parser for parsing the output of the Paddle Text Detection model. It will output the [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) message with the detections.
 
 ### Classification
 
@@ -68,11 +69,12 @@ Parser nodes are used to parse the output of a neural network. The main purpose 
 
 ### Image Processing Nodes
 
-- `ApplyColormap`: Applies color mapping to depth or other grayscale images. Sends out `dai.ImgFrame` message.
+- `ApplyColormap`: Applies a colormap to generic 2D arrays (maps/masks). Sends out `dai.ImgFrame` message.
+- `ApplyDepthColormap`: Applies a colormap to depth/disparity `dai.ImgFrame` using percentile-based normalization for more stable depth visualization. Invalid depth values (\<= 0) are ignored when computing percentiles and rendered black. Sends out `dai.ImgFrame` message.
 - `DepthMerger`: Merges detections with depth information. Sends out `dai.SpatialImgDetections` message.
 - `ImgFrameOverlay`: A host node that receives two dai.ImgFrame objects and overlays them into a single one. Sends out `dai.ImgFrame` message.
 - `Tiling`: Manages tiling of input frames for neural network processing, divides frames into overlapping tiles based on configuration parameters, and creates ImgFrames for each tile to be sent to a neural network node. Sends out `dai.ImgFrame` message.
-- `TilesPatcher`: Handles the processing of tiled frames from neural network (NN) outputs, maps the detections from tiles back into the global frame, and sends out the combined detections for further processing. Sends out `dai.ImgDetections` message.
+- `TilesPatcher`: Handles the processing of tiled frames from neural network (NN) outputs, maps the detections from tiles back into the global frame, and sends out the combined detections for further processing. Sends out [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) message.
 
 ### Neural Network Processing
 
@@ -82,14 +84,17 @@ Parser nodes are used to parse the output of a neural network. The main purpose 
 
 ### Detection and Filtering
 
-- `ImgDetectionsBridge`: Transforms the dai.ImgDetections to ImgDetectionsExtended object or vice versa. Note that conversion from ImgDetectionsExtended to ImgDetection loses information about segmentation, keypoints and rotation. Sends out `dai.ImgDetections` or [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message.
-- `ImgDetectionsFilter`: Filters image detections based on various criteria. Sends out `dai.ImgDetections` or [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) or `dai.SpatialImgDetections` message.
+- `ImgDetectionsBridge`: Transforms the dai.ImgDetections to ImgDetectionsExtended object or vice versa. Sends out [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) or [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message.
+- `ImgDetectionsFilter`: Filters image detections based on various criteria. Sends out [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) or [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) or [`dai.SpatialImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/spatial_img_detections) message.
+- `InstanceToSemanticMask`: Converts instance-id masks into semantic masks by mapping instance indices to detection class labels. Sends out [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) or [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message.
 
 ### Data Management
 
-- `GatherData`: A node for gathering data. Gathers n messages based on reference_data. To determine n, wait_count_fn function is used. The default wait_count_fn function is waiting for len(TReference.detection). This means the node works out-of-the-box with dai.ImgDetections and ImgDetectionsExtended. Sends out `depthai_nodes.message.GatheredData` message.
-- `SnapsProducer`: A host node that helps with creating and sending snaps. If you only have frame as input consider using `SnapsProducerFrameOnly` node instead. Does not send out any messages.
-- `SnapsProducerFrameOnly`: A host node that helps with creating and sending snaps. If you also have additional message as input (e.g. detections) consider using `SnapsProducer` node instead. Does not send out any messages.
+- `GatherData`: A node for gathering data. Gathers n messages based on reference_data. To determine n, wait_count_fn function is used. The default wait_count_fn function is waiting for len(TReference.detection). This means the node works out-of-the-box with [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) and [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended). Sends out [`depthai_nodes.message.GatheredData`](../message/README.md#gathereddata) message.
+
+### Cloud Integration
+
+- `SnapsUploader`: Host node for uploading snaps (images with metadata) to DepthAI Hub Events API. Receives [`depthai_nodes.message.SnapData`](../message/README.md#snapdata) messages and handles upload with automatic retry and optional caching for offline scenarios.
 
 ## Usage
 

@@ -60,7 +60,7 @@ def test_processing(
     )
 
     o_dets = OutputMock()
-    bridge.build(o_dets, ignore_angle=True)
+    bridge.build(o_dets)
     q_dets = o_dets.createOutputQueue()
     q_dets_transformed = bridge.out.createOutputQueue()
 

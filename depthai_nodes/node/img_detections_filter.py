@@ -1,16 +1,17 @@
 from typing import List
 
 import depthai as dai
+import numpy as np
 
 from depthai_nodes import ImgDetectionsExtended
-from depthai_nodes.message.utils import copy_message
+from depthai_nodes.message.utils import compute_area, copy_message
 from depthai_nodes.node.base_host_node import BaseHostNode
 
 
 class ImgDetectionsFilter(BaseHostNode):
     """Filters out detections based on the specified criteria and outputs them as a separate message.
     The order of operations:
-        1. Filter by label/confidence;
+        1. Filter by label/confidence/area;
         2. Sort (if applicable);
         3. Subset.
 
@@ -22,11 +23,12 @@ class ImgDetectionsFilter(BaseHostNode):
         Labels to reject. Only detections with labels not in this list will be kept.
     confidence_threshold : float
         Minimum confidence threshold. Detections with confidence below this threshold will be filtered out.
+    min_area : float
+        Minimum normalized area (width * height) for a detection's bounding box.
     max_detections : int
         Maximum number of detections to keep. If not defined, all detections will be kept.
     sort_by_confidence: bool
-        Whether to sort the detections by confidence before subsetting. If True, the detections will be sorted
-            in descending order of confidence. It's set to False by default.
+        Whether to sort the detections by confidence before subsetting.
     """
 
     def __init__(self):
@@ -36,16 +38,10 @@ class ImgDetectionsFilter(BaseHostNode):
         self._confidence_threshold = None
         self._max_detections = None
         self._sort_by_confidence = False
+        self._min_area = None
         self._logger.debug("ImgDetectionsFilter initialized")
 
     def setLabels(self, labels: List[int], keep: bool) -> None:
-        """Sets the labels to keep or reject.
-
-        @param labels: The labels to keep or reject.
-        @type labels: List[int]
-        @param keep: Whether to keep or reject the labels.
-        @type keep: bool
-        """
         if not isinstance(labels, list) and labels is not None:
             raise ValueError("Labels must be a list or None.")
         if not isinstance(keep, bool):
@@ -63,11 +59,6 @@ class ImgDetectionsFilter(BaseHostNode):
         )
 
     def setConfidenceThreshold(self, confidence_threshold: float) -> None:
-        """Sets the confidence threshold.
-
-        @param confidence_threshold: The confidence threshold.
-        @type confidence_threshold: float
-        """
         if (
             not isinstance(confidence_threshold, float)
             and confidence_threshold is not None
@@ -77,26 +68,25 @@ class ImgDetectionsFilter(BaseHostNode):
         self._logger.debug(f"Confidence threshold set to {self._confidence_threshold}")
 
     def setMaxDetections(self, max_detections: int) -> None:
-        """Sets the maximum number of detections.
-
-        @param max_detections: The maximum number of detections.
-        @type max_detections: int
-        """
         if not isinstance(max_detections, int) and max_detections is not None:
             raise ValueError("max_detections must be an integer.")
         self._max_detections = max_detections
         self._logger.debug(f"Max detections set to {self._max_detections}")
 
     def setSortByConfidence(self, sort_by_confidence: bool) -> None:
-        """Sets whether to sort the detections by confidence before subsetting.
-
-        @param sort_by_confidence: Whether to sort the detections.
-        @type sort_by_confidence: bool
-        """
         if not isinstance(sort_by_confidence, bool):
             raise ValueError("sort_by_confidence must be a boolean.")
         self._sort_by_confidence = sort_by_confidence
         self._logger.debug(f"Sort by confidence set to {self._sort_by_confidence}")
+
+    def setMinArea(self, min_area: float) -> None:
+        if min_area is not None:
+            if not isinstance(min_area, (float)):
+                raise ValueError("min_area must be a float.")
+            if min_area < 0:
+                raise ValueError("min_area must be non-negative.")
+        self._min_area = float(min_area) if min_area is not None else None
+        self._logger.debug(f"Minimum area set to {self._min_area}")
 
     def build(
         self,
@@ -106,6 +96,7 @@ class ImgDetectionsFilter(BaseHostNode):
         confidence_threshold: float = None,
         max_detections: int = None,
         sort_by_confidence: bool = False,
+        min_area: float = None,
     ) -> "ImgDetectionsFilter":
         self.link_args(msg)
 
@@ -126,10 +117,16 @@ class ImgDetectionsFilter(BaseHostNode):
         if max_detections is not None:
             self.setMaxDetections(max_detections)
 
+        if min_area is not None:
+            self.setMinArea(min_area)
+
         self.setSortByConfidence(sort_by_confidence)
 
         self._logger.debug(
-            f"ImgDetectionsFilter built with labels_to_keep={labels_to_keep}, labels_to_reject={labels_to_reject}, confidence_threshold={confidence_threshold}, max_detections={max_detections}, sort_by_confidence={sort_by_confidence}"
+            f"ImgDetectionsFilter built with labels_to_keep={labels_to_keep}, "
+            f"labels_to_reject={labels_to_reject}, confidence_threshold={confidence_threshold}, "
+            f"max_detections={max_detections}, sort_by_confidence={sort_by_confidence}, "
+            f"min_area={min_area}"
         )
 
         return self
@@ -145,9 +142,7 @@ class ImgDetectionsFilter(BaseHostNode):
             ),
         )
 
-        msg_new = copy_message(
-            msg
-        )  # we don't want to modify the original message as it might be used by other nodes
+        msg_new = copy_message(msg)
         assert isinstance(
             msg_new,
             (
@@ -158,17 +153,27 @@ class ImgDetectionsFilter(BaseHostNode):
         )
 
         filtered_detections = []
-        for detection in msg.detections:
+        filtered_out_ixs: List[int] = []
+        for ix, detection in enumerate(msg.detections):
             if self._labels_to_keep is not None:
                 if detection.label not in self._labels_to_keep:
+                    filtered_out_ixs.append(ix)
                     continue
 
             if self._labels_to_reject is not None:
                 if detection.label in self._labels_to_reject:
+                    filtered_out_ixs.append(ix)
                     continue
 
             if self._confidence_threshold is not None:
                 if detection.confidence < self._confidence_threshold:
+                    filtered_out_ixs.append(ix)
+                    continue
+
+            if self._min_area is not None:
+                area = compute_area(detection)
+                if area < self._min_area:
+                    filtered_out_ixs.append(ix)
                     continue
 
             filtered_detections.append(detection)
@@ -178,10 +183,20 @@ class ImgDetectionsFilter(BaseHostNode):
                 filtered_detections, key=lambda x: x.confidence, reverse=True
             )
 
+        if isinstance(msg, ImgDetectionsExtended):
+            masks = msg.masks
+            if masks is not None:
+                masks = np.where(np.isin(masks, filtered_out_ixs), -1, masks)
+                msg_new.masks = masks
+
+        if isinstance(msg, dai.ImgDetections):
+            mask = msg.getCvSegmentationMask()
+            if mask is not None:
+                mask = np.where(np.isin(mask, filtered_out_ixs), 255, mask)
+                msg_new.setCvSegmentationMask(mask)
+
         msg_new.detections = filtered_detections[: self._max_detections]
 
         self._logger.debug("Detections message created")
-
         self.out.send(msg_new)
-
         self._logger.debug("Message sent successfully")

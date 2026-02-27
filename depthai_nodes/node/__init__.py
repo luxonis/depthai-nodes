@@ -1,4 +1,5 @@
 from .apply_colormap import ApplyColormap
+from .apply_depth_colormap import ApplyDepthColormap
 from .base_host_node import BaseHostNode
 from .depth_merger import DepthMerger
 from .gather_data import GatherData
@@ -7,6 +8,7 @@ from .host_spatials_calc import HostSpatialsCalc
 from .img_detections_bridge import ImgDetectionsBridge
 from .img_detections_filter import ImgDetectionsFilter
 from .img_frame_overlay import ImgFrameOverlay
+from .instance_to_semantic_mask import InstanceToSemanticMask
 from .parser_generator import ParserGenerator
 from .parsers.base_parser import BaseParser
 from .parsers.classification import ClassificationParser
@@ -30,12 +32,13 @@ from .parsers.xfeat import XFeatMonoParser, XFeatStereoParser
 from .parsers.yolo import YOLOExtendedParser
 from .parsers.yunet import YuNetParser
 from .parsing_neural_network import ParsingNeuralNetwork
-from .snaps_producer import SnapsProducer, SnapsProducerFrameOnly
+from .snaps_uploader import SnapsUploader
 from .tiles_patcher import TilesPatcher
 from .tiling import Tiling
 
 __all__ = [
     "ApplyColormap",
+    "ApplyDepthColormap",
     "DepthMerger",
     "Tiling",
     "TilesPatcher",
@@ -69,7 +72,7 @@ __all__ = [
     "ImgFrameOverlay",
     "ImgDetectionsBridge",
     "ImgDetectionsFilter",
-    "SnapsProducerFrameOnly",
-    "SnapsProducer",
+    "SnapsUploader",
     "BaseHostNode",
+    "InstanceToSemanticMask",
 ]
