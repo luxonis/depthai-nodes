@@ -35,10 +35,10 @@ class CoordinatesMapper(BaseHostNode):
 
     Inputs
     ------
-    to_transformation_input : dai.Node.Output
+    toTransformationInput : dai.Node.Output
         Output producing messages that define the target reference frame.
         Only the transformation is extracted on-device.
-    from_transformation_input : dai.Node.Output
+    fromTransformationInput : dai.Node.Output
         Output producing messages whose coordinates should be remapped.
 
     Outputs
@@ -78,15 +78,15 @@ except Exception as e:
             )
 
     def build(
-        self, to_transformation_input: dai.Node.Output, from_transformation_input: dai.Node.Output
+        self, toTransformationInput: dai.Node.Output, fromTransformationInput: dai.Node.Output
     ) -> "CoordinatesMapper":
         script = self._pipeline.create(dai.node.Script)
         script.setScript(self.SCRIPT_CONTENT)
-        to_transformation_input.link(script.inputs["message"])
+        toTransformationInput.link(script.inputs["message"])
         script.outputs["transformation"].setPossibleDatatypes(
             [(dai.DatatypeEnum.ImgFrame, True)]
         )
-        self.link_args(script.outputs["transformation"], from_transformation_input)
+        self.link_args(script.outputs["transformation"], fromTransformationInput)
         self._logger.debug("CoordinatesMapper built")
         return self
 
