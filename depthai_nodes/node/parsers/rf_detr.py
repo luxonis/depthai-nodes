@@ -242,10 +242,6 @@ class RFDETRParser(BaseParser):
                     for label in labels
                 ]
 
-            print(boxes)
-            print(scores)
-            print(labels)
-
             # Create detection message
             message = create_detection_message(
                 bboxes=boxes,
