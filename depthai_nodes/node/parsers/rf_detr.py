@@ -11,7 +11,7 @@ from depthai_nodes.node.parsers.utils import xyxy_to_xywh
 class RFDETRParser(BaseParser):
     """Parser class for parsing the output of the RF-DETR object detection model.
 
-    RF-DETR (Real-time Fast Detection Transformer) is a detection transformer model that
+    RF-DETR from Roboflow is a detection transformer model that
     outputs bounding boxes and class probabilities. The model can optionally output
     instance segmentation masks.
 
