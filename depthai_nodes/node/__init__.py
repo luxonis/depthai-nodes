@@ -2,7 +2,9 @@ from .apply_colormap import ApplyColormap
 from .apply_depth_colormap import ApplyDepthColormap
 from .base_host_node import BaseHostNode
 from .base_threaded_host_node import BaseThreadedHostNode
+from .coordinates_mapper import CoordinatesMapper
 from .depth_merger import DepthMerger
+from .extended_neural_network import ExtendedNeuralNetwork
 from .frame_cropper import FrameCropper
 from .gather_data import GatherData
 from .host_parsing_neural_network import HostParsingNeuralNetwork
@@ -41,7 +43,9 @@ from .tiling import Tiling
 __all__ = [
     "ApplyColormap",
     "ApplyDepthColormap",
+    "CoordinatesMapper",
     "DepthMerger",
+    "ExtendedNeuralNetwork",
     "Tiling",
     "TilesPatcher",
     "ParserGenerator",
