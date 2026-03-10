@@ -145,16 +145,30 @@ class DepthMerger(BaseHostNode):
             edges = [[edge[0], edge[1]] for edge in edges]
             kpts_transformed = []
             for kp in kpts:
-                kpt = dai.Keypoint(kp.x, kp.y, kp.z)
-                if kp.confidence >= 0:
-                    kpt.confidence = kp.confidence
-                kpt.labelName = kp.label_name if kp.label_name is not None else ""
-                kpts_transformed.append(kpt)
+                # spatialCoordinates are not computed per keypoint, only the
+                # bounding box spatial coords are computed.
+                skp = dai.SpatialKeypoint(
+                    imageCoordinates=dai.Point3f(kp.x, kp.y, kp.z),
+                    confidence=kp.confidence,
+                    labelName=kp.label_name if kp.label_name is not None else "",
+                )
+                kpts_transformed.append(skp)
             spatial_img_detection.setKeypoints(kpts_transformed)
             spatial_img_detection.setEdges(edges)
 
         elif isinstance(detection, dai.ImgDetection):
-            spatial_img_detection.setKeypoints(detection.getKeypoints())
+            kpts_transformed = []
+            for kp in detection.getKeypoints():
+                # spatialCoordinates are not computed per keypoint, only the
+                # bounding box spatial coords are computed.
+                skp = dai.SpatialKeypoint(
+                    imageCoordinates=kp.imageCoordinates,
+                    confidence=kp.confidence,
+                    label=kp.label,
+                    labelName=kp.labelName,
+                )
+                kpts_transformed.append(skp)
+            spatial_img_detection.setKeypoints(kpts_transformed)
             spatial_img_detection.setEdges(detection.getEdges())
 
         else:
