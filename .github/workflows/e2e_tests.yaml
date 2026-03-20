@@ -71,7 +71,7 @@ jobs:
        (github.event.inputs.select-os == 'all' || github.event.inputs.select-os == 'linux-only'))
     strategy:
       matrix:
-        platform: ${{ fromJSON(github.event_name == 'workflow_dispatch' && (github.event.inputs.platform == 'all' && '["rvc2", "rvc4"]' || format('["{0}"]', github.event.inputs.platform)) || '["rvc2", "rvc4"]') }}
+        platform: ${{ fromJSON(github.event_name == 'workflow_dispatch' && (github.event.inputs.platform == 'all' && '["rvc2", "rvc4", "rvc4usb"]' || format('["{0}"]', github.event.inputs.platform)) || '["rvc2", "rvc4", "rvc4usb"]') }}
 
     steps:
       - uses: actions/checkout@v3
