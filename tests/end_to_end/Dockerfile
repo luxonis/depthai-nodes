@@ -35,10 +35,11 @@ ENTRYPOINT ["bash", "-c", "git checkout main && git pull && \
     git checkout $BRANCH; \
   fi && \
   pip install --extra-index-url https://artifacts.luxonis.com/artifactory/luxonis-python-snapshot-local/ --extra-index-url $LUXONIS_EXTRA_INDEX_URL  depthai==$DEPTHAI_VERSION && \
+  echo $FLAGS && \
   if echo \"$FLAGS\" | grep -qw usb; then \
     export DEPTHAI_PROTOCOL=usb; \
     echo 'Using USB protocol'; \
   fi && \
   source <(python setup_camera_ips.py) && \
-  echo $RVC4_IP && \
+  echo RVC4_IP:$RVC4_IP && \
   DEPTHAI_NODES_LEVEL=debug python -u main.py $FLAGS"]
