@@ -39,4 +39,5 @@ ENTRYPOINT ["bash", "-c", "git checkout main && git pull && \
     export DEPTHAI_PROTOCOL=usb; \
   fi && \
   source <(python setup_camera_ips.py) && \
+  echo $RVC4_IP && \
   DEPTHAI_NODES_LEVEL=debug python -u main.py $FLAGS"]
