@@ -117,7 +117,7 @@ def assert_gather_data_result_basics(
 ):
     assert isinstance(result, GatheredData)
     assert result.reference_data == expected_reference
-    assert len(result.gathered) == expected_gathered_count
+    assert len(result.items) == expected_gathered_count
     assert result.getTimestamp() == expected_reference.getTimestamp()
 
 
@@ -141,9 +141,9 @@ def assert_gather_data_result(
 ):
     assert isinstance(result, GatheredData)
     assert result.reference_data == expected_reference
-    assert len(result.gathered) == expected_gathered_count
+    assert len(result.items) == expected_gathered_count
     assert result.getTimestamp() == expected_reference.getTimestamp()
-    gathered_timestamps = [gathered.getTimestamp() for gathered in result.gathered]
+    gathered_timestamps = [gathered.getTimestamp() for gathered in result.items]
     tolerance_td = timedelta(seconds=tolerance)
     for timestamp in gathered_timestamps:
         assert (
@@ -151,7 +151,7 @@ def assert_gather_data_result(
             <= timestamp
             <= reference_timestamp + tolerance_td
         )
-    for gathered in result.gathered:
+    for gathered in result.items:
         assert isinstance(gathered, dai.Buffer)
 
 
@@ -216,8 +216,8 @@ def test_set_wait_count_fn(gather_data_generator, fps, duration, nn_data_in_tole
     def check(result, *_):
         assert isinstance(result, GatheredData)
         assert result.reference_data == nn_data_in_tolerance
-        assert len(result.gathered) == 1
-        assert result.gathered[0] == nn_data_in_tolerance
+        assert len(result.items) == 1
+        assert result.items[0] == nn_data_in_tolerance
 
     gather_data = setup_gather_data_node(
         generator=gather_data_generator, fps=fps, duration=duration
@@ -242,7 +242,7 @@ def test_clear_old_data(
     def check(result, *_):
         assert isinstance(result, GatheredData)
         assert result.reference_data == img_detections
-        assert len(result.gathered) == 3
+        assert len(result.items) == 3
 
     gather_data = setup_gather_data_node(
         generator=gather_data_generator, fps=fps, duration=duration
