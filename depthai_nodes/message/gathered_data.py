@@ -2,26 +2,27 @@ from typing import Generic, List, TypeVar
 
 import depthai as dai
 
+from .collection import Collection
+
 TReference = TypeVar("TReference", bound=dai.Buffer)
-TGathered = TypeVar("TGathered")
+TGathered = TypeVar("TGathered", bound=dai.Buffer)
 
 
-class GatheredData(dai.Buffer, Generic[TReference, TGathered]):
+class GatheredData(Collection[TGathered], Generic[TReference, TGathered]):
     """Contains N messages and reference data that the messages were matched with.
 
     Attributes
     ----------
     reference_data: TReference
         Data that is used to determine how many of TGathered to gather.
-    collected: List[TGathered]
-        List of collected data.
+    items: List[TGathered]
+        List of gathered data.
     """
 
-    def __init__(self, reference_data: TReference, gathered: List[TGathered]) -> None:
+    def __init__(self, reference_data: TReference, items: List[TGathered]) -> None:
         """Initializes the GatheredData object."""
-        super().__init__()
+        super().__init__(items=items)
         self.reference_data = reference_data
-        self.gathered = gathered
 
     @property
     def reference_data(self) -> TReference:
@@ -43,24 +44,3 @@ class GatheredData(dai.Buffer, Generic[TReference, TGathered]):
         self.setTimestamp(value.getTimestamp())
         self.setTimestampDevice(value.getTimestampDevice())
         self._reference_data = value
-
-    @property
-    def gathered(self) -> List[TGathered]:
-        """Returns the collected data.
-
-        @return: List of collected data.
-        @rtype: List[TGathered]
-        """
-        return self._gathered
-
-    @gathered.setter
-    def gathered(self, value: List[TGathered]):
-        """Sets the gathered data.
-
-        @param value: List of gathered data.
-        @type value: List[TGathered]
-        @raise TypeError: If value is not a list.
-        """
-        if not isinstance(value, list):
-            raise TypeError("gathered_data must be a list.")
-        self._gathered = value

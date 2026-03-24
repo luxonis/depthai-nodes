@@ -43,7 +43,7 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     For each reference timestamp, the node waits until the number of gathered
     data messages equals `wait_count_fn(reference)`. Once ready, it emits a
     :class:`depthai_nodes.GatheredData` message containing the reference message
-    and the gathered list.
+      and the gathered items.
 
     The default `wait_count_fn` uses ``len(reference.detections)``, which works
     out-of-the-box for messages that expose a ``detections`` attribute (e.g.
@@ -54,7 +54,7 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     - Timestamp matching uses ``Buffer.getTimestamp().total_seconds()`` and a
       tolerance of ``1 / (camera_fps * FPS_TOLERANCE_DIVISOR)``.
     - If ``wait_count_fn(reference) == 0``, the node emits immediately for that
-      reference (with an empty gathered list).
+      reference (with an empty items list).
     - The node periodically polls inputs using ``tryGet()`` at a rate derived
       from ``camera_fps`` and ``INPUT_CHECKS_PER_FPS``.
 
@@ -70,7 +70,7 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     -------
     out : dai.Node.Output
         Emits :class:`depthai_nodes.GatheredData` objects with:
-        ``reference_data`` (the matched reference) and ``gathered`` (list of data).
+        ``reference_data`` (the matched reference) and ``items`` (list of data).
 
     Class Attributes
     ---------------
@@ -289,7 +289,7 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         timestamp = self._ready_timestamps.get()
         return GatheredData(
             reference_data=self._reference_data.pop(timestamp),
-            gathered=self._data_by_reference_ts.pop(timestamp, None) or [],
+            items=self._data_by_reference_ts.pop(timestamp, None) or [],
         )
 
     def _clear_old_data(self, ready_data: GatheredData) -> None:
