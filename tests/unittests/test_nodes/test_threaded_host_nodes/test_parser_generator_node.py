@@ -42,7 +42,6 @@ def test_host_only_flag(parser_generator: ParserGenerator):
     parsers = parser_generator.build(nn_archive, host_only=True)
     assert parsers is not None, "Parsers should not be None"
     assert len(parsers) == 1, "Expected 1 parser"
-    print(type(parsers[0]))
     assert isinstance(parsers[0], YOLOExtendedParser), "Expected YOLOExtendedParser"
 
 
