@@ -79,21 +79,21 @@ class ParserGenerator(dai.node.ThreadedHostNode):
                     parser.setNNArchive(nn_archive)
                     parsers[index] = parser
                     continue
-
-            if parser_name == "YOLOExtendedParser":
+            elif parser_name == "YOLOExtendedParser":
                 yolo_subtype_str = head.metadata.subtype
                 if yolo_subtype_str is not None:
                     yolo_subtype = YOLOSubtype(yolo_subtype_str.lower())
                     if yolo_subtype in self.DAI_SUPPORTED_YOLO_SUBTYPES:
                         parser = pipeline.create(dai.node.DetectionParser)
                         parser.setNNArchive(nn_archive)
-                        parsers[index] = parser
                         if head.metadata.maskOutputs is not None and is_rvc2_device:
                             self._logger.warning(
                                 "Segmentation based model detected with RVC2 device. Parsing will be done on the host machine."
                             )
                             parser.setRunOnHost(True)
+                        parsers[index] = parser
                         continue
+
             parser = globals().get(parser_name)
 
             if parser is None:

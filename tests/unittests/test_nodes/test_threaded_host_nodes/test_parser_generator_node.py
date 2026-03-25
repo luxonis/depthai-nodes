@@ -42,8 +42,28 @@ def test_host_only_flag(parser_generator: ParserGenerator):
     parsers = parser_generator.build(nn_archive, host_only=True)
     assert parsers is not None, "Parsers should not be None"
     assert len(parsers) == 1, "Expected 1 parser"
+    print(type(parsers[0]))
     assert isinstance(parsers[0], YOLOExtendedParser), "Expected YOLOExtendedParser"
 
+def test_detection_parser_generatior(parser_generator: ParserGenerator):
+    nn_archive = dai.NNArchive(
+    dai.getModelFromZoo(dai.NNModelDescription("luxonis/yolov6-nano", "RVC2"))
+    )
+    parsers = parser_generator.build(nn_archive, host_only=False)
+    assert parsers is not None, "Parsers should not be None"
+    assert len(parsers) == 1, "Expected 1 parser"
+    assert isinstance(parsers[0], dai.node.DetectionParser), "Expected DetectionParser"
+    assert not parsers[0].runOnHost, "Expected runOnHost to be False"
+
+def test_detection_segmentation_parser_generator(parser_generator: ParserGenerator):
+    nn_archive = dai.NNArchive(
+    dai.getModelFromZoo(dai.NNModelDescription("luxonis/yolov8-instance-segmentation-nano:coco-512x288", "RVC2"))
+    )
+    parsers = parser_generator.build(nn_archive, host_only=False)
+    assert parsers is not None, "Parsers should not be None"
+    assert len(parsers) == 1, "Expected 1 parser"
+    assert isinstance(parsers[0], dai.node.DetectionParser), "Expected DetectionParser"
+    assert parsers[0].runOnHost, "Expected runOnHost to be True"
 
 def test_host_only_flag_unsupported(parser_generator: ParserGenerator):
     nn_archive = dai.NNArchive(

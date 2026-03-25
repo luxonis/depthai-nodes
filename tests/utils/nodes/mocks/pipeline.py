@@ -165,6 +165,7 @@ class DetectionParserMock:
         self._input = InputMock()
         self._out = OutputMock()
         self._nn_archive = None
+        self._run_on_host = False
 
     @property
     def input(self):
@@ -187,3 +188,6 @@ class DetectionParserMock:
 
     def setNNArchive(self, nn_archive):
         self._nn_archive = nn_archive
+        
+    def setRunOnHost(self, run_on_host: bool):
+        self._run_on_host = run_on_host
