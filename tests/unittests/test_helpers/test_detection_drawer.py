@@ -147,6 +147,8 @@ class PointData:
 
 
 class TestAnnotationHelper(AnnotationHelper):
+    __test__ = False
+
     def __init__(self):
         super().__init__()
         self.rotated_rects = []

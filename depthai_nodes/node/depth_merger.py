@@ -147,8 +147,8 @@ class DepthMerger(BaseHostNode):
             for kp in kpts:
                 # spatialCoordinates are not computed per keypoint, only the
                 # bounding box spatial coords are computed.
-                skp = dai.SpatialKeypoint(
-                    imageCoordinates=dai.Point3f(kp.x, kp.y, kp.z),
+                skp = dai.Keypoint(
+                    coordinates=dai.Point3f(kp.x, kp.y, kp.z),
                     confidence=kp.confidence,
                     labelName=kp.label_name if kp.label_name is not None else "",
                 )
@@ -161,8 +161,8 @@ class DepthMerger(BaseHostNode):
             for kp in detection.getKeypoints():
                 # spatialCoordinates are not computed per keypoint, only the
                 # bounding box spatial coords are computed.
-                skp = dai.SpatialKeypoint(
-                    imageCoordinates=kp.imageCoordinates,
+                skp = dai.Keypoint(
+                    coordinates=kp.imageCoordinates,
                     confidence=kp.confidence,
                     label=kp.label,
                     labelName=kp.labelName,

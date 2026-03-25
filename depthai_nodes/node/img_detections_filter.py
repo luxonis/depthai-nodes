@@ -118,18 +118,18 @@ class ImgDetectionsFilter(BaseHostNode):
 
     def sortByConfidence(self, *, desc: bool = True) -> "ImgDetectionsFilter":
         """Enable sorting by confidence (before top-k). Set direction via `desc`."""
-        self._cfg.sort_enabled = True
+        self._cfg.sort_disabled = False
         self._cfg.sort_desc = desc
         return self
 
     def enableSorting(self) -> "ImgDetectionsFilter":
         """Enable sorting using the last configured sort settings."""
-        self._cfg.sort_enabled = True
+        self._cfg.sort_disabled = False
         return self
 
     def disableSorting(self) -> "ImgDetectionsFilter":
         """Disable sorting but keep the last configured sort settings."""
-        self._cfg.sort_enabled = False
+        self._cfg.sort_disabled = True
         return self
 
     def takeFirstK(self, k: Optional[int]):
