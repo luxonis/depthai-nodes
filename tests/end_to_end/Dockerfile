@@ -36,7 +36,7 @@ ENTRYPOINT ["bash", "-c", "git checkout main && git pull && \
   fi && \
   pip install --extra-index-url https://artifacts.luxonis.com/artifactory/luxonis-python-snapshot-local/ --extra-index-url $LUXONIS_EXTRA_INDEX_URL  depthai==$DEPTHAI_VERSION && \
   echo $FLAGS && \
-  if echo \"$FLAGS\" | grep -qw usb; then \
+  if echo \"$FLAGS\" | grep -Eqw 'rvc(2|4)-usb'; then \
     export DEPTHAI_PROTOCOL=usb; \
     echo 'Using USB protocol'; \
   fi && \
