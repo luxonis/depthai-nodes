@@ -7,6 +7,7 @@ current_dir = Path(__file__)
 src_path = current_dir.parent.parent.parent
 sys.path.insert(0, src_path.absolute().as_posix())
 
+from debug_node import DebugNode
 from merge_img_detections import MergeImgDetections
 from depthai_nodes.node.coordinates_mapper import CoordinatesMapper
 from depthai_nodes.node.frame_cropper import FrameCropper
@@ -18,7 +19,7 @@ print("Starting")
 RGB_WIDTH, RGB_HEIGHT = 1920, 1080
 FACE_DETECTION_MODEL = "luxonis/yunet:320x240"
 DEVICE_MXID = ""
-FPS = 10
+FPS = 5
 GRID_SIZE = (2, 2)
 
 visualizer = dai.RemoteConnection(httpPort=8082)
@@ -62,6 +63,7 @@ with dai.Pipeline(device) as pipeline:
         toTransformationInput=rgb_out,
         fromTransformationInput=face_detection.out,
     )
+    debug = pipeline.create(DebugNode).build(coordinates_mapper.out)
     message_gatherer = pipeline.create(
         GatherData
     ).build(
