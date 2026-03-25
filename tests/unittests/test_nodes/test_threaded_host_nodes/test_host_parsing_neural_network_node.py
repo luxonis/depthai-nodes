@@ -2,8 +2,8 @@ import depthai as dai
 import pytest
 
 from depthai_nodes.node import HostParsingNeuralNetwork
-from tests.utils.nodes.mocks.pipeline import DetectionParserMock
 from tests.utils import InputMock, NeuralNetworkMock, PipelineMock
+from tests.utils.nodes.mocks.pipeline import DetectionParserMock
 
 
 @pytest.fixture
@@ -14,7 +14,11 @@ def pipeline():
 
 def test_yolo(pipeline: PipelineMock):
     nn_archive = dai.NNArchive(
-        dai.getModelFromZoo(dai.NNModelDescription("luxonis/yolov8-instance-segmentation-nano:coco-512x288", "RVC2"))
+        dai.getModelFromZoo(
+            dai.NNModelDescription(
+                "luxonis/yolov8-instance-segmentation-nano:coco-512x288", "RVC2"
+            )
+        )
     )
     nn = pipeline.create(HostParsingNeuralNetwork).build(
         input=InputMock(), nn_source=nn_archive, fps=30

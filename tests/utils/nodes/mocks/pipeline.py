@@ -188,6 +188,6 @@ class DetectionParserMock:
 
     def setNNArchive(self, nn_archive):
         self._nn_archive = nn_archive
-        
+
     def setRunOnHost(self, run_on_host: bool):
         self._run_on_host = run_on_host
