@@ -186,7 +186,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
             inputImage.link(manip.inputImage)
             image_out = manip.out
 
-        self._nn = self._pipeline.create(ParsingNeuralNetwork).build(input=image_out, nn_source=nn_archive)
+        self._nn = self._pipeline.create(ParsingNeuralNetwork).build(input=image_out, nnSource=nn_archive)
 
         try:
             nn_output = self._nn.out

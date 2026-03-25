@@ -237,7 +237,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
     def build(
         self,
         input: Union[dai.Node.Output, dai.node.Camera],
-        nn_source: Union[dai.NNModelDescription, dai.NNArchive, str],
+        nnSource: Union[dai.NNModelDescription, dai.NNArchive, str],
         fps: Optional[float] = None,
     ) -> "ParsingNeuralNetwork":
         """Builds the underlying NeuralNetwork node and creates parser nodes for each
@@ -247,29 +247,29 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
             linked. It accepts the output of a Camera node.
         @type input: Node.Input
 
-        @param nn_source: NNModelDescription object containing the HubAI model descriptors, NNArchive object of the model, or HubAI model slug in form of <model_slug>:<model_version_slug> or <model_slug>:<model_version_slug>:<model_instance_hash>.
-        @type nn_source: Union[dai.NNModelDescription, dai.NNArchive, str]
+        @param nnSource: NNModelDescription object containing the HubAI model descriptors, NNArchive object of the model, or HubAI model slug in form of <model_slug>:<model_version_slug> or <model_slug>:<model_version_slug>:<model_instance_hash>.
+        @type nnSource: Union[dai.NNModelDescription, dai.NNArchive, str]
         @param fps: FPS limit for the model runtime.
         @type fps: int
         @return: Returns the ParsingNeuralNetwork object.
         @rtype: ParsingNeuralNetwork
-        @raise ValueError: If the nn_source is not a NNModelDescription or NNArchive
+        @raise ValueError: If the nnSource is not a NNModelDescription or NNArchive
             object.
         """
 
         platform = self.getParentPipeline().getDefaultDevice().getPlatformAsString()
 
-        if isinstance(nn_source, str):
-            nn_source = dai.NNModelDescription(nn_source)
-        if isinstance(nn_source, (dai.NNModelDescription, str)):
-            if not nn_source.platform:
-                nn_source.platform = platform
-            self._nn_archive = dai.NNArchive(dai.getModelFromZoo(nn_source))
-        elif isinstance(nn_source, dai.NNArchive):
-            self._nn_archive = nn_source
+        if isinstance(nnSource, str):
+            nnSource = dai.NNModelDescription(nnSource)
+        if isinstance(nnSource, (dai.NNModelDescription, str)):
+            if not nnSource.platform:
+                nnSource.platform = platform
+            self._nn_archive = dai.NNArchive(dai.getModelFromZoo(nnSource))
+        elif isinstance(nnSource, dai.NNArchive):
+            self._nn_archive = nnSource
         else:
             raise ValueError(
-                "nn_source must be either a NNModelDescription, NNArchive, or a string representing HubAI model slug."
+                "nnSource must be either a NNModelDescription, NNArchive, or a string representing HubAI model slug."
             )
 
         kwargs = {"fps": fps} if fps else {}
@@ -281,7 +281,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
             self._createSyncNode()
 
         self._logger.debug(
-            f"ParsingNeuralNetwork built with fps={fps}, type_of_nn_source={type(nn_source).__name__}, parsers={len(self._parsers)}"
+            f"ParsingNeuralNetwork built with fps={fps}, type_of_nn_source={type(nnSource).__name__}, parsers={len(self._parsers)}"
         )
 
         return self

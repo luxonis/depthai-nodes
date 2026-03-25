@@ -39,7 +39,7 @@ def test_compute_tile_positions_with_global_detection():
     positions = tiling._computeTilePositions(
         overlap=0.0,
         grid_size=(2, 1),
-        img_shape=(100, 50),
+        canvas_shape=(100, 50),
         grid_matrix=None,
         global_detection=True,
     )
@@ -65,10 +65,10 @@ def test_set_tiling_config_sends_updated_message_group():
 
     tiling.setTilingConfig(
         overlap=0.0,
-        grid_size=(2, 1),
-        img_shape=(100, 50),
-        nn_shape=(32, 32),
-        resize_mode=dai.ImageManipConfig.ResizeMode.CENTER_CROP,
+        gridSize=(2, 1),
+        canvasShape=(100, 50),
+        resizeShape=(32, 32),
+        resizeMode=dai.ImageManipConfig.ResizeMode.CENTER_CROP,
     )
 
     assert tiling.tile_count == 2

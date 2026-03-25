@@ -95,7 +95,7 @@ def setup_gather_data_node(generator, fps, duration=None):
     input_data = LinkTrackingOutputMock()
     input_reference = LinkTrackingOutputMock()
     gather_data = generator.build(
-        camera_fps=fps, input_data=input_data, input_reference=input_reference
+        cameraFps=fps, inputData=input_data, inputReference=input_reference
     )
     if duration is not None:
         modified_duration = duration / DIFFERENT_TESTS
@@ -157,7 +157,7 @@ def assert_gather_data_result(
 
 def test_build_missing_required_args(gather_data_generator, fps):
     with pytest.raises(TypeError):
-        gather_data_generator.build(camera_fps=fps)
+        gather_data_generator.build(cameraFps=fps)
 
 
 def test_build(gather_data_generator, fps):
@@ -165,11 +165,11 @@ def test_build(gather_data_generator, fps):
     input_reference = LinkTrackingOutputMock()
     with pytest.raises(ValueError):
         gather_data_generator.build(
-            camera_fps=-fps, input_data=input_data, input_reference=input_reference
+            cameraFps=-fps, inputData=input_data, inputReference=input_reference
         )
 
     gather_data = gather_data_generator.build(
-        camera_fps=fps, input_data=input_data, input_reference=input_reference
+        cameraFps=fps, inputData=input_data, inputReference=input_reference
     )
     assert gather_data is not None
     assert input_data.linked_to is gather_data._data_input

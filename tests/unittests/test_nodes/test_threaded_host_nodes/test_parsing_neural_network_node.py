@@ -41,7 +41,7 @@ def test_parsing_neural_network(pipeline: PipelineMock, model: str):
         dai.getModelFromZoo(dai.NNModelDescription(model, "RVC2"))
     )
     pnn: ParsingNeuralNetwork = pipeline.create(ParsingNeuralNetwork).build(
-        input=InputMock(), nn_source=nn_archive, fps=30
+        input=InputMock(), nnSource=nn_archive, fps=30
     )
 
     validate(pnn, nn_archive)
@@ -53,7 +53,7 @@ def test_parsing_neural_network_nn_archive(pipeline: PipelineMock):
         dai.getModelFromZoo(dai.NNModelDescription(model, "RVC2"))
     )
     pnn: ParsingNeuralNetwork = pipeline.create(ParsingNeuralNetwork).build(
-        input=InputMock(), nn_source=nn_archive, fps=30
+        input=InputMock(), nnSource=nn_archive, fps=30
     )
 
     validate(pnn, nn_archive)
