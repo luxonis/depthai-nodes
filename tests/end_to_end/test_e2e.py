@@ -68,6 +68,10 @@ def test_pipelines(IP: str, ip_platform: str, nn_archive_path, model):
         raise ValueError("You have to pass either path to NNArchive or model model")
 
     try:
+        print(
+            f"Testing model {model} from NN archive {nn_archive_path} on device with IP {IP} ({ip_platform})",
+            flush=True,
+        )
         if model:
             subprocess.run(
                 f"python manual.py -m {model} {'-ip' if IP else ''} {IP}",

@@ -52,6 +52,10 @@ def main():
     run_all = args.all
     parser = args.parser
     rvc_platform = "both" if args.platform == "" else args.platform
+    dai_protocol = None
+
+    if rvc_platform.endswith("-usb"):
+        rvc_platform, dai_protocol = rvc_platform.rsplit("-", 1)
 
     supported_models = json.load(open("supported_models.json"))
     if args.depthai_nodes_version not in supported_models:
