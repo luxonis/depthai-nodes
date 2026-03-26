@@ -157,21 +157,20 @@ class DepthMerger(BaseHostNode):
                 spatial_img_detection.setEdges(edges)
 
         elif isinstance(detection, dai.ImgDetection):
-            kpts_transformed = [
-                self._create_spatial_keypoint(
-                    image_coordinates=dai.Point3f(
-                        kp.imageCoordinates.x,
-                        kp.imageCoordinates.y,
-                        kp.imageCoordinates.z,
-                    ),
-                    spatial_coordinates=spatial_img_detection.spatialCoordinates,
-                    confidence=kp.confidence,
-                    label=kp.label,
-                    label_name=kp.labelName,
-                )
-                for kp in detection.getKeypoints()
-            ]
-            spatial_img_detection.setKeypoints(kpts_transformed)
+            # TODO: Can be removed once depthai requirement is >=3.4
+            if hasattr(dai, "SpatialKeypoint"):
+                kpts_transformed = [ 
+                    self._create_spatial_keypoint(
+                        image_coordinates=dai.Point3f(kp.imageCoordinates.x, kp.imageCoordinates.y, kp.imageCoordinates.z),
+                        spatial_coordinates=dai.Point3f(-1, -1, -1),
+                        confidence=kp.confidence,
+                        label_name=kp.labelName,
+                    )
+                    for kp in detection.getKeypoints()
+                ]
+                spatial_img_detection.setKeypoints(kpts_transformed)
+            else:
+                spatial_img_detection.setKeypoints(detection.getKeypoints())
             edges = detection.getEdges()
             if edges:
                 spatial_img_detection.setEdges(edges)
