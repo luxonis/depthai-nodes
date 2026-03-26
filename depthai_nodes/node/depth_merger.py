@@ -143,17 +143,31 @@ class DepthMerger(BaseHostNode):
             kpts = detection.keypoints
             edges = detection.edges
             edges = [[edge[0], edge[1]] for edge in edges]
-            kpts_transformed = [dai.Point3f(kp.x, kp.y, kp.z) for kp in kpts]
+            kpts_transformed = [
+                self._create_spatial_keypoint(
+                    image_coordinates=dai.Point3f(kp.x, kp.y, kp.z),
+                    spatial_coordinates=spatial_img_detection.spatialCoordinates,
+                    confidence=kp.confidence,
+                    label_name=kp.label_name if kp.label_name is not None else "",
+                )
+                for kp in kpts
+            ]
             spatial_img_detection.setKeypoints(kpts_transformed)
             if edges:
                 spatial_img_detection.setEdges(edges)
 
         elif isinstance(detection, dai.ImgDetection):
             kpts_transformed = [
-                dai.Point3f(
-                    kp.imageCoordinates.x,
-                    kp.imageCoordinates.y,
-                    kp.imageCoordinates.z,
+                self._create_spatial_keypoint(
+                    image_coordinates=dai.Point3f(
+                        kp.imageCoordinates.x,
+                        kp.imageCoordinates.y,
+                        kp.imageCoordinates.z,
+                    ),
+                    spatial_coordinates=spatial_img_detection.spatialCoordinates,
+                    confidence=kp.confidence,
+                    label=kp.label,
+                    label_name=kp.labelName,
                 )
                 for kp in detection.getKeypoints()
             ]
@@ -193,3 +207,24 @@ class DepthMerger(BaseHostNode):
         dimension length."""
         bounded_coord = min(1, relative_coord)
         return max(0, int(bounded_coord * dimension_len) - 1)
+
+    def _create_spatial_keypoint(
+        self,
+        image_coordinates: dai.Point3f,
+        spatial_coordinates: dai.Point3f,
+        confidence: float = -1.0,
+        label: int = 0,
+        label_name: str = "",
+    ):
+        """Creates a SpatialKeypoint when supported by the installed DepthAI package
+        (>=3.4) and falls back to Point3f for older bindings."""
+        # TODO: Can be removed once depthai requirement is >=3.4
+        if hasattr(dai, "SpatialKeypoint"):
+            spatial_keypoint = dai.SpatialKeypoint()
+            spatial_keypoint.imageCoordinates = image_coordinates
+            spatial_keypoint.spatialCoordinates = spatial_coordinates
+            spatial_keypoint.confidence = confidence
+            spatial_keypoint.label = label
+            spatial_keypoint.labelName = label_name
+            return spatial_keypoint
+        return image_coordinates
