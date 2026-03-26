@@ -16,10 +16,7 @@ FRAME3 = np.random.randint(0, 255, (HEIGHT, WIDTH * 2, 3), dtype=np.uint8)
 
 @pytest.fixture(scope="session")
 def duration(request):
-    d = request.config.getoption("--duration")
-    if d is None:
-        return 1e-6
-    return d
+    return request.config.getoption("--duration")
 
 
 @pytest.fixture
@@ -64,8 +61,12 @@ def test_processing(
 
     start_time = time.time()
     last_log_time = time.time()
-    while time.time() - start_time < duration:
-        if time.time() - last_log_time > LOG_INTERVAL:
+    ran_once = False
+    while not ran_once or (
+        duration is not None and time.time() - start_time < duration
+    ):
+        ran_once = True
+        if duration is not None and time.time() - last_log_time > LOG_INTERVAL:
             print(
                 f"Test running... {time.time()-start_time:.1f}s elapsed, {duration-time.time()+start_time:.1f}s remaining"
             )
