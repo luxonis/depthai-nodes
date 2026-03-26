@@ -1,17 +1,20 @@
+import time
+
 import depthai as dai
 
-from depthai_nodes.node.base_host_node import BaseHostNode
+from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
 from depthai_nodes.node.utils.message_remapping import remap_message
 
 
-class CoordinatesMapper(BaseHostNode):
-    """Host node that remaps message coordinates into a different reference frame.
+class CoordinatesMapper(BaseThreadedHostNode):
+    """Threaded host node that remaps message coordinates into a cached reference frame.
 
     This is a temporary node, this functionality will be added to the ImageAlign depthai node.
 
     The node takes two inputs:
-    - a **target transformation** (the reference frame to map coordinates *to*),
-    - a message whose coordinates should be remapped.
+    - a **target transformation** stream used to establish and update the cached
+      reference frame,
+    - a message stream whose coordinates should be remapped.
 
     Any DepthAI message that provides a ``getTransformation()`` and a ``setTransformation()`` method can be
     remapped. Internally, coordinate fields are transformed from the message’s
@@ -21,6 +24,10 @@ class CoordinatesMapper(BaseHostNode):
     :class:`dai.ImgTransformation` from incoming messages and forwards it to the
     host. This avoids transferring large image payloads and reduces
     host–device bandwidth usage.
+
+    The first target transformation message is required before any source messages
+    can be remapped. After that, the node keeps using the cached transformation and
+    updates it only when a newer target message is available via ``tryGet()``.
 
     Message groups are handled recursively: each contained message is remapped
     individually while preserving timestamps and sequence numbers.
@@ -76,6 +83,10 @@ except Exception as e:
             raise RuntimeError(
                 "CoordinatesMapper node is currently not supported on RVC2."
             )
+        self._to_transformation_input = self.createInput()
+        self._from_transformation_input = self.createInput()
+        self._out = self.createOutput()
+        self._cached_transformation: dai.ImgTransformation | None = None
 
     def build(
         self, toTransformationInput: dai.Node.Output, fromTransformationInput: dai.Node.Output
@@ -86,21 +97,54 @@ except Exception as e:
         script.outputs["transformation"].setPossibleDatatypes(
             [(dai.DatatypeEnum.ImgFrame, True)]
         )
-        self.link_args(script.outputs["transformation"], fromTransformationInput)
+        script.outputs["transformation"].link(self._to_transformation_input)
+        fromTransformationInput.link(self._from_transformation_input)
         self._logger.debug("CoordinatesMapper built")
         return self
 
-    def process(self, to_transformation_msg: dai.ImgFrame, from_transformation_msg: dai.Buffer) -> None:
+    @property
+    def out(self) -> dai.Node.Output:
+        return self._out
+
+    def run(self) -> None:
+        first_target_msg = self._to_transformation_input.get()
+        self._cached_transformation = self._extract_transformation(first_target_msg)
+
+        while self.isRunning():
+            try:
+                new_target_msg = self._to_transformation_input.tryGet()
+                if new_target_msg is not None:
+                    self._cached_transformation = self._extract_transformation(
+                        new_target_msg
+                    )
+
+                from_transformation_msg = self._from_transformation_input.get()
+            except dai.MessageQueue.QueueException as e:
+                self._logger.error(
+                    f"CoordinatesMapper failed to read data from queues. Exception: {e}"
+                )
+                break
+
+            remapped_message = self._remap_message(
+                msg=from_transformation_msg,
+                to_transformation=self._cached_transformation,
+            )
+            self.out.send(remapped_message)
+
+    def _extract_transformation(
+        self, to_transformation_msg: dai.ImgFrame
+    ) -> dai.ImgTransformation:
         try:
-            to_transformation: dai.ImgTransformation = to_transformation_msg.getTransformation()
+            to_transformation: dai.ImgTransformation = (
+                to_transformation_msg.getTransformation()
+            )
         except Exception as e:
             raise RuntimeError(
                 "Could not get transformation from `to_transformation_msg` message. Message doesn't have the `getTransformation()` method."
             ) from e
         if to_transformation is None:
             raise RuntimeError("Received `to_transformation_msg` message without transformation. The `getTransformation()` method returns None.")
-        remapped_message = self._remap_message(msg=from_transformation_msg, to_transformation=to_transformation)
-        self.out.send(remapped_message)
+        return to_transformation
 
     def _remap_message(self, msg: dai.Buffer, to_transformation: dai.ImgTransformation):
         if isinstance(msg, dai.MessageGroup):
