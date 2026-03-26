@@ -143,19 +143,24 @@ class DepthMerger(BaseHostNode):
             kpts = detection.keypoints
             edges = detection.edges
             edges = [[edge[0], edge[1]] for edge in edges]
-            kpts_transformed = []
-            for kp in kpts:
-                kpt = dai.Keypoint(kp.x, kp.y, kp.z)
-                if kp.confidence >= 0:
-                    kpt.confidence = kp.confidence
-                kpt.labelName = kp.label_name if kp.label_name is not None else ""
-                kpts_transformed.append(kpt)
+            kpts_transformed = [dai.Point3f(kp.x, kp.y, kp.z) for kp in kpts]
             spatial_img_detection.setKeypoints(kpts_transformed)
-            spatial_img_detection.setEdges(edges)
+            if edges:
+                spatial_img_detection.setEdges(edges)
 
         elif isinstance(detection, dai.ImgDetection):
-            spatial_img_detection.setKeypoints(detection.getKeypoints())
-            spatial_img_detection.setEdges(detection.getEdges())
+            kpts_transformed = [
+                dai.Point3f(
+                    kp.imageCoordinates.x,
+                    kp.imageCoordinates.y,
+                    kp.imageCoordinates.z,
+                )
+                for kp in detection.getKeypoints()
+            ]
+            spatial_img_detection.setKeypoints(kpts_transformed)
+            edges = detection.getEdges()
+            if edges:
+                spatial_img_detection.setEdges(edges)
 
         else:
             raise ValueError(

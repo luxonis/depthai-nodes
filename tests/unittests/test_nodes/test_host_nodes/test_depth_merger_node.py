@@ -25,10 +25,7 @@ DIFFERENT_TESTS = 4  # used for stability tests
 
 @pytest.fixture(scope="session")
 def duration(request):
-    d = request.config.getoption("--duration")
-    if d is None:
-        return 1e-6
-    return d
+    return request.config.getoption("--duration")
 
 
 @pytest.fixture
@@ -109,7 +106,7 @@ def test_img_detection(
     output_2d = OutputMock()
     output_depth = OutputMock()
 
-    modified_duration = duration / DIFFERENT_TESTS
+    modified_duration = None if duration is None else duration / DIFFERENT_TESTS
 
     depth_merger.build(
         output_2d=output_2d,
@@ -125,8 +122,12 @@ def test_img_detection(
 
     start_time = time.time()
     last_log_time = time.time()
-    while time.time() - start_time < modified_duration:
-        if time.time() - last_log_time > LOG_INTERVAL:
+    ran_once = False
+    while not ran_once or (
+        modified_duration is not None and time.time() - start_time < modified_duration
+    ):
+        ran_once = True
+        if modified_duration is not None and time.time() - last_log_time > LOG_INTERVAL:
             print(
                 f"Test running... {time.time()-start_time:.1f}s elapsed, {modified_duration-time.time()+start_time:.1f}s remaining"
             )
@@ -154,7 +155,7 @@ def test_img_detections(
     output_2d = OutputMock()
     output_depth = OutputMock()
 
-    modified_duration = duration / DIFFERENT_TESTS
+    modified_duration = None if duration is None else duration / DIFFERENT_TESTS
 
     depth_merger.build(
         output_2d=output_2d,
@@ -170,8 +171,12 @@ def test_img_detections(
 
     start_time = time.time()
     last_log_time = time.time()
-    while time.time() - start_time < modified_duration:
-        if time.time() - last_log_time > LOG_INTERVAL:
+    ran_once = False
+    while not ran_once or (
+        modified_duration is not None and time.time() - start_time < modified_duration
+    ):
+        ran_once = True
+        if modified_duration is not None and time.time() - last_log_time > LOG_INTERVAL:
             print(
                 f"Test running... {time.time()-start_time:.1f}s elapsed, {modified_duration-time.time()+start_time:.1f}s remaining"
             )
