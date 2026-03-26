@@ -12,4 +12,5 @@ class DebugNode(BaseHostNode):
         return self
 
     def process(self, msg: dai.Buffer) -> None:
-        print(f"DEBUG: {msg.getSequenceNum()=}")
+        # print(f"DEBUG: {msg.getSequenceNum()=}")
+        pass

@@ -17,7 +17,6 @@ class MergeImgDetections(BaseHostNode):
 
         merged = dai.ImgDetections()
         detections = []
-        print(f"{len(msg.items)=}")
         for item in msg.items:
             if not isinstance(item, dai.ImgDetections):
                 raise TypeError(

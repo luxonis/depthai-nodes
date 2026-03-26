@@ -194,7 +194,6 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
                 break
             if data:
                 self._logger.debug("Data input received")
-                print(f"{data.getSequenceNum()=}")
                 self._add_data(data)
                 self._send_ready_data()
             if reference:
@@ -277,7 +276,6 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         recognitions = self._data_by_reference_ts.get(timestamp)
         if not recognitions:
             return False
-        print(f"{wait_for_count=} {len(recognitions)=}")
 
         return wait_for_count == len(recognitions)
 
