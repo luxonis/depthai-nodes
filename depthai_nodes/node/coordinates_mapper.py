@@ -162,7 +162,8 @@ except Exception as e:
                 from_transformation=msg.getTransformation(),
                 to_transformation=to_transformation,
             )
-        except Exception:
+        except TypeError as e:
+            self._logger.error(e)
             remapped_msg = msg
         remapped_msg.setTransformation(to_transformation)
         remapped_msg.setTimestamp(msg.getTimestamp())

@@ -2,7 +2,6 @@ from typing import Union
 
 import depthai as dai
 
-from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.node.base_host_node import BaseHostNode
 
 from .host_spatials_calc import HostSpatialsCalc
@@ -73,16 +72,12 @@ class DepthMerger(BaseHostNode):
             return self._detection_to_spatial(message_2d, depth)
         elif isinstance(message_2d, dai.ImgDetections):
             return self._detections_to_spatial(message_2d, depth)
-        elif isinstance(message_2d, ImgDetectionExtended):
-            return self._detection_to_spatial(message_2d, depth)
-        elif isinstance(message_2d, ImgDetectionsExtended):
-            return self._detections_to_spatial(message_2d, depth)
         else:
             raise ValueError(f"Unknown message type: {type(message_2d)}")
 
     def _detection_to_spatial(
         self,
-        detection: Union[dai.ImgDetection, ImgDetectionExtended],
+        detection: dai.ImgDetection,
         depth: dai.ImgFrame,
     ) -> dai.SpatialImgDetection:
         """Converts a single 2D detection into a spatial detection using the depth
@@ -90,26 +85,10 @@ class DepthMerger(BaseHostNode):
         depth_frame = depth.getCvFrame()
         x_len = depth_frame.shape[1]
         y_len = depth_frame.shape[0]
-        xmin = (
-            detection.rotated_rect.getOuterRect()[0]
-            if isinstance(detection, ImgDetectionExtended)
-            else detection.xmin
-        )
-        ymin = (
-            detection.rotated_rect.getOuterRect()[1]
-            if isinstance(detection, ImgDetectionExtended)
-            else detection.ymin
-        )
-        xmax = (
-            detection.rotated_rect.getOuterRect()[2]
-            if isinstance(detection, ImgDetectionExtended)
-            else detection.xmax
-        )
-        ymax = (
-            detection.rotated_rect.getOuterRect()[3]
-            if isinstance(detection, ImgDetectionExtended)
-            else detection.ymax
-        )
+        xmin = detection.xmin
+        ymin = detection.ymin
+        xmax = detection.xmax
+        ymax = detection.ymax
         xmin_corrected = xmin + (xmax - xmin) * self.shrinking_factor
         ymin_corrected = ymin + (ymax - ymin) * self.shrinking_factor
         xmax_corrected = xmax - (xmax - xmin) * self.shrinking_factor
@@ -133,30 +112,9 @@ class DepthMerger(BaseHostNode):
 
         spatial_img_detection.confidence = detection.confidence
         spatial_img_detection.label = 0 if detection.label == -1 else detection.label
-        spatial_img_detection.labelName = (
-            detection.label_name
-            if isinstance(detection, ImgDetectionExtended)
-            else detection.labelName
-        )
+        spatial_img_detection.labelName = detection.labelName
 
-        if isinstance(detection, ImgDetectionExtended):
-            kpts = detection.keypoints
-            edges = detection.edges
-            edges = [[edge[0], edge[1]] for edge in edges]
-            kpts_transformed = []
-            for kp in kpts:
-                # spatialCoordinates are not computed per keypoint, only the
-                # bounding box spatial coords are computed.
-                skp = dai.Keypoint(
-                    coordinates=dai.Point3f(kp.x, kp.y, kp.z),
-                    confidence=kp.confidence,
-                    labelName=kp.label_name if kp.label_name is not None else "",
-                )
-                kpts_transformed.append(skp)
-            spatial_img_detection.setKeypoints(kpts_transformed)
-            spatial_img_detection.setEdges(edges)
-
-        elif isinstance(detection, dai.ImgDetection):
+        if isinstance(detection, dai.ImgDetection):
             kpts_transformed = []
             for kp in detection.getKeypoints():
                 # spatialCoordinates are not computed per keypoint, only the
@@ -173,14 +131,14 @@ class DepthMerger(BaseHostNode):
 
         else:
             raise ValueError(
-                f"Unknown detection type: {type(detection)}, expected ImgDetectionExtended or dai.ImgDetection"
+                f"Unknown detection type: {type(detection)}, expected dai.ImgDetection"
             )
 
         return spatial_img_detection
 
     def _detections_to_spatial(
         self,
-        detections: Union[dai.ImgDetections, ImgDetectionsExtended],
+        detections: dai.ImgDetections,
         depth: dai.ImgFrame,
     ) -> dai.SpatialImgDetections:
         """Converts multiple 2D detections into spatial detections using the depth
@@ -200,5 +158,5 @@ class DepthMerger(BaseHostNode):
     def _get_index(self, relative_coord: float, dimension_len: int) -> int:
         """Converts a relative coordinate to an absolute index within the given
         dimension length."""
-        bounded_coord = min(1, relative_coord)
+        bounded_coord = min(1., relative_coord)
         return max(0, int(bounded_coord * dimension_len) - 1)

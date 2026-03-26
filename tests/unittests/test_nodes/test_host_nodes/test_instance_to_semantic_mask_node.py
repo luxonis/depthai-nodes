@@ -4,12 +4,11 @@ import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes.message import ImgDetectionsExtended
 from depthai_nodes.node import InstanceToSemanticMask
 from tests.utils import (
     LOG_INTERVAL,
     OutputMock,
-    create_img_detections_extended,
+    create_img_detections,
 )
 
 
@@ -56,7 +55,7 @@ def test_processing_instance_to_semantic(
     q_out = converter.out.createOutputQueue()
 
     # base message with detections
-    msg = create_img_detections_extended()
+    msg = create_img_detections()
     n = len(msg.detections)
 
     # If there are no detections in the test fixture, the mapping isn't meaningful.
@@ -66,8 +65,8 @@ def test_processing_instance_to_semantic(
         q_in.send(msg)
         converter.process(q_in.get())
         out = q_out.get()
-        assert isinstance(out, ImgDetectionsExtended)
-        np.testing.assert_array_equal(out.masks, msg.masks)
+        assert isinstance(out, dai.ImgDetections)
+        np.testing.assert_array_equal(out.getCvSegmentationMask(), msg.getCvSegmentationMask())
         return
 
     # Build a deterministic instance-id mask:

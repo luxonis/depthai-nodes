@@ -6,16 +6,13 @@ import numpy as np
 import pytest
 from pytest import FixtureRequest
 
-from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.node.depth_merger import DepthMerger
 from depthai_nodes.node.host_spatials_calc import HostSpatialsCalc
 from tests.utils import (
     LOG_INTERVAL,
     OutputMock,
     create_img_detection,
-    create_img_detection_extended,
     create_img_detections,
-    create_img_detections_extended,
 )
 
 from .utils.calibration_handler import get_calibration_handler
@@ -47,11 +44,6 @@ def img_detection():
 
 
 @pytest.fixture
-def img_detection_extended():
-    return create_img_detection_extended()
-
-
-@pytest.fixture
 def depth_frame():
     frame = np.random.randint(200, 30000, (720, 1280), dtype=np.uint16)
     img_frame = dai.ImgFrame()
@@ -66,21 +58,13 @@ def img_detections():
     return create_img_detections()
 
 
-@pytest.fixture
-def img_detections_extended():
-    return create_img_detections_extended()
-
-
 def verify_spatial_detection(spatial_det, img_detection):
     assert isinstance(spatial_det, dai.SpatialImgDetection)
 
-    if isinstance(img_detection, ImgDetectionExtended):
-        xmin, ymin, xmax, ymax = img_detection.rotated_rect.getOuterRect()
-    else:
-        xmin = img_detection.xmin
-        ymin = img_detection.ymin
-        xmax = img_detection.xmax
-        ymax = img_detection.ymax
+    xmin = img_detection.xmin
+    ymin = img_detection.ymin
+    xmax = img_detection.xmax
+    ymax = img_detection.ymax
     np.testing.assert_almost_equal(spatial_det.xmin, xmin, decimal=2)
     np.testing.assert_almost_equal(spatial_det.ymin, ymin, decimal=2)
     np.testing.assert_almost_equal(spatial_det.xmax, xmax, decimal=2)
@@ -95,7 +79,7 @@ def test_initialization(depth_merger: DepthMerger):
     assert depth_merger.shrinking_factor == 0.0
 
 
-@pytest.mark.parametrize("detection", ["img_detection", "img_detection_extended"])
+@pytest.mark.parametrize("detection", ["img_detection"])
 def test_img_detection(
     duration: float,
     depth_merger: DepthMerger,
@@ -103,9 +87,7 @@ def test_img_detection(
     request: FixtureRequest,
     detection: str,
 ):
-    img_detection: Union[
-        ImgDetectionExtended, dai.ImgDetection
-    ] = request.getfixturevalue(detection)
+    img_detection: dai.ImgDetection = request.getfixturevalue(detection)
     output_2d = OutputMock()
     output_depth = OutputMock()
 
@@ -140,7 +122,7 @@ def test_img_detection(
         verify_spatial_detection(spatial_det, img_detection)
 
 
-@pytest.mark.parametrize("detections", ["img_detections", "img_detections_extended"])
+@pytest.mark.parametrize("detections", ["img_detections"])
 def test_img_detections(
     depth_merger: DepthMerger,
     depth_frame: dai.ImgFrame,
@@ -148,9 +130,7 @@ def test_img_detections(
     detections: str,
     duration: float,
 ):
-    img_detections: Union[
-        ImgDetectionsExtended, dai.ImgDetections
-    ] = request.getfixturevalue(detections)
+    img_detections: dai.ImgDetections = request.getfixturevalue(detections)
     output_2d = OutputMock()
     output_depth = OutputMock()
 

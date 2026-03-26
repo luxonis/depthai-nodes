@@ -47,7 +47,7 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
 
     The default `wait_count_fn` uses ``len(reference.detections)``, which works
     out-of-the-box for messages that expose a ``detections`` attribute (e.g.
-    ``dai.ImgDetections`` and ``ImgDetectionsExtended``).
+    ``dai.ImgDetections``).
 
     Notes
     -----

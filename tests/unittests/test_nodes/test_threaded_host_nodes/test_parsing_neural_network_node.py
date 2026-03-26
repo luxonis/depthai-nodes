@@ -31,7 +31,6 @@ def validate(pnn: ParsingNeuralNetwork, nn_archive: dai.NNArchive):
     [
         "luxonis/yunet:320x240",
         "luxonis/vehicle-attributes-classification:72x72",
-        "luxonis/mediapipe-hand-landmarker:224x224",
         "luxonis/yolov6-nano:r2-coco-512x288",
         "luxonis/mobilenet-ssd:300x300",
     ],

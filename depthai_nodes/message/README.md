@@ -11,14 +11,6 @@ Here are the custom message types that we introduce in this package. They are us
     - [Attributes](#attributes-1)
   - [Clusters](#clusters)
     - [Attributes](#attributes-2)
-  - [ImgDetectionExtended](#imgdetectionextended)
-    - [Attributes](#attributes-3)
-  - [ImgDetectionsExtended](#imgdetectionsextended)
-    - [Attributes](#attributes-4)
-  - [Keypoint](#keypoint)
-    - [Attributes](#attributes-5)
-  - [Keypoints](#keypoints)
-    - [Attributes](#attributes-6)
   - [Line](#line)
     - [Attributes](#attributes-7)
   - [Lines](#lines)
@@ -57,45 +49,6 @@ Clusters class for storing clusters.
 ### Attributes
 
 - **clusters** (List\[[Cluster](#cluster)\]): List of clusters.
-
-## ImgDetectionExtended
-
-A class for storing image detections in (x_center, y_center, width, height) format with additional angle and keypoints.
-
-### Attributes
-
-- **rotated_rect** (dai.RotatedRect): A depthai object for storing the roated bounding box information. The bounding box is stored as x_center, y_center, width, height, angle in degrees.
-- **confidence** (float): Confidence of the detection.
-- **label** (int): Label of the detection.
-- **keypoints** (List\[[Keypoint](#keypoint)\]): Keypoints of the detection.
-
-## ImgDetectionsExtended
-
-ImgDetectionsExtended class for storing image detections with keypoints.
-
-### Attributes
-
-- **detections** (List\[[ImgDetectionExtended](#imgdetectionextended)\]): Image detections with keypoints.
-- **masks** (np.ndarray): The segmentation masks of the image. All masks are stored in a single numpy array.
-
-## Keypoint
-
-Keypoint class for storing a keypoint.
-
-### Attributes
-
-- **x** (float): X coordinate of the keypoint, relative to the input height.
-- **y** (float): Y coordinate of the keypoint, relative to the input width.
-- **z** (Optional\[float\]): Z coordinate of the keypoint.
-- **confidence** (Optional\[float\]): Confidence of the keypoint.
-
-## Keypoints
-
-Keypoints class for storing keypoints.
-
-### Attributes
-
-- **keypoints** (List\[[Keypoint](#keypoint)\]): List of Keypoint objects, each representing a keypoint.
 
 ## Line
 

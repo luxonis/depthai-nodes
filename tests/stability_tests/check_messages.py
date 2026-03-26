@@ -1,5 +1,5 @@
 import pickle
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List
 
 import depthai as dai
 import numpy as np
@@ -7,9 +7,6 @@ import numpy as np
 from depthai_nodes import (
     Classifications,
     Clusters,
-    ImgDetectionExtended,
-    ImgDetectionsExtended,
-    Keypoints,
     Lines,
     Map2D,
     Predictions,
@@ -151,7 +148,7 @@ def check_segmentation_msg(
 
 
 def check_keypoints_msg(
-    message: Keypoints,
+    message: dai.KeypointsList,
     expected_output: Dict[str, Any],
     verbose: bool = False,
 ):
@@ -163,10 +160,10 @@ def check_keypoints_msg(
         "keypoints": [[0.1, 0.2], ...]
     """
     assert isinstance(
-        message, Keypoints
+        message, dai.KeypointsList
     ), f"The message is not a Keypoints. Got {type(message)}."
 
-    keypoints = [[kp.x, kp.y] for kp in message.keypoints]
+    keypoints = [[kp.imageCoordinates.x, kp.imageCoordinates.y] for kp in message.getKeypoints()]
     keypoints = np.array(keypoints)
     expected_keypoints = np.array(expected_output["keypoints"])
     if expected_keypoints.shape[1] == 3:
@@ -271,7 +268,7 @@ def check_map_msg(
 
 
 def check_detection_msg(
-    message: Union[ImgDetectionsExtended, dai.ImgDetections],
+    message: dai.ImgDetections,
     expected_output: Dict[str, Any],
     verbose: bool = False,
 ):
@@ -297,45 +294,30 @@ def check_detection_msg(
     }
     """
     assert isinstance(
-        message, (ImgDetectionsExtended, dai.ImgDetections)
-    ), f"The message is not a ImgDetectionsExtended or dai.ImgDetections. Got {type(message)}."
+        message, dai.ImgDetections
+    ), f"The message is not dai.ImgDetections. Got {type(message)}."
 
     predicted_detections = []
     expected_detections: List[Dict[str, Any]] = expected_output["detections"]
 
     for detection in message.detections:
-        if isinstance(detection, ImgDetectionExtended):
-            d = {
-                "confidence": detection.confidence,
-                "label": detection.label,
-                "x_center": detection.rotated_rect.center.x,
-                "y_center": detection.rotated_rect.center.y,
-                "width": detection.rotated_rect.size.width,
-                "height": detection.rotated_rect.size.height,
-                "angle": detection.rotated_rect.angle,
-                "keypoints": [
-                    [kp.x, kp.y, kp.confidence] for kp in detection.keypoints
-                ],
-                "mask": message.masks,
-            }
-        else:
-            d = {
-                "confidence": detection.confidence,
-                "label": detection.label,
-                "x_center": detection.getBoundingBox().center.x,
-                "y_center": detection.getBoundingBox().center.y,
-                "width": detection.getBoundingBox().size.width,
-                "height": detection.getBoundingBox().size.height,
-                "angle": detection.getBoundingBox().angle,
-                "keypoints": [
-                    [kp.imageCoordinates.x, kp.imageCoordinates.y, kp.confidence]
-                    for kp in detection.getKeypoints()
-                ],
-                "mask": message.getCvSegmentationMask(),
-            }
-            if d["mask"] is not None:
-                d["mask"] = np.astype(d["mask"], np.int16)
-                d["mask"][d["mask"] == 255] = -1
+        d = {
+            "confidence": detection.confidence,
+            "label": detection.label,
+            "x_center": detection.getBoundingBox().center.x,
+            "y_center": detection.getBoundingBox().center.y,
+            "width": detection.getBoundingBox().size.width,
+            "height": detection.getBoundingBox().size.height,
+            "angle": detection.getBoundingBox().angle,
+            "keypoints": [
+                [kp.imageCoordinates.x, kp.imageCoordinates.y, kp.confidence]
+                for kp in detection.getKeypoints()
+            ],
+            "mask": message.getCvSegmentationMask(),
+        }
+        if d["mask"] is not None:
+            d["mask"] = np.astype(d["mask"], np.int16)
+            d["mask"][d["mask"] == 255] = -1
         predicted_detections.append(d)
 
     assert (

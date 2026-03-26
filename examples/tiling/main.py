@@ -9,6 +9,7 @@ sys.path.insert(0, src_path.absolute().as_posix())
 
 from debug_node import DebugNode
 from merge_img_detections import MergeImgDetections
+from splitter import SplitterNode
 from depthai_nodes.node.coordinates_mapper import CoordinatesMapper
 from depthai_nodes.node.frame_cropper import FrameCropper
 from depthai_nodes.node.gather_data import GatherData
@@ -36,9 +37,9 @@ with dai.Pipeline(device) as pipeline:
         overlap=0.2,
         trigger=rgb_out,
         gridSize=GRID_SIZE,
-        canvasShape=(1920, 1080),
+        canvasShape=(RGB_WIDTH, RGB_HEIGHT),
         resizeShape=(320, 240),
-        resizeMode=dai.ImageManipConfig.ResizeMode.LETTERBOX,
+        resizeMode=dai.ImageManipConfig.ResizeMode.STRETCH,
 
     )
     frame_cropper = pipeline.create(
@@ -48,7 +49,7 @@ with dai.Pipeline(device) as pipeline:
     ).build(
         inputImage=rgb_out,
         outputSize=(320, 240),
-        resizeMode=dai.ImageManipConfig.ResizeMode.LETTERBOX,
+        resizeMode=dai.ImageManipConfig.ResizeMode.STRETCH,
     )
 
     face_detection = pipeline.create(
@@ -77,8 +78,25 @@ with dai.Pipeline(device) as pipeline:
     ).build(
         input=message_gatherer.out,
     )
-    visualizer.addTopic(topicName="rgb", output=rgb_out)
-    visualizer.addTopic(topicName="detections", output=merged_detections.out)
+
+    split_detection = pipeline.create(SplitterNode).build(input=face_detection.out, nr_outs=4)
+    split_crops = pipeline.create(SplitterNode).build(input=frame_cropper.out, nr_outs=4)
+    split_remapped = pipeline.create(SplitterNode).build(input=coordinates_mapper.out, nr_outs=4)
+
+    visualizer.addTopic(topicName="rgb", output=rgb_out, group="1")
+    visualizer.addTopic(topicName="dets", output=split_remapped.outputs[3], group="1")
+
+    visualizer.addTopic(topicName="crop1", output=split_crops.outputs[0], group="3")
+    visualizer.addTopic(topicName="dets1", output=split_detection.outputs[0], group="3")
+
+    visualizer.addTopic(topicName="crop2", output=split_crops.outputs[1], group="4")
+    visualizer.addTopic(topicName="dets2", output=split_detection.outputs[1], group="4")
+
+    visualizer.addTopic(topicName="crop3", output=split_crops.outputs[2], group="5")
+    visualizer.addTopic(topicName="dets3", output=split_detection.outputs[2], group="5")
+
+    visualizer.addTopic(topicName="crop4", output=split_crops.outputs[3], group="6")
+    visualizer.addTopic(topicName="dets4", output=split_detection.outputs[3], group="6")
 
     pipeline.start()
     while pipeline.isRunning():

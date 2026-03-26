@@ -4,7 +4,7 @@ import cv2
 import depthai as dai
 import numpy as np
 
-from depthai_nodes.message import ImgDetectionsExtended, Map2D, SegmentationMask
+from depthai_nodes.message import Map2D, SegmentationMask
 from depthai_nodes.message.utils import copy_message
 from depthai_nodes.node.base_host_node import BaseHostNode
 
@@ -27,7 +27,7 @@ class ApplyColormap(BaseHostNode):
 
     Inputs
     ------
-    frame : dai.ImgFrame | Map2D | ImgDetectionsExtended | SegmentationMask
+    frame : dai.ImgFrame | Map2D | dai.ImgDetections | SegmentationMask
         Input message containing a 2D array to be colorized.
 
     Outputs
@@ -135,9 +135,6 @@ class ApplyColormap(BaseHostNode):
         if isinstance(msg_copy, Map2D):
             return msg_copy.map
 
-        if isinstance(msg_copy, ImgDetectionsExtended):
-            return msg_copy.masks
-
         if isinstance(msg_copy, dai.ImgDetections):
             mask = msg_copy.getCvSegmentationMask()
             mask = np.where(mask == 255, 0, mask + 1)
@@ -146,7 +143,7 @@ class ApplyColormap(BaseHostNode):
         raise ValueError(
             f"Unsupported input type {type(msg_copy)}. "
             "ApplyColormap only accepts image-like inputs: "
-            "dai.ImgFrame, SegmentationMask, Map2D, ImgDetectionsExtended and dai.ImgDetections."
+            "dai.ImgFrame, SegmentationMask, Map2D and dai.ImgDetections."
         )
 
     def _colorize(self, input_map: np.ndarray) -> np.ndarray:
