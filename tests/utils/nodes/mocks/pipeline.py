@@ -192,6 +192,9 @@ class DetectionParserMock:
     def setRunOnHost(self, run_on_host: bool):
         self._run_on_host = run_on_host
 
+    def run(self):
+        pass
+
     @property
     def runOnHost(self):
         return self._run_on_host
