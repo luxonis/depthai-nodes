@@ -228,7 +228,7 @@ class DepthMerger(BaseHostNode):
         confidence: float = -1.0,
         label: int = 0,
         label_name: str = "",
-    ) -> dai.SpatialKeypoint:
+    ) -> "dai.SpatialKeypoint":
         """Creates a dai.SpatialKeypoint."""
         spatial_keypoint = dai.SpatialKeypoint()
         spatial_keypoint.imageCoordinates = image_coordinates
