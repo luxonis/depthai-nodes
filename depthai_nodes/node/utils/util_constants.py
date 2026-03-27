@@ -13,6 +13,7 @@ GMessage = TypeVar(
     "GMessage",
     bound=Union[
         dai.ImgDetections,
+        dai.KeypointsList,
         SegmentationMask,
         Clusters,
         Map2D,
