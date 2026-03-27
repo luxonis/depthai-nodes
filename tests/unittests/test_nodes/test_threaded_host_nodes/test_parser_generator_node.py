@@ -38,7 +38,7 @@ def test_host_only_flag(parser_generator: ParserGenerator):
     nn_archive = dai.NNArchive(
         dai.getModelFromZoo(dai.NNModelDescription("luxonis/yolov6-nano", "RVC2"))
     )
-    parsers = parser_generator.build(nn_archive, host_only=True)
+    parsers = parser_generator.build(nn_archive, hostOnly=True)
     assert parsers is not None, "Parsers should not be None"
     assert len(parsers) == 1, "Expected 1 parser"
     assert isinstance(parsers[0], YOLOExtendedParser), "Expected YOLOExtendedParser"
@@ -51,4 +51,4 @@ def test_host_only_flag_unsupported(parser_generator: ParserGenerator):
         )
     )
     with pytest.raises(ValueError):
-        parser_generator.build(nn_archive, host_only=True)
+        parser_generator.build(nn_archive, hostOnly=True)

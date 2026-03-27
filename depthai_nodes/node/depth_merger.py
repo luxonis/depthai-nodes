@@ -14,19 +14,20 @@ class DepthMerger(BaseHostNode):
     Attributes
     ----------
     output : dai.Node.Output
-        The output of the DepthMerger node containing dai.SpatialImgDetections.
-    shrinking_factor : float
-        The shrinking factor for the bounding box. 0 means no shrinking. The factor means the percentage of the bounding box to shrink from each side.
+        The output of the DepthMerger node containing spatial detections.
+    shrinkingFactor : float
+        The percentage of the bounding box to shrink from each side before
+        sampling depth.
 
     Usage
     -----
     depth_merger = pipeline.create(DepthMerger).build(
-        output_2d=nn.out,
-        output_depth=stereo.depth
+        output2d=nn.out,
+        outputDepth=stereo.depth
     )
     """
 
-    def __init__(self, shrinking_factor: float = 0) -> None:
+    def __init__(self, shrinkingFactor: float = 0) -> None:
         super().__init__()
 
         # TODO: We should make it consistant and use either output or out - IMO out is preferred to match DAI
@@ -36,30 +37,52 @@ class DepthMerger(BaseHostNode):
             ]
         )
 
-        self.shrinking_factor = shrinking_factor
+        self.shrinking_factor = shrinkingFactor
         self._logger.debug(
-            f"DepthMerger initialized with shrinking_factor={shrinking_factor}"
+            f"DepthMerger initialized with shrinking_factor={shrinkingFactor}"
         )
 
     def build(
         self,
-        output_2d: dai.Node.Output,
-        output_depth: dai.Node.Output,
-        calib_data: dai.CalibrationHandler,
-        depth_alignment_socket: dai.CameraBoardSocket = dai.CameraBoardSocket.CAM_A,
-        shrinking_factor: float = 0,
+        output2d: dai.Node.Output,
+        outputDepth: dai.Node.Output,
+        calibData: dai.CalibrationHandler,
+        depthAlignmentSocket: dai.CameraBoardSocket = dai.CameraBoardSocket.CAM_A,
+        shrinkingFactor: float = 0,
     ) -> "DepthMerger":
-        self.link_args(output_2d, output_depth)
-        self.shrinking_factor = shrinking_factor
-        self.host_spatials_calc = HostSpatialsCalc(calib_data, depth_alignment_socket)
+        """Connect detection and depth streams and initialize spatial conversion.
+
+        Parameters
+        ----------
+        output2d
+            Upstream output producing 2D detections.
+        outputDepth
+            Upstream output producing aligned depth frames.
+        calibData
+            Device calibration used to convert image coordinates into spatial
+            coordinates.
+        depthAlignmentSocket
+            Camera socket the depth frame is aligned to.
+        shrinkingFactor
+            Percentage of each bounding box edge trimmed before depth averaging.
+
+        Returns
+        -------
+        DepthMerger
+            The configured node instance.
+        """
+        self.link_args(output2d, outputDepth)
+        self.shrinking_factor = shrinkingFactor
+        self.host_spatials_calc = HostSpatialsCalc(calibData, depthAlignmentSocket)
         self._logger.debug(
-            f"DepthMerger built with shrinking_factor={shrinking_factor}"
+            f"DepthMerger built with shrinking_factor={shrinkingFactor}"
         )
         return self
 
-    def process(self, message_2d: dai.Buffer, depth: dai.ImgFrame) -> None:
+    def process(self, message2d: dai.Buffer, depth: dai.ImgFrame) -> None:
+        """Merge incoming detections with depth to produce spatial detections."""
         self._logger.debug("Processing new input")
-        spatial_dets = self._transform(message_2d, depth)
+        spatial_dets = self._transform(message2d, depth)
         self._logger.debug("Spatial detections message created")
         self.output.send(spatial_dets)  # type: ignore
         self._logger.debug("Message sent successfully")
@@ -99,7 +122,7 @@ class DepthMerger(BaseHostNode):
             self._get_index(xmax_corrected, x_len),
             self._get_index(ymax_corrected, y_len),
         ]
-        spatials = self.host_spatials_calc.calc_spatials(depth, roi)
+        spatials = self.host_spatials_calc.calcSpatials(depth, roi)
 
         spatial_img_detection = dai.SpatialImgDetection()
         spatial_img_detection.xmin = xmin

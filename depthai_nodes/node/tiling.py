@@ -62,71 +62,13 @@ except Exception as e:
 
     @property
     def out(self) -> dai.Node.Output:
+        """Return the output stream of tile configuration groups."""
         return self._script.outputs["cfg_group"]
 
     @property
-    def tile_count(self) -> int:
+    def tileCount(self) -> int:
+        """Return the number of tiles in the current configuration."""
         return len(self._crop_configs)
-
-    def build(
-        self,
-        trigger: dai.Node.Output,
-        overlap: float,
-        gridSize: Tuple[int, int],
-        canvasShape: Tuple[int, int],
-        resizeShape: Tuple[int, int],
-        resizeMode: dai.ImageManipConfig.ResizeMode,
-        globalDetection: bool = False,
-        gridMatrix: Union[np.ndarray, List, None] = None,
-    ) -> "Tiling":
-        """Configure the tiling node and link the trigger stream.
-
-        Parameters
-        ----------
-        trigger
-            Any upstream message stream used only to trigger output of the latest
-            tiling configuration.
-        overlap
-            Fractional overlap between adjacent tiles in the range ``[0, 1)``.
-        gridSize
-            Tile grid as ``(columns, rows)``.
-        canvasShape
-            Shape of the image space the tiling is defined on. Crop coordinates
-            are computed in this absolute coordinate system.
-        resizeShape
-            Output size applied to each tile after cropping. This is the shape
-            expected by downstream consumers, not necessarily a neural network.
-        resizeMode
-            Resize strategy used when adapting each crop to ``resizeShape``.
-        globalDetection
-            If ``True``, prepend a config covering the whole canvas.
-        gridMatrix
-            Optional grouping matrix for merging neighboring grid cells into
-            larger crops.
-        """
-        self.setTilingConfig(
-            overlap=overlap,
-            gridSize=gridSize,
-            canvasShape=canvasShape,
-            resizeShape=resizeShape,
-            resizeMode=resizeMode,
-            globalDetection=globalDetection,
-            gridMatrix=gridMatrix,
-        )
-
-        self._cfg_out.link(self._script.inputs["cfg"])
-        trigger.link(self._script.inputs["trigger"])
-        self._is_built = True
-
-        self._logger.debug(
-            "Tiling built with overlap=%s, gridSize=%s, canvasShape=%s, resizeShape=%s, globalDetection=%s",
-            overlap,
-            gridSize,
-            canvasShape,
-            resizeShape,
-            globalDetection,
-        )
-        return self
 
     def setTilingConfig(
         self,
@@ -174,7 +116,73 @@ except Exception as e:
         )
         self._cfg_group = self._createMessageGroup(self._crop_configs)
 
+    def build(
+        self,
+        trigger: dai.Node.Output,
+        overlap: float,
+        gridSize: Tuple[int, int],
+        canvasShape: Tuple[int, int],
+        resizeShape: Tuple[int, int],
+        resizeMode: dai.ImageManipConfig.ResizeMode,
+        globalDetection: bool = False,
+        gridMatrix: Union[np.ndarray, List, None] = None,
+    ) -> "Tiling":
+        """Configure the tiling node and link the trigger stream.
+
+        Parameters
+        ----------
+        trigger
+            Any upstream message stream used only to trigger output of the latest
+            tiling configuration.
+        overlap
+            Fractional overlap between adjacent tiles in the range ``[0, 1)``.
+        gridSize
+            Tile grid as ``(columns, rows)``.
+        canvasShape
+            Shape of the image space the tiling is defined on. Crop coordinates
+            are computed in this absolute coordinate system.
+        resizeShape
+            Output size applied to each tile after cropping. This is the shape
+            expected by downstream consumers, not necessarily a neural network.
+        resizeMode
+            Resize strategy used when adapting each crop to ``resizeShape``.
+        globalDetection
+            If ``True``, prepend a config covering the whole canvas.
+        gridMatrix
+            Optional grouping matrix for merging neighboring grid cells into
+            larger crops.
+
+        Returns
+        -------
+        Tiling
+            The configured node instance.
+        """
+        self.setTilingConfig(
+            overlap=overlap,
+            gridSize=gridSize,
+            canvasShape=canvasShape,
+            resizeShape=resizeShape,
+            resizeMode=resizeMode,
+            globalDetection=globalDetection,
+            gridMatrix=gridMatrix,
+        )
+
+        self._cfg_out.link(self._script.inputs["cfg"])
+        trigger.link(self._script.inputs["trigger"])
+        self._is_built = True
+
+        self._logger.debug(
+            "Tiling built with overlap=%s, gridSize=%s, canvasShape=%s, resizeShape=%s, globalDetection=%s",
+            overlap,
+            gridSize,
+            canvasShape,
+            resizeShape,
+            globalDetection,
+        )
+        return self
+
     def run(self) -> None:
+        """Send the latest tiling configuration to the script node when updated."""
         while self._pipeline.isRunning():
             if self._cfg_group is not None:
                 self._cfg_out.send(self._cfg_group)

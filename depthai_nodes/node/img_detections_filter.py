@@ -33,18 +33,20 @@ class ImgDetectionsFilter(BaseHostNode):
 
     Attributes
     ----------
-    labels_to_keep : List[int]
-        Labels to keep. Only detections with labels in this list will be kept.
-    labels_to_reject: List[int]
-        Labels to reject. Only detections with labels not in this list will be kept.
-    confidence_threshold : float
-        Minimum confidence threshold. Detections with confidence below this threshold will be filtered out.
-    min_area : float
-        Minimum normalized area (width * height) for a detection's bounding box.
-    max_detections : int
-        Maximum number of detections to keep. If not defined, all detections will be kept.
-    sort_by_confidence: bool
-        Whether to sort the detections by confidence before subsetting.
+    keepLabels(labels)
+        Keep only detections whose label is present in ``labels``.
+    rejectLabels(labels)
+        Drop detections whose label is present in ``labels``.
+    minConfidence(threshold)
+        Require detections to meet a minimum confidence.
+    minArea(area)
+        Require detections to meet a minimum normalized bounding-box area.
+    useNms(confThresh=..., iouThresh=...)
+        Enable non-maximum suppression after filtering.
+    sortByConfidence(desc=True)
+        Sort detections by confidence before optional top-k truncation.
+    takeFirstK(k)
+        Keep only the first ``k`` detections after all previous steps.
     """
 
     def __init__(self):
@@ -53,6 +55,7 @@ class ImgDetectionsFilter(BaseHostNode):
         self._logger.debug("ImgDetectionsFilter initialized")
 
     def setLabels(self, labels: List[int], keep: bool) -> None:
+        """Deprecated wrapper for configuring label inclusion or exclusion."""
         warnings.warn(
             "setLabels() is deprecated; use keepLabels() or rejectLabels() instead.",
             FutureWarning,
@@ -63,42 +66,47 @@ class ImgDetectionsFilter(BaseHostNode):
         else:
             self.rejectLabels(labels=labels)
 
-    def setConfidenceThreshold(self, confidence_threshold: float | None) -> None:
+    def setConfidenceThreshold(self, confidenceThreshold: float | None) -> None:
+        """Deprecated wrapper for setting the minimum confidence."""
         warnings.warn(
             "setConfidenceThreshold() is deprecated; use minConfidence() instead.",
             FutureWarning,
             stacklevel=2,
         )
-        self.minConfidence(threshold=confidence_threshold)
+        self.minConfidence(threshold=confidenceThreshold)
 
-    def setMaxDetections(self, max_detections: int) -> None:
+    def setMaxDetections(self, maxDetections: int) -> None:
+        """Deprecated wrapper for limiting the number of detections."""
         warnings.warn(
             "setMaxDetections() is deprecated; use takeFirstK() instead.",
             FutureWarning,
             stacklevel=2,
         )
-        self.takeFirstK(k=max_detections)
+        self.takeFirstK(k=maxDetections)
 
-    def setSortByConfidence(self, sort_by_confidence: bool) -> None:
+    def setSortByConfidence(self, sortByConfidence: bool) -> None:
+        """Deprecated wrapper for toggling confidence-based sorting."""
         warnings.warn(
             "setSortByConfidence() is deprecated; use sortByConfidence(), enableSorting() and disableSorting() instead.",
             FutureWarning,
             stacklevel=2,
         )
-        if sort_by_confidence is True:
+        if sortByConfidence is True:
             self.enableSorting()
         else:
             self.disableSorting()
 
-    def setMinArea(self, min_area: float) -> None:
+    def setMinArea(self, minArea: float) -> None:
+        """Deprecated wrapper for setting the minimum detection area."""
         warnings.warn(
             "setMinArea() is deprecated; use minArea() instead.",
             FutureWarning,
             stacklevel=2,
         )
-        self.minArea(area=min_area)
+        self.minArea(area=minArea)
 
     def keepLabels(self, labels: list[int]) -> "ImgDetectionsFilter":
+        """Keep only detections whose label is in ``labels``."""
         self._cfg.labels_to_keep = labels
         if self._cfg.labels_to_reject is not None:
             self._logger.warn(f"Removing labels to reject. Use either `keepLabels` or `rejectLabels` but not both.")
@@ -106,6 +114,7 @@ class ImgDetectionsFilter(BaseHostNode):
         return self
 
     def rejectLabels(self, labels: list[int]) -> "ImgDetectionsFilter":
+        """Drop detections whose label is in ``labels``."""
         self._cfg.labels_to_reject = labels
         if self._cfg.labels_to_keep is not None:
             self._logger.warn(f"Removing labels to keep. Use either `keepLabels` or `rejectLabels` but not both.")
@@ -113,10 +122,12 @@ class ImgDetectionsFilter(BaseHostNode):
         return self
 
     def minConfidence(self, threshold: float) -> "ImgDetectionsFilter":
+        """Require detections to meet the minimum confidence threshold."""
         self._cfg.min_confidence = threshold
         return self
 
     def minArea(self, area: float) -> "ImgDetectionsFilter":
+        """Require detections to meet the minimum normalized bounding-box area."""
         self._cfg.min_area = area
         return self
 
@@ -146,15 +157,18 @@ class ImgDetectionsFilter(BaseHostNode):
         return self
 
     def takeFirstK(self, k: Optional[int]):
+        """Keep only the first ``k`` detections after filtering and sorting."""
         self._cfg.first_k = k
         return self
 
     def build(self, input: dai.Node.Output) -> "ImgDetectionsFilter":
+        """Connect the detections stream to the filter node."""
         self.link_args(input)
         self._logger.debug(self._plan_string())
         return self
 
     def process(self, msg: dai.Buffer) -> None:
+        """Filter, optionally suppress, sort, and emit the detections message."""
         assert isinstance(msg, (dai.ImgDetections, dai.SpatialImgDetections))
         msg_new = copy_message(msg)
         assert isinstance(msg_new, (dai.ImgDetections, dai.SpatialImgDetections))

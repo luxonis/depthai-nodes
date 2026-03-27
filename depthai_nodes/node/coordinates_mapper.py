@@ -88,9 +88,29 @@ except Exception as e:
         self._out = self.createOutput()
         self._cached_transformation: dai.ImgTransformation | None = None
 
+    @property
+    def out(self) -> dai.Node.Output:
+        """Return the remapped output stream."""
+        return self._out
+
     def build(
         self, toTransformationInput: dai.Node.Output, fromTransformationInput: dai.Node.Output
     ) -> "CoordinatesMapper":
+        """Connect the target and source streams used for coordinate remapping.
+
+        Parameters
+        ----------
+        toTransformationInput
+            Stream providing messages whose transformation defines the target
+            reference frame.
+        fromTransformationInput
+            Stream providing messages whose coordinates should be remapped.
+
+        Returns
+        -------
+        CoordinatesMapper
+            The configured node instance.
+        """
         script = self._pipeline.create(dai.node.Script)
         script.setScript(self.SCRIPT_CONTENT)
         toTransformationInput.link(script.inputs["message"])
@@ -102,11 +122,8 @@ except Exception as e:
         self._logger.debug("CoordinatesMapper built")
         return self
 
-    @property
-    def out(self) -> dai.Node.Output:
-        return self._out
-
     def run(self) -> None:
+        """Cache the latest target transformation and remap incoming messages."""
         first_target_msg = self._to_transformation_input.get()
         self._cached_transformation = self._extract_transformation(first_target_msg)
 

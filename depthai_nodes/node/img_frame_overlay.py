@@ -19,25 +19,27 @@ class ImgFrameOverlay(BaseHostNode):
     alpha: float
         The weight of the background frame in the overlay. By default, the weight is 0.5
             which means that both frames are represented equally in the overlay.
-    preserve_background: bool
+    preserveBackground: bool
         If True, zero areas in the foreground frame are ignored in the output overlay frame. Default is False.
     out : dai.ImgFrame
         The output message for the overlay frame.
     """
 
-    def __init__(self, alpha: float = 0.5, preserve_background: bool = False) -> None:
+    def __init__(self, alpha: float = 0.5, preserveBackground: bool = False) -> None:
         super().__init__()
         self.setAlpha(alpha)
-        self.setPreserveBackground(preserve_background)
+        self.setPreserveBackground(preserveBackground)
         self._logger.debug(
-            f"ImgFrameOverlay initialized with alpha={alpha}, preserve_background={preserve_background}"
+            f"ImgFrameOverlay initialized with alpha={alpha}, preserve_background={preserveBackground}"
         )
 
     def setAlpha(self, alpha: float) -> None:
-        """Sets the alpha.
+        """Set the background contribution used during overlay.
 
-        @param alpha: The weight of the background frame in the overlay.
-        @type alpha: float
+        Parameters
+        ----------
+        alpha
+            Weight of the background frame in the blended output.
         """
         if not isinstance(alpha, float):
             raise ValueError("Alpha must be a float")
@@ -46,59 +48,60 @@ class ImgFrameOverlay(BaseHostNode):
         self._alpha = alpha
         self._logger.debug(f"Alpha set to {self._alpha}")
 
-    def setPreserveBackground(self, preserve_background: bool) -> None:
-        """Sets the preserve_background flag.
+    def setPreserveBackground(self, preserveBackground: bool) -> None:
+        """Set whether zero-valued foreground pixels preserve the background.
 
-        @param preserve_background: If True, zero areas in the foreground frame are
-            ignored in the output overlay frame.
-        @type preserve_background: bool
+        Parameters
+        ----------
+        preserveBackground
+            If ``True``, zero areas in the foreground frame are ignored in the
+            output image.
         """
-        if not isinstance(preserve_background, bool):
-            raise ValueError("preserve_background must be a boolean")
-        self._preserve_background = preserve_background
+        if not isinstance(preserveBackground, bool):
+            raise ValueError("preserveBackground must be a boolean")
+        self._preserve_background = preserveBackground
 
     def build(
         self,
         frame1: dai.Node.Output,
         frame2: dai.Node.Output,
         alpha: Optional[float] = None,
-        preserve_background: Optional[bool] = None,
+        preserveBackground: Optional[bool] = None,
     ) -> "ImgFrameOverlay":
-        """Configures the node connections.
+        """Connect the input streams and optionally update overlay settings.
 
-        @param frame1: The input message for the background frame.
-        @type frame1: dai.Node.Output
-        @param frame2: The input message for the foreground frame.
-        @type frame2: dai.Node.Output
-        @param alpha: The weight of the background frame in the overlay.
-        @type alpha: float
-        @param preserve_background: If True, zero areas in the foreground frame are
-            ignored in the output overlay frame.
-        @type preserve_background: bool
-        @return: The node object with the background and foreground streams overlaid.
-        @rtype: ImgFrameOverlay
+        Parameters
+        ----------
+        frame1
+            Upstream output producing the background frame.
+        frame2
+            Upstream output producing the foreground frame.
+        alpha
+            Optional blend weight for the background frame.
+        preserveBackground
+            Optional override for whether zero-valued foreground pixels preserve
+            the background frame.
+
+        Returns
+        -------
+        ImgFrameOverlay
+            The configured node instance.
         """
         self.link_args(frame1, frame2)
 
         if alpha is not None:
             self.setAlpha(alpha)
-        if preserve_background is not None:
-            self.setPreserveBackground(preserve_background)
+        if preserveBackground is not None:
+            self.setPreserveBackground(preserveBackground)
 
         self._logger.debug(
-            f"ImgFrameOverlay built with alpha={alpha}, preserve_background={preserve_background}"
+            f"ImgFrameOverlay built with alpha={alpha}, preserve_background={preserveBackground}"
         )
 
         return self
 
     def process(self, frame1: dai.Buffer, frame2: dai.Buffer) -> None:
-        """Processes incoming frames and overlays them.
-
-        @param frame1: The input message for the background frame.
-        @type frame1: dai.ImgFrame
-        @param frame2: The input message for the foreground frame.
-        @type frame2: dai.ImgFrame
-        """
+        """Overlay the foreground frame onto the background frame."""
         self._logger.debug("Processing new input")
         assert isinstance(frame1, dai.ImgFrame)
         assert isinstance(frame2, dai.ImgFrame)

@@ -22,10 +22,12 @@ class InstanceToSemanticMask(BaseHostNode):
         self.out.setPossibleDatatypes([(dai.DatatypeEnum.ImgDetections, True)])
 
     def build(self, detections: dai.Node.Output) -> "InstanceToSemanticMask":
+        """Connect the detections stream to the semantic-mask converter."""
         self.link_args(detections)
         return self
 
     def process(self, msg: dai.Buffer) -> None:
+        """Convert instance IDs in the segmentation mask into class labels."""
         if not isinstance(msg, dai.ImgDetections):
             raise TypeError(
                 f"Expected dai.ImgDetections input type, got {type(msg)}."

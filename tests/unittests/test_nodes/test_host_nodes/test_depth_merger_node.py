@@ -30,10 +30,10 @@ def duration(request):
 
 @pytest.fixture
 def depth_merger():
-    depth_merger = DepthMerger(shrinking_factor=0.0)
+    depth_merger = DepthMerger(shrinkingFactor=0.0)
     calib_handler = get_calibration_handler()
     depth_merger.host_spatials_calc = HostSpatialsCalc(
-        calib_data=calib_handler, depth_alignment_socket=dai.CameraBoardSocket.CAM_A
+        calibData=calib_handler, depthAlignmentSocket=dai.CameraBoardSocket.CAM_A
     )
     return depth_merger
 
@@ -94,11 +94,11 @@ def test_img_detection(
     modified_duration = duration / DIFFERENT_TESTS
 
     depth_merger.build(
-        output_2d=output_2d,
-        output_depth=output_depth,
-        calib_data=get_calibration_handler(),
-        depth_alignment_socket=dai.CameraBoardSocket.CAM_A,
-        shrinking_factor=0.0,
+        output2d=output_2d,
+        outputDepth=output_depth,
+        calibData=get_calibration_handler(),
+        depthAlignmentSocket=dai.CameraBoardSocket.CAM_A,
+        shrinkingFactor=0.0,
     )
 
     q_2d = output_2d.createOutputQueue()
@@ -137,11 +137,11 @@ def test_img_detections(
     modified_duration = duration / DIFFERENT_TESTS
 
     depth_merger.build(
-        output_2d=output_2d,
-        output_depth=output_depth,
-        calib_data=get_calibration_handler(),
-        depth_alignment_socket=dai.CameraBoardSocket.CAM_A,
-        shrinking_factor=0.0,
+        output2d=output_2d,
+        outputDepth=output_depth,
+        calibData=get_calibration_handler(),
+        depthAlignmentSocket=dai.CameraBoardSocket.CAM_A,
+        shrinkingFactor=0.0,
     )
 
     q_2d = output_2d.createOutputQueue()

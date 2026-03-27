@@ -72,13 +72,13 @@ def test_build(uploader):
 def test_set_token_and_url(monkeypatch):
     uploader = SnapsUploader()
 
-    uploader.set_token("test_token")
+    uploader.setToken("test_token")
     assert os.environ["DEPTHAI_HUB_API_KEY"] == "test_token"
 
-    uploader.set_url("test-url")
+    uploader.setUrl("test-url")
     assert os.environ["DEPTHAI_HUB_EVENTS_BASE_URL"] == "test-url"
 
-    uploader.set_token("new_token")
+    uploader.setToken("new_token")
     assert os.environ["DEPTHAI_HUB_API_KEY"] == "test_token"
 
 
@@ -110,13 +110,13 @@ def test_process_invalid_type(uploader):
 
 
 def test_environment_variable_setting(monkeypatch):
-    """Test that set_token and set_url correctly set environment variables."""
+    """Test that setToken and setUrl correctly set environment variables."""
     monkeypatch.delenv("DEPTHAI_HUB_API_KEY", raising=False)
     monkeypatch.delenv("DEPTHAI_HUB_EVENTS_BASE_URL", raising=False)
 
     uploader = SnapsUploader()
-    uploader.set_token("my_token")
-    uploader.set_url("my_url")
+    uploader.setToken("my_token")
+    uploader.setUrl("my_url")
 
     assert os.environ["DEPTHAI_HUB_API_KEY"] == "my_token"
     assert os.environ["DEPTHAI_HUB_EVENTS_BASE_URL"] == "my_url"

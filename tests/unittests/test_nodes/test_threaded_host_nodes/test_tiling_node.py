@@ -71,7 +71,7 @@ def test_set_tiling_config_sends_updated_message_group():
         resizeMode=dai.ImageManipConfig.ResizeMode.CENTER_CROP,
     )
 
-    assert tiling.tile_count == 2
+    assert tiling.tileCount == 2
     assert isinstance(tiling._cfg_group, dai.MessageGroup)
     assert tiling._cfg_group.getNumMessages() == 2
     assert tiling._cfg_out.sent == []

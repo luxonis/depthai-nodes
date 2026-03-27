@@ -17,33 +17,38 @@ class ParserGenerator(dai.node.ThreadedHostNode):
 
     def build(
         self,
-        nn_archive: dai.NNArchive,
-        head_index: Optional[int] = None,
-        host_only: bool = False,
+        nnArchive: dai.NNArchive,
+        headIndex: Optional[int] = None,
+        hostOnly: bool = False,
     ) -> Dict:
-        """Instantiates parsers based on the provided model archive.
+        """Instantiate parser nodes for the supplied model archive.
 
-        @param nn_archive: NN Archive of the model.
-        @type nn_archive: dai.NNArchive
-        @param head_index: Index of the head to be used for parsing. If not provided,
-            each head will instantiate a separate parser.
-        @type head_index: Optional[int]
-        @param host_only: If True, only host parsers will be instantiated.
-        @type host_only: bool
-        @return: A dictionary of instantiated parsers.
-        @rtype: Dict[int, BaseParser]
+        Parameters
+        ----------
+        nnArchive
+            Model archive describing the parser configuration.
+        headIndex
+            Optional model head index to instantiate. If omitted, parsers are
+            created for all heads.
+        hostOnly
+            If ``True``, prefer host-side parser implementations where available.
+
+        Returns
+        -------
+        Dict
+            Mapping of model head index to parser node.
         """
 
-        heads: List = nn_archive.getConfig().model.heads  # type: ignore
+        heads: List = nnArchive.getConfig().model.heads  # type: ignore
 
         indexes = range(len(heads))
 
         if len(heads) == 0:
             raise ValueError("No heads defined in the NN Archive.")
 
-        if head_index:
-            heads = [heads[head_index]]
-            indexes = [head_index]
+        if headIndex is not None:
+            heads = [heads[headIndex]]
+            indexes = [headIndex]
 
         parsers = {}
         pipeline = self.getParentPipeline()
@@ -52,11 +57,11 @@ class ParserGenerator(dai.node.ThreadedHostNode):
             parser_name = head.parser
 
             if parser_name in self.DEVICE_PARSERS:
-                if host_only:
+                if hostOnly:
                     parser_name = self._getHostParserName(parser_name)
                 else:
                     parser = pipeline.create(dai.node.DetectionParser)
-                    parser.setNNArchive(nn_archive)
+                    parser.setNNArchive(nnArchive)
                     parsers[index] = parser
                     continue
 
@@ -71,13 +76,17 @@ class ParserGenerator(dai.node.ThreadedHostNode):
 
             head_config = decode_head(head)
             head_config["model_inputs"] = []
-            for input in nn_archive.getConfig().model.inputs:
+            for input in nnArchive.getConfig().model.inputs:
                 head_config["model_inputs"].append(
                     {"shape": input.shape, "layout": input.layout}
                 )
             parsers[index] = pipeline.create(parser).build(head_config)
 
         return parsers
+
+    def run(self):
+        """No-op required by ``dai.node.ThreadedHostNode``."""
+        pass
 
     def _getHostParserName(self, parser_name: str) -> str:
         if parser_name == "YOLO":
@@ -86,6 +95,3 @@ class ParserGenerator(dai.node.ThreadedHostNode):
             raise ValueError(
                 f"Parser {parser_name} is not supported for host only mode."
             )
-
-    def run(self):
-        pass

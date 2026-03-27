@@ -38,4 +38,5 @@ class BaseThreadedHostNode(dai.node.ThreadedHostNode, metaclass=CombinedMeta):
 
     @abstractmethod
     def run(self) -> None:
+        """Run the threaded host-node loop."""
         pass
