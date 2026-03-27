@@ -40,4 +40,5 @@ class BaseHostNode(dai.node.HostNode, metaclass=CombinedMeta):
 
     @abstractmethod
     def process(self, *msgs: dai.Buffer) -> None:
+        """Process one synchronized batch of input messages."""
         pass

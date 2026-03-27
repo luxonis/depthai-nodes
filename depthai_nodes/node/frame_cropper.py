@@ -130,6 +130,7 @@ class FrameCropper(BaseThreadedHostNode):
 
     @property
     def out(self):
+        """Return the cropped frame output stream."""
         return self._cropper_image_manip.out
 
     def fromImgDetections(
@@ -200,6 +201,10 @@ class FrameCropper(BaseThreadedHostNode):
         self._logger.debug("FrameCropper built")
         return self
 
+    def run(self) -> None:
+        """No-op because cropping is driven entirely by on-device Script nodes."""
+        return  # Both fromImgDetections and fromManipConfigs use on-device Script
+
     def _build_detections_cropper(
         self, input_image: dai.Node.Output, resize_mode: dai.ImageManipConfig.ResizeMode
     ):
@@ -227,6 +232,3 @@ class FrameCropper(BaseThreadedHostNode):
         self._input_manip_configs.link(self._script.inputs["inputManipConfigs"])
         self._script.outputs["manip_cfg"].link(self._cropper_image_manip.inputConfig)
         self._script.outputs["manip_img"].link(self._cropper_image_manip.inputImage)
-
-    def run(self) -> None:
-        return  # Both fromImgDetections and fromManipConfigs use on-device Script

@@ -91,7 +91,7 @@ def test_parser(parser_generator, model: str, parser_name: str, duration: int):
         exit(9)
 
     # Create and build parser
-    parser = parser_generator.build(nn_archive=nn_archive)[0]
+    parser = parser_generator.build(nnArchive=nn_archive)[0]
     parser.input._queue.duration = duration
 
     # Load and send test data

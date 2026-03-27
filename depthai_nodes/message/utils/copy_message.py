@@ -86,6 +86,13 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         keypoints_copy = [_copy_keypoint(keypoint) for keypoint in keypoints]
         return keypoints_copy
 
+    def _copy_keypoints_list(keypoints: dai.KeypointsList) -> dai.KeypointsList:
+        keypoints_copy = _copy_metadata(keypoints)
+        assert isinstance(keypoints_copy, dai.KeypointsList)
+        keypoints_copy.setKeypoints(_copy_keypoints(keypoints.getKeypoints()))
+        keypoints_copy.setEdges(copy.deepcopy(keypoints.getEdges()))
+        return keypoints_copy
+
     def _copy_point2f(point2f: dai.Point2f) -> dai.Point2f:
         point2f_copy = _copy_metadata(point2f)
         point2f_copy.x = point2f.x
@@ -125,6 +132,8 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         return _copy_img_detection(msg)
     elif isinstance(msg, (dai.ImgDetections, dai.SpatialImgDetections)):
         return _copy_img_detections(msg)
+    elif isinstance(msg, dai.KeypointsList):
+        return _copy_keypoints_list(msg)
     elif isinstance(msg, dai.Point2f):
         return _copy_point2f(msg)
     else:

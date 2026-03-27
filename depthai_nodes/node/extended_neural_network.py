@@ -84,6 +84,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
 
     @property
     def out(self) -> Optional[dai.Node.Output]:
+        """Return the primary parsed output stream."""
         if not self._nn:
             return None
         if self._has_camera_node_as_input:
@@ -93,6 +94,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
 
     @property
     def outputs(self) -> Optional[dai.Node.Output]:
+        """Return the multi-head output stream when available."""
         if not self._nn:
             return None
         if self._has_camera_node_as_input:
@@ -102,60 +104,35 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
 
     @property
     def passthrough(self) -> Optional[dai.Node.Output]:
+        """Return the passthrough stream from the underlying NN node."""
         if not self._nn:
             return None
         return self._nn.passthrough
 
     def build(
-            self,
-            inputImage: dai.node.Camera | dai.Node.Output,
-            nnSource: Union[dai.NNModelDescription, dai.NNArchive, str],
-            resizeMode: dai.ImageManipConfig.ResizeMode = dai.ImageManipConfig.ResizeMode.CENTER_CROP,
+        self,
+        inputImage: dai.node.Camera | dai.Node.Output,
+        nnSource: Union[dai.NNModelDescription, dai.NNArchive, str],
+        resizeMode: dai.ImageManipConfig.ResizeMode = dai.ImageManipConfig.ResizeMode.CENTER_CROP,
     ) -> "ExtendedNeuralNetwork":
-        """Build the internal neural network pipeline.
+        """Build the internal inference pipeline.
 
-                Configures model loading, input resizing, and optional coordinate
-                remapping. Returns `self` for fluent chaining.
+        Parameters
+        ----------
+        inputImage
+            Source of input frames. Camera nodes are resized on-device by the
+            camera; generic outputs are resized via an internal ``ImageManip``.
+        nnSource
+            HubAI model slug, ``dai.NNModelDescription``, or ``dai.NNArchive``.
+        resizeMode
+            Resize strategy used when adapting frames to the network input
+            shape.
 
-                Parameters
-                ----------
-                inputImage : dai.node.Camera or dai.Node.Output
-                    Source of input frames. If a Camera node is provided,
-                    resizing is requested directly from the camera. Otherwise,
-                    an internal ImageManip node performs resizing.
-                nnSource : Union[dai.NNModelDescription, dai.NNArchive, str]
-                    Neural network source specification. Can be:
-
-                    - A HubAI model slug (``str``),
-                    - A :class:`dai.NNModelDescription`,
-                    - A preloaded :class:`dai.NNArchive`.
-
-                resizeMode : dai.ImageManipConfig.ResizeMode, optional
-                    Resize strategy used when adapting input frames to the neural
-                    network input size. Default is ``CENTER_CROP``.
-
-                Returns
-                -------
-                ExtendedNeuralNetwork
-                    The configured node instance.
-
-                Raises
-                ------
-                RuntimeError
-                    If the node is used on the RVC2 platform.
-                ValueError
-                    If `nnSource` is not a supported type.
-
-                Notes
-                -----
-                - The neural network input resolution is inferred from the
-                  provided model archive.
-                - When `inputImage` is not a Camera node, an internal
-                  ImageManip node resizes frames to match the model's
-                  expected input size.
-                - In non-camera mode, a CoordinatesMapper node remaps
-                  inference results back to the original image space.
-                """
+        Returns
+        -------
+        ExtendedNeuralNetwork
+            The configured node instance.
+        """
 
         if isinstance(nnSource, str):
             nnSource = dai.NNModelDescription(nnSource)
@@ -167,7 +144,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
             nn_archive = nnSource
         else:
             raise ValueError(
-                "nn_source must be either a NNModelDescription, NNArchive, or a string representing HubAI model slug."
+                "nnSource must be either a NNModelDescription, NNArchive, or a string representing HubAI model slug."
             )
         nn_w = nn_archive.getInputWidth()
         nn_h = nn_archive.getInputHeight()
@@ -186,7 +163,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
             inputImage.link(manip.inputImage)
             image_out = manip.out
 
-        self._nn = self._pipeline.create(ParsingNeuralNetwork).build(input=image_out, nn_source=nn_archive)
+        self._nn = self._pipeline.create(ParsingNeuralNetwork).build(input=image_out, nnSource=nn_archive)
 
         try:
             nn_output = self._nn.out
@@ -203,4 +180,5 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
         return self
 
     def run(self):
+        """No-op required by ``BaseThreadedHostNode``."""
         pass

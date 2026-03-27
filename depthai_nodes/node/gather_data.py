@@ -21,6 +21,7 @@ from depthai_nodes.logging import get_logger
 class HasDetections(Protocol):
     @property
     def detections(self) -> List:
+        """Return the detections used to derive the default wait count."""
         ...
 
 
@@ -47,7 +48,7 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
 
     The default `wait_count_fn` uses ``len(reference.detections)``, which works
     out-of-the-box for messages that expose a ``detections`` attribute (e.g.
-    ``dai.ImgDetections`` and ``ImgDetectionsExtended``).
+    ``dai.ImgDetections``).
 
     Notes
     -----
@@ -104,79 +105,68 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
 
     @property
     def out(self) -> dai.Node.Output:
+        """Return the gathered output stream."""
         return self._out
 
     def setCameraFps(self, fps: int) -> None:
+        """Set the camera frame rate used for timestamp matching.
+
+        Parameters
+        ----------
+        fps
+            Positive camera frame rate used for matching tolerance and polling.
+        """
         if fps <= 0:
             raise ValueError(f"Camera FPS must be positive, got {fps}")
         self._camera_fps = fps
         self._logger.debug(f"Camera FPS set to {fps}")
 
     def setWaitCountFn(self, fn: Callable[[TReference], int]) -> None:
+        """Set the callback that returns the expected item count per reference."""
         self._wait_count_fn = fn
-
-    @staticmethod
-    def _default_wait_count_fn(reference: TReference) -> int:
-        assert isinstance(reference, HasDetections)
-        return len(reference.detections)
 
     def build(
         self,
-        camera_fps: int,
-        input_data: dai.Node.Output,
-        input_reference: dai.Node.Output,
-        wait_count_fn: Optional[Callable[[TReference], int]] = None,
+        cameraFps: int,
+        inputData: dai.Node.Output,
+        inputReference: dai.Node.Output,
+        waitCountFn: Optional[Callable[[TReference], int]] = None,
     ) -> "GatherData[TReference, TGathered]":
-        """Configure the node and link pipeline outputs to this node's inputs. This
-        method must be called before the pipeline is started.
+        """Connect the data and reference streams used for gathering.
 
-        @param camera_fps: Camera frame rate used to derive timestamp matching tolerance and polling interval. Must be positive.
-        @type camera_fps: int
-        @param input_data: Upstream output producing the data messages to gather.
-        @type input_data : dai.Node.Output
-        @param input_reference: Upstream output producing the reference messages.
-        @type input_reference: dai.Node.Output
-        @param wait_count_fn: Function that returns how many data messages are expected for a given
-            reference message. If not provided, defaults to ``len(reference.detections)``.
-            Returning 0 causes immediate emission for that reference.
-        @type wait_count_fn: Callable[[TReference], int], optional
-        @return The configured node instance (for chaining).
-        @rtype GatherData[TReference, TGathered]
+        Parameters
+        ----------
+        cameraFps
+            Camera frame rate used to derive timestamp matching tolerance and
+            polling interval.
+        inputData
+            Upstream output producing the data messages to gather.
+        inputReference
+            Upstream output producing the reference messages.
+        waitCountFn
+            Optional callback returning the number of data messages expected for
+            a given reference. If omitted, defaults to
+            ``len(reference.detections)``.
 
-        @raises ValueError: If ``camera_fps`` is not positive.
-
-        Examples:
-        Use default behavior (wait for number of detections in the reference):
-
-        >>> gather = pipeline.create(GatherData).build(
-        ...     camera_fps=30,
-        ...     input_data=some_data_out,
-        ...     input_reference=detections_out,
-        ... )
-
-        Custom wait count:
-
-        >>> def wait_two(_ref): return 2
-        >>> gather = GatherData().build(
-        ...     camera_fps=60,
-        ...     input_data=some_data_out,
-        ...     input_reference=detections_out,
-        ...     wait_count_fn=wait_two,
-        ... )
+        Returns
+        -------
+        GatherData[TReference, TGathered]
+            The configured node instance.
         """
-        self.setCameraFps(camera_fps)
-        if wait_count_fn is None:
-            wait_count_fn = self._default_wait_count_fn
-        self.setWaitCountFn(wait_count_fn)
+        self.setCameraFps(cameraFps)
+        if waitCountFn is None:
+            waitCountFn = self._default_wait_count_fn
+        self.setWaitCountFn(waitCountFn)
 
-        input_data.link(self._data_input)
-        input_reference.link(self._reference_input)
-        self._logger.debug("Linked input_data and input_reference to GatherData inputs")
+        inputData.link(self._data_input)
+        inputReference.link(self._reference_input)
+        self._logger.debug("Linked inputData and inputReference to GatherData inputs")
 
-        self._logger.debug(f"GatherData built with camera_fps={camera_fps}")
+        self._logger.debug(f"GatherData built with cameraFps={cameraFps}")
         return self
 
     def run(self) -> None:
+        """Poll both inputs, match messages by timestamp, and emit ready groups."""
         self._logger.debug("GatherData run started")
         if not self._camera_fps:
             raise ValueError(
@@ -202,6 +192,11 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
                 self._send_ready_data()
 
             time.sleep(1 / self.INPUT_CHECKS_PER_FPS / self._camera_fps)
+
+    @staticmethod
+    def _default_wait_count_fn(reference: TReference) -> int:
+        assert isinstance(reference, HasDetections)
+        return len(reference.detections)
 
     def _add_data(self, data: TGathered) -> None:
         data_ts = self._get_total_seconds_ts(data)

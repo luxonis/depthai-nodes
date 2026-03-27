@@ -17,17 +17,21 @@ class SnapsUploader(BaseHostNode):
         super().__init__()
         self._em = dai.EventsManager()
 
-    def set_token(self, token: str):
+    def setToken(self, token: str):
+        """Set the Hub API token used for snap uploads."""
         os.environ.setdefault("DEPTHAI_HUB_API_KEY", token)
 
-    def set_url(self, url: str):
+    def setUrl(self, url: str):
+        """Set the Hub Events API base URL used for snap uploads."""
         os.environ.setdefault("DEPTHAI_HUB_EVENTS_BASE_URL", url)
 
     def build(self, snaps: dai.Node.Output):
+        """Connect the ``SnapData`` stream to the uploader node."""
         self.link_args(snaps)
         return self
 
     def process(self, snap: dai.Buffer):
+        """Upload the incoming ``SnapData`` payload to the Hub Events API."""
         assert isinstance(snap, SnapData), f"Expected SnapData, got {type(snap)}"
 
         logger.debug(f"Sending snap: {snap.snap_name} -> {snap.file_name}")

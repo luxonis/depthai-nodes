@@ -4,11 +4,6 @@ import numpy as np
 
 from depthai_nodes.message.classification import Classifications
 from depthai_nodes.message.clusters import Cluster, Clusters
-from depthai_nodes.message.img_detections import (
-    ImgDetectionExtended,
-    ImgDetectionsExtended,
-)
-from depthai_nodes.message.keypoints import Keypoint, Keypoints
 from depthai_nodes.message.lines import Line, Lines
 from depthai_nodes.message.map import Map2D
 from depthai_nodes.message.prediction import Prediction, Predictions
@@ -23,14 +18,10 @@ def remap_message(
 ) -> GMessage:
     if isinstance(message, dai.ImgDetections):
         return remap_img_detections(from_transformation, to_transformation, message)
-    elif isinstance(message, Keypoints):
+    elif isinstance(message, dai.KeypointsList):
         return remap_keypoints(from_transformation, to_transformation, message)
     elif isinstance(message, SegmentationMask):
         return remap_segmentation_mask(from_transformation, to_transformation, message)
-    elif isinstance(message, ImgDetectionsExtended):
-        return remap_img_detections_extended(
-            from_transformation, to_transformation, message
-        )
     elif isinstance(message, Clusters):
         return remap_clusters(from_transformation, to_transformation, message)
     elif isinstance(message, Map2D):
@@ -55,32 +46,11 @@ def remap_img_detections(
         remap_img_detection(from_transformation, to_transformation, det)
         for det in detections.detections
     ]
-    if detections.getCvSegmentationMask().size > 0:
+    if detections.getCvSegmentationMask() is not None and detections.getCvSegmentationMask().size > 0:
         new_mask = remap_segmentation_mask_array(
             from_transformation, to_transformation, detections.getCvSegmentationMask()
         )
         new_detections.setCvSegmentationMask(new_mask)
-    else:
-        new_detections.masks = np.empty(0, dtype=np.int16)
-    return new_detections
-
-
-def remap_img_detections_extended(
-    from_transformation: dai.ImgTransformation,
-    to_transformation: dai.ImgTransformation,
-    detections: ImgDetectionsExtended,
-) -> ImgDetectionsExtended:
-    new_detections = ImgDetectionsExtended()
-    new_detections.detections = [
-        remap_img_detection_extended(from_transformation, to_transformation, det)
-        for det in detections.detections
-    ]
-    if detections.masks.size > 0:
-        new_detections.masks = remap_segmentation_mask_array(
-            from_transformation, to_transformation, detections.masks
-        )
-    else:
-        new_detections.masks = np.empty(0, dtype=np.int16)
     return new_detections
 
 
@@ -140,89 +110,36 @@ def remap_img_detection(
     return new_det
 
 
-def remap_img_detection_extended(
-    from_transformation: dai.ImgTransformation,
-    to_transformation: dai.ImgTransformation,
-    detection: ImgDetectionExtended,
-) -> ImgDetectionExtended:
-    new_det = ImgDetectionExtended()
-
-    if detection.rotated_rect.angle == 0:
-        new_rect = from_transformation.remapRectTo(
-            to_transformation, detection.rotated_rect
-        )
-        new_det.rotated_rect = (
-            new_rect.center.x,
-            new_rect.center.y,
-            new_rect.size.width,
-            new_rect.size.height,
-            new_rect.angle,
-        )
-    else:
-        # TODO: This is a temporary fix - DepthAI doesn't handle rotated rects with angle != 0 correctly
-        pts = detection.rotated_rect.getPoints()
-        pts = [dai.Point2f(np.clip(pt.x, 0, 1), np.clip(pt.y, 0, 1)) for pt in pts]
-        remapped_pts = [
-            from_transformation.remapPointTo(to_transformation, pt) for pt in pts
-        ]
-        remapped_pts = [
-            (np.clip(pt.x, 0, 1), np.clip(pt.y, 0, 1)) for pt in remapped_pts
-        ]
-        (center_x, center_y), (width, height), angle = cv2.minAreaRect(
-            np.array(remapped_pts, dtype=np.float32)
-        )
-        new_det.rotated_rect = (
-            center_x,
-            center_y,
-            width,
-            height,
-            angle,
-        )
-    new_det.confidence = detection.confidence
-    new_det.label = detection.label
-    new_det.label_name = detection.label_name
-
-    new_kpts_list = []
-    for kpt in detection.keypoints:
-        new_kpt = remap_keypoint(from_transformation, to_transformation, kpt)
-        new_kpts_list.append(new_kpt)
-    new_kpts = Keypoints()
-    new_kpts.edges = detection.edges
-    new_kpts.keypoints = new_kpts_list
-    new_det.keypoints = new_kpts
-    return new_det
-
-
 def remap_keypoint(
     from_transformation: dai.ImgTransformation,
     to_transformation: dai.ImgTransformation,
-    keypoint: Keypoint,
-) -> Keypoint:
-    new_kpt = Keypoint()
-    new_kpt.x = from_transformation.remapPointTo(
-        to_transformation, dai.Point2f(keypoint.x, keypoint.y)
-    ).x
-    new_kpt.y = from_transformation.remapPointTo(
-        to_transformation, dai.Point2f(keypoint.x, keypoint.y)
-    ).y
-    new_kpt.z = keypoint.z
+    keypoint: dai.Keypoint,
+) -> dai.Keypoint:
+    new_kpt = dai.Keypoint()
+    transformed = from_transformation.remapPointTo(
+        to_transformation, dai.Point2f(keypoint.imageCoordinates.x, keypoint.imageCoordinates.y)
+    )
+    new_kpt.imageCoordinates.x = transformed.x
+    new_kpt.imageCoordinates.y = transformed.y
+    new_kpt.imageCoordinates.z = keypoint.imageCoordinates.z
     new_kpt.confidence = keypoint.confidence
-    new_kpt.label_name = keypoint.label_name
+    new_kpt.labelName = keypoint.labelName
+    new_kpt.label = keypoint.label
     return new_kpt
 
 
 def remap_keypoints(
     from_transformation: dai.ImgTransformation,
     to_transformation: dai.ImgTransformation,
-    keypoints: Keypoints,
-) -> Keypoints:
+    keypoints: dai.KeypointsList,
+) -> dai.KeypointsList:
     new_kpts_list = []
-    for kpt in keypoints.keypoints:
+    for kpt in keypoints.getKeypoints():
         new_kpt = remap_keypoint(from_transformation, to_transformation, kpt)
         new_kpts_list.append(new_kpt)
-    new_kpts = Keypoints()
-    new_kpts.keypoints = new_kpts_list
-    new_kpts.edges = keypoints.edges
+    new_kpts = dai.KeypointsList()
+    new_kpts.setKeypoints(new_kpts_list)
+    new_kpts.setEdges(keypoints.getEdges())
     return new_kpts
 
 

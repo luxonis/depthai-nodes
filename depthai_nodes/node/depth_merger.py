@@ -2,7 +2,6 @@ from typing import Union
 
 import depthai as dai
 
-from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.node.base_host_node import BaseHostNode
 
 from .host_spatials_calc import HostSpatialsCalc
@@ -15,19 +14,20 @@ class DepthMerger(BaseHostNode):
     Attributes
     ----------
     output : dai.Node.Output
-        The output of the DepthMerger node containing dai.SpatialImgDetections.
-    shrinking_factor : float
-        The shrinking factor for the bounding box. 0 means no shrinking. The factor means the percentage of the bounding box to shrink from each side.
+        The output of the DepthMerger node containing spatial detections.
+    shrinkingFactor : float
+        The percentage of the bounding box to shrink from each side before
+        sampling depth.
 
     Usage
     -----
     depth_merger = pipeline.create(DepthMerger).build(
-        output_2d=nn.out,
-        output_depth=stereo.depth
+        output2d=nn.out,
+        outputDepth=stereo.depth
     )
     """
 
-    def __init__(self, shrinking_factor: float = 0) -> None:
+    def __init__(self, shrinkingFactor: float = 0) -> None:
         super().__init__()
 
         # TODO: We should make it consistant and use either output or out - IMO out is preferred to match DAI
@@ -37,30 +37,52 @@ class DepthMerger(BaseHostNode):
             ]
         )
 
-        self.shrinking_factor = shrinking_factor
+        self.shrinking_factor = shrinkingFactor
         self._logger.debug(
-            f"DepthMerger initialized with shrinking_factor={shrinking_factor}"
+            f"DepthMerger initialized with shrinking_factor={shrinkingFactor}"
         )
 
     def build(
         self,
-        output_2d: dai.Node.Output,
-        output_depth: dai.Node.Output,
-        calib_data: dai.CalibrationHandler,
-        depth_alignment_socket: dai.CameraBoardSocket = dai.CameraBoardSocket.CAM_A,
-        shrinking_factor: float = 0,
+        output2d: dai.Node.Output,
+        outputDepth: dai.Node.Output,
+        calibData: dai.CalibrationHandler,
+        depthAlignmentSocket: dai.CameraBoardSocket = dai.CameraBoardSocket.CAM_A,
+        shrinkingFactor: float = 0,
     ) -> "DepthMerger":
-        self.link_args(output_2d, output_depth)
-        self.shrinking_factor = shrinking_factor
-        self.host_spatials_calc = HostSpatialsCalc(calib_data, depth_alignment_socket)
+        """Connect detection and depth streams and initialize spatial conversion.
+
+        Parameters
+        ----------
+        output2d
+            Upstream output producing 2D detections.
+        outputDepth
+            Upstream output producing aligned depth frames.
+        calibData
+            Device calibration used to convert image coordinates into spatial
+            coordinates.
+        depthAlignmentSocket
+            Camera socket the depth frame is aligned to.
+        shrinkingFactor
+            Percentage of each bounding box edge trimmed before depth averaging.
+
+        Returns
+        -------
+        DepthMerger
+            The configured node instance.
+        """
+        self.link_args(output2d, outputDepth)
+        self.shrinking_factor = shrinkingFactor
+        self.host_spatials_calc = HostSpatialsCalc(calibData, depthAlignmentSocket)
         self._logger.debug(
-            f"DepthMerger built with shrinking_factor={shrinking_factor}"
+            f"DepthMerger built with shrinking_factor={shrinkingFactor}"
         )
         return self
 
-    def process(self, message_2d: dai.Buffer, depth: dai.ImgFrame) -> None:
+    def process(self, message2d: dai.Buffer, depth: dai.ImgFrame) -> None:
+        """Merge incoming detections with depth to produce spatial detections."""
         self._logger.debug("Processing new input")
-        spatial_dets = self._transform(message_2d, depth)
+        spatial_dets = self._transform(message2d, depth)
         self._logger.debug("Spatial detections message created")
         self.output.send(spatial_dets)  # type: ignore
         self._logger.debug("Message sent successfully")
@@ -73,16 +95,12 @@ class DepthMerger(BaseHostNode):
             return self._detection_to_spatial(message_2d, depth)
         elif isinstance(message_2d, dai.ImgDetections):
             return self._detections_to_spatial(message_2d, depth)
-        elif isinstance(message_2d, ImgDetectionExtended):
-            return self._detection_to_spatial(message_2d, depth)
-        elif isinstance(message_2d, ImgDetectionsExtended):
-            return self._detections_to_spatial(message_2d, depth)
         else:
             raise ValueError(f"Unknown message type: {type(message_2d)}")
 
     def _detection_to_spatial(
         self,
-        detection: Union[dai.ImgDetection, ImgDetectionExtended],
+        detection: dai.ImgDetection,
         depth: dai.ImgFrame,
     ) -> dai.SpatialImgDetection:
         """Converts a single 2D detection into a spatial detection using the depth
@@ -90,26 +108,10 @@ class DepthMerger(BaseHostNode):
         depth_frame = depth.getCvFrame()
         x_len = depth_frame.shape[1]
         y_len = depth_frame.shape[0]
-        xmin = (
-            detection.rotated_rect.getOuterRect()[0]
-            if isinstance(detection, ImgDetectionExtended)
-            else detection.xmin
-        )
-        ymin = (
-            detection.rotated_rect.getOuterRect()[1]
-            if isinstance(detection, ImgDetectionExtended)
-            else detection.ymin
-        )
-        xmax = (
-            detection.rotated_rect.getOuterRect()[2]
-            if isinstance(detection, ImgDetectionExtended)
-            else detection.xmax
-        )
-        ymax = (
-            detection.rotated_rect.getOuterRect()[3]
-            if isinstance(detection, ImgDetectionExtended)
-            else detection.ymax
-        )
+        xmin = detection.xmin
+        ymin = detection.ymin
+        xmax = detection.xmax
+        ymax = detection.ymax
         xmin_corrected = xmin + (xmax - xmin) * self.shrinking_factor
         ymin_corrected = ymin + (ymax - ymin) * self.shrinking_factor
         xmax_corrected = xmax - (xmax - xmin) * self.shrinking_factor
@@ -120,7 +122,7 @@ class DepthMerger(BaseHostNode):
             self._get_index(xmax_corrected, x_len),
             self._get_index(ymax_corrected, y_len),
         ]
-        spatials = self.host_spatials_calc.calc_spatials(depth, roi)
+        spatials = self.host_spatials_calc.calcSpatials(depth, roi)
 
         spatial_img_detection = dai.SpatialImgDetection()
         spatial_img_detection.xmin = xmin
@@ -133,36 +135,15 @@ class DepthMerger(BaseHostNode):
 
         spatial_img_detection.confidence = detection.confidence
         spatial_img_detection.label = 0 if detection.label == -1 else detection.label
-        spatial_img_detection.labelName = (
-            detection.label_name
-            if isinstance(detection, ImgDetectionExtended)
-            else detection.labelName
-        )
+        spatial_img_detection.labelName = detection.labelName
 
-        if isinstance(detection, ImgDetectionExtended):
-            kpts = detection.keypoints
-            edges = detection.edges
-            edges = [[edge[0], edge[1]] for edge in edges]
-            kpts_transformed = []
-            for kp in kpts:
-                # spatialCoordinates are not computed per keypoint, only the
-                # bounding box spatial coords are computed.
-                skp = dai.SpatialKeypoint(
-                    imageCoordinates=dai.Point3f(kp.x, kp.y, kp.z),
-                    confidence=kp.confidence,
-                    labelName=kp.label_name if kp.label_name is not None else "",
-                )
-                kpts_transformed.append(skp)
-            spatial_img_detection.setKeypoints(kpts_transformed)
-            spatial_img_detection.setEdges(edges)
-
-        elif isinstance(detection, dai.ImgDetection):
+        if isinstance(detection, dai.ImgDetection):
             kpts_transformed = []
             for kp in detection.getKeypoints():
                 # spatialCoordinates are not computed per keypoint, only the
                 # bounding box spatial coords are computed.
-                skp = dai.SpatialKeypoint(
-                    imageCoordinates=kp.imageCoordinates,
+                skp = dai.Keypoint(
+                    coordinates=kp.imageCoordinates,
                     confidence=kp.confidence,
                     label=kp.label,
                     labelName=kp.labelName,
@@ -173,14 +154,14 @@ class DepthMerger(BaseHostNode):
 
         else:
             raise ValueError(
-                f"Unknown detection type: {type(detection)}, expected ImgDetectionExtended or dai.ImgDetection"
+                f"Unknown detection type: {type(detection)}, expected dai.ImgDetection"
             )
 
         return spatial_img_detection
 
     def _detections_to_spatial(
         self,
-        detections: Union[dai.ImgDetections, ImgDetectionsExtended],
+        detections: dai.ImgDetections,
         depth: dai.ImgFrame,
     ) -> dai.SpatialImgDetections:
         """Converts multiple 2D detections into spatial detections using the depth
@@ -200,5 +181,5 @@ class DepthMerger(BaseHostNode):
     def _get_index(self, relative_coord: float, dimension_len: int) -> int:
         """Converts a relative coordinate to an absolute index within the given
         dimension length."""
-        bounded_coord = min(1, relative_coord)
+        bounded_coord = min(1., relative_coord)
         return max(0, int(bounded_coord * dimension_len) - 1)

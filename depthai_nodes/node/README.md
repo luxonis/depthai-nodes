@@ -6,7 +6,6 @@
   - [Object Detection](#object-detection)
   - [Classification](#classification)
   - [Segmentation](#segmentation)
-  - [Keypoints](#keypoints)
   - [Feature Matching](#feature-matching)
   - [Other](#other)
 - [Utility & Helper Nodes](#utility--helper-nodes)
@@ -39,12 +38,6 @@ Parser nodes are used to parse the output of a neural network. The main purpose 
 
 - `SegmentationParser`: Parser for parsing the output of the segmentation models. It will output the [`depthai_nodes.message.SegmentationMask`](../message/README.md#segmentationmask) message.
 - `FastSAMParser`: Parser for parsing the output of the FastSAM model. It will output the [`depthai_nodes.message.SegmentationMask`](../message/README.md#segmentationmask) message.
-
-### Keypoints
-
-- `KeypointParser`: General keypoint parser that will output the [`depthai_nodes.message.Keypoints`](../message/README.md#keypoints) message.
-- `SuperAnimalParser`: Special parser for parsing the output of the SuperAnimal model and will output the [`depthai_nodes.message.Keypoints`](../message/README.md#keypoints) message.
-- `HRNetParser`: Special parser for parsing the output of the HRNet model and will output the [`depthai_nodes.message.Keypoints`](../message/README.md#keypoints) message.
 
 ### Feature Matching
 
@@ -83,13 +76,12 @@ Parser nodes are used to parse the output of a neural network. The main purpose 
 
 ### Detection and Filtering
 
-- `ImgDetectionsBridge`: Transforms the dai.ImgDetections to ImgDetectionsExtended object or vice versa. Sends out [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) or [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message.
-- `ImgDetectionsFilter`: Filters image detections based on various criteria. Sends out [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) or [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) or [`dai.SpatialImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/spatial_img_detections) message.
-- `InstanceToSemanticMask`: Converts instance-id masks into semantic masks by mapping instance indices to detection class labels. Sends out [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) or [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message.
+- `ImgDetectionsFilter`: Filters image detections based on various criteria. Sends out [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) or [`dai.SpatialImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/spatial_img_detections) message.
+- `InstanceToSemanticMask`: Converts instance-id masks into semantic masks by mapping instance indices to detection class labels. Sends out [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) message.
 
 ### Data Management
 
-- `GatherData`: A node for gathering data. Gathers n messages based on reference_data. To determine n, wait_count_fn function is used. The default wait_count_fn function is waiting for len(TReference.detection). This means the node works out-of-the-box with [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) and [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended). Sends out [`depthai_nodes.message.GatheredData`](../message/README.md#gathereddata) message.
+- `GatherData`: A node for gathering data. Gathers n messages based on reference_data. To determine n, `wait_count_fn` is used. The default `wait_count_fn` waits for `len(TReference.detections)`, so the node works out-of-the-box with [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections). Sends out [`depthai_nodes.message.GatheredData`](../message/README.md#gathereddata) message.
 
 ## Usage
 

@@ -85,7 +85,7 @@ def test_check_input_invalid(
 
 def test_calc_spatials(host_spatials_calc: HostSpatialsCalc, depth_frame: dai.ImgFrame):
     roi = [100, 100, 200, 200]
-    spatials = host_spatials_calc.calc_spatials(depth_frame, roi)
+    spatials = host_spatials_calc.calcSpatials(depth_frame, roi)
     assert "x" in spatials
     assert "y" in spatials
     assert "z" in spatials

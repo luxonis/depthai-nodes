@@ -25,9 +25,9 @@ class HRNetParser(KeypointParser):
 
     Output Message/s
     ----------------
-    **Type**: Keypoints
+    **Type**: keypoint output
 
-    **Description**: Keypoints message containing detected body keypoints.
+    **Description**: Output containing detected body keypoints.
     """
 
     def __init__(
@@ -154,4 +154,4 @@ class HRNetParser(KeypointParser):
 
             self.out.send(keypoints_message)
 
-            self._logger.debug("Keypoints message sent successfully")
+            self._logger.debug("Keypoint output sent successfully")

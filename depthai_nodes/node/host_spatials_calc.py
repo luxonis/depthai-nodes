@@ -12,72 +12,72 @@ class HostSpatialsCalc:
     ----------
     calibData : dai.CalibrationHandler
         Calibration data handler for the device.
-    depth_alignment_socket : dai.CameraBoardSocket
+    depthAlignmentSocket : dai.CameraBoardSocket
         The camera socket used for depth alignment.
     delta : int
         The delta value for ROI calculation. Default is 5 - means 10x10 depth pixels around point for depth averaging.
-    thresh_low : int
+    threshLow : int
         The lower threshold for depth values. Default is 200 - means 20cm.
-    thresh_high : int
+    threshHigh : int
         The upper threshold for depth values. Default is 30000 - means 30m.
     """
 
     # We need device object to get calibration data
     def __init__(
         self,
-        calib_data: dai.CalibrationHandler,
-        depth_alignment_socket: dai.CameraBoardSocket = dai.CameraBoardSocket.CAM_A,
+        calibData: dai.CalibrationHandler,
+        depthAlignmentSocket: dai.CameraBoardSocket = dai.CameraBoardSocket.CAM_A,
         delta: int = 5,
-        thresh_low: int = 200,
-        thresh_high: int = 30000,
+        threshLow: int = 200,
+        threshHigh: int = 30000,
     ):
-        self.calibData = calib_data
-        self.depth_alignment_socket = depth_alignment_socket
+        self.calibData = calibData
+        self.depth_alignment_socket = depthAlignmentSocket
 
         self.delta = delta
-        self.thresh_low = thresh_low
-        self.thresh_high = thresh_high
+        self.thresh_low = threshLow
+        self.thresh_high = threshHigh
 
-    def setLowerThreshold(self, threshold_low: int) -> None:
-        """Sets the lower threshold for depth values.
+    def setLowerThreshold(self, thresholdLow: int) -> None:
+        """Set the lower depth threshold used during ROI averaging.
 
-        @param threshold_low: The lower threshold for depth values.
-        @type threshold_low: int
+        Parameters
+        ----------
+        thresholdLow
+            Lower accepted depth value.
         """
-        if not isinstance(threshold_low, int):
-            if isinstance(threshold_low, float):
-                threshold_low = int(threshold_low)
+        if not isinstance(thresholdLow, int):
+            if isinstance(thresholdLow, float):
+                thresholdLow = int(thresholdLow)
             else:
                 raise TypeError(
                     "Threshold has to be an integer or float! Got {}".format(
-                        type(threshold_low)
+                        type(thresholdLow)
                     )
                 )
-        self.thresh_low = threshold_low
+        self.thresh_low = thresholdLow
 
-    def setUpperThreshold(self, threshold_high: int) -> None:
-        """Sets the upper threshold for depth values.
+    def setUpperThreshold(self, thresholdHigh: int) -> None:
+        """Set the upper depth threshold used during ROI averaging.
 
-        @param threshold_high: The upper threshold for depth values.
-        @type threshold_high: int
+        Parameters
+        ----------
+        thresholdHigh
+            Upper accepted depth value.
         """
-        if not isinstance(threshold_high, int):
-            if isinstance(threshold_high, float):
-                threshold_high = int(threshold_high)
+        if not isinstance(thresholdHigh, int):
+            if isinstance(thresholdHigh, float):
+                thresholdHigh = int(thresholdHigh)
             else:
                 raise TypeError(
                     "Threshold has to be an integer or float! Got {}".format(
-                        type(threshold_high)
+                        type(thresholdHigh)
                     )
                 )
-        self.thresh_high = threshold_high
+        self.thresh_high = thresholdHigh
 
     def setDeltaRoi(self, delta: int) -> None:
-        """Sets the delta value for ROI calculation.
-
-        @param delta: The delta value for ROI calculation.
-        @type delta: int
-        """
+        """Set the half-size of the ROI used around point inputs."""
         if not isinstance(delta, int):
             if isinstance(delta, float):
                 delta = int(delta)
@@ -87,44 +87,27 @@ class HostSpatialsCalc:
                 )
         self.delta = delta
 
-    def _check_input(self, roi: List[int], frame: np.ndarray) -> List[int]:
-        """Checks if the input is ROI or point and converts point to ROI if necessary.
-
-        @param roi: The region of interest (ROI) or point.
-        @type roi: List[int]
-        @param frame: The depth frame.
-        @type frame: np.ndarray
-        @return: The region of interest (ROI).
-        @rtype: List[int]
-        """
-        if len(roi) == 4:
-            return roi
-        if len(roi) != 2:
-            raise ValueError(
-                "You have to pass either ROI (4 values) or point (2 values)!"
-            )
-        # Limit the point so ROI won't be outside the frame
-        x = min(max(roi[0], self.delta), frame.shape[1] - self.delta)
-        y = min(max(roi[1], self.delta), frame.shape[0] - self.delta)
-        return [x - self.delta, y - self.delta, x + self.delta, y + self.delta]
-
-    # roi has to be list of ints
-    def calc_spatials(
+    def calcSpatials(
         self,
         depthData: dai.ImgFrame,
         roi: List[int],
-        averaging_method: Callable = np.mean,
+        averagingMethod: Callable = np.mean,
     ) -> Dict[str, float]:
-        """Calculates spatial coordinates from depth data within the specified ROI.
+        """Calculate spatial coordinates from the depth frame within the ROI.
 
-        @param depthData: The depth data.
-        @type depthData: dai.ImgFrame
-        @param roi: The region of interest (ROI) or point.
-        @type roi: List[int]
-        @param averaging_method: The method for averaging the depth values.
-        @type averaging_method: callable
-        @return: The spatial coordinates.
-        @rtype: Dict[str, float]
+        Parameters
+        ----------
+        depthData
+            Depth frame used for coordinate estimation.
+        roi
+            Region of interest or point.
+        averagingMethod
+            Callable used to reduce valid depth values inside the ROI.
+
+        Returns
+        -------
+        Dict[str, float]
+            Spatial coordinates in camera space.
         """
         depthFrame = depthData.getFrame()
 
@@ -145,7 +128,7 @@ class HostSpatialsCalc:
                 "z": np.nan,
             }
         else:
-            averageDepth = averaging_method(valid_depths)
+            averageDepth = averagingMethod(valid_depths)
 
         centroid = np.array(  # Get centroid of the ROI
             [
@@ -170,3 +153,14 @@ class HostSpatialsCalc:
             "z": spatial_coords[2],
         }
         return spatials
+
+    def _check_input(self, roi: List[int], frame: np.ndarray) -> List[int]:
+        if len(roi) == 4:
+            return roi
+        if len(roi) != 2:
+            raise ValueError(
+                "You have to pass either ROI (4 values) or point (2 values)!"
+            )
+        x = min(max(roi[0], self.delta), frame.shape[1] - self.delta)
+        y = min(max(roi[1], self.delta), frame.shape[0] - self.delta)
+        return [x - self.delta, y - self.delta, x + self.delta, y + self.delta]
