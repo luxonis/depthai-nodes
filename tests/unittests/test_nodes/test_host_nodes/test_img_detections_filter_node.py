@@ -151,3 +151,41 @@ def test_disable_sorting_keeps_original_order_before_top_k(
     )
 
     assert [det.label for det in output.detections] == [1, 2]
+
+
+def test_nms_suppresses_overlapping_detections_of_same_label(
+    filter_node: ImgDetectionsFilter,
+):
+    msg = create_img_detections(
+        [
+            (1, 0.95, (0.10, 0.10, 0.50, 0.50)),
+            (1, 0.80, (0.12, 0.12, 0.48, 0.48)),
+            (1, 0.70, (0.60, 0.60, 0.80, 0.80)),
+        ]
+    )
+
+    output = process_message(
+        filter_node.useNms(confThresh=0.0, iouThresh=0.5),
+        msg,
+    )
+
+    assert len(output.detections) == 2
+    assert [det.confidence for det in output.detections] == pytest.approx([0.95, 0.70])
+
+
+def test_nms_keeps_overlapping_detections_of_different_labels(
+    filter_node: ImgDetectionsFilter,
+):
+    msg = create_img_detections(
+        [
+            (1, 0.95, (0.10, 0.10, 0.50, 0.50)),
+            (2, 0.80, (0.12, 0.12, 0.48, 0.48)),
+        ]
+    )
+
+    output = process_message(
+        filter_node.useNms(confThresh=0.0, iouThresh=0.5),
+        msg,
+    )
+
+    assert [det.label for det in output.detections] == [1, 2]

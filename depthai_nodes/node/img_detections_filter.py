@@ -7,6 +7,7 @@ import numpy as np
 
 from depthai_nodes.message.utils import compute_area, copy_message
 from depthai_nodes.node.base_host_node import BaseHostNode
+from depthai_nodes.node.utils.nms import nms_detections
 
 
 @dataclass
@@ -15,6 +16,9 @@ class _FilterCfg:
     labels_to_reject: Optional[List[int]] = None
     min_confidence: Optional[float] = None
     min_area: Optional[float] = None
+    nms_disabled: bool = True
+    nms_conf_thresh: float = 0.3
+    nms_iou_thresh: float = 0.4
     sort_desc: bool = True
     sort_disabled: bool = True
     first_k: Optional[int] = None
@@ -122,6 +126,15 @@ class ImgDetectionsFilter(BaseHostNode):
         self._cfg.sort_desc = desc
         return self
 
+    def useNms(
+        self, *, confThresh: float = 0.3, iouThresh: float = 0.4
+    ) -> "ImgDetectionsFilter":
+        """Enable NMS after filtering and configure its thresholds."""
+        self._cfg.nms_disabled = False
+        self._cfg.nms_conf_thresh = confThresh
+        self._cfg.nms_iou_thresh = iouThresh
+        return self
+
     def enableSorting(self) -> "ImgDetectionsFilter":
         """Enable sorting using the last configured sort settings."""
         self._cfg.sort_disabled = False
@@ -147,7 +160,8 @@ class ImgDetectionsFilter(BaseHostNode):
         assert isinstance(msg_new, (dai.ImgDetections, dai.SpatialImgDetections))
 
         filtered_detections, filtered_out_ixs = self._filter_step(detections=msg.detections)
-        sorted_detections = self._sorting_step(detections=filtered_detections)
+        nms_detections_out = self._nms_step(detections=filtered_detections)
+        sorted_detections = self._sorting_step(detections=nms_detections_out)
         # Take first K step
         msg_new.detections = sorted_detections[: self._cfg.first_k]
 
@@ -158,7 +172,8 @@ class ImgDetectionsFilter(BaseHostNode):
         self.out.send(msg_new)
 
     def _plan_string(self) -> str:
-        return (f"ImgDetectionsFilter plan: filter -> sort(enabled: {not self._cfg.sort_disabled}, descending order: {self._cfg.sort_desc})"
+        return (f"ImgDetectionsFilter plan: filter -> nms(enabled: {not self._cfg.nms_disabled}, confidence threshold: {self._cfg.nms_conf_thresh}, iou threshold: {self._cfg.nms_iou_thresh})"
+                f" -> sort(enabled: {not self._cfg.sort_disabled}, descending order: {self._cfg.sort_desc})"
                 f" -> take_first_k({self._cfg.first_k})")
 
     def _filter_step(
@@ -191,6 +206,17 @@ class ImgDetectionsFilter(BaseHostNode):
 
             filtered_detections.append(detection)
         return filtered_detections, filtered_out_ixs
+
+    def _nms_step(
+        self, detections: List[dai.ImgDetection | dai.SpatialImgDetection]
+    ) -> List[dai.ImgDetection | dai.SpatialImgDetection]:
+        if self._cfg.nms_disabled:
+            return detections
+        return nms_detections(
+            detections=detections,
+            conf_thresh=self._cfg.nms_conf_thresh,
+            iou_thresh=self._cfg.nms_iou_thresh,
+        )
 
     def _sorting_step(self, detections: List[dai.ImgDetection | dai.SpatialImgDetection]) -> List[dai.ImgDetection | dai.SpatialImgDetection]:
         if not self._cfg.sort_disabled:
