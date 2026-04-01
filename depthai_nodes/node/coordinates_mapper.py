@@ -141,11 +141,12 @@ except Exception as e:
                     f"CoordinatesMapper failed to read data from queues. Exception: {e}"
                 )
                 break
-
+            start_time = time.monotonic()
             remapped_message = self._remap_message(
                 msg=from_transformation_msg,
                 to_transformation=self._cached_transformation,
             )
+            print(f"COORDINATES MAPPER REMAPPING TIME: {time.monotonic() - start_time} ms")
             self.out.send(remapped_message)
 
     def _extract_transformation(
