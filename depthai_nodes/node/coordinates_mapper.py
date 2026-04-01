@@ -128,21 +128,16 @@ except Exception as e:
         self._cached_transformation = self._extract_transformation(first_target_msg)
 
         while self.isRunning():
-            start_time = time.monotonic()
             new_target_msg = self._to_transformation_input.tryGet()
             if new_target_msg is not None:
                 self._cached_transformation = self._extract_transformation(
                     new_target_msg
                 )
             from_transformation_msg = self._from_transformation_input.get()
-            end_time = time.monotonic()
-            start_time_2 = time.monotonic()
             remapped_message = self._remap_message(
                 msg=from_transformation_msg,
                 to_transformation=self._cached_transformation,
             )
-            end_time_2 = time.monotonic()
-            print(f"COORDINATES MAPPER REMAPPING TIME: {end_time_2- start_time_2} ms getting Data: {end_time - start_time}")
             self.out.send(remapped_message)
 
     def _extract_transformation(
