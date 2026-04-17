@@ -12,6 +12,7 @@ from .host_spatials_calc import HostSpatialsCalc
 from .img_detections_filter import ImgDetectionsFilter
 from .img_frame_overlay import ImgFrameOverlay
 from .instance_to_semantic_mask import InstanceToSemanticMask
+from .message_collector import MessageCollector
 from .parser_generator import ParserGenerator
 from .parsers.base_parser import BaseParser
 from .parsers.classification import ClassificationParser
@@ -68,6 +69,7 @@ __all__ = [
     "GatherData",
     "ImgFrameOverlay",
     "ImgDetectionsFilter",
+    "MessageCollector",
     "SnapsUploader",
     "BaseHostNode",
     "InstanceToSemanticMask",
