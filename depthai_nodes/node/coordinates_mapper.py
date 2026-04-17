@@ -2,6 +2,7 @@ import time
 
 import depthai as dai
 
+from depthai_nodes.message import Collection
 from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
 from depthai_nodes.node.utils.message_remapping import remap_message
 
@@ -94,7 +95,9 @@ except Exception as e:
         return self._out
 
     def build(
-        self, toTransformationInput: dai.Node.Output, fromTransformationInput: dai.Node.Output
+        self,
+        toTransformationInput: dai.Node.Output,
+        fromTransformationInput: dai.Node.Output,
     ) -> "CoordinatesMapper":
         """Connect the target and source streams used for coordinate remapping.
 
@@ -126,7 +129,6 @@ except Exception as e:
         """Cache the latest target transformation and remap incoming messages."""
         first_target_msg = self._to_transformation_input.get()
         self._cached_transformation = self._extract_transformation(first_target_msg)
-
         while self.isRunning():
             new_target_msg = self._to_transformation_input.tryGet()
             if new_target_msg is not None:
@@ -152,7 +154,9 @@ except Exception as e:
                 "Could not get transformation from `to_transformation_msg` message. Message doesn't have the `getTransformation()` method."
             ) from e
         if to_transformation is None:
-            raise RuntimeError("Received `to_transformation_msg` message without transformation. The `getTransformation()` method returns None.")
+            raise RuntimeError(
+                "Received `to_transformation_msg` message without transformation. The `getTransformation()` method returns None."
+            )
         return to_transformation
 
     def _remap_message(self, msg: dai.Buffer, to_transformation: dai.ImgTransformation):
@@ -165,6 +169,17 @@ except Exception as e:
             new_msg_group.setSequenceNum(msg.getSequenceNum())
             new_msg_group.setTimestampDevice(msg.getTimestampDevice())
             return new_msg_group
+        elif isinstance(msg, Collection):
+            remapped_msgs = []
+            for m in msg.items:
+                remapped_msg = self._remap_message(msg=m, to_transformation=to_transformation)
+                remapped_msgs.append(remapped_msg)
+            new_collection = Collection(items=remapped_msgs)
+            new_collection.setTimestamp(msg.getTimestamp())
+            new_collection.setSequenceNum(msg.getSequenceNum())
+            new_collection.setTimestampDevice(msg.getTimestampDevice())
+            return new_collection
+
         try:
             remapped_msg = remap_message(
                 message=msg,
