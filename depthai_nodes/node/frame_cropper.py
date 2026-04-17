@@ -145,7 +145,10 @@ class FrameCropper(BaseThreadedHostNode):
         return self._cropper_image_manip.out
 
     def fromImgDetections(
-        self, inputImgDetections: dai.Node.Output, padding: float = 0.0
+            self,
+            inputImgDetections: dai.Node.Output,
+            outputSize: Tuple[int, int],
+            padding: float = 0.0,
     ) -> "FrameCropper":
         """Configure cropping from an ImgDetections stream.
 
@@ -159,6 +162,7 @@ class FrameCropper(BaseThreadedHostNode):
             )
         self._version_selected = True
         self._input_img_detections = inputImgDetections
+        self._output_size = outputSize
         self._padding = padding
         return self
 
@@ -184,7 +188,6 @@ class FrameCropper(BaseThreadedHostNode):
     def build(
         self,
         inputImage: dai.Node.Output,
-        outputSize: Tuple[int, int],
         resizeMode: dai.ImageManipConfig.ResizeMode = dai.ImageManipConfig.ResizeMode.CENTER_CROP,
     ) -> "FrameCropper":
         """Build the internal pipeline and set output size / resize behavior.
@@ -196,7 +199,6 @@ class FrameCropper(BaseThreadedHostNode):
             raise RuntimeError(
                 "Configure the FrameCropper by calling one of the `fromImgDetections` or `fromManipConfigs` methods first."
             )
-        self._output_size = outputSize
         self._cropper_image_manip.setMaxOutputFrameSize(
             self._output_size[0] * self._output_size[1] * 3
         )
