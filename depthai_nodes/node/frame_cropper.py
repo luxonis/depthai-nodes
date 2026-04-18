@@ -133,6 +133,7 @@ class FrameCropper(BaseThreadedHostNode):
         self._script: Optional[dai.node.Script] = None
         self._input_img_detections: Optional[dai.Node.Output] = None
         self._padding: Optional[float] = None
+        self._resize_mode: Optional[dai.ImageManipConfig.ResizeMode] = None
 
         # when fromManipConfigs is used, script node receives MessageGroup of precomputed configs
         self._input_manip_configs: Optional[dai.Node.Output] = None
@@ -148,6 +149,7 @@ class FrameCropper(BaseThreadedHostNode):
             self,
             inputImgDetections: dai.Node.Output,
             outputSize: Tuple[int, int],
+            resizeMode: dai.ImageManipConfig.ResizeMode = dai.ImageManipConfig.ResizeMode.CENTER_CROP,
             padding: float = 0.0,
     ) -> "FrameCropper":
         """Configure cropping from an ImgDetections stream.
@@ -155,7 +157,7 @@ class FrameCropper(BaseThreadedHostNode):
         In this mode the node generates ImageManipConfig messages per detection (via Script)
         and outputs one cropped ImgFrame per detection. `padding` expands the crop region.
         """
-        if self._version_selected is True:
+        if self._version_selected:
             raise RuntimeError(
                 "FrameCropper was already configured using the `fromManipConfigs` method. "
                 "Only one of `fromImgDetections` and `fromManipConfigs` can be used."
@@ -164,9 +166,21 @@ class FrameCropper(BaseThreadedHostNode):
         self._input_img_detections = inputImgDetections
         self._output_size = outputSize
         self._padding = padding
+        self._resize_mode = resizeMode
+        self._cropper_image_manip.setMaxOutputFrameSize(
+            self._output_size[0] * self._output_size[1] * 3
+        )
+        self._cropper_image_manip.initialConfig.setOutputSize(
+            *self._output_size, mode=resizeMode
+        )
         return self
 
-    def fromManipConfigs(self, inputManipConfigs: dai.Node.Output, waitForConfig: bool) -> "FrameCropper":
+    def fromManipConfigs(
+            self,
+            inputManipConfigs: dai.Node.Output,
+            maxOutputFrameSize: int,
+            waitForConfig: bool,
+    ) -> "FrameCropper":
         """Configure cropping from a stream of precomputed ImageManipConfig groups.
 
         Expects `inputManipConfigs` to output dai.MessageGroup messages where each
@@ -175,7 +189,7 @@ class FrameCropper(BaseThreadedHostNode):
 
         Key naming is arbitrary; all values in the MessageGroup are treated as configs.
         """
-        if self._version_selected is True:
+        if self._version_selected:
             raise RuntimeError(
                 "FrameCropper was already configured using the `fromManipConfig` method. "
                 "Only one of `fromImgDetections` and `fromManipConfigs` can be used."
@@ -183,33 +197,26 @@ class FrameCropper(BaseThreadedHostNode):
         self._version_selected = True
         self._input_manip_configs = inputManipConfigs
         self._wait_for_cfg = waitForConfig
+        self._cropper_image_manip.setMaxOutputFrameSize(maxOutputFrameSize)
         return self
 
     def build(
         self,
         inputImage: dai.Node.Output,
-        resizeMode: dai.ImageManipConfig.ResizeMode = dai.ImageManipConfig.ResizeMode.CENTER_CROP,
     ) -> "FrameCropper":
         """Build the internal pipeline and set output size / resize behavior.
 
         Requires that exactly one configuration path was selected via `fromImgDetections`
         or `fromManipConfigs` before calling. Returns `self` for fluent chaining.
         """
-        if self._version_selected is False:
+        if not self._version_selected:
             raise RuntimeError(
                 "Configure the FrameCropper by calling one of the `fromImgDetections` or `fromManipConfigs` methods first."
             )
-        self._cropper_image_manip.setMaxOutputFrameSize(
-            self._output_size[0] * self._output_size[1] * 3
-        )
-        self._cropper_image_manip.initialConfig.setOutputSize(
-            *self._output_size, mode=resizeMode
-        )
+
         self._cropper_image_manip.inputConfig.setWaitForMessage(waitForMessage=True)
         if self._input_img_detections is not None:
-            self._build_detections_cropper(
-                input_image=inputImage, resize_mode=resizeMode
-            )
+            self._build_detections_cropper(input_image=inputImage)
         else:
             self._build_manip_configs_cropper(input_image=inputImage)
         self._logger.debug("FrameCropper built")
@@ -219,9 +226,7 @@ class FrameCropper(BaseThreadedHostNode):
         """No-op because cropping is driven entirely by on-device Script nodes."""
         return  # Both fromImgDetections and fromManipConfigs use on-device Script
 
-    def _build_detections_cropper(
-        self, input_image: dai.Node.Output, resize_mode: dai.ImageManipConfig.ResizeMode
-    ):
+    def _build_detections_cropper(self, input_image: dai.Node.Output):
         self._script = self._pipeline.create(dai.node.Script)
         self._script.setScript(
             self.IMG_DETECTIONS_SCRIPT_CONTENT.substitute(
@@ -230,7 +235,7 @@ class FrameCropper(BaseThreadedHostNode):
                     "OUT_HEIGHT": self._output_size[1],
                     "PADDING": self._padding,
                     "FRAME_TYPE": self._img_frame_type.name,
-                    "RESIZE_MODE": resize_mode.name,
+                    "RESIZE_MODE": self._resize_mode.name,
                 }
             )
         )
