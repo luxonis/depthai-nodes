@@ -105,11 +105,13 @@ class MessageCollector(dai.node.ThreadedHostNode, Generic[TCollected]):
         msg: TCollected = self._data_input.get()  # noqa
         current_msg_ts = self._get_total_seconds_ts(msg)
         collected = [msg]
+        last_collected_msg = msg
         while self.isRunning():
             msg: TCollected = self._data_input.get()  # noqa
             msg_ts = self._get_total_seconds_ts(msg)
             if self._timestamps_in_tolerance(msg_ts, current_msg_ts):
                 collected.append(msg)
+                last_collected_msg = msg
             else:
                 # skip old data
                 if msg_ts < current_msg_ts:
@@ -118,13 +120,16 @@ class MessageCollector(dai.node.ThreadedHostNode, Generic[TCollected]):
                     output_msg = Collection(
                         items=collected,
                     )
-                    output_msg.setTimestampDevice(msg.getTimestampDevice())
-                    output_msg.setTimestamp(msg.getTimestamp())
-                    output_msg.setSequenceNum(msg.getSequenceNum())
+                    output_msg.setTimestampDevice(
+                        last_collected_msg.getTimestampDevice()
+                    )
+                    output_msg.setTimestamp(last_collected_msg.getTimestamp())
+                    output_msg.setSequenceNum(last_collected_msg.getSequenceNum())
                     self.out.send(output_msg)
                     current_msg_ts = msg_ts
                     collected.clear()
                     collected.append(msg)
+                    last_collected_msg = msg
 
     def _get_total_seconds_ts(self, buffer_like: dai.Buffer) -> float:
         return buffer_like.getTimestamp().total_seconds()
