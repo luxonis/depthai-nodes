@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Generic, List, Optional, Type, TypeVar
 
 import depthai as dai
+from depthai_nodes.message.utils import copy_message as _copy_message
 
 T = TypeVar("T")
 
@@ -59,3 +60,14 @@ class Collection(dai.Buffer, Generic[T]):
     def extend(self, items: List[T]) -> None:
         # Reuse setter validation
         self.items = [*self._items, *items]
+
+    def copy(self) -> "Collection":
+        new_list = []
+        for item in self.items:
+            new_list.append(item.copy())
+        new_collection = Collection(new_list)
+        new_collection.setSequenceNum(self.getSequenceNum())
+        new_collection.setTimestampDevice(self.getTimestampDevice())
+        new_collection.setTimestamp(self.getTimestamp())
+        return Collection(new_list)
+
