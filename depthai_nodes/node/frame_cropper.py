@@ -84,17 +84,16 @@ class FrameCropper(BaseThreadedHostNode):
                 # We receive 1 detection count message and image per frame
                 frame = node.inputs['inputImage'].get()
                 img_detections = node.inputs['inputImgDetections'].get()
-                node.outputs['manip_img'].send(frame)
                 for det in img_detections.detections:
                     rot_rect = det.getBoundingBox()
                     cfg = ImageManipConfig()
-                    cfg.setReusePreviousImage(True)
                     cfg.addCropRotatedRect(rect=pad_rotated_rect(rot_rect, PADDING), normalizedCoords=True)
                     cfg.setTimestamp(img_detections.getTimestamp())
                     cfg.setTimestampDevice(img_detections.getTimestampDevice())
                     cfg.setSequenceNum(img_detections.getSequenceNum())
                     cfg.setOutputSize(OUT_WIDTH, OUT_HEIGHT, RESIZE_MODE)
                     cfg.setFrameType(FRAME_TYPE)
+                    node.outputs['manip_img'].send(frame)
                     node.outputs['manip_cfg'].send(cfg)
 
         except Exception as e:
