@@ -52,6 +52,10 @@ class ImgDetectionsFilter(BaseHostNode):
     def __init__(self):
         super().__init__()
         self._cfg = _FilterCfg()
+        self.out.setPossibleDatatypes([
+            (dai.DatatypeEnum.ImgDetections, True),
+            (dai.DatatypeEnum.SpatialImgDetections, True),
+        ])
         self._logger.debug("ImgDetectionsFilter initialized")
 
     def setLabels(self, labels: List[int], keep: bool) -> None:
