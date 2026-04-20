@@ -14,6 +14,7 @@
   - [Neural Network Processing](#neural-network-processing)
   - [Detection and Filtering](#detection-and-filtering)
   - [Data Management](#data-management)
+  - [Cloud Integration](#cloud-integration)
 - [Usage](#usage)
   - [Example](#example)
 
@@ -82,6 +83,10 @@ Parser nodes are used to parse the output of a neural network. The main purpose 
 ### Data Management
 
 - `GatherData`: A node for gathering data. Gathers n messages based on reference_data. To determine n, `wait_count_fn` is used. The default `wait_count_fn` waits for `len(TReference.detections)`, so the node works out-of-the-box with [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections). Sends out [`depthai_nodes.message.GatheredData`](../message/README.md#gathereddata) message.
+
+### Cloud Integration
+
+- `SnapsUploader`: Host node for uploading snaps (images with metadata) to DepthAI Hub Events API. Receives [`depthai_nodes.message.SnapData`](../message/README.md#snapdata) messages and handles upload with automatic retry and optional caching for offline scenarios.
 
 ## Usage
 
