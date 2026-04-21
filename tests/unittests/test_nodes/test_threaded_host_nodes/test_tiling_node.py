@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 import depthai as dai
 
 from depthai_nodes.node.tiling import Tiling
@@ -28,21 +30,21 @@ def create_tiling_node() -> Tiling:
     node = object.__new__(Tiling)
     node._pipeline = PipelineStub()
     node._cfg_out = OutputRecorder()
-    node._crop_configs = []
-    node._cfg_group = None
-    return node
+    node._logger = Mock()
+    return node.build(
+        overlap=0.0,
+        gridSize=(2, 1),
+        canvasShape=(100, 50),
+        resizeShape=(32, 32),
+        resizeMode=dai.ImageManipConfig.ResizeMode.CENTER_CROP,
+        globalDetection=True,
+    )
 
 
 def test_compute_tile_positions_with_global_detection():
     tiling = create_tiling_node()
 
-    positions = tiling._computeTilePositions(
-        overlap=0.0,
-        grid_size=(2, 1),
-        canvas_shape=(100, 50),
-        grid_matrix=None,
-        global_detection=True,
-    )
+    positions = tiling.tilePositions
 
     assert positions == [(0, 0, 100, 50), (0, 0, 50, 50), (50, 0, 100, 50)]
 
@@ -60,29 +62,27 @@ def test_create_message_group_contains_all_configs():
     assert msg_group["1"] is configs[1]
 
 
-def test_set_tiling_config_sends_updated_message_group():
+def test_update_tiling_config_sends_updated_message_group():
     tiling = create_tiling_node()
 
-    tiling.setTilingConfig(
-        overlap=0.0,
-        gridSize=(2, 1),
-        canvasShape=(100, 50),
+    tiling.updateTilingConfig(
+        gridSize=(1, 1),
         resizeShape=(32, 32),
         resizeMode=dai.ImageManipConfig.ResizeMode.CENTER_CROP,
+        globalDetection=False,
     )
 
-    assert tiling.tileCount == 2
-    assert isinstance(tiling._cfg_group, dai.MessageGroup)
-    assert tiling._cfg_group.getNumMessages() == 2
-    assert tiling._cfg_out.sent == []
+    assert tiling.tileCount == 1
+    assert len(tiling._cfg_out.sent) == 1
+    assert isinstance(tiling._cfg_out.sent[0], dai.MessageGroup)
+    assert tiling._cfg_out.sent[0].getNumMessages() == 1
 
 
-def test_run_sends_initial_message_group():
+def test_run_sends_message_group_for_current_tiling_config():
     tiling = create_tiling_node()
-    initial_group = dai.MessageGroup()
-    tiling._cfg_group = initial_group
 
     tiling.run()
 
-    assert tiling._cfg_out.sent == [initial_group]
-    assert tiling._cfg_group is None
+    assert len(tiling._cfg_out.sent) == 1
+    assert isinstance(tiling._cfg_out.sent[0], dai.MessageGroup)
+    assert tiling._cfg_out.sent[0].getNumMessages() == 3
