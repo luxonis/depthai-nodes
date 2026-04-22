@@ -4,6 +4,7 @@ import numpy as np
 
 from depthai_nodes.message.classification import Classifications
 from depthai_nodes.message.clusters import Cluster, Clusters
+from depthai_nodes.message.keypoints import Keypoints
 from depthai_nodes.message.lines import Line, Lines
 from depthai_nodes.message.map import Map2D
 from depthai_nodes.message.prediction import Prediction, Predictions
@@ -18,7 +19,7 @@ def remap_message(
 ) -> GMessage:
     if isinstance(message, dai.ImgDetections):
         return remap_img_detections(from_transformation, to_transformation, message)
-    elif isinstance(message, dai.KeypointsList):
+    elif isinstance(message, Keypoints):
         return remap_keypoints(from_transformation, to_transformation, message)
     elif isinstance(message, SegmentationMask):
         return remap_segmentation_mask(from_transformation, to_transformation, message)
@@ -128,7 +129,7 @@ def remap_keypoint(
     return new_kpt
 
 
-def remap_keypoints(
+def remap_native_keypoints(
     from_transformation: dai.ImgTransformation,
     to_transformation: dai.ImgTransformation,
     keypoints: dai.KeypointsList,
@@ -140,6 +141,22 @@ def remap_keypoints(
     new_kpts = dai.KeypointsList()
     new_kpts.setKeypoints(new_kpts_list)
     new_kpts.setEdges(keypoints.getEdges())
+    return new_kpts
+
+
+def remap_keypoints(
+    from_transformation: dai.ImgTransformation,
+    to_transformation: dai.ImgTransformation,
+    keypoints: Keypoints,
+) -> Keypoints:
+    new_kpts = Keypoints()
+    new_kpts.keypoints_list = remap_native_keypoints(
+        from_transformation, to_transformation, keypoints.keypoints_list
+    )
+    new_kpts.setSequenceNum(keypoints.getSequenceNum())
+    new_kpts.setTimestamp(keypoints.getTimestamp())
+    new_kpts.setTimestampDevice(keypoints.getTimestampDevice())
+    new_kpts.setTransformation(keypoints.getTransformation())
     return new_kpts
 
 

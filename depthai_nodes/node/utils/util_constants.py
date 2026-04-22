@@ -4,6 +4,7 @@ import depthai as dai
 
 from depthai_nodes.message.classification import Classifications
 from depthai_nodes.message.clusters import Clusters
+from depthai_nodes.message.keypoints import Keypoints
 from depthai_nodes.message.lines import Lines
 from depthai_nodes.message.map import Map2D
 from depthai_nodes.message.prediction import Predictions
@@ -13,7 +14,7 @@ GMessage = TypeVar(
     "GMessage",
     bound=Union[
         dai.ImgDetections,
-        dai.KeypointsList,
+        Keypoints,
         SegmentationMask,
         Clusters,
         Map2D,

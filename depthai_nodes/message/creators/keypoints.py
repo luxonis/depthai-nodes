@@ -3,6 +3,8 @@ from typing import List, Optional, Tuple, Union
 import depthai as dai
 import numpy as np
 
+from depthai_nodes.message.keypoints import Keypoints
+
 
 def create_keypoints_message(
     keypoints: Union[np.ndarray, List[List[float]]],
@@ -10,7 +12,7 @@ def create_keypoints_message(
     confidence_threshold: Optional[float] = None,
     label_names: Optional[List[str]] = None,
     edges: Optional[List[Tuple[int, int]]] = None,
-) -> dai.KeypointsList:
+) -> Keypoints:
     """Create a native DepthAI keypoints message."""
 
     if not isinstance(keypoints, (np.ndarray, list)):
@@ -104,7 +106,7 @@ def create_keypoints_message(
             )
         use_3d = keypoints.shape[1] == 3
 
-    keypoints_msg = dai.KeypointsList()
+    keypoints_list = dai.KeypointsList()
     points = []
     included_keypoints = []
 
@@ -124,7 +126,7 @@ def create_keypoints_message(
         points.append(pt)
         included_keypoints.append(i)
 
-    keypoints_msg.setKeypoints(points)
+    keypoints_list.setKeypoints(points)
 
     if edges is not None:
         filtered_edges = []
@@ -138,6 +140,8 @@ def create_keypoints_message(
                     (index_mapping[edge[0]], index_mapping[edge[1]])
                 )
 
-        keypoints_msg.setEdges(filtered_edges)
+        keypoints_list.setEdges(filtered_edges)
 
+    keypoints_msg = Keypoints()
+    keypoints_msg.keypoints_list = keypoints_list
     return keypoints_msg

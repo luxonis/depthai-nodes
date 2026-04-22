@@ -7,6 +7,7 @@ import numpy as np
 from depthai_nodes import (
     Classifications,
     Clusters,
+    Keypoints,
     Lines,
     Map2D,
     Predictions,
@@ -148,7 +149,7 @@ def check_segmentation_msg(
 
 
 def check_keypoints_msg(
-    message: dai.KeypointsList,
+    message: Keypoints,
     expected_output: Dict[str, Any],
     verbose: bool = False,
 ):
@@ -160,10 +161,12 @@ def check_keypoints_msg(
         "keypoints": [[0.1, 0.2], ...]
     """
     assert isinstance(
-        message, dai.KeypointsList
+        message, Keypoints
     ), f"The message is not a Keypoints. Got {type(message)}."
 
-    keypoints = [[kp.imageCoordinates.x, kp.imageCoordinates.y] for kp in message.getKeypoints()]
+    keypoints = [
+        [kp.imageCoordinates.x, kp.imageCoordinates.y] for kp in message.getKeypoints()
+    ]
     keypoints = np.array(keypoints)
     expected_keypoints = np.array(expected_output["keypoints"])
     if expected_keypoints.shape[1] == 3:
