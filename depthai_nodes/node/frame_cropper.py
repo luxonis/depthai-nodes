@@ -145,11 +145,11 @@ class FrameCropper(BaseThreadedHostNode):
         return self._cropper_image_manip.out
 
     def fromImgDetections(
-            self,
-            inputImgDetections: dai.Node.Output,
-            outputSize: Tuple[int, int],
-            resizeMode: dai.ImageManipConfig.ResizeMode = dai.ImageManipConfig.ResizeMode.CENTER_CROP,
-            padding: float = 0.0,
+        self,
+        inputImgDetections: dai.Node.Output,
+        outputSize: Tuple[int, int],
+        resizeMode: dai.ImageManipConfig.ResizeMode = dai.ImageManipConfig.ResizeMode.CENTER_CROP,
+        padding: float = 0.0,
     ) -> "FrameCropper":
         """Configure cropping from an ImgDetections stream.
 
@@ -175,10 +175,10 @@ class FrameCropper(BaseThreadedHostNode):
         return self
 
     def fromManipConfigs(
-            self,
-            inputManipConfigs: dai.Node.Output,
-            maxOutputFrameSize: int,
-            waitForConfig: bool,
+        self,
+        inputManipConfigs: dai.Node.Output,
+        maxOutputFrameSize: int,
+        waitForConfig: bool,
     ) -> "FrameCropper":
         """Configure cropping from a stream of precomputed ImageManipConfig groups.
 

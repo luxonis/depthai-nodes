@@ -111,7 +111,11 @@ def create_keypoints_message(
     included_keypoints = []
 
     for i, keypoint in enumerate(keypoints):
-        if scores is not None and confidence_threshold is not None and scores[i] < confidence_threshold:
+        if (
+            scores is not None
+            and confidence_threshold is not None
+            and scores[i] < confidence_threshold
+        ):
             continue
 
         pt = dai.Keypoint()
@@ -136,9 +140,7 @@ def create_keypoints_message(
 
         for edge in edges:
             if edge[0] in included_keypoints and edge[1] in included_keypoints:
-                filtered_edges.append(
-                    (index_mapping[edge[0]], index_mapping[edge[1]])
-                )
+                filtered_edges.append((index_mapping[edge[0]], index_mapping[edge[1]]))
 
         keypoints_list.setEdges(filtered_edges)
 

@@ -52,10 +52,12 @@ class ImgDetectionsFilter(BaseHostNode):
     def __init__(self):
         super().__init__()
         self._cfg = _FilterCfg()
-        self.out.setPossibleDatatypes([
-            (dai.DatatypeEnum.ImgDetections, True),
-            (dai.DatatypeEnum.SpatialImgDetections, True),
-        ])
+        self.out.setPossibleDatatypes(
+            [
+                (dai.DatatypeEnum.ImgDetections, True),
+                (dai.DatatypeEnum.SpatialImgDetections, True),
+            ]
+        )
         self._logger.debug("ImgDetectionsFilter initialized")
 
     def setLabels(self, labels: List[int], keep: bool) -> None:
@@ -113,7 +115,9 @@ class ImgDetectionsFilter(BaseHostNode):
         """Keep only detections whose label is in ``labels``."""
         self._cfg.labels_to_keep = labels
         if self._cfg.labels_to_reject is not None:
-            self._logger.warn(f"Removing labels to reject. Use either `keepLabels` or `rejectLabels` but not both.")
+            self._logger.warn(
+                "Removing labels to reject. Use either `keepLabels` or `rejectLabels` but not both."
+            )
             self._cfg.labels_to_reject = None
         return self
 
@@ -121,7 +125,9 @@ class ImgDetectionsFilter(BaseHostNode):
         """Drop detections whose label is in ``labels``."""
         self._cfg.labels_to_reject = labels
         if self._cfg.labels_to_keep is not None:
-            self._logger.warn(f"Removing labels to keep. Use either `keepLabels` or `rejectLabels` but not both.")
+            self._logger.warn(
+                "Removing labels to keep. Use either `keepLabels` or `rejectLabels` but not both."
+            )
             self._cfg.labels_to_keep = None
         return self
 
@@ -136,7 +142,10 @@ class ImgDetectionsFilter(BaseHostNode):
         return self
 
     def sortByConfidence(self, *, desc: bool = True) -> "ImgDetectionsFilter":
-        """Enable sorting by confidence (before top-k). Set direction via `desc`."""
+        """Enable sorting by confidence (before top-k).
+
+        Set direction via `desc`.
+        """
         self._cfg.sort_disabled = False
         self._cfg.sort_desc = desc
         return self
@@ -177,7 +186,9 @@ class ImgDetectionsFilter(BaseHostNode):
         msg_new = copy_message(msg)
         assert isinstance(msg_new, (dai.ImgDetections, dai.SpatialImgDetections))
 
-        filtered_detections, filtered_out_ixs = self._filter_step(detections=msg.detections)
+        filtered_detections, filtered_out_ixs = self._filter_step(
+            detections=msg.detections
+        )
         nms_detections_out = self._nms_step(detections=filtered_detections)
         sorted_detections = self._sorting_step(detections=nms_detections_out)
         # Take first K step
@@ -185,18 +196,22 @@ class ImgDetectionsFilter(BaseHostNode):
 
         # Remove classes of filtered out detections
         if isinstance(msg, dai.ImgDetections):
-            msg_new = self._update_segmentation_mask(msg_new=msg_new, filtered_out_ixs=filtered_out_ixs)
+            msg_new = self._update_segmentation_mask(
+                msg_new=msg_new, filtered_out_ixs=filtered_out_ixs
+            )
 
         self.out.send(msg_new)
 
     def _plan_string(self) -> str:
-        return (f"ImgDetectionsFilter plan: filter -> nms(enabled: {not self._cfg.nms_disabled}, confidence threshold: {self._cfg.nms_conf_thresh}, iou threshold: {self._cfg.nms_iou_thresh})"
-                f" -> sort(enabled: {not self._cfg.sort_disabled}, descending order: {self._cfg.sort_desc})"
-                f" -> take_first_k({self._cfg.first_k})")
+        return (
+            f"ImgDetectionsFilter plan: filter -> nms(enabled: {not self._cfg.nms_disabled}, confidence threshold: {self._cfg.nms_conf_thresh}, iou threshold: {self._cfg.nms_iou_thresh})"
+            f" -> sort(enabled: {not self._cfg.sort_disabled}, descending order: {self._cfg.sort_desc})"
+            f" -> take_first_k({self._cfg.first_k})"
+        )
 
     def _filter_step(
-            self,
-            detections: List[dai.ImgDetection | dai.SpatialImgDetection],
+        self,
+        detections: List[dai.ImgDetection | dai.SpatialImgDetection],
     ) -> Tuple[List[dai.ImgDetection | dai.SpatialImgDetection], List[int]]:
         filtered_detections = []
         filtered_out_ixs: List[int] = []
@@ -236,7 +251,9 @@ class ImgDetectionsFilter(BaseHostNode):
             iou_thresh=self._cfg.nms_iou_thresh,
         )
 
-    def _sorting_step(self, detections: List[dai.ImgDetection | dai.SpatialImgDetection]) -> List[dai.ImgDetection | dai.SpatialImgDetection]:
+    def _sorting_step(
+        self, detections: List[dai.ImgDetection | dai.SpatialImgDetection]
+    ) -> List[dai.ImgDetection | dai.SpatialImgDetection]:
         if not self._cfg.sort_disabled:
             sorted_detections = sorted(
                 detections, key=lambda x: x.confidence, reverse=self._cfg.sort_desc

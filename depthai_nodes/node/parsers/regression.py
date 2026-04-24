@@ -91,8 +91,6 @@ class RegressionParser(BaseParser):
                     f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
                 )
 
-            print("expected:", self.output_layer_name)
-            print("available:", output.getAllLayerNames())
             predictions = output.getTensor(
                 self.output_layer_name, dequantize=True
             ).squeeze()

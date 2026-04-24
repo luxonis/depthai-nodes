@@ -1,6 +1,7 @@
 import sys
-import depthai as dai
 from pathlib import Path
+
+import depthai as dai
 
 # set PYTHONPATH to src
 current_dir = Path(__file__)
@@ -8,6 +9,7 @@ src_path = current_dir.parent.parent.parent
 sys.path.insert(0, src_path.absolute().as_posix())
 
 from merge_img_detections import MergeImgDetections
+
 from depthai_nodes.node.coordinates_mapper import CoordinatesMapper
 from depthai_nodes.node.frame_cropper import FrameCropper
 from depthai_nodes.node.gather_data import GatherData
@@ -25,64 +27,59 @@ GRID_SIZE = (2, 2)
 visualizer = dai.RemoteConnection(httpPort=8082)
 device = dai.Device(dai.DeviceInfo(DEVICE_MXID)) if DEVICE_MXID else dai.Device()
 platform = device.getPlatform().name
-frame_type = dai.ImgFrame.Type.BGR888i if platform == "RVC4" else dai.ImgFrame.Type.BGR888p
+frame_type = (
+    dai.ImgFrame.Type.BGR888i if platform == "RVC4" else dai.ImgFrame.Type.BGR888p
+)
 
 with dai.Pipeline(device) as pipeline:
     rgb = pipeline.create(dai.node.Camera).build(sensorFps=FPS)
     rgb_out = rgb.requestOutput(size=(RGB_WIDTH, RGB_HEIGHT), fps=FPS, type=frame_type)
-    tiling = pipeline.create(
-        Tiling
-    ).build(
+    tiling = pipeline.create(Tiling).build(
         overlap=0.2,
         trigger=rgb_out,
         gridSize=GRID_SIZE,
         canvasShape=(RGB_WIDTH, RGB_HEIGHT),
         resizeShape=(320, 240),
         resizeMode=dai.ImageManipConfig.ResizeMode.STRETCH,
-
     )
-    frame_cropper = pipeline.create(
-        FrameCropper
-    ).fromManipConfigs(
-        inputManipConfigs=tiling.out,
-    ).build(
-        inputImage=rgb_out,
-        outputSize=(320, 240),
-        resizeMode=dai.ImageManipConfig.ResizeMode.STRETCH,
+    frame_cropper = (
+        pipeline.create(FrameCropper)
+        .fromManipConfigs(
+            inputManipConfigs=tiling.out,
+        )
+        .build(
+            inputImage=rgb_out,
+            outputSize=(320, 240),
+            resizeMode=dai.ImageManipConfig.ResizeMode.STRETCH,
+        )
     )
 
-    face_detection = pipeline.create(
-        ParsingNeuralNetwork
-    ).build(
+    face_detection = pipeline.create(ParsingNeuralNetwork).build(
         input=frame_cropper.out,
         nnSource=FACE_DETECTION_MODEL,
     )
-    coordinates_mapper = pipeline.create(
-        CoordinatesMapper
-    ).build(
+    coordinates_mapper = pipeline.create(CoordinatesMapper).build(
         toTransformationInput=rgb_out,
         fromTransformationInput=face_detection.out,
     )
-    message_gatherer = pipeline.create(
-        GatherData
-    ).build(
+    message_gatherer = pipeline.create(GatherData).build(
         inputData=coordinates_mapper.out,
         inputReference=rgb_out,
         cameraFps=FPS,
         waitCountFn=lambda _: GRID_SIZE[0] * GRID_SIZE[1],
     )
-    merged_detections = pipeline.create(
-        MergeImgDetections
-    ).build(
+    merged_detections = pipeline.create(MergeImgDetections).build(
         input=message_gatherer.out,
     )
-    filter_node = pipeline.create(
-        ImgDetectionsFilter
-    ).useNms(
-        confThresh=0.8,
-        iouThresh=0.3,
-    ).build(
-        input=merged_detections.out,
+    filter_node = (
+        pipeline.create(ImgDetectionsFilter)
+        .useNms(
+            confThresh=0.8,
+            iouThresh=0.3,
+        )
+        .build(
+            input=merged_detections.out,
+        )
     )
 
     visualizer.addTopic(topicName="rgb", output=rgb_out, group="1")

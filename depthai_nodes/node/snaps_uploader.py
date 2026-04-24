@@ -20,6 +20,7 @@ class SnapsUploader(BaseHostNode):
     def setToken(self, token: str):
         """Set the Hub API token used for snap uploads."""
         os.environ.setdefault("DEPTHAI_HUB_API_KEY", token)
+
     def setToken(self, token: str):
         os.environ["DEPTHAI_HUB_API_KEY"] = token
 

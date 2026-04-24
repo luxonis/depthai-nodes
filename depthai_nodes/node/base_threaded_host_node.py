@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 import depthai as dai
+
 from depthai_nodes.logging import get_logger
 
 ThreadedHostNodeMeta = type(dai.node.ThreadedHostNode)  # metaclass of dai.node.HostNode

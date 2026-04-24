@@ -25,7 +25,9 @@ def mapper(pipeline: PipelineMock):
     return pipeline.create(CoordinatesMapper)
 
 
-def test_extract_transformation_requires_valid_transformation(mapper: CoordinatesMapper):
+def test_extract_transformation_requires_valid_transformation(
+    mapper: CoordinatesMapper,
+):
     with pytest.raises(RuntimeError):
         mapper._extract_transformation(TransformationMessage(None))
 

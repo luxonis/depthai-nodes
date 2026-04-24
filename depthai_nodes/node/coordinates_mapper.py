@@ -1,5 +1,3 @@
-import time
-
 import depthai as dai
 
 from depthai_nodes.message import Collection
@@ -172,7 +170,9 @@ except Exception as e:
         elif isinstance(msg, Collection):
             remapped_msgs = []
             for m in msg.items:
-                remapped_msg = self._remap_message(msg=m, to_transformation=to_transformation)
+                remapped_msg = self._remap_message(
+                    msg=m, to_transformation=to_transformation
+                )
                 remapped_msgs.append(remapped_msg)
             new_collection = Collection(items=remapped_msgs)
             new_collection.setTimestamp(msg.getTimestamp())

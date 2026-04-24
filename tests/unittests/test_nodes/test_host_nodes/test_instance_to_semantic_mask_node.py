@@ -63,7 +63,9 @@ def test_processing_instance_to_semantic(
         converter.process(q_in.get())
         out = q_out.get()
         assert isinstance(out, dai.ImgDetections)
-        np.testing.assert_array_equal(out.getCvSegmentationMask(), msg.getCvSegmentationMask())
+        np.testing.assert_array_equal(
+            out.getCvSegmentationMask(), msg.getCvSegmentationMask()
+        )
         return
 
     # Build a deterministic instance-id mask:

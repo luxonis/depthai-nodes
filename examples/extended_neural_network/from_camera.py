@@ -1,6 +1,7 @@
 import sys
-import depthai as dai
 from pathlib import Path
+
+import depthai as dai
 
 from depthai_nodes.node.extended_neural_network import ExtendedNeuralNetwork
 
@@ -18,7 +19,9 @@ FPS = 10
 visualizer = dai.RemoteConnection(httpPort=8082)
 device = dai.Device(dai.DeviceInfo(DEVICE_MXID)) if DEVICE_MXID else dai.Device()
 platform = device.getPlatform().name
-frame_type = dai.ImgFrame.Type.BGR888i if platform == "RVC4" else dai.ImgFrame.Type.BGR888p
+frame_type = (
+    dai.ImgFrame.Type.BGR888i if platform == "RVC4" else dai.ImgFrame.Type.BGR888p
+)
 
 with dai.Pipeline(device) as pipeline:
     rgb = pipeline.create(dai.node.Camera).build(sensorFps=FPS)

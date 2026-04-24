@@ -74,9 +74,7 @@ class DepthMerger(BaseHostNode):
         self.link_args(output2d, outputDepth)
         self.shrinking_factor = shrinkingFactor
         self.host_spatials_calc = HostSpatialsCalc(calibData, depthAlignmentSocket)
-        self._logger.debug(
-            f"DepthMerger built with shrinking_factor={shrinkingFactor}"
-        )
+        self._logger.debug(f"DepthMerger built with shrinking_factor={shrinkingFactor}")
         return self
 
     def process(self, message2d: dai.Buffer, depth: dai.ImgFrame) -> None:
@@ -181,5 +179,5 @@ class DepthMerger(BaseHostNode):
     def _get_index(self, relative_coord: float, dimension_len: int) -> int:
         """Converts a relative coordinate to an absolute index within the given
         dimension length."""
-        bounded_coord = min(1., relative_coord)
+        bounded_coord = min(1.0, relative_coord)
         return max(0, int(bounded_coord * dimension_len) - 1)

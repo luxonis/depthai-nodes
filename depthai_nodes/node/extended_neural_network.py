@@ -8,8 +8,8 @@ from depthai_nodes.node.parsing_neural_network import ParsingNeuralNetwork
 
 
 class ExtendedNeuralNetwork(BaseThreadedHostNode):
-    """A high-level host node that performs neural network inference with
-    automatic input resizing and optional coordinate remapping.
+    """A high-level host node that performs neural network inference with automatic
+    input resizing and optional coordinate remapping.
 
     `ExtendedNeuralNetwork` is a convenience wrapper around an internal
     :class:`ParsingNeuralNetwork` node. It handles:
@@ -163,7 +163,9 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
             inputImage.link(manip.inputImage)
             image_out = manip.out
 
-        self._nn = self._pipeline.create(ParsingNeuralNetwork).build(input=image_out, nnSource=nn_archive)
+        self._nn = self._pipeline.create(ParsingNeuralNetwork).build(
+            input=image_out, nnSource=nn_archive
+        )
 
         try:
             nn_output = self._nn.out

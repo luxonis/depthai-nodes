@@ -1,4 +1,3 @@
-import time
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
@@ -35,9 +34,7 @@ class Tiling(BaseThreadedHostNode):
         super().__init__()
 
         self._cfg_out = self.createOutput()
-        self._cfg_out.setPossibleDatatypes(
-            [(dai.DatatypeEnum.MessageGroup, True)]
-        )
+        self._cfg_out.setPossibleDatatypes([(dai.DatatypeEnum.MessageGroup, True)])
         self._tiling_cfg: Optional[TilingCfg] = None
         self._logger.debug("Tiling initialized")
 
@@ -49,7 +46,9 @@ class Tiling(BaseThreadedHostNode):
     @property
     def tileCount(self) -> int:
         """Return the number of tiles in the current configuration."""
-        return self._tiling_cfg.gridSize[0] * self._tiling_cfg.gridSize[1] + int(self._tiling_cfg.globalDetection)
+        return self._tiling_cfg.gridSize[0] * self._tiling_cfg.gridSize[1] + int(
+            self._tiling_cfg.globalDetection
+        )
 
     @property
     def tilePositions(self) -> list[tuple[int, int, int, int]]:
@@ -88,7 +87,7 @@ class Tiling(BaseThreadedHostNode):
             larger crops.
         """
         if self._tiling_cfg is None:
-            raise RuntimeError(f"Tiling was not built yet. Call `build()` first.")
+            raise RuntimeError("Tiling was not built yet. Call `build()` first.")
 
         if overlap is not None:
             self._tiling_cfg.overlap = overlap
@@ -168,9 +167,7 @@ class Tiling(BaseThreadedHostNode):
         self._process_tiling_config()
 
     def _process_tiling_config(self) -> None:
-        tile_positions = self._computeTilePositions(
-            tiling_cfg=self._tiling_cfg
-        )
+        tile_positions = self._computeTilePositions(tiling_cfg=self._tiling_cfg)
         crop_configs = self._generateManipConfigs(
             tile_positions=tile_positions,
             resize_shape=self._tiling_cfg.resizeShape,

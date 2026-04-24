@@ -6,8 +6,8 @@ from depthai_nodes.node.base_host_node import BaseHostNode
 
 
 class InstanceToSemanticMask(BaseHostNode):
-    """Converts a dai.ImgDetections instance mask into a semantic mask by mapping
-    unique instance IDs to detection class labels.
+    """Converts a dai.ImgDetections instance mask into a semantic mask by mapping unique
+    instance IDs to detection class labels.
 
     Attributes
     ----------
@@ -29,9 +29,7 @@ class InstanceToSemanticMask(BaseHostNode):
     def process(self, msg: dai.Buffer) -> None:
         """Convert instance IDs in the segmentation mask into class labels."""
         if not isinstance(msg, dai.ImgDetections):
-            raise TypeError(
-                f"Expected dai.ImgDetections input type, got {type(msg)}."
-            )
+            raise TypeError(f"Expected dai.ImgDetections input type, got {type(msg)}.")
 
         msg_copy = copy_message(msg)
         masks = msg_copy.getCvSegmentationMask()

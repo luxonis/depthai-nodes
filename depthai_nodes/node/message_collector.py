@@ -13,7 +13,8 @@ TCollected = TypeVar("TCollected", bound=dai.Buffer)
 
 
 class MessageCollector(dai.node.ThreadedHostNode, Generic[TCollected]):
-    """Threaded host node that collects multiple data messages from a single input matched by timestamp.
+    """Threaded host node that collects multiple data messages from a single input
+    matched by timestamp.
 
     The node receives one input stream:
 

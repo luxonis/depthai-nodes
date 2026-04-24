@@ -3,14 +3,12 @@ from __future__ import annotations
 from typing import Generic, List, Optional, Type, TypeVar
 
 import depthai as dai
-from depthai_nodes.message.utils import copy_message as _copy_message
 
 T = TypeVar("T")
 
 
 class Collection(dai.Buffer, Generic[T]):
-    """
-    A generic DepthAI message containing a list of items of a single type T.
+    """A generic DepthAI message containing a list of items of a single type T.
 
     Notes:
     - Python generics are erased at runtime, so runtime type checking is inferred
@@ -70,4 +68,3 @@ class Collection(dai.Buffer, Generic[T]):
         new_collection.setTimestampDevice(self.getTimestampDevice())
         new_collection.setTimestamp(self.getTimestamp())
         return Collection(new_list)
-

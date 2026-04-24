@@ -34,7 +34,9 @@ def remap_message(
     elif isinstance(message, Classifications):
         return remap_classifications(from_transformation, to_transformation, message)
     else:
-        raise TypeError(f"Cannot remap message. Unsupported message type: {type(message)}")
+        raise TypeError(
+            f"Cannot remap message. Unsupported message type: {type(message)}"
+        )
 
 
 def remap_img_detections(
@@ -47,7 +49,10 @@ def remap_img_detections(
         remap_img_detection(from_transformation, to_transformation, det)
         for det in detections.detections
     ]
-    if detections.getCvSegmentationMask() is not None and detections.getCvSegmentationMask().size > 0:
+    if (
+        detections.getCvSegmentationMask() is not None
+        and detections.getCvSegmentationMask().size > 0
+    ):
         new_mask = remap_segmentation_mask_array(
             from_transformation, to_transformation, detections.getCvSegmentationMask()
         )
@@ -118,7 +123,8 @@ def remap_keypoint(
 ) -> dai.Keypoint:
     new_kpt = dai.Keypoint()
     transformed = from_transformation.remapPointTo(
-        to_transformation, dai.Point2f(keypoint.imageCoordinates.x, keypoint.imageCoordinates.y)
+        to_transformation,
+        dai.Point2f(keypoint.imageCoordinates.x, keypoint.imageCoordinates.y),
     )
     new_kpt.imageCoordinates.x = transformed.x
     new_kpt.imageCoordinates.y = transformed.y

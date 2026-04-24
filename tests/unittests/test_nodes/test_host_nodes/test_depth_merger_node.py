@@ -1,5 +1,4 @@
 import time
-from typing import Union
 
 import depthai as dai
 import numpy as np
