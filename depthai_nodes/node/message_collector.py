@@ -88,7 +88,7 @@ class MessageCollector(dai.node.ThreadedHostNode, Generic[TCollected]):
 
         Returns
         -------
-        Collection[TCollected]
+        MessageCollector[TCollected]
             The configured node instance.
         """
         self.setCameraFps(cameraFps)

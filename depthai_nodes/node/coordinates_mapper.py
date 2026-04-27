@@ -1,6 +1,6 @@
 import depthai as dai
 
-from depthai_nodes.message import Collection
+from depthai_nodes.message import Collection, GatheredData
 from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
 from depthai_nodes.node.utils.message_remapping import remap_message
 
@@ -167,6 +167,18 @@ except Exception as e:
             new_msg_group.setSequenceNum(msg.getSequenceNum())
             new_msg_group.setTimestampDevice(msg.getTimestampDevice())
             return new_msg_group
+        elif isinstance(msg, GatheredData):
+            remapped_msgs = []
+            for m in msg.items:
+                remapped_msg = self._remap_message(
+                    msg=m, to_transformation=to_transformation
+                )
+                remapped_msgs.append(remapped_msg)
+            new_gathered_data = GatheredData(items=remapped_msgs, reference_data=msg.reference_data)
+            new_gathered_data.setTimestamp(msg.getTimestamp())
+            new_gathered_data.setSequenceNum(msg.getSequenceNum())
+            new_gathered_data.setTimestampDevice(msg.getTimestampDevice())
+            return new_gathered_data
         elif isinstance(msg, Collection):
             remapped_msgs = []
             for m in msg.items:
@@ -179,7 +191,6 @@ except Exception as e:
             new_collection.setSequenceNum(msg.getSequenceNum())
             new_collection.setTimestampDevice(msg.getTimestampDevice())
             return new_collection
-
         try:
             remapped_msg = remap_message(
                 message=msg,

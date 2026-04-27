@@ -7,7 +7,7 @@ from depthai_nodes.node.extended_neural_network import ExtendedNeuralNetwork
 
 # set PYTHONPATH to src
 current_dir = Path(__file__)
-src_path = current_dir.parent.parent.parent.parent
+src_path = current_dir.parent.parent.parent
 sys.path.insert(0, src_path.absolute().as_posix())
 
 print("Starting")
