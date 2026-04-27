@@ -69,6 +69,25 @@ def verify_spatial_detection(spatial_det, img_detection):
     np.testing.assert_almost_equal(
         spatial_det.confidence, img_detection.confidence, decimal=2
     )
+    assert len(spatial_det.getKeypoints()) == len(img_detection.getKeypoints())
+    assert spatial_det.getEdges() == img_detection.getEdges()
+    for spatial_kp, img_kp in zip(
+        spatial_det.getKeypoints(), img_detection.getKeypoints()
+    ):
+        np.testing.assert_almost_equal(
+            spatial_kp.imageCoordinates.x, img_kp.imageCoordinates.x, decimal=4
+        )
+        np.testing.assert_almost_equal(
+            spatial_kp.imageCoordinates.y, img_kp.imageCoordinates.y, decimal=4
+        )
+        np.testing.assert_almost_equal(
+            spatial_kp.confidence, img_kp.confidence, decimal=4
+        )
+        assert spatial_kp.label == img_kp.label
+        assert spatial_kp.labelName == img_kp.labelName
+        assert np.isfinite(spatial_kp.spatialCoordinates.x)
+        assert np.isfinite(spatial_kp.spatialCoordinates.y)
+        assert np.isfinite(spatial_kp.spatialCoordinates.z)
 
 
 def test_initialization(depth_merger: DepthMerger):

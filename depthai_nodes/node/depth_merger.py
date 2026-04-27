@@ -138,10 +138,18 @@ class DepthMerger(BaseHostNode):
         if isinstance(detection, dai.ImgDetection):
             kpts_transformed = []
             for kp in detection.getKeypoints():
-                # spatialCoordinates are not computed per keypoint, only the
-                # bounding box spatial coords are computed.
-                skp = dai.Keypoint(
-                    coordinates=kp.imageCoordinates,
+                kp_spatials = self.host_spatials_calc.calcSpatials(
+                    depth,
+                    [
+                        self._get_index(kp.imageCoordinates.x, x_len),
+                        self._get_index(kp.imageCoordinates.y, y_len),
+                    ],
+                )
+                skp = dai.SpatialKeypoint(
+                    imageCoordinates=kp.imageCoordinates,
+                    spatialCoordinates=dai.Point3f(
+                        kp_spatials["x"], kp_spatials["y"], kp_spatials["z"]
+                    ),
                     confidence=kp.confidence,
                     label=kp.label,
                     labelName=kp.labelName,
