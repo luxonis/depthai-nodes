@@ -1,6 +1,6 @@
 import depthai as dai
 
-from depthai_nodes.message import Collection, GatheredData
+from depthai_nodes.message import GatheredData
 from depthai_nodes.node.base_host_node import BaseHostNode
 
 

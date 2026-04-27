@@ -7,16 +7,15 @@ src_path = current_dir.parent.parent.parent
 sys.path.insert(0, src_path.absolute().as_posix())
 
 import depthai as dai
+from merge_img_detections import MergeImgDetections
 
 from depthai_nodes.node import (
     CoordinatesMapper,
     ExtendedNeuralNetwork,
     FrameCropper,
     GatherData,
-    MessageCollector,
     ParsingNeuralNetwork,
 )
-from merge_img_detections import MergeImgDetections
 
 print("Starting")
 RGB_WIDTH, RGB_HEIGHT = 1280, 720
@@ -47,12 +46,16 @@ with dai.Pipeline(device) as pipeline:
         nnSource=PEOPLE_DETECTION_MODEL,
     )
     # 2nd stage
-    face_cropper = pipeline.create(FrameCropper).fromImgDetections(
-        inputImgDetections=people_detection.out,
-        outputSize=(320, 240),
-        resizeMode=dai.ImageManipConfig.ResizeMode.LETTERBOX,
-    ).build(
-        inputImage=rgb_high_res_out,
+    face_cropper = (
+        pipeline.create(FrameCropper)
+        .fromImgDetections(
+            inputImgDetections=people_detection.out,
+            outputSize=(320, 240),
+            resizeMode=dai.ImageManipConfig.ResizeMode.LETTERBOX,
+        )
+        .build(
+            inputImage=rgb_high_res_out,
+        )
     )
     face_detections = pipeline.create(ParsingNeuralNetwork).build(
         input=face_cropper.out,

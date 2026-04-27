@@ -174,7 +174,9 @@ except Exception as e:
                     msg=m, to_transformation=to_transformation
                 )
                 remapped_msgs.append(remapped_msg)
-            new_gathered_data = GatheredData(items=remapped_msgs, reference_data=msg.reference_data)
+            new_gathered_data = GatheredData(
+                items=remapped_msgs, reference_data=msg.reference_data
+            )
             new_gathered_data.setTimestamp(msg.getTimestamp())
             new_gathered_data.setSequenceNum(msg.getSequenceNum())
             new_gathered_data.setTimestampDevice(msg.getTimestampDevice())
