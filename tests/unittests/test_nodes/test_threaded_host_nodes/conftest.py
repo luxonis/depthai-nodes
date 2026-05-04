@@ -1,4 +1,5 @@
 from tests.utils import HostNodeMock, PipelineMock, SyncMock, ThreadedHostNodeMock
+from tests.utils.nodes.mocks.pipeline import DetectionParserMock
 
 
 def pytest_configure():
@@ -8,3 +9,4 @@ def pytest_configure():
     dai.node.ThreadedHostNode = ThreadedHostNodeMock
     dai.node.HostNode = HostNodeMock
     dai.node.Sync = SyncMock
+    dai.node.DetectionParser = DetectionParserMock

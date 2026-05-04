@@ -33,10 +33,7 @@ arr_creators = [
 
 @pytest.fixture(scope="session")
 def duration(request):
-    d = request.config.getoption("--duration")
-    if d is None:
-        return 1e-6
-    return d
+    return request.config.getoption("--duration")
 
 
 def make_colormap(colormap_value: int) -> np.ndarray:
@@ -104,7 +101,7 @@ def test_processing(
 ):
     total_combinations = len(colormap_values) * len(arr_creators)
 
-    modified_duration = duration / total_combinations
+    modified_duration = None if duration is None else duration / total_combinations
     o_array = OutputMock()
     colorizer.build(o_array)
     colorizer.setColormap(colormap_value)
@@ -115,8 +112,12 @@ def test_processing(
     arr = arr_creator()
     start_time = time.time()
     last_log_time = time.time()
-    while time.time() - start_time < modified_duration:
-        if time.time() - last_log_time > LOG_INTERVAL:
+    ran_once = False
+    while not ran_once or (
+        modified_duration is not None and time.time() - start_time < modified_duration
+    ):
+        ran_once = True
+        if modified_duration is not None and time.time() - last_log_time > LOG_INTERVAL:
             print(
                 f"Test running... {time.time() - start_time:.1f}s elapsed, {modified_duration - time.time() + start_time:.1f}s remaining"
             )

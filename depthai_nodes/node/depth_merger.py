@@ -143,19 +143,51 @@ class DepthMerger(BaseHostNode):
             kpts = detection.keypoints
             edges = detection.edges
             edges = [[edge[0], edge[1]] for edge in edges]
+            # TODO: Can be removed once depthai requirement is >=3.4
             kpts_transformed = []
-            for kp in kpts:
-                kpt = dai.Keypoint(kp.x, kp.y, kp.z)
-                if kp.confidence >= 0:
-                    kpt.confidence = kp.confidence
-                kpt.labelName = kp.label_name if kp.label_name is not None else ""
-                kpts_transformed.append(kpt)
+            if hasattr(dai, "SpatialKeypoint"):
+                for kp in kpts:
+                    kp_spatial = self._create_spatial_keypoint(
+                        image_coordinates=dai.Point3f(kp.x, kp.y, kp.z),
+                        spatial_coordinates=dai.Point3f(-1, -1, -1),
+                        confidence=kp.confidence,
+                        label_name=kp.label_name if kp.label_name is not None else "",
+                    )
+                    kpts_transformed.append(kp_spatial)
+            else:
+                for kp in kpts:
+                    kpt = dai.Keypoint(kp.x, kp.y, kp.z)
+                    if kp.confidence >= 0:
+                        kpt.confidence = kp.confidence
+                    kpt.labelName = kp.label_name if kp.label_name is not None else ""
+                    kpts_transformed.append(kpt)
             spatial_img_detection.setKeypoints(kpts_transformed)
-            spatial_img_detection.setEdges(edges)
+            if edges:
+                spatial_img_detection.setEdges(edges)
 
         elif isinstance(detection, dai.ImgDetection):
-            spatial_img_detection.setKeypoints(detection.getKeypoints())
-            spatial_img_detection.setEdges(detection.getEdges())
+            # TODO: Can be removed once depthai requirement is >=3.4
+            if hasattr(dai, "SpatialKeypoint"):
+                kpts_transformed = [
+                    self._create_spatial_keypoint(
+                        image_coordinates=dai.Point3f(
+                            kp.imageCoordinates.x,
+                            kp.imageCoordinates.y,
+                            kp.imageCoordinates.z,
+                        ),
+                        spatial_coordinates=dai.Point3f(-1, -1, -1),
+                        confidence=kp.confidence,
+                        label=kp.label,
+                        label_name=kp.labelName,
+                    )
+                    for kp in detection.getKeypoints()
+                ]
+                spatial_img_detection.setKeypoints(kpts_transformed)
+            else:
+                spatial_img_detection.setKeypoints(detection.getKeypoints())  # type: ignore
+            edges = detection.getEdges()
+            if edges:
+                spatial_img_detection.setEdges(edges)
 
         else:
             raise ValueError(
@@ -188,3 +220,20 @@ class DepthMerger(BaseHostNode):
         dimension length."""
         bounded_coord = min(1, relative_coord)
         return max(0, int(bounded_coord * dimension_len) - 1)
+
+    def _create_spatial_keypoint(
+        self,
+        image_coordinates: dai.Point3f,
+        spatial_coordinates: dai.Point3f,
+        confidence: float = -1.0,
+        label: int = 0,
+        label_name: str = "",
+    ) -> "dai.SpatialKeypoint":
+        """Creates a dai.SpatialKeypoint."""
+        spatial_keypoint = dai.SpatialKeypoint()
+        spatial_keypoint.imageCoordinates = image_coordinates
+        spatial_keypoint.spatialCoordinates = spatial_coordinates
+        spatial_keypoint.confidence = confidence
+        spatial_keypoint.label = label
+        spatial_keypoint.labelName = label_name
+        return spatial_keypoint
