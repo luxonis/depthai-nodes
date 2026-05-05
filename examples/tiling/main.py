@@ -38,7 +38,6 @@ with dai.Pipeline(device) as pipeline:
     rgb_out = rgb.requestOutput(size=(RGB_WIDTH, RGB_HEIGHT), fps=FPS, type=frame_type)
     tiling = pipeline.create(Tiling).build(
         overlap=0.2,
-        trigger=rgb_out,
         gridSize=GRID_SIZE,
         canvasShape=(RGB_WIDTH, RGB_HEIGHT),
         resizeShape=(320, 240),
@@ -48,11 +47,11 @@ with dai.Pipeline(device) as pipeline:
         pipeline.create(FrameCropper)
         .fromManipConfigs(
             inputManipConfigs=tiling.out,
+            maxOutputFrameSize=320 * 240 * 3,
+            waitForConfig=False,
         )
         .build(
             inputImage=rgb_out,
-            outputSize=(320, 240),
-            resizeMode=dai.ImageManipConfig.ResizeMode.STRETCH,
         )
     )
 
