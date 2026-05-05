@@ -11,7 +11,7 @@ from tests.utils import (
     ARRAYS,
     LOG_INTERVAL,
     OutputMock,
-    create_img_detections_extended,
+    create_img_detections,
     create_img_frame,
     create_map,
 )
@@ -27,8 +27,14 @@ arr_creators = [
         image=ARR[..., np.newaxis], img_frame_type=dai.ImgFrame.Type.RAW8
     ),
     lambda: create_map(ARR.astype(np.float32)),
-    lambda: create_img_detections_extended(masks=ARR),
+    lambda: _create_img_detections_with_mask(ARR),
 ]
+
+
+def _create_img_detections_with_mask(mask: np.ndarray) -> dai.ImgDetections:
+    msg = create_img_detections()
+    msg.setCvSegmentationMask(mask.astype(np.uint8))
+    return msg
 
 
 @pytest.fixture(scope="session")

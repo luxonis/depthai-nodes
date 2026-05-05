@@ -169,3 +169,6 @@ cython_debug/
 .vscode/
 
 /tests/stability_tests/nn_datas
+
+# Local agent context
+/agent_context/*

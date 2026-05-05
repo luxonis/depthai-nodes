@@ -1,21 +1,17 @@
 import time
-from typing import Union
 
 import depthai as dai
 import numpy as np
 import pytest
 from pytest import FixtureRequest
 
-from depthai_nodes import ImgDetectionExtended, ImgDetectionsExtended
 from depthai_nodes.node.depth_merger import DepthMerger
 from depthai_nodes.node.host_spatials_calc import HostSpatialsCalc
 from tests.utils import (
     LOG_INTERVAL,
     OutputMock,
     create_img_detection,
-    create_img_detection_extended,
     create_img_detections,
-    create_img_detections_extended,
 )
 
 from .utils.calibration_handler import get_calibration_handler
@@ -30,10 +26,10 @@ def duration(request):
 
 @pytest.fixture
 def depth_merger():
-    depth_merger = DepthMerger(shrinking_factor=0.0)
+    depth_merger = DepthMerger(shrinkingFactor=0.0)
     calib_handler = get_calibration_handler()
     depth_merger.host_spatials_calc = HostSpatialsCalc(
-        calib_data=calib_handler, depth_alignment_socket=dai.CameraBoardSocket.CAM_A
+        calibData=calib_handler, depthAlignmentSocket=dai.CameraBoardSocket.CAM_A
     )
     return depth_merger
 
@@ -41,11 +37,6 @@ def depth_merger():
 @pytest.fixture
 def img_detection():
     return create_img_detection()
-
-
-@pytest.fixture
-def img_detection_extended():
-    return create_img_detection_extended()
 
 
 @pytest.fixture
@@ -63,21 +54,13 @@ def img_detections():
     return create_img_detections()
 
 
-@pytest.fixture
-def img_detections_extended():
-    return create_img_detections_extended()
-
-
 def verify_spatial_detection(spatial_det, img_detection):
     assert isinstance(spatial_det, dai.SpatialImgDetection)
 
-    if isinstance(img_detection, ImgDetectionExtended):
-        xmin, ymin, xmax, ymax = img_detection.rotated_rect.getOuterRect()
-    else:
-        xmin = img_detection.xmin
-        ymin = img_detection.ymin
-        xmax = img_detection.xmax
-        ymax = img_detection.ymax
+    xmin = img_detection.xmin
+    ymin = img_detection.ymin
+    xmax = img_detection.xmax
+    ymax = img_detection.ymax
     np.testing.assert_almost_equal(spatial_det.xmin, xmin, decimal=2)
     np.testing.assert_almost_equal(spatial_det.ymin, ymin, decimal=2)
     np.testing.assert_almost_equal(spatial_det.xmax, xmax, decimal=2)
@@ -86,13 +69,32 @@ def verify_spatial_detection(spatial_det, img_detection):
     np.testing.assert_almost_equal(
         spatial_det.confidence, img_detection.confidence, decimal=2
     )
+    assert len(spatial_det.getKeypoints()) == len(img_detection.getKeypoints())
+    assert spatial_det.getEdges() == img_detection.getEdges()
+    for spatial_kp, img_kp in zip(
+        spatial_det.getKeypoints(), img_detection.getKeypoints()
+    ):
+        np.testing.assert_almost_equal(
+            spatial_kp.imageCoordinates.x, img_kp.imageCoordinates.x, decimal=4
+        )
+        np.testing.assert_almost_equal(
+            spatial_kp.imageCoordinates.y, img_kp.imageCoordinates.y, decimal=4
+        )
+        np.testing.assert_almost_equal(
+            spatial_kp.confidence, img_kp.confidence, decimal=4
+        )
+        assert spatial_kp.label == img_kp.label
+        assert spatial_kp.labelName == img_kp.labelName
+        assert np.isfinite(spatial_kp.spatialCoordinates.x)
+        assert np.isfinite(spatial_kp.spatialCoordinates.y)
+        assert np.isfinite(spatial_kp.spatialCoordinates.z)
 
 
 def test_initialization(depth_merger: DepthMerger):
     assert depth_merger.shrinking_factor == 0.0
 
 
-@pytest.mark.parametrize("detection", ["img_detection", "img_detection_extended"])
+@pytest.mark.parametrize("detection", ["img_detection"])
 def test_img_detection(
     duration: float,
     depth_merger: DepthMerger,
@@ -100,20 +102,18 @@ def test_img_detection(
     request: FixtureRequest,
     detection: str,
 ):
-    img_detection: Union[
-        ImgDetectionExtended, dai.ImgDetection
-    ] = request.getfixturevalue(detection)
+    img_detection: dai.ImgDetection = request.getfixturevalue(detection)
     output_2d = OutputMock()
     output_depth = OutputMock()
 
     modified_duration = None if duration is None else duration / DIFFERENT_TESTS
 
     depth_merger.build(
-        output_2d=output_2d,
-        output_depth=output_depth,
-        calib_data=get_calibration_handler(),
-        depth_alignment_socket=dai.CameraBoardSocket.CAM_A,
-        shrinking_factor=0.0,
+        output2d=output_2d,
+        outputDepth=output_depth,
+        calibData=get_calibration_handler(),
+        depthAlignmentSocket=dai.CameraBoardSocket.CAM_A,
+        shrinkingFactor=0.0,
     )
 
     q_2d = output_2d.createOutputQueue()
@@ -141,7 +141,7 @@ def test_img_detection(
         verify_spatial_detection(spatial_det, img_detection)
 
 
-@pytest.mark.parametrize("detections", ["img_detections", "img_detections_extended"])
+@pytest.mark.parametrize("detections", ["img_detections"])
 def test_img_detections(
     depth_merger: DepthMerger,
     depth_frame: dai.ImgFrame,
@@ -149,20 +149,18 @@ def test_img_detections(
     detections: str,
     duration: float,
 ):
-    img_detections: Union[
-        ImgDetectionsExtended, dai.ImgDetections
-    ] = request.getfixturevalue(detections)
+    img_detections: dai.ImgDetections = request.getfixturevalue(detections)
     output_2d = OutputMock()
     output_depth = OutputMock()
 
     modified_duration = None if duration is None else duration / DIFFERENT_TESTS
 
     depth_merger.build(
-        output_2d=output_2d,
-        output_depth=output_depth,
-        calib_data=get_calibration_handler(),
-        depth_alignment_socket=dai.CameraBoardSocket.CAM_A,
-        shrinking_factor=0.0,
+        output2d=output_2d,
+        outputDepth=output_depth,
+        calibData=get_calibration_handler(),
+        depthAlignmentSocket=dai.CameraBoardSocket.CAM_A,
+        shrinkingFactor=0.0,
     )
 
     q_2d = output_2d.createOutputQueue()

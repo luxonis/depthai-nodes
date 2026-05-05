@@ -18,7 +18,8 @@ class SnapsUploader(BaseHostNode):
         self._em = dai.EventsManager()
 
     def setToken(self, token: str):
-        os.environ["DEPTHAI_HUB_API_KEY"] = token
+        """Set the Hub API token used for snap uploads."""
+        os.environ.setdefault("DEPTHAI_HUB_API_KEY", token)
 
     def setCacheDir(self, cacheDir: str):
         """Set the cache directory for storing cached data.
@@ -53,6 +54,7 @@ class SnapsUploader(BaseHostNode):
         return self
 
     def process(self, snap: dai.Buffer):
+        """Upload the incoming ``SnapData`` payload to the Hub Events API."""
         assert isinstance(snap, SnapData), f"Expected SnapData, got {type(snap)}"
 
         logger.debug(f"Sending snap: {snap.snap_name}")

@@ -1,13 +1,11 @@
-from typing import List, Union
+from typing import List
 
 import depthai as dai
 import numpy as np
 
-from depthai_nodes.message.img_detections import ImgDetectionExtended
-
 
 def nms_detections(
-    detections: List[Union[dai.ImgDetection, ImgDetectionExtended]],
+    detections: List[dai.ImgDetection],
     conf_thresh=0.3,
     iou_thresh=0.4,
 ):
@@ -43,8 +41,6 @@ def nms_detections(
             # Coordinates are normalized between 0 and 1
             if isinstance(det, dai.ImgDetection):
                 boxes.append([det.xmin, det.ymin, det.xmax, det.ymax])
-            elif isinstance(det, ImgDetectionExtended):
-                boxes.append(det.rotated_rect.getOuterRect())
             scores.append(det.confidence)
 
         boxes = np.array(boxes)

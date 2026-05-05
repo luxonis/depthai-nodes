@@ -6,7 +6,6 @@
   - [Object Detection](#object-detection)
   - [Classification](#classification)
   - [Segmentation](#segmentation)
-  - [Keypoints](#keypoints)
   - [Feature Matching](#feature-matching)
   - [Other](#other)
 - [Utility & Helper Nodes](#utility--helper-nodes)
@@ -41,12 +40,6 @@ Parser nodes are used to parse the output of a neural network. The main purpose 
 - `SegmentationParser`: Parser for parsing the output of the segmentation models. It will output the [`depthai_nodes.message.SegmentationMask`](../message/README.md#segmentationmask) message.
 - `FastSAMParser`: Parser for parsing the output of the FastSAM model. It will output the [`depthai_nodes.message.SegmentationMask`](../message/README.md#segmentationmask) message.
 
-### Keypoints
-
-- `KeypointParser`: General keypoint parser that will output the [`depthai_nodes.message.Keypoints`](../message/README.md#keypoints) message.
-- `SuperAnimalParser`: Special parser for parsing the output of the SuperAnimal model and will output the [`depthai_nodes.message.Keypoints`](../message/README.md#keypoints) message.
-- `HRNetParser`: Special parser for parsing the output of the HRNet model and will output the [`depthai_nodes.message.Keypoints`](../message/README.md#keypoints) message.
-
 ### Feature Matching
 
 - `XFeatMonoParser`: Special parser for parsing the output of the XFeat model when running in mono mode. It will output the `dai.TrackedFeatures` message.
@@ -66,31 +59,35 @@ Parser nodes are used to parse the output of a neural network. The main purpose 
 ### Base Classes
 
 - `BaseHostNode`: Abstract base class for all host nodes, providing common functionality and platform-specific configurations.
+- `BaseThreadedHostNode`: Abstract base class for threaded host nodes, providing the same shared platform-specific setup for nodes that run their own host loop.
 
 ### Image Processing Nodes
 
 - `ApplyColormap`: Applies a colormap to generic 2D arrays (maps/masks). Sends out `dai.ImgFrame` message.
 - `ApplyDepthColormap`: Applies a colormap to depth/disparity `dai.ImgFrame` using percentile-based normalization for more stable depth visualization. Invalid depth values (\<= 0) are ignored when computing percentiles and rendered black. Sends out `dai.ImgFrame` message.
 - `DepthMerger`: Merges detections with depth information. Sends out `dai.SpatialImgDetections` message.
+- `FrameCropper`: Crops and resizes image regions either from `dai.ImgDetections` or from upstream `dai.ImageManipConfig` message groups. Sends out `dai.ImgFrame` messages.
 - `ImgFrameOverlay`: A host node that receives two dai.ImgFrame objects and overlays them into a single one. Sends out `dai.ImgFrame` message.
-- `Tiling`: Manages tiling of input frames for neural network processing, divides frames into overlapping tiles based on configuration parameters, and creates ImgFrames for each tile to be sent to a neural network node. Sends out `dai.ImgFrame` message.
-- `TilesPatcher`: Handles the processing of tiled frames from neural network (NN) outputs, maps the detections from tiles back into the global frame, and sends out the combined detections for further processing. Sends out [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) message.
+- `Tiling`: Produces tiled `dai.ImageManipConfig` groups for downstream cropping pipelines and supports runtime reconfiguration of the tiling layout.
 
 ### Neural Network Processing
 
+- `ExtendedNeuralNetwork`: Convenience wrapper around `dai.node.NeuralNetwork` with support for model-zoo / NN archive sources and pipeline-friendly setup.
 - `ParsingNeuralNetwork`: Node for creating a neural network node and relevant parser(s) for the given model from our Model ZOO. Does not send out any messages.
 - `HostParsingNeuralNetwork`: Host-side `ParsingNeuralNetwork` implementation. Does not send out any messages.
 - `ParserGenerator`: Generates parsers from the given NN archive. Does not send out any messages.
 
 ### Detection and Filtering
 
-- `ImgDetectionsBridge`: Transforms the dai.ImgDetections to ImgDetectionsExtended object or vice versa. Sends out [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) or [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message.
-- `ImgDetectionsFilter`: Filters image detections based on various criteria. Sends out [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) or [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) or [`dai.SpatialImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/spatial_img_detections) message.
-- `InstanceToSemanticMask`: Converts instance-id masks into semantic masks by mapping instance indices to detection class labels. Sends out [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) or [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended) message.
+- `CoordinatesMapper`: Remaps coordinates from one image transformation space into another for supported messages. Useful for mapping detections from crops or tiles back into the original frame.
+- `HostSpatialsCalc`: Computes host-side spatial coordinates for detections using depth data and calibration information.
+- `ImgDetectionsFilter`: Filters image detections based on various criteria. Sends out [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) or [`dai.SpatialImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/spatial_img_detections) message.
+- `InstanceToSemanticMask`: Converts instance-id masks into semantic masks by mapping instance indices to detection class labels. Sends out [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) message.
 
 ### Data Management
 
-- `GatherData`: A node for gathering data. Gathers n messages based on reference_data. To determine n, wait_count_fn function is used. The default wait_count_fn function is waiting for len(TReference.detection). This means the node works out-of-the-box with [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) and [`depthai_nodes.message.ImgDetectionsExtended`](../message/README.md#imgdetectionsextended). Sends out [`depthai_nodes.message.GatheredData`](../message/README.md#gathereddata) message.
+- `GatherData`: A node for gathering data. Gathers n messages based on reference_data. To determine n, `wait_count_fn` is used. The default `wait_count_fn` waits for `len(TReference.detections)`, so the node works out-of-the-box with [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections). Sends out [`depthai_nodes.message.GatheredData`](../message/README.md#gathereddata) message.
+- `MessageCollector`: Collects consecutive same-timestamp messages from a single stream into a [`depthai_nodes.message.Collection`](../message/README.md#collection) and emits the batch when a newer timestamp arrives.
 
 ### Cloud Integration
 
