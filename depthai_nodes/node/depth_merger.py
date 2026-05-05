@@ -52,24 +52,20 @@ class DepthMerger(BaseHostNode):
     ) -> "DepthMerger":
         """Connect detection and depth streams and initialize spatial conversion.
 
-        Parameters
-        ----------
-        output2d
-            Upstream output producing 2D detections.
-        outputDepth
-            Upstream output producing aligned depth frames.
-        calibData
-            Device calibration used to convert image coordinates into spatial
-            coordinates.
-        depthAlignmentSocket
-            Camera socket the depth frame is aligned to.
-        shrinkingFactor
-            Percentage of each bounding box edge trimmed before depth averaging.
-
-        Returns
-        -------
-        DepthMerger
-            The configured node instance.
+        @param output2d: Upstream output producing 2D detections.
+        @type output2d: dai.Node.Output
+        @param outputDepth: Upstream output producing aligned depth frames.
+        @type outputDepth: dai.Node.Output
+        @param calibData: Device calibration used to convert image coordinates into
+            spatial coordinates.
+        @type calibData: dai.CalibrationHandler
+        @param depthAlignmentSocket: Camera socket the depth frame is aligned to.
+        @type depthAlignmentSocket: dai.CameraBoardSocket
+        @param shrinkingFactor: Percentage of each bounding box edge trimmed before
+            depth averaging.
+        @type shrinkingFactor: float
+        @return: The configured node instance.
+        @rtype: DepthMerger
         """
         self.link_args(output2d, outputDepth)
         self.shrinking_factor = shrinkingFactor

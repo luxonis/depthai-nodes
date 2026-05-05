@@ -43,20 +43,16 @@ class ParserGenerator(dai.node.ThreadedHostNode):
     ) -> Dict:
         """Instantiate parser nodes for the supplied model archive.
 
-        Parameters
-        ----------
-        nnArchive
-            Model archive describing the parser configuration.
-        headIndex
-            Optional model head index to instantiate. If omitted, parsers are
-            created for all heads.
-        hostOnly
-            If ``True``, prefer host-side parser implementations where available.
-
-        Returns
-        -------
-        Dict
-            Mapping of model head index to parser node.
+        @param nnArchive: Model archive describing the parser configuration.
+        @type nnArchive: dai.NNArchive
+        @param headIndex: Optional model head index to instantiate. If omitted, parsers
+            are created for all heads.
+        @type headIndex: Optional[int]
+        @param hostOnly: If True, prefer host-side parser implementations where
+            available.
+        @type hostOnly: bool
+        @return: Mapping of model head index to parser node.
+        @rtype: Dict
         """
 
         heads: List = nnArchive.getConfig().model.heads  # type: ignore

@@ -61,10 +61,8 @@ class MessageCollector(dai.node.ThreadedHostNode, Generic[TCollected]):
     def setCameraFps(self, fps: int) -> None:
         """Set the camera frame rate used for timestamp matching.
 
-        Parameters
-        ----------
-        fps
-            Positive camera frame rate used for matching tolerance and polling.
+        @param fps: Positive camera frame rate used for matching tolerance and polling.
+        @type fps: int
         """
         if fps <= 0:
             raise ValueError(f"Camera FPS must be positive, got {fps}")
@@ -78,18 +76,13 @@ class MessageCollector(dai.node.ThreadedHostNode, Generic[TCollected]):
     ) -> "MessageCollector[TCollected]":
         """Connect the data and reference streams used for gathering.
 
-        Parameters
-        ----------
-        cameraFps
-            Camera frame rate used to derive timestamp matching tolerance and
-            polling interval.
-        inputData
-            Upstream output producing the data messages to gather.
-
-        Returns
-        -------
-        MessageCollector[TCollected]
-            The configured node instance.
+        @param cameraFps: Camera frame rate used to derive timestamp matching tolerance
+            and polling interval.
+        @type cameraFps: int
+        @param inputData: Upstream output producing the data messages to gather.
+        @type inputData: dai.Node.Output
+        @return: The configured node instance.
+        @rtype: MessageCollector[TCollected]
         """
         self.setCameraFps(cameraFps)
         inputData.link(self._data_input)

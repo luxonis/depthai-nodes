@@ -105,17 +105,12 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
     def getParser(self, *args, **kwargs) -> Union[BaseParser, dai.DeviceNode]:
         """Return the parser for the requested model head.
 
-        Parameters
-        ----------
-        parserType
-            Optional expected parser type used for runtime type checking.
-        index
-            Model head index. Defaults to ``0``.
-
-        Returns
-        -------
-        BaseParser | dai.DeviceNode
-            Parser node matching the requested head.
+        @param parserType: Optional expected parser type used for runtime type checking.
+        @type parserType: Type[TParser]
+        @param index: Model head index. Defaults to 0.
+        @type index: int
+        @return: Parser node matching the requested head.
+        @rtype: BaseParser | dai.DeviceNode
         """
         index = 0
         parser_type = None
@@ -188,12 +183,11 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
     ) -> None:
         """Set the active model archive and rebuild parser nodes.
 
-        Parameters
-        ----------
-        nnArchive
-            Neural-network archive containing the model and parser config.
-        numShaves
-            Optional number of shaves allocated to the neural-network node.
+        @param nnArchive: Neural-network archive containing the model and parser config.
+        @type nnArchive: dai.NNArchive
+        @param numShaves: Optional number of shaves allocated to the neural-network
+            node.
+        @type numShaves: Optional[int]
         """
         self._nn_archive = nnArchive
         if numShaves:
@@ -226,19 +220,15 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
     ) -> "ParsingNeuralNetwork":
         """Build the neural-network node and create parser nodes for each head.
 
-        Parameters
-        ----------
-        input
-            Upstream output or camera feeding frames into the neural-network node.
-        nnSource
-            ``dai.NNModelDescription``, ``dai.NNArchive``, or HubAI model slug.
-        fps
-            Optional runtime FPS limit for the neural-network node.
-
-        Returns
-        -------
-        ParsingNeuralNetwork
-            The configured node instance.
+        @param input: Upstream output or camera feeding frames into the neural-network
+            node.
+        @type input: Union[dai.Node.Output, dai.node.Camera]
+        @param nnSource: dai.NNModelDescription, dai.NNArchive, or HubAI model slug.
+        @type nnSource: Union[dai.NNModelDescription, dai.NNArchive, str]
+        @param fps: Optional runtime FPS limit for the neural-network node.
+        @type fps: Optional[float]
+        @return: The configured node instance.
+        @rtype: ParsingNeuralNetwork
         """
 
         platform = self.getParentPipeline().getDefaultDevice().getPlatformAsString()

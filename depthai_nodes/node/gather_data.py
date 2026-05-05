@@ -111,10 +111,8 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     def setCameraFps(self, fps: int) -> None:
         """Set the camera frame rate used for timestamp matching.
 
-        Parameters
-        ----------
-        fps
-            Positive camera frame rate used for matching tolerance and polling.
+        @param fps: Positive camera frame rate used for matching tolerance and polling.
+        @type fps: int
         """
         if fps <= 0:
             raise ValueError(f"Camera FPS must be positive, got {fps}")
@@ -134,24 +132,19 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     ) -> "GatherData[TReference, TGathered]":
         """Connect the data and reference streams used for gathering.
 
-        Parameters
-        ----------
-        cameraFps
-            Camera frame rate used to derive timestamp matching tolerance and
-            polling interval.
-        inputData
-            Upstream output producing the data messages to gather.
-        inputReference
-            Upstream output producing the reference messages.
-        waitCountFn
-            Optional callback returning the number of data messages expected for
-            a given reference. If omitted, defaults to
-            ``len(reference.detections)``.
-
-        Returns
-        -------
-        GatherData[TReference, TGathered]
-            The configured node instance.
+        @param cameraFps: Camera frame rate used to derive timestamp matching tolerance
+            and polling interval.
+        @type cameraFps: int
+        @param inputData: Upstream output producing the data messages to gather.
+        @type inputData: dai.Node.Output
+        @param inputReference: Upstream output producing the reference messages.
+        @type inputReference: dai.Node.Output
+        @param waitCountFn: Optional callback returning the number of data messages
+            expected for a given reference. If omitted, defaults to
+            len(reference.detections).
+        @type waitCountFn: Optional[Callable[[TReference], int]]
+        @return: The configured node instance.
+        @rtype: GatherData[TReference, TGathered]
         """
         self.setCameraFps(cameraFps)
         if waitCountFn is None:
