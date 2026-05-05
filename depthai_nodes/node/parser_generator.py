@@ -30,6 +30,7 @@ class ParserGenerator(dai.node.ThreadedHostNode):
         YOLOSubtype.V8,
         YOLOSubtype.V9,
         YOLOSubtype.V10,
+        YOLOSubtype.V26,
         YOLOSubtype.P,
         YOLOSubtype.GOLD,
     ]
