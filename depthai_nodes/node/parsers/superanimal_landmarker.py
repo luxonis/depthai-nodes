@@ -28,7 +28,7 @@ class SuperAnimalParser(KeypointParser):
 
     Output Message/s
     ----------------
-    **Type**: keypoint output
+    **Type**: Keypoints
 
     **Description**: Output containing detected keypoints that exceed the confidence threshold.
     """

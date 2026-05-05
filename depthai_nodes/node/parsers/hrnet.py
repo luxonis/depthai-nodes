@@ -25,7 +25,7 @@ class HRNetParser(KeypointParser):
 
     Output Message/s
     ----------------
-    **Type**: keypoint output
+    **Type**: Keypoints
 
     **Description**: Output containing detected body keypoints.
     """
