@@ -11,20 +11,26 @@ Here are the custom message types that we introduce in this package. They are us
     - [Attributes](#attributes-1)
   - [Clusters](#clusters)
     - [Attributes](#attributes-2)
+  - [Collection](#collection)
+    - [Attributes](#attributes-3)
+  - [GatheredData](#gathereddata)
+    - [Attributes](#attributes-4)
+  - [Keypoints](#keypoints)
+    - [Attributes](#attributes-5)
   - [Line](#line)
-    - [Attributes](#attributes-7)
+    - [Attributes](#attributes-6)
   - [Lines](#lines)
-    - [Attributes](#attributes-8)
+    - [Attributes](#attributes-7)
   - [Map2D](#map2d)
-    - [Attributes](#attributes-9)
+    - [Attributes](#attributes-8)
   - [Prediction](#prediction)
-    - [Attributes](#attributes-10)
+    - [Attributes](#attributes-9)
   - [Predictions](#predictions)
-    - [Attributes](#attributes-11)
+    - [Attributes](#attributes-10)
   - [SegmentationMask](#segmentationmask)
-    - [Attributes](#attributes-12)
+    - [Attributes](#attributes-11)
   - [SnapData](#snapdata)
-    - [Attributes](#attributes-13)
+    - [Attributes](#attributes-12)
 
 ## Classifications
 
@@ -51,6 +57,40 @@ Clusters class for storing clusters.
 ### Attributes
 
 - **clusters** (List\[[Cluster](#cluster)\]): List of clusters.
+
+## Collection
+
+Collection class for storing a list of messages or other items of the same type.
+
+### Attributes
+
+- **items** (List\[T\]): List of collected items.
+- **item_cls** (Optional\[Type\[T\]\]): Runtime item type inferred from the first item once the collection is non-empty.
+
+Items can be added with `append(...)` or `extend(...)`. The collection enforces that all items have the same inferred type.
+
+## GatheredData
+
+GatheredData class for storing a reference message and the messages gathered for that reference.
+
+### Attributes
+
+- **reference_data** (TReference): Reference message used to determine how many items to gather.
+- **items** (List\[TGathered\]): List of gathered messages.
+- **item_cls** (Optional\[Type\[TGathered\]\]): Runtime gathered-item type inferred from the first item once the collection is non-empty.
+
+GatheredData inherits [Collection](#collection) behavior, so all gathered items must have the same inferred type. Setting `reference_data` copies the reference message sequence number, timestamp, and device timestamp to the GatheredData message.
+
+## Keypoints
+
+Keypoints class for storing keypoints and optional skeleton edges.
+
+### Attributes
+
+- **keypoints_list** (dai.KeypointsList): Native DepthAI keypoints list containing keypoints and edges.
+- **transformation** (Optional\[dai.ImgTransformation\]): Optional image transformation associated with the keypoints.
+
+The keypoints can be accessed with `getKeypoints()` and set with `setKeypoints(...)`. Each keypoint is a `dai.Keypoint` with image coordinates, confidence, and optional label name. Edges can be accessed with `getEdges()` and set with `setEdges(...)`.
 
 ## Line
 
