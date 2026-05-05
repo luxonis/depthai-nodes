@@ -99,18 +99,14 @@ except Exception as e:
     ) -> "CoordinatesMapper":
         """Connect the target and source streams used for coordinate remapping.
 
-        Parameters
-        ----------
-        toTransformationInput
-            Stream providing messages whose transformation defines the target
-            reference frame.
-        fromTransformationInput
-            Stream providing messages whose coordinates should be remapped.
-
-        Returns
-        -------
-        CoordinatesMapper
-            The configured node instance.
+        @param toTransformationInput: Stream providing messages whose transformation
+            defines the target reference frame.
+        @type toTransformationInput: dai.Node.Output
+        @param fromTransformationInput: Stream providing messages whose coordinates
+            should be remapped.
+        @type fromTransformationInput: dai.Node.Output
+        @return: The configured node instance.
+        @rtype: CoordinatesMapper
         """
         script = self._pipeline.create(dai.node.Script)
         script.setScript(self.SCRIPT_CONTENT)

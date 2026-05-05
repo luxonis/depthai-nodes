@@ -117,21 +117,16 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
     ) -> "ExtendedNeuralNetwork":
         """Build the internal inference pipeline.
 
-        Parameters
-        ----------
-        inputImage
-            Source of input frames. Camera nodes are resized on-device by the
-            camera; generic outputs are resized via an internal ``ImageManip``.
-        nnSource
-            HubAI model slug, ``dai.NNModelDescription``, or ``dai.NNArchive``.
-        resizeMode
-            Resize strategy used when adapting frames to the network input
-            shape.
-
-        Returns
-        -------
-        ExtendedNeuralNetwork
-            The configured node instance.
+        @param inputImage: Source of input frames. Camera nodes are resized on-device by
+            the camera; generic outputs are resized via an internal ImageManip.
+        @type inputImage: dai.node.Camera | dai.Node.Output
+        @param nnSource: HubAI model slug, dai.NNModelDescription, or dai.NNArchive.
+        @type nnSource: Union[dai.NNModelDescription, dai.NNArchive, str]
+        @param resizeMode: Resize strategy used when adapting frames to the network
+            input shape.
+        @type resizeMode: dai.ImageManipConfig.ResizeMode
+        @return: The configured node instance.
+        @rtype: ExtendedNeuralNetwork
         """
 
         if isinstance(nnSource, str):

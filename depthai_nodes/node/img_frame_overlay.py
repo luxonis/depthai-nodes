@@ -36,10 +36,8 @@ class ImgFrameOverlay(BaseHostNode):
     def setAlpha(self, alpha: float) -> None:
         """Set the background contribution used during overlay.
 
-        Parameters
-        ----------
-        alpha
-            Weight of the background frame in the blended output.
+        @param alpha: Weight of the background frame in the blended output.
+        @type alpha: float
         """
         if not isinstance(alpha, float):
             raise ValueError("Alpha must be a float")
@@ -51,11 +49,9 @@ class ImgFrameOverlay(BaseHostNode):
     def setPreserveBackground(self, preserveBackground: bool) -> None:
         """Set whether zero-valued foreground pixels preserve the background.
 
-        Parameters
-        ----------
-        preserveBackground
-            If ``True``, zero areas in the foreground frame are ignored in the
-            output image.
+        @param preserveBackground: If True, zero areas in the foreground frame are
+            ignored in the output image.
+        @type preserveBackground: bool
         """
         if not isinstance(preserveBackground, bool):
             raise ValueError("preserveBackground must be a boolean")
@@ -70,22 +66,17 @@ class ImgFrameOverlay(BaseHostNode):
     ) -> "ImgFrameOverlay":
         """Connect the input streams and optionally update overlay settings.
 
-        Parameters
-        ----------
-        frame1
-            Upstream output producing the background frame.
-        frame2
-            Upstream output producing the foreground frame.
-        alpha
-            Optional blend weight for the background frame.
-        preserveBackground
-            Optional override for whether zero-valued foreground pixels preserve
-            the background frame.
-
-        Returns
-        -------
-        ImgFrameOverlay
-            The configured node instance.
+        @param frame1: Upstream output producing the background frame.
+        @type frame1: dai.Node.Output
+        @param frame2: Upstream output producing the foreground frame.
+        @type frame2: dai.Node.Output
+        @param alpha: Optional blend weight for the background frame.
+        @type alpha: Optional[float]
+        @param preserveBackground: Optional override for whether zero-valued foreground
+            pixels preserve the background frame.
+        @type preserveBackground: Optional[bool]
+        @return: The configured node instance.
+        @rtype: ImgFrameOverlay
         """
         self.link_args(frame1, frame2)
 

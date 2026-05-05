@@ -41,10 +41,8 @@ class HostSpatialsCalc:
     def setLowerThreshold(self, thresholdLow: int) -> None:
         """Set the lower depth threshold used during ROI averaging.
 
-        Parameters
-        ----------
-        thresholdLow
-            Lower accepted depth value.
+        @param thresholdLow: Lower accepted depth value.
+        @type thresholdLow: int
         """
         if not isinstance(thresholdLow, int):
             if isinstance(thresholdLow, float):
@@ -60,10 +58,8 @@ class HostSpatialsCalc:
     def setUpperThreshold(self, thresholdHigh: int) -> None:
         """Set the upper depth threshold used during ROI averaging.
 
-        Parameters
-        ----------
-        thresholdHigh
-            Upper accepted depth value.
+        @param thresholdHigh: Upper accepted depth value.
+        @type thresholdHigh: int
         """
         if not isinstance(thresholdHigh, int):
             if isinstance(thresholdHigh, float):
@@ -95,19 +91,15 @@ class HostSpatialsCalc:
     ) -> Dict[str, float]:
         """Calculate spatial coordinates from the depth frame within the ROI.
 
-        Parameters
-        ----------
-        depthData
-            Depth frame used for coordinate estimation.
-        roi
-            Region of interest or point.
-        averagingMethod
-            Callable used to reduce valid depth values inside the ROI.
-
-        Returns
-        -------
-        Dict[str, float]
-            Spatial coordinates in camera space.
+        @param depthData: Depth frame used for coordinate estimation.
+        @type depthData: dai.ImgFrame
+        @param roi: Region of interest or point.
+        @type roi: List[int]
+        @param averagingMethod: Callable used to reduce valid depth values inside the
+            ROI.
+        @type averagingMethod: Callable
+        @return: Spatial coordinates in camera space.
+        @rtype: Dict[str, float]
         """
         depthFrame = depthData.getFrame()
 

@@ -59,10 +59,9 @@ class ApplyDepthColormap(BaseHostNode):
     def setColormap(self, colormapValue: Union[int, np.ndarray]) -> None:
         """Set the color mapping applied to depth images.
 
-        Parameters
-        ----------
-        colormapValue
-            OpenCV colormap enum value or a custom OpenCV-compatible LUT.
+        @param colormapValue: OpenCV colormap enum value or a custom OpenCV-compatible
+            LUT.
+        @type colormapValue: Union[int, np.ndarray]
         """
         self._colormap = self._make_colormap(colormapValue)
         if isinstance(colormapValue, int):
@@ -73,12 +72,10 @@ class ApplyDepthColormap(BaseHostNode):
     def setPercentileRange(self, low: float, high: float) -> None:
         """Set the percentile clipping range used for normalization.
 
-        Parameters
-        ----------
-        low
-            Lower percentile in ``[0, 100)``.
-        high
-            Upper percentile in ``(0, 100]``.
+        @param low: Lower percentile in the range [0, 100).
+        @type low: float
+        @param high: Upper percentile in the range (0, 100].
+        @type high: float
         """
         self._p_low, self._p_high = self._validate_percentile_range(low, high)
         self._logger.debug(
@@ -88,15 +85,10 @@ class ApplyDepthColormap(BaseHostNode):
     def build(self, frame: dai.Node.Output) -> "ApplyDepthColormap":
         """Connect the input depth stream to the node.
 
-        Parameters
-        ----------
-        frame
-            Upstream output producing a RAW depth ``dai.ImgFrame``.
-
-        Returns
-        -------
-        ApplyDepthColormap
-            The configured node instance.
+        @param frame: Upstream output producing a RAW depth dai.ImgFrame.
+        @type frame: dai.Node.Output
+        @return: The configured node instance.
+        @rtype: ApplyDepthColormap
         """
         self.link_args(frame)
         self._logger.debug("ApplyDepthColormap built")

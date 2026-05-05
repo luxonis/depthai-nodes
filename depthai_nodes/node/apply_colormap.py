@@ -55,10 +55,9 @@ class ApplyColormap(BaseHostNode):
     def setColormap(self, colormapValue: Union[int, np.ndarray]) -> None:
         """Set the color mapping applied to incoming maps.
 
-        Parameters
-        ----------
-        colormapValue
-            OpenCV colormap enum value or a custom OpenCV-compatible LUT.
+        @param colormapValue: OpenCV colormap enum value or a custom OpenCV-compatible
+            LUT.
+        @type colormapValue: Union[int, np.ndarray]
         """
         self._colormap = self._make_colormap(colormapValue)
         if isinstance(colormapValue, int):
@@ -69,26 +68,19 @@ class ApplyColormap(BaseHostNode):
     def setMaxValue(self, maxValue: int) -> None:
         """Set the normalization ceiling used during colorization.
 
-        Parameters
-        ----------
-        maxValue
-            Maximum input value used for normalization. ``0`` keeps per-frame
+        @param maxValue: Maximum input value used for normalization. 0 keeps per-frame
             normalization.
+        @type maxValue: int
         """
         self._max_value = self._validate_max_value(maxValue)
 
     def build(self, frame: dai.Node.Output) -> "ApplyColormap":
         """Connect the input stream to the node.
 
-        Parameters
-        ----------
-        frame
-            Upstream output producing the map-like message to colorize.
-
-        Returns
-        -------
-        ApplyColormap
-            The configured node instance.
+        @param frame: Upstream output producing the map-like message to colorize.
+        @type frame: dai.Node.Output
+        @return: The configured node instance.
+        @rtype: ApplyColormap
         """
         self.link_args(frame)
         self._logger.debug("ApplyColormap built")

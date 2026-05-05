@@ -66,25 +66,23 @@ class Tiling(BaseThreadedHostNode):
     ) -> None:
         """Update the tiling configuration used for future trigger messages.
 
-        Parameters
-        ----------
-        overlap
-            Fractional overlap between adjacent tiles in the range ``[0, 1)``.
-        gridSize
-            Tile grid as ``(columns, rows)``.
-        canvasShape
-            Shape of the image space the tiling is defined on. Crop coordinates
-            are computed in this absolute coordinate system.
-        resizeShape
-            Output size applied to each tile after cropping. This is the shape
-            expected by downstream consumers, not necessarily a neural network.
-        resizeMode
-            Resize strategy used when adapting each crop to ``resizeShape``.
-        globalDetection
-            If ``True``, prepend a config covering the whole canvas.
-        gridMatrix
-            Optional grouping matrix for merging neighboring grid cells into
-            larger crops.
+        @param overlap: Fractional overlap between adjacent tiles in the range [0, 1).
+        @type overlap: Optional[float]
+        @param gridSize: Tile grid as (columns, rows).
+        @type gridSize: Optional[Tuple[int, int]]
+        @param canvasShape: Shape of the image space the tiling is defined on. Crop
+            coordinates are computed in this absolute coordinate system.
+        @type canvasShape: Optional[Tuple[int, int]]
+        @param resizeShape: Output size applied to each tile after cropping. This is the
+            shape expected by downstream consumers, not necessarily a neural network.
+        @type resizeShape: Optional[Tuple[int, int]]
+        @param resizeMode: Resize strategy used when adapting each crop to resizeShape.
+        @type resizeMode: Optional[dai.ImageManipConfig.ResizeMode]
+        @param globalDetection: If True, prepend a config covering the whole canvas.
+        @type globalDetection: Optional[bool]
+        @param gridMatrix: Optional grouping matrix for merging neighboring grid cells
+            into larger crops.
+        @type gridMatrix: Optional[Union[np.ndarray, List, None]]
         """
         if self._tiling_cfg is None:
             raise RuntimeError("Tiling was not built yet. Call `build()` first.")
@@ -118,30 +116,25 @@ class Tiling(BaseThreadedHostNode):
     ) -> "Tiling":
         """Configure the tiling node and link the trigger stream.
 
-        Parameters
-        ----------
-        overlap
-            Fractional overlap between adjacent tiles in the range ``[0, 1)``.
-        gridSize
-            Tile grid as ``(columns, rows)``.
-        canvasShape
-            Shape of the image space the tiling is defined on. Crop coordinates
-            are computed in this absolute coordinate system.
-        resizeShape
-            Output size applied to each tile after cropping. This is the shape
-            expected by downstream consumers, not necessarily a neural network.
-        resizeMode
-            Resize strategy used when adapting each crop to ``resizeShape``.
-        globalDetection
-            If ``True``, prepend a config covering the whole canvas.
-        gridMatrix
-            Optional grouping matrix for merging neighboring grid cells into
-            larger crops.
-
-        Returns
-        -------
-        Tiling
-            The configured node instance.
+        @param overlap: Fractional overlap between adjacent tiles in the range [0, 1).
+        @type overlap: float
+        @param gridSize: Tile grid as (columns, rows).
+        @type gridSize: Tuple[int, int]
+        @param canvasShape: Shape of the image space the tiling is defined on. Crop
+            coordinates are computed in this absolute coordinate system.
+        @type canvasShape: Tuple[int, int]
+        @param resizeShape: Output size applied to each tile after cropping. This is the
+            shape expected by downstream consumers, not necessarily a neural network.
+        @type resizeShape: Tuple[int, int]
+        @param resizeMode: Resize strategy used when adapting each crop to resizeShape.
+        @type resizeMode: dai.ImageManipConfig.ResizeMode
+        @param globalDetection: If True, prepend a config covering the whole canvas.
+        @type globalDetection: bool
+        @param gridMatrix: Optional grouping matrix for merging neighboring grid cells
+            into larger crops.
+        @type gridMatrix: Union[np.ndarray, List, None]
+        @return: The configured node instance.
+        @rtype: Tiling
         """
         self._tiling_cfg = TilingCfg(
             overlap=overlap,
