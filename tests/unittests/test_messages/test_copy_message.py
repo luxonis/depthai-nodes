@@ -9,6 +9,7 @@ from tests.utils.messages import creators as message_creators
 
 ATTRS_TO_IGNORE = [
     "Type",  # dai.ImgFrame attribute
+    "Fsync",  # dai.ImgFrame attribute
 ]
 
 
