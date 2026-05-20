@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional, Tuple, Union
 
 import cv2
 import depthai as dai
@@ -28,7 +28,9 @@ class ApplyColormap(BaseHostNode):
     Inputs
     ------
     frame : dai.ImgFrame | Map2D | dai.ImgDetections | SegmentationMask
-        Input message containing a 2D array to be colorized.
+        Input message containing a 2D array to be colorized. A dai.ImgDetections
+        message with no segmentation mask is colorized as an all-background frame
+        (see `emptyDetectionsMaskShape` in `build`).
 
     Outputs
     -------
@@ -47,6 +49,7 @@ class ApplyColormap(BaseHostNode):
 
         self._colormap = self._make_colormap(colormapValue)
         self._max_value = self._validate_max_value(maxValue)
+        self._empty_detections_mask_shape: Optional[Tuple[int, int]] = None
 
         self._logger.debug(
             f"ApplyColormap initialized with colormap_value={colormapValue}, max_value={maxValue}",
@@ -74,14 +77,26 @@ class ApplyColormap(BaseHostNode):
         """
         self._max_value = self._validate_max_value(maxValue)
 
-    def build(self, frame: dai.Node.Output) -> "ApplyColormap":
+    def build(
+        self,
+        frame: dai.Node.Output,
+        emptyDetectionsMaskShape: Optional[Tuple[int, int]] = None,
+    ) -> "ApplyColormap":
         """Connect the input stream to the node.
 
         @param frame: Upstream output producing the map-like message to colorize.
         @type frame: dai.Node.Output
+        @param emptyDetectionsMaskShape: Shape, as (height, width), used to build an
+            all-background mask when a dai.ImgDetections message carries no segmentation
+            mask (e.g. a frame with no detections). Required to colorize such messages;
+            ignored for other input types. Default is None.
+        @type emptyDetectionsMaskShape: Optional[Tuple[int, int]]
         @return: The configured node instance.
         @rtype: ApplyColormap
         """
+        self._empty_detections_mask_shape = self._validate_mask_shape(
+            emptyDetectionsMaskShape
+        )
         self.link_args(frame)
         self._logger.debug("ApplyColormap built")
         return self
@@ -123,7 +138,26 @@ class ApplyColormap(BaseHostNode):
         return max_value
 
     @staticmethod
-    def _get_input_map(msg: dai.Buffer) -> np.ndarray:
+    def _validate_mask_shape(
+        shape: Optional[Tuple[int, int]],
+    ) -> Optional[Tuple[int, int]]:
+        if shape is None:
+            return None
+
+        if (
+            not isinstance(shape, tuple)
+            or len(shape) != 2
+            or not all(isinstance(dim, int) for dim in shape)
+            or not all(dim > 0 for dim in shape)
+        ):
+            raise ValueError(
+                "emptyDetectionsMaskShape must be a tuple of positive integers: "
+                "(height, width)."
+            )
+
+        return shape
+
+    def _get_input_map(self, msg: dai.Buffer) -> np.ndarray:
         if isinstance(msg, dai.ImgFrame):
             if not msg.getType().name.startswith("RAW"):
                 raise TypeError(f"Expected image type RAW, got {msg.getType().name}")
@@ -139,6 +173,14 @@ class ApplyColormap(BaseHostNode):
 
         if isinstance(msg_copy, dai.ImgDetections):
             mask = msg_copy.getCvSegmentationMask()
+            if mask is None or mask.size == 0:
+                if self._empty_detections_mask_shape is None:
+                    raise ValueError(
+                        "Received a dai.ImgDetections message with no segmentation "
+                        "mask. Set emptyDetectionsMaskShape in build() to colorize "
+                        "maskless detections."
+                    )
+                mask = np.full(self._empty_detections_mask_shape, 255, dtype=np.uint8)
             mask = np.where(mask == 255, 0, mask + 1)
             return mask
 
