@@ -212,31 +212,6 @@ class RFDETRParser(BaseParser):
             return f"class_{label}"
         return self._class_id_to_name.get(label, f"class_{label}")
 
-    def _uses_standard_coco_sparse_mapping(self, num_logits: int) -> bool:
-        """Return whether metadata corresponds to standard COCO sparse-id RF-DETR logits."""
-        if num_logits != 91 or not self.label_names:
-            return False
-        normalized_names = [
-            name
-            for name in self.label_names
-            if name and name != "__background__"
-        ]
-        return normalized_names == _COCO_CLASS_NAMES
-
-    def _resolve_label_name(self, label: int, num_logits: int) -> str:
-        """Return the display label for a raw RF-DETR class id."""
-        if self._uses_standard_coco_sparse_mapping(num_logits):
-            if label == 0:
-                return "__background__"
-            dense_idx = _COCO_SPARSE_ID_TO_DENSE_IDX.get(label)
-            if dense_idx is None:
-                return ""
-            return _COCO_CLASS_NAMES[dense_idx]
-
-        if self.label_names and label < len(self.label_names):
-            return self.label_names[label]
-        return f"class_{label}"
-
     def run(self):
         self._logger.debug("RFDETRParser run started")
 
