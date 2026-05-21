@@ -60,7 +60,6 @@ class RFDETRParser(BaseParser):
         self.label_names = label_names
         self.class_ids = class_ids
         self._class_id_to_name: Dict[int, str] = {}
-        self._class_id_to_index: Dict[int, int] = {}
         self.output_layer_names = []
         self._refresh_label_mapping()
         self._logger.debug(
@@ -194,7 +193,6 @@ class RFDETRParser(BaseParser):
     def _refresh_label_mapping(self) -> None:
         """Build label lookup mapping from parser metadata."""
         self._class_id_to_name = {}
-        self._class_id_to_index = {}
         if self.label_names is None:
             return
         if self.class_ids is not None:
@@ -205,24 +203,14 @@ class RFDETRParser(BaseParser):
             self._class_id_to_name = dict(
                 zip(self.class_ids, self.label_names, strict=True)
             )
-            self._class_id_to_index = {
-                class_id: index for index, class_id in enumerate(self.class_ids)
-            }
         else:
             self._class_id_to_name = dict(enumerate(self.label_names))
-            self._class_id_to_index = dict(enumerate(range(len(self.label_names))))
 
     def _resolve_label_name(self, label: int) -> str:
         """Resolve a raw model label to a display name using metadata only."""
         if not self._class_id_to_name:
             return f"class_{label}"
         return self._class_id_to_name.get(label, f"class_{label}")
-
-    def _resolve_output_label(self, label: int) -> int:
-        """Resolve a raw model label to the emitted label index."""
-        if not self._class_id_to_index:
-            return label
-        return self._class_id_to_index.get(label, label)
 
     def run(self):
         self._logger.debug("RFDETRParser run started")
@@ -291,10 +279,6 @@ class RFDETRParser(BaseParser):
                     self._resolve_label_name(int(label))
                     for label in labels
                 ]
-                labels = np.array(
-                    [self._resolve_output_label(int(label)) for label in labels],
-                    dtype=np.int32,
-                )
 
             # Create detection message
             message = create_detection_message(
