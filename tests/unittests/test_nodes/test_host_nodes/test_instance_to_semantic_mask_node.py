@@ -4,21 +4,17 @@ import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes.message import ImgDetectionsExtended
 from depthai_nodes.node import InstanceToSemanticMask
 from tests.utils import (
     LOG_INTERVAL,
     OutputMock,
-    create_img_detections_extended,
+    create_img_detections,
 )
 
 
 @pytest.fixture(scope="session")
 def duration(request):
-    d = request.config.getoption("--duration")
-    if d is None:
-        return 1e-6
-    return d
+    return request.config.getoption("--duration")
 
 
 @pytest.fixture
@@ -56,7 +52,7 @@ def test_processing_instance_to_semantic(
     q_out = converter.out.createOutputQueue()
 
     # base message with detections
-    msg = create_img_detections_extended()
+    msg = create_img_detections()
     n = len(msg.detections)
 
     # If there are no detections in the test fixture, the mapping isn't meaningful.
@@ -66,8 +62,10 @@ def test_processing_instance_to_semantic(
         q_in.send(msg)
         converter.process(q_in.get())
         out = q_out.get()
-        assert isinstance(out, ImgDetectionsExtended)
-        np.testing.assert_array_equal(out.masks, msg.masks)
+        assert isinstance(out, dai.ImgDetections)
+        np.testing.assert_array_equal(
+            out.getCvSegmentationMask(), msg.getCvSegmentationMask()
+        )
         return
 
     # Build a deterministic instance-id mask:
@@ -87,8 +85,12 @@ def test_processing_instance_to_semantic(
 
     start_time = time.time()
     last_log_time = time.time()
-    while time.time() - start_time < duration:
-        if time.time() - last_log_time > LOG_INTERVAL:
+    ran_once = False
+    while not ran_once or (
+        duration is not None and time.time() - start_time < duration
+    ):
+        ran_once = True
+        if duration is not None and time.time() - last_log_time > LOG_INTERVAL:
             print(
                 f"Test running... {time.time() - start_time:.1f}s elapsed, "
                 f"{duration - time.time() + start_time:.1f}s remaining"

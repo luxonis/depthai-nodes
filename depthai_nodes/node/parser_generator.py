@@ -2,9 +2,11 @@ from typing import Dict, List, Optional
 
 import depthai as dai
 
+from depthai_nodes.logging import get_logger
 from depthai_nodes.node.parsers import *
 from depthai_nodes.node.parsers.base_parser import BaseParser
 from depthai_nodes.node.parsers.utils import decode_head
+from depthai_nodes.node.parsers.utils.yolo import YOLOSubtype
 
 
 class ParserGenerator(dai.node.ThreadedHostNode):
@@ -13,52 +15,86 @@ class ParserGenerator(dai.node.ThreadedHostNode):
     The `build` method creates parsers based on the head information stored in the NN Archive. The method then returns a dictionary of these parsers.
     """
 
+    _logger = get_logger(__name__)
     DEVICE_PARSERS = ["YOLO", "SSD"]
+    DAI_SUPPORTED_YOLO_SUBTYPES = [
+        YOLOSubtype.V3,
+        YOLOSubtype.V3T,
+        YOLOSubtype.V3UT,
+        YOLOSubtype.V5,
+        YOLOSubtype.V5U,
+        YOLOSubtype.V6,
+        YOLOSubtype.V6R1,
+        YOLOSubtype.V6R2,
+        YOLOSubtype.V7,
+        YOLOSubtype.V8,
+        YOLOSubtype.V9,
+        YOLOSubtype.V10,
+        YOLOSubtype.V26,
+        YOLOSubtype.P,
+        YOLOSubtype.GOLD,
+    ]
 
     def build(
         self,
-        nn_archive: dai.NNArchive,
-        head_index: Optional[int] = None,
-        host_only: bool = False,
+        nnArchive: dai.NNArchive,
+        headIndex: Optional[int] = None,
+        hostOnly: bool = False,
     ) -> Dict:
-        """Instantiates parsers based on the provided model archive.
+        """Instantiate parser nodes for the supplied model archive.
 
-        @param nn_archive: NN Archive of the model.
-        @type nn_archive: dai.NNArchive
-        @param head_index: Index of the head to be used for parsing. If not provided,
-            each head will instantiate a separate parser.
-        @type head_index: Optional[int]
-        @param host_only: If True, only host parsers will be instantiated.
-        @type host_only: bool
-        @return: A dictionary of instantiated parsers.
-        @rtype: Dict[int, BaseParser]
+        @param nnArchive: Model archive describing the parser configuration.
+        @type nnArchive: dai.NNArchive
+        @param headIndex: Optional model head index to instantiate. If omitted, parsers
+            are created for all heads.
+        @type headIndex: Optional[int]
+        @param hostOnly: If True, prefer host-side parser implementations where
+            available.
+        @type hostOnly: bool
+        @return: Mapping of model head index to parser node.
+        @rtype: Dict
         """
 
-        heads: List = nn_archive.getConfig().model.heads  # type: ignore
+        heads: List = nnArchive.getConfig().model.heads  # type: ignore
 
         indexes = range(len(heads))
 
         if len(heads) == 0:
             raise ValueError("No heads defined in the NN Archive.")
 
-        if head_index:
-            heads = [heads[head_index]]
-            indexes = [head_index]
+        if headIndex is not None:
+            heads = [heads[headIndex]]
+            indexes = [headIndex]
 
         parsers = {}
         pipeline = self.getParentPipeline()
+        is_rvc2_device = pipeline.getDefaultDevice().getPlatform() == dai.Platform.RVC2
 
         for index, head in zip(indexes, heads):
             parser_name = head.parser
 
             if parser_name in self.DEVICE_PARSERS:
-                if host_only:
+                if hostOnly:
                     parser_name = self._getHostParserName(parser_name)
                 else:
                     parser = pipeline.create(dai.node.DetectionParser)
-                    parser.setNNArchive(nn_archive)
+                    parser.setNNArchive(nnArchive)
                     parsers[index] = parser
                     continue
+            elif parser_name == "YOLOExtendedParser":
+                yolo_subtype_str = head.metadata.subtype
+                if yolo_subtype_str is not None:
+                    yolo_subtype = YOLOSubtype(yolo_subtype_str.lower())
+                    if yolo_subtype in self.DAI_SUPPORTED_YOLO_SUBTYPES:
+                        parser = pipeline.create(dai.node.DetectionParser)
+                        parser.setNNArchive(nnArchive)
+                        if head.metadata.maskOutputs is not None and is_rvc2_device:
+                            self._logger.warning(
+                                "Segmentation based model detected with RVC2 device. Parsing will be done on the host machine."
+                            )
+                            parser.setRunOnHost(True)
+                        parsers[index] = parser
+                        continue
 
             parser = globals().get(parser_name)
 
@@ -71,13 +107,17 @@ class ParserGenerator(dai.node.ThreadedHostNode):
 
             head_config = decode_head(head)
             head_config["model_inputs"] = []
-            for input in nn_archive.getConfig().model.inputs:
+            for input in nnArchive.getConfig().model.inputs:
                 head_config["model_inputs"].append(
                     {"shape": input.shape, "layout": input.layout}
                 )
             parsers[index] = pipeline.create(parser).build(head_config)
 
         return parsers
+
+    def run(self):
+        """No-op required by ``dai.node.ThreadedHostNode``."""
+        pass
 
     def _getHostParserName(self, parser_name: str) -> str:
         if parser_name == "YOLO":
@@ -86,6 +126,3 @@ class ParserGenerator(dai.node.ThreadedHostNode):
             raise ValueError(
                 f"Parser {parser_name} is not supported for host only mode."
             )
-
-    def run(self):
-        pass

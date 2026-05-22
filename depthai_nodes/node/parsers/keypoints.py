@@ -31,7 +31,7 @@ class KeypointParser(BaseParser):
     ----------------
     **Type**: Keypoints
 
-    **Description**: Keypoints message containing 2D or 3D keypoints.
+    **Description**: Output containing 2D or 3D keypoints.
 
     Error Handling
     --------------
@@ -250,4 +250,4 @@ class KeypointParser(BaseParser):
 
             self.out.send(msg)
 
-            self._logger.debug("Keypoints message sent successfully")
+            self._logger.debug("Keypoint output sent successfully")

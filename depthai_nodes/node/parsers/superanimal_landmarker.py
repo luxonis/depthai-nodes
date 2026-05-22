@@ -30,7 +30,7 @@ class SuperAnimalParser(KeypointParser):
     ----------------
     **Type**: Keypoints
 
-    **Description**: Keypoints message containing detected keypoints that exceeds confidence threshold.
+    **Description**: Output containing detected keypoints that exceed the confidence threshold.
     """
 
     def __init__(
@@ -138,4 +138,4 @@ class SuperAnimalParser(KeypointParser):
 
             self.out.send(msg)
 
-            self._logger.debug("Keypoints message sent successfully")
+            self._logger.debug("Keypoint output sent successfully")
