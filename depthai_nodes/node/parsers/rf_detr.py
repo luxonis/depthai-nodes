@@ -43,7 +43,6 @@ class RFDETRParser(BaseParser):
         conf_threshold: float = 0.5,
         max_det: int = 300,
         label_names: Optional[List[str]] = None,
-        class_ids: Optional[List[int]] = None,
     ) -> None:
         """Initializes the parser node.
 
@@ -58,11 +57,7 @@ class RFDETRParser(BaseParser):
         self.conf_threshold = conf_threshold
         self.max_det = max_det
         self.label_names = label_names
-        self.class_ids = class_ids
-        self._class_id_to_name: Dict[int, str] = {}
-        self._class_id_to_index: Dict[int, int] = {}
         self.output_layer_names = []
-        self._refresh_label_mapping()
         self._logger.debug(
             f"RFDETRParser initialized with conf_threshold={conf_threshold}, max_det={max_det}"
         )
@@ -112,22 +107,7 @@ class RFDETRParser(BaseParser):
         if not all(isinstance(label, str) for label in label_names):
             raise ValueError("Each label name must be a string.")
         self.label_names = label_names
-        self._refresh_label_mapping()
         self._logger.debug(f"Label names updated to: {label_names}")
-
-    def setClassIds(self, class_ids: List[int]) -> None:
-        """Sets the class IDs for detected objects.
-
-        @param class_ids: List of class IDs corresponding to label names.
-        @type class_ids: List[int]
-        """
-        if not isinstance(class_ids, list):
-            raise ValueError("Class IDs must be a list.")
-        if not all(isinstance(class_id, int) for class_id in class_ids):
-            raise ValueError("Each class ID must be an integer.")
-        self.class_ids = class_ids
-        self._refresh_label_mapping()
-        self._logger.debug(f"Class IDs updated to: {class_ids}")
 
     def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
         """Sets the output layer names for the parser.
@@ -153,9 +133,7 @@ class RFDETRParser(BaseParser):
         self.conf_threshold = head_config.get("conf_threshold", self.conf_threshold)
         self.max_det = head_config.get("max_det", self.max_det)
         self.label_names = head_config.get("classes", self.label_names)
-        self.class_ids = head_config.get("class_ids", self.class_ids)
         self.output_layer_names = head_config.get("outputs", self.output_layer_names)
-        self._refresh_label_mapping()
 
         self._logger.debug(
             f"RFDETRParser built with conf_threshold={self.conf_threshold}, max_det={self.max_det}"
@@ -190,39 +168,6 @@ class RFDETRParser(BaseParser):
         xmax = cx + w / 2
         ymax = cy + h / 2
         return np.stack([xmin, ymin, xmax, ymax], axis=-1)
-
-    def _refresh_label_mapping(self) -> None:
-        """Build label lookup mapping from parser metadata."""
-        self._class_id_to_name = {}
-        self._class_id_to_index = {}
-        if self.label_names is None:
-            return
-        if self.class_ids is not None:
-            if len(self.class_ids) != len(self.label_names):
-                raise ValueError(
-                    "Class IDs and label names must have the same length."
-                )
-            self._class_id_to_name = dict(
-                zip(self.class_ids, self.label_names, strict=True)
-            )
-            self._class_id_to_index = {
-                class_id: index for index, class_id in enumerate(self.class_ids)
-            }
-        else:
-            self._class_id_to_name = dict(enumerate(self.label_names))
-            self._class_id_to_index = dict(enumerate(range(len(self.label_names))))
-
-    def _resolve_label_name(self, label: int) -> str:
-        """Resolve a raw model label to a display name using metadata only."""
-        if not self._class_id_to_name:
-            return f"class_{label}"
-        return self._class_id_to_name.get(label, f"class_{label}")
-
-    def _resolve_output_label(self, label: int) -> int:
-        """Resolve a raw model label to the emitted label index."""
-        if not self._class_id_to_index:
-            return label
-        return self._class_id_to_index.get(label, label)
 
     def run(self):
         self._logger.debug("RFDETRParser run started")
@@ -259,6 +204,7 @@ class RFDETRParser(BaseParser):
                 )
 
             prob = self._sigmoid(logits_tensor)
+
             scores = np.max(prob, axis=2).squeeze()  # (num_queries,)
             labels = np.argmax(prob, axis=2).squeeze()  # (num_queries,)
 
@@ -288,13 +234,13 @@ class RFDETRParser(BaseParser):
             label_names_list = None
             if self.label_names:
                 label_names_list = [
-                    self._resolve_label_name(int(label))
+                    (
+                        self.label_names[int(label)]
+                        if int(label) < len(self.label_names)
+                        else f"class_{int(label)}"
+                    )
                     for label in labels
                 ]
-                labels = np.array(
-                    [self._resolve_output_label(int(label)) for label in labels],
-                    dtype=np.int32,
-                )
 
             # Create detection message
             message = create_detection_message(
