@@ -1,11 +1,8 @@
 import time
+from collections.abc import Callable
 from queue import PriorityQueue
 from typing import (
-    Callable,
-    Dict,
     Generic,
-    List,
-    Optional,
     Protocol,
     TypeVar,
     runtime_checkable,
@@ -20,7 +17,7 @@ from depthai_nodes.logging import get_logger
 @runtime_checkable
 class HasDetections(Protocol):
     @property
-    def detections(self) -> List:
+    def detections(self) -> list:
         """Return the detections used to derive the default wait count."""
         ...
 
@@ -89,10 +86,10 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     def __init__(self) -> None:
         """Initializes the GatherData node."""
         super().__init__()
-        self._camera_fps: Optional[int] = None
-        self._unmatched_data: List[TGathered] = []
-        self._data_by_reference_ts: Dict[float, List[TGathered]] = {}
-        self._reference_data: Dict[float, TReference] = {}
+        self._camera_fps: int | None = None
+        self._unmatched_data: list[TGathered] = []
+        self._data_by_reference_ts: dict[float, list[TGathered]] = {}
+        self._reference_data: dict[float, TReference] = {}
         self._ready_timestamps = PriorityQueue()
         self._wait_count_fn = self._default_wait_count_fn
 
@@ -128,7 +125,7 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         cameraFps: int,
         inputData: dai.Node.Output,
         inputReference: dai.Node.Output,
-        waitCountFn: Optional[Callable[[TReference], int]] = None,
+        waitCountFn: Callable[[TReference], int] | None = None,
     ) -> "GatherData[TReference, TGathered]":
         """Connect the data and reference streams used for gathering.
 
@@ -142,7 +139,7 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         @param waitCountFn: Optional callback returning the number of data messages
             expected for a given reference. If omitted, defaults to
             len(reference.detections).
-        @type waitCountFn: Optional[Callable[[TReference], int]]
+        @type waitCountFn: Callable[[TReference], int] | None
         @return: The configured node instance.
         @rtype: GatherData[TReference, TGathered]
         """
@@ -220,7 +217,7 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     def _get_total_seconds_ts(self, buffer_like: dai.Buffer) -> float:
         return buffer_like.getTimestamp().total_seconds()
 
-    def _get_matching_reference_ts(self, data_ts: float) -> Optional[float]:
+    def _get_matching_reference_ts(self, data_ts: float) -> float | None:
         for reference_ts in self._reference_data.keys():
             if self._timestamps_in_tolerance(reference_ts, data_ts):
                 return reference_ts
@@ -238,7 +235,7 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         self._ready_timestamps.put(timestamp)
 
     def _try_match_data(self, reference_ts: float) -> None:
-        matched_data: List[TGathered] = []
+        matched_data: list[TGathered] = []
         for data in self._unmatched_data:
             data_ts = self._get_total_seconds_ts(data)
             if self._timestamps_in_tolerance(reference_ts, data_ts):
@@ -270,7 +267,7 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     def _get_wait_count(self, reference: TReference) -> int:
         return self._wait_count_fn(reference)
 
-    def _pop_ready_data(self) -> Optional[GatheredData]:
+    def _pop_ready_data(self) -> GatheredData | None:
         if self._ready_timestamps.empty():
             return None
 

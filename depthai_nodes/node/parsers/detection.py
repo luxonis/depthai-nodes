@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 import depthai as dai
 import numpy as np
 
@@ -30,8 +28,8 @@ class DetectionParser(BaseParser):
         Non-maximum suppression threshold.
     max_det : int
         Maximum number of detections to keep.
-    label_names : List[str]
-        List of label names for detected objects.
+    label_names : list[str]
+    List of label names for detected objects.
 
     Output Message/s
         -------
@@ -46,7 +44,7 @@ class DetectionParser(BaseParser):
         conf_threshold: float = 0.5,
         iou_threshold: float = 0.5,
         max_det: int = 100,
-        label_names: Optional[List[str]] = None,
+        label_names: list[str] | None = None,
     ) -> None:
         """Initializes the parser node.
 
@@ -99,11 +97,11 @@ class DetectionParser(BaseParser):
         self.max_det = max_det
         self._logger.debug(f"Maximum detections updated to {max_det}")
 
-    def setLabelNames(self, label_names: List[str]) -> None:
+    def setLabelNames(self, label_names: list[str]) -> None:
         """Sets the label names for detected objects.
 
         @param label_names: List of label names for detected objects.
-        @type label_names: List[str]
+        @type label_names: list[str]
         """
         if not isinstance(label_names, list):
             raise ValueError("Label names must be a list.")
@@ -116,7 +114,7 @@ class DetectionParser(BaseParser):
         """Configures the parser.
 
         @param head_config: The head configuration for the parser.
-        @type head_config: Dict[str, Any]
+        @type head_config: dict[str, Any]
         @return: The parser object with the head configuration set.
         @rtype: DetectionParser
         """

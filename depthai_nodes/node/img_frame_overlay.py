@@ -1,5 +1,3 @@
-from typing import Optional
-
 import cv2
 import depthai as dai
 
@@ -61,8 +59,8 @@ class ImgFrameOverlay(BaseHostNode):
         self,
         frame1: dai.Node.Output,
         frame2: dai.Node.Output,
-        alpha: Optional[float] = None,
-        preserveBackground: Optional[bool] = None,
+        alpha: float | None = None,
+        preserveBackground: bool | None = None,
     ) -> "ImgFrameOverlay":
         """Connect the input streams and optionally update overlay settings.
 
@@ -71,10 +69,10 @@ class ImgFrameOverlay(BaseHostNode):
         @param frame2: Upstream output producing the foreground frame.
         @type frame2: dai.Node.Output
         @param alpha: Optional blend weight for the background frame.
-        @type alpha: Optional[float]
+        @type alpha: float | None
         @param preserveBackground: Optional override for whether zero-valued foreground
             pixels preserve the background frame.
-        @type preserveBackground: Optional[bool]
+        @type preserveBackground: bool | None
         @return: The configured node instance.
         @rtype: ImgFrameOverlay
         """

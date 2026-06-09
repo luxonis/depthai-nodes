@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import depthai as dai
 import numpy as np
@@ -21,9 +21,9 @@ class RFDETRParser(BaseParser):
         Confidence score threshold for detected objects.
     max_det : int
         Maximum number of detections to keep.
-    label_names : Optional[List[str]]
+    label_names : list[str] | None
         List of label names for detected objects.
-    output_layer_names : List[str]
+    output_layer_names : list[str]
         Names of the output layers (boxes, logits, and optionally masks).
 
     Output Message/s
@@ -42,7 +42,7 @@ class RFDETRParser(BaseParser):
         self,
         conf_threshold: float = 0.5,
         max_det: int = 300,
-        label_names: Optional[List[str]] = None,
+        label_names: list[str] | None = None,
     ) -> None:
         """Initializes the parser node.
 
@@ -51,13 +51,13 @@ class RFDETRParser(BaseParser):
         @param max_det: Maximum number of detections to keep.
         @type max_det: int
         @param label_names: List of label names for detected objects.
-        @type label_names: Optional[List[str]]
+        @type label_names: list[str] | None
         """
         super().__init__()
         self.conf_threshold = conf_threshold
         self.max_det = max_det
         self.label_names = label_names
-        self.output_layer_names = []
+        self.output_layer_names: list[str] = []
         self._logger.debug(
             f"RFDETRParser initialized with conf_threshold={conf_threshold}, max_det={max_det}"
         )
@@ -96,11 +96,11 @@ class RFDETRParser(BaseParser):
         self.max_det = max_det
         self._logger.debug(f"Maximum detections updated to {max_det}")
 
-    def setLabelNames(self, label_names: List[str]) -> None:
+    def setLabelNames(self, label_names: list[str]) -> None:
         """Sets the label names for detected objects.
 
         @param label_names: List of label names for detected objects.
-        @type label_names: List[str]
+        @type label_names: list[str]
         """
         if not isinstance(label_names, list):
             raise ValueError("Label names must be a list.")
@@ -109,11 +109,11 @@ class RFDETRParser(BaseParser):
         self.label_names = label_names
         self._logger.debug(f"Label names updated to: {label_names}")
 
-    def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
+    def setOutputLayerNames(self, output_layer_names: list[str]) -> None:
         """Sets the output layer names for the parser.
 
         @param output_layer_names: List of output layer names.
-        @type output_layer_names: List[str]
+        @type output_layer_names: list[str]
         """
         if not isinstance(output_layer_names, list):
             raise ValueError("Output layer names must be a list.")
@@ -122,11 +122,11 @@ class RFDETRParser(BaseParser):
         self.output_layer_names = output_layer_names
         self._logger.debug(f"Output layer names set to {self.output_layer_names}")
 
-    def build(self, head_config: Dict[str, Any]) -> "RFDETRParser":
+    def build(self, head_config: dict[str, Any]) -> "RFDETRParser":
         """Configures the parser based on the head configuration.
 
         @param head_config: The head configuration for the parser.
-        @type head_config: Dict[str, Any]
+        @type head_config: dict[str, Any]
         @return: The parser object with the head configuration set.
         @rtype: RFDETRParser
         """

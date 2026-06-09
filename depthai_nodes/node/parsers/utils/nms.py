@@ -1,10 +1,8 @@
-from typing import List
-
 import cv2
 import numpy as np
 
 
-def nms(dets: np.ndarray, nms_thresh: float = 0.5) -> List[int]:
+def nms(dets: np.ndarray, nms_thresh: float = 0.5) -> list[int]:
     """Non-maximum suppression.
 
     @param dets: Bounding boxes and confidence scores.
@@ -12,7 +10,7 @@ def nms(dets: np.ndarray, nms_thresh: float = 0.5) -> List[int]:
     @param nms_thresh: Non-maximum suppression threshold.
     @type nms_thresh: float
     @return: Indices of the detections to keep.
-    @rtype: List[int]
+    @rtype: list[int]
     """
     thresh = nms_thresh
     x1 = dets[:, 0]
@@ -60,7 +58,7 @@ def nms_cv2(
     @param nms_thresh: Non-maximum suppression threshold.
     @type nms_thresh: float
     @return: Indices of the detections to keep.
-    @rtype: List[int]
+    @rtype: list[int]
     """
 
     # NMS

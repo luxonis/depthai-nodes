@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union
 
 import depthai as dai
 import numpy as np
@@ -10,12 +9,12 @@ from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
 @dataclass
 class TilingCfg:
     overlap: float
-    gridSize: Tuple[int, int]
-    canvasShape: Tuple[int, int]
-    resizeShape: Tuple[int, int]
+    gridSize: tuple[int, int]
+    canvasShape: tuple[int, int]
+    resizeShape: tuple[int, int]
     resizeMode: dai.ImageManipConfig.ResizeMode
     globalDetection: bool
-    gridMatrix: Union[np.ndarray, List, None]
+    gridMatrix: np.ndarray | list | None
 
 
 class Tiling(BaseThreadedHostNode):
@@ -35,7 +34,7 @@ class Tiling(BaseThreadedHostNode):
 
         self._cfg_out = self.createOutput()
         self._cfg_out.setPossibleDatatypes([(dai.DatatypeEnum.MessageGroup, True)])
-        self._tiling_cfg: Optional[TilingCfg] = None
+        self._tiling_cfg: TilingCfg | None = None
         self._logger.debug("Tiling initialized")
 
     @property
@@ -56,33 +55,33 @@ class Tiling(BaseThreadedHostNode):
 
     def updateTilingConfig(
         self,
-        overlap: Optional[float] = None,
-        gridSize: Optional[Tuple[int, int]] = None,
-        canvasShape: Optional[Tuple[int, int]] = None,
-        resizeShape: Optional[Tuple[int, int]] = None,
-        resizeMode: Optional[dai.ImageManipConfig.ResizeMode] = None,
-        globalDetection: Optional[bool] = None,
-        gridMatrix: Optional[Union[np.ndarray, List, None]] = None,
+        overlap: float | None = None,
+        gridSize: tuple[int, int] | None = None,
+        canvasShape: tuple[int, int] | None = None,
+        resizeShape: tuple[int, int] | None = None,
+        resizeMode: dai.ImageManipConfig.ResizeMode | None = None,
+        globalDetection: bool | None = None,
+        gridMatrix: np.ndarray | list | None | None = None,
     ) -> None:
         """Update the tiling configuration used for future trigger messages.
 
         @param overlap: Fractional overlap between adjacent tiles in the range [0, 1).
-        @type overlap: Optional[float]
+        @type overlap: float | None
         @param gridSize: Tile grid as (columns, rows).
-        @type gridSize: Optional[Tuple[int, int]]
+        @type gridSize: tuple[int, int] | None
         @param canvasShape: Shape of the image space the tiling is defined on. Crop
             coordinates are computed in this absolute coordinate system.
-        @type canvasShape: Optional[Tuple[int, int]]
+        @type canvasShape: tuple[int, int] | None
         @param resizeShape: Output size applied to each tile after cropping. This is the
             shape expected by downstream consumers, not necessarily a neural network.
-        @type resizeShape: Optional[Tuple[int, int]]
+        @type resizeShape: tuple[int, int] | None
         @param resizeMode: Resize strategy used when adapting each crop to resizeShape.
-        @type resizeMode: Optional[dai.ImageManipConfig.ResizeMode]
+        @type resizeMode: dai.ImageManipConfig.ResizeMode | None
         @param globalDetection: If True, prepend a config covering the whole canvas.
-        @type globalDetection: Optional[bool]
+        @type globalDetection: bool | None
         @param gridMatrix: Optional grouping matrix for merging neighboring grid cells
             into larger crops.
-        @type gridMatrix: Optional[Union[np.ndarray, List, None]]
+        @type gridMatrix: np.ndarray | list | None | None
         """
         if self._tiling_cfg is None:
             raise RuntimeError("Tiling was not built yet. Call `build()` first.")
@@ -107,32 +106,32 @@ class Tiling(BaseThreadedHostNode):
     def build(
         self,
         overlap: float,
-        gridSize: Tuple[int, int],
-        canvasShape: Tuple[int, int],
-        resizeShape: Tuple[int, int],
+        gridSize: tuple[int, int],
+        canvasShape: tuple[int, int],
+        resizeShape: tuple[int, int],
         resizeMode: dai.ImageManipConfig.ResizeMode,
         globalDetection: bool = False,
-        gridMatrix: Union[np.ndarray, List, None] = None,
+        gridMatrix: np.ndarray | list | None = None,
     ) -> "Tiling":
         """Configure the tiling node and link the trigger stream.
 
         @param overlap: Fractional overlap between adjacent tiles in the range [0, 1).
         @type overlap: float
         @param gridSize: Tile grid as (columns, rows).
-        @type gridSize: Tuple[int, int]
+        @type gridSize: tuple[int, int]
         @param canvasShape: Shape of the image space the tiling is defined on. Crop
             coordinates are computed in this absolute coordinate system.
-        @type canvasShape: Tuple[int, int]
+        @type canvasShape: tuple[int, int]
         @param resizeShape: Output size applied to each tile after cropping. This is the
             shape expected by downstream consumers, not necessarily a neural network.
-        @type resizeShape: Tuple[int, int]
+        @type resizeShape: tuple[int, int]
         @param resizeMode: Resize strategy used when adapting each crop to resizeShape.
         @type resizeMode: dai.ImageManipConfig.ResizeMode
         @param globalDetection: If True, prepend a config covering the whole canvas.
         @type globalDetection: bool
         @param gridMatrix: Optional grouping matrix for merging neighboring grid cells
             into larger crops.
-        @type gridMatrix: Union[np.ndarray, List, None]
+        @type gridMatrix: np.ndarray | list | None
         @return: The configured node instance.
         @rtype: Tiling
         """
@@ -170,7 +169,7 @@ class Tiling(BaseThreadedHostNode):
         self.out.send(cfg_group)
 
     def _createMessageGroup(
-        self, crop_configs: List[dai.ImageManipConfig]
+        self, crop_configs: list[dai.ImageManipConfig]
     ) -> dai.MessageGroup:
         msg_group = dai.MessageGroup()
         for i, cfg in enumerate(crop_configs):
@@ -180,7 +179,7 @@ class Tiling(BaseThreadedHostNode):
     def _computeTilePositions(
         self,
         tiling_cfg: TilingCfg,
-    ) -> List[Tuple[int, int, int, int]]:
+    ) -> list[tuple[int, int, int, int]]:
         tile_dims = self._calculateTiles(
             grid_size=tiling_cfg.gridSize,
             canvas_shape=tiling_cfg.canvasShape,
@@ -270,8 +269,8 @@ class Tiling(BaseThreadedHostNode):
 
     def _calculateTiles(
         self,
-        grid_size: Tuple[int, int],
-        canvas_shape: Tuple[int, int],
+        grid_size: tuple[int, int],
+        canvas_shape: tuple[int, int],
         overlap: float,
     ) -> np.ndarray:
         if not 0 <= overlap < 1:
@@ -289,10 +288,10 @@ class Tiling(BaseThreadedHostNode):
 
     def _generateManipConfigs(
         self,
-        tile_positions: List[Tuple[int, int, int, int]],
-        resize_shape: Tuple[int, int],
+        tile_positions: list[tuple[int, int, int, int]],
+        resize_shape: tuple[int, int],
         resize_mode: dai.ImageManipConfig.ResizeMode,
-    ) -> List[dai.ImageManipConfig]:
+    ) -> list[dai.ImageManipConfig]:
         return [
             self._getManipConfig(tile_info, resize_shape, resize_mode)
             for tile_info in tile_positions
@@ -300,8 +299,8 @@ class Tiling(BaseThreadedHostNode):
 
     def _getManipConfig(
         self,
-        tile_info: Tuple[int, int, int, int],
-        resize_shape: Tuple[int, int],
+        tile_info: tuple[int, int, int, int],
+        resize_shape: tuple[int, int],
         resize_mode: dai.ImageManipConfig.ResizeMode,
     ) -> dai.ImageManipConfig:
         x1, y1, x2, y2 = tile_info

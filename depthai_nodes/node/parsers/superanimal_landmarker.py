@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import depthai as dai
 import numpy as np
@@ -21,9 +21,9 @@ class SuperAnimalParser(KeypointParser):
         Number of keypoints.
     score_threshold : float
         Confidence score threshold for detected keypoints.
-    label_names : List[str]
+    label_names : list[str]
         Label names for the keypoints.
-    edges : List[Tuple[int, int]]
+    edges : list[tuple[int, int]]
         Keypoint connection pairs for visualizing the skeleton. Example: [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint 1, keypoint 1 is connected to keypoint 2, etc.
 
     Output Message/s
@@ -39,8 +39,8 @@ class SuperAnimalParser(KeypointParser):
         scale_factor: float = 256.0,
         n_keypoints: int = 39,
         score_threshold: float = 0.5,
-        label_names: Optional[List[str]] = None,
-        edges: Optional[List[Tuple[int, int]]] = None,
+        label_names: list[str] | None = None,
+        edges: list[tuple[int, int]] | None = None,
     ) -> None:
         """Initializes the parser node.
 
@@ -53,11 +53,11 @@ class SuperAnimalParser(KeypointParser):
         @param scale_factor: Scale factor to divide the keypoints by.
         @type scale_factor: float
         @param label_names: Label names for the keypoints.
-        @type label_names: Optional[List[str]]
+        @type label_names: list[str] | None
         @param edges: Keypoint connection pairs for visualizing the skeleton. Example:
             [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
             1, keypoint 1 is connected to keypoint 2, etc.
-        @type edges: Optional[List[Tuple[int, int]]]
+        @type edges: list[tuple[int, int]] | None
         """
         super().__init__(
             output_layer_name,
@@ -73,12 +73,12 @@ class SuperAnimalParser(KeypointParser):
 
     def build(
         self,
-        head_config: Dict[str, Any],
+        head_config: dict[str, Any],
     ) -> "SuperAnimalParser":
         """Configures the parser.
 
         @param head_config: The head configuration for the parser.
-        @type head_config: Dict[str, Any]
+        @type head_config: dict[str, Any]
         @return: The parser object with the head configuration set.
         @rtype: SuperAnimalParser
         """

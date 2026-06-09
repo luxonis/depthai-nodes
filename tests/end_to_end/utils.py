@@ -1,6 +1,5 @@
 import os
 import sys
-from typing import Dict, List, Tuple
 
 import depthai as dai
 import requests
@@ -21,7 +20,7 @@ if not HUBAI_TEAM_SLUG:
 HEADERS = {"Authorization": f"Bearer {API_KEY}"}
 
 
-def get_inputs_from_archive(nn_archive: dai.NNArchive) -> List:
+def get_inputs_from_archive(nn_archive: dai.NNArchive) -> list:
     """Get all inputs from NN archive."""
     try:
         inputs = nn_archive.getConfig().model.inputs
@@ -34,7 +33,7 @@ def get_inputs_from_archive(nn_archive: dai.NNArchive) -> List:
     return inputs
 
 
-def get_input_shape(nn_archive: dai.NNArchive) -> Tuple[int, int]:
+def get_input_shape(nn_archive: dai.NNArchive) -> tuple[int, int]:
     """Get the input shape of the model from the NN archive."""
     inputs = get_inputs_from_archive(nn_archive)
 
@@ -68,7 +67,7 @@ def get_num_inputs(nn_archive: dai.NNArchive) -> int:
     return len(inputs)
 
 
-def get_models() -> List[Dict]:
+def get_models() -> list[dict]:
     """Get all the models from the ZOO that correspond to the HubAI team."""
     url = "https://easyml.cloud.luxonis.com/models/api/v1/models?is_public=true&limit=1000"
 
@@ -92,7 +91,7 @@ def get_models() -> List[Dict]:
     return valid_models
 
 
-def get_model_versions(models: List[Dict]) -> List[Dict]:
+def get_model_versions(models: list[dict]) -> list[dict]:
     """Get all the model versions from the ZOO that correspond to given models."""
     url = "https://easyml.cloud.luxonis.com/models/api/v1/modelVersions?is_public=True&limit=1000"
 
@@ -122,7 +121,7 @@ def get_model_versions(models: List[Dict]) -> List[Dict]:
     return model_versions
 
 
-def get_model_instances(model_versions: List[Dict]) -> List[Dict]:
+def get_model_instances(model_versions: list[dict]) -> list[dict]:
     """Get all the model instances from the ZOO that correspond to the model
     versions."""
     url = "https://easyml.cloud.luxonis.com/models/api/v1/modelInstances?is_public=True&limit=1000"
@@ -157,7 +156,7 @@ def get_model_instances(model_versions: List[Dict]) -> List[Dict]:
     return model_instances
 
 
-def get_model_config_parser(model_instance_id: str) -> Dict:
+def get_model_config_parser(model_instance_id: str) -> dict:
     """Get the model config from the ZOO."""
     url = f"https://easyml.cloud.luxonis.com/models/api/v1/modelInstances/{model_instance_id}/config"
     response = requests.get(url, headers=HEADERS)
@@ -169,7 +168,7 @@ def get_model_config_parser(model_instance_id: str) -> Dict:
     return response.json()
 
 
-def get_model_slugs_from_zoo() -> List[str]:
+def get_model_slugs_from_zoo() -> list[str]:
     """Get all the model slugs from the ZOO."""
     model_slugs = []
     models = get_models()
@@ -181,7 +180,7 @@ def get_model_slugs_from_zoo() -> List[str]:
     return model_slugs
 
 
-def find_slugs_from_zoo(parser: str) -> List[str]:
+def find_slugs_from_zoo(parser: str) -> list[str]:
     """Find all model slugs that have the required parser."""
     models = get_models()
     model_versions = get_model_versions(models)

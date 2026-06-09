@@ -1,5 +1,5 @@
 import pickle
-from typing import Any, Dict, List
+from typing import Any
 
 import depthai as dai
 import numpy as np
@@ -17,14 +17,14 @@ from depthai_nodes import (
 from .utils import extract_main_slug
 
 
-def load_expected_output(model: str, parser: str) -> Dict[str, Any]:
+def load_expected_output(model: str, parser: str) -> dict[str, Any]:
     model = extract_main_slug(model)
     with open(f"nn_datas/{parser}/{model}_output.pkl", "rb") as f:
         return pickle.load(f)
 
 
 def check_classification_msg(
-    message: Classifications, expected_output: Dict[str, Any], verbose: bool = False
+    message: Classifications, expected_output: dict[str, Any], verbose: bool = False
 ):
     """
     Expected output format:
@@ -51,7 +51,7 @@ def check_classification_msg(
 
 
 def check_classification_sequence_msg(
-    message: Classifications, expected_output: Dict[str, Any], verbose: bool = False
+    message: Classifications, expected_output: dict[str, Any], verbose: bool = False
 ):
     """
     Expected output format:
@@ -78,7 +78,7 @@ def check_classification_sequence_msg(
 
 
 def check_embeddings_msg(
-    message: dai.NNData, expected_output: Dict[str, Any], verbose: bool = False
+    message: dai.NNData, expected_output: dict[str, Any], verbose: bool = False
 ):
     """
     Expected output format:
@@ -108,7 +108,7 @@ def check_embeddings_msg(
 
 def check_segmentation_msg(
     message: SegmentationMask,
-    expected_output: Dict[str, Any],
+    expected_output: dict[str, Any],
     threshold: float = 0.9,
     verbose: bool = False,
 ):
@@ -150,7 +150,7 @@ def check_segmentation_msg(
 
 def check_keypoints_msg(
     message: Keypoints,
-    expected_output: Dict[str, Any],
+    expected_output: dict[str, Any],
     verbose: bool = False,
 ):
     """
@@ -183,7 +183,7 @@ def check_keypoints_msg(
 
 
 def check_image_msg(
-    message: dai.ImgFrame, expected_output: Dict[str, Any], verbose: bool = False
+    message: dai.ImgFrame, expected_output: dict[str, Any], verbose: bool = False
 ):
     """
     Expected output format:
@@ -210,7 +210,7 @@ def check_image_msg(
 
 
 def check_cluster_msg(
-    message: Clusters, expected_output: Dict[str, Any], verbose: bool = False
+    message: Clusters, expected_output: dict[str, Any], verbose: bool = False
 ):
     """
     Expected output format:
@@ -244,7 +244,7 @@ def check_cluster_msg(
 
 
 def check_map_msg(
-    message: Map2D, expected_output: Dict[str, Any], verbose: bool = False
+    message: Map2D, expected_output: dict[str, Any], verbose: bool = False
 ):
     """
     Expected output format:
@@ -272,7 +272,7 @@ def check_map_msg(
 
 def check_detection_msg(
     message: dai.ImgDetections,
-    expected_output: Dict[str, Any],
+    expected_output: dict[str, Any],
     verbose: bool = False,
 ):
     """
@@ -301,7 +301,7 @@ def check_detection_msg(
     ), f"The message is not dai.ImgDetections. Got {type(message)}."
 
     predicted_detections = []
-    expected_detections: List[Dict[str, Any]] = expected_output["detections"]
+    expected_detections: list[dict[str, Any]] = expected_output["detections"]
 
     for detection in message.detections:
         d = {
@@ -386,7 +386,7 @@ def check_detection_msg(
 
 
 def check_line_msg(
-    message: Lines, expected_output: Dict[str, Any], verbose: bool = False
+    message: Lines, expected_output: dict[str, Any], verbose: bool = False
 ):
     """
     Expected output format:
@@ -407,7 +407,7 @@ def check_line_msg(
         message, Lines
     ), f"The message is not a Lines. Got {type(message)}."
 
-    expected_lines: List[Dict[str, Any]] = expected_output["lines"]
+    expected_lines: list[dict[str, Any]] = expected_output["lines"]
     predicted_lines = []
     for line in message.lines:
         line_dict = {
@@ -439,7 +439,7 @@ def check_line_msg(
 
 
 def check_regression_msg(
-    message: Predictions, expected_output: Dict[str, Any], verbose: bool = False
+    message: Predictions, expected_output: dict[str, Any], verbose: bool = False
 ):
     """
     Expected output format:

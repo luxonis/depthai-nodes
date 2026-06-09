@@ -1,5 +1,3 @@
-from typing import Optional, Tuple
-
 import cv2
 import numpy as np
 
@@ -8,14 +6,14 @@ from depthai_nodes.node.parsers.utils import (
 )
 
 
-def _get_mini_boxes(contour: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def _get_mini_boxes(contour: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Internal function to get the minimum bounding box of a contour.
 
     @param contour: The contour to get the minimum bounding box of the text.
     @type contour: np.ndarray
     @return: The minimum rotated bounding box defined as [x_center, y_center, width,
         height, angle] and the corners of the box.
-    @rtype: Tuple[np.ndarray, np.ndarray]
+    @rtype: tuple[np.ndarray, np.ndarray]
     """
     bounding_box = cv2.minAreaRect(contour)
     points = sorted(list(cv2.boxPoints(bounding_box)), key=lambda x: x[0])
@@ -106,9 +104,9 @@ def parse_paddle_detection_outputs(
     mask_threshold: float = 0.25,
     bbox_threshold: float = 0.5,
     max_detections: int = 100,
-    width: Optional[int] = None,
-    height: Optional[int] = None,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    width: int | None = None,
+    height: int | None = None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Parse the output of a PaddlePaddle Text Detection model from a mask of text
     probabilities into rotated bounding boxes with additional corners saved as
     keypoints.
@@ -122,9 +120,9 @@ def parse_paddle_detection_outputs(
     @param max_detections: The maximum number of candidate bounding boxes.
     @type max_detections: int
     @param width: The width of the image.
-    @type width: Optional[int]
+    @type width: int | None
     @param height: The height of the image.
-    @type height: Optional[int]
+    @type height: int | None
     @return: A touple containing the rotated bounding boxes, corners and scores.
     @rtype: Touple[np.ndarray, np.ndarray, np.ndarray]
     """

@@ -1,11 +1,9 @@
-from typing import List
-
 import depthai as dai
 import numpy as np
 
 
 def nms_detections(
-    detections: List[dai.ImgDetection],
+    detections: list[dai.ImgDetection],
     conf_thresh=0.3,
     iou_thresh=0.4,
 ):

@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List
+from collections.abc import Callable
 
 import depthai as dai
 import numpy as np
@@ -49,9 +49,7 @@ class HostSpatialsCalc:
                 thresholdLow = int(thresholdLow)
             else:
                 raise TypeError(
-                    "Threshold has to be an integer or float! Got {}".format(
-                        type(thresholdLow)
-                    )
+                    f"Threshold has to be an integer or float! Got {type(thresholdLow)}"
                 )
         self.thresh_low = thresholdLow
 
@@ -66,9 +64,7 @@ class HostSpatialsCalc:
                 thresholdHigh = int(thresholdHigh)
             else:
                 raise TypeError(
-                    "Threshold has to be an integer or float! Got {}".format(
-                        type(thresholdHigh)
-                    )
+                    f"Threshold has to be an integer or float! Got {type(thresholdHigh)}"
                 )
         self.thresh_high = thresholdHigh
 
@@ -79,27 +75,27 @@ class HostSpatialsCalc:
                 delta = int(delta)
             else:
                 raise TypeError(
-                    "Delta has to be an integer or float! Got {}".format(type(delta))
+                    f"Delta has to be an integer or float! Got {type(delta)}"
                 )
         self.delta = delta
 
     def calcSpatials(
         self,
         depthData: dai.ImgFrame,
-        roi: List[int],
+        roi: list[int],
         averagingMethod: Callable = np.mean,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Calculate spatial coordinates from the depth frame within the ROI.
 
         @param depthData: Depth frame used for coordinate estimation.
         @type depthData: dai.ImgFrame
         @param roi: Region of interest or point.
-        @type roi: List[int]
+        @type roi: list[int]
         @param averagingMethod: Callable used to reduce valid depth values inside the
             ROI.
         @type averagingMethod: Callable
         @return: Spatial coordinates in camera space.
-        @rtype: Dict[str, float]
+        @rtype: dict[str, float]
         """
         depthFrame = depthData.getFrame()
 
@@ -146,7 +142,7 @@ class HostSpatialsCalc:
         }
         return spatials
 
-    def _check_input(self, roi: List[int], frame: np.ndarray) -> List[int]:
+    def _check_input(self, roi: list[int], frame: np.ndarray) -> list[int]:
         if len(roi) == 4:
             return roi
         if len(roi) != 2:

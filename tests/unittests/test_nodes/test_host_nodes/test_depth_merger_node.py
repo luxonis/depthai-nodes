@@ -129,7 +129,7 @@ def test_img_detection(
         ran_once = True
         if modified_duration is not None and time.time() - last_log_time > LOG_INTERVAL:
             print(
-                f"Test running... {time.time()-start_time:.1f}s elapsed, {modified_duration-time.time()+start_time:.1f}s remaining"
+                f"Test running... {time.time() - start_time:.1f}s elapsed, {modified_duration - time.time() + start_time:.1f}s remaining"
             )
             last_log_time = time.time()
         output_2d.send(img_detection)
@@ -176,7 +176,7 @@ def test_img_detections(
         ran_once = True
         if modified_duration is not None and time.time() - last_log_time > LOG_INTERVAL:
             print(
-                f"Test running... {time.time()-start_time:.1f}s elapsed, {modified_duration-time.time()+start_time:.1f}s remaining"
+                f"Test running... {time.time() - start_time:.1f}s elapsed, {modified_duration - time.time() + start_time:.1f}s remaining"
             )
             last_log_time = time.time()
         output_2d.send(img_detections)

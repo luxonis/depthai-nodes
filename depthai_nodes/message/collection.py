@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Generic, List, Optional, Type, TypeVar
+from typing import Generic, TypeVar
 
 import depthai as dai
 
@@ -15,22 +15,22 @@ class Collection(dai.Buffer, Generic[T]):
       from the first item when the collection becomes non-empty.
     """
 
-    def __init__(self, items: List[T]):
+    def __init__(self, items: list[T]):
         super().__init__()
-        self._item_cls: Optional[Type[T]] = type(items[0]) if items else None
-        self.items: List[T] = items
+        self._item_cls: type[T] | None = type(items[0]) if items else None
+        self.items: list[T] = items
 
     @property
-    def item_cls(self) -> Optional[Type[T]]:
+    def item_cls(self) -> type[T] | None:
         """The inferred runtime type for items, once known."""
         return self._item_cls
 
     @property
-    def items(self) -> List[T]:
+    def items(self) -> list[T]:
         return self._items
 
     @items.setter
-    def items(self, value: List[T]) -> None:
+    def items(self, value: list[T]) -> None:
         if not isinstance(value, list):
             raise TypeError(f"items must be a list, got {type(value)}")
 
@@ -55,11 +55,11 @@ class Collection(dai.Buffer, Generic[T]):
             )
         self._items.append(item)
 
-    def extend(self, items: List[T]) -> None:
+    def extend(self, items: list[T]) -> None:
         # Reuse setter validation
         self.items = [*self._items, *items]
 
-    def copy(self) -> "Collection":
+    def copy(self) -> Collection:
         new_list = []
         for item in self.items:
             new_list.append(item.copy())

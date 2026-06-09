@@ -1,13 +1,11 @@
-from typing import List, Optional, Tuple
-
 import depthai as dai
 import numpy as np
 
 
 def _create_keypoints(
     keypoints: np.ndarray,
-    scores: np.ndarray = None,
-    keypoint_label_names: Optional[List[str]] = None,
+    scores: np.ndarray | None = None,
+    keypoint_label_names: list[str] | None = None,
 ) -> list[dai.Keypoint]:
     if not isinstance(keypoints, (np.ndarray, list)):
         raise ValueError(
@@ -23,9 +21,7 @@ def _create_keypoints(
 
         if len(keypoints) != len(scores):
             raise ValueError(
-                "Keypoints and scores should have the same length. Got {} keypoints and {} scores.".format(
-                    len(keypoints), len(scores)
-                )
+                f"Keypoints and scores should have the same length. Got {len(keypoints)} keypoints and {len(scores)} scores."
             )
 
         if not all(isinstance(score, (float, np.floating)) for score in scores):
@@ -90,14 +86,14 @@ def _create_keypoints(
 def create_detection_message(
     bboxes: np.ndarray,
     scores: np.ndarray,
-    angles: np.ndarray = None,
-    labels: np.ndarray = None,
-    label_names: Optional[List[str]] = None,
-    keypoints: np.ndarray = None,
-    keypoints_scores: np.ndarray = None,
-    keypoint_label_names: Optional[List[str]] = None,
-    keypoint_edges: Optional[List[Tuple[int, int]]] = None,
-    masks: np.ndarray = None,
+    angles: np.ndarray | None = None,
+    labels: np.ndarray | None = None,
+    label_names: list[str] | None = None,
+    keypoints: np.ndarray | None = None,
+    keypoints_scores: np.ndarray | None = None,
+    keypoint_label_names: list[str] | None = None,
+    keypoint_edges: list[tuple[int, int]] | None = None,
+    masks: np.ndarray | None = None,
 ) -> dai.ImgDetections:
     """Create a DepthAI message for object detection. The message contains the bounding
     boxes in X_center, Y_center, Width, Height format with optional angles, labels and
@@ -109,25 +105,25 @@ def create_detection_message(
     @param scores: Confidence scores of the detected objects of shape (N,).
     @type scores: np.ndarray
     @param angles: Angles of detected objects expressed in degrees. Defaults to None.
-    @type angles: Optional[np.ndarray]
+    @type angles: np.ndarray | None
     @param labels: Labels of detected objects of shape (N,). Defaults to None.
-    @type labels: Optional[np.ndarray]
+    @type labels: np.ndarray | None
     @param label_names: Names of the labels (classes)
-    @type label_names: Optional[List[str]]
+    @type label_names: list[str] | None
     @param keypoints: Keypoints of detected objects of shape (N, n_keypoints, dim) where
         dim is 2 or 3. Defaults to None.
-    @type keypoints: Optional[np.array]
+    @type keypoints: np.array | None
     @param keypoints_scores: Confidence scores of detected keypoints of shape (N,
         n_keypoints). Defaults to None.
-    @type keypoints_scores: Optional[np.ndarray]
+    @type keypoints_scores: np.ndarray | None
     @param keypoint_label_names: Labels of keypoints. Defaults to None.
-    @type keypoint_label_names: Optional[List[str]]
+    @type keypoint_label_names: list[str] | None
     @param keypoint_edges: Connection pairs of keypoints. Defaults to None. Example:
         [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint 1,
         keypoint 1 is connected to keypoint 2, etc.
-    @type keypoint_edges: Optional[List[Tuple[int, int]]]
+    @type keypoint_edges: list[tuple[int, int]] | None
     @param masks: Masks of detected objects of shape (H, W). Defaults to None.
-    @type masks: Optional[np.ndarray]
+    @type masks: np.ndarray | None
     @return: Message containing the bounding boxes, labels, confidence scores, and
         keypoints of detected objects.
     @rtype: dai.ImgDetections

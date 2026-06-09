@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import depthai as dai
 import numpy as np
@@ -17,13 +17,13 @@ class LaneDetectionParser(BaseParser):
     ----------
     output_layer_name: str
         Name of the output layer relevant to the parser.
-    row_anchors : List[int]
+    row_anchors : list[int]
         List of row anchors.
     griding_num : int
         Griding number.
     cls_num_per_lane : int
         Number of points per lane.
-    input_size : Tuple[int, int]
+    input_size : tuple[int, int]
         Input size (width,height).
 
     Output Message/s
@@ -41,23 +41,23 @@ class LaneDetectionParser(BaseParser):
     def __init__(
         self,
         output_layer_name: str = "",
-        row_anchors: List[int] = None,
+        row_anchors: list[int] = None,
         griding_num: int = None,
         cls_num_per_lane: int = None,
-        input_size: Tuple[int, int] = None,
+        input_size: tuple[int, int] = None,
     ) -> None:
         """Initializes the lane detection parser node.
 
         @param output_layer_name: Name of the output layer relevant to the parser.
         @type output_layer_name: str
         @param row_anchors: List of row anchors.
-        @type row_anchors: List[int]
+        @type row_anchors: list[int]
         @param griding_num: Griding number.
         @type griding_num: int
         @param cls_num_per_lane: Number of points per lane.
         @type cls_num_per_lane: int
         @param input_size: Input size (width,height).
-        @type input_size: Tuple[int, int]
+        @type input_size: tuple[int, int]
         """
         super().__init__()
         self.output_layer_name = output_layer_name
@@ -81,11 +81,11 @@ class LaneDetectionParser(BaseParser):
         self.output_layer_name = output_layer_name
         self._logger.debug(f"Output layer name set to '{self.output_layer_name}'")
 
-    def setRowAnchors(self, row_anchors: List[int]) -> None:
+    def setRowAnchors(self, row_anchors: list[int]) -> None:
         """Set the row anchors for the lane detection model.
 
         @param row_anchors: List of row anchors.
-        @type row_anchors: List[int]
+        @type row_anchors: list[int]
         """
         if not isinstance(row_anchors, list):
             raise ValueError("Row anchors must be a list.")
@@ -116,11 +116,11 @@ class LaneDetectionParser(BaseParser):
         self.cls_num_per_lane = cls_num_per_lane
         self._logger.debug(f"Number of points per lane set to {self.cls_num_per_lane}")
 
-    def setInputSize(self, input_size: Tuple[int, int]) -> None:
+    def setInputSize(self, input_size: tuple[int, int]) -> None:
         """Set the input size for the lane detection model.
 
         @param input_size: Input size (width,height).
-        @type input_size: Tuple[int, int]
+        @type input_size: tuple[int, int]
         """
         if not isinstance(input_size, tuple):
             raise ValueError("Input size must be a tuple.")
@@ -133,12 +133,12 @@ class LaneDetectionParser(BaseParser):
 
     def build(
         self,
-        head_config: Dict[str, Any],
+        head_config: dict[str, Any],
     ) -> "LaneDetectionParser":
         """Configures the parser.
 
         @param head_config: The head configuration for the parser.
-        @type head_config: Dict[str, Any]
+        @type head_config: dict[str, Any]
         @return: The parser object with the head configuration set.
         @rtype: LaneDetectionParser
         """

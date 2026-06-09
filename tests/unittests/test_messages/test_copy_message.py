@@ -1,5 +1,5 @@
 import inspect
-from typing import Callable, List, Tuple
+from collections.abc import Callable
 
 import numpy as np
 import pytest
@@ -21,7 +21,7 @@ def equal_attributes(obj1, obj2):
         return obj1 == obj2
     elif isinstance(obj1, np.ndarray):
         return np.array_equal(obj1, obj2)
-    elif isinstance(obj1, (List, Tuple)):
+    elif isinstance(obj1, (list, tuple)):
         return len(obj1) == len(obj2) and all(
             equal_attributes(a, b) for a, b in zip(obj1, obj2)
         )
@@ -46,7 +46,7 @@ def equal_attributes(obj1, obj2):
     "message_creator",
     message_creators.__all__,
 )
-def test_message_copying(message_creator: Tuple[str, Callable]):
+def test_message_copying(message_creator: tuple[str, Callable]):
     creator_function = getattr(message_creators, message_creator)
 
     msg = creator_function()

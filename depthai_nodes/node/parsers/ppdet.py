@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import depthai as dai
 import numpy as np
@@ -80,11 +80,11 @@ class PPTextDetectionParser(DetectionParser):
         self.mask_threshold = mask_threshold
         self._logger.debug(f"Mask threshold set to {self.mask_threshold}")
 
-    def build(self, head_config: Dict[str, Any]) -> "PPTextDetectionParser":
+    def build(self, head_config: dict[str, Any]) -> "PPTextDetectionParser":
         """Configures the parser.
 
         @param config: The head configuration for the parser.
-        @type config: Dict[str, Any]
+        @type config: dict[str, Any]
         @return: The parser object with the head configuration set.
         @rtype: PPTextDetectionParser
         """

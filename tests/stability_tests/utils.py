@@ -1,5 +1,4 @@
 import os
-from typing import List, Tuple
 
 import depthai as dai
 from b2sdk.api import B2Api
@@ -23,7 +22,7 @@ def extract_main_slug(model_slug: str) -> str:
     return model_slug.split("/")[1].split(":")[0]
 
 
-def get_inputs_from_archive(nn_archive: dai.NNArchive) -> List:
+def get_inputs_from_archive(nn_archive: dai.NNArchive) -> list:
     """Get all inputs from NN archive."""
     try:
         inputs = nn_archive.getConfig().model.inputs
@@ -36,7 +35,7 @@ def get_inputs_from_archive(nn_archive: dai.NNArchive) -> List:
     return inputs
 
 
-def get_input_shape(nn_archive: dai.NNArchive) -> Tuple[int, int]:
+def get_input_shape(nn_archive: dai.NNArchive) -> tuple[int, int]:
     """Get the input shape of the model from the NN archive."""
     inputs = get_inputs_from_archive(nn_archive)
 

@@ -1,16 +1,14 @@
-from typing import Union
-
 import depthai as dai
 
 
 def compute_area(
-    detection: Union[dai.ImgDetection, dai.SpatialImgDetection],
+    detection: dai.ImgDetection | dai.SpatialImgDetection,
 ):
     """Computes the normalized area of a detection bounding box.
 
     @param detection: Detection object to compute the area for. Can be of type
         dai.ImgDetection, or dai.SpatialImgDetection.
-    @type detection: Union[dai.ImgDetection, dai.SpatialImgDetection]
+    @type detection: dai.ImgDetection | dai.SpatialImgDetection
     @return: Normalized area (width * height) of the detection bounding box.
     @rtype: float
     """

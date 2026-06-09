@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import depthai as dai
 import numpy as np
@@ -31,15 +31,15 @@ class FastSAMParser(BaseParser):
         Mask confidence threshold.
     prompt : str
         Prompt type.
-    points : Tuple[int, int]
+    points : tuple[int, int]
         Points.
     point_label : int
         Point label.
-    bbox : Tuple[int, int, int, int]
+    bbox : tuple[int, int, int, int]
         Bounding box.
-    yolo_outputs : List[str]
+    yolo_outputs : list[str]
         Names of the YOLO outputs.
-    mask_outputs : List[str]
+    mask_outputs : list[str]
         Names of the mask outputs.
     protos_output : str
         Name of the protos output.
@@ -61,11 +61,11 @@ class FastSAMParser(BaseParser):
         iou_threshold: float = 0.5,
         mask_conf: float = 0.5,
         prompt: str = "everything",
-        points: Optional[Tuple[int, int]] = None,
-        point_label: Optional[int] = None,
-        bbox: Optional[Tuple[int, int, int, int]] = None,
-        yolo_outputs: List[str] = None,
-        mask_outputs: List[str] = None,
+        points: tuple[int, int] | None = None,
+        point_label: int | None = None,
+        bbox: tuple[int, int, int, int] | None = None,
+        yolo_outputs: list[str] = None,
+        mask_outputs: list[str] = None,
         protos_output: str = "protos_output",
     ) -> None:
         """Initializes the parser node.
@@ -81,15 +81,15 @@ class FastSAMParser(BaseParser):
         @param prompt: The prompt type
         @type prompt: str
         @param points: The points
-        @type points: Optional[Tuple[int, int]]
+        @type points: tuple[int, int] | None
         @param point_label: The point label
-        @type point_label: Optional[int]
+        @type point_label: int | None
         @param bbox: The bounding box
-        @type bbox: Optional[Tuple[int, int, int, int]]
+        @type bbox: tuple[int, int, int, int] | None
         @param yolo_outputs: The YOLO outputs
-        @type yolo_outputs: List[str]
+        @type yolo_outputs: list[str]
         @param mask_outputs: The mask outputs
-        @type mask_outputs: List[str]
+        @type mask_outputs: list[str]
         @param protos_output: The protos output
         @type protos_output: str
         """
@@ -182,11 +182,11 @@ class FastSAMParser(BaseParser):
         self.prompt = prompt
         self._logger.debug(f"Prompt set to '{self.prompt}'")
 
-    def setPoints(self, points: Tuple[int, int]) -> None:
+    def setPoints(self, points: tuple[int, int]) -> None:
         """Sets the points.
 
         @param points: The points
-        @type points: Tuple[int, int]
+        @type points: tuple[int, int]
         """
         if not isinstance(points, tuple):
             raise ValueError("Points must be a tuple.")
@@ -208,11 +208,11 @@ class FastSAMParser(BaseParser):
         self.point_label = point_label
         self._logger.debug(f"Point label set to {self.point_label}")
 
-    def setBoundingBox(self, bbox: Tuple[int, int, int, int]) -> None:
+    def setBoundingBox(self, bbox: tuple[int, int, int, int]) -> None:
         """Sets the bounding box.
 
         @param bbox: The bounding box
-        @type bbox: Tuple[int, int, int, int]
+        @type bbox: tuple[int, int, int, int]
         """
         if not isinstance(bbox, tuple):
             raise ValueError("Bounding box must be a tuple.")
@@ -223,11 +223,11 @@ class FastSAMParser(BaseParser):
         self.bbox = bbox
         self._logger.debug(f"Bounding box set to {self.bbox}")
 
-    def setYoloOutputs(self, yolo_outputs: List[str]) -> None:
+    def setYoloOutputs(self, yolo_outputs: list[str]) -> None:
         """Sets the YOLO outputs.
 
         @param yolo_outputs: The YOLO outputs
-        @type yolo_outputs: List[str]
+        @type yolo_outputs: list[str]
         """
         if not isinstance(yolo_outputs, list):
             raise ValueError("YOLO outputs must be a list.")
@@ -236,11 +236,11 @@ class FastSAMParser(BaseParser):
         self.yolo_outputs = yolo_outputs
         self._logger.debug(f"YOLO outputs set to {self.yolo_outputs}")
 
-    def setMaskOutputs(self, mask_outputs: List[str]) -> None:
+    def setMaskOutputs(self, mask_outputs: list[str]) -> None:
         """Sets the mask outputs.
 
         @param mask_outputs: The mask outputs
-        @type mask_outputs: List[str]
+        @type mask_outputs: list[str]
         """
         if not isinstance(mask_outputs, list):
             raise ValueError("Mask outputs must be a list.")
@@ -260,11 +260,11 @@ class FastSAMParser(BaseParser):
         self.protos_output = protos_output
         self._logger.debug(f"Protos output set to '{self.protos_output}'")
 
-    def build(self, head_config: Dict[str, Any]) -> "FastSAMParser":
+    def build(self, head_config: dict[str, Any]) -> "FastSAMParser":
         """Configures the parser.
 
         @param head_config: The head configuration for the parser.
-        @type head_config: Dict[str, Any]
+        @type head_config: dict[str, Any]
         @return: The parser object with the head configuration set.
         @rtype: FastSAMParser
         """

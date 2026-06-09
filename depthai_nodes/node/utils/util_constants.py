@@ -1,4 +1,4 @@
-from typing import TypeVar, Union
+from typing import TypeVar
 
 import depthai as dai
 
@@ -12,15 +12,13 @@ from depthai_nodes.message.segmentation import SegmentationMask
 
 GMessage = TypeVar(
     "GMessage",
-    bound=Union[
-        dai.ImgDetections,
-        Keypoints,
-        SegmentationMask,
-        Clusters,
-        Map2D,
-        Lines,
-        Predictions,
-        Classifications,
-    ],
+    bound=dai.ImgDetections
+    | Keypoints
+    | SegmentationMask
+    | Clusters
+    | Map2D
+    | Lines
+    | Predictions
+    | Classifications,
 )
 UNASSIGNED_MASK_LABEL = -1

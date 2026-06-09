@@ -1,19 +1,16 @@
-from typing import List, Optional, Union
-
 import numpy as np
 
 from depthai_nodes import Classifications
 
 
 def create_classification_message(
-    classes: List[str], scores: Union[np.ndarray, List]
+    classes: list[str], scores: np.ndarray | list
 ) -> Classifications:
     """Create a message for classification. The message contains the class names and
     their respective scores, sorted in descending order of scores.
 
     @param classes: A list containing class names.
-    @type classes: List[str]
-    @param scores: A numpy array of shape (n_classes,) containing the probability score of each class.
+    @type classes: list[str]    @param scores: A numpy array of shape (n_classes,) containing the probability score of each class.
     @type scores: np.ndarray
 
     @return: A message with attributes `classes` and `scores`. `classes` is a list of classes, sorted in descending order of scores. `scores` is a list of the corresponding scores.
@@ -87,9 +84,9 @@ def create_classification_message(
 
 
 def create_classification_sequence_message(
-    classes: List[str],
-    scores: Union[np.ndarray, List],
-    ignored_indexes: Optional[List[int]] = None,
+    classes: list[str],
+    scores: np.ndarray | list,
+    ignored_indexes: list[int] | None = None,
     remove_duplicates: bool = False,
     concatenate_classes: bool = False,
 ) -> Classifications:
@@ -99,12 +96,10 @@ def create_classification_sequence_message(
     sequence.
 
     @param classes: A list of class names, with length 'n_classes'.
-    @type classes: List
-    @param scores: A numpy array of shape (sequence_length, n_classes) containing the (row-wise) probability distributions over the classes.
+    @type classes: list    @param scores: A numpy array of shape (sequence_length, n_classes) containing the (row-wise) probability distributions over the classes.
     @type scores: np.ndarray
     @param ignored_indexes: A list of indexes to ignore during classification generation (e.g., background class, padding class). Defaults to None.
-    @type ignored_indexes: Optional[List[int]]
-    @param remove_duplicates: If True, removes consecutive duplicates from the sequence. Defaults to False.
+    @type ignored_indexes: list[int] | None    @param remove_duplicates: If True, removes consecutive duplicates from the sequence. Defaults to False.
     @type remove_duplicates: bool
     @param concatenate_classes: If True, concatenates consecutive classes based on the space character. Defaults to False.
     @type concatenate_classes: bool
@@ -118,10 +113,10 @@ def create_classification_sequence_message(
     @raises ValueError: If 'ignored_indexes' in not None or a list of valid indexes within the range [0, n_classes - 1].
     """
 
-    if not isinstance(classes, List):
+    if not isinstance(classes, list):
         raise ValueError(f"Classes should be a list, got {type(classes)}.")
 
-    if isinstance(scores, List):
+    if isinstance(scores, list):
         scores = np.array(scores)
 
     if len(scores.shape) != 2:
@@ -143,7 +138,7 @@ def create_classification_sequence_message(
     scores = scores.astype(np.float32)
 
     if ignored_indexes is not None:
-        if not isinstance(ignored_indexes, List):
+        if not isinstance(ignored_indexes, list):
             raise ValueError(
                 f"Ignored indexes should be a list, got {type(ignored_indexes)}."
             )
@@ -165,7 +160,7 @@ def create_classification_sequence_message(
     if ignored_indexes is not None:
         selection &= np.array([index not in ignored_indexes for index in indexes])
 
-    class_list: List[str] = [classes[i] for i in indexes[selection]]
+    class_list: list[str] = [classes[i] for i in indexes[selection]]
     score_list = np.max(scores, axis=1)[selection]
 
     if (

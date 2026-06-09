@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import depthai as dai
 import numpy as np
@@ -22,9 +22,9 @@ class KeypointParser(BaseParser):
         Number of keypoints the model detects.
     score_threshold : float
         Confidence score threshold for detected keypoints.
-    label_names : List[str]
+    label_names : list[str]
         Label names for the keypoints.
-    edges : List[Tuple[int, int]]
+    edges : list[tuple[int, int]]
         Keypoint connection pairs for visualizing the skeleton. Example: [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint 1, keypoint 1 is connected to keypoint 2, etc.
 
     Output Message/s
@@ -48,8 +48,8 @@ class KeypointParser(BaseParser):
         scale_factor: float = 1.0,
         n_keypoints: int = None,
         score_threshold: float = None,
-        label_names: Optional[List[str]] = None,
-        edges: Optional[List[List[int]]] = None,
+        label_names: list[str] | None = None,
+        edges: list[list[int]] | None = None,
     ) -> None:
         """Initializes the parser node.
 
@@ -60,11 +60,11 @@ class KeypointParser(BaseParser):
         @param n_keypoints: Number of keypoints.
         @type n_keypoints: int
         @param label_names: Label names for the keypoints.
-        @type label_names: Optional[List[str]]
+        @type label_names: list[str] | None
         @param edges: Keypoint connection pairs for visualizing the skeleton. Example:
             [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
             1, keypoint 1 is connected to keypoint 2, etc.
-        @type edges: Optional[List[Tuple[int, int]]]
+        @type edges: list[tuple[int, int]] | None
         """
         super().__init__()
         self.output_layer_name = output_layer_name
@@ -133,11 +133,11 @@ class KeypointParser(BaseParser):
         self.score_threshold = threshold
         self._logger.debug(f"Score threshold set to {self.score_threshold}")
 
-    def setLabelNames(self, label_names: List[str]) -> None:
+    def setLabelNames(self, label_names: list[str]) -> None:
         """Sets the label names for the keypoints.
 
         @param label_names: List of label names for the keypoints.
-        @type label_names: List[str]
+        @type label_names: list[str]
         """
         if not isinstance(label_names, list):
             raise ValueError("Label names must be a list.")
@@ -146,13 +146,13 @@ class KeypointParser(BaseParser):
         self.label_names = label_names
         self._logger.debug(f"Label names set to {self.label_names}")
 
-    def setEdges(self, edges: List[Tuple[int, int]]) -> None:
+    def setEdges(self, edges: list[tuple[int, int]]) -> None:
         """Sets the edges for the keypoints.
 
         @param edges: List of edges for the keypoints. Example: [(0,1), (1,2), (2,3),
             (3,0)] shows that keypoint 0 is connected to keypoint 1, keypoint 1 is
             connected to keypoint 2, etc.
-        @type edges: List[Tuple[int, int]]
+        @type edges: list[tuple[int, int]]
         """
         if not isinstance(edges, list):
             raise ValueError("Edges must be a list.")
@@ -168,12 +168,12 @@ class KeypointParser(BaseParser):
 
     def build(
         self,
-        head_config: Dict[str, Any],
+        head_config: dict[str, Any],
     ) -> "KeypointParser":
         """Configures the parser.
 
         @param head_config: The head configuration for the parser.
-        @type head_config: Dict[str, Any]
+        @type head_config: dict[str, Any]
         @return: The parser object with the head configuration set.
         @rtype: KeypointParser
         """

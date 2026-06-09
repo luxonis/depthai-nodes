@@ -1,5 +1,3 @@
-from typing import List, Optional, Tuple
-
 import depthai as dai
 
 from .input import InputMock
@@ -19,7 +17,7 @@ class HostNodeMock(NodeMock):
         self._output = OutputMock()
         self._parent_pipeline = None
         self._input = InputMock()
-        self._linked_args: Optional[Tuple[OutputMock, ...]] = None
+        self._linked_args: tuple[OutputMock, ...] | None = None
         self._sendProcessingToPipeline = False
         self._pipeline = PipelineMock()
 
@@ -40,7 +38,7 @@ class HostNodeMock(NodeMock):
     def output(self, output):
         self._output = output
 
-    def createOutput(self, possibleDatatypes: List[Tuple[dai.DatatypeEnum, bool]]):
+    def createOutput(self, possibleDatatypes: list[tuple[dai.DatatypeEnum, bool]]):
         return self._output
 
     def sendProcessingToPipeline(self, send: bool):

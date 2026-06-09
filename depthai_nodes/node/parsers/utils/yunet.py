@@ -1,5 +1,4 @@
 from itertools import product
-from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -18,19 +17,19 @@ def manual_product(*args):
 
 
 def generate_anchors(
-    input_size: Tuple[int, int],
-    min_sizes: Optional[List[List[int]]] = None,
-    strides: Optional[List[int]] = None,
+    input_size: tuple[int, int],
+    min_sizes: list[list[int]] | None = None,
+    strides: list[int] | None = None,
 ):
     """Generate a set of default bounding boxes, known as anchors.
     The code is taken from https://github.com/Kazuhito00/YuNet-ONNX-TFLite-Sample/tree/main
 
     @param input_size: A tuple representing the width and height of the input image.
-    @type input_size: Tuple[int, int]
+    @type input_size: tuple[int, int]
     @param min_sizes: A list of lists, where each inner list contains the minimum sizes of the anchors for different feature maps. If None then '[[10, 16, 24], [32, 48], [64, 96], [128, 192, 256]]' will be used. Defaults to None.
-    @type min_sizes Optional[List[List[int]]]
+    @type min_sizes list[list[int]] | None
     @param strides: Strides for each feature map layer. If None then '[8, 16, 32, 64]' will be used. Defaults to None.
-    @type strides: Optional[List[int]]
+    @type strides: list[int] | None
     @return: Anchors.
     @rtype: np.ndarray
     """
@@ -68,11 +67,11 @@ def generate_anchors(
 
 
 def decode_detections(
-    input_size: Tuple[int, int],
+    input_size: tuple[int, int],
     loc: np.ndarray,
     conf: np.ndarray,
     iou: np.ndarray,
-    variance: Optional[List[float]] = None,
+    variance: list[float] | None = None,
 ):
     """
     Decodes the output of an object detection model by converting the model's predictions (localization, confidence, and IoU scores) into bounding boxes, keypoints, and scores.
@@ -87,13 +86,12 @@ def decode_detections(
     @param iou: The predicted IoU (Intersection over Union) scores.
     @type iou: np.ndarray
     @param variance: A list of variances used to decode the bounding box predictions. If None then [0.1,0.2] will be used. Defaults to None.
-    @type variance: Optional[List[float]]
+    @type variance: list[float] | None
     @return: A tuple of bboxes, keypoints, and scores.
         - bboxes: NumPy array of shape (N, 4) containing the decoded bounding boxes in the format [x_min, y_min, width, height].
         - keypoints: A NumPy array of shape (N, 10) containing the decoded keypoint coordinates for each anchor.
         - scores: A NumPy array of shape (N, 1) containing the combined scores for each anchor.
-    @rtype: Tuple[np.ndarray, np.ndarray, np.ndarray]
-
+    @rtype: tuple[np.ndarray, np.ndarray, np.ndarray]
     """
 
     w, h = input_size
@@ -155,7 +153,7 @@ def prune_detections(
         - bboxes: NumPy array of shape (N, 4) containing the decoded bounding boxes in the format [x_min, y_min, width, height].
         - keypoints: A NumPy array of shape (N, 10) containing the decoded keypoint coordinates for each anchor.
         - scores: A NumPy array of shape (N, 1) containing the combined scores for each anchor.
-    @rtype: Tuple[np.ndarray, np.ndarray, np.ndarray]
+    @rtype: tuple[np.ndarray, np.ndarray, np.ndarray]
     """
 
     keep_indices = np.where(scores.squeeze() > conf_threshold)
@@ -166,7 +164,7 @@ def format_detections(
     bboxes: np.ndarray,
     keypoints: np.ndarray,
     scores: np.ndarray,
-    input_size: Tuple[int, int],
+    input_size: tuple[int, int],
 ):
     """Format detections into a list of dictionaries.
 
@@ -182,7 +180,7 @@ def format_detections(
         - bboxes: NumPy array of shape (N, 4) containing the decoded bounding boxes in the format [x_min, y_min, width, height].
         - keypoints: A NumPy array of shape (N, 10) containing the decoded keypoint coordinates for each anchor.
         - scores: A NumPy array of shape (N, 1) containing the combined scores for each anchor.
-    @rtype: Tuple[np.ndarray, np.ndarray, np.ndarray]
+    @rtype: tuple[np.ndarray, np.ndarray, np.ndarray]
     """
 
     w, h = input_size
@@ -200,13 +198,13 @@ def format_detections(
 
 
 def decode_and_prune_detections(
-    input_size: Tuple[int, int],
+    input_size: tuple[int, int],
     loc: np.ndarray,
     conf: np.ndarray,
     iou: np.ndarray,
     conf_threshold: float,
     anchors: np.ndarray,
-    variance: Optional[List[float]] = None,
+    variance: list[float] | None = None,
 ):
     """Optimized function that combines decode_detections and prune_detections. Performs
     early pruning to avoid processing low-confidence detections.

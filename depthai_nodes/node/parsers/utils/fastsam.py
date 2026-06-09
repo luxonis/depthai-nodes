@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import cv2
 import numpy as np
@@ -10,7 +10,7 @@ from depthai_nodes.node.parsers.utils.yolo import (
 
 
 def box_prompt(
-    masks: np.ndarray, bbox: Tuple[int, int, int, int], orig_shape: Tuple[int, int]
+    masks: np.ndarray, bbox: tuple[int, int, int, int], orig_shape: tuple[int, int]
 ) -> np.ndarray:
     """Modifies the bounding box properties and calculates IoU between masks and
     bounding box.
@@ -21,9 +21,9 @@ def box_prompt(
     @param masks: The resulting masks of the FastSAM model
     @type masks: np.ndarray
     @param bbox: The prompt bounding box coordinates
-    @type bbox: Tuple[int, int, int, int]
+    @type bbox: tuple[int, int, int, int]
     @param orig_shape: The original shape of the image
-    @type orig_shape: Tuple[int, int] (height, width)
+    @type orig_shape: tuple[int, int](height, width)
     @return: The modified masks
     @rtype: np.ndarray
     """
@@ -58,7 +58,7 @@ def box_prompt(
 
 def format_results(
     bboxes: np.ndarray, masks: np.ndarray, filter: int = 0
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Formats detection results into list of annotations each containing ID,
     segmentation, bounding box, score and area.
 
@@ -71,7 +71,7 @@ def format_results(
     @param filter: The filter value
     @type filter: int
     @return: The formatted annotations
-    @rtype: List[Dict[str, Any]]
+    @rtype: list[dict[str, Any]]
     """
     annotations = []
     n = len(masks) if masks is not None else 0
@@ -92,9 +92,9 @@ def format_results(
 def point_prompt(
     bboxes: np.ndarray,
     masks: np.ndarray,
-    points: List[Tuple[int, int]],
-    pointlabel: List[int],
-    orig_shape: Tuple[int, int],
+    points: list[tuple[int, int]],
+    pointlabel: list[int],
+    orig_shape: tuple[int, int],
 ) -> np.ndarray:
     """Adjusts points on detected masks based on user input and returns the modified
     results.
@@ -107,11 +107,11 @@ def point_prompt(
     @param masks: The masks of the detected objects
     @type masks: np.ndarray
     @param points: The points to adjust
-    @type points: List[Tuple[int, int]]
+    @type points: list[tuple[int, int]]
     @param pointlabel: The point labels
-    @type pointlabel: List[int]
+    @type pointlabel: list[int]
     @param orig_shape: The original shape of the image
-    @type orig_shape: Tuple[int, int] (height, width)
+    @type orig_shape: tuple[int, int](height, width)
     @return: The modified masks
     @rtype: np.ndarray
     """
@@ -143,7 +143,7 @@ def point_prompt(
 
 
 def adjust_bboxes_to_image_border(
-    boxes: np.ndarray, image_shape: Tuple[int, int], threshold: int = 20
+    boxes: np.ndarray, image_shape: tuple[int, int], threshold: int = 20
 ) -> np.ndarray:
     """
     Source: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/utils.py#L6 (Ultralytics)
@@ -152,7 +152,7 @@ def adjust_bboxes_to_image_border(
     @param boxes: Bounding boxes
     @type boxes: np.ndarray
     @param image_shape: Image shape
-    @type image_shape: Tuple[int, int]
+    @type image_shape: tuple[int, int]
     @param threshold: Pixel threshold
     @type threshold: int
     @return: Adjusted bounding boxes
@@ -173,7 +173,7 @@ def bbox_iou(
     box1: np.ndarray,
     boxes: np.ndarray,
     iou_thres: float = 0.9,
-    image_shape: Tuple[int, int] = (640, 640),
+    image_shape: tuple[int, int] = (640, 640),
     raw_output: bool = False,
 ) -> np.ndarray:
     """
@@ -187,7 +187,7 @@ def bbox_iou(
     @param iou_thres: IoU threshold
     @type iou_thres: float
     @param image_shape: Image shape (height, width)
-    @type image_shape: Tuple[int, int]
+    @type image_shape: tuple[int, int]
     @param raw_output: If True, return the raw IoU values instead of the indices
     @type raw_output: bool
     @return: Indices of boxes with IoU > thres, or the raw IoU values if raw_output is True
@@ -221,10 +221,10 @@ def bbox_iou(
 
 
 def decode_fastsam_output(
-    outputs: List[np.ndarray],
-    strides: List[int],
-    anchors: List[Optional[np.ndarray]],
-    img_shape: Tuple[int, int],
+    outputs: list[np.ndarray],
+    strides: list[int],
+    anchors: list[np.ndarray | None],
+    img_shape: tuple[int, int],
     conf_thres: float = 0.5,
     iou_thres: float = 0.45,
     num_classes: int = 1,
@@ -232,13 +232,13 @@ def decode_fastsam_output(
     """Decode the output of the FastSAM model.
 
     @param outputs: List of FastSAM outputs
-    @type outputs: List[np.ndarray]
+    @type outputs: list[np.ndarray]
     @param strides: List of strides
-    @type strides: List[int]
+    @type strides: list[int]
     @param anchors: List of anchors
-    @type anchors: List[Optional[np.ndarray]]
+    @type anchors: list[np.ndarray | None]
     @param img_shape: Image shape
-    @type img_shape: Tuple[int, int]
+    @type img_shape: tuple[int, int]
     @param conf_thres: Confidence threshold
     @type conf_thres: float
     @param iou_thres: IoU threshold
@@ -320,7 +320,7 @@ def process_masks(
     parsed_results: np.ndarray,
     mask_coeffs: np.ndarray,
     protos: np.ndarray,
-    orig_shape: Tuple[int, int],
+    orig_shape: tuple[int, int],
     mask_conf: float,
 ) -> np.ndarray:
     """Process output into full-size masks for all detections.

@@ -1,5 +1,3 @@
-from typing import Optional, Union
-
 import depthai as dai
 
 from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
@@ -79,11 +77,11 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
                 "ExtendedNeuralNetwork node is currently not supported on RVC2."
             )
         self._has_camera_node_as_input = False
-        self._nn: Optional[ParsingNeuralNetwork] = None
-        self._coordinates_mapper: Optional[CoordinatesMapper] = None
+        self._nn: ParsingNeuralNetwork | None = None
+        self._coordinates_mapper: CoordinatesMapper | None = None
 
     @property
-    def out(self) -> Optional[dai.Node.Output]:
+    def out(self) -> dai.Node.Output | None:
         """Return the primary parsed output stream."""
         if not self._nn:
             return None
@@ -93,7 +91,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
             return self._coordinates_mapper.out
 
     @property
-    def outputs(self) -> Optional[dai.Node.Output]:
+    def outputs(self) -> dai.Node.Output | None:
         """Return the multi-head output stream when available."""
         if not self._nn:
             return None
@@ -103,7 +101,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
             return self._coordinates_mapper.out
 
     @property
-    def passthrough(self) -> Optional[dai.Node.Output]:
+    def passthrough(self) -> dai.Node.Output | None:
         """Return the passthrough stream from the underlying NN node."""
         if not self._nn:
             return None
@@ -112,7 +110,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
     def build(
         self,
         inputImage: dai.node.Camera | dai.Node.Output,
-        nnSource: Union[dai.NNModelDescription, dai.NNArchive, str],
+        nnSource: dai.NNModelDescription | dai.NNArchive | str,
         resizeMode: dai.ImageManipConfig.ResizeMode = dai.ImageManipConfig.ResizeMode.CENTER_CROP,
     ) -> "ExtendedNeuralNetwork":
         """Build the internal inference pipeline.
@@ -121,7 +119,7 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
             the camera; generic outputs are resized via an internal ImageManip.
         @type inputImage: dai.node.Camera | dai.Node.Output
         @param nnSource: HubAI model slug, dai.NNModelDescription, or dai.NNArchive.
-        @type nnSource: Union[dai.NNModelDescription, dai.NNArchive, str]
+        @type nnSource: dai.NNModelDescription | dai.NNArchive | str
         @param resizeMode: Resize strategy used when adapting frames to the network
             input shape.
         @type resizeMode: dai.ImageManipConfig.ResizeMode

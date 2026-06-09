@@ -1,5 +1,4 @@
 from datetime import timedelta
-from typing import List, Optional, Tuple, Union
 
 import depthai as dai
 import numpy as np
@@ -10,8 +9,8 @@ from depthai_nodes.constants import (
 )
 from depthai_nodes.utils.viewport_clipper import ViewportClipper
 
-Point = Tuple[float, float]
-ColorRGBA = Tuple[float, float, float, float]
+Point = tuple[float, float]
+ColorRGBA = tuple[float, float, float, float]
 
 
 class AnnotationHelper:
@@ -20,7 +19,7 @@ class AnnotationHelper:
     After calling the desired drawing methods, call the `build` method to create the `ImgAnnotations` message.
     """
 
-    def __init__(self, viewport_clipper: Optional[ViewportClipper] = None):
+    def __init__(self, viewport_clipper: ViewportClipper | None = None):
         self.annotation: dai.ImgAnnotation = dai.ImgAnnotation()
         if not viewport_clipper:
             viewport_clipper = ViewportClipper(
@@ -30,9 +29,9 @@ class AnnotationHelper:
 
     def draw_line(
         self,
-        pt1: Union[Point, dai.Point2f],
-        pt2: Union[Point, dai.Point2f],
-        color: Union[ColorRGBA, dai.Color] = PRIMARY_COLOR,
+        pt1: Point | dai.Point2f,
+        pt2: Point | dai.Point2f,
+        color: ColorRGBA | dai.Color = PRIMARY_COLOR,
         thickness: float = 2.0,
         clip_to_viewport: bool = False,
     ) -> "AnnotationHelper":
@@ -74,18 +73,16 @@ class AnnotationHelper:
 
     def draw_polyline(
         self,
-        points: Union[List[Point], List[dai.Point2f]],
-        outline_color: Union[ColorRGBA, dai.Color] = PRIMARY_COLOR,
-        fill_color: Union[
-            Optional[ColorRGBA], Optional[dai.Color]
-        ] = TRANSPARENT_PRIMARY_COLOR,
+        points: list[Point] | list[dai.Point2f],
+        outline_color: ColorRGBA | dai.Color = PRIMARY_COLOR,
+        fill_color: (ColorRGBA | None | dai.Color | None) = TRANSPARENT_PRIMARY_COLOR,
         thickness: float = 1.0,
         closed: bool = False,
     ) -> "AnnotationHelper":
         """Draws a polyline.
 
         @param points: List of points of the polyline
-        @type points: List[Point] | List[dai.Point2f]
+        @type points: list[Point] | list[dai.Point2f]
         @param outline_color: Outline color
         @type outline_color: ColorRGBA | dai.Color
         @param fill_color: Fill color (None for no fill)
@@ -118,14 +115,14 @@ class AnnotationHelper:
 
     def draw_points(
         self,
-        points: Union[List[Point], List[dai.Point2f], dai.VectorPoint2f],
-        color: Union[ColorRGBA, dai.Color] = PRIMARY_COLOR,
+        points: list[Point] | list[dai.Point2f] | dai.VectorPoint2f,
+        color: ColorRGBA | dai.Color = PRIMARY_COLOR,
         thickness: float = 2.0,
     ) -> "AnnotationHelper":
         """Draws points.
 
         @param points: List of points to draw
-        @type points: List[Point] | List[dai.Point2f]
+        @type points: list[Point] | list[dai.Point2f]
         @param color: Color of the points
         @type color: ColorRGBA | dai.Color
         @param thickness: Size of the points
@@ -147,10 +144,10 @@ class AnnotationHelper:
 
     def draw_circle(
         self,
-        center: Union[Point, dai.Point2f],
+        center: Point | dai.Point2f,
         radius: float,
-        outline_color: Union[ColorRGBA, dai.Color] = PRIMARY_COLOR,
-        fill_color: Union[Optional[ColorRGBA], Optional[dai.Color]] = None,
+        outline_color: ColorRGBA | dai.Color = PRIMARY_COLOR,
+        fill_color: ColorRGBA | None | dai.Color | None = None,
         thickness: float = 1.0,
     ) -> "AnnotationHelper":
         """Draws a circle.
@@ -186,12 +183,10 @@ class AnnotationHelper:
 
     def draw_rectangle(
         self,
-        top_left: Union[Point, dai.Point2f],
-        bottom_right: Union[Point, dai.Point2f],
-        outline_color: Union[ColorRGBA, dai.Color] = PRIMARY_COLOR,
-        fill_color: Union[
-            Optional[ColorRGBA], Optional[dai.Color]
-        ] = TRANSPARENT_PRIMARY_COLOR,
+        top_left: Point | dai.Point2f,
+        bottom_right: Point | dai.Point2f,
+        outline_color: ColorRGBA | dai.Color = PRIMARY_COLOR,
+        fill_color: (ColorRGBA | None | dai.Color | None) = TRANSPARENT_PRIMARY_COLOR,
         thickness: float = 1.0,
         clip_to_viewport: bool = False,
     ) -> "AnnotationHelper":
@@ -231,9 +226,9 @@ class AnnotationHelper:
     def draw_text(
         self,
         text: str,
-        position: Union[Point, dai.Point2f],
-        color: Union[ColorRGBA, dai.Color] = PRIMARY_COLOR,
-        background_color: Union[Optional[ColorRGBA], Optional[dai.Color]] = None,
+        position: Point | dai.Point2f,
+        color: ColorRGBA | dai.Color = PRIMARY_COLOR,
+        background_color: ColorRGBA | None | dai.Color | None = None,
         size: float = 32,
     ) -> "AnnotationHelper":
         """Draws text.
@@ -269,13 +264,11 @@ class AnnotationHelper:
 
     def draw_rotated_rect(
         self,
-        center: Union[Point, dai.Point2f],
-        size: Union[Tuple[float, float], dai.Size2f],
+        center: Point | dai.Point2f,
+        size: tuple[float, float] | dai.Size2f,
         angle: float,
-        outline_color: Union[ColorRGBA, dai.Color] = PRIMARY_COLOR,
-        fill_color: Union[
-            Optional[ColorRGBA], Optional[dai.Color]
-        ] = TRANSPARENT_PRIMARY_COLOR,
+        outline_color: ColorRGBA | dai.Color = PRIMARY_COLOR,
+        fill_color: (ColorRGBA | None | dai.Color | None) = TRANSPARENT_PRIMARY_COLOR,
         thickness: float = 1.0,
         clip_to_viewport: bool = False,
     ) -> "AnnotationHelper":
@@ -284,7 +277,7 @@ class AnnotationHelper:
         @param center: Center of the rectangle
         @type center: Point | dai.Point2f
         @param size: Size of the rectangle (width, height)
-        @type size: Tuple[float, float] | dai.Size2f
+        @type size: tuple[float, float] | dai.Size2f
         @param angle: Angle of rotation in degrees
         @type angle: float
         @param outline_color: Outline color
@@ -329,9 +322,9 @@ class AnnotationHelper:
 
     def _create_points_annotation(
         self,
-        points: List[dai.Point2f],
+        points: list[dai.Point2f],
         color: dai.Color,
-        fill_color: Optional[dai.Color],
+        fill_color: dai.Color | None,
         type: dai.PointsAnnotationType,
     ) -> dai.PointsAnnotation:
         points_annot = dai.PointsAnnotation()
@@ -352,7 +345,7 @@ class AnnotationHelper:
 
     def _get_rotated_rect_points(
         self, center: dai.Point2f, size: dai.Size2f, angle: float
-    ) -> List[Point]:
+    ) -> list[Point]:
         angle_rad = np.radians(angle)
 
         # Half-dimensions
@@ -377,8 +370,8 @@ class AnnotationHelper:
         # Convert to list of tuples
         return [tuple(corner) for corner in translated_corners.tolist()]
 
-    def _create_points_vector(self, points: List[dai.Point2f]) -> dai.VectorPoint2f:
+    def _create_points_vector(self, points: list[dai.Point2f]) -> dai.VectorPoint2f:
         return dai.VectorPoint2f(points)
 
-    def _create_size(self, size: Tuple[float, float]):
+    def _create_size(self, size: tuple[float, float]):
         return dai.Size2f(size[0], size[1])

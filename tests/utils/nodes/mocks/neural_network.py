@@ -1,5 +1,3 @@
-from typing import Union
-
 import depthai as dai
 
 from .input import InputMock
@@ -16,7 +14,7 @@ class NeuralNetworkMock:
     def build(
         self,
         input: InputMock,
-        model: Union[dai.NNModelDescription, dai.NNArchive],
+        model: dai.NNModelDescription | dai.NNArchive,
         fps: float,
     ):
         self._nn_archive = model

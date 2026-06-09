@@ -1,5 +1,3 @@
-from typing import Dict, List, Optional
-
 import depthai as dai
 
 from depthai_nodes.logging import get_logger
@@ -38,24 +36,24 @@ class ParserGenerator(dai.node.ThreadedHostNode):
     def build(
         self,
         nnArchive: dai.NNArchive,
-        headIndex: Optional[int] = None,
+        headIndex: int | None = None,
         hostOnly: bool = False,
-    ) -> Dict:
+    ) -> dict:
         """Instantiate parser nodes for the supplied model archive.
 
         @param nnArchive: Model archive describing the parser configuration.
         @type nnArchive: dai.NNArchive
         @param headIndex: Optional model head index to instantiate. If omitted, parsers
             are created for all heads.
-        @type headIndex: Optional[int]
+        @type headIndex: int | None
         @param hostOnly: If True, prefer host-side parser implementations where
             available.
         @type hostOnly: bool
         @return: Mapping of model head index to parser node.
-        @rtype: Dict
+        @rtype: dict
         """
 
-        heads: List = nnArchive.getConfig().model.heads  # type: ignore
+        heads: list = nnArchive.getConfig().model.heads  # type: ignore
 
         indexes = range(len(heads))
 

@@ -1,5 +1,3 @@
-from typing import List, Optional, Tuple
-
 import depthai as dai
 import numpy as np
 
@@ -59,9 +57,9 @@ def process_single_mask(
 
 def get_segmentation_outputs(
     output: dai.NNData,
-    mask_output_layer_names: Optional[List[str]] = None,
-    protos_output_layer_name: Optional[str] = None,
-) -> Tuple[List[np.ndarray], np.ndarray, int]:
+    mask_output_layer_names: list[str] | None = None,
+    protos_output_layer_name: str | None = None,
+) -> tuple[list[np.ndarray], np.ndarray, int]:
     """Get the segmentation outputs from the Neural Network data."""
     # Get all the layer names
     layer_names = mask_output_layer_names or output.getAllLayerNames()

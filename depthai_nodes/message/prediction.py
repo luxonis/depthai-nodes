@@ -1,5 +1,4 @@
 import copy
-from typing import List, Optional
 
 import depthai as dai
 
@@ -60,7 +59,7 @@ class Predictions(dai.Buffer):
 
     Attributes
     ----------
-    predictions : List[Prediction]
+    predictions : list[Prediction]
         List of predictions.
     transformation : dai.ImgTransformation
         Image transformation object.
@@ -69,8 +68,8 @@ class Predictions(dai.Buffer):
     def __init__(self):
         """Initializes the Predictions object."""
         super().__init__()
-        self._predictions: List[Prediction] = []
-        self._transformation: Optional[dai.ImgTransformation] = None
+        self._predictions: list[Prediction] = []
+        self._transformation: dai.ImgTransformation | None = None
 
     def copy(self):
         """Creates a new instance of the Predictions class and copies the attributes.
@@ -87,24 +86,24 @@ class Predictions(dai.Buffer):
         return new_obj
 
     @property
-    def predictions(self) -> List[Prediction]:
+    def predictions(self) -> list[Prediction]:
         """Returns the predictions.
 
         @return: List of predictions.
-        @rtype: List[Prediction]
+        @rtype: list[Prediction]
         """
         return self._predictions
 
     @predictions.setter
-    def predictions(self, value: List[Prediction]):
+    def predictions(self, value: list[Prediction]):
         """Sets the predictions.
 
         @param value: List of predicted values.
-        @type value: List[Prediction]
+        @type value: list[Prediction]
         @raise TypeError: If value is not a list.
         @raise ValueError: If each element is not of type Prediction.
         """
-        if not isinstance(value, List):
+        if not isinstance(value, list):
             raise TypeError(
                 f"Predictions must be of type list, instead got {type(value)}."
             )
@@ -122,7 +121,7 @@ class Predictions(dai.Buffer):
         return self._predictions[0].prediction
 
     @property
-    def transformation(self) -> Optional[dai.ImgTransformation]:
+    def transformation(self) -> dai.ImgTransformation | None:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.
@@ -131,7 +130,7 @@ class Predictions(dai.Buffer):
         return self._transformation
 
     @transformation.setter
-    def transformation(self, value: Optional[dai.ImgTransformation]):
+    def transformation(self, value: dai.ImgTransformation | None):
         """Sets the Image Transformation object.
 
         @param value: The Image Transformation object.
@@ -146,7 +145,7 @@ class Predictions(dai.Buffer):
                 )
         self._transformation = value
 
-    def setTransformation(self, transformation: Optional[dai.ImgTransformation]):
+    def setTransformation(self, transformation: dai.ImgTransformation | None):
         """Sets the Image Transformation object.
 
         @param transformation: The Image Transformation object.
@@ -155,7 +154,7 @@ class Predictions(dai.Buffer):
         """
         self.transformation = transformation
 
-    def getTransformation(self) -> Optional[dai.ImgTransformation]:
+    def getTransformation(self) -> dai.ImgTransformation | None:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.

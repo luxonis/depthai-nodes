@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import depthai as dai
 import numpy as np
@@ -16,9 +16,9 @@ class HRNetParser(KeypointParser):
         Name of the output layer relevant to the parser.
     score_threshold : float
         Confidence score threshold for detected keypoints.
-    label_names: Optional[List[str]]
+    label_names: list[str] | None
         Label names for the keypoints.
-    edges: Optional[List[Tuple[int, int]]]
+    edges: list[tuple[int, int]] | None
         Keypoint connection pairs for visualizing the skeleton. Example:
             [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
             1, keypoint 1 is connected to keypoint 2, etc.
@@ -34,8 +34,8 @@ class HRNetParser(KeypointParser):
         self,
         output_layer_name: str = "",
         score_threshold: float = 0.5,
-        label_names: Optional[List[str]] = None,
-        edges: Optional[List[Tuple[int, int]]] = None,
+        label_names: list[str] | None = None,
+        edges: list[tuple[int, int]] | None = None,
     ) -> None:
         """Initializes the parser node.
 
@@ -44,11 +44,11 @@ class HRNetParser(KeypointParser):
         @param score_threshold: Confidence score threshold for detected keypoints.
         @type score_threshold: float
         @param label_names: Label names for the keypoints.
-        @type label_names: Optional[List[str]]
+        @type label_names: list[str] | None
         @param edges: Keypoint connection pairs for visualizing the skeleton. Example:
             [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
             1, keypoint 1 is connected to keypoint 2, etc.
-        @type edges: Optional[List[Tuple[int, int]]]
+        @type edges: list[tuple[int, int]] | None
         """
         super().__init__(
             output_layer_name,
@@ -73,12 +73,12 @@ class HRNetParser(KeypointParser):
 
     def build(
         self,
-        head_config: Dict[str, Any],
+        head_config: dict[str, Any],
     ) -> "HRNetParser":
         """Configures the parser.
 
         @param head_config: The head configuration for the parser.
-        @type head_config: Dict[str, Any]
+        @type head_config: dict[str, Any]
         @return: The parser object with the head configuration set.
         @rtype: HRNetParser
         """

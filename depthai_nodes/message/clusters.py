@@ -1,5 +1,4 @@
 import copy
-from typing import List, Optional
 
 import cv2
 import depthai as dai
@@ -17,7 +16,7 @@ class Cluster(dai.Buffer):
     ----------
     label : int
         Label of the cluster.
-    points : List[dai.Point2f]
+    points : list[dai.Point2f]
         List of points in the cluster.
     """
 
@@ -25,7 +24,7 @@ class Cluster(dai.Buffer):
         """Initializes the Cluster object."""
         super().__init__()
         self._label: int = None
-        self._points: List[dai.Point2f] = []
+        self._points: list[dai.Point2f] = []
 
     def copy(self):
         """Creates a new instance of the Cluster class and copies the attributes.
@@ -60,24 +59,24 @@ class Cluster(dai.Buffer):
         self._label = value
 
     @property
-    def points(self) -> List[dai.Point2f]:
+    def points(self) -> list[dai.Point2f]:
         """Returns the points in the cluster.
 
         @return: List of points in the cluster.
-        @rtype: List[dai.Point2f]
+        @rtype: list[dai.Point2f
         """
         return self._points
 
     @points.setter
-    def points(self, value: List[dai.Point2f]):
+    def points(self, value: list[dai.Point2f]):
         """Sets the points in the cluster.
 
         @param value: List of points in the cluster.
-        @type value: List[dai.Point2f]
+        @type value: list[dai.Point2f]
         @raise TypeError: If value is not a list.
         @raise TypeError: If each element is not of type dai.Point2f.
         """
-        if not isinstance(value, List):
+        if not isinstance(value, list):
             raise TypeError(f"Points must be a list, instead got {type(value)}.")
         if not all(isinstance(point, dai.Point2f) for point in value):
             raise ValueError("Points must be a list of dai.Point2f objects")
@@ -89,7 +88,7 @@ class Clusters(dai.Buffer):
 
     Attributes
     ----------
-    clusters : List[Cluster]
+    clusters : list[Cluster]
         List of clusters.
     transformation : dai.ImgTransformation
         Image transformation object.
@@ -98,8 +97,8 @@ class Clusters(dai.Buffer):
     def __init__(self):
         """Initializes the Clusters object."""
         super().__init__()
-        self._clusters: List[Cluster] = []
-        self._transformation: Optional[dai.ImgTransformation] = None
+        self._clusters: list[Cluster] = []
+        self._transformation: dai.ImgTransformation | None = None
 
     def copy(self):
         """Creates a new instance of the Clusters class and copies the attributes.
@@ -116,31 +115,31 @@ class Clusters(dai.Buffer):
         return new_obj
 
     @property
-    def clusters(self) -> List[Cluster]:
+    def clusters(self) -> list[Cluster]:
         """Returns the clusters.
 
         @return: List of clusters.
-        @rtype: List[Cluster]
+        @rtype: list[Cluster]
         """
         return self._clusters
 
     @clusters.setter
-    def clusters(self, value: List[Cluster]):
+    def clusters(self, value: list[Cluster]):
         """Sets the clusters.
 
         @param value: List of clusters.
-        @type value: List[Cluster]
+        @type value: list[Cluster]
         @raise TypeError: If value is not a list.
         @raise ValueError: If each element is not of type Cluster.
         """
-        if not isinstance(value, List):
+        if not isinstance(value, list):
             raise TypeError("Clusters must be a list.")
         if not all(isinstance(cluster, Cluster) for cluster in value):
             raise ValueError("Clusters must be a list of Cluster objects.")
         self._clusters = value
 
     @property
-    def transformation(self) -> Optional[dai.ImgTransformation]:
+    def transformation(self) -> dai.ImgTransformation | None:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.
@@ -149,7 +148,7 @@ class Clusters(dai.Buffer):
         return self._transformation
 
     @transformation.setter
-    def transformation(self, value: Optional[dai.ImgTransformation]):
+    def transformation(self, value: dai.ImgTransformation | None):
         """Sets the Image Transformation object.
 
         @param value: The Image Transformation object.
@@ -164,7 +163,7 @@ class Clusters(dai.Buffer):
                 )
         self._transformation = value
 
-    def setTransformation(self, transformation: Optional[dai.ImgTransformation]):
+    def setTransformation(self, transformation: dai.ImgTransformation | None):
         """Sets the Image Transformation object.
 
         @param transformation: The Image Transformation object.
@@ -173,7 +172,7 @@ class Clusters(dai.Buffer):
         """
         self.transformation = transformation
 
-    def getTransformation(self) -> Optional[dai.ImgTransformation]:
+    def getTransformation(self) -> dai.ImgTransformation | None:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.

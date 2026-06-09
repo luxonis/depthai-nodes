@@ -1,6 +1,5 @@
 import ast
 import pickle
-from typing import List
 
 import depthai as dai
 import pytest
@@ -30,8 +29,8 @@ def parser_generator():
 
 
 def get_parametrized_values(
-    models: List[str], parsers: List[str], duration: int
-) -> List[List[str]]:
+    models: list[str], parsers: list[str], duration: int
+) -> list[list[str]]:
     test_cases = []
 
     if duration:

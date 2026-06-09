@@ -1,5 +1,3 @@
-from typing import List, Tuple, Type
-
 import depthai as dai
 
 from .device import DeviceMock
@@ -30,7 +28,7 @@ class PipelineMock:
     def remove(self, node):
         self._nodes.remove(node)
 
-    def create(self, node_type: Type[ThreadedHostNodeMock]):
+    def create(self, node_type: type[ThreadedHostNodeMock]):
         from depthai_nodes.node.parsers.base_parser import BaseParser
 
         if issubclass(node_type, BaseParser):
@@ -67,7 +65,7 @@ class PipelineMock:
                     return self._input
 
                 def createOutput(
-                    self, possibleDatatypes: List[Tuple[dai.DatatypeEnum, bool]] = None
+                    self, possibleDatatypes: list[tuple[dai.DatatypeEnum, bool]] = None
                 ):
                     self._out = OutputMock()
                     return self._out
@@ -148,7 +146,7 @@ class PipelineMock:
                     self._is_running = is_running
 
                 def createOutput(
-                    self, possibleDatatypes: List[Tuple[dai.DatatypeEnum, bool]] = None
+                    self, possibleDatatypes: list[tuple[dai.DatatypeEnum, bool]] = None
                 ):
                     self._out = OutputMock()
                     return self._out

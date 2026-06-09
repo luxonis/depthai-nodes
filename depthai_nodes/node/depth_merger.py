@@ -1,5 +1,3 @@
-from typing import Union
-
 import depthai as dai
 
 from depthai_nodes.node.base_host_node import BaseHostNode
@@ -83,7 +81,7 @@ class DepthMerger(BaseHostNode):
 
     def _transform(
         self, message_2d: dai.Buffer, depth: dai.ImgFrame
-    ) -> Union[dai.SpatialImgDetections, dai.SpatialImgDetection]:
+    ) -> dai.SpatialImgDetections | dai.SpatialImgDetection:
         """Transforms 2D detections into spatial detections based on the depth frame."""
         if isinstance(message_2d, dai.ImgDetection):
             return self._detection_to_spatial(message_2d, depth)
