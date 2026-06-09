@@ -325,7 +325,7 @@ class AnnotationHelper:
         points: list[dai.Point2f],
         color: dai.Color,
         fill_color: dai.Color | None,
-        type: dai.PointsAnnotationtype,
+        type: dai.PointsAnnotationType,
     ) -> dai.PointsAnnotation:
         points_annot = dai.PointsAnnotation()
         points_annot.outlineColor = color
