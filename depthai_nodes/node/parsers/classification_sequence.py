@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 import depthai as dai
 import numpy as np
@@ -20,11 +20,11 @@ class ClassificationSequenceParser(ClassificationParser):
     ----------
     output_layer_name: str
         Name of the output layer relevant to the parser.
-    classes: List[str]
+    classes: list[str]
         List of available classes for the model.
     is_softmax: bool
         If False, the scores are converted to probabilities using softmax function.
-    ignored_indexes: List[int]
+    ignored_indexes: list[int]
         List of indexes to ignore during classification generation (e.g., background class, blank space).
     remove_duplicates: bool
         If True, removes consecutive duplicates from the sequence.
@@ -42,9 +42,9 @@ class ClassificationSequenceParser(ClassificationParser):
     def __init__(
         self,
         output_layer_name: str = "",
-        classes: List[str] = None,
+        classes: list[str] = None,
         is_softmax: bool = True,
-        ignored_indexes: List[int] = None,
+        ignored_indexes: list[int] = None,
         remove_duplicates: bool = False,
         concatenate_classes: bool = False,
     ) -> None:
@@ -53,10 +53,10 @@ class ClassificationSequenceParser(ClassificationParser):
         @param output_layer_name: Name of the output layer relevant to the parser.
         @type output_layer_name: str
         @param classes: List of available classes for the model.
-        @type classes: List[str]
+        @type classes: list[str]
         @param ignored_indexes: List of indexes to ignore during classification
             generation (e.g., background class, blank space).
-        @type ignored_indexes: List[int]
+        @type ignored_indexes: list[int]
         @param is_softmax: If False, the scores are converted to probabilities using
             softmax function.
         @type is_softmax: bool
@@ -90,12 +90,12 @@ class ClassificationSequenceParser(ClassificationParser):
         self.remove_duplicates = remove_duplicates
         self._logger.debug(f"Remove duplicates set to {remove_duplicates}")
 
-    def setIgnoredIndexes(self, ignored_indexes: List[int]) -> None:
+    def setIgnoredIndexes(self, ignored_indexes: list[int]) -> None:
         """Sets the ignored_indexes for the classification sequence model.
 
         @param ignored_indexes: A list of indexes to ignore during classification
             generation.
-        @type ignored_indexes: List[int]
+        @type ignored_indexes: list[int]
         """
         if not isinstance(ignored_indexes, list):
             raise ValueError("Ignored indexes must be a list.")
@@ -116,13 +116,12 @@ class ClassificationSequenceParser(ClassificationParser):
         self.concatenate_classes = concatenate_classes
         self._logger.debug(f"Concatenate classes set to {concatenate_classes}")
 
-    def build(self, head_config: Dict[str, Any]) -> "ClassificationSequenceParser":
+    def build(self, head_config: dict[str, Any]) -> "ClassificationSequenceParser":
         """Configures the parser.
 
         @param head_config: The head configuration for the parser. The required keys are `classes`, `n_classes`, and `is_softmax`.
         In addition to these, there are three optional keys that are mostly used for text processing: `ignored_indexes`, `remove_duplicates` and `concatenate_classes`.
-        @type head_config: Dict[str, Any]
-
+        @type head_config: dict[str, Any]
         @return: Returns the instantiated parser with the correct configuration.
         @rtype: ClassificationParser
         """

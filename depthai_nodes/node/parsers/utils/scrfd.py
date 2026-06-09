@@ -1,24 +1,22 @@
-from typing import Dict, List, Tuple
-
 import numpy as np
 
 from depthai_nodes.node.parsers.utils.nms import nms
 
 
 def compute_anchor_centers(
-    strides: List[int], input_size: Tuple[int, int], num_anchors: int
-) -> Dict[int, np.ndarray]:
+    strides: list[int], input_size: tuple[int, int], num_anchors: int
+) -> dict[int, np.ndarray]:
     """Compute the anchor centers for a given list of strides, input size, and number of
     anchors.
 
     @param strides: List of strides.
-    @type strides: List[int]
+    @type strides: list[int]
     @param input_size: Input size.
-    @type input_size: Tuple[int, int]
+    @type input_size: tuple[int, int]
     @param num_anchors: Number of anchors.
     @type num_anchors: int
     @return: Dictionary of anchor centers.
-    @rtype: Dict[int, np.ndarray]
+    @rtype: dict[int, np.ndarray]
     """
     anchor_centers_dict = {}
     for stride in strides:
@@ -45,7 +43,7 @@ def distance2bbox(points, distance, max_shape=None):
         bottom).
     @type distance: np.ndarray
     @param max_shape: Shape of the image.
-    @type max_shape: Tuple[int, int]
+    @type max_shape: tuple[int, int]
     @return: Decoded bboxes.
     @rtype: np.ndarray
     """
@@ -70,7 +68,7 @@ def distance2kps(points, distance, max_shape=None):
         bottom).
     @type distance: np.ndarray
     @param max_shape: Shape of the image.
-    @type max_shape: Tuple[int, int]
+    @type max_shape: tuple[int, int]
     @return: Decoded keypoints.
     @rtype: np.ndarray
     """

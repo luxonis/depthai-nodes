@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import List, Optional, Tuple
 
 
 class ViewportClipper:
@@ -19,15 +18,15 @@ class ViewportClipper:
         self._min_y = min_y
         self._max_y = max_y
 
-    def clip_rect(self, points: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+    def clip_rect(self, points: list[tuple[float, float]]) -> list[tuple[float, float]]:
         """Clips a rectangle defined by points to viewport.
 
         Uses Sutherland-Hodgman polygon clipping algorithm.
 
         @param points: List of points defining the polygon vertices
-        @type points: List[Tuple[float, float]]
+        @type points: list[tuple[float, float]]
         @return: List of points defining the clipped polygon vertices
-        @rtype: List[Tuple[float, float]]
+        @rtype: list[tuple[float, float]]
         """
         if not points:
             return []
@@ -45,8 +44,8 @@ class ViewportClipper:
         return clipped
 
     def _clip_against_boundary(
-        self, points: List[Tuple[float, float]], boundary: "_PointLocation"
-    ) -> List[Tuple[float, float]]:
+        self, points: list[tuple[float, float]], boundary: "_PointLocation"
+    ) -> list[tuple[float, float]]:
         if not points:
             return []
         result = []
@@ -71,17 +70,17 @@ class ViewportClipper:
         return result
 
     def _point_inside_boundary(
-        self, point: Tuple[float, float], boundary: "_PointLocation"
+        self, point: tuple[float, float], boundary: "_PointLocation"
     ) -> bool:
         location = self._get_location(point)
         return self._location_inside_boundary(location, boundary)
 
     def _intersect_boundary(
         self,
-        p1: Tuple[float, float],
-        p2: Tuple[float, float],
+        p1: tuple[float, float],
+        p2: tuple[float, float],
         boundary: "_PointLocation",
-    ) -> Optional[Tuple[float, float]]:
+    ) -> tuple[float, float] | None:
         location1 = self._get_location(p1)
         location2 = self._get_location(p2)
 
@@ -101,7 +100,7 @@ class ViewportClipper:
     ) -> bool:
         return not (location & boundary.value)
 
-    def clip_line(self, pt1: Tuple[float, float], pt2: Tuple[float, float]):
+    def clip_line(self, pt1: tuple[float, float], pt2: tuple[float, float]):
         """Clips a line segment to viewport (0,1).
 
         Uses Cohen-Sutherland line clipping algorithm.
@@ -139,8 +138,8 @@ class ViewportClipper:
                 location2 = self._get_location(pt2)
 
     def _calculate_intersection(
-        self, pt1: Tuple[float, float], pt2: Tuple[float, float], location: int
-    ) -> Tuple[float, float]:
+        self, pt1: tuple[float, float], pt2: tuple[float, float], location: int
+    ) -> tuple[float, float]:
         x1, y1 = pt1
         x2, y2 = pt2
         if location & self._PointLocation.TOP.value:
@@ -166,7 +165,7 @@ class ViewportClipper:
             return a1
         return a1 + (a2 - a1) * (b_target - b1) / (b2 - b1)
 
-    def _get_location(self, pt: Tuple[float, float]) -> int:
+    def _get_location(self, pt: tuple[float, float]) -> int:
         x, y = pt
         location = self._PointLocation.INSIDE.value
         if x < self._min_x:

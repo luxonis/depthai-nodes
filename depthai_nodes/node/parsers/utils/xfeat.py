@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -213,9 +213,9 @@ def detect_and_compute(
     heatmaps: np.ndarray,
     resize_rate_w: float,
     resize_rate_h: float,
-    input_size: Tuple[int, int],
+    input_size: tuple[int, int],
     top_k: int = 4096,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Detect and compute keypoints.
 
     @param feats: Features.
@@ -229,11 +229,11 @@ def detect_and_compute(
     @param resize_rate_h: Resize rate for height.
     @type resize_rate_h: float
     @param input_size: Input size.
-    @type input_size: Tuple[int, int]
+    @type input_size: tuple[int, int]
     @param top_k: Maximum number of keypoints to keep.
     @type top_k: int
     @return: List of dictionaries containing keypoints, scores, and descriptors.
-    @rtype: List[Dict[str, Any]]
+    @rtype: list[dict[str, Any]]
     """
     norm = np.linalg.norm(feats, axis=1, keepdims=True)
     feats = feats / norm
@@ -287,7 +287,7 @@ def detect_and_compute(
 
 def _match_mkpts(
     feats1: np.ndarray, feats2: np.ndarray, min_cossim: float = 0.62
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Match features.
 
     @param feats1: Features 1.
@@ -297,7 +297,7 @@ def _match_mkpts(
     @param min_cossim: Minimum cosine similarity.
     @type min_cossim: float
     @return: Matched features.
-    @rtype: Tuple[np.ndarray, np.ndarray]
+    @rtype: tuple[np.ndarray, np.ndarray]
     """
     cossim = feats1 @ feats2.T
     cossim_t = feats2 @ feats1.T
@@ -320,18 +320,18 @@ def _match_mkpts(
 
 
 def match(
-    result1: Dict[str, Any], result2: Dict[str, Any], min_cossim: float = -1
-) -> Tuple[np.ndarray, np.ndarray]:
+    result1: dict[str, Any], result2: dict[str, Any], min_cossim: float = -1
+) -> tuple[np.ndarray, np.ndarray]:
     """Match keypoints.
 
     @param result1: Result 1.
-    @type result1: Dict[str, Any]
+    @type result1: dict[str, Any]
     @param result2: Result 2.
-    @type result2: Dict[str, Any]
+    @type result2: dict[str, Any]
     @param min_cossim: Minimum cosine similarity.
     @type min_cossim: float
     @return: Matched keypoints.
-    @rtype: Tuple[np.ndarray, np.ndarray]
+    @rtype: tuple[np.ndarray, np.ndarray]
     """
     indexes1, indexes2 = _match_mkpts(
         result1["descriptors"],

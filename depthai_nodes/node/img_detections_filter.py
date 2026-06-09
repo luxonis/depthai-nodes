@@ -1,6 +1,5 @@
 import warnings
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
 
 import depthai as dai
 import numpy as np
@@ -12,16 +11,16 @@ from depthai_nodes.node.utils.nms import nms_detections
 
 @dataclass
 class _FilterCfg:
-    labels_to_keep: Optional[List[int]] = None
-    labels_to_reject: Optional[List[int]] = None
-    min_confidence: Optional[float] = None
-    min_area: Optional[float] = None
+    labels_to_keep: list[int] | None = None
+    labels_to_reject: list[int] | None = None
+    min_confidence: float | None = None
+    min_area: float | None = None
     nms_disabled: bool = True
     nms_conf_thresh: float = 0.3
     nms_iou_thresh: float = 0.4
     sort_desc: bool = True
     sort_disabled: bool = True
-    first_k: Optional[int] = None
+    first_k: int | None = None
 
 
 class ImgDetectionsFilter(BaseHostNode):
@@ -60,7 +59,7 @@ class ImgDetectionsFilter(BaseHostNode):
         )
         self._logger.debug("ImgDetectionsFilter initialized")
 
-    def setLabels(self, labels: List[int], keep: bool) -> None:
+    def setLabels(self, labels: list[int], keep: bool) -> None:
         """Deprecated wrapper for configuring label inclusion or exclusion."""
         warnings.warn(
             "setLabels() is deprecated; use keepLabels() or rejectLabels() instead.",
@@ -169,7 +168,7 @@ class ImgDetectionsFilter(BaseHostNode):
         self._cfg.sort_disabled = True
         return self
 
-    def takeFirstK(self, k: Optional[int]):
+    def takeFirstK(self, k: int | None):
         """Keep only the first ``k`` detections after filtering and sorting."""
         self._cfg.first_k = k
         return self
@@ -211,10 +210,10 @@ class ImgDetectionsFilter(BaseHostNode):
 
     def _filter_step(
         self,
-        detections: List[dai.ImgDetection | dai.SpatialImgDetection],
-    ) -> Tuple[List[dai.ImgDetection | dai.SpatialImgDetection], List[int]]:
+        detections: list[dai.ImgDetection | dai.SpatialImgDetection],
+    ) -> tuple[list[dai.ImgDetection | dai.SpatialImgDetection], list[int]]:
         filtered_detections = []
-        filtered_out_ixs: List[int] = []
+        filtered_out_ixs: list[int] = []
         for ix, detection in enumerate(detections):
             if self._cfg.labels_to_keep is not None:
                 if detection.label not in self._cfg.labels_to_keep:
@@ -241,8 +240,8 @@ class ImgDetectionsFilter(BaseHostNode):
         return filtered_detections, filtered_out_ixs
 
     def _nms_step(
-        self, detections: List[dai.ImgDetection | dai.SpatialImgDetection]
-    ) -> List[dai.ImgDetection | dai.SpatialImgDetection]:
+        self, detections: list[dai.ImgDetection | dai.SpatialImgDetection]
+    ) -> list[dai.ImgDetection | dai.SpatialImgDetection]:
         if self._cfg.nms_disabled:
             return detections
         return nms_detections(
@@ -252,8 +251,8 @@ class ImgDetectionsFilter(BaseHostNode):
         )
 
     def _sorting_step(
-        self, detections: List[dai.ImgDetection | dai.SpatialImgDetection]
-    ) -> List[dai.ImgDetection | dai.SpatialImgDetection]:
+        self, detections: list[dai.ImgDetection | dai.SpatialImgDetection]
+    ) -> list[dai.ImgDetection | dai.SpatialImgDetection]:
         if not self._cfg.sort_disabled:
             sorted_detections = sorted(
                 detections, key=lambda x: x.confidence, reverse=self._cfg.sort_desc
@@ -262,7 +261,7 @@ class ImgDetectionsFilter(BaseHostNode):
         return detections
 
     @staticmethod
-    def _update_segmentation_mask(msg_new, filtered_out_ixs: List[int]):
+    def _update_segmentation_mask(msg_new, filtered_out_ixs: list[int]):
         mask = msg_new.getCvSegmentationMask()
         if mask is not None:
             mask = np.where(np.isin(mask, filtered_out_ixs), 255, mask)

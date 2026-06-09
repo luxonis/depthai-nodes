@@ -1,7 +1,6 @@
 import logging
 import os
 from enum import Enum
-from typing import Optional
 
 
 class LogLevel(Enum):
@@ -12,14 +11,14 @@ class LogLevel(Enum):
     WARN = "WARN"
 
 
-def get_logger(name: Optional[str] = None) -> logging.Logger:
+def get_logger(name: str | None = None) -> logging.Logger:
     logger = logging.getLogger("depthai-nodes")
     if name:
         logger = logger.getChild(name)
     return logger
 
 
-def setup_logging(level: Optional[str] = None, file: Optional[str] = None):
+def setup_logging(level: str | None = None, file: str | None = None):
     """Globally configures logging for depthai_nodes package.
 
     @type level: str or None
@@ -57,7 +56,7 @@ def setup_logging(level: Optional[str] = None, file: Optional[str] = None):
     logger.info(f"Using log level: {used_level}")
 
 
-def get_log_level(level_str: Optional[str]) -> Optional[LogLevel]:
+def get_log_level(level_str: str | None) -> LogLevel | None:
     try:
         if level_str is None:
             return None

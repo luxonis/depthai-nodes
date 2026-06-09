@@ -1,5 +1,4 @@
 import copy
-from typing import List, Optional
 
 import depthai as dai
 import numpy as np
@@ -25,9 +24,9 @@ class Classifications(dai.Buffer):
     def __init__(self):
         """Initializes the Classifications object."""
         dai.Buffer.__init__(self)
-        self._classes: List[str] = []
+        self._classes: list[str] = []
         self._scores: NDArray[np.float32] = np.array([])
-        self._transformation: Optional[dai.ImgTransformation] = None
+        self._transformation: dai.ImgTransformation | None = None
 
     def copy(self):
         """Creates a new instance of the Classifications class and copies the
@@ -46,24 +45,24 @@ class Classifications(dai.Buffer):
         return new_obj
 
     @property
-    def classes(self) -> List:
+    def classes(self) -> list:
         """Returns the list of classes.
 
         @return: List of classes.
-        @rtype: List[str]
+        @rtype: list[str]
         """
         return self._classes
 
     @classes.setter
-    def classes(self, value: List[str]):
+    def classes(self, value: list[str]):
         """Sets the classes.
 
         @param value: A list of class names.
-        @type value: List[str]
+        @type value: list[str]
         @raise TypeError: If value is not a list.
         @raise ValueError: If each element is not of type string.
         """
-        if not isinstance(value, List):
+        if not isinstance(value, list):
             raise TypeError(f"Classes must be a list, instead got {type(value)}.")
         if not all(isinstance(class_name, str) for class_name in value):
             raise ValueError("Classes must be a list of strings.")
@@ -116,7 +115,7 @@ class Classifications(dai.Buffer):
         return self._scores[0]
 
     @property
-    def transformation(self) -> Optional[dai.ImgTransformation]:
+    def transformation(self) -> dai.ImgTransformation | None:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.
@@ -125,7 +124,7 @@ class Classifications(dai.Buffer):
         return self._transformation
 
     @transformation.setter
-    def transformation(self, value: Optional[dai.ImgTransformation]):
+    def transformation(self, value: dai.ImgTransformation | None):
         """Sets the Image Transformation object.
 
         @param value: The Image Transformation object.
@@ -140,7 +139,7 @@ class Classifications(dai.Buffer):
                 )
         self._transformation = value
 
-    def setTransformation(self, transformation: Optional[dai.ImgTransformation]):
+    def setTransformation(self, transformation: dai.ImgTransformation | None):
         """Sets the Image Transformation object.
 
         @param transformation: The Image Transformation object.
@@ -149,7 +148,7 @@ class Classifications(dai.Buffer):
         """
         self.transformation = transformation
 
-    def getTransformation(self) -> Optional[dai.ImgTransformation]:
+    def getTransformation(self) -> dai.ImgTransformation | None:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.

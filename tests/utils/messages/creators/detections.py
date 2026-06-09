@@ -1,5 +1,4 @@
 from datetime import timedelta
-from typing import List
 
 import depthai as dai
 import numpy as np
@@ -8,7 +7,7 @@ from .constants import DETECTIONS
 
 
 def create_img_detection(
-    bbox: List[float] = DETECTIONS["bboxes"][0],
+    bbox: list[float] = DETECTIONS["bboxes"][0],
     label: int = DETECTIONS["labels"][0],
     score: float = DETECTIONS["scores"][0],
 ):
@@ -38,7 +37,7 @@ def create_img_detections(
 
     @param dets: List of detection dicts, each containing "bbox" ([xmin, ymin, xmax,
         ymax]), "label" (int), and "confidence" (float).
-    @type dets: List[Dict]
+    @type dets: list[dict]
     @return: The created dai.ImgDetections object.
     @rtype: dai.ImgDetections
     """

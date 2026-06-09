@@ -1,4 +1,4 @@
-from typing import Generic, List, TypeVar
+from typing import Generic, TypeVar
 
 import depthai as dai
 
@@ -15,11 +15,11 @@ class GatheredData(Collection[TGathered], Generic[TReference, TGathered]):
     ----------
     reference_data: TReference
         Data that is used to determine how many of TGathered to gather.
-    items: List[TGathered]
+    items: list[TGathered]
         List of gathered data.
     """
 
-    def __init__(self, reference_data: TReference, items: List[TGathered]) -> None:
+    def __init__(self, reference_data: TReference, items: list[TGathered]) -> None:
         """Initializes the GatheredData object."""
         super().__init__(items=items)
         self.reference_data = reference_data

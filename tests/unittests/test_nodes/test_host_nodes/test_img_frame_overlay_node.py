@@ -68,7 +68,7 @@ def test_processing(
         ran_once = True
         if duration is not None and time.time() - last_log_time > LOG_INTERVAL:
             print(
-                f"Test running... {time.time()-start_time:.1f}s elapsed, {duration-time.time()+start_time:.1f}s remaining"
+                f"Test running... {time.time() - start_time:.1f}s elapsed, {duration - time.time() + start_time:.1f}s remaining"
             )
             last_log_time = time.time()
         q_background.send(img_frame1)

@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict
+from typing import Any
 
 import depthai as dai
 
@@ -54,12 +54,12 @@ class BaseParser(dai.node.ThreadedHostNode, metaclass=BaseMeta):
         self._out = node
 
     @abstractmethod
-    def build(self, head_config: Dict[str, Any]) -> "BaseParser":
+    def build(self, head_config: dict[str, Any]) -> "BaseParser":
         """Configures the parser based on the specified head configuration.
 
         @param head_config: A dictionary containing configuration details relevant to
             the parser, including parameters and settings required for output parsing.
-        @type head_config: Dict[str, Any]
+        @type head_config: dict[str, Any]
         @return: The parser object with the head configuration set.
         @rtype: BaseParser
         """

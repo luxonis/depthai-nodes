@@ -1,6 +1,5 @@
 import time
 from enum import Enum
-from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -53,7 +52,7 @@ def non_max_suppression(
     prediction: np.ndarray,
     conf_thres: float = 0.5,
     iou_thres: float = 0.45,
-    classes: Optional[List] = None,
+    classes: list | None = None,
     num_classes: int = 1,
     agnostic: bool = False,
     multi_label: bool = False,
@@ -63,7 +62,7 @@ def non_max_suppression(
     max_wh: int = 7680,
     kpts_mode: bool = False,
     det_mode: bool = False,
-) -> List[np.ndarray]:
+) -> list[np.ndarray]:
     """Performs Non-Maximum Suppression (NMS) on inference results.
 
     @param prediction: Prediction from the model, shape = (batch_size, boxes, xy+wh+...)
@@ -73,7 +72,7 @@ def non_max_suppression(
     @param iou_thres: Intersection over union threshold.
     @type iou_thres: float
     @param classes: For filtering by classes.
-    @type classes: Optional[List]
+    @type classes: list | None
     @param num_classes: Number of classes.
     @type num_classes: int
     @param agnostic: Runs NMS on all boxes together rather than per class if True.
@@ -93,7 +92,7 @@ def non_max_suppression(
     @param det_mode: Detection only mode. If True, the output will only contain bbox detections.
     @type det_mode: bool
     @return: An array of detections. If det_mode is False, the detections may include kpts or segmentation outputs.
-    @rtype: List[np.ndarray]
+    @rtype: list[np.ndarray]
     """
     bs = prediction.shape[0]  # batch size
 
@@ -190,9 +189,9 @@ def parse_yolo_output(
     out: np.ndarray,
     stride: int,
     num_outputs: int,
-    anchors: Optional[np.ndarray] = None,
+    anchors: np.ndarray | None = None,
     head_id: int = -1,
-    kpts: Optional[np.ndarray] = None,
+    kpts: np.ndarray | None = None,
     det_mode: bool = False,
     subtype: YOLOSubtype = YOLOSubtype.DEFAULT,
 ) -> np.ndarray:
@@ -205,11 +204,11 @@ def parse_yolo_output(
     @param num_outputs: Number of outputs of the model.
     @type num_outputs: int
     @param anchors: Anchors for the given head.
-    @type anchors: Optional[np.ndarray]
+    @type anchors: np.ndarray | None
     @param head_id: Head ID.
     @type head_id: int
     @param kpts: A single output of keypoints for the given channel.
-    @type kpts: Optional[np.ndarray]
+    @type kpts: np.ndarray | None
     @param det_mode: Detection only mode.
     @type det_mode: bool
     @param subtype: YOLO version.
@@ -308,8 +307,8 @@ def parse_yolo_output(
 
 
 def parse_kpts(
-    kpts: np.ndarray, n_keypoints: int, img_shape: Tuple[int, int]
-) -> List[Tuple[float, float, float]]:
+    kpts: np.ndarray, n_keypoints: int, img_shape: tuple[int, int]
+) -> list[tuple[float, float, float]]:
     """Parse keypoints.
 
     @param kpts: Result keypoints.
@@ -317,9 +316,9 @@ def parse_kpts(
     @param n_keypoints: Number of keypoints.
     @type n_keypoints: int
     @param img_shape: Image shape of the model input in (height, width) format.
-    @type img_shape: Tuple[int, int]
+    @type img_shape: tuple[int, int]
     @return: Parsed keypoints.
-    @rtype: List[Tuple[float, float, float]]
+    @rtype: list[tuple[float, float, float]]
     """
     h, w = img_shape
     kps = []
@@ -337,8 +336,8 @@ def _apply_conf_and_topk(
     cls_ids: np.ndarray,
     conf_threshold: float,
     max_det: int,
-    auxiliary: Optional[np.ndarray] = None,
-) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    auxiliary: np.ndarray | None = None,
+) -> tuple[np.ndarray, np.ndarray | None]:
     """Apply confidence threshold and top-k filtering.
 
     @param boxes: Bounding boxes array (A, 4).
@@ -353,9 +352,9 @@ def _apply_conf_and_topk(
     @type max_det: int
     @param auxiliary: generic parameter for task-specific data (mask coefficients for
         segmentation and keypoints for pose) to be filtered according to the detections
-    @type auxiliary: Optional[np.ndarray]
+    @type auxiliary: np.ndarray | None
     @return: Tuple of (results array (K, 6), filtered auxiliary or None).
-    @rtype: Tuple[np.ndarray, Optional[np.ndarray]]
+    @rtype: tuple[np.ndarray, np.ndarray | None]
     """
     keep = conf >= conf_threshold
 
@@ -395,8 +394,8 @@ def decode_yolo26(
     raw: np.ndarray,
     conf_threshold: float,
     max_det: int,
-    extra_raw: Optional[np.ndarray] = None,
-) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    extra_raw: np.ndarray | None = None,
+) -> tuple[np.ndarray, np.ndarray | None]:
     """Decode YOLO26 output for detection, segmentation, or pose.
 
     YOLO26 end2end output is already decoded (xyxy in pixels) with a pre-computed
@@ -413,9 +412,9 @@ def decode_yolo26(
     @type max_det: int
     @param extra_raw: Optional auxiliary tensor (N, A, M) such as mask coefficients or
         keypoints. When provided the kept rows are returned as the second element.
-    @type extra_raw: Optional[np.ndarray]
+    @type extra_raw: np.ndarray | None
     @return: Tuple of (detection results (K, 6), kept auxiliary data (K, M) or None).
-    @rtype: Tuple[np.ndarray, Optional[np.ndarray]]
+    @rtype: tuple[np.ndarray, np.ndarray | None]
     """
     det_results = raw[0]  # (A, 5+nc)
     extra = extra_raw[0] if extra_raw is not None else None
@@ -431,10 +430,10 @@ def decode_yolo26(
 
 
 def decode_yolo_output(
-    yolo_outputs: List[np.ndarray],
-    strides: List[int],
-    anchors: Optional[np.ndarray] = None,
-    kpts: Optional[List[np.ndarray]] = None,
+    yolo_outputs: list[np.ndarray],
+    strides: list[int],
+    anchors: np.ndarray | None = None,
+    kpts: list[np.ndarray] | None = None,
     conf_thres: float = 0.5,
     iou_thres: float = 0.45,
     num_classes: int = 1,
@@ -445,13 +444,13 @@ def decode_yolo_output(
     """Decode the output of an YOLO instance segmentation or pose estimation model.
 
     @param yolo_outputs: List of YOLO outputs.
-    @type yolo_outputs: List[np.ndarray]
+    @type yolo_outputs: list[np.ndarray]
     @param strides: List of strides.
-    @type strides: List[int]
+    @type strides: list[int]
     @param anchors: An optional array of anchors.
-    @type anchors: Optional[np.ndarray]
+    @type anchors: np.ndarray | None
     @param kpts: An optional list of keypoints.
-    @type kpts: Optional[List[np.ndarray]]
+    @type kpts: list[np.ndarray] | None
     @param conf_thres: Confidence threshold.
     @type conf_thres: float
     @param iou_thres: Intersection over union threshold.

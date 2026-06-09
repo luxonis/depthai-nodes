@@ -1,11 +1,9 @@
-from typing import List, Tuple
-
 import numpy as np
 
 
 def decode_scores_and_points(
     tpMap: np.ndarray, heat: np.ndarray, topk_n: int
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Decode the scores and points from the neural network output tensors. Used for
     MLSD model.
 
@@ -16,7 +14,7 @@ def decode_scores_and_points(
     @param topk_n: Number of top candidates to keep.
     @type topk_n: int
     @return: Detected points, confidence scores for the detected points, and vector map.
-    @rtype: Tuple[np.ndarray, np.ndarray, np.ndarray]
+    @rtype: tuple[np.ndarray, np.ndarray, np.ndarray]
     """
     _, _, h, w = tpMap.shape
     displacement = tpMap[0, 1:5]  # shape (4, h, w)
@@ -48,7 +46,7 @@ def get_lines(
     score_thr: float,
     dist_thr: float,
     input_size: int = 512,
-) -> Tuple[np.ndarray, List[float]]:
+) -> tuple[np.ndarray, list[float]]:
     """Get lines from the detected points and scores. The lines are filtered by the
     score threshold and distance threshold. Used for MLSD model.
 
@@ -65,7 +63,7 @@ def get_lines(
     @param input_size: Input size of the model.
     @type input_size: int
     @return: Detected lines and their confidence scores.
-    @rtype: Tuple[np.ndarray, List[float]]
+    @rtype: tuple[np.ndarray, list[float]]
     """
     # Extract coordinates for all points
     ys, xs = pts[:, 0], pts[:, 1]

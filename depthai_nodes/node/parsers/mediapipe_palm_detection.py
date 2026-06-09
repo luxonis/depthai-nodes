@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 import cv2
 import depthai as dai
@@ -19,8 +19,8 @@ class MPPalmDetectionParser(DetectionParser):
 
     Attributes
     ----------
-    output_layer_names: List[str]
-        Names of the output layers relevant to the parser.
+    output_layer_names: list[str]
+    Names of the output layers relevant to the parser.
     conf_threshold : float
         Confidence score threshold for detected hands.
     iou_threshold : float
@@ -44,7 +44,7 @@ class MPPalmDetectionParser(DetectionParser):
 
     def __init__(
         self,
-        output_layer_names: List[str] = None,
+        output_layer_names: list[str] = None,
         conf_threshold: float = 0.5,
         iou_threshold: float = 0.5,
         max_det: int = 100,
@@ -53,7 +53,7 @@ class MPPalmDetectionParser(DetectionParser):
         """Initializes the parser node.
 
         @param output_layer_names: Names of the output layers relevant to the parser.
-        @type output_layer_names: List[str]
+        @type output_layer_names: list[str]
         @param conf_threshold: Confidence score threshold for detected hands.
         @type conf_threshold: float
         @param iou_threshold: Non-maximum suppression threshold.
@@ -77,12 +77,12 @@ class MPPalmDetectionParser(DetectionParser):
             f"MPPalmDetectionParser initialized with output_layer_names={output_layer_names}, conf_threshold={conf_threshold}, iou_threshold={iou_threshold}, max_det={max_det}, scale={scale}"
         )
 
-    def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
+    def setOutputLayerNames(self, output_layer_names: list[str]) -> None:
         """Sets the output layer name(s) for the parser.
 
         @param output_layer_names: The name of the output layer(s) from which the scores
             are extracted.
-        @type output_layer_names: List[str]
+        @type output_layer_names: list[str]
         """
         if not isinstance(output_layer_names, list):
             raise ValueError("Output layer name must be a list.")
@@ -108,12 +108,12 @@ class MPPalmDetectionParser(DetectionParser):
 
     def build(
         self,
-        head_config: Dict[str, Any],
+        head_config: dict[str, Any],
     ) -> "MPPalmDetectionParser":
         """Configures the parser.
 
         @param head_config: The head configuration for the parser.
-        @type head_config: Dict[str, Any]
+        @type head_config: dict[str, Any]
         @return: The parser object with the head configuration set.
         @rtype: MPPalmDetectionParser
         """

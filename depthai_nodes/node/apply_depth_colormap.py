@@ -1,5 +1,3 @@
-from typing import Tuple, Union
-
 import cv2
 import depthai as dai
 import numpy as np
@@ -18,7 +16,7 @@ class ApplyDepthColormap(BaseHostNode):
 
     Parameters
     ----------
-    colormapValue : Union[int, np.ndarray], optional
+    colormapValue : int | np.ndarray, optional
         OpenCV colormap enum (e.g. cv2.COLORMAP_JET) or a custom OpenCV-compatible
         colormap LUT. Default is cv2.COLORMAP_JET.
     pLow : float, optional
@@ -39,7 +37,7 @@ class ApplyDepthColormap(BaseHostNode):
 
     def __init__(
         self,
-        colormapValue: Union[int, np.ndarray] = cv2.COLORMAP_JET,
+        colormapValue: int | np.ndarray = cv2.COLORMAP_JET,
         pLow: float = 2.0,
         pHigh: float = 98.0,
     ) -> None:
@@ -56,12 +54,12 @@ class ApplyDepthColormap(BaseHostNode):
             self._p_high,
         )
 
-    def setColormap(self, colormapValue: Union[int, np.ndarray]) -> None:
+    def setColormap(self, colormapValue: int | np.ndarray) -> None:
         """Set the color mapping applied to depth images.
 
         @param colormapValue: OpenCV colormap enum value or a custom OpenCV-compatible
             LUT.
-        @type colormapValue: Union[int, np.ndarray]
+        @type colormapValue: int | np.ndarray
         """
         self._colormap = self._make_colormap(colormapValue)
         if isinstance(colormapValue, int):
@@ -121,7 +119,7 @@ class ApplyDepthColormap(BaseHostNode):
         self._logger.debug("Message sent successfully")
 
     @staticmethod
-    def _validate_percentile_range(low: float, high: float) -> Tuple[float, float]:
+    def _validate_percentile_range(low: float, high: float) -> tuple[float, float]:
         low = float(low)
         high = float(high)
         if not (0.0 <= low < high <= 100.0):
@@ -129,7 +127,7 @@ class ApplyDepthColormap(BaseHostNode):
         return low, high
 
     @staticmethod
-    def _make_colormap(colormap_value: Union[int, np.ndarray]) -> np.ndarray:
+    def _make_colormap(colormap_value: int | np.ndarray) -> np.ndarray:
         if isinstance(colormap_value, int):
             colormap = cv2.applyColorMap(np.arange(256, dtype=np.uint8), colormap_value)
             return colormap
@@ -157,7 +155,7 @@ class ApplyDepthColormap(BaseHostNode):
 
     def _compute_normalization_bounds(
         self, valid_depth_values: np.ndarray
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         low = float(np.percentile(valid_depth_values, self._p_low))
         high = float(np.percentile(valid_depth_values, self._p_high))
         return low, high

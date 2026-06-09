@@ -1,18 +1,16 @@
-from typing import List, Tuple
-
 import numpy as np
 
 from depthai_nodes.node.parsers.utils import softmax
 
 
 def decode_ufld(
-    anchors: List[int],
+    anchors: list[int],
     griding_num: int,
     cls_num_per_lane: int,
     input_width: int,
     input_height: int,
     y: np.ndarray,
-) -> List[List[Tuple[int, int]]]:
+) -> list[list[tuple[int, int]]]:
     col_sample = np.linspace(0, input_width - 1, griding_num)
     col_sample_w = col_sample[1] - col_sample[0]
 

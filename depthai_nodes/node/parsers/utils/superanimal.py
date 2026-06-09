@@ -7,7 +7,7 @@ def get_top_values(heatmap):
     @param heatmap: Heatmap tensor.
     @type heatmap: np.ndarray
     @return: Y and X coordinates of the top values.
-    @rtype: Tuple[np.ndarray, np.ndarray]
+    @rtype: tuple[np.ndarray, np.ndarray]
     """
     batchsize, ny, nx, num_joints = heatmap.shape
     heatmap_flat = heatmap.reshape(batchsize, nx * ny, num_joints)
@@ -27,7 +27,7 @@ def get_pose_prediction(heatmap, locref, scale_factors):
     @param locref: Locref tensor.
     @type locref: np.ndarray
     @param scale_factors: Scale factors for the x and y axes.
-    @type scale_factors: Tuple[float, float]
+    @type scale_factors: tuple[float, float]
     @return: Pose prediction.
     @rtype: np.ndarray
     """

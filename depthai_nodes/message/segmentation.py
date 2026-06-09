@@ -1,5 +1,4 @@
 import copy
-from typing import Optional
 
 import cv2
 import depthai as dai
@@ -24,7 +23,7 @@ class SegmentationMask(dai.Buffer):
         """Initializes the SegmentationMask object."""
         super().__init__()
         self._mask: NDArray[np.int16] = np.empty(0, dtype=np.int16)
-        self._transformation: Optional[dai.ImgTransformation] = None
+        self._transformation: dai.ImgTransformation | None = None
 
     def copy(self):
         """Creates a new instance of the SegmentationMask class and copies the
@@ -67,12 +66,12 @@ class SegmentationMask(dai.Buffer):
             raise ValueError("Mask must be 2D or empty.")
         if value.dtype != np.int16:
             raise ValueError("Mask must be an array of int16.")
-        if np.any((value < -1)):
+        if np.any(value < -1):
             raise ValueError("Mask must be an array of integers larger or equal to -1.")
         self._mask = value
 
     @property
-    def transformation(self) -> Optional[dai.ImgTransformation]:
+    def transformation(self) -> dai.ImgTransformation | None:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.
@@ -81,7 +80,7 @@ class SegmentationMask(dai.Buffer):
         return self._transformation
 
     @transformation.setter
-    def transformation(self, value: Optional[dai.ImgTransformation]):
+    def transformation(self, value: dai.ImgTransformation | None):
         """Sets the Image Transformation object.
 
         @param value: The Image Transformation object.
@@ -96,7 +95,7 @@ class SegmentationMask(dai.Buffer):
                 )
         self._transformation = value
 
-    def setTransformation(self, transformation: Optional[dai.ImgTransformation]):
+    def setTransformation(self, transformation: dai.ImgTransformation | None):
         """Sets the Image Transformation object.
 
         @param transformation: The Image Transformation object.
@@ -105,7 +104,7 @@ class SegmentationMask(dai.Buffer):
         """
         self.transformation = transformation
 
-    def getTransformation(self) -> Optional[dai.ImgTransformation]:
+    def getTransformation(self) -> dai.ImgTransformation | None:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.

@@ -1,5 +1,3 @@
-from typing import List, Optional, Tuple, Union
-
 import depthai as dai
 import numpy as np
 
@@ -7,11 +5,11 @@ from depthai_nodes.message.keypoints import Keypoints
 
 
 def create_keypoints_message(
-    keypoints: Union[np.ndarray, List[List[float]]],
-    scores: Union[np.ndarray, List[float], None] = None,
-    confidence_threshold: Optional[float] = None,
-    label_names: Optional[List[str]] = None,
-    edges: Optional[List[Tuple[int, int]]] = None,
+    keypoints: np.ndarray | list[list[float]],
+    scores: np.ndarray | list[float] | None = None,
+    confidence_threshold: float | None = None,
+    label_names: list[str] | None = None,
+    edges: list[tuple[int, int]] | None = None,
 ) -> Keypoints:
     """Create a native DepthAI keypoints message."""
 
@@ -28,9 +26,7 @@ def create_keypoints_message(
 
         if len(keypoints) != len(scores):
             raise ValueError(
-                "Keypoints and scores should have the same length. Got {} keypoints and {} scores.".format(
-                    len(keypoints), len(scores)
-                )
+                f"Keypoints and scores should have the same length. Got {len(keypoints)} keypoints and {len(scores)} scores."
             )
 
         if not all(isinstance(score, (float, np.floating)) for score in scores):

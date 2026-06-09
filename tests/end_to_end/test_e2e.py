@@ -2,7 +2,6 @@ import ast
 import os
 import subprocess
 import time
-from typing import List
 
 import pytest
 
@@ -23,7 +22,7 @@ def platform(request):
 
 
 def get_parametrized_values(
-    models: List[str], nn_archive_paths: List[str], platform: str
+    models: list[str], nn_archive_paths: list[str], platform: str
 ):
     test_cases = []
     rvc2_ip = os.getenv("RVC2_IP", "")

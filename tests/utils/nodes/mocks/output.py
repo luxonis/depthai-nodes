@@ -1,5 +1,3 @@
-from typing import List, Tuple
-
 import depthai as dai
 
 from .queue import OutputQueueMock
@@ -9,13 +7,13 @@ class OutputMock:
     """Output class to simulate the depthai output node."""
 
     def __init__(self):
-        self._datatypes: List[Tuple[dai.DatatypeEnum, bool]] = []
-        self._queues: List[OutputQueueMock] = []
+        self._datatypes: list[tuple[dai.DatatypeEnum, bool]] = []
+        self._queues: list[OutputQueueMock] = []
 
-    def setPossibleDatatypes(self, datatypes: List[Tuple[dai.DatatypeEnum, bool]]):
+    def setPossibleDatatypes(self, datatypes: list[tuple[dai.DatatypeEnum, bool]]):
         self._datatypes = datatypes
 
-    def getPossibleDatatypes(self) -> List[Tuple[dai.DatatypeEnum, bool]]:
+    def getPossibleDatatypes(self) -> list[tuple[dai.DatatypeEnum, bool]]:
         return self._datatypes
 
     def send(self, message):

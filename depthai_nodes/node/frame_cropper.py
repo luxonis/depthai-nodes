@@ -1,5 +1,4 @@
 from string import Template
-from typing import Optional, Tuple
 
 import depthai as dai
 
@@ -126,16 +125,16 @@ class FrameCropper(BaseThreadedHostNode):
         super().__init__()
         self._cropper_image_manip = self._pipeline.create(dai.node.ImageManip)
         self._version_selected = False
-        self._output_size: Optional[Tuple[int, int]] = None  # width, height
+        self._output_size: tuple[int, int] | None = None  # width, height
 
         # when fromImgDetections is used script node can work on ImgDetections directly
-        self._script: Optional[dai.node.Script] = None
-        self._input_img_detections: Optional[dai.Node.Output] = None
-        self._padding: Optional[float] = None
-        self._resize_mode: Optional[dai.ImageManipConfig.ResizeMode] = None
+        self._script: dai.node.Script | None = None
+        self._input_img_detections: dai.Node.Output | None = None
+        self._padding: float | None = None
+        self._resize_mode: dai.ImageManipConfig.ResizeMode | None = None
 
         # when fromManipConfigs is used, script node receives MessageGroup of precomputed configs
-        self._input_manip_configs: Optional[dai.Node.Output] = None
+        self._input_manip_configs: dai.Node.Output | None = None
         self._wait_for_cfg = False
         self._logger.debug("FrameCropper initialized")
 
@@ -147,7 +146,7 @@ class FrameCropper(BaseThreadedHostNode):
     def fromImgDetections(
         self,
         inputImgDetections: dai.Node.Output,
-        outputSize: Tuple[int, int],
+        outputSize: tuple[int, int],
         resizeMode: dai.ImageManipConfig.ResizeMode = dai.ImageManipConfig.ResizeMode.CENTER_CROP,
         padding: float = 0.0,
     ) -> "FrameCropper":

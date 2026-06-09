@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import depthai as dai
 
@@ -40,11 +40,11 @@ class EmbeddingsParser(BaseParser):
         self.output_layer_name = output_layer_name
         self._logger.debug(f"Output layer name set to {self.output_layer_name}")
 
-    def build(self, head_config: Dict[str, Any]) -> "EmbeddingsParser":
+    def build(self, head_config: dict[str, Any]) -> "EmbeddingsParser":
         """Sets the head configuration for the parser.
 
         @param head_config: The head configuration for the parser.
-        @type head_config: Dict[str, Any]
+        @type head_config: dict[str, Any]
         @return: The parser object with the head configuration set.
         @rtype: EmbeddingsParser
         """

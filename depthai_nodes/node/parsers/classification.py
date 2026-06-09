@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 import depthai as dai
 import numpy as np
@@ -17,7 +17,7 @@ class ClassificationParser(BaseParser):
     ----------
     output_layer_name: str
         Name of the output layer relevant to the parser.
-    classes : List[str]
+    classes : list[str]
         List of class names to be used for linking with their respective scores.
         Expected to be in the same order as Neural Network's output. If not provided, the message will only return sorted scores.
     is_softmax : bool = True
@@ -33,7 +33,7 @@ class ClassificationParser(BaseParser):
     def __init__(
         self,
         output_layer_name: str = "",
-        classes: List[str] = None,
+        classes: list[str] = None,
         is_softmax: bool = True,
     ) -> None:
         """Initializes the parser node.
@@ -43,7 +43,7 @@ class ClassificationParser(BaseParser):
         @param classes: List of class names to be used for linking with their respective
             scores. Expected to be in the same order as Neural Network's output. If not
             provided, the message will only return sorted scores.
-        @type classes: List[str]
+        @type classes: list[str]
         @param is_softmax: If False, the scores are converted to probabilities using
             softmax function.
         @type is_softmax: bool
@@ -68,12 +68,12 @@ class ClassificationParser(BaseParser):
         self.output_layer_name = output_layer_name
         self._logger.debug(f"Output layer name set to '{self.output_layer_name}'")
 
-    def setClasses(self, classes: List[str]) -> None:
+    def setClasses(self, classes: list[str]) -> None:
         """Sets the class names for the classification model.
 
         @param classes: List of class names to be used for linking with their respective
             scores.
-        @type classes: List[str]
+        @type classes: list[str]
         """
         if not isinstance(classes, list):
             raise ValueError("classes must be a list.")
@@ -98,12 +98,12 @@ class ClassificationParser(BaseParser):
 
     def build(
         self,
-        head_config: Dict[str, Any],
+        head_config: dict[str, Any],
     ) -> "ClassificationParser":
         """Configures the parser.
 
         @param head_config: The head configuration for the parser.
-        @type head_config: Dict[str, Any]
+        @type head_config: dict[str, Any]
         @return: The parser object with the head configuration set.
         @rtype: ClassificationParser
         """

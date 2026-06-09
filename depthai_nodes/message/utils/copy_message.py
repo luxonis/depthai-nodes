@@ -1,5 +1,4 @@
 import copy
-from typing import Union
 
 import depthai as dai
 
@@ -51,8 +50,8 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         return img_frame_copy
 
     def _copy_img_detection(
-        img_det: Union[dai.ImgDetection, dai.SpatialImgDetection],
-    ) -> Union[dai.ImgDetection, dai.SpatialImgDetection]:
+        img_det: dai.ImgDetection | dai.SpatialImgDetection,
+    ) -> dai.ImgDetection | dai.SpatialImgDetection:
         assert isinstance(img_det, (dai.ImgDetection, dai.SpatialImgDetection))
         img_det_copy = _copy_metadata(img_det)
         assert isinstance(img_det_copy, (dai.ImgDetection, dai.SpatialImgDetection))
@@ -68,8 +67,8 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         return img_det_copy
 
     def _copy_img_detections(
-        img_dets: Union[dai.ImgDetections, dai.SpatialImgDetections],
-    ) -> Union[dai.ImgDetections, dai.SpatialImgDetections]:
+        img_dets: dai.ImgDetections | dai.SpatialImgDetections,
+    ) -> dai.ImgDetections | dai.SpatialImgDetections:
         assert isinstance(img_dets, (dai.ImgDetections, dai.SpatialImgDetections))
         img_dets_copy = _copy_metadata(img_dets)
         if isinstance(img_dets, dai.ImgDetections):

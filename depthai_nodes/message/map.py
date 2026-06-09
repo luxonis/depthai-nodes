@@ -1,5 +1,4 @@
 import copy
-from typing import Optional
 
 import cv2
 import depthai as dai
@@ -28,7 +27,7 @@ class Map2D(dai.Buffer):
         self._map: NDArray[np.float32] = np.array([])
         self._width: int = None
         self._height: int = None
-        self._transformation: Optional[dai.ImgTransformation] = None
+        self._transformation: dai.ImgTransformation | None = None
 
     def copy(self):
         """Creates a new instance of the Map2D class and copies the attributes.
@@ -91,7 +90,7 @@ class Map2D(dai.Buffer):
         return self._height
 
     @property
-    def transformation(self) -> Optional[dai.ImgTransformation]:
+    def transformation(self) -> dai.ImgTransformation | None:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.
@@ -100,7 +99,7 @@ class Map2D(dai.Buffer):
         return self._transformation
 
     @transformation.setter
-    def transformation(self, value: Optional[dai.ImgTransformation]):
+    def transformation(self, value: dai.ImgTransformation | None):
         """Sets the Image Transformation object.
 
         @param value: The Image Transformation object.
@@ -124,7 +123,7 @@ class Map2D(dai.Buffer):
         """
         self.transformation = transformation
 
-    def getTransformation(self) -> Optional[dai.ImgTransformation]:
+    def getTransformation(self) -> dai.ImgTransformation | None:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.

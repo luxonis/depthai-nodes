@@ -1,16 +1,14 @@
-from typing import List, Union
-
 import depthai as dai
 
 from depthai_nodes import Cluster, Clusters
 
 
-def create_cluster_message(clusters: List[List[List[Union[float, int]]]]) -> Clusters:
+def create_cluster_message(clusters: list[list[list[float | int]]]) -> Clusters:
     """Create a DepthAI message for clusters.
 
     @param clusters: List of clusters. Each cluster is a list of points with x and y
         coordinates.
-    @type clusters: List[List[List[Union[float, int]]]]
+    @type clusters: list[list[list[float | int]]]
     @return: Clusters message containing the detected clusters.
     @rtype: Clusters
     @raise TypeError: If the clusters are not a list.

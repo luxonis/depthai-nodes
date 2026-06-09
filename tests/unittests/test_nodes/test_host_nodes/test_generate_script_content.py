@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 import depthai as dai
 import pytest
 
@@ -19,12 +17,10 @@ def resize_height():
 class ImageManipConfig(dai.ImageManipConfig):
     def __init__(self):
         super().__init__()
-        self._output_size: Optional[tuple[int, int]] = None
-        self._crop_rotated_rect: Optional[dai.RotatedRect] = None
+        self._output_size: tuple[int, int] | None = None
+        self._crop_rotated_rect: dai.RotatedRect | None = None
 
-    def setOutputSize(
-        self, w, h, mode: Optional[dai.ImageManipConfig.ResizeMode] = None
-    ):
+    def setOutputSize(self, w, h, mode: dai.ImageManipConfig.ResizeMode | None = None):
         self._output_size = w, h
         if mode:
             return super().setOutputSize(w, h, mode)
@@ -62,7 +58,7 @@ class Node:
     OUTPUT_FRAMES_KEY = "manip_img"
 
     class Input:
-        def __init__(self, items: List):
+        def __init__(self, items: list):
             self._items = items
 
         def get(self):
@@ -106,7 +102,7 @@ class Node:
         raise Warning(msg)
 
 
-def create_node(preview: List[Frame], detections: List[dai.ImgDetections]):
+def create_node(preview: list[Frame], detections: list[dai.ImgDetections]):
     return Node(
         preview=Node.Input(preview),
         detections=Node.Input(detections),
@@ -133,9 +129,9 @@ def create_node(preview: List[Frame], detections: List[dai.ImgDetections]):
 )
 def detections(request):
     detections_params = request.param
-    detections_list: List[dai.ImgDetections] = []
+    detections_list: list[dai.ImgDetections] = []
     for detection_param in detections_params:
-        detections: List[dai.ImgDetection] = []
+        detections: list[dai.ImgDetection] = []
         for label, ymin, ymax, xmin, xmax, conf in detection_param:
             detection = dai.ImgDetection()
             detection.label = label
@@ -152,7 +148,7 @@ def detections(request):
 
 
 @pytest.fixture
-def frames(detections: List[dai.ImgDetections]):
+def frames(detections: list[dai.ImgDetections]):
     return [Frame(i) for i, _ in enumerate(detections)]
 
 
@@ -162,12 +158,12 @@ def node(frames, detections):
 
 
 @pytest.fixture
-def node_input_frames(node) -> List[Frame]:
+def node_input_frames(node) -> list[Frame]:
     return node.inputs[Node.INPUT_FRAMES_KEY].items
 
 
 @pytest.fixture
-def node_input_detections(node) -> List[dai.ImgDetections]:
+def node_input_detections(node) -> list[dai.ImgDetections]:
     return node.inputs[Node.INPUT_DETECTIONS_KEY].items
 
 
@@ -207,7 +203,7 @@ def test_output_size(node, resize):
 @pytest.mark.parametrize("padding", [0, 0.1, 0.2, -0.1, -0.2])
 def test_crop(node, node_input_detections, padding, resize_width, resize_height):
     ANGLE = 0
-    expected_rects: List[dai.RotatedRect] = []
+    expected_rects: list[dai.RotatedRect] = []
     for input_dets in node_input_detections:
         for detection in input_dets.detections:
             rect = dai.RotatedRect()
@@ -281,11 +277,11 @@ def run_script(node, script):
     )
 
 
-def get_output_frames(node: Node) -> List[Frame]:
+def get_output_frames(node: Node) -> list[Frame]:
     return node.outputs[Node.OUTPUT_FRAMES_KEY].items
 
 
 def get_output_config(
     node: Node,
-) -> List[ImageManipConfig]:
+) -> list[ImageManipConfig]:
     return node.outputs[Node.OUTPUT_CONFIG_KEY].items

@@ -1,5 +1,4 @@
 import copy
-from typing import Optional
 
 import depthai as dai
 
@@ -13,7 +12,7 @@ class Keypoints(dai.Buffer):
     def __init__(self):
         super().__init__()
         self._keypoints_list = dai.KeypointsList()
-        self._transformation: Optional[dai.ImgTransformation] = None
+        self._transformation: dai.ImgTransformation | None = None
 
     def copy(self):
         new_obj = Keypoints()
@@ -40,21 +39,21 @@ class Keypoints(dai.Buffer):
         self._keypoints_list = value
 
     @property
-    def transformation(self) -> Optional[dai.ImgTransformation]:
+    def transformation(self) -> dai.ImgTransformation | None:
         return self._transformation
 
     @transformation.setter
-    def transformation(self, value: Optional[dai.ImgTransformation]):
+    def transformation(self, value: dai.ImgTransformation | None):
         if value is not None and not isinstance(value, dai.ImgTransformation):
             raise TypeError(
                 f"Transformation must be a dai.ImgTransformation object, got {type(value)}."
             )
         self._transformation = value
 
-    def setTransformation(self, transformation: Optional[dai.ImgTransformation]):
+    def setTransformation(self, transformation: dai.ImgTransformation | None):
         self.transformation = transformation
 
-    def getTransformation(self) -> Optional[dai.ImgTransformation]:
+    def getTransformation(self) -> dai.ImgTransformation | None:
         return self.transformation
 
     def getKeypoints(self) -> list[dai.Keypoint]:

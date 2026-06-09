@@ -1,6 +1,5 @@
 from typing import (
     Generic,
-    Optional,
     TypeVar,
 )
 
@@ -43,7 +42,7 @@ class MessageCollector(dai.node.ThreadedHostNode, Generic[TCollected]):
     def __init__(self) -> None:
         """Initializes the GatherData node."""
         super().__init__()
-        self._camera_fps: Optional[int] = None
+        self._camera_fps: int | None = None
 
         self._data_input = self.createInput()
         self._out = self.createOutput()

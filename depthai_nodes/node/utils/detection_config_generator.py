@@ -29,7 +29,7 @@ def generate_script_content(
     @type padding: float
     @param valid_labels: List of valid label indices to filter detections. If None, all
         detections are processed
-    @type valid_labels: Optional[List[int]]
+    @type valid_labels: list[int] | None
     @return: Generated script content as a string
     @rtype: str
     """

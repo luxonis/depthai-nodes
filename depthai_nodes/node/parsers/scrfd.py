@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import depthai as dai
 import numpy as np
@@ -14,7 +14,7 @@ class SCRFDParser(DetectionParser):
 
     Attributes
     ----------
-    output_layer_name: List[str]
+    output_layer_name: list[str]
         Names of the output layers relevant to the parser.
     conf_threshold : float
         Confidence score threshold for detected faces.
@@ -38,18 +38,18 @@ class SCRFDParser(DetectionParser):
 
     def __init__(
         self,
-        output_layer_names: List[str] = None,
+        output_layer_names: list[str] = None,
         conf_threshold: float = 0.5,
         iou_threshold: float = 0.5,
         max_det: int = 100,
-        input_size: Tuple[int, int] = (640, 640),
-        feat_stride_fpn: Tuple = (8, 16, 32),
+        input_size: tuple[int, int] = (640, 640),
+        feat_stride_fpn: tuple = (8, 16, 32),
         num_anchors: int = 2,
     ) -> None:
         """Initializes the parser node.
 
         @param output_layer_names: Names of the output layers relevant to the parser.
-        @type output_layer_names: List[str]
+        @type output_layer_names: list[str]
         @param conf_threshold: Confidence score threshold for detected faces.
         @type conf_threshold: float
         @param iou_threshold: Non-maximum suppression threshold.
@@ -79,11 +79,11 @@ class SCRFDParser(DetectionParser):
             f"SCRFDParser initialized with output_layer_names={output_layer_names}, conf_threshold={conf_threshold}, iou_threshold={iou_threshold}, max_det={max_det}, input_size={input_size}, feat_stride_fpn={feat_stride_fpn}, num_anchors={num_anchors}"
         )
 
-    def setOutputLayerNames(self, output_layer_names: List[str]) -> None:
+    def setOutputLayerNames(self, output_layer_names: list[str]) -> None:
         """Sets the output layer name(s) for the parser.
 
         @param output_layer_names: The name of the output layer(s) to be used.
-        @type output_layer_names: List[str]
+        @type output_layer_names: list[str]
         """
         if not isinstance(output_layer_names, list):
             raise ValueError("Output layer names must be a list.")
@@ -92,7 +92,7 @@ class SCRFDParser(DetectionParser):
         self.output_layer_names = output_layer_names
         self._logger.debug(f"Output layer names set to {self.output_layer_names}")
 
-    def setInputSize(self, input_size: Tuple[int, int]) -> None:
+    def setInputSize(self, input_size: tuple[int, int]) -> None:
         """Sets the input size of the model.
 
         @param input_size: Input size of the model.
@@ -105,7 +105,7 @@ class SCRFDParser(DetectionParser):
         self.input_size = input_size
         self._logger.debug(f"Input size set to {self.input_size}")
 
-    def setFeatStrideFPN(self, feat_stride_fpn: List[int]) -> None:
+    def setFeatStrideFPN(self, feat_stride_fpn: list[int]) -> None:
         """Sets the feature stride of the FPN.
 
         @param feat_stride_fpn: Feature stride of the FPN.
@@ -131,12 +131,12 @@ class SCRFDParser(DetectionParser):
 
     def build(
         self,
-        head_config: Dict[str, Any],
+        head_config: dict[str, Any],
     ) -> "SCRFDParser":
         """Configures the parser.
 
         @param head_config: The head configuration for the parser.
-        @type head_config: Dict[str, Any]
+        @type head_config: dict[str, Any]
         @return: The parser object with the head configuration set.
         @rtype: SCRFDParser
         """

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import depthai as dai
 import numpy as np
@@ -25,7 +25,7 @@ class YuNetParser(DetectionParser):
         Non-maximum suppression threshold.
     max_det : int
         Maximum number of detections to keep.
-    input_size : Tuple[int, int]
+    input_size : tuple[int, int]
         Input size (width, height).
     loc_output_layer_name: str
         Name of the output layer containing the location predictions.
@@ -46,7 +46,7 @@ class YuNetParser(DetectionParser):
         conf_threshold: float = 0.8,
         iou_threshold: float = 0.3,
         max_det: int = 5000,
-        input_size: Tuple[int, int] = None,
+        input_size: tuple[int, int] = None,
         loc_output_layer_name: str = None,
         conf_output_layer_name: str = None,
         iou_output_layer_name: str = None,
@@ -60,7 +60,7 @@ class YuNetParser(DetectionParser):
         @param max_det: Maximum number of detections to keep.
         @type max_det: int
         @param input_size: Input size of the model (width, height).
-        @type input_size: Tuple[int, int]
+        @type input_size: tuple[int, int]
         @param loc_output_layer_name: Output layer name for the location predictions.
         @type loc_output_layer_name: str
         @param conf_output_layer_name: Output layer name for the confidence predictions.
@@ -87,7 +87,7 @@ class YuNetParser(DetectionParser):
         self._cached_anchors = None
         self._cached_input_size = None
 
-    def setInputSize(self, input_size: Tuple[int, int]) -> None:
+    def setInputSize(self, input_size: tuple[int, int]) -> None:
         """Sets the input size of the model.
 
         @param input_size: Input size of the model (width, height).
@@ -143,12 +143,12 @@ class YuNetParser(DetectionParser):
 
     def build(
         self,
-        head_config: Dict[str, Any],
+        head_config: dict[str, Any],
     ) -> "YuNetParser":
         """Configures the parser.
 
         @param head_config: The head configuration for the parser.
-        @type head_config: Dict[str, Any]
+        @type head_config: dict[str, Any]
         @return: The parser object with the head configuration set.
         @rtype: YuNetParser
         """
@@ -217,7 +217,7 @@ class YuNetParser(DetectionParser):
                 loc_output_layer_name_candidates = [
                     layer_name
                     for layer_name in output_layer_names
-                    if layer_name.startswith(("loc"))
+                    if layer_name.startswith("loc")
                 ]
                 if len(loc_output_layer_name_candidates) == 0:
                     raise ValueError(
@@ -244,7 +244,7 @@ class YuNetParser(DetectionParser):
                 conf_output_layer_name_candidates = [
                     layer_name
                     for layer_name in output_layer_names
-                    if layer_name.startswith(("conf"))
+                    if layer_name.startswith("conf")
                 ]
                 if len(conf_output_layer_name_candidates) == 0:
                     raise ValueError(
@@ -269,7 +269,7 @@ class YuNetParser(DetectionParser):
                 iou_output_layer_name_candidates = [
                     layer_name
                     for layer_name in output_layer_names
-                    if layer_name.startswith(("iou"))
+                    if layer_name.startswith("iou")
                 ]
                 if len(iou_output_layer_name_candidates) == 0:
                     raise ValueError(

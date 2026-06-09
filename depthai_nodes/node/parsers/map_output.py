@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import depthai as dai
 
@@ -67,12 +67,12 @@ class MapOutputParser(BaseParser):
 
     def build(
         self,
-        head_config: Dict[str, Any],
+        head_config: dict[str, Any],
     ) -> "MapOutputParser":
         """Configures the parser.
 
         @param head_config: The head configuration for the parser.
-        @type head_config: Dict[str, Any]
+        @type head_config: dict[str, Any]
         @return: The parser object with the head configuration set.
         @rtype: MapOutputParser
         """

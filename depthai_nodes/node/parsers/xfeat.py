@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import depthai as dai
 import numpy as np
@@ -24,9 +24,9 @@ class XFeatBaseParser(BaseParser):
         Name of the output layer containing keypoints.
     output_layer_heatmaps : str
         Name of the output layer containing heatmaps.
-    original_size : Tuple[float, float]
+    original_size : tuple[float, float]
         Original image size.
-    input_size : Tuple[float, float]
+    input_size : tuple[float, float]
         Input image size.
     max_keypoints : int
         Maximum number of keypoints to keep.
@@ -47,8 +47,8 @@ class XFeatBaseParser(BaseParser):
         output_layer_feats: str = "",
         output_layer_keypoints: str = "",
         output_layer_heatmaps: str = "",
-        original_size: Tuple[float, float] = None,
-        input_size: Tuple[float, float] = (640, 352),
+        original_size: tuple[float, float] = None,
+        input_size: tuple[float, float] = (640, 352),
         max_keypoints: int = 4096,
     ) -> None:
         """Initializes the parser node."""
@@ -67,22 +67,22 @@ class XFeatBaseParser(BaseParser):
         )
 
     @property
-    def reference_input(self) -> Optional[dai.Node.Input]:
+    def reference_input(self) -> dai.Node.Input | None:
         """Returns the reference input."""
         return self.input
 
     @property
-    def target_input(self) -> Optional[dai.Node.Input]:
+    def target_input(self) -> dai.Node.Input | None:
         """Returns the target input."""
         return self._target_input
 
     @reference_input.setter
-    def reference_input(self, reference_input: Optional[dai.Node.Input]):
+    def reference_input(self, reference_input: dai.Node.Input | None):
         """Sets the reference input."""
         self.input = reference_input
 
     @target_input.setter
-    def target_input(self, target_input: Optional[dai.Node.Input]):
+    def target_input(self, target_input: dai.Node.Input | None):
         """Sets the target input."""
         self._target_input = target_input
 
@@ -125,11 +125,11 @@ class XFeatBaseParser(BaseParser):
             f"Output layer containing heatmaps set to '{self.output_layer_heatmaps}'"
         )
 
-    def setOriginalSize(self, original_size: Tuple[int, int]) -> None:
+    def setOriginalSize(self, original_size: tuple[int, int]) -> None:
         """Sets the original image size.
 
         @param original_size: Original image size.
-        @type original_size: Tuple[int, int]
+        @type original_size: tuple[int, int]
         """
         if not isinstance(original_size, tuple) or len(original_size) != 2:
             raise ValueError("Original image size must be a tuple of two ints!")
@@ -139,11 +139,11 @@ class XFeatBaseParser(BaseParser):
         self.original_size = original_size
         self._logger.debug(f"Original image size set to {self.original_size}")
 
-    def setInputSize(self, input_size: Tuple[int, int]) -> None:
+    def setInputSize(self, input_size: tuple[int, int]) -> None:
         """Sets the input image size.
 
         @param input_size: Input image size.
-        @type input_size: Tuple[int, int]
+        @type input_size: tuple[int, int]
         """
         if not isinstance(input_size, tuple) or len(input_size) != 2:
             raise ValueError("Input image size must be a tuple of two ints!")
@@ -166,12 +166,12 @@ class XFeatBaseParser(BaseParser):
 
     def build(
         self,
-        head_config: Dict[str, Any],
+        head_config: dict[str, Any],
     ) -> "XFeatBaseParser":
         """Configures the parser.
 
         @param head_config: The head configuration for the parser.
-        @type head_config: Dict[str, Any]
+        @type head_config: dict[str, Any]
         @return: The parser object with the head configuration set.
         @rtype: XFeatBaseParser
         """
@@ -217,7 +217,7 @@ class XFeatBaseParser(BaseParser):
 
     def extractTensors(
         self, output: dai.NNData
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Extracts the tensors from the output. It returns the features, keypoints, and
         heatmaps. It also handles the reshaping of the tensors by requesting the NCHW
         storage order.
@@ -225,7 +225,7 @@ class XFeatBaseParser(BaseParser):
         @param output: Output from the Neural Network node.
         @type output: dai.NNData
         @return: Tuple of features, keypoints, and heatmaps.
-        @rtype: Tuple[np.ndarray, np.ndarray, np.ndarray]
+        @rtype: tuple[np.ndarray, np.ndarray, np.ndarray]
         """
         feats = output.getTensor(
             self.output_layer_feats,
@@ -259,9 +259,9 @@ class XFeatMonoParser(XFeatBaseParser):
         Name of the output layer containing keypoints.
     output_layer_heatmaps : str
         Name of the output layer containing heatmaps.
-    original_size : Tuple[float, float]
+    original_size : tuple[float, float]
         Original image size.
-    input_size : Tuple[float, float]
+    input_size : tuple[float, float]
         Input image size.
     max_keypoints : int
         Maximum number of keypoints to keep.
@@ -291,8 +291,8 @@ class XFeatMonoParser(XFeatBaseParser):
         output_layer_feats: str = "feats",
         output_layer_keypoints: str = "keypoints",
         output_layer_heatmaps: str = "heatmaps",
-        original_size: Tuple[float, float] = None,
-        input_size: Tuple[float, float] = (640, 352),
+        original_size: tuple[float, float] = None,
+        input_size: tuple[float, float] = (640, 352),
         max_keypoints: int = 4096,
     ) -> None:
         """Initializes the XFeatParser node.
@@ -304,9 +304,9 @@ class XFeatMonoParser(XFeatBaseParser):
         @param output_layer_heatmaps: Name of the output layer containing heatmaps.
         @type output_layer_heatmaps: str
         @param original_size: Original image size.
-        @type original_size: Tuple[float, float]
+        @type original_size: tuple[float, float]
         @param input_size: Input image size.
-        @type input_size: Tuple[float, float]
+        @type input_size: tuple[float, float]
         @param max_keypoints: Maximum number of keypoints to keep.
         @type max_keypoints: int
         """
@@ -412,9 +412,9 @@ class XFeatStereoParser(XFeatBaseParser):
         Name of the output layer from which the keypoints are extracted.
     output_layer_heatmaps : str
         Name of the output layer from which the heatmaps are extracted.
-    original_size : Tuple[float, float]
+    original_size : tuple[float, float]
         Original image size.
-    input_size : Tuple[float, float]
+    input_size : tuple[float, float]
         Input image size.
     max_keypoints : int
         Maximum number of keypoints to keep.
@@ -440,8 +440,8 @@ class XFeatStereoParser(XFeatBaseParser):
         output_layer_feats: str = "feats",
         output_layer_keypoints: str = "keypoints",
         output_layer_heatmaps: str = "heatmaps",
-        original_size: Tuple[float, float] = None,
-        input_size: Tuple[float, float] = (640, 352),
+        original_size: tuple[float, float] = None,
+        input_size: tuple[float, float] = (640, 352),
         max_keypoints: int = 4096,
     ) -> None:
         """Initializes the XFeatParser node.
@@ -453,9 +453,9 @@ class XFeatStereoParser(XFeatBaseParser):
         @param output_layer_heatmaps: Name of the output layer containing heatmaps.
         @type output_layer_heatmaps: str
         @param original_size: Original image size.
-        @type original_size: Tuple[float, float]
+        @type original_size: tuple[float, float]
         @param input_size: Input image size.
-        @type input_size: Tuple[float, float]
+        @type input_size: tuple[float, float]
         @param max_keypoints: Maximum number of keypoints to keep.
         @type max_keypoints: int
         """

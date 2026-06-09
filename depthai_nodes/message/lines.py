@@ -1,5 +1,4 @@
 import copy
-from typing import List, Optional
 
 import depthai as dai
 
@@ -125,7 +124,7 @@ class Lines(dai.Buffer):
 
     Attributes
     ----------
-    lines : List[Line]
+    lines : list[Line]
         List of detected lines.
     transformation : dai.ImgTransformation
         Image transformation object.
@@ -134,8 +133,8 @@ class Lines(dai.Buffer):
     def __init__(self):
         """Initializes the Lines object."""
         super().__init__()
-        self._lines: List[Line] = []
-        self._transformation: Optional[dai.ImgTransformation] = None
+        self._lines: list[Line] = []
+        self._transformation: dai.ImgTransformation | None = None
 
     def copy(self):
         """Creates a new instance of the Lines class and copies the attributes.
@@ -152,31 +151,31 @@ class Lines(dai.Buffer):
         return new_obj
 
     @property
-    def lines(self) -> List[Line]:
+    def lines(self) -> list[Line]:
         """Returns the lines.
 
         @return: List of lines.
-        @rtype: List[Line]
+        @rtype: list[Line]
         """
         return self._lines
 
     @lines.setter
-    def lines(self, value: List[Line]):
+    def lines(self, value: list[Line]):
         """Sets the lines.
 
         @param value: List of lines.
-        @type value: List[Line]
+        @type value: list[Line]
         @raise TypeError: If value is not a list.
         @raise TypeError: If each element is not of type Line.
         """
-        if not isinstance(value, List):
+        if not isinstance(value, list):
             raise TypeError(f"lines must be a list, instead got {type(value)}.")
         if not all(isinstance(item, Line) for item in value):
             raise ValueError("Lines must be a list of Line objects.")
         self._lines = value
 
     @property
-    def transformation(self) -> Optional[dai.ImgTransformation]:
+    def transformation(self) -> dai.ImgTransformation | None:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.
@@ -185,7 +184,7 @@ class Lines(dai.Buffer):
         return self._transformation
 
     @transformation.setter
-    def transformation(self, value: Optional[dai.ImgTransformation]):
+    def transformation(self, value: dai.ImgTransformation | None):
         """Sets the Image Transformation object.
 
         @param value: The Image Transformation object.
@@ -200,7 +199,7 @@ class Lines(dai.Buffer):
                 )
         self._transformation = value
 
-    def setTransformation(self, transformation: Optional[dai.ImgTransformation]):
+    def setTransformation(self, transformation: dai.ImgTransformation | None):
         """Sets the Image Transformation object.
 
         @param transformation: The Image Transformation object.
@@ -209,7 +208,7 @@ class Lines(dai.Buffer):
         """
         self.transformation = transformation
 
-    def getTransformation(self) -> Optional[dai.ImgTransformation]:
+    def getTransformation(self) -> dai.ImgTransformation | None:
         """Returns the Image Transformation object.
 
         @return: The Image Transformation object.

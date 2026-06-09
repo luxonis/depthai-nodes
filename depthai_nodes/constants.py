@@ -1,15 +1,11 @@
 import depthai as dai
 
-PRIMARY_COLOR = dai.Color(
-    float(21 / 255), float(127 / 255), float(88 / 255), float(1.0)
-)
+PRIMARY_COLOR = dai.Color(float(21 / 255), float(127 / 255), float(88 / 255), 1.0)
 TRANSPARENT_PRIMARY_COLOR = dai.Color(
-    float(21 / 255), float(127 / 255), float(88 / 255), float(0.2)
+    float(21 / 255), float(127 / 255), float(88 / 255), 0.2
 )
-SECONDARY_COLOR = dai.Color(
-    float(240 / 255), float(240 / 255), float(240 / 255), float(1.0)
-)
-FONT_COLOR = dai.Color(float(255 / 255), float(255 / 255), float(255 / 255), float(1.0))
+SECONDARY_COLOR = dai.Color(float(240 / 255), float(240 / 255), float(240 / 255), 1.0)
+FONT_COLOR = dai.Color(float(255 / 255), float(255 / 255), float(255 / 255), 1.0)
 FONT_SIZE_PER_HEIGHT = 1 / 30
 SMALLER_FONT_SIZE_PER_HEIGHT = FONT_SIZE_PER_HEIGHT / 2
 FONT_BACKGROUND_COLOR = dai.Color(0.0, 0.0, 0.0, 0.0)
