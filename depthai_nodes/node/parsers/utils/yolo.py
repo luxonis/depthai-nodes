@@ -27,6 +27,8 @@ class YOLOSubtype(str, Enum):
     V8 = "yolov8"
     V9 = "yolov9"
     V10 = "yolov10"
+    V11 = "yolov11"
+    V12 = "yolov12"
     V26 = "yolo26"
     P = "yolo-p"
     GOLD = "yolo-gold"
