@@ -217,7 +217,7 @@ class RFDETRParser(BaseParser):
                 masks = masks_tensor.squeeze()[sorted_idx][: self.max_det]
 
             # Convert boxes from cxcywh (normalized) to xyxy (normalized)
-            boxes = self._box_cxcywh_to_xyxy(boxes)
+            boxes = np.clip(self._box_cxcywh_to_xyxy(boxes), 0, 1)
 
             # Filter detections by confidence threshold
             confidence_mask = scores > self.conf_threshold
@@ -229,7 +229,6 @@ class RFDETRParser(BaseParser):
                 masks = masks[confidence_mask]
 
             boxes = xyxy_to_xywh(boxes)
-            boxes = np.clip(boxes, 0, 1)
 
             label_names_list = None
             if self.label_names:
