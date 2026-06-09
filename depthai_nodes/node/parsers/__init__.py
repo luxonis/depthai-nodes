@@ -13,6 +13,7 @@ from .mediapipe_palm_detection import MPPalmDetectionParser
 from .mlsd import MLSDParser
 from .ppdet import PPTextDetectionParser
 from .regression import RegressionParser
+from .rf_detr import RFDETRParser
 from .scrfd import SCRFDParser
 from .segmentation import SegmentationParser
 from .superanimal_landmarker import SuperAnimalParser
@@ -43,4 +44,5 @@ __all__ = [
     "BaseParser",
     "DetectionParser",
     "EmbeddingsParser",
+    "RFDETRParser",
 ]
