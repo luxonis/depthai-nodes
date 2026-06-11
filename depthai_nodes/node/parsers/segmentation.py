@@ -21,7 +21,7 @@ class SegmentationParser(BaseParser):
     ----------------
     **Type**: SegmentationMask
 
-    **Description**: Segmentation message containing the segmentation mask. Every pixel belongs to exactly one class. Unassigned pixels are represented with "-1" and class pixels with non-negative integers.
+    **Description**: Segmentation message containing the segmentation mask. Every pixel belongs to exactly one class. Unassigned pixels are represented with "255" and class pixels with non-negative integers.
 
     Error Handling
     --------------
@@ -153,14 +153,19 @@ class SegmentationParser(BaseParser):
                         )
                     )
 
-            class_map = (
-                np_function(segmentation_mask, axis=0)
-                .reshape(segmentation_mask.shape[1], segmentation_mask.shape[2])
-                .astype(np.int16)
+            class_map = np_function(segmentation_mask, axis=0).reshape(
+                segmentation_mask.shape[1], segmentation_mask.shape[2]
             )
 
             if adding_unassigned_class:
-                class_map = class_map - 1
+                class_map = np.where(class_map == 0, 255, class_map - 1)
+
+            if np.any(class_map < 0) or np.any(class_map > 255):
+                raise ValueError(
+                    "Segmentation mask values must be in the uint8 range [0, 255]."
+                )
+
+            class_map = class_map.astype(np.uint8)
 
             mask_message = create_segmentation_message(class_map)
             mask_message.setTimestamp(output.getTimestamp())
