@@ -27,8 +27,6 @@ Here are the custom message types that we introduce in this package. They are us
     - [Attributes](#attributes-9)
   - [Predictions](#predictions)
     - [Attributes](#attributes-10)
-  - [SegmentationMask](#segmentationmask)
-    - [Attributes](#attributes-11)
   - [SnapData](#snapdata)
     - [Attributes](#attributes-12)
 
@@ -135,14 +133,6 @@ Predictions class for storing predictions.
 ### Attributes
 
 - **predictions** (List\[[Prediction](#prediction)\]): List of predictions.
-
-## SegmentationMask
-
-SegmentationMask class for a single- or multi-object segmentation mask. Background is represented with "-1" and foreground classes with non-negative integers.
-
-### Attributes
-
-- **mask** (NDArray\[np.int16\]): Segmentation mask.
 
 ## SnapData
 
