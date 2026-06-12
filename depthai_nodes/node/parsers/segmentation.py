@@ -19,9 +19,9 @@ class SegmentationParser(BaseParser):
 
     Output Message/s
     ----------------
-    **Type**: SegmentationMask
+    **Type**: dai.SegmentationMask
 
-    **Description**: Segmentation message containing the segmentation mask. Every pixel belongs to exactly one class. Unassigned pixels are represented with "255" and class pixels with non-negative integers.
+    **Description**: dai.SegmentationMask containing the segmentation mask. Every pixel belongs to exactly one class. Unassigned pixels are represented with "255" and class pixels with non-negative integers.
 
     Error Handling
     --------------

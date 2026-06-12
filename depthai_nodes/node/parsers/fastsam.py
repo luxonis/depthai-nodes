@@ -46,9 +46,9 @@ class FastSAMParser(BaseParser):
 
     Output Message/s
     ----------------
-    **Type**: SegmentationMask
+    **Type**: dai.SegmentationMask
 
-    **Description**: SegmentationMask message containing the resulting segmentation masks given the prompt.
+    **Description**: dai.SegmentationMask message containing the resulting segmentation masks given the prompt.
 
     Error Handling
     --------------
