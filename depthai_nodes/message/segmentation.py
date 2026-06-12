@@ -115,13 +115,19 @@ class SegmentationMask(dai.Buffer):
     def getVisualizationMessage(self) -> dai.ImgFrame:
         """Returns the default visualization message for segmentation masks."""
         img_frame = dai.ImgFrame()
+        img_frame.setTimestamp(self.getTimestamp())
+        img_frame.setTimestampDevice(self.getTimestampDevice())
+        img_frame.setSequenceNum(self.getSequenceNum())
+        if self.transformation is not None:
+            img_frame.setTransformation(self.transformation)
         mask = self._mask.copy()
 
         unique_values = np.unique(mask[mask >= 0])
         scaled_mask = np.zeros_like(mask, dtype=np.uint8)
 
         if unique_values.size == 0:
-            return img_frame.setCvFrame(scaled_mask, dai.ImgFrame.Type.BGR888i)
+            empty_bgr_mask = cv2.cvtColor(scaled_mask, cv2.COLOR_GRAY2BGR)
+            return img_frame.setCvFrame(empty_bgr_mask, dai.ImgFrame.Type.BGR888i)
 
         min_val, max_val = unique_values.min(), unique_values.max()
 
