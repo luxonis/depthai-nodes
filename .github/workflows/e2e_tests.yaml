@@ -89,6 +89,10 @@ jobs:
       - name: Run Test
         run: |
           export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#${{ matrix.platform }}"
+          PLATFORM="${{ matrix.platform }}"
+          if [ "$PLATFORM" = "rvc4-usb" ]; then
+            PLATFORM="rvc4"
+          fi
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
 
             if [[ -n "${{ github.event.inputs.reservation_name }}" ]]; then
@@ -99,11 +103,6 @@ jobs:
 
             if [[ -n "${{ github.event.inputs.additional_options }}" ]]; then
               ADDITIONAL_OPTIONS="${{ github.event.inputs.additional_options }}"
-            fi
-
-            PLATFORM="${{ matrix.platform }}"
-            if [ "$PLATFORM" = "rvc4-usb" ]; then
-              PLATFORM="rvc4"
             fi
 
             if [[ "${{ github.event.inputs.bom_mode }}" == 'true' ]]; then
