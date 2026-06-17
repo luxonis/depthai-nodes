@@ -124,9 +124,8 @@ class RFDETRParser(BaseParser):
     def setMaskConfidence(self, mask_conf: float) -> None:
         """Set mask confidence threshold.
 
-        RF-DETR Seg outputs mask logits. The parser applies sigmoid to the
-        mask logits, so this value is interpreted as a normal probability
-        threshold.
+        RF-DETR Seg outputs mask logits. The parser applies sigmoid to the mask logits,
+        so this value is interpreted as a normal probability threshold.
         """
         if not isinstance(mask_conf, float):
             raise ValueError("Mask confidence threshold must be a float.")
