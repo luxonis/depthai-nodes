@@ -32,4 +32,15 @@ def sigmoid(x: np.ndarray) -> np.ndarray:
     @return: A result tensor after applying a sigmoid function on the given input.
     @rtype: np.ndarray
     """
-    return 1 / (1 + np.exp(-x))
+    x = np.asarray(x, dtype=np.float32)
+    result = np.empty_like(x)
+
+    positive = x >= 0
+    negative = ~positive
+
+    result[positive] = 1 / (1 + np.exp(-x[positive]))
+
+    exp_x = np.exp(x[negative])
+    result[negative] = exp_x / (1 + exp_x)
+
+    return result

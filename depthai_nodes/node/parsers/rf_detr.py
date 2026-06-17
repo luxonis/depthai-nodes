@@ -1,13 +1,15 @@
 from typing import Any
 
-import cv2
 import depthai as dai
 import numpy as np
 
 from depthai_nodes.message.creators import create_detection_message
 from depthai_nodes.node.parsers.base_parser import BaseParser
-from depthai_nodes.node.parsers.utils import xyxy_to_xywh
-from depthai_nodes.node.parsers.utils.masks_utils import crop_mask
+from depthai_nodes.node.parsers.utils import sigmoid, xyxy_to_xywh
+from depthai_nodes.node.parsers.utils.bbox_format_converters import xywh_to_xyxy
+from depthai_nodes.node.parsers.utils.masks_utils import (
+    process_single_mask_rfdetr,
+)
 
 
 class RFDETRParser(BaseParser):
@@ -71,7 +73,7 @@ class RFDETRParser(BaseParser):
         self.output_layer_names: list[str] = []
         self.input_shape: tuple[int, int] | None = None
         self._logger.debug(
-            f"RFDETRParser initialized with conf_threshold={conf_threshold}, max_det={max_det}"
+            f"RFDETRParser initialized with conf_threshold={conf_threshold}, max_det={max_det}, mask_conf={mask_conf}"
         )
 
     @property
@@ -122,10 +124,10 @@ class RFDETRParser(BaseParser):
         self._logger.debug(f"Label names updated to: {label_names}")
 
     def setMaskConfidence(self, mask_conf: float) -> None:
-        """Set mask confidence threshold.
+        """Sets the mask confidence threshold.
 
-        RF-DETR Seg outputs mask logits. The parser applies sigmoid to the mask logits,
-        so this value is interpreted as a normal probability threshold.
+        @param mask_conf: The mask confidence threshold.
+        @type mask_conf: float
         """
         if not isinstance(mask_conf, float):
             raise ValueError("Mask confidence threshold must be a float.")
@@ -190,80 +192,6 @@ class RFDETRParser(BaseParser):
         )
         return self
 
-    @staticmethod
-    def _sigmoid(x: np.ndarray) -> np.ndarray:
-        """Apply sigmoid activation function.
-
-        @param x: Input array.
-        @type x: np.ndarray
-        @return: Sigmoid of input.
-        @rtype: np.ndarray
-        """
-        x = np.asarray(x, dtype=np.float32)
-        result = np.empty_like(x, dtype=np.float32)
-
-        positive_mask = x >= 0
-        result[positive_mask] = 1.0 / (1.0 + np.exp(-x[positive_mask]))
-
-        exp_x = np.exp(x[~positive_mask])
-        result[~positive_mask] = exp_x / (1.0 + exp_x)
-
-        return result
-
-    @staticmethod
-    def _box_cxcywh_to_xyxy(boxes: np.ndarray) -> np.ndarray:
-        """Convert boxes from (cx, cy, w, h) format to (xmin, ymin, xmax, ymax) format.
-
-        Boxes are expected to be in normalized coordinates [0, 1].
-
-        @param boxes: Boxes in cxcywh format, shape (..., 4)
-        @type boxes: np.ndarray
-        @return: Boxes in xyxy format, shape (..., 4)
-        @rtype: np.ndarray
-        """
-        cx, cy, w, h = boxes[..., 0], boxes[..., 1], boxes[..., 2], boxes[..., 3]
-        xmin = cx - w / 2
-        ymin = cy - h / 2
-        xmax = cx + w / 2
-        ymax = cy + h / 2
-        return np.stack([xmin, ymin, xmax, ymax], axis=-1)
-
-    def _process_mask(
-        self,
-        mask_logits: np.ndarray,
-        bbox: np.ndarray,
-        input_shape: tuple[int, int],
-    ) -> np.ndarray:
-        """Process a single RF-DETR Seg mask.
-
-        @param mask_logits: Mask logits in [H, W] format.
-        @type mask_logits: np.ndarray
-        @param bbox: Bounding box in normalized cxcywh format.
-        @type bbox: np.ndarray
-        @param input_shape: Target input shape in (height, width) format.
-        @type input_shape: tuple[int, int]
-        @return: Binary mask resized to input shape.
-        @rtype: np.ndarray
-        """
-
-        if mask_logits.ndim != 2:
-            raise ValueError(
-                f"Expected mask logits of shape (H, W), got {mask_logits.shape}."
-            )
-
-        mask_h, mask_w = mask_logits.shape
-
-        scaled_bbox = bbox * np.array([mask_w, mask_h, mask_w, mask_h])
-        mask = self._sigmoid(mask_logits)
-        mask = crop_mask(mask, scaled_bbox)
-        mask = (mask > self.mask_conf).astype(np.uint8)
-
-        return cv2.resize(
-            mask,
-            (input_shape[1], input_shape[0]),
-            interpolation=cv2.INTER_NEAREST,
-        )
-
     def run(self):
         self._logger.debug("RFDETRParser run started")
 
@@ -299,7 +227,7 @@ class RFDETRParser(BaseParser):
                     np.float32
                 )
 
-            prob = self._sigmoid(logits_tensor)
+            prob = sigmoid(logits_tensor)
 
             scores = np.max(prob, axis=2).squeeze()  # (num_queries,)
             labels = np.argmax(prob, axis=2).squeeze()  # (num_queries,)
@@ -336,7 +264,7 @@ class RFDETRParser(BaseParser):
                 masks = masks_tensor.squeeze()[sorted_idx][:effective_max_det]
 
             # Convert boxes from cxcywh (normalized) to xyxy (normalized)
-            boxes = np.clip(self._box_cxcywh_to_xyxy(boxes_cxcywh), 0, 1)
+            boxes = np.clip(xywh_to_xyxy(boxes_cxcywh), 0, 1)
 
             # Filter detections by confidence threshold
             confidence_mask = scores > self.conf_threshold
@@ -360,10 +288,11 @@ class RFDETRParser(BaseParser):
                 final_mask = np.full(self.input_shape, 255, dtype=np.uint8)
 
                 for i, (mask_logits, bbox) in enumerate(zip(masks, boxes_cxcywh)):
-                    resized_mask = self._process_mask(
-                        mask_logits,
-                        bbox,
-                        self.input_shape,
+                    resized_mask = process_single_mask_rfdetr(
+                        mask_logits=mask_logits,
+                        mask_conf=self.mask_conf,
+                        bbox=bbox,
+                        input_shape=self.input_shape,
                     )
                     final_mask[resized_mask > 0] = i
 
