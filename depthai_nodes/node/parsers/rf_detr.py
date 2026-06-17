@@ -294,7 +294,8 @@ class RFDETRParser(BaseParser):
                         bbox=bbox,
                         input_shape=self.input_shape,
                     )
-                    final_mask[resized_mask > 0] = i
+                    foreground = resized_mask > 0
+                    final_mask[(final_mask == 255) & foreground] = i
 
             boxes = xyxy_to_xywh(boxes)
 
