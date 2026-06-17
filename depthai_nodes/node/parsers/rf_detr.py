@@ -305,13 +305,35 @@ class RFDETRParser(BaseParser):
             labels = np.argmax(prob, axis=2).squeeze()  # (num_queries,)
 
             sorted_idx = np.argsort(scores)[::-1]
-            scores = scores[sorted_idx][: self.max_det]
-            labels = labels[sorted_idx][: self.max_det]
-            boxes_cxcywh = boxes_tensor.squeeze()[sorted_idx][: self.max_det]
+
+            effective_max_det = self.max_det
+            if masks_tensor is not None:
+                # SegmentationMask is uint8 and reserves 255 for background,
+                # so valid instance IDs are 0..254.
+                max_segmentation_instances = 255
+
+                num_valid_instances = int(
+                    np.count_nonzero(
+                        scores[sorted_idx][: self.max_det] > self.conf_threshold
+                    )
+                )
+                if num_valid_instances > max_segmentation_instances:
+                    self._logger.warning(
+                        "RFDETRParser can encode at most 255 instances in "
+                        "SegmentationMask; ignoring "
+                        f"{num_valid_instances - max_segmentation_instances} "
+                        "lowest-scoring instances."
+                    )
+
+                effective_max_det = min(effective_max_det, max_segmentation_instances)
+
+            scores = scores[sorted_idx][:effective_max_det]
+            labels = labels[sorted_idx][:effective_max_det]
+            boxes_cxcywh = boxes_tensor.squeeze()[sorted_idx][:effective_max_det]
 
             masks = None
             if masks_tensor is not None:
-                masks = masks_tensor.squeeze()[sorted_idx][: self.max_det]
+                masks = masks_tensor.squeeze()[sorted_idx][:effective_max_det]
 
             # Convert boxes from cxcywh (normalized) to xyxy (normalized)
             boxes = np.clip(self._box_cxcywh_to_xyxy(boxes_cxcywh), 0, 1)
