@@ -5,7 +5,11 @@ import numpy as np
 
 from depthai_nodes.message.creators import create_detection_message
 from depthai_nodes.node.parsers.base_parser import BaseParser
-from depthai_nodes.node.parsers.utils import xyxy_to_xywh
+from depthai_nodes.node.parsers.utils import sigmoid, xyxy_to_xywh
+from depthai_nodes.node.parsers.utils.bbox_format_converters import xywh_to_xyxy
+from depthai_nodes.node.parsers.utils.masks_utils import (
+    process_single_mask_rfdetr,
+)
 
 
 class RFDETRParser(BaseParser):
@@ -23,6 +27,8 @@ class RFDETRParser(BaseParser):
         Maximum number of detections to keep.
     label_names : list[str] | None
         List of label names for detected objects.
+    mask_conf : float
+        Confidence threshold for binarizing instance segmentation masks.
     output_layer_names : list[str]
         Names of the output layers (boxes, logits, and optionally masks).
 
@@ -38,11 +44,15 @@ class RFDETRParser(BaseParser):
     RF-DETR: https://github.com/roboflow/rf-detr
     """
 
+    _DET_MODE = 0
+    _SEG_MODE = 1
+
     def __init__(
         self,
         conf_threshold: float = 0.5,
         max_det: int = 300,
         label_names: list[str] | None = None,
+        mask_conf: float = 0.5,
     ) -> None:
         """Initializes the parser node.
 
@@ -52,14 +62,18 @@ class RFDETRParser(BaseParser):
         @type max_det: int
         @param label_names: List of label names for detected objects.
         @type label_names: list[str] | None
+        @param mask_conf: Mask confidence threshold for instance segmentation masks.
+        @type mask_conf: float
         """
         super().__init__()
         self.conf_threshold = conf_threshold
         self.max_det = max_det
         self.label_names = label_names
+        self.mask_conf = mask_conf
         self.output_layer_names: list[str] = []
+        self.input_shape: tuple[int, int] | None = None
         self._logger.debug(
-            f"RFDETRParser initialized with conf_threshold={conf_threshold}, max_det={max_det}"
+            f"RFDETRParser initialized with conf_threshold={conf_threshold}, max_det={max_det}, mask_conf={mask_conf}"
         )
 
     @property
@@ -109,6 +123,21 @@ class RFDETRParser(BaseParser):
         self.label_names = label_names
         self._logger.debug(f"Label names updated to: {label_names}")
 
+    def setMaskConfidence(self, mask_conf: float) -> None:
+        """Sets the mask confidence threshold.
+
+        @param mask_conf: The mask confidence threshold.
+        @type mask_conf: float
+        """
+        if not isinstance(mask_conf, float):
+            raise ValueError("Mask confidence threshold must be a float.")
+
+        if mask_conf < 0 or mask_conf > 1:
+            raise ValueError("Mask confidence threshold must be between 0 and 1.")
+
+        self.mask_conf = mask_conf
+        self._logger.debug(f"Mask confidence threshold updated to {mask_conf}")
+
     def setOutputLayerNames(self, output_layer_names: list[str]) -> None:
         """Sets the output layer names for the parser.
 
@@ -133,41 +162,35 @@ class RFDETRParser(BaseParser):
         self.conf_threshold = head_config.get("conf_threshold", self.conf_threshold)
         self.max_det = head_config.get("max_det", self.max_det)
         self.label_names = head_config.get("classes", self.label_names)
+        self.mask_conf = head_config.get("mask_conf", self.mask_conf)
         self.output_layer_names = head_config.get("outputs", self.output_layer_names)
 
+        inputs = head_config.get("model_inputs", [])
+        if inputs:
+            input_shape = inputs[0].get("shape")
+            input_layout = inputs[0].get("layout")
+
+            if input_shape and input_layout:
+                if input_layout == "NCHW":
+                    self.input_shape = (input_shape[2], input_shape[3])
+                elif input_layout == "NHWC":
+                    self.input_shape = (input_shape[1], input_shape[2])
+                else:
+                    raise ValueError(f"Unsupported input layout: {input_layout}")
+
+        if self.output_layer_names and len(self.output_layer_names) not in (2, 3):
+            raise ValueError(
+                f"RFDETRParser expects 2 outputs for detection or 3 outputs for "
+                f"segmentation, got {len(self.output_layer_names)} outputs: "
+                f"{self.output_layer_names}."
+            )
+
         self._logger.debug(
-            f"RFDETRParser built with conf_threshold={self.conf_threshold}, max_det={self.max_det}"
+            f"RFDETRParser built with conf_threshold={self.conf_threshold}, "
+            f"max_det={self.max_det}, mask_conf={self.mask_conf}, "
+            f"input_shape={self.input_shape}, outputs={self.output_layer_names}"
         )
         return self
-
-    @staticmethod
-    def _sigmoid(x: np.ndarray) -> np.ndarray:
-        """Apply sigmoid activation function.
-
-        @param x: Input array.
-        @type x: np.ndarray
-        @return: Sigmoid of input.
-        @rtype: np.ndarray
-        """
-        return 1 / (1 + np.exp(-x))
-
-    @staticmethod
-    def _box_cxcywh_to_xyxy(boxes: np.ndarray) -> np.ndarray:
-        """Convert boxes from (cx, cy, w, h) format to (xmin, ymin, xmax, ymax) format.
-
-        Boxes are expected to be in normalized coordinates [0, 1].
-
-        @param boxes: Boxes in cxcywh format, shape (..., 4)
-        @type boxes: np.ndarray
-        @return: Boxes in xyxy format, shape (..., 4)
-        @rtype: np.ndarray
-        """
-        cx, cy, w, h = boxes[..., 0], boxes[..., 1], boxes[..., 2], boxes[..., 3]
-        xmin = cx - w / 2
-        ymin = cy - h / 2
-        xmax = cx + w / 2
-        ymax = cy + h / 2
-        return np.stack([xmin, ymin, xmax, ymax], axis=-1)
 
     def run(self):
         self._logger.debug("RFDETRParser run started")
@@ -184,7 +207,8 @@ class RFDETRParser(BaseParser):
 
             if len(layer_names) < 2 or len(layer_names) > 3:
                 raise ValueError(
-                    f"Expected 2 or 3 output layers (boxes, logits, optional masks), got {len(layer_names)} layers."
+                    "Expected 2 or 3 output layers "
+                    f"(boxes, logits, optional masks), got {len(layer_names)} layers."
                 )
 
             # outputs[0]: boxes in cxcywh format (normalized coordinates [0, 1])
@@ -203,30 +227,75 @@ class RFDETRParser(BaseParser):
                     np.float32
                 )
 
-            prob = self._sigmoid(logits_tensor)
+            prob = sigmoid(logits_tensor)
 
             scores = np.max(prob, axis=2).squeeze()  # (num_queries,)
             labels = np.argmax(prob, axis=2).squeeze()  # (num_queries,)
 
             sorted_idx = np.argsort(scores)[::-1]
-            scores = scores[sorted_idx][: self.max_det]
-            labels = labels[sorted_idx][: self.max_det]
-            boxes = boxes_tensor.squeeze()[sorted_idx][: self.max_det]
 
+            effective_max_det = self.max_det
             if masks_tensor is not None:
-                masks = masks_tensor.squeeze()[sorted_idx][: self.max_det]
+                # SegmentationMask is uint8 and reserves 255 for background,
+                # so valid instance IDs are 0..254.
+                max_segmentation_instances = 255
+
+                num_valid_instances = int(
+                    np.count_nonzero(
+                        scores[sorted_idx][: self.max_det] > self.conf_threshold
+                    )
+                )
+                if num_valid_instances > max_segmentation_instances:
+                    self._logger.warning(
+                        "RFDETRParser can encode at most 255 instances in "
+                        "SegmentationMask; ignoring "
+                        f"{num_valid_instances - max_segmentation_instances} "
+                        "lowest-scoring instances."
+                    )
+
+                effective_max_det = min(effective_max_det, max_segmentation_instances)
+
+            scores = scores[sorted_idx][:effective_max_det]
+            labels = labels[sorted_idx][:effective_max_det]
+            boxes_cxcywh = boxes_tensor.squeeze()[sorted_idx][:effective_max_det]
+
+            masks = None
+            if masks_tensor is not None:
+                masks = masks_tensor.squeeze()[sorted_idx][:effective_max_det]
 
             # Convert boxes from cxcywh (normalized) to xyxy (normalized)
-            boxes = np.clip(self._box_cxcywh_to_xyxy(boxes), 0, 1)
+            boxes = np.clip(xywh_to_xyxy(boxes_cxcywh), 0, 1)
 
             # Filter detections by confidence threshold
             confidence_mask = scores > self.conf_threshold
             scores = scores[confidence_mask]
             labels = labels[confidence_mask]
             boxes = boxes[confidence_mask]
+            boxes_cxcywh = boxes_cxcywh[confidence_mask]
 
-            if masks_tensor is not None:
+            if masks is not None:
                 masks = masks[confidence_mask]
+
+            final_mask = None
+            mode = self._SEG_MODE if masks is not None else self._DET_MODE
+
+            if mode == self._SEG_MODE:
+                if self.input_shape is None:
+                    raise ValueError(
+                        "RFDETRParser segmentation mode requires model input shape."
+                    )
+
+                final_mask = np.full(self.input_shape, 255, dtype=np.uint8)
+
+                for i, (mask_logits, bbox) in enumerate(zip(masks, boxes_cxcywh)):
+                    resized_mask = process_single_mask_rfdetr(
+                        mask_logits=mask_logits,
+                        mask_conf=self.mask_conf,
+                        bbox=bbox,
+                        input_shape=self.input_shape,
+                    )
+                    foreground = resized_mask > 0
+                    final_mask[(final_mask == 255) & foreground] = i
 
             boxes = xyxy_to_xywh(boxes)
 
@@ -247,6 +316,7 @@ class RFDETRParser(BaseParser):
                 scores=scores,
                 labels=labels.astype(int),
                 label_names=label_names_list,
+                masks=final_mask,
             )
 
             # Set message metadata
