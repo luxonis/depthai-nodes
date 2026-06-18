@@ -2,7 +2,7 @@ from .constants import *
 from .logging import setup_logging
 from .message import *
 
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 
 
 setup_logging()
