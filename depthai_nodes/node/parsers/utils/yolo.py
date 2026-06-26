@@ -65,7 +65,10 @@ def resolve_yolo_strides(
 
     resolved_strides = list(strides)
 
-    if not all(type(stride) is int for stride in resolved_strides):
+    if not all(
+        isinstance(stride, int) and not isinstance(stride, bool)
+        for stride in resolved_strides
+    ):
         raise ValueError("All `strides` values must be integers.")
 
     if not all(stride > 0 for stride in resolved_strides):
@@ -290,9 +293,9 @@ def parse_yolo_output(
             anchors = anchors.reshape(bs, -1, 1, 1, 2)
         else:
             anchors = np.array(anchors).reshape(bs, -1, 1, 1, 2)
-        assert anchors.shape[1] == na, (
-            f"Anchor shape mismatch at dimension 1: {anchors.shape[1]} vs {na}"
-        )
+        assert (
+            anchors.shape[1] == na
+        ), f"Anchor shape mismatch at dimension 1: {anchors.shape[1]} vs {na}"
 
         if subtype in [YOLOSubtype.V3, YOLOSubtype.V3T]:
             c_xy = out[..., 0:2] + grid
