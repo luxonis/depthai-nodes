@@ -400,10 +400,10 @@ def decode_yolo26(
 ) -> tuple[np.ndarray, np.ndarray | None]:
     """Decode YOLO26 output for detection, segmentation, or pose.
 
-    YOLO26 end2end output is already decoded (xyxy in pixels) with a pre-computed
-    confidence score (ReduceMax over class scores). Needs topk and conf thresholding.
-    Optionally filters an auxiliary tensor (mask coefficients or keypoints) with the
-    detections.
+    YOLO26 end2end output is already decoded to xyxy pixel boxes and includes a
+    pre-computed confidence score (ReduceMax over class scores) in column 4. This
+    path only applies confidence thresholding and top-k filtering. It can also filter
+    an auxiliary tensor such as mask coefficients or keypoints using the kept rows.
 
     @param raw: Raw detection tensor (N, A, 5+nc) where columns are
         [x1, y1, x2, y2, conf, cls_0, ..., cls_nc-1].
