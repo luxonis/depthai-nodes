@@ -166,3 +166,36 @@ def decode_scrfd(
     keypoints = np.clip(keypoints, 0, 1)
 
     return bboxes, scores, keypoints
+
+
+def compute_scrfd_detections(
+    *,
+    bboxes_concatenated: list[np.ndarray],
+    scores_concatenated: list[np.ndarray],
+    kps_concatenated: list[np.ndarray],
+    feat_stride_fpn: tuple[int, ...] | list[int],
+    input_size: tuple[int, int],
+    num_anchors: int,
+    score_threshold: float,
+    nms_threshold: float,
+    anchors: dict[int, np.ndarray],
+    label_names: list[str] | None = None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[str] | None]:
+    """Decode SCRFD outputs into final detection payloads."""
+    bboxes, scores, keypoints = decode_scrfd(
+        bboxes_concatenated=bboxes_concatenated,
+        scores_concatenated=scores_concatenated,
+        kps_concatenated=kps_concatenated,
+        feat_stride_fpn=feat_stride_fpn,
+        input_size=input_size,
+        num_anchors=num_anchors,
+        score_threshold=score_threshold,
+        nms_threshold=nms_threshold,
+        anchors=anchors,
+    )
+
+    labels = np.zeros(len(bboxes), dtype=int)
+    mapped_label_names = (
+        [label_names[label] for label in labels] if label_names else None
+    )
+    return bboxes, scores, keypoints, labels, mapped_label_names

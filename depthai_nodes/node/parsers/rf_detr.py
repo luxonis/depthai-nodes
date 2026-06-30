@@ -5,10 +5,8 @@ import numpy as np
 
 from depthai_nodes.message.creators import create_detection_message
 from depthai_nodes.node.parsers.base_parser import BaseParser
-from depthai_nodes.node.parsers.utils import sigmoid, xyxy_to_xywh
-from depthai_nodes.node.parsers.utils.bbox_format_converters import xywh_to_xyxy
-from depthai_nodes.node.parsers.utils.masks_utils import (
-    process_single_mask_rfdetr,
+from depthai_nodes.node.parsers.utils.rf_detr import (
+    compute_rfdetr_detections,
 )
 
 
@@ -201,132 +199,91 @@ class RFDETRParser(BaseParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            # Get output layers
-            layer_names = self.output_layer_names or output.getAllLayerNames()
-            self._logger.debug(f"Processing input with layers: {layer_names}")
+            boxes_tensor, logits_tensor, masks_tensor = self.extract(output)
+            boxes, scores, labels, label_names_list, final_mask = self.compute(
+                boxes_tensor,
+                logits_tensor,
+                conf_threshold=self.conf_threshold,
+                max_det=self.max_det,
+                label_names=self.label_names,
+                mask_conf=self.mask_conf,
+                input_shape=self.input_shape,
+                masks_tensor=masks_tensor,
+            )
+            self.emit(output, boxes, scores, labels, label_names_list, final_mask)
 
-            if len(layer_names) < 2 or len(layer_names) > 3:
-                raise ValueError(
-                    "Expected 2 or 3 output layers "
-                    f"(boxes, logits, optional masks), got {len(layer_names)} layers."
-                )
+    def extract(
+        self, output: dai.NNData
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
+        layer_names = self.output_layer_names or output.getAllLayerNames()
+        self._logger.debug(f"Processing input with layers: {layer_names}")
 
-            # outputs[0]: boxes in cxcywh format (normalized coordinates [0, 1])
-            # outputs[1]: class logits (need sigmoid activation)
-            # outputs[2]: instance segmentation masks (optional)
-            boxes_tensor = output.getTensor(layer_names[0], dequantize=True).astype(
+        if len(layer_names) < 2 or len(layer_names) > 3:
+            raise ValueError(
+                "Expected 2 or 3 output layers "
+                f"(boxes, logits, optional masks), got {len(layer_names)} layers."
+            )
+
+        boxes_tensor = output.getTensor(layer_names[0], dequantize=True).astype(
+            np.float32
+        )
+        logits_tensor = output.getTensor(layer_names[1], dequantize=True).astype(
+            np.float32
+        )
+        masks_tensor = None
+        if len(layer_names) == 3:
+            masks_tensor = output.getTensor(layer_names[2], dequantize=True).astype(
                 np.float32
             )
-            logits_tensor = output.getTensor(layer_names[1], dequantize=True).astype(
-                np.float32
-            )
+        return boxes_tensor, logits_tensor, masks_tensor
 
-            masks_tensor = None
-            if len(layer_names) == 3:
-                masks_tensor = output.getTensor(layer_names[2], dequantize=True).astype(
-                    np.float32
-                )
+    @staticmethod
+    def compute(
+        boxes_tensor: np.ndarray,
+        logits_tensor: np.ndarray,
+        *,
+        conf_threshold: float,
+        max_det: int,
+        label_names: list[str] | None,
+        mask_conf: float,
+        input_shape: tuple[int, int] | None,
+        masks_tensor: np.ndarray | None = None,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[str] | None, np.ndarray | None]:
+        return compute_rfdetr_detections(
+            boxes_tensor,
+            logits_tensor,
+            conf_threshold=conf_threshold,
+            max_det=max_det,
+            label_names=label_names,
+            mask_conf=mask_conf,
+            input_shape=input_shape,
+            masks_tensor=masks_tensor,
+        )
 
-            prob = sigmoid(logits_tensor)
+    def emit(
+        self,
+        output: dai.NNData,
+        boxes: np.ndarray,
+        scores: np.ndarray,
+        labels: np.ndarray,
+        label_names_list: list[str] | None,
+        final_mask: np.ndarray | None,
+    ) -> None:
+        message = create_detection_message(
+            bboxes=boxes,
+            scores=scores,
+            labels=labels.astype(int),
+            label_names=label_names_list,
+            masks=final_mask,
+        )
 
-            scores = np.max(prob, axis=2).squeeze()  # (num_queries,)
-            labels = np.argmax(prob, axis=2).squeeze()  # (num_queries,)
+        transformation = output.getTransformation()
+        if transformation is not None:
+            message.setTransformation(transformation)
+        message.setTimestamp(output.getTimestamp())
+        message.setSequenceNum(output.getSequenceNum())
+        message.setTimestampDevice(output.getTimestampDevice())
 
-            sorted_idx = np.argsort(scores)[::-1]
-
-            effective_max_det = self.max_det
-            if masks_tensor is not None:
-                # SegmentationMask is uint8 and reserves 255 for background,
-                # so valid instance IDs are 0..254.
-                max_segmentation_instances = 255
-
-                num_valid_instances = int(
-                    np.count_nonzero(
-                        scores[sorted_idx][: self.max_det] > self.conf_threshold
-                    )
-                )
-                if num_valid_instances > max_segmentation_instances:
-                    self._logger.warning(
-                        "RFDETRParser can encode at most 255 instances in "
-                        "SegmentationMask; ignoring "
-                        f"{num_valid_instances - max_segmentation_instances} "
-                        "lowest-scoring instances."
-                    )
-
-                effective_max_det = min(effective_max_det, max_segmentation_instances)
-
-            scores = scores[sorted_idx][:effective_max_det]
-            labels = labels[sorted_idx][:effective_max_det]
-            boxes_cxcywh = boxes_tensor.squeeze()[sorted_idx][:effective_max_det]
-
-            masks = None
-            if masks_tensor is not None:
-                masks = masks_tensor.squeeze()[sorted_idx][:effective_max_det]
-
-            # Convert boxes from cxcywh (normalized) to xyxy (normalized)
-            boxes = np.clip(xywh_to_xyxy(boxes_cxcywh), 0, 1)
-
-            # Filter detections by confidence threshold
-            confidence_mask = scores > self.conf_threshold
-            scores = scores[confidence_mask]
-            labels = labels[confidence_mask]
-            boxes = boxes[confidence_mask]
-            boxes_cxcywh = boxes_cxcywh[confidence_mask]
-
-            if masks is not None:
-                masks = masks[confidence_mask]
-
-            final_mask = None
-            mode = self._SEG_MODE if masks is not None else self._DET_MODE
-
-            if mode == self._SEG_MODE:
-                if self.input_shape is None:
-                    raise ValueError(
-                        "RFDETRParser segmentation mode requires model input shape."
-                    )
-
-                final_mask = np.full(self.input_shape, 255, dtype=np.uint8)
-
-                for i, (mask_logits, bbox) in enumerate(zip(masks, boxes_cxcywh)):
-                    resized_mask = process_single_mask_rfdetr(
-                        mask_logits=mask_logits,
-                        mask_conf=self.mask_conf,
-                        bbox=bbox,
-                        input_shape=self.input_shape,
-                    )
-                    foreground = resized_mask > 0
-                    final_mask[(final_mask == 255) & foreground] = i
-
-            boxes = xyxy_to_xywh(boxes)
-
-            label_names_list = None
-            if self.label_names:
-                label_names_list = [
-                    (
-                        self.label_names[int(label)]
-                        if int(label) < len(self.label_names)
-                        else f"class_{int(label)}"
-                    )
-                    for label in labels
-                ]
-
-            # Create detection message
-            message = create_detection_message(
-                bboxes=boxes,
-                scores=scores,
-                labels=labels.astype(int),
-                label_names=label_names_list,
-                masks=final_mask,
-            )
-
-            # Set message metadata
-            transformation = output.getTransformation()
-            if transformation is not None:
-                message.setTransformation(transformation)
-            message.setTimestamp(output.getTimestamp())
-            message.setSequenceNum(output.getSequenceNum())
-            message.setTimestampDevice(output.getTimestampDevice())
-
-            self._logger.debug(f"Created detections message with {len(boxes)} objects")
-            self.out.send(message)
-            self._logger.debug("Detections message sent successfully")
+        self._logger.debug(f"Created detections message with {len(boxes)} objects")
+        self.out.send(message)
+        self._logger.debug("Detections message sent successfully")

@@ -4,7 +4,7 @@ import depthai as dai
 
 from depthai_nodes.message.creators import create_image_message
 from depthai_nodes.node.parsers.base_parser import BaseParser
-from depthai_nodes.node.parsers.utils import unnormalize_image
+from depthai_nodes.node.parsers.utils.image_output import compute_image_output
 
 
 class ImageOutputParser(BaseParser):
@@ -102,45 +102,43 @@ class ImageOutputParser(BaseParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            layers = output.getAllLayerNames()
-            self._logger.debug(f"Processing input with layers: {layers}")
-            if len(layers) == 1 and self.output_layer_name == "":
-                self.output_layer_name = layers[0]
-            elif len(layers) != 1 and self.output_layer_name == "":
-                raise ValueError(
-                    f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
-                )
+            output_image = self.extract(output)
+            image = self.compute(output_image)
+            self.emit(output, image)
 
-            output_image = output.getTensor(self.output_layer_name, dequantize=True)
-
-            if output_image.shape[0] == 1:
-                output_image = output_image[0]  # remove batch dimension
-
-            if len(output_image.shape) != 3:
-                raise ValueError(
-                    f"Expected 3D output tensor, got {len(output_image.shape)}D."
-                )
-
-            image = unnormalize_image(output_image)
-
-            image_message = create_image_message(
-                image=image,
-                is_bgr=self.output_is_bgr,
-                img_frame_type=(
-                    dai.ImgFrame.Type.BGR888p
-                    if self._platform == "RVC2"
-                    else dai.ImgFrame.Type.BGR888i
-                ),
+    def extract(self, output: dai.NNData):
+        layers = output.getAllLayerNames()
+        self._logger.debug(f"Processing input with layers: {layers}")
+        if len(layers) == 1 and self.output_layer_name == "":
+            self.output_layer_name = layers[0]
+        elif len(layers) != 1 and self.output_layer_name == "":
+            raise ValueError(
+                f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
             )
-            image_message.setTimestamp(output.getTimestamp())
-            image_message.setSequenceNum(output.getSequenceNum())
-            image_message.setTimestampDevice(output.getTimestampDevice())
-            transformation = output.getTransformation()
-            if transformation is not None:
-                image_message.setTransformation(transformation)
 
-            self._logger.debug(f"Created image message with shape {image.shape}")
+        return output.getTensor(self.output_layer_name, dequantize=True)
 
-            self.out.send(image_message)
+    @staticmethod
+    def compute(output_image):
+        return compute_image_output(output_image)
 
-            self._logger.debug("Image message sent successfully")
+    def emit(self, output: dai.NNData, image) -> None:
+        image_message = create_image_message(
+            image=image,
+            is_bgr=self.output_is_bgr,
+            img_frame_type=(
+                dai.ImgFrame.Type.BGR888p
+                if self._platform == "RVC2"
+                else dai.ImgFrame.Type.BGR888i
+            ),
+        )
+        image_message.setTimestamp(output.getTimestamp())
+        image_message.setSequenceNum(output.getSequenceNum())
+        image_message.setTimestampDevice(output.getTimestampDevice())
+        transformation = output.getTransformation()
+        if transformation is not None:
+            image_message.setTransformation(transformation)
+
+        self._logger.debug(f"Created image message with shape {image.shape}")
+        self.out.send(image_message)
+        self._logger.debug("Image message sent successfully")

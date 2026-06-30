@@ -274,3 +274,65 @@ def decode_and_prune_detections(
     scores_filtered = scores_filtered[:, np.newaxis]
 
     return bboxes, keypoints, scores_filtered
+
+
+def compute_yunet_detections(
+    *,
+    input_size: tuple[int, int],
+    loc: np.ndarray,
+    conf: np.ndarray,
+    iou: np.ndarray,
+    conf_threshold: float,
+    iou_threshold: float,
+    max_det: int,
+    anchors: np.ndarray,
+    label_names: list[str] | None = None,
+    nms_fn=None,
+    top_left_wh_to_xywh_fn=None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[str] | None]:
+    """Decode YuNet outputs into final detection payloads."""
+    bboxes, keypoints, scores = decode_and_prune_detections(
+        input_size=input_size,
+        loc=loc,
+        conf=conf,
+        iou=iou,
+        conf_threshold=conf_threshold,
+        anchors=anchors,
+    )
+
+    if len(bboxes) == 0:
+        return (
+            np.array([]),
+            np.array([]),
+            np.array([]),
+            np.array([], dtype=int),
+            [] if label_names is not None else None,
+        )
+
+    bboxes, keypoints, scores = format_detections(
+        bboxes=bboxes,
+        keypoints=keypoints,
+        scores=scores,
+        input_size=input_size,
+    )
+
+    keep_indices = nms_fn(
+        bboxes=bboxes,
+        scores=scores,
+        conf_threshold=conf_threshold,
+        iou_threshold=iou_threshold,
+        max_det=max_det,
+    )
+
+    bboxes = top_left_wh_to_xywh_fn(bboxes[keep_indices])
+    keypoints = keypoints[keep_indices]
+    scores = scores[keep_indices]
+
+    bboxes = np.clip(bboxes, 0, 1)
+    keypoints = np.clip(keypoints, 0, 1)
+
+    labels = np.zeros(len(bboxes), dtype=int)
+    mapped_label_names = (
+        [label_names[label] for label in labels] if label_names else None
+    )
+    return bboxes, keypoints, scores, labels, mapped_label_names

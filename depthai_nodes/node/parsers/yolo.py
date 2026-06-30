@@ -16,6 +16,7 @@ from depthai_nodes.node.parsers.utils.masks_utils import (
 )
 from depthai_nodes.node.parsers.utils.yolo import (
     YOLOSubtype,
+    compute_yolo_detections,
     decode_yolo26,
     decode_yolo_output,
     parse_kpts,
@@ -421,67 +422,61 @@ class YOLOExtendedParser(BaseParser):
                 output: dai.NNData = self.input.get()
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped, no more data
-            # Get all the layer names
-            layer_names = self.output_layer_names or output.getAllLayerNames()
-            self._logger.debug(f"Processing input with layers: {layer_names}")
+            extracted = self.extract(output)
+            payload = self.compute(**extracted)
+            self.emit(output, payload)
 
-            if self.subtype == YOLOSubtype.V26:
-                # YOLO26 end2end: infer task type from output layer names
-                if any("output_masks" in name for name in layer_names):
-                    outputs_values = [
-                        output.getTensor("output_yolo26", dequantize=True).astype(
-                            np.float32
-                        )
-                    ]
-                    self._mask_coeffs = output.getTensor(
-                        "output_masks", dequantize=True
-                    ).astype(np.float32)
-                    self._protos = output.getTensor(
-                        self._protos_layer_name,
-                        dequantize=True,
-                        storageOrder=dai.TensorInfo.StorageOrder.NCHW,
-                    ).astype(np.float32)
-                elif any("kpt_output" in name for name in layer_names):
-                    outputs_values = [
-                        output.getTensor("output_yolo26", dequantize=True).astype(
-                            np.float32
-                        )
-                    ]
-                    self._kpts_output = output.getTensor(
-                        "kpt_output", dequantize=True
-                    ).astype(np.float32)
-                else:
-                    outputs_names = list(layer_names)
-                    outputs_values = [
-                        output.getTensor(o, dequantize=True).astype(np.float32)
-                        for o in outputs_names
-                    ]
-            else:
-                outputs_names = sorted(
-                    [name for name in layer_names if "_yolo" in name or "yolo-" in name]
-                )
+    def extract(self, output: dai.NNData) -> dict[str, Any]:
+        layer_names = self.output_layer_names or output.getAllLayerNames()
+        self._logger.debug(f"Processing input with layers: {layer_names}")
+
+        kpts_outputs = None
+        masks_outputs_values = None
+        protos_output = None
+        protos_len = None
+        v26_mask_coeffs = None
+        v26_protos = None
+        v26_pose_kpts = None
+
+        if self.subtype == YOLOSubtype.V26:
+            if any("output_masks" in name for name in layer_names):
                 outputs_values = [
-                    output.getTensor(
-                        o,
-                        dequantize=True,
-                        storageOrder=dai.TensorInfo.StorageOrder.NCHW,
-                    ).astype(np.float32)
-                    for o in outputs_names
+                    output.getTensor("output_yolo26", dequantize=True).astype(np.float32)
                 ]
+                v26_mask_coeffs = output.getTensor(
+                    "output_masks", dequantize=True
+                ).astype(np.float32)
+                v26_protos = output.getTensor(
+                    self._protos_layer_name,
+                    dequantize=True,
+                    storageOrder=dai.TensorInfo.StorageOrder.NCHW,
+                ).astype(np.float32)[0]
+            elif any("kpt_output" in name for name in layer_names):
+                outputs_values = [
+                    output.getTensor("output_yolo26", dequantize=True).astype(np.float32)
+                ]
+                v26_pose_kpts = output.getTensor(
+                    "kpt_output", dequantize=True
+                ).astype(np.float32)
+            else:
+                outputs_values = [
+                    output.getTensor(o, dequantize=True).astype(np.float32)
+                    for o in list(layer_names)
+                ]
+        else:
+            outputs_names = sorted(
+                [name for name in layer_names if "_yolo" in name or "yolo-" in name]
+            )
+            outputs_values = [
+                output.getTensor(
+                    o,
+                    dequantize=True,
+                    storageOrder=dai.TensorInfo.StorageOrder.NCHW,
+                ).astype(np.float32)
+                for o in outputs_names
+            ]
 
-            if self.subtype == YOLOSubtype.V26:
-                if any("kpt_output" in name for name in layer_names):
-                    mode = self._KPTS_MODE
-                elif any("output_masks" in name for name in layer_names):
-                    mode = self._SEG_MODE
-                else:
-                    mode = self._DET_MODE
-            elif (
-                any("kpt_output" in name for name in layer_names)
-                and self.subtype != YOLOSubtype.P
-            ):
-                mode = self._KPTS_MODE
-                # Get the keypoint outputs
+            if any("kpt_output" in name for name in layer_names) and self.subtype != YOLOSubtype.P:
                 kpts_output_names = sorted(
                     [name for name in layer_names if "kpt_output" in name]
                 )
@@ -489,201 +484,79 @@ class YOLOExtendedParser(BaseParser):
                     output.getTensor(o, dequantize=True).astype(np.float32)
                     for o in kpts_output_names
                 ]
-            elif (
-                any("_masks" in name for name in layer_names)
-                and self.subtype != YOLOSubtype.P
-            ):
-                mode = self._SEG_MODE
-                # Get the segmentation outputs
+            elif any("_masks" in name for name in layer_names) and self.subtype != YOLOSubtype.P:
                 (
                     masks_outputs_values,
                     protos_output,
                     protos_len,
                 ) = get_segmentation_outputs(output)
-            else:
-                mode = self._DET_MODE
 
-            # Get the model's input shape
-            if self.subtype == YOLOSubtype.V26:
-                if self.input_shape is None:
-                    raise ValueError(
-                        "YOLO26 parsing requires model input shape in head_config."
-                    )
-                input_shape = self.input_shape
-            else:
-                strides = (
-                    [8, 16, 32]
-                    if self.subtype
-                    not in [YOLOSubtype.V3UT, YOLOSubtype.V3T, YOLOSubtype.V4T]
-                    else [16, 32]
-                )
-                input_shape = tuple(
-                    dim * strides[0] for dim in outputs_values[0].shape[2:4]
-                )
+        return {
+            "subtype": self.subtype,
+            "layer_names": list(layer_names),
+            "outputs_values": outputs_values,
+            "conf_threshold": self.conf_threshold,
+            "n_classes": self.n_classes,
+            "iou_threshold": self.iou_threshold,
+            "max_det": self.max_det,
+            "anchors": self.anchors,
+            "n_keypoints": self.n_keypoints,
+            "label_names": self.label_names,
+            "keypoint_label_names": self.keypoint_label_names,
+            "keypoint_edges": self.keypoint_edges,
+            "input_shape": self.input_shape,
+            "kpts_outputs": kpts_outputs,
+            "masks_outputs_values": masks_outputs_values,
+            "protos_output": protos_output,
+            "protos_len": protos_len,
+            "mask_conf": self.mask_conf,
+            "v26_mask_coeffs": v26_mask_coeffs,
+            "v26_protos": v26_protos,
+            "v26_pose_kpts": v26_pose_kpts,
+        }
 
-            # Reshape the anchors based on the model's output heads
-            if self.subtype != YOLOSubtype.V26 and self.anchors is not None:
-                self.anchors = np.array(self.anchors).reshape(len(strides), -1)
+    @staticmethod
+    def compute(**kwargs) -> dict[str, Any]:
+        return compute_yolo_detections(**kwargs)
 
-            # Ensure the number of classes is correct
-            if self.subtype != YOLOSubtype.V26:
-                num_classes_check = (
-                    outputs_values[0].shape[1] - 5
-                    if self.anchors is None
-                    else (outputs_values[0].shape[1] // self.anchors.shape[0]) - 5
-                )
-                if num_classes_check != self.n_classes:
-                    raise ValueError(
-                        f"The provided number of classes {self.n_classes} does not match the model's {num_classes_check}."
-                    )
-
-            # Ensure the number of keypoints is correct (skip for V26 pose which handles kpts differently)
-            if mode == self._KPTS_MODE and self.subtype != YOLOSubtype.V26:
-                num_keypoints_check = kpts_outputs[0].shape[1] // 3
-                if num_keypoints_check != self.n_keypoints:
-                    raise ValueError(
-                        f"The provided number of keypoints {self.n_keypoints} does not match the model's {num_keypoints_check}."
-                    )
-
-            # Decode the outputs
-            if self.subtype == YOLOSubtype.V26:
-                if len(outputs_values) != 1:
-                    raise ValueError("YOLO26 requires detection output layer.")
-                if mode == self._SEG_MODE:
-                    extra_raw = self._mask_coeffs
-                elif mode == self._KPTS_MODE:
-                    extra_raw = self._kpts_output
-                else:
-                    extra_raw = None
-
-                results, extra = decode_yolo26(
-                    outputs_values[0],
-                    self.conf_threshold,
-                    self.max_det,
-                    extra_raw=extra_raw,
-                )
-
-                if mode == self._SEG_MODE:
-                    self._v26_seg_mask_coeffs = extra
-                    self._v26_seg_protos = self._protos[0]  # (nm, H, W)
-                elif mode == self._KPTS_MODE:
-                    self._v26_pose_kpts = extra
-            else:
-                results = decode_yolo_output(
-                    outputs_values,
-                    strides,
-                    self.anchors,
-                    kpts=kpts_outputs if mode == self._KPTS_MODE else None,
-                    conf_thres=self.conf_threshold,
-                    iou_thres=self.iou_threshold,
-                    num_classes=self.n_classes,
-                    det_mode=mode == self._DET_MODE,
-                    subtype=self.subtype,
-                )
-
-            bboxes, labels, label_names, scores, additional_output = [], [], [], [], []
-            final_mask = np.full(input_shape, 255, dtype=np.uint8)
-            for i in range(results.shape[0]):
-                bbox, conf, label, other = (
-                    results[i, :4],
-                    results[i, 4],
-                    results[i, 5].astype(int),
-                    results[i, 6:],
-                )
-
-                bbox = xyxy_to_xywh(bbox.reshape(1, 4))
-                bbox = normalize_bboxes(
-                    bbox, height=input_shape[0], width=input_shape[1]
-                )[0]
-                bboxes.append(bbox)
-                labels.append(int(label))
-                if self.label_names:
-                    label_names.append(self.label_names[int(label)])
-                scores.append(conf)
-
-                if mode == self._KPTS_MODE:
-                    if self.subtype == YOLOSubtype.V26:
-                        kpts = parse_kpts(
-                            self._v26_pose_kpts[i], self.n_keypoints, input_shape
-                        )
-                    else:
-                        kpts = parse_kpts(other, self.n_keypoints, input_shape)
-                    additional_output.append(kpts)
-                elif mode == self._SEG_MODE:
-                    if self.subtype == YOLOSubtype.V26:
-                        # V26 segmentation: mask coefficients are directly available
-                        mask_coeff = self._v26_seg_mask_coeffs[i]
-                        mask = process_single_mask(
-                            self._v26_seg_protos, mask_coeff, self.mask_conf, bbox
-                        )
-                    else:
-                        # Other YOLO versions: extract mask coefficients from indexed outputs
-                        seg_coeff = other.astype(int)
-                        hi, ai, xi, yi = seg_coeff
-                        mask_coeff = masks_outputs_values[hi][
-                            0, ai * protos_len : (ai + 1) * protos_len, yi, xi
-                        ]
-                        mask = process_single_mask(
-                            protos_output[0], mask_coeff, self.mask_conf, bbox
-                        )
-                    # Resize mask to input shape
-                    resized_mask = cv2.resize(
-                        mask,
-                        (input_shape[1], input_shape[0]),
-                        interpolation=cv2.INTER_NEAREST,
-                    )
-                    # Fill the final mask with the instance values
-                    final_mask[resized_mask > 0] = i
-
-            bboxes = np.array(bboxes)
-            bboxes = np.clip(bboxes, 0, 1)
-
-            if mode == self._KPTS_MODE:
-                additional_output = np.array(additional_output)
-                keypoints = np.array([])
-                keypoints_scores = np.array([])
-                if additional_output.size > 0:
-                    keypoints = additional_output[:, :, :2]
-                    keypoints_scores = additional_output[:, :, 2]
-
-                keypoints = np.clip(keypoints, 0, 1)
-                detections_message = create_detection_message(
-                    bboxes=bboxes,
-                    scores=np.array(scores),
-                    labels=np.array(labels),
-                    label_names=label_names,
-                    keypoints=keypoints,
-                    keypoints_scores=keypoints_scores,
-                    keypoint_label_names=self.keypoint_label_names,
-                    keypoint_edges=self.keypoint_edges,
-                )
-            elif mode == self._SEG_MODE:
-                detections_message = create_detection_message(
-                    bboxes=bboxes,
-                    scores=np.array(scores),
-                    labels=np.array(labels),
-                    label_names=label_names,
-                    masks=final_mask,
-                )
-            else:
-                detections_message = create_detection_message(
-                    bboxes=bboxes,
-                    scores=np.array(scores),
-                    labels=np.array(labels),
-                    label_names=label_names,
-                )
-
-            detections_message.setTimestamp(output.getTimestamp())
-            detections_message.setTimestampDevice(output.getTimestampDevice())
-            detections_message.setSequenceNum(output.getSequenceNum())
-            transformation = output.getTransformation()
-            if transformation is not None:
-                detections_message.setTransformation(transformation)
-
-            self._logger.debug(
-                f"Created detection message with {len(bboxes)} detections"
+    def emit(self, output: dai.NNData, payload: dict[str, Any]) -> None:
+        mode = payload["mode"]
+        if mode == self._KPTS_MODE:
+            detections_message = create_detection_message(
+                bboxes=payload["bboxes"],
+                scores=payload["scores"],
+                labels=payload["labels"],
+                label_names=payload["label_names"],
+                keypoints=payload["keypoints"],
+                keypoints_scores=payload["keypoints_scores"],
+                keypoint_label_names=payload["keypoint_label_names"],
+                keypoint_edges=payload["keypoint_edges"],
+            )
+        elif mode == self._SEG_MODE:
+            detections_message = create_detection_message(
+                bboxes=payload["bboxes"],
+                scores=payload["scores"],
+                labels=payload["labels"],
+                label_names=payload["label_names"],
+                masks=payload["masks"],
+            )
+        else:
+            detections_message = create_detection_message(
+                bboxes=payload["bboxes"],
+                scores=payload["scores"],
+                labels=payload["labels"],
+                label_names=payload["label_names"],
             )
 
-            self.out.send(detections_message)
+        detections_message.setTimestamp(output.getTimestamp())
+        detections_message.setTimestampDevice(output.getTimestampDevice())
+        detections_message.setSequenceNum(output.getSequenceNum())
+        transformation = output.getTransformation()
+        if transformation is not None:
+            detections_message.setTransformation(transformation)
 
-            self._logger.debug("Detection message sent successfully")
+        self._logger.debug(
+            f"Created detection message with {len(payload['bboxes'])} detections"
+        )
+        self.out.send(detections_message)
+        self._logger.debug("Detection message sent successfully")

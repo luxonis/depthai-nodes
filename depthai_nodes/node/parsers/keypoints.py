@@ -5,6 +5,7 @@ import numpy as np
 
 from depthai_nodes.message.creators import create_keypoints_message
 from depthai_nodes.node.parsers.base_parser import BaseParser
+from depthai_nodes.node.parsers.utils.keypoints import compute_keypoints
 
 
 class KeypointParser(BaseParser):
@@ -209,45 +210,52 @@ class KeypointParser(BaseParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            layers = output.getAllLayerNames()
-            self._logger.debug(f"Processing input with layers: {layers}")
-            if len(layers) == 1 and self.output_layer_name == "":
-                self.output_layer_name = layers[0]
-            elif len(layers) != 1 and self.output_layer_name == "":
-                raise ValueError(
-                    f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
-                )
-
-            keypoints = output.getTensor(
-                self.output_layer_name, dequantize=True
-            ).astype(np.float32)
-            num_coords = int(np.prod(keypoints.shape) / self.n_keypoints)
-
-            if num_coords not in [2, 3]:
-                raise ValueError(
-                    f"Expected 2 or 3 coordinates per keypoint, got {num_coords}."
-                )
-
-            keypoints = keypoints.reshape(self.n_keypoints, num_coords)
-
-            keypoints /= self.scale_factor
-
-            keypoints = np.clip(keypoints, 0, 1)
-
-            msg = create_keypoints_message(
-                keypoints, edges=self.edges, label_names=self.label_names
+            keypoints = self.extract(output)
+            keypoints = self.compute(
+                keypoints,
+                n_keypoints=self.n_keypoints,
+                scale_factor=self.scale_factor,
             )
-            msg.setTimestamp(output.getTimestamp())
-            msg.setSequenceNum(output.getSequenceNum())
-            msg.setTimestampDevice(output.getTimestampDevice())
-            transformation = output.getTransformation()
-            if transformation is not None:
-                msg.setTransformation(transformation)
+            self.emit(output, keypoints)
 
-            self._logger.debug(
-                f"Created keypoints message with {len(keypoints)} points"
+    def extract(self, output: dai.NNData) -> np.ndarray:
+        layers = output.getAllLayerNames()
+        self._logger.debug(f"Processing input with layers: {layers}")
+        if len(layers) == 1 and self.output_layer_name == "":
+            self.output_layer_name = layers[0]
+        elif len(layers) != 1 and self.output_layer_name == "":
+            raise ValueError(
+                f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
             )
 
-            self.out.send(msg)
+        return output.getTensor(self.output_layer_name, dequantize=True).astype(
+            np.float32
+        )
 
-            self._logger.debug("Keypoint output sent successfully")
+    @staticmethod
+    def compute(
+        keypoints: np.ndarray,
+        *,
+        n_keypoints: int,
+        scale_factor: float = 1.0,
+    ) -> np.ndarray:
+        return compute_keypoints(
+            keypoints,
+            n_keypoints=n_keypoints,
+            scale_factor=scale_factor,
+        )
+
+    def emit(self, output: dai.NNData, keypoints: np.ndarray) -> None:
+        msg = create_keypoints_message(
+            keypoints, edges=self.edges, label_names=self.label_names
+        )
+        msg.setTimestamp(output.getTimestamp())
+        msg.setSequenceNum(output.getSequenceNum())
+        msg.setTimestampDevice(output.getTimestampDevice())
+        transformation = output.getTransformation()
+        if transformation is not None:
+            msg.setTransformation(transformation)
+
+        self._logger.debug(f"Created keypoints message with {len(keypoints)} points")
+        self.out.send(msg)
+        self._logger.debug("Keypoint output sent successfully")

@@ -173,3 +173,22 @@ def parse_paddle_detection_outputs(
     if boxes.size > 0:
         boxes = np.clip(boxes, 0.0, 1.0)
     return boxes, angles, scores
+
+
+def compute_pp_text_detections(
+    predictions: np.ndarray,
+    *,
+    mask_threshold: float,
+    conf_threshold: float,
+    max_det: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Decode PaddleOCR text detection output into boxes, angles, and scores."""
+    _, _, height, width = predictions.shape
+    return parse_paddle_detection_outputs(
+        predictions,
+        mask_threshold,
+        conf_threshold,
+        max_det,
+        width=width,
+        height=height,
+    )

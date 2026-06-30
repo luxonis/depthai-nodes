@@ -37,3 +37,23 @@ def normalize_keypoints(keypoints: np.ndarray, height: int, width: int) -> np.nd
     keypoints[:, 1] = keypoints[:, 1] / height
 
     return keypoints
+
+
+def compute_keypoints(
+    keypoints: np.ndarray,
+    *,
+    n_keypoints: int,
+    scale_factor: float = 1.0,
+) -> np.ndarray:
+    """Reshape and normalize a keypoint tensor."""
+    parsed_keypoints = np.asarray(keypoints, dtype=np.float32)
+    num_coords = int(np.prod(parsed_keypoints.shape) / n_keypoints)
+
+    if num_coords not in [2, 3]:
+        raise ValueError(
+            f"Expected 2 or 3 coordinates per keypoint, got {num_coords}."
+        )
+
+    parsed_keypoints = parsed_keypoints.reshape(n_keypoints, num_coords)
+    parsed_keypoints /= scale_factor
+    return np.clip(parsed_keypoints, 0, 1)

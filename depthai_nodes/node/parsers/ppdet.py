@@ -5,7 +5,7 @@ import numpy as np
 
 from depthai_nodes.message.creators import create_detection_message
 from depthai_nodes.node.parsers.detection import DetectionParser
-from depthai_nodes.node.parsers.utils.ppdet import parse_paddle_detection_outputs
+from depthai_nodes.node.parsers.utils.ppdet import compute_pp_text_detections
 
 
 class PPTextDetectionParser(DetectionParser):
@@ -106,47 +106,65 @@ class PPTextDetectionParser(DetectionParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            layers = output.getAllLayerNames()
-            self._logger.debug(f"Processing input with layers: {layers}")
-            if len(layers) == 1 and self.output_layer_name == "":
-                self.output_layer_name = layers[0]
-            elif len(layers) != 1 and self.output_layer_name == "":
-                raise ValueError(
-                    f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
-                )
-
-            predictions = np.array(
-                output.getTensor(
-                    self.output_layer_name,
-                    dequantize=True,
-                    storageOrder=dai.TensorInfo.StorageOrder.NCHW,
-                )
-            )
-
-            _, _, height, width = predictions.shape
-
-            bboxes, angles, scores = parse_paddle_detection_outputs(
+            predictions = self.extract(output)
+            bboxes, angles, scores = self.compute(
                 predictions,
-                self.mask_threshold,
-                self.conf_threshold,
-                self.max_det,
-                width=width,
-                height=height,
+                mask_threshold=self.mask_threshold,
+                conf_threshold=self.conf_threshold,
+                max_det=self.max_det,
             )
-            message = create_detection_message(
-                bboxes=bboxes, scores=scores, angles=angles
-            )
-            message.setTimestamp(output.getTimestamp())
-            message.setSequenceNum(output.getSequenceNum())
-            message.setTimestampDevice(output.getTimestampDevice())
-            transformation = output.getTransformation()
-            if transformation is not None:
-                message.setTransformation(transformation)
+            self.emit(output, bboxes, angles, scores)
 
-            self._logger.debug(
-                f"Created text detection message with {len(bboxes)} detections"
+    def extract(self, output: dai.NNData) -> np.ndarray:
+        layers = output.getAllLayerNames()
+        self._logger.debug(f"Processing input with layers: {layers}")
+        if len(layers) == 1 and self.output_layer_name == "":
+            self.output_layer_name = layers[0]
+        elif len(layers) != 1 and self.output_layer_name == "":
+            raise ValueError(
+                f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
             )
 
-            self.out.send(message)
+        return np.array(
+            output.getTensor(
+                self.output_layer_name,
+                dequantize=True,
+                storageOrder=dai.TensorInfo.StorageOrder.NCHW,
+            )
+        )
 
-            self._logger.debug("Text detection message sent successfully")
+    @staticmethod
+    def compute(
+        predictions: np.ndarray,
+        *,
+        mask_threshold: float,
+        conf_threshold: float,
+        max_det: int,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        return compute_pp_text_detections(
+            predictions,
+            mask_threshold=mask_threshold,
+            conf_threshold=conf_threshold,
+            max_det=max_det,
+        )
+
+    def emit(
+        self,
+        output: dai.NNData,
+        bboxes: np.ndarray,
+        angles: np.ndarray,
+        scores: np.ndarray,
+    ) -> None:
+        message = create_detection_message(bboxes=bboxes, scores=scores, angles=angles)
+        message.setTimestamp(output.getTimestamp())
+        message.setSequenceNum(output.getSequenceNum())
+        message.setTimestampDevice(output.getTimestampDevice())
+        transformation = output.getTransformation()
+        if transformation is not None:
+            message.setTransformation(transformation)
+
+        self._logger.debug(
+            f"Created text detection message with {len(bboxes)} detections"
+        )
+        self.out.send(message)
+        self._logger.debug("Text detection message sent successfully")

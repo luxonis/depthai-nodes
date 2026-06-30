@@ -60,3 +60,20 @@ def get_pose_prediction(heatmap, locref, scale_factors):
     )
 
     return pose
+
+
+def compute_superanimal_keypoints(
+    heatmaps: np.ndarray,
+    *,
+    scale_factor: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Extract normalized keypoints and scores from SuperAnimal heatmaps."""
+    heatmaps_scale_factor = (
+        scale_factor / heatmaps.shape[1],
+        scale_factor / heatmaps.shape[2],
+    )
+
+    keypoints = get_pose_prediction(heatmaps, None, heatmaps_scale_factor)[0][0]
+    scores = keypoints[:, 2]
+    keypoints = keypoints[:, :2] / scale_factor
+    return keypoints, scores

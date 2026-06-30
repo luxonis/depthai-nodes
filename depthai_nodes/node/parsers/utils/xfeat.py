@@ -285,6 +285,28 @@ def detect_and_compute(
     return result
 
 
+def compute_xfeat_result(
+    feats: np.ndarray,
+    keypoints: np.ndarray,
+    heatmaps: np.ndarray,
+    *,
+    resize_rate_w: float,
+    resize_rate_h: float,
+    input_size: tuple[int, int],
+    max_keypoints: int,
+) -> list[dict[str, Any]] | None:
+    """Compute XFeat keypoints, scores, and descriptors."""
+    return detect_and_compute(
+        feats,
+        keypoints,
+        heatmaps,
+        resize_rate_w,
+        resize_rate_h,
+        input_size,
+        max_keypoints,
+    )
+
+
 def _match_mkpts(
     feats1: np.ndarray, feats2: np.ndarray, min_cossim: float = 0.62
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -343,3 +365,10 @@ def match(
     mkpts1 = result2["keypoints"][indexes2]
 
     return mkpts0, mkpts1
+
+
+def compute_xfeat_matches(
+    result1: dict[str, Any], result2: dict[str, Any], min_cossim: float = -1
+) -> tuple[np.ndarray, np.ndarray]:
+    """Compute matched XFeat keypoints."""
+    return match(result1, result2, min_cossim=min_cossim)

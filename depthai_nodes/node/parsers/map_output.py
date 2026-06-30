@@ -4,6 +4,7 @@ import depthai as dai
 
 from depthai_nodes.message.creators import create_map_message
 from depthai_nodes.node.parsers.base_parser import BaseParser
+from depthai_nodes.node.parsers.utils.map_output import compute_map_output
 
 
 class MapOutputParser(BaseParser):
@@ -99,32 +100,37 @@ class MapOutputParser(BaseParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            layers = output.getAllLayerNames()
-            self._logger.debug(f"Processing input with layers: {layers}")
-            if len(layers) == 1 and self.output_layer_name == "":
-                self.output_layer_name = layers[0]
-            elif len(layers) != 1 and self.output_layer_name == "":
-                raise ValueError(
-                    f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
-                )
+            map_tensor = self.extract(output)
+            map_output = self.compute(map_tensor)
+            self.emit(output, map_output)
 
-            map = output.getTensor(self.output_layer_name, dequantize=True)
-
-            if map.shape[0] == 1:
-                map = map[0]  # remove batch dimension
-
-            map_message = create_map_message(
-                map=map, min_max_scaling=self.min_max_scaling
+    def extract(self, output: dai.NNData):
+        layers = output.getAllLayerNames()
+        self._logger.debug(f"Processing input with layers: {layers}")
+        if len(layers) == 1 and self.output_layer_name == "":
+            self.output_layer_name = layers[0]
+        elif len(layers) != 1 and self.output_layer_name == "":
+            raise ValueError(
+                f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
             )
-            map_message.setTimestamp(output.getTimestamp())
-            map_message.setTimestampDevice(output.getTimestampDevice())
-            map_message.setSequenceNum(output.getSequenceNum())
-            transformation = output.getTransformation()
-            if transformation is not None:
-                map_message.setTransformation(transformation)
 
-            self._logger.debug("Created Map message.")
+        return output.getTensor(self.output_layer_name, dequantize=True)
 
-            self.out.send(map_message)
+    @staticmethod
+    def compute(map_tensor):
+        return compute_map_output(map_tensor)
 
-            self._logger.debug("Map message sent successfully")
+    def emit(self, output: dai.NNData, map_output) -> None:
+        map_message = create_map_message(
+            map=map_output, min_max_scaling=self.min_max_scaling
+        )
+        map_message.setTimestamp(output.getTimestamp())
+        map_message.setTimestampDevice(output.getTimestampDevice())
+        map_message.setSequenceNum(output.getSequenceNum())
+        transformation = output.getTransformation()
+        if transformation is not None:
+            map_message.setTransformation(transformation)
+
+        self._logger.debug("Created Map message.")
+        self.out.send(map_message)
+        self._logger.debug("Map message sent successfully")
