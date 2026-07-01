@@ -1,4 +1,6 @@
+from datetime import timedelta
 from string import Template
+from typing import cast
 
 import depthai as dai
 
@@ -80,9 +82,10 @@ class FrameCropper(BaseThreadedHostNode):
             FRAME_TYPE = ImgFrame.Type.$FRAME_TYPE
             RESIZE_MODE = ImageManipConfig.ResizeMode.$RESIZE_MODE
             while True:
-                # We receive 1 detection count message and image per frame
-                frame = node.inputs['inputImage'].get()
-                img_detections = node.inputs['inputImgDetections'].get()
+                # Sync guarantees the image and detections belong to the same source frame.
+                group = node.inputs['synced'].get()
+                frame = group['frame']
+                img_detections = group['detections']
                 for det in img_detections.detections:
                     rot_rect = det.getBoundingBox()
                     cfg = ImageManipConfig()
@@ -102,18 +105,30 @@ class FrameCropper(BaseThreadedHostNode):
 
     MANIP_CONFIGS_SCRIPT_CONTENT = Template(
         """
-        wait_for_cfg = $WAIT_FOR_CFG
         try:
             latest_cfgs = node.inputs['inputManipConfigs'].get()
             while True:
                 frame = node.inputs['inputImage'].get()
-                if wait_for_cfg:
-                    latest_cfgs =node.inputs['inputManipConfigs'].get()
-                else:
-                    cfgs = node.inputs['inputManipConfigs'].tryGet()
-                    if cfgs:
-                        latest_cfgs = cfgs
+                cfgs = node.inputs['inputManipConfigs'].tryGet()
+                if cfgs:
+                    latest_cfgs = cfgs
                 for key, cfg in latest_cfgs:
+                    node.outputs['manip_cfg'].send(cfg)
+                    node.outputs['manip_img'].send(frame)
+        except Exception as e:
+            node.error(str(e))
+        """
+    )
+
+    SYNCED_MANIP_CONFIGS_SCRIPT_CONTENT = Template(
+        """
+        try:
+            while True:
+                # Sync guarantees the image and config group belong to the same source frame.
+                group = node.inputs['synced'].get()
+                frame = group['frame']
+                cfgs = group['configs']
+                for key, cfg in cfgs:
                     node.outputs['manip_cfg'].send(cfg)
                     node.outputs['manip_img'].send(frame)
         except Exception as e:
@@ -123,9 +138,11 @@ class FrameCropper(BaseThreadedHostNode):
 
     def __init__(self):
         super().__init__()
-        self._cropper_image_manip = self._pipeline.create(dai.node.ImageManip)
+        self._cropper_image_manip = self.createSubnode(dai.node.ImageManip)
         self._version_selected = False
         self._output_size: tuple[int, int] | None = None  # width, height
+        self._sync: dai.node.Sync | None = None
+        self._sync_threshold: timedelta = timedelta(milliseconds=10)
 
         # when fromImgDetections is used script node can work on ImgDetections directly
         self._script: dai.node.Script | None = None
@@ -149,11 +166,13 @@ class FrameCropper(BaseThreadedHostNode):
         outputSize: tuple[int, int],
         resizeMode: dai.ImageManipConfig.ResizeMode = dai.ImageManipConfig.ResizeMode.CENTER_CROP,
         padding: float = 0.0,
+        syncThreshold: timedelta = timedelta(milliseconds=10),
     ) -> "FrameCropper":
         """Configure cropping from an ImgDetections stream.
 
-        In this mode the node generates ImageManipConfig messages per detection (via Script)
-        and outputs one cropped ImgFrame per detection. `padding` expands the crop region.
+        In this mode the node strictly timestamp-synchronizes images and detections,
+        generates ImageManipConfig messages per detection (via Script), and outputs one
+        cropped ImgFrame per detection. `padding` expands the crop region.
         """
         if self._version_selected:
             raise RuntimeError(
@@ -165,6 +184,7 @@ class FrameCropper(BaseThreadedHostNode):
         self._output_size = outputSize
         self._padding = padding
         self._resize_mode = resizeMode
+        self._sync_threshold = syncThreshold
         self._cropper_image_manip.setMaxOutputFrameSize(
             self._output_size[0] * self._output_size[1] * 3
         )
@@ -178,12 +198,15 @@ class FrameCropper(BaseThreadedHostNode):
         inputManipConfigs: dai.Node.Output,
         maxOutputFrameSize: int,
         waitForConfig: bool,
+        syncThreshold: timedelta = timedelta(milliseconds=10),
     ) -> "FrameCropper":
         """Configure cropping from a stream of precomputed ImageManipConfig groups.
 
         Expects `inputManipConfigs` to output dai.MessageGroup messages where each
         value is an ImageManipConfig. An on-device Script node pairs each config with
-        the current frame and forwards them to ImageManip.
+        the current frame and forwards them to ImageManip. When `waitForConfig` is true,
+        images and config groups are strictly timestamp-synchronized using `syncThreshold`.
+        When false, the latest config group is reused for every frame and no Sync is used.
 
         Key naming is arbitrary; all values in the MessageGroup are treated as configs.
         """
@@ -195,6 +218,7 @@ class FrameCropper(BaseThreadedHostNode):
         self._version_selected = True
         self._input_manip_configs = inputManipConfigs
         self._wait_for_cfg = waitForConfig
+        self._sync_threshold = syncThreshold
         self._cropper_image_manip.setMaxOutputFrameSize(maxOutputFrameSize)
         return self
 
@@ -225,7 +249,12 @@ class FrameCropper(BaseThreadedHostNode):
         return  # Both fromImgDetections and fromManipConfigs use on-device Script
 
     def _build_detections_cropper(self, input_image: dai.Node.Output):
-        self._script = self._pipeline.create(dai.node.Script)
+        assert self._input_img_detections is not None
+        assert self._output_size is not None
+        assert self._padding is not None
+        assert self._resize_mode is not None
+
+        self._script = cast(dai.node.Script, self.createSubnode(dai.node.Script))
         self._script.setScript(
             self.IMG_DETECTIONS_SCRIPT_CONTENT.substitute(
                 {
@@ -237,18 +266,31 @@ class FrameCropper(BaseThreadedHostNode):
                 }
             )
         )
-        input_image.link(self._script.inputs["inputImage"])
-        self._input_img_detections.link(self._script.inputs["inputImgDetections"])
+        self._sync = cast(dai.node.Sync, self.createSubnode(dai.node.Sync))
+        self._sync.setSyncThreshold(self._sync_threshold)
+        self._sync.setSyncAttempts(-1)
+        input_image.link(self._sync.inputs["frame"])
+        self._input_img_detections.link(self._sync.inputs["detections"])
+        self._sync.out.link(self._script.inputs["synced"])
         self._script.outputs["manip_cfg"].link(self._cropper_image_manip.inputConfig)
         self._script.outputs["manip_img"].link(self._cropper_image_manip.inputImage)
 
     def _build_manip_configs_cropper(self, input_image: dai.Node.Output):
-        self._script = self._pipeline.create(dai.node.Script)
-        script_content = self.MANIP_CONFIGS_SCRIPT_CONTENT.substitute(
-            {"WAIT_FOR_CFG": self._wait_for_cfg}
-        )
+        assert self._input_manip_configs is not None
+
+        self._script = cast(dai.node.Script, self.createSubnode(dai.node.Script))
+        if self._wait_for_cfg:
+            script_content = self.SYNCED_MANIP_CONFIGS_SCRIPT_CONTENT.substitute()
+            self._sync = cast(dai.node.Sync, self.createSubnode(dai.node.Sync))
+            self._sync.setSyncThreshold(self._sync_threshold)
+            self._sync.setSyncAttempts(-1)
+            input_image.link(self._sync.inputs["frame"])
+            self._input_manip_configs.link(self._sync.inputs["configs"])
+            self._sync.out.link(self._script.inputs["synced"])
+        else:
+            script_content = self.MANIP_CONFIGS_SCRIPT_CONTENT.substitute()
+            input_image.link(self._script.inputs["inputImage"])
+            self._input_manip_configs.link(self._script.inputs["inputManipConfigs"])
         self._script.setScript(script_content)
-        input_image.link(self._script.inputs["inputImage"])
-        self._input_manip_configs.link(self._script.inputs["inputManipConfigs"])
         self._script.outputs["manip_cfg"].link(self._cropper_image_manip.inputConfig)
         self._script.outputs["manip_img"].link(self._cropper_image_manip.inputImage)
