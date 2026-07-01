@@ -6,13 +6,7 @@ import numpy as np
 from depthai_nodes.message.creators import create_segmentation_message
 from depthai_nodes.node.parsers.base_parser import BaseParser
 from depthai_nodes.node.parsers.utils.fastsam import (
-    box_prompt,
-    build_mask_coeffs,
     compute_fastsam_mask,
-    decode_fastsam_output,
-    merge_masks,
-    point_prompt,
-    process_masks,
 )
 from depthai_nodes.node.parsers.utils.masks_utils import get_segmentation_outputs
 

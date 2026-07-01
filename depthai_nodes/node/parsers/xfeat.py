@@ -560,7 +560,9 @@ class XFeatStereoParser(XFeatBaseParser):
 
         return {
             "status": "matched",
-            "match_result": compute_xfeat_matches(reference_result[0], target_result[0]),
+            "match_result": compute_xfeat_matches(
+                reference_result[0], target_result[0]
+            ),
         }
 
     def emit(

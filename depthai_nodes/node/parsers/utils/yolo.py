@@ -566,7 +566,9 @@ def compute_yolo_detections(
 
     if subtype == YOLOSubtype.V26:
         if input_shape is None:
-            raise ValueError("YOLO26 parsing requires model input shape in head_config.")
+            raise ValueError(
+                "YOLO26 parsing requires model input shape in head_config."
+            )
 
         if len(outputs_values) != 1:
             raise ValueError("YOLO26 requires detection output layer.")
@@ -666,9 +668,7 @@ def compute_yolo_detections(
         elif mode == seg_mode:
             if subtype == YOLOSubtype.V26:
                 mask_coeff = v26_seg_mask_coeffs[i]
-                mask = process_single_mask(
-                    v26_seg_protos, mask_coeff, mask_conf, bbox
-                )
+                mask = process_single_mask(v26_seg_protos, mask_coeff, mask_conf, bbox)
             else:
                 seg_coeff = other.astype(int)
                 hi, ai, xi, yi = seg_coeff

@@ -1,25 +1,16 @@
 from typing import Any
 
-import cv2
 import depthai as dai
 import numpy as np
 
 from depthai_nodes.message.creators import create_detection_message
 from depthai_nodes.node.parsers.base_parser import BaseParser
-from depthai_nodes.node.parsers.utils import (
-    normalize_bboxes,
-    xyxy_to_xywh,
-)
 from depthai_nodes.node.parsers.utils.masks_utils import (
     get_segmentation_outputs,
-    process_single_mask,
 )
 from depthai_nodes.node.parsers.utils.yolo import (
     YOLOSubtype,
     compute_yolo_detections,
-    decode_yolo26,
-    decode_yolo_output,
-    parse_kpts,
 )
 
 
@@ -441,7 +432,9 @@ class YOLOExtendedParser(BaseParser):
         if self.subtype == YOLOSubtype.V26:
             if any("output_masks" in name for name in layer_names):
                 outputs_values = [
-                    output.getTensor("output_yolo26", dequantize=True).astype(np.float32)
+                    output.getTensor("output_yolo26", dequantize=True).astype(
+                        np.float32
+                    )
                 ]
                 v26_mask_coeffs = output.getTensor(
                     "output_masks", dequantize=True
@@ -453,11 +446,13 @@ class YOLOExtendedParser(BaseParser):
                 ).astype(np.float32)[0]
             elif any("kpt_output" in name for name in layer_names):
                 outputs_values = [
-                    output.getTensor("output_yolo26", dequantize=True).astype(np.float32)
+                    output.getTensor("output_yolo26", dequantize=True).astype(
+                        np.float32
+                    )
                 ]
-                v26_pose_kpts = output.getTensor(
-                    "kpt_output", dequantize=True
-                ).astype(np.float32)
+                v26_pose_kpts = output.getTensor("kpt_output", dequantize=True).astype(
+                    np.float32
+                )
             else:
                 outputs_values = [
                     output.getTensor(o, dequantize=True).astype(np.float32)
@@ -476,7 +471,10 @@ class YOLOExtendedParser(BaseParser):
                 for o in outputs_names
             ]
 
-            if any("kpt_output" in name for name in layer_names) and self.subtype != YOLOSubtype.P:
+            if (
+                any("kpt_output" in name for name in layer_names)
+                and self.subtype != YOLOSubtype.P
+            ):
                 kpts_output_names = sorted(
                     [name for name in layer_names if "kpt_output" in name]
                 )
@@ -484,7 +482,10 @@ class YOLOExtendedParser(BaseParser):
                     output.getTensor(o, dequantize=True).astype(np.float32)
                     for o in kpts_output_names
                 ]
-            elif any("_masks" in name for name in layer_names) and self.subtype != YOLOSubtype.P:
+            elif (
+                any("_masks" in name for name in layer_names)
+                and self.subtype != YOLOSubtype.P
+            ):
                 (
                     masks_outputs_values,
                     protos_output,

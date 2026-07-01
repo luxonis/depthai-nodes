@@ -183,9 +183,7 @@ class ClassificationSequenceParser(ClassificationParser):
 
     @staticmethod
     def compute(scores: np.ndarray, *, is_softmax: bool = True) -> np.ndarray:
-        return compute_classification_sequence_scores(
-            scores, is_softmax=is_softmax
-        )
+        return compute_classification_sequence_scores(scores, is_softmax=is_softmax)
 
     def emit(self, output: dai.NNData, scores: np.ndarray) -> None:
         msg = create_classification_sequence_message(

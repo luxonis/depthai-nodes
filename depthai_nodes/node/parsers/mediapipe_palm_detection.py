@@ -1,6 +1,5 @@
 from typing import Any
 
-import cv2
 import depthai as dai
 import numpy as np
 
@@ -8,7 +7,6 @@ from depthai_nodes.message.creators import create_detection_message
 from depthai_nodes.node.parsers.detection import DetectionParser
 from depthai_nodes.node.parsers.utils.medipipe import (
     compute_mediapipe_palm_detections,
-    decode,
     generate_handtracker_anchors,
 )
 

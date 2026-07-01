@@ -35,9 +35,7 @@ def compute_segmentation_class_map(
             )
 
     class_map = (
-        reduce_fn(mask, axis=0)
-        .reshape(mask.shape[1], mask.shape[2])
-        .astype(np.int16)
+        reduce_fn(mask, axis=0).reshape(mask.shape[1], mask.shape[2]).astype(np.int16)
     )
 
     if adding_unassigned_class:

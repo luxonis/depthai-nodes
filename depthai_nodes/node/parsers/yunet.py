@@ -9,8 +9,6 @@ from depthai_nodes.node.parsers.utils import top_left_wh_to_xywh
 from depthai_nodes.node.parsers.utils.nms import nms_cv2
 from depthai_nodes.node.parsers.utils.yunet import (
     compute_yunet_detections,
-    decode_and_prune_detections,
-    format_detections,
     generate_anchors,
 )
 

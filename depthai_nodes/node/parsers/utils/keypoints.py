@@ -50,9 +50,7 @@ def compute_keypoints(
     num_coords = int(np.prod(parsed_keypoints.shape) / n_keypoints)
 
     if num_coords not in [2, 3]:
-        raise ValueError(
-            f"Expected 2 or 3 coordinates per keypoint, got {num_coords}."
-        )
+        raise ValueError(f"Expected 2 or 3 coordinates per keypoint, got {num_coords}.")
 
     parsed_keypoints = parsed_keypoints.reshape(n_keypoints, num_coords)
     parsed_keypoints /= scale_factor
