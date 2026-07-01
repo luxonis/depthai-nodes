@@ -237,8 +237,8 @@ class RFDETRParser(BaseParser):
             )
         return boxes_tensor, logits_tensor, masks_tensor
 
-    @staticmethod
     def compute(
+        self,
         boxes_tensor: np.ndarray,
         logits_tensor: np.ndarray,
         *,
@@ -258,6 +258,7 @@ class RFDETRParser(BaseParser):
             mask_conf=mask_conf,
             input_shape=input_shape,
             masks_tensor=masks_tensor,
+            logger=self._logger,
         )
 
     def emit(

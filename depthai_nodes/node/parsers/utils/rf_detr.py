@@ -15,6 +15,7 @@ def compute_rfdetr_detections(
     mask_conf: float,
     input_shape: tuple[int, int] | None,
     masks_tensor: np.ndarray | None = None,
+    logger=None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[str] | None, np.ndarray | None]:
     """Decode RF-DETR detections and optional masks."""
     prob = sigmoid(logits_tensor)
@@ -30,9 +31,14 @@ def compute_rfdetr_detections(
         num_valid_instances = int(
             np.count_nonzero(scores[sorted_idx][:max_det] > conf_threshold)
         )
+        if num_valid_instances > max_segmentation_instances and logger is not None:
+            logger.warning(
+                "RFDETRParser can encode at most 255 instances in "
+                "SegmentationMask; ignoring "
+                f"{num_valid_instances - max_segmentation_instances} "
+                "lowest-scoring instances."
+            )
         effective_max_det = min(effective_max_det, max_segmentation_instances)
-        if num_valid_instances > max_segmentation_instances:
-            num_valid_instances = max_segmentation_instances
 
     scores = scores[sorted_idx][:effective_max_det]
     labels = labels[sorted_idx][:effective_max_det]

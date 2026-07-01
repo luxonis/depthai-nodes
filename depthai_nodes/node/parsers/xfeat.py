@@ -537,7 +537,7 @@ class XFeatStereoParser(XFeatBaseParser):
         *,
         resize_rate_w: float,
         resize_rate_h: float,
-    ) -> tuple[np.ndarray, np.ndarray] | None:
+    ) -> dict[str, tuple[np.ndarray, np.ndarray] | str | None]:
         reference_result = compute_xfeat_result(
             *reference_tensors,
             resize_rate_w=resize_rate_w,
@@ -553,24 +553,37 @@ class XFeatStereoParser(XFeatBaseParser):
             max_keypoints=self.max_keypoints,
         )
 
-        if reference_result is None or target_result is None:
-            return None
+        if reference_result is None:
+            return {"status": "reference_missing", "match_result": None}
+        if target_result is None:
+            return {"status": "target_missing", "match_result": None}
 
-        return compute_xfeat_matches(reference_result[0], target_result[0])
+        return {
+            "status": "matched",
+            "match_result": compute_xfeat_matches(reference_result[0], target_result[0]),
+        }
 
     def emit(
         self,
         reference_output: dai.NNData,
         target_output: dai.NNData,
-        match_result: tuple[np.ndarray, np.ndarray] | None,
+        result: dict[str, tuple[np.ndarray, np.ndarray] | str | None],
     ) -> None:
+        status = result["status"]
+        match_result = result["match_result"]
         if match_result is None:
             matched_points = dai.TrackedFeatures()
-            matched_points.setTimestamp(target_output.getTimestamp())
+            if status == "reference_missing":
+                matched_points.setTimestamp(reference_output.getTimestamp())
+                self._logger.debug(
+                    "No reference keypoints found, sending TrackedFeatures message"
+                )
+            else:
+                matched_points.setTimestamp(target_output.getTimestamp())
+                self._logger.debug(
+                    "No target keypoints found, sending TrackedFeatures message"
+                )
             matched_points.setSequenceNum(reference_output.getSequenceNum())
-            self._logger.debug(
-                "No stereo keypoints found, sending TrackedFeatures message"
-            )
             self.out.send(matched_points)
             self._logger.debug("TrackedFeatures message sent")
             return
