@@ -7,7 +7,7 @@ from depthai_nodes.message.creators import (
     create_classification_message,
 )
 from depthai_nodes.node.parsers.base_parser import BaseParser
-from depthai_nodes.node.parsers.utils import softmax
+from depthai_nodes.node.parsers.utils import compute_classification_scores
 
 
 class ClassificationParser(BaseParser):
@@ -131,36 +131,48 @@ class ClassificationParser(BaseParser):
             except dai.MessageQueue.QueueException:
                 break
 
-            layers = output.getAllLayerNames()
-            self._logger.debug(f"Processing input with layers: {layers}")
-            if len(layers) == 1 and self.output_layer_name == "":
-                self.output_layer_name = layers[0]
-            elif len(layers) != 1 and self.output_layer_name == "":
-                raise ValueError(
-                    f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
-                )
+            scores = self.extract(output)
+            scores = self.compute(scores, is_softmax=self.is_softmax)
+            self.emit(output, scores)
 
-            scores = output.getTensor(self.output_layer_name, dequantize=True)
-            scores = np.array(scores).flatten()
+    def extract(self, output: dai.NNData) -> np.ndarray:
+        layers = output.getAllLayerNames()
+        self._logger.debug(f"Processing input with layers: {layers}")
+        if len(layers) == 1 and self.output_layer_name == "":
+            self.output_layer_name = layers[0]
+        elif len(layers) != 1 and self.output_layer_name == "":
+            raise ValueError(
+                f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
+            )
 
-            if len(scores) != self.n_classes and self.n_classes != 0:
-                raise ValueError(
-                    f"Number of labels and scores mismatch. Provided {self.n_classes} class names and {len(scores)} scores."
-                )
+        scores = np.asarray(
+            output.getTensor(self.output_layer_name, dequantize=True)
+        ).flatten()
 
-            if not self.is_softmax:
-                scores = softmax(scores)
+        if len(scores) != self.n_classes and self.n_classes != 0:
+            raise ValueError(
+                f"Number of labels and scores mismatch. Provided {self.n_classes} class names and {len(scores)} scores."
+            )
 
-            msg = create_classification_message(self.classes, scores)
-            transformation = output.getTransformation()
-            if transformation is not None:
-                msg.setTransformation(transformation)
-            msg.setTimestamp(output.getTimestamp())
-            msg.setSequenceNum(output.getSequenceNum())
-            msg.setTimestampDevice(output.getTimestampDevice())
+        return scores
 
-            self._logger.debug(f"Created message with {len(msg.classes)} classes")
+    @staticmethod
+    def compute(
+        scores: np.ndarray,
+        *,
+        is_softmax: bool = True,
+    ) -> np.ndarray:
+        return compute_classification_scores(scores, is_softmax=is_softmax)
 
-            self.out.send(msg)
+    def emit(self, output: dai.NNData, scores: np.ndarray) -> None:
+        msg = create_classification_message(self.classes, scores)
+        transformation = output.getTransformation()
+        if transformation is not None:
+            msg.setTransformation(transformation)
+        msg.setTimestamp(output.getTimestamp())
+        msg.setSequenceNum(output.getSequenceNum())
+        msg.setTimestampDevice(output.getTimestampDevice())
 
-            self._logger.debug("Classification message sent successfully")
+        self._logger.debug(f"Created message with {len(msg.classes)} classes")
+        self.out.send(msg)
+        self._logger.debug("Classification message sent successfully")

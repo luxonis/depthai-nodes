@@ -6,12 +6,7 @@ import numpy as np
 from depthai_nodes.message.creators import create_segmentation_message
 from depthai_nodes.node.parsers.base_parser import BaseParser
 from depthai_nodes.node.parsers.utils.fastsam import (
-    box_prompt,
-    build_mask_coeffs,
-    decode_fastsam_output,
-    merge_masks,
-    point_prompt,
-    process_masks,
+    compute_fastsam_mask,
 )
 from depthai_nodes.node.parsers.utils.masks_utils import get_segmentation_outputs
 
@@ -306,93 +301,89 @@ class FastSAMParser(BaseParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped, no more data
 
-            outputs_names = sorted([name for name in self.yolo_outputs])
-            self._logger.debug(f"Processing input with layers: {outputs_names}")
-            outputs_values = [
-                output.getTensor(
-                    o, dequantize=True, storageOrder=dai.TensorInfo.StorageOrder.NCHW
-                ).astype(np.float32)
-                for o in outputs_names
-            ]
-
-            # Get the segmentation outputs
             (
+                outputs_values,
                 masks_outputs_values,
                 protos_output,
                 protos_len,
-            ) = get_segmentation_outputs(output, self.mask_outputs, self.protos_output)
-
-            # determine the input shape of the model from the first output
-            width = outputs_values[0].shape[3] * 8
-            height = outputs_values[0].shape[2] * 8
-            input_shape = (width, height)
-
-            # Decode the outputs
-            results = decode_fastsam_output(
+            ) = self.extract(output)
+            results_masks = self.compute(
                 outputs_values,
-                [8, 16, 32],
-                [None, None, None],
-                img_shape=input_shape[::-1],
-                conf_thres=self.conf_threshold,
-                iou_thres=self.iou_threshold,
-                num_classes=self.n_classes,
+                masks_outputs_values,
+                protos_output,
+                protos_len,
+                conf_threshold=self.conf_threshold,
+                n_classes=self.n_classes,
+                iou_threshold=self.iou_threshold,
+                mask_conf=self.mask_conf,
+                prompt=self.prompt,
+                points=self.points,
+                point_label=self.point_label,
+                bbox=self.bbox,
             )
+            self.emit(output, results_masks)
 
-            if results.shape[0] == 0:
-                results_bboxes = np.array([])
-                results_masks = np.array([])
-            else:
-                results_bboxes = np.concatenate(
-                    [
-                        results[:, :4].astype(int),
-                        results[:, 4:5],
-                        results[:, 5:6].astype(int),
-                    ],
-                    axis=1,
-                )
-                mask_coeffs = build_mask_coeffs(
-                    parsed_results=results,
-                    masks_outputs_values=masks_outputs_values,
-                    protos_len=protos_len,
-                )
-                results_masks = process_masks(
-                    parsed_results=results,
-                    mask_coeffs=mask_coeffs,
-                    protos=protos_output[0],
-                    orig_shape=input_shape,
-                    mask_conf=self.mask_conf,
-                )
+    def extract(
+        self, output: dai.NNData
+    ) -> tuple[list[np.ndarray], list[np.ndarray], np.ndarray, int]:
+        outputs_names = sorted([name for name in self.yolo_outputs])
+        self._logger.debug(f"Processing input with layers: {outputs_names}")
+        outputs_values = [
+            output.getTensor(
+                o, dequantize=True, storageOrder=dai.TensorInfo.StorageOrder.NCHW
+            ).astype(np.float32)
+            for o in outputs_names
+        ]
 
-                if self.prompt == "bbox":
-                    results_masks = box_prompt(
-                        results_masks, bbox=self.bbox, orig_shape=input_shape[::-1]
-                    )
+        (
+            masks_outputs_values,
+            protos_output,
+            protos_len,
+        ) = get_segmentation_outputs(output, self.mask_outputs, self.protos_output)
+        return outputs_values, masks_outputs_values, protos_output, protos_len
 
-                elif self.prompt == "point":
-                    results_masks = point_prompt(
-                        results_bboxes,
-                        results_masks,
-                        points=self.points,
-                        pointlabel=self.point_label,
-                        orig_shape=input_shape[::-1],
-                    )
+    @staticmethod
+    def compute(
+        outputs_values: list[np.ndarray],
+        masks_outputs_values: list[np.ndarray],
+        protos_output: np.ndarray,
+        protos_len: int,
+        *,
+        conf_threshold: float,
+        n_classes: int,
+        iou_threshold: float,
+        mask_conf: float,
+        prompt: str,
+        points: tuple[int, int] | None,
+        point_label: int | None,
+        bbox: tuple[int, int, int, int] | None,
+    ) -> np.ndarray:
+        return compute_fastsam_mask(
+            outputs_values,
+            masks_outputs_values,
+            protos_output,
+            protos_len,
+            conf_threshold=conf_threshold,
+            n_classes=n_classes,
+            iou_threshold=iou_threshold,
+            mask_conf=mask_conf,
+            prompt=prompt,
+            points=points,
+            point_label=point_label,
+            bbox=bbox,
+        )
 
-            if len(results_masks) == 0:
-                results_masks = np.full((1, height, width), -1, dtype=np.int16)
-            results_masks = merge_masks(results_masks)
+    def emit(self, output: dai.NNData, results_masks: np.ndarray) -> None:
+        segmentation_message = create_segmentation_message(results_masks)
+        transformation = output.getTransformation()
+        if transformation is not None:
+            segmentation_message.setTransformation(transformation)
+        segmentation_message.setTimestamp(output.getTimestamp())
+        segmentation_message.setSequenceNum(output.getSequenceNum())
+        segmentation_message.setTimestampDevice(output.getTimestampDevice())
 
-            segmentation_message = create_segmentation_message(results_masks)
-            transformation = output.getTransformation()
-            if transformation is not None:
-                segmentation_message.setTransformation(transformation)
-            segmentation_message.setTimestamp(output.getTimestamp())
-            segmentation_message.setSequenceNum(output.getSequenceNum())
-            segmentation_message.setTimestampDevice(output.getTimestampDevice())
-
-            self._logger.debug(
-                f"Created segmentation message with {len(results_masks)} masks"
-            )
-
-            self.out.send(segmentation_message)
-
-            self._logger.debug("Segmentation message sent successfully")
+        self._logger.debug(
+            f"Created segmentation message with {len(results_masks)} masks"
+        )
+        self.out.send(segmentation_message)
+        self._logger.debug("Segmentation message sent successfully")

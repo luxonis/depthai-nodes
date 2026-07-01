@@ -4,7 +4,9 @@ import depthai as dai
 import numpy as np
 
 from depthai_nodes.message.creators import create_classification_sequence_message
-from depthai_nodes.node.parsers.utils import softmax
+from depthai_nodes.node.parsers.utils.classification_sequence import (
+    compute_classification_sequence_scores,
+)
 
 from .classification import ClassificationParser
 
@@ -158,47 +160,46 @@ class ClassificationSequenceParser(ClassificationParser):
                     f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
                 )
 
-            if self.n_classes == 0:
-                raise ValueError("Classes must be provided for classification.")
+            scores = self.extract(output)
+            scores = self.compute(scores, is_softmax=self.is_softmax)
+            self.emit(output, scores)
 
-            scores = output.getTensor(self.output_layer_name, dequantize=True).astype(
-                np.float32
+    def extract(self, output: dai.NNData) -> np.ndarray:
+        layers = output.getAllLayerNames()
+        self._logger.debug(f"Processing input with layers: {layers}")
+        if len(layers) == 1 and self.output_layer_name == "":
+            self.output_layer_name = layers[0]
+        elif len(layers) != 1 and self.output_layer_name == "":
+            raise ValueError(
+                f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
             )
 
-            if len(scores.shape) != 3 and len(scores.shape) != 2:
-                raise ValueError(
-                    f"Scores should be a 3D or 2D array, got shape {scores.shape}."
-                )
+        if self.n_classes == 0:
+            raise ValueError("Classes must be provided for classification.")
 
-            if len(scores.shape) == 3:
-                if scores.shape[0] == 1:
-                    scores = scores[0]
-                elif scores.shape[2] == 1:
-                    scores = scores[:, :, 0]
-                else:
-                    raise ValueError(
-                        "Scores should be a 3D array of shape (1, sequence_length, n_classes) or (sequence_length, n_classes, 1)."
-                    )
+        return output.getTensor(self.output_layer_name, dequantize=True).astype(
+            np.float32
+        )
 
-            if not self.is_softmax:
-                scores = softmax(scores, axis=1, keep_dims=True)
+    @staticmethod
+    def compute(scores: np.ndarray, *, is_softmax: bool = True) -> np.ndarray:
+        return compute_classification_sequence_scores(scores, is_softmax=is_softmax)
 
-            msg = create_classification_sequence_message(
-                classes=self.classes,
-                scores=scores,
-                remove_duplicates=self.remove_duplicates,
-                ignored_indexes=self.ignored_indexes,
-                concatenate_classes=self.concatenate_classes,
-            )
-            msg.setTimestamp(output.getTimestamp())
-            msg.setSequenceNum(output.getSequenceNum())
-            msg.setTimestampDevice(output.getTimestampDevice())
-            transformation = output.getTransformation()
-            if transformation is not None:
-                msg.setTransformation(transformation)
+    def emit(self, output: dai.NNData, scores: np.ndarray) -> None:
+        msg = create_classification_sequence_message(
+            classes=self.classes,
+            scores=scores,
+            remove_duplicates=self.remove_duplicates,
+            ignored_indexes=self.ignored_indexes,
+            concatenate_classes=self.concatenate_classes,
+        )
+        msg.setTimestamp(output.getTimestamp())
+        msg.setSequenceNum(output.getSequenceNum())
+        msg.setTimestampDevice(output.getTimestampDevice())
+        transformation = output.getTransformation()
+        if transformation is not None:
+            msg.setTransformation(transformation)
 
-            self._logger.debug(f"Created message with {len(msg.classes)} classes")
-
-            self.out.send(msg)
-
-            self._logger.debug("Classification message sent successfully")
+        self._logger.debug(f"Created message with {len(msg.classes)} classes")
+        self.out.send(msg)
+        self._logger.debug("Classification message sent successfully")

@@ -83,3 +83,20 @@ def get_lines(
     lines = 2 * lines / input_size  # scale: 256→512
 
     return lines, pts_score[keep].tolist()
+
+
+def compute_mlsd_lines(
+    tpMap: np.ndarray,
+    heat: np.ndarray,
+    *,
+    topk_n: int,
+    score_thr: float,
+    dist_thr: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Decode MLSD outputs into lines and scores."""
+    if len(tpMap.shape) != 4:
+        raise ValueError("Invalid shape of the tpMap tensor. Should be 4D.")
+
+    pts, pts_score, vmap = decode_scores_and_points(tpMap, heat, topk_n)
+    lines, scores = get_lines(pts, pts_score, vmap, score_thr, dist_thr)
+    return lines, np.array(scores, dtype=np.float32)

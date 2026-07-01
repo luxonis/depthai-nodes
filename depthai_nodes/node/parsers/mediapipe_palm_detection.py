@@ -1,13 +1,12 @@
 from typing import Any
 
-import cv2
 import depthai as dai
 import numpy as np
 
 from depthai_nodes.message.creators import create_detection_message
 from depthai_nodes.node.parsers.detection import DetectionParser
 from depthai_nodes.node.parsers.utils.medipipe import (
-    decode,
+    compute_mediapipe_palm_detections,
     generate_handtracker_anchors,
 )
 
@@ -142,97 +141,88 @@ class MPPalmDetectionParser(DetectionParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            all_tensors = output.getAllLayerNames()
-
-            self._logger.debug(f"Processing input with layers: {all_tensors}")
-
-            bboxes = None
-            scores = None
-
-            for tensor_name in all_tensors:
-                tensor = np.array(
-                    output.getTensor(tensor_name, dequantize=True), dtype=np.float32
-                )
-
-                if bboxes is None:
-                    bboxes = tensor
-                    scores = tensor
-                else:
-                    bboxes = bboxes if tensor.shape[-1] < bboxes.shape[-1] else tensor
-                    scores = tensor if tensor.shape[-1] < scores.shape[-1] else scores
-
-            bboxes = bboxes.reshape(-1, 18)
-            scores = scores.reshape(-1)
-
-            if bboxes is None or scores is None:
-                raise ValueError("No valid output tensors found.")
-
-            decoded_bboxes = decode(
-                bboxes=bboxes,
-                scores=scores,
-                anchors=self._anchors,
-                threshold=self.conf_threshold,
-                scale=self.scale,
-            )
-
-            bboxes = []
-            scores = []
-            angles = []
-            for hand in decoded_bboxes:
-                extended_points = np.array(hand.rect_points)
-
-                x_dist = extended_points[3][0] - extended_points[0][0]
-                y_dist = extended_points[3][1] - extended_points[0][1]
-
-                angle = np.degrees(np.arctan2(y_dist, x_dist))
-                x_center, y_center = np.mean(extended_points, axis=0)
-                width = np.linalg.norm(extended_points[0] - extended_points[3])
-                height = np.linalg.norm(extended_points[0] - extended_points[1])
-
-                bboxes.append([x_center, y_center, width, height])
-                angles.append(angle)
-                scores.append(hand.pd_score)
-
-            indices = cv2.dnn.NMSBoxes(
+            bboxes, scores = self.extract(output)
+            bboxes, scores, angles, labels, label_names = self.compute(
                 bboxes,
                 scores,
-                self.conf_threshold,
-                self.iou_threshold,
-                top_k=self.max_det,
+                anchors=self._anchors,
+                conf_threshold=self.conf_threshold,
+                iou_threshold=self.iou_threshold,
+                max_det=self.max_det,
+                scale=self.scale,
+                label_names=self.label_names,
             )
-            bboxes = np.array(bboxes)[indices]
-            scores = np.array(scores)[indices]
-            angles = np.array(angles)[indices]
-            bboxes = bboxes.astype(float) / self.scale
+            self.emit(output, bboxes, scores, angles, labels, label_names)
 
-            bboxes = np.clip(bboxes, 0, 1)
-            angles = np.round(angles, 0)
+    def extract(self, output: dai.NNData) -> tuple[np.ndarray, np.ndarray]:
+        all_tensors = output.getAllLayerNames()
+        self._logger.debug(f"Processing input with layers: {all_tensors}")
 
-            labels = np.array([0] * len(bboxes))
+        bboxes = None
+        scores = None
 
-            label_names = (
-                [self.label_names[label] for label in labels]
-                if self.label_names
-                else None
+        for tensor_name in all_tensors:
+            tensor = np.array(
+                output.getTensor(tensor_name, dequantize=True), dtype=np.float32
             )
-            detections_msg = create_detection_message(
-                bboxes=bboxes,
-                scores=scores,
-                angles=angles,
-                labels=labels,
-                label_names=label_names,
-            )
-            detections_msg.setTimestamp(output.getTimestamp())
-            detections_msg.setSequenceNum(output.getSequenceNum())
-            detections_msg.setTimestampDevice(output.getTimestampDevice())
-            transformation = output.getTransformation()
-            if transformation is not None:
-                detections_msg.setTransformation(transformation)
+            if bboxes is None:
+                bboxes = tensor
+                scores = tensor
+            else:
+                bboxes = bboxes if tensor.shape[-1] < bboxes.shape[-1] else tensor
+                scores = tensor if tensor.shape[-1] < scores.shape[-1] else scores
 
-            self._logger.debug(
-                f"Created detection message with {len(bboxes)} detections"
-            )
+        if bboxes is None or scores is None:
+            raise ValueError("No valid output tensors found.")
 
-            self.out.send(detections_msg)
+        return bboxes.reshape(-1, 18), scores.reshape(-1)
 
-            self._logger.debug("Detection message sent successfully")
+    @staticmethod
+    def compute(
+        bboxes: np.ndarray,
+        scores: np.ndarray,
+        *,
+        anchors: np.ndarray,
+        conf_threshold: float,
+        iou_threshold: float,
+        max_det: int,
+        scale: int,
+        label_names: list[str] | None = None,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[str] | None]:
+        return compute_mediapipe_palm_detections(
+            bboxes,
+            scores,
+            anchors=anchors,
+            conf_threshold=conf_threshold,
+            iou_threshold=iou_threshold,
+            max_det=max_det,
+            scale=scale,
+            label_names=label_names,
+        )
+
+    def emit(
+        self,
+        output: dai.NNData,
+        bboxes: np.ndarray,
+        scores: np.ndarray,
+        angles: np.ndarray,
+        labels: np.ndarray,
+        label_names: list[str] | None,
+    ) -> None:
+        detections_msg = create_detection_message(
+            bboxes=bboxes,
+            scores=scores,
+            angles=angles,
+            labels=labels,
+            label_names=label_names,
+        )
+        detections_msg.setTimestamp(output.getTimestamp())
+        detections_msg.setSequenceNum(output.getSequenceNum())
+        detections_msg.setTimestampDevice(output.getTimestampDevice())
+        transformation = output.getTransformation()
+        if transformation is not None:
+            detections_msg.setTransformation(transformation)
+
+        self._logger.debug(f"Created detection message with {len(bboxes)} detections")
+        self.out.send(detections_msg)
+        self._logger.debug("Detection message sent successfully")

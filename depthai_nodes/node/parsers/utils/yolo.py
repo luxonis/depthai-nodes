@@ -1,10 +1,17 @@
 import time
 from enum import Enum
 
+import cv2
 import numpy as np
 
 from depthai_nodes.logging import get_logger
-from depthai_nodes.node.parsers.utils import sigmoid, xywh_to_xyxy
+from depthai_nodes.node.parsers.utils import (
+    normalize_bboxes,
+    sigmoid,
+    xywh_to_xyxy,
+    xyxy_to_xywh,
+)
+from depthai_nodes.node.parsers.utils.masks_utils import process_single_mask
 from depthai_nodes.node.parsers.utils.nms import nms
 
 logger = get_logger(__name__)
@@ -400,10 +407,10 @@ def decode_yolo26(
 ) -> tuple[np.ndarray, np.ndarray | None]:
     """Decode YOLO26 output for detection, segmentation, or pose.
 
-    YOLO26 end2end output is already decoded (xyxy in pixels) with a pre-computed
-    confidence score (ReduceMax over class scores). Needs topk and conf thresholding.
-    Optionally filters an auxiliary tensor (mask coefficients or keypoints) with the
-    detections.
+    YOLO26 end2end output is already decoded to xyxy pixel boxes and includes a
+    pre-computed confidence score (ReduceMax over class scores) in column 4. This
+    path only applies confidence thresholding and top-k filtering. It can also filter
+    an auxiliary tensor such as mask coefficients or keypoints using the kept rows.
 
     @param raw: Raw detection tensor (N, A, 5+nc) where columns are
         [x1, y1, x2, y2, conf, cls_0, ..., cls_nc-1].
@@ -512,3 +519,193 @@ def decode_yolo_output(
     )[0]
 
     return output_nms
+
+
+def compute_yolo_detections(
+    *,
+    subtype: YOLOSubtype,
+    layer_names: list[str],
+    outputs_values: list[np.ndarray],
+    conf_threshold: float,
+    n_classes: int,
+    iou_threshold: float,
+    max_det: int,
+    anchors: np.ndarray | None,
+    n_keypoints: int,
+    label_names: list[str] | None,
+    keypoint_label_names: list[str] | None,
+    keypoint_edges: list[tuple[int, int]] | None,
+    input_shape: tuple[int, int] | None = None,
+    kpts_outputs: list[np.ndarray] | None = None,
+    masks_outputs_values: list[np.ndarray] | None = None,
+    protos_output: np.ndarray | None = None,
+    protos_len: int | None = None,
+    mask_conf: float = 0.5,
+    v26_mask_coeffs: np.ndarray | None = None,
+    v26_protos: np.ndarray | None = None,
+    v26_pose_kpts: np.ndarray | None = None,
+) -> dict[str, np.ndarray | list[str] | int | None]:
+    """Decode YOLO detection, pose, or segmentation outputs into message payloads."""
+    det_mode = 0
+    kpts_mode = 1
+    seg_mode = 2
+
+    if subtype == YOLOSubtype.V26:
+        if any("kpt_output" in name for name in layer_names):
+            mode = kpts_mode
+        elif any("output_masks" in name for name in layer_names):
+            mode = seg_mode
+        else:
+            mode = det_mode
+    elif any("kpt_output" in name for name in layer_names) and subtype != YOLOSubtype.P:
+        mode = kpts_mode
+    elif any("_masks" in name for name in layer_names) and subtype != YOLOSubtype.P:
+        mode = seg_mode
+    else:
+        mode = det_mode
+
+    if subtype == YOLOSubtype.V26:
+        if input_shape is None:
+            raise ValueError(
+                "YOLO26 parsing requires model input shape in head_config."
+            )
+
+        if len(outputs_values) != 1:
+            raise ValueError("YOLO26 requires detection output layer.")
+
+        if mode == seg_mode:
+            extra_raw = v26_mask_coeffs
+        elif mode == kpts_mode:
+            extra_raw = v26_pose_kpts
+        else:
+            extra_raw = None
+
+        results, extra = decode_yolo26(
+            outputs_values[0],
+            conf_threshold,
+            max_det,
+            extra_raw=extra_raw,
+        )
+
+        if mode == seg_mode:
+            v26_seg_mask_coeffs = extra
+            v26_seg_protos = v26_protos
+        elif mode == kpts_mode:
+            v26_pose_kpts = extra
+    else:
+        strides = (
+            [8, 16, 32]
+            if subtype not in [YOLOSubtype.V3UT, YOLOSubtype.V3T, YOLOSubtype.V4T]
+            else [16, 32]
+        )
+
+        if input_shape is None:
+            input_shape = tuple(
+                dim * strides[0] for dim in outputs_values[0].shape[2:4]
+            )
+
+        if anchors is not None:
+            anchors = np.array(anchors).reshape(len(strides), -1)
+
+        num_classes_check = (
+            outputs_values[0].shape[1] - 5
+            if anchors is None
+            else (outputs_values[0].shape[1] // anchors.shape[0]) - 5
+        )
+        if num_classes_check != n_classes:
+            raise ValueError(
+                f"The provided number of classes {n_classes} does not match the model's {num_classes_check}."
+            )
+
+        if mode == kpts_mode:
+            num_keypoints_check = kpts_outputs[0].shape[1] // 3
+            if num_keypoints_check != n_keypoints:
+                raise ValueError(
+                    f"The provided number of keypoints {n_keypoints} does not match the model's {num_keypoints_check}."
+                )
+
+        results = decode_yolo_output(
+            outputs_values,
+            strides,
+            anchors,
+            kpts=kpts_outputs if mode == kpts_mode else None,
+            conf_thres=conf_threshold,
+            iou_thres=iou_threshold,
+            num_classes=n_classes,
+            det_mode=mode == det_mode,
+            subtype=subtype,
+        )
+
+    bboxes = []
+    labels = []
+    mapped_label_names = []
+    scores = []
+    additional_output = []
+    final_mask = np.full(input_shape, 255, dtype=np.uint8)
+
+    for i in range(results.shape[0]):
+        bbox, conf, label, other = (
+            results[i, :4],
+            results[i, 4],
+            results[i, 5].astype(int),
+            results[i, 6:],
+        )
+
+        bbox = xyxy_to_xywh(bbox.reshape(1, 4))
+        bbox = normalize_bboxes(bbox, height=input_shape[0], width=input_shape[1])[0]
+        bboxes.append(bbox)
+        labels.append(int(label))
+        if label_names:
+            mapped_label_names.append(label_names[int(label)])
+        scores.append(conf)
+
+        if mode == kpts_mode:
+            if subtype == YOLOSubtype.V26:
+                kpts = parse_kpts(v26_pose_kpts[i], n_keypoints, input_shape)
+            else:
+                kpts = parse_kpts(other, n_keypoints, input_shape)
+            additional_output.append(kpts)
+        elif mode == seg_mode:
+            if subtype == YOLOSubtype.V26:
+                mask_coeff = v26_seg_mask_coeffs[i]
+                mask = process_single_mask(v26_seg_protos, mask_coeff, mask_conf, bbox)
+            else:
+                seg_coeff = other.astype(int)
+                hi, ai, xi, yi = seg_coeff
+                mask_coeff = masks_outputs_values[hi][
+                    0, ai * protos_len : (ai + 1) * protos_len, yi, xi
+                ]
+                mask = process_single_mask(
+                    protos_output[0], mask_coeff, mask_conf, bbox
+                )
+            resized_mask = cv2.resize(
+                mask,
+                (input_shape[1], input_shape[0]),
+                interpolation=cv2.INTER_NEAREST,
+            )
+            final_mask[resized_mask > 0] = i
+
+    bboxes = np.array(bboxes)
+    bboxes = np.clip(bboxes, 0, 1)
+
+    keypoints = np.array([])
+    keypoints_scores = np.array([])
+    if mode == kpts_mode:
+        additional_output = np.array(additional_output)
+        if additional_output.size > 0:
+            keypoints = additional_output[:, :, :2]
+            keypoints_scores = additional_output[:, :, 2]
+        keypoints = np.clip(keypoints, 0, 1)
+
+    return {
+        "mode": mode,
+        "bboxes": bboxes,
+        "scores": np.array(scores),
+        "labels": np.array(labels),
+        "label_names": mapped_label_names,
+        "keypoints": keypoints,
+        "keypoints_scores": keypoints_scores,
+        "keypoint_label_names": keypoint_label_names,
+        "keypoint_edges": keypoint_edges,
+        "masks": final_mask if mode == seg_mode else None,
+    }

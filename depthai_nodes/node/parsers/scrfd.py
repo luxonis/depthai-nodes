@@ -6,7 +6,10 @@ import numpy as np
 from depthai_nodes.message.creators import create_detection_message
 from depthai_nodes.node.parsers.detection import DetectionParser
 from depthai_nodes.node.parsers.utils import xyxy_to_xywh
-from depthai_nodes.node.parsers.utils.scrfd import compute_anchor_centers, decode_scrfd
+from depthai_nodes.node.parsers.utils.scrfd import (
+    compute_anchor_centers,
+    compute_scrfd_detections,
+)
 
 
 class SCRFDParser(DetectionParser):
@@ -176,55 +179,12 @@ class SCRFDParser(DetectionParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            scores_concatenated = []
-            bboxes_concatenated = []
-            kps_concatenated = []
-
-            if len(self.output_layer_names) == 0:
-                self.output_layer_names = output.getAllLayerNames()
-
-            self._logger.debug(
-                f"Processing input with layers: {output.getAllLayerNames()}"
-            )
-
-            for stride in self.feat_stride_fpn:
-                score_layer_name = f"score_{stride}"
-                bbox_layer_name = f"bbox_{stride}"
-                kps_layer_name = f"kps_{stride}"
-                if score_layer_name not in self.output_layer_names:
-                    raise ValueError(
-                        f"Layer {score_layer_name} not found in the model output."
-                    )
-                if bbox_layer_name not in self.output_layer_names:
-                    raise ValueError(
-                        f"Layer {bbox_layer_name} not found in the model output."
-                    )
-                if kps_layer_name not in self.output_layer_names:
-                    raise ValueError(
-                        f"Layer {kps_layer_name} not found in the model output."
-                    )
-
-                score_tensor = (
-                    output.getTensor(score_layer_name, dequantize=True)
-                    .flatten()
-                    .astype(np.float32)
-                )
-                bbox_tensor = (
-                    output.getTensor(bbox_layer_name, dequantize=True)
-                    .reshape(len(score_tensor), 4)
-                    .astype(np.float32)
-                )
-                kps_tensor = (
-                    output.getTensor(kps_layer_name, dequantize=True)
-                    .reshape(len(score_tensor), 10)
-                    .astype(np.float32)
-                )
-
-                scores_concatenated.append(score_tensor)
-                bboxes_concatenated.append(bbox_tensor)
-                kps_concatenated.append(kps_tensor)
-
-            bboxes, scores, keypoints = decode_scrfd(
+            (
+                bboxes_concatenated,
+                scores_concatenated,
+                kps_concatenated,
+            ) = self.extract(output)
+            bboxes, scores, keypoints, labels, label_names = self.compute(
                 bboxes_concatenated=bboxes_concatenated,
                 scores_concatenated=scores_concatenated,
                 kps_concatenated=kps_concatenated,
@@ -234,35 +194,91 @@ class SCRFDParser(DetectionParser):
                 score_threshold=self.conf_threshold,
                 nms_threshold=self.iou_threshold,
                 anchors=self._cached_anchors,
+                label_names=self.label_names,
             )
-            bboxes = xyxy_to_xywh(bboxes)
-            bboxes = np.clip(bboxes, 0, 1)
+            self.emit(output, bboxes, scores, keypoints, labels, label_names)
 
-            labels = np.array([0] * len(bboxes))
+    def extract(
+        self, output: dai.NNData
+    ) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
+        scores_concatenated = []
+        bboxes_concatenated = []
+        kps_concatenated = []
 
-            label_names = (
-                [self.label_names[label] for label in labels]
-                if self.label_names
-                else None
+        if len(self.output_layer_names) == 0:
+            self.output_layer_names = output.getAllLayerNames()
+
+        self._logger.debug(f"Processing input with layers: {output.getAllLayerNames()}")
+
+        for stride in self.feat_stride_fpn:
+            score_layer_name = f"score_{stride}"
+            bbox_layer_name = f"bbox_{stride}"
+            kps_layer_name = f"kps_{stride}"
+            if score_layer_name not in self.output_layer_names:
+                raise ValueError(
+                    f"Layer {score_layer_name} not found in the model output."
+                )
+            if bbox_layer_name not in self.output_layer_names:
+                raise ValueError(
+                    f"Layer {bbox_layer_name} not found in the model output."
+                )
+            if kps_layer_name not in self.output_layer_names:
+                raise ValueError(
+                    f"Layer {kps_layer_name} not found in the model output."
+                )
+
+            score_tensor = (
+                output.getTensor(score_layer_name, dequantize=True)
+                .flatten()
+                .astype(np.float32)
             )
-            message = create_detection_message(
-                bboxes=bboxes,
-                scores=scores,
-                labels=labels,
-                label_names=label_names,
-                keypoints=keypoints,
+            bbox_tensor = (
+                output.getTensor(bbox_layer_name, dequantize=True)
+                .reshape(len(score_tensor), 4)
+                .astype(np.float32)
             )
-            message.setTimestamp(output.getTimestamp())
-            message.setSequenceNum(output.getSequenceNum())
-            message.setTimestampDevice(output.getTimestampDevice())
-            transformation = output.getTransformation()
-            if transformation is not None:
-                message.setTransformation(transformation)
-
-            self._logger.debug(
-                f"Created detection message with {len(bboxes)} detections"
+            kps_tensor = (
+                output.getTensor(kps_layer_name, dequantize=True)
+                .reshape(len(score_tensor), 10)
+                .astype(np.float32)
             )
 
-            self.out.send(message)
+            scores_concatenated.append(score_tensor)
+            bboxes_concatenated.append(bbox_tensor)
+            kps_concatenated.append(kps_tensor)
 
-            self._logger.debug("Detection message sent successfully")
+        return bboxes_concatenated, scores_concatenated, kps_concatenated
+
+    @staticmethod
+    def compute(**kwargs):
+        return compute_scrfd_detections(**kwargs)
+
+    def emit(
+        self,
+        output: dai.NNData,
+        bboxes: np.ndarray,
+        scores: np.ndarray,
+        keypoints: np.ndarray,
+        labels: np.ndarray,
+        label_names: list[str] | None,
+    ) -> None:
+        bboxes = xyxy_to_xywh(bboxes)
+        bboxes = np.clip(bboxes, 0, 1)
+
+        message = create_detection_message(
+            bboxes=bboxes,
+            scores=scores,
+            labels=labels,
+            label_names=label_names,
+            keypoints=keypoints,
+        )
+        message.setTimestamp(output.getTimestamp())
+        message.setSequenceNum(output.getSequenceNum())
+        message.setTimestampDevice(output.getTimestampDevice())
+        transformation = output.getTransformation()
+        if transformation is not None:
+            message.setTransformation(transformation)
+
+        self._logger.debug(f"Created detection message with {len(bboxes)} detections")
+        self.out.send(message)
+        self._logger.debug("Detection message sent successfully")
