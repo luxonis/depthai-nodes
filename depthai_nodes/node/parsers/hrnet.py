@@ -116,14 +116,15 @@ class HRNetParser(KeypointParser):
             dequantize=True,
         )
 
-    def compute(self, heatmaps: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    @staticmethod
+    def compute(heatmaps: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         keypoints, scores = compute_hrnet_keypoints(heatmaps)
-        self.n_keypoints = len(keypoints)
         return keypoints, scores
 
     def emit(
         self, output: dai.NNData, keypoints: np.ndarray, scores: np.ndarray
     ) -> None:
+        self.n_keypoints = len(keypoints)
         keypoints_message = create_keypoints_message(
             keypoints=keypoints,
             scores=scores,

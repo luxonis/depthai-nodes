@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from itertools import product
 
 import numpy as np
@@ -287,8 +288,8 @@ def compute_yunet_detections(
     max_det: int,
     anchors: np.ndarray,
     label_names: list[str] | None = None,
-    nms_fn=None,
-    top_left_wh_to_xywh_fn=None,
+    nms_fn: Callable[..., np.ndarray],
+    top_left_wh_to_xywh_fn: Callable[[np.ndarray], np.ndarray],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[str] | None]:
     """Decode YuNet outputs into final detection payloads."""
     bboxes, keypoints, scores = decode_and_prune_detections(
@@ -302,9 +303,9 @@ def compute_yunet_detections(
 
     if len(bboxes) == 0:
         return (
-            np.array([]),
-            np.array([]),
-            np.array([]),
+            np.empty((0, 4), dtype=np.float32),
+            np.empty((0, 5, 2), dtype=np.float32),
+            np.empty((0, 1), dtype=np.float32),
             np.array([], dtype=int),
             [] if label_names is not None else None,
         )

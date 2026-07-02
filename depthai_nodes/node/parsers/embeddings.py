@@ -24,7 +24,7 @@ class EmbeddingsParser(BaseParser):
     def __init__(self) -> None:
         """Initialize the EmbeddingsParser node."""
         super().__init__()
-        self.output_layer_name: str = None
+        self.output_layer_name: str | list[str] | None = None
         self._logger.debug(
             f"EmbeddingsParser initialized with output_layer_name={self.output_layer_name}"
         )
@@ -51,9 +51,12 @@ class EmbeddingsParser(BaseParser):
         """
 
         self.output_layer_name = head_config["outputs"]
-        assert (
-            len(self.output_layer_name) == 1
-        ), "Embeddings head should have only one output layer"
+        output_names = self._normalize_output_layer_names(
+            self.output_layer_name
+        )
+        assert len(output_names) == 1, (
+            "Embeddings head should have only one output layer"
+        )
 
         self._logger.debug(
             f"EmbeddingsParser built with output_layer_name={self.output_layer_name}"
@@ -74,13 +77,25 @@ class EmbeddingsParser(BaseParser):
             self.emit(computed)
 
     def extract(self, output: dai.NNData) -> dai.NNData:
-        output_names = self.output_layer_name or output.getAllLayerNames()
+        output_names = self._normalize_output_layer_names(
+            self.output_layer_name or output.getAllLayerNames()
+        )
         self._logger.debug(f"Processing input with layers: {output_names}")
 
-        assert (
-            len(output_names) == 1
-        ), "Embeddings head should have only one output layer"
+        assert len(output_names) == 1, (
+            "Embeddings head should have only one output layer"
+        )
         return output
+
+    @staticmethod
+    def _normalize_output_layer_names(
+        output_layer_name: str | list[str] | None,
+    ) -> list[str]:
+        if output_layer_name is None:
+            return []
+        if isinstance(output_layer_name, str):
+            return [output_layer_name]
+        return list(output_layer_name)
 
     @staticmethod
     def compute(output: dai.NNData) -> dai.NNData:

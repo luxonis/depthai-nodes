@@ -183,7 +183,20 @@ def compute_pp_text_detections(
     max_det: int,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Decode PaddleOCR text detection output into boxes, angles, and scores."""
-    _, _, height, width = predictions.shape
+    if predictions.ndim != 4:
+        raise ValueError(
+            f"Predictions should be 4D array of shape (1, 1, H, W) or (1, H, W, 1), got {predictions.shape}."
+        )
+
+    if predictions.shape[0] == 1 and predictions.shape[1] == 1:
+        height, width = predictions.shape[2], predictions.shape[3]
+    elif predictions.shape[0] == 1 and predictions.shape[3] == 1:
+        height, width = predictions.shape[1], predictions.shape[2]
+    else:
+        raise ValueError(
+            f"Predictions should be either (1, 1, H, W) or (1, H, W, 1), got {predictions.shape}."
+        )
+
     return parse_paddle_detection_outputs(
         predictions,
         mask_threshold,

@@ -641,7 +641,14 @@ def compute_yolo_detections(
     mapped_label_names = []
     scores = []
     additional_output = []
-    final_mask = np.full(input_shape, 255, dtype=np.uint8)
+    final_mask = None
+    if mode == seg_mode:
+        max_instance_id = np.iinfo(np.int16).max
+        if results.shape[0] > max_instance_id + 1:
+            raise ValueError(
+                "YOLO segmentation can encode at most 32768 instances in SegmentationMask."
+            )
+        final_mask = np.full(input_shape, -1, dtype=np.int16)
 
     for i in range(results.shape[0]):
         bbox, conf, label, other = (
@@ -656,7 +663,11 @@ def compute_yolo_detections(
         bboxes.append(bbox)
         labels.append(int(label))
         if label_names:
-            mapped_label_names.append(label_names[int(label)])
+            label_idx = int(label)
+            if label_idx < len(label_names):
+                mapped_label_names.append(label_names[label_idx])
+            else:
+                mapped_label_names.append(f"class_{label_idx}")
         scores.append(conf)
 
         if mode == kpts_mode:
@@ -707,5 +718,5 @@ def compute_yolo_detections(
         "keypoints_scores": keypoints_scores,
         "keypoint_label_names": keypoint_label_names,
         "keypoint_edges": keypoint_edges,
-        "masks": final_mask if mode == seg_mode else None,
+        "masks": final_mask,
     }

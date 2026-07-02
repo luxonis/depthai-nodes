@@ -388,6 +388,7 @@ class XFeatMonoParser(XFeatBaseParser):
             matched_points = dai.TrackedFeatures()
             matched_points.setTimestamp(output.getTimestamp())
             matched_points.setSequenceNum(output.getSequenceNum())
+            matched_points.setTimestampDevice(output.getTimestampDevice())
             self._logger.debug("No keypoints found, sending TrackedFeatures message")
             self.out.send(matched_points)
             self._logger.debug("TrackedFeatures message sent")
@@ -398,6 +399,7 @@ class XFeatMonoParser(XFeatBaseParser):
             matched_points = create_tracked_features_message(mkpts0, mkpts1)
             matched_points.setTimestamp(output.getTimestamp())
             matched_points.setSequenceNum(output.getSequenceNum())
+            matched_points.setTimestampDevice(output.getTimestampDevice())
             self._logger.debug("Keypoints found, sending TrackedFeatures message")
             self.out.send(matched_points)
             self._logger.debug("TrackedFeatures message sent")
@@ -405,6 +407,7 @@ class XFeatMonoParser(XFeatBaseParser):
             matched_points = dai.TrackedFeatures()
             matched_points.setTimestamp(output.getTimestamp())
             matched_points.setSequenceNum(output.getSequenceNum())
+            matched_points.setTimestampDevice(output.getTimestampDevice())
             self._logger.debug("No previous results, sending TrackedFeatures message")
             self.out.send(matched_points)
             self._logger.debug("TrackedFeatures message sent")
@@ -577,11 +580,15 @@ class XFeatStereoParser(XFeatBaseParser):
             matched_points = dai.TrackedFeatures()
             if status == "reference_missing":
                 matched_points.setTimestamp(reference_output.getTimestamp())
+                matched_points.setTimestampDevice(
+                    reference_output.getTimestampDevice()
+                )
                 self._logger.debug(
                     "No reference keypoints found, sending TrackedFeatures message"
                 )
             else:
                 matched_points.setTimestamp(target_output.getTimestamp())
+                matched_points.setTimestampDevice(target_output.getTimestampDevice())
                 self._logger.debug(
                     "No target keypoints found, sending TrackedFeatures message"
                 )

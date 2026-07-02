@@ -408,6 +408,7 @@ def compute_mediapipe_palm_detections(
     )
 
     bbox_list = []
+    nms_bbox_list = []
     score_list = []
     angle_list = []
     for hand in decoded_bboxes:
@@ -420,8 +421,11 @@ def compute_mediapipe_palm_detections(
         x_center, y_center = np.mean(extended_points, axis=0)
         width = np.linalg.norm(extended_points[0] - extended_points[3])
         height = np.linalg.norm(extended_points[0] - extended_points[1])
+        x_min = x_center - width / 2
+        y_min = y_center - height / 2
 
         bbox_list.append([x_center, y_center, width, height])
+        nms_bbox_list.append([x_min, y_min, width, height])
         angle_list.append(angle)
         score_list.append(hand.pd_score)
 
@@ -435,7 +439,7 @@ def compute_mediapipe_palm_detections(
         )
 
     indices = cv2.dnn.NMSBoxes(
-        bbox_list,
+        nms_bbox_list,
         score_list,
         conf_threshold,
         iou_threshold,
