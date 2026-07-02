@@ -34,6 +34,55 @@ class YOLOSubtype(str, Enum):
     DEFAULT = ""
 
 
+def resolve_yolo_strides(
+    strides: list[int] | tuple[int, ...] | None,
+    subtype: YOLOSubtype,
+    num_outputs: int,
+) -> list[int]:
+    """Resolve YOLO strides from metadata or default fallback.
+
+    @param strides: Optional strides from NNArchive head metadata.
+    @type strides: list[int] | tuple[int, ...] | None
+    @param subtype: YOLO subtype.
+    @type subtype: YOLOSubtype
+    @param num_outputs: Number of YOLO output heads.
+    @type num_outputs: int
+    @return: Resolved YOLO strides.
+    @rtype: list[int]
+    """
+    if strides is None:
+        return (
+            [8, 16, 32]
+            if subtype not in [YOLOSubtype.V3UT, YOLOSubtype.V3T, YOLOSubtype.V4T]
+            else [16, 32]
+        )
+
+    if not isinstance(strides, (list, tuple)):
+        raise ValueError("`strides` must be a list or tuple of positive integers.")
+
+    if not strides:
+        raise ValueError("`strides` must not be empty.")
+
+    resolved_strides = list(strides)
+
+    if not all(
+        isinstance(stride, int) and not isinstance(stride, bool)
+        for stride in resolved_strides
+    ):
+        raise ValueError("All `strides` values must be integers.")
+
+    if not all(stride > 0 for stride in resolved_strides):
+        raise ValueError("All `strides` values must be positive.")
+
+    if len(resolved_strides) != num_outputs:
+        raise ValueError(
+            "Number of `strides` must match number of YOLO outputs. "
+            f"Got {len(resolved_strides)} strides for {num_outputs} outputs."
+        )
+
+    return resolved_strides
+
+
 def make_grid_numpy(ny: int, nx: int, na: int) -> np.ndarray:
     """Create a grid of shape (1, na, ny, nx, 2)
 
