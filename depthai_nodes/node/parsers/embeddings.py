@@ -51,12 +51,10 @@ class EmbeddingsParser(BaseParser):
         """
 
         self.output_layer_name = head_config["outputs"]
-        output_names = self._normalize_output_layer_names(
-            self.output_layer_name
-        )
-        assert len(output_names) == 1, (
-            "Embeddings head should have only one output layer"
-        )
+        output_names = self._normalize_output_layer_names(self.output_layer_name)
+        assert (
+            len(output_names) == 1
+        ), "Embeddings head should have only one output layer"
 
         self._logger.debug(
             f"EmbeddingsParser built with output_layer_name={self.output_layer_name}"
@@ -82,9 +80,9 @@ class EmbeddingsParser(BaseParser):
         )
         self._logger.debug(f"Processing input with layers: {output_names}")
 
-        assert len(output_names) == 1, (
-            "Embeddings head should have only one output layer"
-        )
+        assert (
+            len(output_names) == 1
+        ), "Embeddings head should have only one output layer"
         return output
 
     @staticmethod

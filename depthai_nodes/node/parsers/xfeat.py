@@ -580,9 +580,7 @@ class XFeatStereoParser(XFeatBaseParser):
             matched_points = dai.TrackedFeatures()
             if status == "reference_missing":
                 matched_points.setTimestamp(reference_output.getTimestamp())
-                matched_points.setTimestampDevice(
-                    reference_output.getTimestampDevice()
-                )
+                matched_points.setTimestampDevice(reference_output.getTimestampDevice())
                 self._logger.debug(
                     "No reference keypoints found, sending TrackedFeatures message"
                 )
