@@ -51,6 +51,7 @@ class SegmentationParser(BaseParser):
         self.output_layer_name = output_layer_name
         self.classes_in_one_layer = classes_in_one_layer
         self.background_class = background_class
+        self._background_class_ignored_warning_sent = False
         self._logger.debug(
             "SegmentationParser initialized with "
             f"output_layer_name='{output_layer_name}', "
@@ -91,6 +92,17 @@ class SegmentationParser(BaseParser):
         self.background_class = background_class
         self._logger.debug(f"Background class set to {self.background_class}")
 
+    def _warn_if_background_class_ignored(self) -> None:
+        if (
+            self.background_class
+            and self.classes_in_one_layer
+            and not self._background_class_ignored_warning_sent
+        ):
+            self._logger.warning(
+                "background_class=True is ignored when classes_in_one_layer=True."
+            )
+            self._background_class_ignored_warning_sent = True
+
     def build(
         self,
         head_config: dict[str, Any],
@@ -113,8 +125,7 @@ class SegmentationParser(BaseParser):
             "classes_in_one_layer", self.classes_in_one_layer
         )
         self.background_class = head_config.get(
-            "background_class",
-            head_config.get("backgroundClass", self.background_class),
+            "background_class", self.background_class
         )
 
         self._logger.debug(
@@ -123,6 +134,8 @@ class SegmentationParser(BaseParser):
             f"classes_in_one_layer={self.classes_in_one_layer}, "
             f"background_class={self.background_class}"
         )
+
+        self._warn_if_background_class_ignored()
 
         return self
 
@@ -179,6 +192,8 @@ class SegmentationParser(BaseParser):
                             segmentation_mask,
                         )
                     )
+
+            self._warn_if_background_class_ignored()
 
             class_map = np_function(segmentation_mask, axis=0).reshape(
                 segmentation_mask.shape[1], segmentation_mask.shape[2]

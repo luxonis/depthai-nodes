@@ -57,10 +57,7 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         segmentation_mask_copy = _copy_metadata(segmentation_mask)
         assert isinstance(segmentation_mask_copy, dai.SegmentationMask)
         segmentation_mask_copy.setCvMask(segmentation_mask.getCvMask().copy())
-        if hasattr(segmentation_mask, "getLabels") and hasattr(
-            segmentation_mask_copy, "setLabels"
-        ):
-            segmentation_mask_copy.setLabels(segmentation_mask.getLabels())
+        segmentation_mask_copy.setLabels(segmentation_mask.getLabels())
         return segmentation_mask_copy
 
     def _copy_img_detection(

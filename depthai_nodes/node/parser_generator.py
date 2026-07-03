@@ -79,7 +79,7 @@ class ParserGenerator(dai.node.ThreadedHostNode):
                     parser_name = self._getHostParserName(parser_name)
                 else:
                     parser = pipeline.create(dai.node.DetectionParser)
-                    parser.setNNArchive(nnArchive)
+                    parser.setNNArchiveHead(head)
                     parsers[index] = parser
                     continue
             elif parser_name == "YOLOExtendedParser":
@@ -91,7 +91,7 @@ class ParserGenerator(dai.node.ThreadedHostNode):
                         and not self._has_non_default_yolo_strides(head, yolo_subtype)
                     ):
                         parser = pipeline.create(dai.node.DetectionParser)
-                        parser.setNNArchive(nnArchive)
+                        parser.setNNArchiveHead(head)
                         if head.metadata.maskOutputs is not None and is_rvc2_device:
                             self._logger.warning(
                                 "Segmentation based model detected with RVC2 device. Parsing will be done on the host machine."
@@ -102,7 +102,7 @@ class ParserGenerator(dai.node.ThreadedHostNode):
 
             elif parser_name == "SegmentationParser" and not hostOnly:
                 parser = pipeline.create(dai.node.SegmentationParser)
-                parser.setNNArchive(nnArchive)
+                parser.setNNArchiveHead(head)
                 if is_rvc2_device:
                     self._logger.warning(
                         "Segmentation model detected with RVC2 device. Parsing will "
