@@ -95,6 +95,18 @@ class ParserGenerator(dai.node.ThreadedHostNode):
                         parsers[index] = parser
                         continue
 
+            elif parser_name == "SegmentationParser" and not hostOnly:
+                parser = pipeline.create(dai.node.SegmentationParser)
+                parser.setNNArchive(nnArchive)
+                if is_rvc2_device:
+                    self._logger.warning(
+                        "Segmentation model detected with RVC2 device. Parsing will "
+                        "be done on the host machine."
+                    )
+                    parser.setRunOnHost(True)
+                parsers[index] = parser
+                continue
+
             parser = globals().get(parser_name)
 
             if parser is None:

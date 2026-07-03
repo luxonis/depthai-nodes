@@ -130,7 +130,8 @@ class ApplyColormap(BaseHostNode):
         msg_copy = copy_message(msg)
 
         if isinstance(msg_copy, dai.SegmentationMask):
-            return msg_copy.getCvMask()
+            mask = msg_copy.getCvMask()
+            return np.where(mask == 255, 0, mask + 1)
 
         if isinstance(msg_copy, Map2D):
             return msg_copy.map

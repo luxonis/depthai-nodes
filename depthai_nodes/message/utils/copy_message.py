@@ -40,7 +40,9 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         if hasattr(msg, "getTimestampDevice"):
             msg_copy.setTimestampDevice(msg.getTimestampDevice())
         if hasattr(msg, "getTransformation"):
-            msg_copy.setTransformation(msg.getTransformation())
+            transformation = msg.getTransformation()
+            if transformation is not None:
+                msg_copy.setTransformation(transformation)
         return msg_copy
 
     def _copy_img_frame(img_frame: dai.ImgFrame) -> dai.ImgFrame:
@@ -48,6 +50,18 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         img_frame_copy.setCvFrame(img_frame.getCvFrame(), img_frame.getType())
         img_frame_copy.setCategory(img_frame.getCategory())
         return img_frame_copy
+
+    def _copy_segmentation_mask(
+        segmentation_mask: dai.SegmentationMask,
+    ) -> dai.SegmentationMask:
+        segmentation_mask_copy = _copy_metadata(segmentation_mask)
+        assert isinstance(segmentation_mask_copy, dai.SegmentationMask)
+        segmentation_mask_copy.setCvMask(segmentation_mask.getCvMask().copy())
+        if hasattr(segmentation_mask, "getLabels") and hasattr(
+            segmentation_mask_copy, "setLabels"
+        ):
+            segmentation_mask_copy.setLabels(segmentation_mask.getLabels())
+        return segmentation_mask_copy
 
     def _copy_img_detection(
         img_det: dai.ImgDetection | dai.SpatialImgDetection,
@@ -125,7 +139,9 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         rotated_rect_copy.angle = rotated_rect.angle
         return rotated_rect_copy
 
-    if isinstance(msg, dai.ImgFrame):
+    if isinstance(msg, dai.SegmentationMask):
+        return _copy_segmentation_mask(msg)
+    elif isinstance(msg, dai.ImgFrame):
         return _copy_img_frame(msg)
     elif isinstance(msg, (dai.ImgDetection, dai.SpatialImgDetection)):
         return _copy_img_detection(msg)
