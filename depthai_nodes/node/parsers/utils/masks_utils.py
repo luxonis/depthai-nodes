@@ -1,3 +1,4 @@
+import cv2
 import depthai as dai
 import numpy as np
 
@@ -77,3 +78,42 @@ def get_segmentation_outputs(
     ).astype(np.float32)
     protos_len = protos_output.shape[1]
     return masks_outputs_values, protos_output, protos_len
+
+
+def process_single_mask_rfdetr(
+    mask_logits: np.ndarray,
+    mask_conf: float,
+    bbox: np.ndarray,
+    input_shape: tuple[int, int],
+) -> np.ndarray:
+    """Process a single RF-DETR instance segmentation mask.
+
+    @param mask_logits: Mask logits for a single detection.
+    @type mask_logits: np.ndarray
+    @param mask_conf: Mask confidence threshold.
+    @type mask_conf: float
+    @param bbox: A numpy array of bbox coordinates in (x_center, y_center, width,
+        height) normalized format.
+    @type bbox: np.ndarray
+    @param input_shape: Target output mask shape as (height, width).
+    @type input_shape: tuple[int, int]
+    @return: Processed mask resized to the model input shape.
+    @rtype: np.ndarray
+    """
+    if mask_logits.ndim != 2:
+        raise ValueError(
+            f"RF-DETR mask logits should have shape (H, W), got {mask_logits.shape}."
+        )
+
+    mask_h, mask_w = mask_logits.shape
+    scaled_bbox = bbox * np.array([mask_w, mask_h, mask_w, mask_h])
+
+    mask = sigmoid(mask_logits)
+    mask = crop_mask(mask, scaled_bbox)
+    mask = (mask > mask_conf).astype(np.uint8)
+
+    return cv2.resize(
+        mask,
+        (input_shape[1], input_shape[0]),
+        interpolation=cv2.INTER_NEAREST,
+    )
