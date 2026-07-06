@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any
 
 import depthai as dai
@@ -12,6 +13,31 @@ from depthai_nodes.node.parsers.utils.yolo import (
     YOLOSubtype,
     compute_yolo_detections,
 )
+
+
+@dataclass(frozen=True)
+class YOLOComputeInputs:
+    subtype: YOLOSubtype
+    layer_names: list[str]
+    outputs_values: list[np.ndarray]
+    conf_threshold: float
+    n_classes: int
+    iou_threshold: float
+    max_det: int
+    anchors: list[list[list[float]]] | np.ndarray | None
+    n_keypoints: int
+    label_names: list[str] | None
+    keypoint_label_names: list[str] | None
+    keypoint_edges: list[tuple[int, int]] | None
+    input_shape: tuple[int, int] | None
+    kpts_outputs: list[np.ndarray] | None
+    masks_outputs_values: list[np.ndarray] | None
+    protos_output: np.ndarray | None
+    protos_len: int | None
+    mask_conf: float
+    v26_mask_coeffs: np.ndarray | None
+    v26_protos: np.ndarray | None
+    v26_pose_kpts: np.ndarray | None
 
 
 class YOLOExtendedParser(BaseParser):
@@ -414,10 +440,10 @@ class YOLOExtendedParser(BaseParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped, no more data
             extracted = self.extract(output)
-            payload = self.compute(**extracted)
+            payload = self.compute(extracted)
             self.emit(output, payload)
 
-    def extract(self, output: dai.NNData) -> dict[str, Any]:
+    def extract(self, output: dai.NNData) -> YOLOComputeInputs:
         layer_names = self.output_layer_names or output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layer_names}")
 
@@ -492,33 +518,55 @@ class YOLOExtendedParser(BaseParser):
                     protos_len,
                 ) = get_segmentation_outputs(output)
 
-        return {
-            "subtype": self.subtype,
-            "layer_names": list(layer_names),
-            "outputs_values": outputs_values,
-            "conf_threshold": self.conf_threshold,
-            "n_classes": self.n_classes,
-            "iou_threshold": self.iou_threshold,
-            "max_det": self.max_det,
-            "anchors": self.anchors,
-            "n_keypoints": self.n_keypoints,
-            "label_names": self.label_names,
-            "keypoint_label_names": self.keypoint_label_names,
-            "keypoint_edges": self.keypoint_edges,
-            "input_shape": self.input_shape,
-            "kpts_outputs": kpts_outputs,
-            "masks_outputs_values": masks_outputs_values,
-            "protos_output": protos_output,
-            "protos_len": protos_len,
-            "mask_conf": self.mask_conf,
-            "v26_mask_coeffs": v26_mask_coeffs,
-            "v26_protos": v26_protos,
-            "v26_pose_kpts": v26_pose_kpts,
-        }
+        return YOLOComputeInputs(
+            subtype=self.subtype,
+            layer_names=list(layer_names),
+            outputs_values=outputs_values,
+            conf_threshold=self.conf_threshold,
+            n_classes=self.n_classes,
+            iou_threshold=self.iou_threshold,
+            max_det=self.max_det,
+            anchors=self.anchors,
+            n_keypoints=self.n_keypoints,
+            label_names=self.label_names,
+            keypoint_label_names=self.keypoint_label_names,
+            keypoint_edges=self.keypoint_edges,
+            input_shape=self.input_shape,
+            kpts_outputs=kpts_outputs,
+            masks_outputs_values=masks_outputs_values,
+            protos_output=protos_output,
+            protos_len=protos_len,
+            mask_conf=self.mask_conf,
+            v26_mask_coeffs=v26_mask_coeffs,
+            v26_protos=v26_protos,
+            v26_pose_kpts=v26_pose_kpts,
+        )
 
     @staticmethod
-    def compute(**kwargs) -> dict[str, Any]:
-        return compute_yolo_detections(**kwargs)
+    def compute(inputs: YOLOComputeInputs) -> dict[str, Any]:
+        return compute_yolo_detections(
+            subtype=inputs.subtype,
+            layer_names=inputs.layer_names,
+            outputs_values=inputs.outputs_values,
+            conf_threshold=inputs.conf_threshold,
+            n_classes=inputs.n_classes,
+            iou_threshold=inputs.iou_threshold,
+            max_det=inputs.max_det,
+            anchors=inputs.anchors,
+            n_keypoints=inputs.n_keypoints,
+            label_names=inputs.label_names,
+            keypoint_label_names=inputs.keypoint_label_names,
+            keypoint_edges=inputs.keypoint_edges,
+            input_shape=inputs.input_shape,
+            kpts_outputs=inputs.kpts_outputs,
+            masks_outputs_values=inputs.masks_outputs_values,
+            protos_output=inputs.protos_output,
+            protos_len=inputs.protos_len,
+            mask_conf=inputs.mask_conf,
+            v26_mask_coeffs=inputs.v26_mask_coeffs,
+            v26_protos=inputs.v26_protos,
+            v26_pose_kpts=inputs.v26_pose_kpts,
+        )
 
     def emit(self, output: dai.NNData, payload: dict[str, Any]) -> None:
         mode = payload["mode"]
