@@ -105,14 +105,6 @@ def check_embeddings_msg(
     np.testing.assert_allclose(embeddings, expected_embeddings, rtol=1e-2)
 
 
-def _normalize_expected_segmentation_mask(expected_mask: np.ndarray) -> np.ndarray:
-    if expected_mask.dtype == np.int16:
-        expected_mask = np.where(expected_mask == -1, 255, expected_mask).astype(
-            np.uint8
-        )
-    return expected_mask
-
-
 def check_segmentation_msg(
     message: dai.SegmentationMask,
     expected_output: dict[str, Any],
@@ -134,7 +126,6 @@ def check_segmentation_msg(
     mask = message.getCvMask()
 
     expected_mask = expected_output["mask"]
-    expected_mask = _normalize_expected_segmentation_mask(expected_mask)
     if verbose:
         print(
             f"Expected mask shape: {expected_mask.shape}, predicted mask shape: {mask.shape}"
