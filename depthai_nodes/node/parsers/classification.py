@@ -145,9 +145,7 @@ class ClassificationParser(BaseParser):
                 f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
             )
 
-        scores = np.asarray(
-            output.getTensor(self.output_layer_name, dequantize=True)
-        ).flatten()
+        scores = output.getTensor(self.output_layer_name, dequantize=True).flatten()
 
         if len(scores) != self.n_classes and self.n_classes != 0:
             raise ValueError(

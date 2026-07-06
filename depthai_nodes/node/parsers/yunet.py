@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from typing import Any
 
 import depthai as dai
@@ -290,8 +291,33 @@ class YuNetParser(DetectionParser):
         return loc, conf, iou
 
     @staticmethod
-    def compute(**kwargs):
-        return compute_yunet_detections(**kwargs)
+    def compute(
+        *,
+        input_size: tuple[int, int],
+        loc: np.ndarray,
+        conf: np.ndarray,
+        iou: np.ndarray,
+        conf_threshold: float,
+        iou_threshold: float,
+        max_det: int,
+        anchors: np.ndarray,
+        label_names: list[str] | None = None,
+        nms_fn: Callable[..., np.ndarray],
+        top_left_wh_to_xywh_fn: Callable[[np.ndarray], np.ndarray],
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[str] | None]:
+        return compute_yunet_detections(
+            input_size=input_size,
+            loc=loc,
+            conf=conf,
+            iou=iou,
+            conf_threshold=conf_threshold,
+            iou_threshold=iou_threshold,
+            max_det=max_det,
+            anchors=anchors,
+            label_names=label_names,
+            nms_fn=nms_fn,
+            top_left_wh_to_xywh_fn=top_left_wh_to_xywh_fn,
+        )
 
     def emit(
         self,

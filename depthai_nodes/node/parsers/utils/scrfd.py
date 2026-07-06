@@ -1,5 +1,6 @@
 import numpy as np
 
+from depthai_nodes.node.parsers.utils.bbox_format_converters import xyxy_to_xywh
 from depthai_nodes.node.parsers.utils.nms import nms
 
 
@@ -193,6 +194,8 @@ def compute_scrfd_detections(
         nms_threshold=nms_threshold,
         anchors=anchors,
     )
+    bboxes = xyxy_to_xywh(bboxes)
+    bboxes = np.clip(bboxes, 0, 1)
 
     labels = np.zeros(len(bboxes), dtype=int)
     mapped_label_names = (

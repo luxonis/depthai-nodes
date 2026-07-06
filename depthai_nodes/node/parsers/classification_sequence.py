@@ -151,15 +151,6 @@ class ClassificationSequenceParser(ClassificationParser):
             except dai.MessageQueue.QueueException:
                 break
 
-            layers = output.getAllLayerNames()
-            self._logger.debug(f"Processing input with layers: {layers}")
-            if len(layers) == 1 and self.output_layer_name == "":
-                self.output_layer_name = layers[0]
-            elif len(layers) != 1 and self.output_layer_name == "":
-                raise ValueError(
-                    f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
-                )
-
             scores = self.extract(output)
             scores = self.compute(scores, is_softmax=self.is_softmax)
             self.emit(output, scores)

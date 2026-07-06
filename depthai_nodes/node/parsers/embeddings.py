@@ -24,7 +24,7 @@ class EmbeddingsParser(BaseParser):
     def __init__(self) -> None:
         """Initialize the EmbeddingsParser node."""
         super().__init__()
-        self.output_layer_name: str | list[str] | None = None
+        self.output_layer_name: str | None = None
         self._logger.debug(
             f"EmbeddingsParser initialized with output_layer_name={self.output_layer_name}"
         )
@@ -49,12 +49,11 @@ class EmbeddingsParser(BaseParser):
         @return: The parser object with the head configuration set.
         @rtype: EmbeddingsParser
         """
-
-        self.output_layer_name = head_config["outputs"]
-        output_names = self._normalize_output_layer_names(self.output_layer_name)
+        output_names = self._normalize_output_layer_names(head_config["outputs"])
         assert (
             len(output_names) == 1
         ), "Embeddings head should have only one output layer"
+        self.output_layer_name = output_names[0]
 
         self._logger.debug(
             f"EmbeddingsParser built with output_layer_name={self.output_layer_name}"
@@ -75,8 +74,10 @@ class EmbeddingsParser(BaseParser):
             self.emit(computed)
 
     def extract(self, output: dai.NNData) -> dai.NNData:
-        output_names = self._normalize_output_layer_names(
-            self.output_layer_name or output.getAllLayerNames()
+        output_names = (
+            [self.output_layer_name]
+            if self.output_layer_name is not None
+            else output.getAllLayerNames()
         )
         self._logger.debug(f"Processing input with layers: {output_names}")
 

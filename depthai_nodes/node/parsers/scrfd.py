@@ -5,7 +5,6 @@ import numpy as np
 
 from depthai_nodes.message.creators import create_detection_message
 from depthai_nodes.node.parsers.detection import DetectionParser
-from depthai_nodes.node.parsers.utils import xyxy_to_xywh
 from depthai_nodes.node.parsers.utils.scrfd import (
     compute_anchor_centers,
     compute_scrfd_detections,
@@ -262,9 +261,6 @@ class SCRFDParser(DetectionParser):
         labels: np.ndarray,
         label_names: list[str] | None,
     ) -> None:
-        bboxes = xyxy_to_xywh(bboxes)
-        bboxes = np.clip(bboxes, 0, 1)
-
         message = create_detection_message(
             bboxes=bboxes,
             scores=scores,

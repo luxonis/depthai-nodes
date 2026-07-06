@@ -124,7 +124,6 @@ class HRNetParser(KeypointParser):
     def emit(
         self, output: dai.NNData, keypoints: np.ndarray, scores: np.ndarray
     ) -> None:
-        self.n_keypoints = len(keypoints)
         keypoints_message = create_keypoints_message(
             keypoints=keypoints,
             scores=scores,
