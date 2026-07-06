@@ -12,6 +12,7 @@ from depthai_nodes.node.parsers.utils.masks_utils import (
 from depthai_nodes.node.parsers.utils.yolo import (
     YOLOSubtype,
     compute_yolo_detections,
+    resolve_yolo_strides,
 )
 
 
@@ -60,6 +61,8 @@ class YOLOExtendedParser(BaseParser):
         Number of keypoints in the model.
     anchors : list[list[list[float]]] | None
         Anchors for the YOLO model (optional).
+    strides : list[int] | tuple[int, ...] | None
+        Strides for the YOLO output heads.
     keypoint_label_names : list[str] | None
         Labels for the keypoints.
     keypoint_edges : list[tuple[int, int]] | None
@@ -129,6 +132,7 @@ class YOLOExtendedParser(BaseParser):
         self.n_keypoints = n_keypoints
         self.max_det = max_det
         self.anchors = anchors
+        self.strides: list[int] | tuple[int, ...] | None = None
         self.keypoint_label_names = keypoint_label_names
         self.keypoint_edges = keypoint_edges
         self.input_shape = None
@@ -140,7 +144,7 @@ class YOLOExtendedParser(BaseParser):
             ) from err
 
         self._logger.debug(
-            f"YOLOExtendedParser initialized with conf_threshold={self.conf_threshold}, n_classes={self.n_classes}, label_names={self.label_names}, iou_threshold={self.iou_threshold}, mask_conf={self.mask_conf}, n_keypoints={self.n_keypoints}, max_det={self.max_det}, anchors={self.anchors}, subtype='{self.subtype}', keypoint_label_names={self.keypoint_label_names}, keypoint_edges={self.keypoint_edges}"
+            f"YOLOExtendedParser initialized with conf_threshold={self.conf_threshold}, n_classes={self.n_classes}, label_names={self.label_names}, iou_threshold={self.iou_threshold}, mask_conf={self.mask_conf}, n_keypoints={self.n_keypoints}, max_det={self.max_det}, anchors={self.anchors}, strides={self.strides}, subtype='{self.subtype}', keypoint_label_names={self.keypoint_label_names}, keypoint_edges={self.keypoint_edges}"
         )
 
     def setOutputLayerNames(self, output_layer_names: list[str]) -> None:
@@ -401,6 +405,7 @@ class YOLOExtendedParser(BaseParser):
         self.iou_threshold = head_config.get("iou_threshold", self.iou_threshold)
         self.mask_conf = head_config.get("mask_conf", self.mask_conf)
         self.anchors = head_config.get("anchors", self.anchors)
+        self.strides = head_config.get("strides", self.strides)
         self.n_keypoints = head_config.get("n_keypoints", self.n_keypoints)
         self.max_det = head_config.get("max_det", self.max_det)
         self.label_names = head_config.get("classes", self.label_names)
@@ -427,7 +432,7 @@ class YOLOExtendedParser(BaseParser):
                 self.n_prototypes = head_config.get("n_prototypes", 32)
 
         self._logger.debug(
-            f"YOLOExtendedParser built with conf_threshold={self.conf_threshold}, n_classes={self.n_classes}, label_names={self.label_names}, iou_threshold={self.iou_threshold}, mask_conf={self.mask_conf}, n_keypoints={self.n_keypoints}, anchors={self.anchors}, subtype='{self.subtype}', keypoint_label_names={self.keypoint_label_names}, keypoint_edges={self.keypoint_edges}"
+            f"YOLOExtendedParser built with conf_threshold={self.conf_threshold}, n_classes={self.n_classes}, label_names={self.label_names}, iou_threshold={self.iou_threshold}, mask_conf={self.mask_conf}, n_keypoints={self.n_keypoints}, anchors={self.anchors}, strides={self.strides}, subtype='{self.subtype}', keypoint_label_names={self.keypoint_label_names}, keypoint_edges={self.keypoint_edges}"
         )
 
         return self
@@ -518,6 +523,22 @@ class YOLOExtendedParser(BaseParser):
                     protos_len,
                 ) = get_segmentation_outputs(output)
 
+        if self.subtype == YOLOSubtype.V26:
+            if self.input_shape is None:
+                raise ValueError(
+                    "YOLO26 parsing requires model input shape in head_config."
+                )
+            input_shape = self.input_shape
+        else:
+            strides = resolve_yolo_strides(
+                self.strides,
+                self.subtype,
+                num_outputs=len(outputs_values),
+            )
+            input_shape = tuple(
+                dim * strides[0] for dim in outputs_values[0].shape[2:4]
+            )
+
         return YOLOComputeInputs(
             subtype=self.subtype,
             layer_names=list(layer_names),
@@ -531,7 +552,7 @@ class YOLOExtendedParser(BaseParser):
             label_names=self.label_names,
             keypoint_label_names=self.keypoint_label_names,
             keypoint_edges=self.keypoint_edges,
-            input_shape=self.input_shape,
+            input_shape=input_shape,
             kpts_outputs=kpts_outputs,
             masks_outputs_values=masks_outputs_values,
             protos_output=protos_output,
