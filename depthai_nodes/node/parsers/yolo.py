@@ -21,6 +21,7 @@ class YOLOComputeInputs:
     subtype: YOLOSubtype
     layer_names: list[str]
     outputs_values: list[np.ndarray]
+    strides: list[int] | None
     conf_threshold: float
     n_classes: int
     iou_threshold: float
@@ -452,6 +453,7 @@ class YOLOExtendedParser(BaseParser):
         layer_names = self.output_layer_names or output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layer_names}")
 
+        strides = None
         kpts_outputs = None
         masks_outputs_values = None
         protos_output = None
@@ -543,6 +545,7 @@ class YOLOExtendedParser(BaseParser):
             subtype=self.subtype,
             layer_names=list(layer_names),
             outputs_values=outputs_values,
+            strides=strides,
             conf_threshold=self.conf_threshold,
             n_classes=self.n_classes,
             iou_threshold=self.iou_threshold,
@@ -569,6 +572,7 @@ class YOLOExtendedParser(BaseParser):
             subtype=inputs.subtype,
             layer_names=inputs.layer_names,
             outputs_values=inputs.outputs_values,
+            strides=inputs.strides,
             conf_threshold=inputs.conf_threshold,
             n_classes=inputs.n_classes,
             iou_threshold=inputs.iou_threshold,

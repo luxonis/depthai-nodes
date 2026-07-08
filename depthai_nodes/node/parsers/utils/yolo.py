@@ -575,6 +575,7 @@ def compute_yolo_detections(
     subtype: YOLOSubtype,
     layer_names: list[str],
     outputs_values: list[np.ndarray],
+    strides: list[int] | None = None,
     conf_threshold: float,
     n_classes: int,
     iou_threshold: float,
@@ -642,19 +643,21 @@ def compute_yolo_detections(
         elif mode == kpts_mode:
             v26_pose_kpts = extra
     else:
-        strides = (
-            [8, 16, 32]
-            if subtype not in [YOLOSubtype.V3UT, YOLOSubtype.V3T, YOLOSubtype.V4T]
-            else [16, 32]
-        )
+        resolved_strides = strides
+        if resolved_strides is None:
+            resolved_strides = (
+                [8, 16, 32]
+                if subtype not in [YOLOSubtype.V3UT, YOLOSubtype.V3T, YOLOSubtype.V4T]
+                else [16, 32]
+            )
 
         if input_shape is None:
             input_shape = tuple(
-                dim * strides[0] for dim in outputs_values[0].shape[2:4]
+                dim * resolved_strides[0] for dim in outputs_values[0].shape[2:4]
             )
 
         if anchors is not None:
-            anchors = np.array(anchors).reshape(len(strides), -1)
+            anchors = np.array(anchors).reshape(len(resolved_strides), -1)
 
         num_classes_check = (
             outputs_values[0].shape[1] - 5
@@ -675,7 +678,7 @@ def compute_yolo_detections(
 
         results = decode_yolo_output(
             outputs_values,
-            strides,
+            resolved_strides,
             anchors,
             kpts=kpts_outputs if mode == kpts_mode else None,
             conf_thres=conf_threshold,
