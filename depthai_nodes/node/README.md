@@ -37,8 +37,8 @@ Parser nodes are used to parse the output of a neural network. The main purpose 
 
 ### Segmentation
 
-- `SegmentationParser`: Parser for parsing the output of the segmentation models. It will output the [`depthai_nodes.message.SegmentationMask`](../message/README.md#segmentationmask) message.
-- `FastSAMParser`: Parser for parsing the output of the FastSAM model. It will output the [`depthai_nodes.message.SegmentationMask`](../message/README.md#segmentationmask) message.
+- `SegmentationParser`: Parser for parsing the output of the segmentation models. It will output the [`dai.SegmentationMask`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/segmentation_mask) message.
+- `FastSAMParser`: Parser for parsing the output of the FastSAM model. It will output the [`dai.SegmentationMask`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/segmentation_mask) message.
 
 ### Feature Matching
 

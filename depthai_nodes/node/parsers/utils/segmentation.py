@@ -5,6 +5,7 @@ def compute_segmentation_class_map(
     segmentation_mask: np.ndarray,
     *,
     classes_in_one_layer: bool = False,
+    background_class: bool = False,
 ) -> np.ndarray:
     """Convert segmentation logits into a class map."""
     mask = np.asarray(segmentation_mask)
@@ -41,4 +42,10 @@ def compute_segmentation_class_map(
     if adding_unassigned_class:
         class_map = class_map - 1
 
-    return class_map
+    if background_class and not classes_in_one_layer:
+        class_map = np.where(class_map == 0, 255, class_map)
+
+    if np.any((class_map < 0) | (class_map > 255)):
+        raise ValueError("Segmentation class map values must be in the range [0, 255].")
+
+    return class_map.astype(np.uint8)

@@ -254,6 +254,24 @@ class YOLOExtendedParser(BaseParser):
         self.anchors = anchors
         self._logger.debug(f"Anchors set to {self.anchors}")
 
+    def setStrides(self, strides: list[int] | tuple[int, ...]) -> None:
+        """Sets the strides for YOLO output heads.
+
+        @param strides: Strides for YOLO output heads.
+        @type strides: list[int] | tuple[int, ...]
+        """
+        if not isinstance(strides, (list, tuple)):
+            raise ValueError("Strides must be a list or tuple.")
+        if not strides:
+            raise ValueError("Strides must not be empty.")
+        if not all(isinstance(stride, int) for stride in strides):
+            raise ValueError("Strides must be a list or tuple of integers.")
+        if not all(stride > 0 for stride in strides):
+            raise ValueError("Strides must be positive.")
+
+        self.strides = strides
+        self._logger.debug(f"Strides set to {self.strides}")
+
     def setSubtype(self, subtype: str) -> None:
         """Sets the subtype of the YOLO model.
 

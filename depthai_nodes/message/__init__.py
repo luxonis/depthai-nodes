@@ -6,14 +6,12 @@ from .keypoints import Keypoints
 from .lines import Line, Lines
 from .map import Map2D
 from .prediction import Prediction, Predictions
-from .segmentation import SegmentationMask
 from .snap_data import SnapData
 
 __all__ = [
     "Line",
     "Lines",
     "Classifications",
-    "SegmentationMask",
     "Map2D",
     "Clusters",
     "Cluster",

@@ -8,9 +8,9 @@ on:
         required: true
         default: 'main'
       depthai-version:
-        description: 'Version of depthai to install. Default: 3.3.0'
+        description: 'Version of depthai to install. Default: 3.7.1'
         required: true
-        default: '3.3.0'
+        default: '3.7.1'
       duration:
         description: 'Duration of each test in seconds. Default: 10'
         required: true
