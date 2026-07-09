@@ -54,6 +54,8 @@ class SegmentationParser(BaseParser):
         self.output_layer_name = output_layer_name
         self.classes_in_one_layer = classes_in_one_layer
         self.background_class = background_class
+        self.class_names = None
+        self.n_classes = 0
         self._background_class_ignored_warning_sent = False
         self._logger.debug(
             "SegmentationParser initialized with "
@@ -106,6 +108,13 @@ class SegmentationParser(BaseParser):
             )
             self._background_class_ignored_warning_sent = True
 
+    def _get_logged_class_count(self, class_map: np.ndarray) -> int:
+        if self.class_names is not None:
+            return len(self.class_names)
+        if self.n_classes > 0:
+            return self.n_classes
+        return int(np.unique(class_map[class_map != 255]).size)
+
     def build(
         self,
         head_config: dict[str, Any],
@@ -130,6 +139,10 @@ class SegmentationParser(BaseParser):
         self.background_class = head_config.get(
             "background_class", self.background_class
         )
+        self.class_names = head_config.get("classes", self.class_names)
+        self.n_classes = head_config.get("n_classes", self.n_classes)
+        if self.n_classes == 0 and self.class_names is not None:
+            self.n_classes = len(self.class_names)
 
         self._logger.debug(
             "SegmentationParser built with "
@@ -193,7 +206,7 @@ class SegmentationParser(BaseParser):
             mask_message.setTransformation(transformation)
 
         self._logger.debug(
-            f"Created segmentation message with {class_map.shape[0]} classes"
+            f"Created segmentation message with {self._get_logged_class_count(class_map)} classes"
         )
         self.out.send(mask_message)
         self._logger.debug("Segmentation message sent successfully")

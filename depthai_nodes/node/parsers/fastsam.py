@@ -307,7 +307,7 @@ class FastSAMParser(BaseParser):
                 protos_output,
                 protos_len,
             ) = self.extract(output)
-            results_masks = self.compute(
+            results_masks, mask_count = self.compute(
                 outputs_values,
                 masks_outputs_values,
                 protos_output,
@@ -321,7 +321,7 @@ class FastSAMParser(BaseParser):
                 point_label=self.point_label,
                 bbox=self.bbox,
             )
-            self.emit(output, results_masks)
+            self.emit(output, results_masks, mask_count)
 
     def extract(
         self, output: dai.NNData
@@ -357,7 +357,7 @@ class FastSAMParser(BaseParser):
         points: tuple[int, int] | None,
         point_label: int | None,
         bbox: tuple[int, int, int, int] | None,
-    ) -> np.ndarray:
+    ) -> tuple[np.ndarray, int]:
         return compute_fastsam_mask(
             outputs_values,
             masks_outputs_values,
@@ -373,7 +373,9 @@ class FastSAMParser(BaseParser):
             bbox=bbox,
         )
 
-    def emit(self, output: dai.NNData, results_masks: np.ndarray) -> None:
+    def emit(
+        self, output: dai.NNData, results_masks: np.ndarray, mask_count: int
+    ) -> None:
         segmentation_message = create_segmentation_message(results_masks)
         transformation = output.getTransformation()
         if transformation is not None:
@@ -383,7 +385,7 @@ class FastSAMParser(BaseParser):
         segmentation_message.setTimestampDevice(output.getTimestampDevice())
 
         self._logger.debug(
-            f"Created segmentation message with {len(results_masks)} masks"
+            f"Created segmentation message with {mask_count} masks"
         )
         self.out.send(segmentation_message)
         self._logger.debug("Segmentation message sent successfully")

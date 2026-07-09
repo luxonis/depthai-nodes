@@ -525,6 +525,12 @@ def decode_yolo_output(
     @return: NMS output.
     @rtype: np.ndarray
     """
+    if len(strides) != len(yolo_outputs):
+        raise ValueError(
+            "Number of `strides` must match number of YOLO outputs. "
+            f"Got {len(strides)} strides for {len(yolo_outputs)} outputs."
+        )
+
     num_outputs = num_classes + 5
 
     # 1. Parse and concatenate all head outputs efficiently

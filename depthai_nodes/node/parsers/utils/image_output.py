@@ -7,7 +7,7 @@ def compute_image_output(output_image: np.ndarray) -> np.ndarray:
     """Convert a model image output tensor into an image array."""
     image = np.asarray(output_image)
 
-    if image.shape[0] == 1:
+    if image.ndim == 4 and image.shape[0] == 1:
         image = image[0]
 
     if image.ndim != 3:
