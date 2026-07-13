@@ -19,9 +19,9 @@ class SegmentationParser(BaseParser):
 
     Output Message/s
     ----------------
-    **Type**: SegmentationMask
+    **Type**: dai.SegmentationMask
 
-    **Description**: Segmentation message containing the segmentation mask. Every pixel belongs to exactly one class. Unassigned pixels are represented with "-1" and class pixels with non-negative integers.
+    **Description**: dai.SegmentationMask containing the segmentation mask. Every pixel belongs to exactly one class. Unassigned pixels are represented with "255" and class pixels with non-negative integers.
 
     Error Handling
     --------------
@@ -31,7 +31,10 @@ class SegmentationParser(BaseParser):
     """
 
     def __init__(
-        self, output_layer_name: str = "", classes_in_one_layer: bool = False
+        self,
+        output_layer_name: str = "",
+        classes_in_one_layer: bool = False,
+        background_class: bool = False,
     ) -> None:
         """Initializes the parser node.
 
@@ -41,12 +44,19 @@ class SegmentationParser(BaseParser):
             class segmentation model. Default is False. If True, the parser will use
             np.max instead of np.argmax to get the class map.
         @type classes_in_one_layer: bool
+        @param background_class: Whether class index 0 should be treated as background.
+        @type background_class: bool
         """
         super().__init__()
         self.output_layer_name = output_layer_name
         self.classes_in_one_layer = classes_in_one_layer
+        self.background_class = background_class
+        self._background_class_ignored_warning_sent = False
         self._logger.debug(
-            f"SegmentationParser initialized with output_layer_name='{output_layer_name}', classes_in_one_layer={classes_in_one_layer}"
+            "SegmentationParser initialized with "
+            f"output_layer_name='{output_layer_name}', "
+            f"classes_in_one_layer={classes_in_one_layer}, "
+            f"background_class={background_class}"
         )
 
     def setOutputLayerName(self, output_layer_name: str) -> None:
@@ -71,6 +81,28 @@ class SegmentationParser(BaseParser):
         self.classes_in_one_layer = classes_in_one_layer
         self._logger.debug(f"Classes in one layer set to {self.classes_in_one_layer}")
 
+    def setBackgroundClass(self, background_class: bool) -> None:
+        """Sets whether class index 0 should be treated as background.
+
+        @param background_class: Whether class index 0 is background.
+        @type background_class: bool
+        """
+        if not isinstance(background_class, bool):
+            raise ValueError("background_class must be a boolean.")
+        self.background_class = background_class
+        self._logger.debug(f"Background class set to {self.background_class}")
+
+    def _warn_if_background_class_ignored(self) -> None:
+        if (
+            self.background_class
+            and self.classes_in_one_layer
+            and not self._background_class_ignored_warning_sent
+        ):
+            self._logger.warning(
+                "background_class=True is ignored when classes_in_one_layer=True."
+            )
+            self._background_class_ignored_warning_sent = True
+
     def build(
         self,
         head_config: dict[str, Any],
@@ -92,10 +124,18 @@ class SegmentationParser(BaseParser):
         self.classes_in_one_layer = head_config.get(
             "classes_in_one_layer", self.classes_in_one_layer
         )
+        self.background_class = head_config.get(
+            "background_class", self.background_class
+        )
 
         self._logger.debug(
-            f"SegmentationParser built with output_layer_name='{self.output_layer_name}', classes_in_one_layer={self.classes_in_one_layer}"
+            "SegmentationParser built with "
+            f"output_layer_name='{self.output_layer_name}', "
+            f"classes_in_one_layer={self.classes_in_one_layer}, "
+            f"background_class={self.background_class}"
         )
+
+        self._warn_if_background_class_ignored()
 
         return self
 
@@ -153,14 +193,23 @@ class SegmentationParser(BaseParser):
                         )
                     )
 
-            class_map = (
-                np_function(segmentation_mask, axis=0)
-                .reshape(segmentation_mask.shape[1], segmentation_mask.shape[2])
-                .astype(np.int16)
+            self._warn_if_background_class_ignored()
+
+            class_map = np_function(segmentation_mask, axis=0).reshape(
+                segmentation_mask.shape[1], segmentation_mask.shape[2]
             )
 
             if adding_unassigned_class:
-                class_map = class_map - 1
+                class_map = np.where(class_map == 0, 255, class_map - 1)
+            elif self.background_class and not self.classes_in_one_layer:
+                class_map = np.where(class_map == 0, 255, class_map)
+
+            if np.any(class_map < 0) or np.any(class_map > 255):
+                raise ValueError(
+                    "Segmentation mask values must be in the uint8 range [0, 255]."
+                )
+
+            class_map = class_map.astype(np.uint8)
 
             mask_message = create_segmentation_message(class_map)
             mask_message.setTimestamp(output.getTimestamp())

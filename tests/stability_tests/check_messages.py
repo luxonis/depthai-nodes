@@ -11,7 +11,6 @@ from depthai_nodes import (
     Lines,
     Map2D,
     Predictions,
-    SegmentationMask,
 )
 
 from .utils import extract_main_slug
@@ -107,7 +106,7 @@ def check_embeddings_msg(
 
 
 def check_segmentation_msg(
-    message: SegmentationMask,
+    message: dai.SegmentationMask,
     expected_output: dict[str, Any],
     threshold: float = 0.9,
     verbose: bool = False,
@@ -121,10 +120,10 @@ def check_segmentation_msg(
     }
     """
     assert isinstance(
-        message, SegmentationMask
-    ), f"The message is not a SegmentationMask. Got {type(message)}."
+        message, dai.SegmentationMask
+    ), f"The message is not a dai.SegmentationMask. Got {type(message)}."
 
-    mask = message.mask
+    mask = message.getCvMask()
 
     expected_mask = expected_output["mask"]
     if verbose:

@@ -8,7 +8,6 @@ from depthai_nodes.message.keypoints import Keypoints
 from depthai_nodes.message.lines import Line, Lines
 from depthai_nodes.message.map import Map2D
 from depthai_nodes.message.prediction import Prediction, Predictions
-from depthai_nodes.message.segmentation import SegmentationMask
 from depthai_nodes.node.utils.util_constants import UNASSIGNED_MASK_LABEL, GMessage
 
 
@@ -21,7 +20,7 @@ def remap_message(
         return remap_img_detections(from_transformation, to_transformation, message)
     elif isinstance(message, Keypoints):
         return remap_keypoints(from_transformation, to_transformation, message)
-    elif isinstance(message, SegmentationMask):
+    elif isinstance(message, dai.SegmentationMask):
         return remap_segmentation_mask(from_transformation, to_transformation, message)
     elif isinstance(message, Clusters):
         return remap_clusters(from_transformation, to_transformation, message)
@@ -82,11 +81,13 @@ def remap_segmentation_mask_array(
 def remap_segmentation_mask(
     from_transformation: dai.ImgTransformation,
     to_transformation: dai.ImgTransformation,
-    segmentation_mask: SegmentationMask,
-) -> SegmentationMask:
-    new_mask = SegmentationMask()
-    new_mask.mask = remap_segmentation_mask_array(
-        from_transformation, to_transformation, segmentation_mask.mask
+    segmentation_mask: dai.SegmentationMask,
+) -> dai.SegmentationMask:
+    new_mask = dai.SegmentationMask()
+    new_mask.setCvMask(
+        remap_segmentation_mask_array(
+            from_transformation, to_transformation, segmentation_mask.getCvMask()
+        )
     )
     return new_mask
 

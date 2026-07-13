@@ -187,6 +187,9 @@ class DetectionParserMock:
     def setNNArchive(self, nn_archive):
         self._nn_archive = nn_archive
 
+    def setNNArchiveHead(self, head) -> None:
+        self._nn_archive_head = head
+
     def setRunOnHost(self, run_on_host: bool):
         self._run_on_host = run_on_host
 

@@ -22,12 +22,21 @@ MAX_VALUE = ARR.max().item()
 
 # Your parameter lists
 colormap_values = [cv2.COLORMAP_HOT, cv2.COLORMAP_PLASMA, cv2.COLORMAP_INFERNO]
+
+
+def _create_segmentation_mask(arr: np.ndarray) -> dai.SegmentationMask:
+    msg = dai.SegmentationMask()
+    msg.setCvMask(arr.astype(np.uint8))
+    return msg
+
+
 arr_creators = [
     lambda: create_img_frame(
         image=ARR[..., np.newaxis], img_frame_type=dai.ImgFrame.Type.RAW8
     ),
     lambda: create_map(ARR.astype(np.float32)),
     lambda: _create_img_detections_with_mask(ARR),
+    lambda: _create_segmentation_mask(ARR),
 ]
 
 
@@ -137,7 +146,7 @@ def test_processing(
 
         modified_arr = (
             np.where(ARR == 255, 0, ARR + 1)
-            if isinstance(arr, dai.ImgDetections)
+            if isinstance(arr, (dai.ImgDetections, dai.SegmentationMask))
             else ARR
         )
         assert np.array_equal(
