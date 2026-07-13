@@ -194,6 +194,7 @@ def compute_scrfd_detections(
         nms_threshold=nms_threshold,
         anchors=anchors,
     )
+    bboxes = np.clip(bboxes, 0, 1)
     bboxes = xyxy_to_xywh(bboxes)
     bboxes = np.clip(bboxes, 0, 1)
 
