@@ -198,7 +198,7 @@ class FrameCropper(BaseThreadedHostNode):
         inputManipConfigs: dai.Node.Output,
         maxOutputFrameSize: int,
         waitForConfig: bool,
-        syncThreshold: timedelta = timedelta(milliseconds=10),
+        syncThreshold: timedelta | None = None,
     ) -> "FrameCropper":
         """Configure cropping from a stream of precomputed ImageManipConfig groups.
 
@@ -215,10 +215,15 @@ class FrameCropper(BaseThreadedHostNode):
                 "FrameCropper was already configured using the `fromManipConfig` method. "
                 "Only one of `fromImgDetections` and `fromManipConfigs` can be used."
             )
+        if syncThreshold is not None and waitForConfig is False:
+            raise RuntimeError(
+                "syncThreshold can only be used when waitForConfig is True."
+            )
+        elif syncThreshold is not None:
+            self._sync_threshold = syncThreshold
         self._version_selected = True
         self._input_manip_configs = inputManipConfigs
         self._wait_for_cfg = waitForConfig
-        self._sync_threshold = syncThreshold
         self._cropper_image_manip.setMaxOutputFrameSize(maxOutputFrameSize)
         return self
 
