@@ -4,7 +4,7 @@ from depthai_nodes.logging import get_logger
 from depthai_nodes.node.parsers import *
 from depthai_nodes.node.parsers.base_parser import BaseParser
 from depthai_nodes.node.parsers.utils import decode_head
-from depthai_nodes.node.parsers.utils.yolo import YOLOSubtype
+from depthai_nodes.node.parsers.utils.yolo import YOLOSubtype, resolve_yolo_strides
 
 
 class ParserGenerator(dai.node.ThreadedHostNode):
@@ -75,18 +75,23 @@ class ParserGenerator(dai.node.ThreadedHostNode):
             if parser_name in self.DEVICE_PARSERS:
                 if hostOnly:
                     parser_name = self._getHostParserName(parser_name)
+                elif parser_name == "YOLO" and self._has_non_default_yolo_strides(head):
+                    parser_name = self._getHostParserName(parser_name)
                 else:
                     parser = pipeline.create(dai.node.DetectionParser)
-                    parser.setNNArchive(nnArchive)
+                    parser.setNNArchiveHead(head)
                     parsers[index] = parser
                     continue
             elif parser_name == "YOLOExtendedParser":
                 yolo_subtype_str = head.metadata.subtype
                 if yolo_subtype_str is not None:
                     yolo_subtype = YOLOSubtype(yolo_subtype_str.lower())
-                    if yolo_subtype in self.DAI_SUPPORTED_YOLO_SUBTYPES:
+                    if (
+                        yolo_subtype in self.DAI_SUPPORTED_YOLO_SUBTYPES
+                        and not self._has_non_default_yolo_strides(head, yolo_subtype)
+                    ):
                         parser = pipeline.create(dai.node.DetectionParser)
-                        parser.setNNArchive(nnArchive)
+                        parser.setNNArchiveHead(head)
                         if head.metadata.maskOutputs is not None and is_rvc2_device:
                             self._logger.warning(
                                 "Segmentation based model detected with RVC2 device. Parsing will be done on the host machine."
@@ -94,6 +99,18 @@ class ParserGenerator(dai.node.ThreadedHostNode):
                             parser.setRunOnHost(True)
                         parsers[index] = parser
                         continue
+
+            elif parser_name == "SegmentationParser" and not hostOnly:
+                parser = pipeline.create(dai.node.SegmentationParser)
+                parser.setNNArchiveHead(head)
+                if is_rvc2_device:
+                    self._logger.warning(
+                        "Segmentation model detected with RVC2 device. Parsing will "
+                        "be done on the host machine."
+                    )
+                    parser.setRunOnHost(True)
+                parsers[index] = parser
+                continue
 
             parser = globals().get(parser_name)
 
@@ -113,6 +130,50 @@ class ParserGenerator(dai.node.ThreadedHostNode):
             parsers[index] = pipeline.create(parser).build(head_config)
 
         return parsers
+
+    @staticmethod
+    def _has_non_default_yolo_strides(
+        head,
+        subtype: YOLOSubtype | None = None,
+    ) -> bool:
+        head_config = decode_head(head)
+        strides = head_config.get("strides")
+        if strides is None:
+            return False
+
+        metadata = getattr(head, "metadata", None)
+
+        if subtype is None:
+            yolo_subtype_str = getattr(metadata, "subtype", None)
+            if yolo_subtype_str is None:
+                subtype = YOLOSubtype.DEFAULT
+            else:
+                try:
+                    subtype = YOLOSubtype(yolo_subtype_str.lower())
+                except ValueError:
+                    return True
+
+        yolo_outputs = getattr(metadata, "yoloOutputs", None)
+        outputs = (
+            yolo_outputs if yolo_outputs is not None else head_config.get("outputs")
+        )
+        num_outputs = len(outputs or [])
+
+        try:
+            resolved_strides = resolve_yolo_strides(
+                strides,
+                subtype,
+                num_outputs,
+            )
+        except ValueError:
+            return True
+
+        default_strides = resolve_yolo_strides(
+            None,
+            subtype,
+            num_outputs,
+        )
+        return resolved_strides != default_strides
 
     def run(self):
         """No-op required by ``dai.node.ThreadedHostNode``."""

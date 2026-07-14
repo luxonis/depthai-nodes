@@ -8,13 +8,12 @@ from depthai_nodes.message.keypoints import Keypoints
 from depthai_nodes.message.lines import Lines
 from depthai_nodes.message.map import Map2D
 from depthai_nodes.message.prediction import Predictions
-from depthai_nodes.message.segmentation import SegmentationMask
 
 GMessage = TypeVar(
     "GMessage",
     bound=dai.ImgDetections
     | Keypoints
-    | SegmentationMask
+    | dai.SegmentationMask
     | Clusters
     | Map2D
     | Lines

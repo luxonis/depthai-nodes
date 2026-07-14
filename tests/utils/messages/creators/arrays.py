@@ -20,4 +20,4 @@ def create_map(map: np.ndarray = ARRAYS["2d"]):
 
 
 def create_segmentation(mask: np.ndarray = ARRAYS["2d"]):
-    return creators.create_segmentation_message(mask=mask.astype(np.int16))
+    return creators.create_segmentation_message(mask=mask.astype(np.uint8))

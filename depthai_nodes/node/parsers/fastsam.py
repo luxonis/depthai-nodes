@@ -46,9 +46,9 @@ class FastSAMParser(BaseParser):
 
     Output Message/s
     ----------------
-    **Type**: SegmentationMask
+    **Type**: dai.SegmentationMask
 
-    **Description**: SegmentationMask message containing the resulting segmentation masks given the prompt.
+    **Description**: dai.SegmentationMask message containing the resulting segmentation masks given the prompt.
 
     Error Handling
     --------------
@@ -378,8 +378,9 @@ class FastSAMParser(BaseParser):
                     )
 
             if len(results_masks) == 0:
-                results_masks = np.full((1, height, width), -1, dtype=np.int16)
-            results_masks = merge_masks(results_masks)
+                results_masks = np.full((height, width), 255, dtype=np.uint8)
+            else:
+                results_masks = merge_masks(results_masks)
 
             segmentation_message = create_segmentation_message(results_masks)
             transformation = output.getTransformation()

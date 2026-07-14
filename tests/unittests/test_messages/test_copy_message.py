@@ -1,6 +1,7 @@
 import inspect
 from collections.abc import Callable
 
+import depthai as dai
 import numpy as np
 import pytest
 
@@ -67,3 +68,31 @@ def test_message_copying(message_creator: tuple[str, Callable]):
 
     except TypeError:  # copying not implemented for all messages
         pass
+
+
+def test_copy_native_segmentation_mask():
+    mask = np.array(
+        [
+            [0, 1, 255],
+            [2, 3, 255],
+        ],
+        dtype=np.uint8,
+    )
+
+    msg = dai.SegmentationMask()
+    msg.setCvMask(mask)
+    msg.setSequenceNum(123)
+
+    if hasattr(msg, "setLabels"):
+        msg.setLabels(["class_0", "class_1", "class_2", "class_3"])
+
+    msg_copy = copy_message(msg)
+
+    assert isinstance(msg_copy, dai.SegmentationMask)
+    assert msg_copy is not msg
+    assert np.array_equal(msg_copy.getCvMask(), msg.getCvMask())
+    assert msg_copy.getCvMask().dtype == np.uint8
+    assert msg_copy.getSequenceNum() == msg.getSequenceNum()
+
+    if hasattr(msg, "getLabels"):
+        assert msg_copy.getLabels() == msg.getLabels()
