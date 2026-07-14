@@ -254,10 +254,11 @@ class FrameCropper(BaseThreadedHostNode):
         return  # Both fromImgDetections and fromManipConfigs use on-device Script
 
     def _build_detections_cropper(self, input_image: dai.Node.Output):
-        assert self._input_img_detections is not None
-        assert self._output_size is not None
-        assert self._padding is not None
-        assert self._resize_mode is not None
+        assert_msg = "Configure the FrameCropper by calling one of the `fromImgDetections` or `fromManipConfigs` methods first."
+        assert self._input_img_detections is not None, assert_msg
+        assert self._output_size is not None, assert_msg
+        assert self._padding is not None, assert_msg
+        assert self._resize_mode is not None, assert_msg
 
         self._script = cast(dai.node.Script, self.createSubnode(dai.node.Script))
         self._script.setScript(
