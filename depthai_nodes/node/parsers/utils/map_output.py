@@ -10,5 +10,4 @@ def compute_map_output(map_tensor: np.ndarray) -> np.ndarray:
 
     if map_output.ndim != 2:
         raise ValueError(f"Expected 2D output tensor, got {map_output.ndim}D.")
-
     return map_output
