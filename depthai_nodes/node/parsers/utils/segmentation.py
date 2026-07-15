@@ -43,6 +43,8 @@ def compute_segmentation_class_map(
         class_map = np.where(class_map == 0, 255, class_map)
 
     if np.any(class_map < 0) or np.any(class_map > 255):
-        raise ValueError("Segmentation mask values must be in the uint8 range [0, 255].")
+        raise ValueError(
+            "Segmentation mask values must be in the uint8 range [0, 255]."
+        )
 
     return class_map.astype(np.uint8)
