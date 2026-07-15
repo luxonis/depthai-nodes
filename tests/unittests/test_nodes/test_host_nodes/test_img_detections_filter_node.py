@@ -92,8 +92,8 @@ def test_rejects_labels_and_updates_segmentation_mask(
         output.getCvSegmentationMask(),
         np.array(
             [
-                [0, 255, 2],
-                [2, 255, 0],
+                [0, 255, 1],
+                [1, 255, 0],
             ],
             dtype=np.uint8,
         ),
@@ -122,7 +122,8 @@ def test_sorts_by_confidence_before_taking_top_k(filter_node: ImgDetectionsFilte
             (1, 0.40, (0.10, 0.10, 0.30, 0.30)),
             (2, 0.95, (0.20, 0.20, 0.40, 0.40)),
             (3, 0.70, (0.30, 0.30, 0.50, 0.50)),
-        ]
+        ],
+        mask=np.array([[0, 1, 2]], dtype=np.uint8),
     )
 
     output = process_message(
@@ -132,6 +133,9 @@ def test_sorts_by_confidence_before_taking_top_k(filter_node: ImgDetectionsFilte
 
     assert [det.label for det in output.detections] == [2, 3]
     assert [det.confidence for det in output.detections] == pytest.approx([0.95, 0.70])
+    np.testing.assert_array_equal(
+        output.getCvSegmentationMask(), np.array([[255, 0, 1]], dtype=np.uint8)
+    )
 
 
 def test_disable_sorting_keeps_original_order_before_top_k(
@@ -161,7 +165,8 @@ def test_nms_suppresses_overlapping_detections_of_same_label(
             (1, 0.95, (0.10, 0.10, 0.50, 0.50)),
             (1, 0.80, (0.12, 0.12, 0.48, 0.48)),
             (1, 0.70, (0.60, 0.60, 0.80, 0.80)),
-        ]
+        ],
+        mask=np.array([[0, 1, 2]], dtype=np.uint8),
     )
 
     output = process_message(
@@ -171,6 +176,9 @@ def test_nms_suppresses_overlapping_detections_of_same_label(
 
     assert len(output.detections) == 2
     assert [det.confidence for det in output.detections] == pytest.approx([0.95, 0.70])
+    np.testing.assert_array_equal(
+        output.getCvSegmentationMask(), np.array([[0, 255, 1]], dtype=np.uint8)
+    )
 
 
 def test_nms_keeps_overlapping_detections_of_different_labels(
@@ -189,3 +197,59 @@ def test_nms_keeps_overlapping_detections_of_different_labels(
     )
 
     assert [det.label for det in output.detections] == [1, 2]
+
+
+def test_take_first_k_removes_truncated_detection_masks(
+    filter_node: ImgDetectionsFilter,
+):
+    msg = create_img_detections(
+        [
+            (1, 0.90, (0.10, 0.10, 0.20, 0.20)),
+            (2, 0.80, (0.20, 0.20, 0.30, 0.30)),
+            (3, 0.70, (0.30, 0.30, 0.40, 0.40)),
+        ],
+        mask=np.array([[0, 1, 2, 255]], dtype=np.uint8),
+    )
+
+    output = process_message(filter_node.takeFirstK(2), msg)
+
+    assert [det.label for det in output.detections] == [1, 2]
+    np.testing.assert_array_equal(
+        output.getCvSegmentationMask(), np.array([[0, 1, 255, 255]], dtype=np.uint8)
+    )
+
+
+def test_invalid_mask_ids_become_background(filter_node: ImgDetectionsFilter):
+    msg = create_img_detections(
+        [
+            (1, 0.90, (0.10, 0.10, 0.20, 0.20)),
+            (2, 0.80, (0.20, 0.20, 0.30, 0.30)),
+        ],
+        mask=np.array([[0, 1, 2, 254, 255]], dtype=np.uint8),
+    )
+
+    output = process_message(filter_node, msg)
+
+    np.testing.assert_array_equal(
+        output.getCvSegmentationMask(),
+        np.array([[0, 1, 255, 255, 255]], dtype=np.uint8),
+    )
+
+
+def test_empty_final_detections_makes_mask_background(
+    filter_node: ImgDetectionsFilter,
+):
+    msg = create_img_detections(
+        [
+            (1, 0.90, (0.10, 0.10, 0.20, 0.20)),
+            (2, 0.80, (0.20, 0.20, 0.30, 0.30)),
+        ],
+        mask=np.array([[0, 1, 255]], dtype=np.uint8),
+    )
+
+    output = process_message(filter_node.keepLabels([3]), msg)
+
+    assert output.detections == []
+    np.testing.assert_array_equal(
+        output.getCvSegmentationMask(), np.array([[255, 255, 255]], dtype=np.uint8)
+    )

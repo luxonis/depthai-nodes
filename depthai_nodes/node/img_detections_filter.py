@@ -185,18 +185,19 @@ class ImgDetectionsFilter(BaseHostNode):
         msg_new = copy_message(msg)
         assert isinstance(msg_new, (dai.ImgDetections, dai.SpatialImgDetections))
 
-        filtered_detections, filtered_out_ixs = self._filter_step(
-            detections=msg.detections
-        )
+        indexed_detections = list(enumerate(msg.detections))
+        filtered_detections = self._filter_step(detections=indexed_detections)
         nms_detections_out = self._nms_step(detections=filtered_detections)
         sorted_detections = self._sorting_step(detections=nms_detections_out)
         # Take first K step
-        msg_new.detections = sorted_detections[: self._cfg.first_k]
+        final_detections = sorted_detections[: self._cfg.first_k]
+        msg_new.detections = [detection for _, detection in final_detections]
 
-        # Remove classes of filtered out detections
+        # Reindex segmentation mask instance IDs to match final detections.
         if isinstance(msg, dai.ImgDetections):
             msg_new = self._update_segmentation_mask(
-                msg_new=msg_new, filtered_out_ixs=filtered_out_ixs
+                msg_new=msg_new,
+                kept_original_indices=[ix for ix, _ in final_detections],
             )
 
         self.out.send(msg_new)
@@ -210,60 +211,64 @@ class ImgDetectionsFilter(BaseHostNode):
 
     def _filter_step(
         self,
-        detections: list[dai.ImgDetection | dai.SpatialImgDetection],
-    ) -> tuple[list[dai.ImgDetection | dai.SpatialImgDetection], list[int]]:
+        detections: list[tuple[int, dai.ImgDetection | dai.SpatialImgDetection]],
+    ) -> list[tuple[int, dai.ImgDetection | dai.SpatialImgDetection]]:
         filtered_detections = []
-        filtered_out_ixs: list[int] = []
-        for ix, detection in enumerate(detections):
+        for ix, detection in detections:
             if self._cfg.labels_to_keep is not None:
                 if detection.label not in self._cfg.labels_to_keep:
-                    filtered_out_ixs.append(ix)
                     continue
 
             elif self._cfg.labels_to_reject is not None:
                 if detection.label in self._cfg.labels_to_reject:
-                    filtered_out_ixs.append(ix)
                     continue
 
             if self._cfg.min_confidence is not None:
                 if detection.confidence < self._cfg.min_confidence:
-                    filtered_out_ixs.append(ix)
                     continue
 
             if self._cfg.min_area is not None:
                 area = compute_area(detection)
                 if area < self._cfg.min_area:
-                    filtered_out_ixs.append(ix)
                     continue
 
-            filtered_detections.append(detection)
-        return filtered_detections, filtered_out_ixs
+            filtered_detections.append((ix, detection))
+        return filtered_detections
 
     def _nms_step(
-        self, detections: list[dai.ImgDetection | dai.SpatialImgDetection]
-    ) -> list[dai.ImgDetection | dai.SpatialImgDetection]:
+        self, detections: list[tuple[int, dai.ImgDetection | dai.SpatialImgDetection]]
+    ) -> list[tuple[int, dai.ImgDetection | dai.SpatialImgDetection]]:
         if self._cfg.nms_disabled:
             return detections
-        return nms_detections(
-            detections=detections,
+        detections_only = [detection for _, detection in detections]
+        kept_detections = nms_detections(
+            detections=detections_only,
             conf_thresh=self._cfg.nms_conf_thresh,
             iou_thresh=self._cfg.nms_iou_thresh,
         )
+        by_id = {id(detection): (ix, detection) for ix, detection in detections}
+        return [by_id[id(detection)] for detection in kept_detections]
 
     def _sorting_step(
-        self, detections: list[dai.ImgDetection | dai.SpatialImgDetection]
-    ) -> list[dai.ImgDetection | dai.SpatialImgDetection]:
+        self, detections: list[tuple[int, dai.ImgDetection | dai.SpatialImgDetection]]
+    ) -> list[tuple[int, dai.ImgDetection | dai.SpatialImgDetection]]:
         if not self._cfg.sort_disabled:
             sorted_detections = sorted(
-                detections, key=lambda x: x.confidence, reverse=self._cfg.sort_desc
+                detections,
+                key=lambda indexed_detection: indexed_detection[1].confidence,
+                reverse=self._cfg.sort_desc,
             )
             return sorted_detections
         return detections
 
     @staticmethod
-    def _update_segmentation_mask(msg_new, filtered_out_ixs: list[int]):
+    def _update_segmentation_mask(msg_new, kept_original_indices: list[int]):
         mask = msg_new.getCvSegmentationMask()
         if mask is not None:
-            mask = np.where(np.isin(mask, filtered_out_ixs), 255, mask)
+            lookup_table = np.full(256, 255, dtype=np.uint8)
+            for new_ix, original_ix in enumerate(kept_original_indices):
+                if original_ix < 255 and new_ix < 255:
+                    lookup_table[original_ix] = new_ix
+            mask = lookup_table[mask].astype(np.uint8, copy=False)
             msg_new.setCvSegmentationMask(mask)
         return msg_new
