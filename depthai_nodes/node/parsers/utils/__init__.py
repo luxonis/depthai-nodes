@@ -7,6 +7,7 @@ from .bbox_format_converters import (
     xywh_to_xyxy,
     xyxy_to_xywh,
 )
+from .classification import compute_classification_scores
 from .decode_head import decode_head
 from .denormalize import unnormalize_image
 
@@ -19,6 +20,7 @@ __all__ = [
     "xyxy_to_xywh",
     "normalize_bboxes",
     "top_left_wh_to_xywh",
+    "compute_classification_scores",
     "softmax",
     "sigmoid",
 ]

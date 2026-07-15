@@ -5,7 +5,9 @@ import numpy as np
 
 from depthai_nodes.message.creators import create_keypoints_message
 from depthai_nodes.node.parsers.keypoints import KeypointParser
-from depthai_nodes.node.parsers.utils.superanimal import get_pose_prediction
+from depthai_nodes.node.parsers.utils.superanimal import (
+    compute_superanimal_keypoints,
+)
 
 
 class SuperAnimalParser(KeypointParser):
@@ -97,45 +99,52 @@ class SuperAnimalParser(KeypointParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            layers = output.getAllLayerNames()
-            self._logger.debug(f"Processing input with layers: {layers}")
-            if len(layers) == 1 and self.output_layer_name == "":
-                self.output_layer_name = layers[0]
-            elif len(layers) != 1 and self.output_layer_name == "":
-                raise ValueError(
-                    f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
-                )
-            heatmaps = output.getTensor(self.output_layer_name, dequantize=True).astype(
-                np.float32
+            heatmaps = self.extract(output)
+            keypoints, scores = self.compute(heatmaps, scale_factor=self.scale_factor)
+            self.emit(output, keypoints, scores)
+
+    def extract(self, output: dai.NNData) -> np.ndarray:
+        layers = output.getAllLayerNames()
+        self._logger.debug(f"Processing input with layers: {layers}")
+        if len(layers) == 1 and self.output_layer_name == "":
+            self.output_layer_name = layers[0]
+        elif len(layers) != 1 and self.output_layer_name == "":
+            raise ValueError(
+                f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
             )
 
-            heatmaps_scale_factor = (
-                self.scale_factor / heatmaps.shape[1],
-                self.scale_factor / heatmaps.shape[2],
-            )
+        return output.getTensor(self.output_layer_name, dequantize=True).astype(
+            np.float32
+        )
 
-            keypoints = get_pose_prediction(heatmaps, None, heatmaps_scale_factor)[0][0]
-            scores = keypoints[:, 2]
-            keypoints = keypoints[:, :2] / self.scale_factor
+    @staticmethod
+    def compute(
+        heatmaps: np.ndarray,
+        *,
+        scale_factor: float,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        return compute_superanimal_keypoints(
+            heatmaps,
+            scale_factor=scale_factor,
+        )
 
-            msg = create_keypoints_message(
-                keypoints,
-                scores,
-                self.score_threshold,
-                label_names=self.label_names,
-                edges=self.edges,
-            )
-            msg.setTimestamp(output.getTimestamp())
-            msg.setSequenceNum(output.getSequenceNum())
-            msg.setTimestampDevice(output.getTimestampDevice())
-            transformation = output.getTransformation()
-            if transformation is not None:
-                msg.setTransformation(transformation)
+    def emit(
+        self, output: dai.NNData, keypoints: np.ndarray, scores: np.ndarray
+    ) -> None:
+        msg = create_keypoints_message(
+            keypoints,
+            scores,
+            self.score_threshold,
+            label_names=self.label_names,
+            edges=self.edges,
+        )
+        msg.setTimestamp(output.getTimestamp())
+        msg.setSequenceNum(output.getSequenceNum())
+        msg.setTimestampDevice(output.getTimestampDevice())
+        transformation = output.getTransformation()
+        if transformation is not None:
+            msg.setTransformation(transformation)
 
-            self._logger.debug(
-                f"Created keypoints message with {len(keypoints)} points"
-            )
-
-            self.out.send(msg)
-
-            self._logger.debug("Keypoint output sent successfully")
+        self._logger.debug(f"Created keypoints message with {len(keypoints)} points")
+        self.out.send(msg)
+        self._logger.debug("Keypoint output sent successfully")

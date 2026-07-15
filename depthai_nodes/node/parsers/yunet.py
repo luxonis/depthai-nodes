@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from typing import Any
 
 import depthai as dai
@@ -8,8 +9,7 @@ from depthai_nodes.node.parsers.detection import DetectionParser
 from depthai_nodes.node.parsers.utils import top_left_wh_to_xywh
 from depthai_nodes.node.parsers.utils.nms import nms_cv2
 from depthai_nodes.node.parsers.utils.yunet import (
-    decode_and_prune_detections,
-    format_detections,
+    compute_yunet_detections,
     generate_anchors,
 )
 
@@ -202,169 +202,147 @@ class YuNetParser(DetectionParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            output_layer_names = output.getAllLayerNames()
-            self._logger.debug(f"Processing input with layers: {output_layer_names}")
-
-            # get loc
-            if self.loc_output_layer_name:
-                try:
-                    loc = output.getTensor(self.loc_output_layer_name, dequantize=True)
-                except KeyError as err:
-                    raise ValueError(
-                        f"Layer {self.loc_output_layer_name} not found in the model output."
-                    ) from err
-            else:
-                loc_output_layer_name_candidates = [
-                    layer_name
-                    for layer_name in output_layer_names
-                    if layer_name.startswith("loc")
-                ]
-                if len(loc_output_layer_name_candidates) == 0:
-                    raise ValueError(
-                        "No loc layer candidates found in the model output."
-                    )
-                elif len(loc_output_layer_name_candidates) > 1:
-                    raise ValueError(
-                        "Multiple loc layer candidates found in the model output."
-                    )
-                else:
-                    self.loc_output_layer_name = loc_output_layer_name_candidates[0]
-
-            # get conf
-            if self.conf_output_layer_name:
-                try:
-                    conf = output.getTensor(
-                        self.conf_output_layer_name, dequantize=True
-                    )
-                except KeyError as err:
-                    raise ValueError(
-                        f"Layer {self.conf_output_layer_name} not found in the model output."
-                    ) from err
-            else:
-                conf_output_layer_name_candidates = [
-                    layer_name
-                    for layer_name in output_layer_names
-                    if layer_name.startswith("conf")
-                ]
-                if len(conf_output_layer_name_candidates) == 0:
-                    raise ValueError(
-                        "No conf layer candidates found in the model output."
-                    )
-                elif len(conf_output_layer_name_candidates) > 1:
-                    raise ValueError(
-                        "Multiple conf layer candidates found in the model output."
-                    )
-                else:
-                    self.conf_output_layer_name = conf_output_layer_name_candidates[0]
-
-            # get iou
-            if self.iou_output_layer_name:
-                try:
-                    iou = output.getTensor(self.iou_output_layer_name, dequantize=True)
-                except KeyError as err:
-                    raise ValueError(
-                        f"Layer {self.iou_output_layer_name} not found in the model output."
-                    ) from err
-            else:
-                iou_output_layer_name_candidates = [
-                    layer_name
-                    for layer_name in output_layer_names
-                    if layer_name.startswith("iou")
-                ]
-                if len(iou_output_layer_name_candidates) == 0:
-                    raise ValueError(
-                        "No iou layer candidates found in the model output."
-                    )
-                elif len(iou_output_layer_name_candidates) > 1:
-                    raise ValueError(
-                        "Multiple iou layer candidates found in the model output."
-                    )
-                else:
-                    self.iou_output_layer_name = iou_output_layer_name_candidates[0]
-
-            loc = output.getTensor(self.loc_output_layer_name, dequantize=True)
-            conf = output.getTensor(self.conf_output_layer_name, dequantize=True)
-            iou = output.getTensor(self.iou_output_layer_name, dequantize=True)
-
-            # Use optimized combined decode and prune function
-            anchors = self._get_cached_anchors()
-            bboxes, keypoints, scores = decode_and_prune_detections(
+            loc, conf, iou = self.extract(output)
+            bboxes, keypoints, scores, labels, label_names = self.compute(
                 input_size=self.input_size,
                 loc=loc,
                 conf=conf,
                 iou=iou,
                 conf_threshold=self.conf_threshold,
-                anchors=anchors,
-            )
-
-            # Skip further processing if no detections
-            if len(bboxes) == 0:
-                detections_message = create_detection_message(
-                    bboxes=np.array([]),
-                    scores=np.array([]),
-                    keypoints=np.array([]),
-                    labels=np.array([]),
-                    label_names=[],
-                )
-                detections_message.setTimestamp(output.getTimestamp())
-                detections_message.setTimestampDevice(output.getTimestampDevice())
-                transformation = output.getTransformation()
-                if transformation is not None:
-                    detections_message.setTransformation(transformation)
-                detections_message.setSequenceNum(output.getSequenceNum())
-                self.out.send(detections_message)
-                continue
-
-            # format detections
-            bboxes, keypoints, scores = format_detections(
-                bboxes=bboxes,
-                keypoints=keypoints,
-                scores=scores,
-                input_size=self.input_size,
-            )
-
-            # run nms
-            keep_indices = nms_cv2(
-                bboxes=bboxes,
-                scores=scores,
-                conf_threshold=self.conf_threshold,
                 iou_threshold=self.iou_threshold,
                 max_det=self.max_det,
+                anchors=self._get_cached_anchors(),
+                label_names=self.label_names,
+                nms_fn=nms_cv2,
+                top_left_wh_to_xywh_fn=top_left_wh_to_xywh,
             )
+            self.emit(output, bboxes, keypoints, scores, labels, label_names)
 
-            bboxes = bboxes[keep_indices]
-            bboxes = top_left_wh_to_xywh(bboxes)
-            keypoints = keypoints[keep_indices]
-            scores = scores[keep_indices]
+    def extract(self, output: dai.NNData) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        output_layer_names = output.getAllLayerNames()
+        self._logger.debug(f"Processing input with layers: {output_layer_names}")
 
-            bboxes = np.clip(bboxes, 0, 1)
-            keypoints = np.clip(keypoints, 0, 1)
+        if self.loc_output_layer_name:
+            try:
+                loc = output.getTensor(self.loc_output_layer_name, dequantize=True)
+            except KeyError as err:
+                raise ValueError(
+                    f"Layer {self.loc_output_layer_name} not found in the model output."
+                ) from err
+        else:
+            loc_output_layer_name_candidates = [
+                layer_name
+                for layer_name in output_layer_names
+                if layer_name.startswith("loc")
+            ]
+            if len(loc_output_layer_name_candidates) == 0:
+                raise ValueError("No loc layer candidates found in the model output.")
+            if len(loc_output_layer_name_candidates) > 1:
+                raise ValueError(
+                    "Multiple loc layer candidates found in the model output."
+                )
+            self.loc_output_layer_name = loc_output_layer_name_candidates[0]
+            loc = output.getTensor(self.loc_output_layer_name, dequantize=True)
 
-            labels = np.array([0] * len(bboxes))
+        if self.conf_output_layer_name:
+            try:
+                conf = output.getTensor(self.conf_output_layer_name, dequantize=True)
+            except KeyError as err:
+                raise ValueError(
+                    f"Layer {self.conf_output_layer_name} not found in the model output."
+                ) from err
+        else:
+            conf_output_layer_name_candidates = [
+                layer_name
+                for layer_name in output_layer_names
+                if layer_name.startswith("conf")
+            ]
+            if len(conf_output_layer_name_candidates) == 0:
+                raise ValueError("No conf layer candidates found in the model output.")
+            if len(conf_output_layer_name_candidates) > 1:
+                raise ValueError(
+                    "Multiple conf layer candidates found in the model output."
+                )
+            self.conf_output_layer_name = conf_output_layer_name_candidates[0]
+            conf = output.getTensor(self.conf_output_layer_name, dequantize=True)
 
-            label_names = (
-                [self.label_names[label] for label in labels]
-                if self.label_names
-                else None
-            )
+        if self.iou_output_layer_name:
+            try:
+                iou = output.getTensor(self.iou_output_layer_name, dequantize=True)
+            except KeyError as err:
+                raise ValueError(
+                    f"Layer {self.iou_output_layer_name} not found in the model output."
+                ) from err
+        else:
+            iou_output_layer_name_candidates = [
+                layer_name
+                for layer_name in output_layer_names
+                if layer_name.startswith("iou")
+            ]
+            if len(iou_output_layer_name_candidates) == 0:
+                raise ValueError("No iou layer candidates found in the model output.")
+            if len(iou_output_layer_name_candidates) > 1:
+                raise ValueError(
+                    "Multiple iou layer candidates found in the model output."
+                )
+            self.iou_output_layer_name = iou_output_layer_name_candidates[0]
+            iou = output.getTensor(self.iou_output_layer_name, dequantize=True)
 
-            detections_message = create_detection_message(
-                bboxes=bboxes,
-                scores=scores,
-                keypoints=keypoints,
-                labels=labels,
-                label_names=label_names,
-            )
+        return loc, conf, iou
 
-            detections_message.setTimestamp(output.getTimestamp())
-            detections_message.setSequenceNum(output.getSequenceNum())
-            detections_message.setTimestampDevice(output.getTimestampDevice())
-            transformation = output.getTransformation()
-            if transformation is not None:
-                detections_message.setTransformation(transformation)
+    @staticmethod
+    def compute(
+        *,
+        input_size: tuple[int, int],
+        loc: np.ndarray,
+        conf: np.ndarray,
+        iou: np.ndarray,
+        conf_threshold: float,
+        iou_threshold: float,
+        max_det: int,
+        anchors: np.ndarray,
+        label_names: list[str] | None = None,
+        nms_fn: Callable[..., np.ndarray],
+        top_left_wh_to_xywh_fn: Callable[[np.ndarray], np.ndarray],
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[str] | None]:
+        return compute_yunet_detections(
+            input_size=input_size,
+            loc=loc,
+            conf=conf,
+            iou=iou,
+            conf_threshold=conf_threshold,
+            iou_threshold=iou_threshold,
+            max_det=max_det,
+            anchors=anchors,
+            label_names=label_names,
+            nms_fn=nms_fn,
+            top_left_wh_to_xywh_fn=top_left_wh_to_xywh_fn,
+        )
 
-            self._logger.debug(f"Created detections message with {len(bboxes)} faces")
+    def emit(
+        self,
+        output: dai.NNData,
+        bboxes: np.ndarray,
+        keypoints: np.ndarray,
+        scores: np.ndarray,
+        labels: np.ndarray,
+        label_names: list[str] | None,
+    ) -> None:
+        detections_message = create_detection_message(
+            bboxes=bboxes,
+            scores=scores,
+            keypoints=keypoints,
+            labels=labels,
+            label_names=label_names,
+        )
 
-            self.out.send(detections_message)
+        detections_message.setTimestamp(output.getTimestamp())
+        detections_message.setSequenceNum(output.getSequenceNum())
+        detections_message.setTimestampDevice(output.getTimestampDevice())
+        transformation = output.getTransformation()
+        if transformation is not None:
+            detections_message.setTransformation(transformation)
 
-            self._logger.debug("Detections message sent successfully")
+        self._logger.debug(f"Created detections message with {len(bboxes)} faces")
+        self.out.send(detections_message)
+        self._logger.debug("Detections message sent successfully")

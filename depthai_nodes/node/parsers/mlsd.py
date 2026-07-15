@@ -5,7 +5,7 @@ import numpy as np
 
 from depthai_nodes.message.creators import create_line_detection_message
 from depthai_nodes.node.parsers.base_parser import BaseParser
-from depthai_nodes.node.parsers.utils.mlsd import decode_scores_and_points, get_lines
+from depthai_nodes.node.parsers.utils.mlsd import compute_mlsd_lines
 
 
 class MLSDParser(BaseParser):
@@ -165,38 +165,54 @@ class MLSDParser(BaseParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            self._logger.debug(
-                f"Processing input with layers: {output.getAllLayerNames()}"
+            tpMap, heat_np = self.extract(output)
+            lines, scores = self.compute(
+                tpMap,
+                heat_np,
+                topk_n=self.topk_n,
+                score_thr=self.score_thr,
+                dist_thr=self.dist_thr,
             )
-            tpMap = output.getTensor(
-                self.output_layer_tpmap,
-                dequantize=True,
-                storageOrder=dai.TensorInfo.StorageOrder.NCHW,
-            ).astype(np.float32)
-            heat_np = output.getTensor(self.output_layer_heat, dequantize=True).astype(
-                np.float32
-            )
+            self.emit(output, lines, scores)
 
-            if len(tpMap.shape) != 4:
-                raise ValueError("Invalid shape of the tpMap tensor. Should be 4D.")
+    def extract(self, output: dai.NNData) -> tuple[np.ndarray, np.ndarray]:
+        self._logger.debug(f"Processing input with layers: {output.getAllLayerNames()}")
+        tpMap = output.getTensor(
+            self.output_layer_tpmap,
+            dequantize=True,
+            storageOrder=dai.TensorInfo.StorageOrder.NCHW,
+        ).astype(np.float32)
+        heat_np = output.getTensor(self.output_layer_heat, dequantize=True).astype(
+            np.float32
+        )
+        return tpMap, heat_np
 
-            pts, pts_score, vmap = decode_scores_and_points(tpMap, heat_np, self.topk_n)
-            lines, scores = get_lines(
-                pts, pts_score, vmap, self.score_thr, self.dist_thr
-            )
+    @staticmethod
+    def compute(
+        tpMap: np.ndarray,
+        heat_np: np.ndarray,
+        *,
+        topk_n: int,
+        score_thr: float,
+        dist_thr: float,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        return compute_mlsd_lines(
+            tpMap,
+            heat_np,
+            topk_n=topk_n,
+            score_thr=score_thr,
+            dist_thr=dist_thr,
+        )
 
-            message = create_line_detection_message(lines, np.array(scores))
-            message.setTimestamp(output.getTimestamp())
-            message.setSequenceNum(output.getSequenceNum())
-            message.setTimestampDevice(output.getTimestampDevice())
-            transformation = output.getTransformation()
-            if transformation is not None:
-                message.setTransformation(transformation)
+    def emit(self, output: dai.NNData, lines: np.ndarray, scores: np.ndarray) -> None:
+        message = create_line_detection_message(lines, scores)
+        message.setTimestamp(output.getTimestamp())
+        message.setSequenceNum(output.getSequenceNum())
+        message.setTimestampDevice(output.getTimestampDevice())
+        transformation = output.getTransformation()
+        if transformation is not None:
+            message.setTransformation(transformation)
 
-            self._logger.debug(
-                f"Created line detection message with {len(lines)} lines"
-            )
-
-            self.out.send(message)
-
-            self._logger.debug("Line detection message sent successfully")
+        self._logger.debug(f"Created line detection message with {len(lines)} lines")
+        self.out.send(message)
+        self._logger.debug("Line detection message sent successfully")

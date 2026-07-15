@@ -3,6 +3,7 @@ from typing import Any
 import depthai as dai
 
 from depthai_nodes.node.parsers.base_parser import BaseParser
+from depthai_nodes.node.parsers.utils.embeddings import compute_embeddings_output
 
 
 class EmbeddingsParser(BaseParser):
@@ -23,7 +24,7 @@ class EmbeddingsParser(BaseParser):
     def __init__(self) -> None:
         """Initialize the EmbeddingsParser node."""
         super().__init__()
-        self.output_layer_name: str = None
+        self.output_layer_name: str | None = None
         self._logger.debug(
             f"EmbeddingsParser initialized with output_layer_name={self.output_layer_name}"
         )
@@ -48,11 +49,11 @@ class EmbeddingsParser(BaseParser):
         @return: The parser object with the head configuration set.
         @rtype: EmbeddingsParser
         """
-
-        self.output_layer_name = head_config["outputs"]
+        output_names = self._normalize_output_layer_names(head_config["outputs"])
         assert (
-            len(self.output_layer_name) == 1
+            len(output_names) == 1
         ), "Embeddings head should have only one output layer"
+        self.output_layer_name = output_names[0]
 
         self._logger.debug(
             f"EmbeddingsParser built with output_layer_name={self.output_layer_name}"
@@ -68,20 +69,44 @@ class EmbeddingsParser(BaseParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped, no more data
 
-            # Get all the layer names
-            output_names = self.output_layer_name or output.getAllLayerNames()
-            self._logger.debug(f"Processing input with layers: {output_names}")
+            extracted = self.extract(output)
+            computed = self.compute(extracted)
+            self.emit(computed)
 
-            assert (
-                len(output_names) == 1
-            ), "Embeddings head should have only one output layer"
-            output.setSequenceNum(output.getSequenceNum())
-            output.setTimestamp(output.getTimestamp())
-            output.setTimestampDevice(output.getTimestampDevice())
-            transformation = output.getTransformation()
-            if transformation is not None:
-                output.setTransformation(transformation)
+    def extract(self, output: dai.NNData) -> dai.NNData:
+        output_names = (
+            [self.output_layer_name]
+            if self.output_layer_name is not None
+            else output.getAllLayerNames()
+        )
+        self._logger.debug(f"Processing input with layers: {output_names}")
 
-            self.out.send(output)
+        assert (
+            len(output_names) == 1
+        ), "Embeddings head should have only one output layer"
+        return output
 
-            self._logger.debug("Message sent successfully")
+    @staticmethod
+    def _normalize_output_layer_names(
+        output_layer_name: str | list[str] | None,
+    ) -> list[str]:
+        if output_layer_name is None:
+            return []
+        if isinstance(output_layer_name, str):
+            return [output_layer_name]
+        return list(output_layer_name)
+
+    @staticmethod
+    def compute(output: dai.NNData) -> dai.NNData:
+        return compute_embeddings_output(output)
+
+    def emit(self, output: dai.NNData) -> None:
+        output.setSequenceNum(output.getSequenceNum())
+        output.setTimestamp(output.getTimestamp())
+        output.setTimestampDevice(output.getTimestampDevice())
+        transformation = output.getTransformation()
+        if transformation is not None:
+            output.setTransformation(transformation)
+
+        self.out.send(output)
+        self._logger.debug("Message sent successfully")

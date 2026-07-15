@@ -5,7 +5,9 @@ import numpy as np
 
 from depthai_nodes.message.creators import create_cluster_message
 from depthai_nodes.node.parsers.base_parser import BaseParser
-from depthai_nodes.node.parsers.utils.ufld import decode_ufld
+from depthai_nodes.node.parsers.utils.lane_detection import (
+    compute_lane_detection_points,
+)
 
 
 class LaneDetectionParser(BaseParser):
@@ -192,41 +194,56 @@ class LaneDetectionParser(BaseParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            layers = output.getAllLayerNames()
-            self._logger.debug(f"Processing input with layers: {layers}")
-            if len(layers) == 1 and self.output_layer_name == "":
-                self.output_layer_name = layers[0]
-            elif len(layers) != 1 and self.output_layer_name == "":
-                raise ValueError(
-                    f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
-                )
-
-            tensor = output.getTensor(self.output_layer_name, dequantize=True).astype(
-                np.float32
-            )
-            y = tensor[0]
-
-            points = decode_ufld(
-                anchors=self.row_anchors,
+            tensor = self.extract(output)
+            points = self.compute(
+                tensor,
+                row_anchors=self.row_anchors,
                 griding_num=self.griding_num,
                 cls_num_per_lane=self.cls_num_per_lane,
-                input_width=self.input_size[0],
-                input_height=self.input_size[1],
-                y=y,
+                input_size=self.input_size,
+            )
+            self.emit(output, points)
+
+    def extract(self, output: dai.NNData) -> np.ndarray:
+        layers = output.getAllLayerNames()
+        self._logger.debug(f"Processing input with layers: {layers}")
+        if len(layers) == 1 and self.output_layer_name == "":
+            self.output_layer_name = layers[0]
+        elif len(layers) != 1 and self.output_layer_name == "":
+            raise ValueError(
+                f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
             )
 
-            msg = create_cluster_message(points)
-            msg.setTimestamp(output.getTimestamp())
-            msg.setSequenceNum(output.getSequenceNum())
-            msg.setTimestampDevice(output.getTimestampDevice())
-            transformation = output.getTransformation()
-            if transformation is not None:
-                msg.setTransformation(transformation)
+        return output.getTensor(self.output_layer_name, dequantize=True).astype(
+            np.float32
+        )
 
-            self._logger.debug(
-                f"Created lane detection message with {len(points)} points"
-            )
+    @staticmethod
+    def compute(
+        tensor: np.ndarray,
+        *,
+        row_anchors: list[int],
+        griding_num: int,
+        cls_num_per_lane: int,
+        input_size: tuple[int, int],
+    ) -> list[list[tuple[int, int]]]:
+        return compute_lane_detection_points(
+            tensor,
+            row_anchors=row_anchors,
+            griding_num=griding_num,
+            cls_num_per_lane=cls_num_per_lane,
+            input_size=input_size,
+        )
 
-            self.out.send(msg)
+    def emit(self, output: dai.NNData, points) -> None:
+        msg = create_cluster_message(points)
+        msg.setTimestamp(output.getTimestamp())
+        msg.setSequenceNum(output.getSequenceNum())
+        msg.setTimestampDevice(output.getTimestampDevice())
+        transformation = output.getTransformation()
+        if transformation is not None:
+            msg.setTransformation(transformation)
 
-            self._logger.debug("Lane detection message sent successfully")
+        self._logger.debug(f"Created lane detection message with {len(points)} points")
+        self.out.send(msg)
+        self._logger.debug("Lane detection message sent successfully")

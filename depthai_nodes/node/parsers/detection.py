@@ -4,8 +4,7 @@ import numpy as np
 from depthai_nodes.message.creators import (
     create_detection_message,
 )
-from depthai_nodes.node.parsers.utils.bbox_format_converters import xyxy_to_xywh
-from depthai_nodes.node.parsers.utils.nms import nms_cv2
+from depthai_nodes.node.parsers.utils.detection import compute_detection_outputs
 
 from .base_parser import BaseParser
 
@@ -137,54 +136,69 @@ class DetectionParser(BaseParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            layers = output.getAllLayerNames()
-            if len(layers) != 2:
-                raise ValueError(
-                    f"Expected 2 output layers, got {len(layers)} layers. Please use different parser or create a new one."
-                )
+            bboxes, scores = self.extract(output)
+            bboxes, scores = self.compute(
+                bboxes,
+                scores,
+                conf_threshold=self.conf_threshold,
+                iou_threshold=self.iou_threshold,
+                max_det=self.max_det,
+            )
+            self.emit(output, bboxes, scores)
 
-            bboxes = None
-            scores = None
-
-            for layer in layers:
-                tensor: np.ndarray = output.getTensor(layer, dequantize=True)
-                if tensor.shape[-1] == 4 and len(tensor.shape) != 1:
-                    bboxes = tensor
-                else:
-                    scores = tensor
-
-            bboxes = bboxes.reshape(-1, 4)
-            scores = scores.reshape(-1)
-
-            if bboxes is None or scores is None:
-                raise ValueError(
-                    "Bounding boxes or scores are missing in the output. Please check the NN model."
-                )
-
-            indices = nms_cv2(
-                bboxes, scores, self.conf_threshold, self.iou_threshold, self.max_det
+    def extract(self, output: dai.NNData) -> tuple[np.ndarray, np.ndarray]:
+        layers = output.getAllLayerNames()
+        self._logger.debug(f"Processing input with layers: {layers}")
+        if len(layers) != 2:
+            raise ValueError(
+                f"Expected 2 output layers, got {len(layers)} layers. Please use different parser or create a new one."
             )
 
-            if len(indices) > 0:
-                bboxes = bboxes[indices]
-                scores = scores[indices]
+        bboxes = None
+        scores = None
 
-                bboxes = xyxy_to_xywh(bboxes)
-
+        for layer in layers:
+            tensor = np.asarray(output.getTensor(layer, dequantize=True))
+            if tensor.shape[-1] == 4 and tensor.ndim != 1:
+                bboxes = tensor
             else:
-                bboxes = np.array([])
-                scores = np.array([])
+                scores = tensor
 
-            message = create_detection_message(
-                bboxes=bboxes, scores=scores, label_names=self.label_names
+        if bboxes is None or scores is None:
+            raise ValueError(
+                "Bounding boxes or scores are missing in the output. Please check the NN model."
             )
-            transformation = output.getTransformation()
-            if transformation is not None:
-                message.setTransformation(transformation)
-            message.setTimestamp(output.getTimestamp())
-            message.setSequenceNum(output.getSequenceNum())
-            message.setTimestampDevice(output.getTimestampDevice())
 
-            self._logger.debug(f"Created detections message with {len(bboxes)} objects")
-            self.out.send(message)
-            self._logger.debug("Detections message sent successfully")
+        return bboxes.reshape(-1, 4), scores.reshape(-1)
+
+    @staticmethod
+    def compute(
+        bboxes: np.ndarray,
+        scores: np.ndarray,
+        *,
+        conf_threshold: float,
+        iou_threshold: float,
+        max_det: int,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        return compute_detection_outputs(
+            bboxes,
+            scores,
+            conf_threshold=conf_threshold,
+            iou_threshold=iou_threshold,
+            max_det=max_det,
+        )
+
+    def emit(self, output: dai.NNData, bboxes: np.ndarray, scores: np.ndarray) -> None:
+        message = create_detection_message(
+            bboxes=bboxes, scores=scores, label_names=self.label_names
+        )
+        transformation = output.getTransformation()
+        if transformation is not None:
+            message.setTransformation(transformation)
+        message.setTimestamp(output.getTimestamp())
+        message.setSequenceNum(output.getSequenceNum())
+        message.setTimestampDevice(output.getTimestampDevice())
+
+        self._logger.debug(f"Created detections message with {len(bboxes)} objects")
+        self.out.send(message)
+        self._logger.debug("Detections message sent successfully")

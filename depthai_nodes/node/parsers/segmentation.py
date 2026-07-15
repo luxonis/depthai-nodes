@@ -5,6 +5,9 @@ import numpy as np
 
 from depthai_nodes.message.creators import create_segmentation_message
 from depthai_nodes.node.parsers.base_parser import BaseParser
+from depthai_nodes.node.parsers.utils.segmentation import (
+    compute_segmentation_class_map,
+)
 
 
 class SegmentationParser(BaseParser):
@@ -147,82 +150,53 @@ class SegmentationParser(BaseParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            layers = output.getAllLayerNames()
-            self._logger.debug(f"Processing input with layers: {layers}")
-            if len(layers) == 1 and self.output_layer_name == "":
-                self.output_layer_name = layers[0]
-            elif len(layers) != 1 and self.output_layer_name == "":
-                raise ValueError(
-                    f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
-                )
-
-            segmentation_mask = output.getTensor(
-                self.output_layer_name, dequantize=True
+            segmentation_mask = self.extract(output)
+            class_map = self.compute(
+                segmentation_mask,
+                classes_in_one_layer=self.classes_in_one_layer,
+                background_class=self.background_class,
             )
-            if len(segmentation_mask.shape) == 4:
-                segmentation_mask = segmentation_mask[0]
+            self.emit(output, class_map)
 
-            if len(segmentation_mask.shape) != 3:
-                raise ValueError(
-                    f"Expected 3D output tensor, got {len(segmentation_mask.shape)}D."
-                )
-
-            np_function = np.argmax
-            mask_shape = segmentation_mask.shape
-            min_dim = np.argmin(mask_shape)
-            if min_dim == len(mask_shape) - 1:
-                segmentation_mask = segmentation_mask.transpose(2, 0, 1)
-            adding_unassigned_class = False
-            if segmentation_mask.shape[0] == 1:  # shape is (1, H, W)
-                if self.classes_in_one_layer:
-                    np_function = np.max
-                else:
-                    # If there is only one class, add an unassigned class
-                    adding_unassigned_class = True
-                    segmentation_mask = np.vstack(
-                        (
-                            np.zeros(
-                                (
-                                    1,
-                                    segmentation_mask.shape[1],
-                                    segmentation_mask.shape[2],
-                                ),
-                                dtype=np.float32,
-                            ),
-                            segmentation_mask,
-                        )
-                    )
-
-            self._warn_if_background_class_ignored()
-
-            class_map = np_function(segmentation_mask, axis=0).reshape(
-                segmentation_mask.shape[1], segmentation_mask.shape[2]
+    def extract(self, output: dai.NNData):
+        layers = output.getAllLayerNames()
+        self._logger.debug(f"Processing input with layers: {layers}")
+        if len(layers) == 1 and self.output_layer_name == "":
+            self.output_layer_name = layers[0]
+        elif len(layers) != 1 and self.output_layer_name == "":
+            raise ValueError(
+                f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
             )
 
-            if adding_unassigned_class:
-                class_map = np.where(class_map == 0, 255, class_map - 1)
-            elif self.background_class and not self.classes_in_one_layer:
-                class_map = np.where(class_map == 0, 255, class_map)
+        segmentation_mask = output.getTensor(self.output_layer_name, dequantize=True)
+        if len(segmentation_mask.shape) == 4:
+            segmentation_mask = segmentation_mask[0]
+        return segmentation_mask
 
-            if np.any(class_map < 0) or np.any(class_map > 255):
-                raise ValueError(
-                    "Segmentation mask values must be in the uint8 range [0, 255]."
-                )
+    @staticmethod
+    def compute(
+        segmentation_mask: np.ndarray,
+        *,
+        classes_in_one_layer: bool = False,
+        background_class: bool = False,
+    ) -> np.ndarray:
+        return compute_segmentation_class_map(
+            segmentation_mask,
+            classes_in_one_layer=classes_in_one_layer,
+            background_class=background_class,
+        )
 
-            class_map = class_map.astype(np.uint8)
+    def emit(self, output: dai.NNData, class_map: np.ndarray) -> None:
+        mask_message = create_segmentation_message(class_map)
+        mask_message.setTimestamp(output.getTimestamp())
+        mask_message.setSequenceNum(output.getSequenceNum())
+        mask_message.setTimestampDevice(output.getTimestampDevice())
+        transformation = output.getTransformation()
+        if transformation is not None:
+            mask_message.setTransformation(transformation)
 
-            mask_message = create_segmentation_message(class_map)
-            mask_message.setTimestamp(output.getTimestamp())
-            mask_message.setSequenceNum(output.getSequenceNum())
-            mask_message.setTimestampDevice(output.getTimestampDevice())
-            transformation = output.getTransformation()
-            if transformation is not None:
-                mask_message.setTransformation(transformation)
-
-            self._logger.debug(
-                f"Created segmentation message with {class_map.shape[0]} classes"
-            )
-
-            self.out.send(mask_message)
-
-            self._logger.debug("Segmentation message sent successfully")
+        self._logger.debug(
+            f"Created segmentation message with {class_map.shape[0]} classes"
+        )
+        self.out.send(mask_message)
+        self._logger.debug("Segmentation message sent successfully")

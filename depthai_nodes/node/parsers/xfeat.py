@@ -5,7 +5,10 @@ import numpy as np
 
 from depthai_nodes.message.creators import create_tracked_features_message
 from depthai_nodes.node.parsers.base_parser import BaseParser
-from depthai_nodes.node.parsers.utils.xfeat import detect_and_compute, match
+from depthai_nodes.node.parsers.utils.xfeat import (
+    compute_xfeat_matches,
+    compute_xfeat_result,
+)
 
 
 class XFeatBaseParser(BaseParser):
@@ -344,55 +347,74 @@ class XFeatMonoParser(XFeatBaseParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            self._logger.debug(
-                f"Processing input with layers: {output.getAllLayerNames()}"
-            )
-            feats, keypoints, heatmaps = self.extractTensors(output)
-
-            result = detect_and_compute(
+            feats, keypoints, heatmaps = self.extract(output)
+            result = self.compute(
                 feats,
                 keypoints,
                 heatmaps,
-                resize_rate_w,
-                resize_rate_h,
-                self.input_size,
-                self.max_keypoints,
+                resize_rate_w=resize_rate_w,
+                resize_rate_h=resize_rate_h,
             )
+            self.emit(output, result)
 
-            if result is not None:
-                result = result[0]
-            else:
-                matched_points = dai.TrackedFeatures()
-                matched_points.setTimestamp(output.getTimestamp())
-                matched_points.setSequenceNum(output.getSequenceNum())
-                self._logger.debug(
-                    "No keypoints found, sending TrackedFeatures message"
-                )
-                self.out.send(matched_points)
-                self._logger.debug("TrackedFeatures message sent")
-                continue
+    def extract(self, output: dai.NNData) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        self._logger.debug(f"Processing input with layers: {output.getAllLayerNames()}")
+        return self.extractTensors(output)
 
-            if self.previous_results is not None:
-                mkpts0, mkpts1 = match(self.previous_results, result)
-                matched_points = create_tracked_features_message(mkpts0, mkpts1)
-                matched_points.setTimestamp(output.getTimestamp())
-                matched_points.setSequenceNum(output.getSequenceNum())
-                self._logger.debug("Keypoints found, sending TrackedFeatures message")
-                self.out.send(matched_points)
-                self._logger.debug("TrackedFeatures message sent")
-            else:
-                matched_points = dai.TrackedFeatures()
-                matched_points.setTimestamp(output.getTimestamp())
-                matched_points.setSequenceNum(output.getSequenceNum())
-                self._logger.debug(
-                    "No previous results, sending TrackedFeatures message"
-                )
-                self.out.send(matched_points)
-                self._logger.debug("TrackedFeatures message sent")
+    def compute(
+        self,
+        feats: np.ndarray,
+        keypoints: np.ndarray,
+        heatmaps: np.ndarray,
+        *,
+        resize_rate_w: float,
+        resize_rate_h: float,
+    ) -> dict[str, Any] | None:
+        result = compute_xfeat_result(
+            feats,
+            keypoints,
+            heatmaps,
+            resize_rate_w=resize_rate_w,
+            resize_rate_h=resize_rate_h,
+            input_size=self.input_size,
+            max_keypoints=self.max_keypoints,
+        )
+        if result is not None:
+            return result[0]
+        return None
 
-            if self.trigger:
-                self.previous_results = result
-                self.trigger = False
+    def emit(self, output: dai.NNData, result: dict[str, Any] | None) -> None:
+        if result is None:
+            matched_points = dai.TrackedFeatures()
+            matched_points.setTimestamp(output.getTimestamp())
+            matched_points.setSequenceNum(output.getSequenceNum())
+            matched_points.setTimestampDevice(output.getTimestampDevice())
+            self._logger.debug("No keypoints found, sending TrackedFeatures message")
+            self.out.send(matched_points)
+            self._logger.debug("TrackedFeatures message sent")
+            return
+
+        if self.previous_results is not None:
+            mkpts0, mkpts1 = compute_xfeat_matches(self.previous_results, result)
+            matched_points = create_tracked_features_message(mkpts0, mkpts1)
+            matched_points.setTimestamp(output.getTimestamp())
+            matched_points.setSequenceNum(output.getSequenceNum())
+            matched_points.setTimestampDevice(output.getTimestampDevice())
+            self._logger.debug("Keypoints found, sending TrackedFeatures message")
+            self.out.send(matched_points)
+            self._logger.debug("TrackedFeatures message sent")
+        else:
+            matched_points = dai.TrackedFeatures()
+            matched_points.setTimestamp(output.getTimestamp())
+            matched_points.setSequenceNum(output.getSequenceNum())
+            matched_points.setTimestampDevice(output.getTimestampDevice())
+            self._logger.debug("No previous results, sending TrackedFeatures message")
+            self.out.send(matched_points)
+            self._logger.debug("TrackedFeatures message sent")
+
+        if self.trigger:
+            self.previous_results = result
+            self.trigger = False
 
 
 class XFeatStereoParser(XFeatBaseParser):
@@ -486,73 +508,98 @@ class XFeatStereoParser(XFeatBaseParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            self._logger.debug(
-                f"Processing reference input with layers: {reference_output.getAllLayerNames()}"
+            reference_tensors, target_tensors = self.extract(
+                reference_output, target_output
             )
-            self._logger.debug(
-                f"Processing target input with layers: {target_output.getAllLayerNames()}"
+            match_result = self.compute(
+                reference_tensors,
+                target_tensors,
+                resize_rate_w=resize_rate_w,
+                resize_rate_h=resize_rate_h,
             )
+            self.emit(reference_output, target_output, match_result)
 
-            (
-                reference_feats,
-                reference_keypoints,
-                reference_heatmaps,
-            ) = self.extractTensors(reference_output)
-            target_feats, target_keypoints, target_heatmaps = self.extractTensors(
-                target_output
-            )
+    def extract(
+        self, reference_output: dai.NNData, target_output: dai.NNData
+    ) -> tuple[
+        tuple[np.ndarray, np.ndarray, np.ndarray],
+        tuple[np.ndarray, np.ndarray, np.ndarray],
+    ]:
+        self._logger.debug(
+            f"Processing reference input with layers: {reference_output.getAllLayerNames()}"
+        )
+        self._logger.debug(
+            f"Processing target input with layers: {target_output.getAllLayerNames()}"
+        )
+        return self.extractTensors(reference_output), self.extractTensors(target_output)
 
-            reference_result = detect_and_compute(
-                reference_feats,
-                reference_keypoints,
-                reference_heatmaps,
-                resize_rate_w,
-                resize_rate_h,
-                self.input_size,
-                self.max_keypoints,
-            )
+    def compute(
+        self,
+        reference_tensors: tuple[np.ndarray, np.ndarray, np.ndarray],
+        target_tensors: tuple[np.ndarray, np.ndarray, np.ndarray],
+        *,
+        resize_rate_w: float,
+        resize_rate_h: float,
+    ) -> dict[str, tuple[np.ndarray, np.ndarray] | str | None]:
+        reference_result = compute_xfeat_result(
+            *reference_tensors,
+            resize_rate_w=resize_rate_w,
+            resize_rate_h=resize_rate_h,
+            input_size=self.input_size,
+            max_keypoints=self.max_keypoints,
+        )
+        target_result = compute_xfeat_result(
+            *target_tensors,
+            resize_rate_w=resize_rate_w,
+            resize_rate_h=resize_rate_h,
+            input_size=self.input_size,
+            max_keypoints=self.max_keypoints,
+        )
 
-            target_result = detect_and_compute(
-                target_feats,
-                target_keypoints,
-                target_heatmaps,
-                resize_rate_w,
-                resize_rate_h,
-                self.input_size,
-                self.max_keypoints,
-            )
+        if reference_result is None:
+            return {"status": "reference_missing", "match_result": None}
+        if target_result is None:
+            return {"status": "target_missing", "match_result": None}
 
-            if reference_result is not None:
-                reference_result = reference_result[0]
-            else:
-                matched_points = dai.TrackedFeatures()
+        return {
+            "status": "matched",
+            "match_result": compute_xfeat_matches(
+                reference_result[0], target_result[0]
+            ),
+        }
+
+    def emit(
+        self,
+        reference_output: dai.NNData,
+        target_output: dai.NNData,
+        result: dict[str, tuple[np.ndarray, np.ndarray] | str | None],
+    ) -> None:
+        status = result["status"]
+        match_result = result["match_result"]
+        if match_result is None:
+            matched_points = dai.TrackedFeatures()
+            if status == "reference_missing":
                 matched_points.setTimestamp(reference_output.getTimestamp())
-                matched_points.setSequenceNum(reference_output.getSequenceNum())
+                matched_points.setTimestampDevice(reference_output.getTimestampDevice())
                 self._logger.debug(
                     "No reference keypoints found, sending TrackedFeatures message"
                 )
-                self.out.send(matched_points)
-                self._logger.debug("TrackedFeatures message sent")
-                continue
-
-            if target_result is not None:
-                target_result = target_result[0]
             else:
-                matched_points = dai.TrackedFeatures()
                 matched_points.setTimestamp(target_output.getTimestamp())
-                matched_points.setSequenceNum(reference_output.getSequenceNum())
+                matched_points.setTimestampDevice(target_output.getTimestampDevice())
                 self._logger.debug(
                     "No target keypoints found, sending TrackedFeatures message"
                 )
-                self.out.send(matched_points)
-                self._logger.debug("TrackedFeatures message sent")
-                continue
-
-            mkpts0, mkpts1 = match(reference_result, target_result)
-            matched_points = create_tracked_features_message(mkpts0, mkpts1)
-            matched_points.setTimestamp(target_output.getTimestamp())
             matched_points.setSequenceNum(reference_output.getSequenceNum())
-            matched_points.setTimestampDevice(target_output.getTimestampDevice())
-            self._logger.debug("Keypoints found, sending TrackedFeatures message")
             self.out.send(matched_points)
             self._logger.debug("TrackedFeatures message sent")
+            return
+
+        mkpts0, mkpts1 = match_result
+        matched_points = create_tracked_features_message(mkpts0, mkpts1)
+        matched_points.setTimestamp(target_output.getTimestamp())
+        matched_points.setSequenceNum(reference_output.getSequenceNum())
+        matched_points.setTimestampDevice(target_output.getTimestampDevice())
+        self._logger.debug("Keypoints found, sending TrackedFeatures message")
+        self.out.send(matched_points)
+        self._logger.debug("TrackedFeatures message sent")

@@ -391,3 +391,76 @@ def merge_masks(masks: np.ndarray) -> np.ndarray:
         merged_masks[masks[i] > 0] = i
 
     return merged_masks
+
+
+def compute_fastsam_mask(
+    outputs_values: list[np.ndarray],
+    masks_outputs_values: list[np.ndarray],
+    protos_output: np.ndarray,
+    protos_len: int,
+    *,
+    conf_threshold: float,
+    n_classes: int,
+    iou_threshold: float,
+    mask_conf: float,
+    prompt: str,
+    points: tuple[int, int] | None,
+    point_label: int | None,
+    bbox: tuple[int, int, int, int] | None,
+) -> np.ndarray:
+    """Decode FastSAM outputs into a merged segmentation mask."""
+    width = outputs_values[0].shape[3] * 8
+    height = outputs_values[0].shape[2] * 8
+    input_shape = (width, height)
+
+    results = decode_fastsam_output(
+        outputs_values,
+        [8, 16, 32],
+        [None, None, None],
+        img_shape=input_shape[::-1],
+        conf_thres=conf_threshold,
+        iou_thres=iou_threshold,
+        num_classes=n_classes,
+    )
+
+    if results.shape[0] == 0:
+        results_masks = np.array([])
+    else:
+        results_bboxes = np.concatenate(
+            [
+                results[:, :4].astype(int),
+                results[:, 4:5],
+                results[:, 5:6].astype(int),
+            ],
+            axis=1,
+        )
+        mask_coeffs = build_mask_coeffs(
+            parsed_results=results,
+            masks_outputs_values=masks_outputs_values,
+            protos_len=protos_len,
+        )
+        results_masks = process_masks(
+            parsed_results=results,
+            mask_coeffs=mask_coeffs,
+            protos=protos_output[0],
+            orig_shape=input_shape,
+            mask_conf=mask_conf,
+        )
+
+        if prompt == "bbox":
+            results_masks = box_prompt(
+                results_masks, bbox=bbox, orig_shape=input_shape[::-1]
+            )
+        elif prompt == "point":
+            results_masks = point_prompt(
+                results_bboxes,
+                results_masks,
+                points=points,
+                pointlabel=point_label,
+                orig_shape=input_shape[::-1],
+            )
+
+    if len(results_masks) == 0:
+        results_masks = np.full((1, height, width), -1, dtype=np.int16)
+
+    return merge_masks(results_masks)

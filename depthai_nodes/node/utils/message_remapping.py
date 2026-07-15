@@ -67,13 +67,18 @@ def remap_segmentation_mask_array(
     dst_matrix = np.array(to_transformation.getMatrix())
     src_matrix = np.array(from_transformation.getMatrixInv())
     trans_matrix = dst_matrix @ src_matrix
+    border_value = (
+        255
+        if np.issubdtype(segmentation_mask.dtype, np.uint8)
+        else UNASSIGNED_MASK_LABEL
+    )
     new_mask = cv2.warpPerspective(
         segmentation_mask,
         trans_matrix,
         to_transformation.getSize(),
         flags=cv2.INTER_NEAREST,
         borderMode=cv2.BORDER_CONSTANT,
-        borderValue=UNASSIGNED_MASK_LABEL,  # type: ignore
+        borderValue=border_value,  # type: ignore
     )
     return new_mask
 

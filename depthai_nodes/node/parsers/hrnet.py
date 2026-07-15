@@ -5,6 +5,7 @@ import numpy as np
 
 from depthai_nodes.message.creators import create_keypoints_message
 from depthai_nodes.node.parsers.keypoints import KeypointParser
+from depthai_nodes.node.parsers.utils.hrnet import compute_hrnet_keypoints
 
 
 class HRNetParser(KeypointParser):
@@ -95,63 +96,48 @@ class HRNetParser(KeypointParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            layers = output.getAllLayerNames()
-            self._logger.debug(f"Processing input with layers: {layers}")
-            if len(layers) == 1 and self.output_layer_name == "":
-                self.output_layer_name = layers[0]
-            elif len(layers) != 1 and self.output_layer_name == "":
-                raise ValueError(
-                    f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
-                )
+            heatmaps = self.extract(output)
+            keypoints, scores = self.compute(heatmaps)
+            self.emit(output, keypoints, scores)
 
-            heatmaps = output.getTensor(
-                self.output_layer_name,
-                dai.TensorInfo.StorageOrder.NCHW,  # this signals DAI to return output as NCHW
-                dequantize=True,
+    def extract(self, output: dai.NNData) -> np.ndarray:
+        layers = output.getAllLayerNames()
+        self._logger.debug(f"Processing input with layers: {layers}")
+        if len(layers) == 1 and self.output_layer_name == "":
+            self.output_layer_name = layers[0]
+        elif len(layers) != 1 and self.output_layer_name == "":
+            raise ValueError(
+                f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
             )
 
-            if heatmaps.shape[0] == 1:
-                heatmaps = heatmaps[0]  # remove batch dimension
+        return output.getTensor(
+            self.output_layer_name,
+            dai.TensorInfo.StorageOrder.NCHW,
+            dequantize=True,
+        )
 
-            if len(heatmaps.shape) != 3:
-                raise ValueError(
-                    f"Expected 3D output tensor, got {len(heatmaps.shape)}D."
-                )
+    @staticmethod
+    def compute(heatmaps: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        keypoints, scores = compute_hrnet_keypoints(heatmaps)
+        return keypoints, scores
 
-            self.n_keypoints, map_h, map_w = heatmaps.shape
+    def emit(
+        self, output: dai.NNData, keypoints: np.ndarray, scores: np.ndarray
+    ) -> None:
+        keypoints_message = create_keypoints_message(
+            keypoints=keypoints,
+            scores=scores,
+            confidence_threshold=self.score_threshold,
+            edges=self.edges,
+            label_names=self.label_names,
+        )
+        keypoints_message.setTimestamp(output.getTimestamp())
+        keypoints_message.setSequenceNum(output.getSequenceNum())
+        keypoints_message.setTimestampDevice(output.getTimestampDevice())
+        transformation = output.getTransformation()
+        if transformation is not None:
+            keypoints_message.setTransformation(transformation)
 
-            scores = np.array([np.max(heatmap) for heatmap in heatmaps])
-            scores = np.clip(scores, 0, 1)  # TODO: check why scores are sometimes >1
-
-            keypoints = np.array(
-                [
-                    np.unravel_index(heatmap.argmax(), heatmap.shape)
-                    for heatmap in heatmaps
-                ]
-            )
-            keypoints = keypoints.astype(np.float32)
-            keypoints = keypoints[:, ::-1] / np.array(
-                [map_w, map_h]
-            )  # normalize keypoints to [0, 1]
-
-            keypoints_message = create_keypoints_message(
-                keypoints=keypoints,
-                scores=scores,
-                confidence_threshold=self.score_threshold,
-                edges=self.edges,
-                label_names=self.label_names,
-            )
-            keypoints_message.setTimestamp(output.getTimestamp())
-            keypoints_message.setSequenceNum(output.getSequenceNum())
-            keypoints_message.setTimestampDevice(output.getTimestampDevice())
-            transformation = output.getTransformation()
-            if transformation is not None:
-                keypoints_message.setTransformation(transformation)
-
-            self._logger.debug(
-                f"Created keypoints message with {len(keypoints)} points"
-            )
-
-            self.out.send(keypoints_message)
-
-            self._logger.debug("Keypoint output sent successfully")
+        self._logger.debug(f"Created keypoints message with {len(keypoints)} points")
+        self.out.send(keypoints_message)
+        self._logger.debug("Keypoint output sent successfully")

@@ -5,6 +5,9 @@ import numpy as np
 
 from depthai_nodes.message.creators import create_regression_message
 from depthai_nodes.node.parsers.base_parser import BaseParser
+from depthai_nodes.node.parsers.utils.regression import (
+    compute_regression_predictions,
+)
 
 
 class RegressionParser(BaseParser):
@@ -82,32 +85,35 @@ class RegressionParser(BaseParser):
             except dai.MessageQueue.QueueException:
                 break  # Pipeline was stopped
 
-            layers = output.getAllLayerNames()
-            self._logger.debug(f"Processing input with layers: {layers}")
-            if len(layers) == 1 and self.output_layer_name == "":
-                self.output_layer_name = layers[0]
-            elif len(layers) != 1 and self.output_layer_name == "":
-                raise ValueError(
-                    f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
-                )
+            predictions = self.extract(output)
+            predictions = self.compute(predictions)
+            self.emit(output, predictions)
 
-            predictions = output.getTensor(
-                self.output_layer_name, dequantize=True
-            ).squeeze()
-            predictions = np.atleast_1d(predictions).tolist()
-
-            regression_message = create_regression_message(predictions=predictions)
-            regression_message.setTimestamp(output.getTimestamp())
-            regression_message.setTimestampDevice(output.getTimestampDevice())
-            regression_message.setSequenceNum(output.getSequenceNum())
-            transformation = output.getTransformation()
-            if transformation is not None:
-                regression_message.setTransformation(transformation)
-
-            self._logger.debug(
-                f"Created regression message with {len(predictions)} values"
+    def extract(self, output: dai.NNData) -> np.ndarray:
+        layers = output.getAllLayerNames()
+        self._logger.debug(f"Processing input with layers: {layers}")
+        if len(layers) == 1 and self.output_layer_name == "":
+            self.output_layer_name = layers[0]
+        elif len(layers) != 1 and self.output_layer_name == "":
+            raise ValueError(
+                f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
             )
 
-            self.out.send(regression_message)
+        return output.getTensor(self.output_layer_name, dequantize=True)
 
-            self._logger.debug("Regression message sent successfully")
+    @staticmethod
+    def compute(predictions: np.ndarray) -> list[float]:
+        return compute_regression_predictions(predictions)
+
+    def emit(self, output: dai.NNData, predictions: list[float]) -> None:
+        regression_message = create_regression_message(predictions=predictions)
+        regression_message.setTimestamp(output.getTimestamp())
+        regression_message.setTimestampDevice(output.getTimestampDevice())
+        regression_message.setSequenceNum(output.getSequenceNum())
+        transformation = output.getTransformation()
+        if transformation is not None:
+            regression_message.setTransformation(transformation)
+
+        self._logger.debug(f"Created regression message with {len(predictions)} values")
+        self.out.send(regression_message)
+        self._logger.debug("Regression message sent successfully")

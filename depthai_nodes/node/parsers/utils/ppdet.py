@@ -141,6 +141,9 @@ def parse_paddle_detection_outputs(
             f"Predictions should be 4D array of shape (1, 1, H, W) or (1, H, W, 1), got {predictions.shape}."
         )
 
+    if width is None or height is None:
+        height, width = predictions.shape[:2]
+
     mask = (predictions > mask_threshold).astype(np.uint8)
     mask = cv2.dilate(mask, np.ones((3, 3), np.uint8), iterations=1)
 
@@ -173,3 +176,19 @@ def parse_paddle_detection_outputs(
     if boxes.size > 0:
         boxes = np.clip(boxes, 0.0, 1.0)
     return boxes, angles, scores
+
+
+def compute_pp_text_detections(
+    predictions: np.ndarray,
+    *,
+    mask_threshold: float,
+    conf_threshold: float,
+    max_det: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Decode PaddleOCR text detection output into boxes, angles, and scores."""
+    return parse_paddle_detection_outputs(
+        predictions,
+        mask_threshold,
+        conf_threshold,
+        max_det,
+    )

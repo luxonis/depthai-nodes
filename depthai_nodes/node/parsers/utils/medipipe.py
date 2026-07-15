@@ -15,6 +15,7 @@ Copyright (c) [2021] [geax]
 import math
 from collections import namedtuple
 
+import cv2
 import numpy as np
 
 
@@ -384,3 +385,89 @@ def decode(bboxes, scores, anchors, threshold=0.5, scale=192):
     detections_to_rect(decoded_bboxes)
     rect_transformation(decoded_bboxes, scale, scale, no_shift=True)
     return decoded_bboxes
+
+
+def compute_mediapipe_palm_detections(
+    bboxes: np.ndarray,
+    scores: np.ndarray,
+    *,
+    anchors: np.ndarray,
+    conf_threshold: float,
+    iou_threshold: float,
+    max_det: int,
+    scale: int,
+    label_names: list[str] | None = None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[str] | None]:
+    """Decode Mediapipe palm detections and apply NMS."""
+    decoded_bboxes = decode(
+        bboxes=bboxes,
+        scores=scores,
+        anchors=anchors,
+        threshold=conf_threshold,
+        scale=scale,
+    )
+
+    bbox_list = []
+    nms_bbox_list = []
+    score_list = []
+    angle_list = []
+    for hand in decoded_bboxes:
+        extended_points = np.array(hand.rect_points)
+
+        x_dist = extended_points[3][0] - extended_points[0][0]
+        y_dist = extended_points[3][1] - extended_points[0][1]
+
+        angle = np.degrees(np.arctan2(y_dist, x_dist))
+        x_center, y_center = np.mean(extended_points, axis=0)
+        width = np.linalg.norm(extended_points[0] - extended_points[3])
+        height = np.linalg.norm(extended_points[0] - extended_points[1])
+        x_min = x_center - width / 2
+        y_min = y_center - height / 2
+
+        bbox_list.append([x_center, y_center, width, height])
+        nms_bbox_list.append([x_min, y_min, width, height])
+        angle_list.append(angle)
+        score_list.append(hand.pd_score)
+
+    if len(bbox_list) == 0:
+        return (
+            np.array([]),
+            np.array([]),
+            np.array([]),
+            np.array([], dtype=int),
+            [] if label_names is not None else None,
+        )
+
+    indices = cv2.dnn.NMSBoxes(
+        nms_bbox_list,
+        score_list,
+        conf_threshold,
+        iou_threshold,
+        top_k=max_det,
+    )
+    indices = np.array(indices).reshape(-1)
+    if indices.size == 0:
+        return (
+            np.array([]),
+            np.array([]),
+            np.array([]),
+            np.array([], dtype=int),
+            [] if label_names is not None else None,
+        )
+
+    filtered_bboxes = np.array(bbox_list)[indices].astype(np.float32) / scale
+    filtered_scores = np.array(score_list)[indices].astype(np.float32)
+    filtered_angles = np.round(np.array(angle_list)[indices], 0)
+    filtered_bboxes = np.clip(filtered_bboxes, 0, 1)
+
+    labels = np.zeros(len(filtered_bboxes), dtype=int)
+    mapped_label_names = (
+        [label_names[label] for label in labels] if label_names is not None else None
+    )
+    return (
+        filtered_bboxes,
+        filtered_scores,
+        filtered_angles,
+        labels,
+        mapped_label_names,
+    )
