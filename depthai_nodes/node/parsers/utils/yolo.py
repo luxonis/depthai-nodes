@@ -705,7 +705,7 @@ def compute_yolo_detections(
         if results.shape[0] > max_instance_id + 1:
             raise ValueError(
                 "YOLO segmentation can encode at most "
-                f"{max_instance_id} instance masks in SegmentationMask."
+                f"{max_instance_id + 1} instance masks in SegmentationMask."
             )
         final_mask = np.full(input_shape, -1, dtype=np.int16)
 
