@@ -700,7 +700,6 @@ def compute_yolo_detections(
     scores = []
     additional_output = []
     final_mask = None
-    instance_masks = []
     if mode == seg_mode:
         max_instance_id = np.iinfo(np.int16).max
         if results.shape[0] > max_instance_id + 1:
@@ -754,7 +753,6 @@ def compute_yolo_detections(
                 (input_shape[1], input_shape[0]),
                 interpolation=cv2.INTER_NEAREST,
             )
-            instance_masks.append(resized_mask.astype(np.uint8, copy=False))
             final_mask[resized_mask > 0] = i
 
     bboxes = np.array(bboxes)
@@ -780,9 +778,4 @@ def compute_yolo_detections(
         "keypoint_label_names": keypoint_label_names,
         "keypoint_edges": keypoint_edges,
         "masks": final_mask,
-        "instance_masks": (
-            np.stack(instance_masks, axis=0)
-            if instance_masks
-            else np.zeros((0, *input_shape), dtype=np.uint8)
-        ),
     }
