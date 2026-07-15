@@ -168,7 +168,10 @@ class SegmentationParser(BaseParser):
                 f"Expected 1 output layer, got {len(layers)} layers. Please provide the output_layer_name."
             )
 
-        return output.getTensor(self.output_layer_name, dequantize=True)
+        segmentation_mask = output.getTensor(self.output_layer_name, dequantize=True)
+        if len(segmentation_mask.shape) == 4:
+            segmentation_mask = segmentation_mask[0]
+        return segmentation_mask
 
     @staticmethod
     def compute(

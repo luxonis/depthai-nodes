@@ -381,7 +381,6 @@ class FastSAMParser(BaseParser):
         segmentation_message.setTimestamp(output.getTimestamp())
         segmentation_message.setSequenceNum(output.getSequenceNum())
         segmentation_message.setTimestampDevice(output.getTimestampDevice())
-
         self._logger.debug(
             f"Created segmentation message with {len(results_masks)} masks"
         )
