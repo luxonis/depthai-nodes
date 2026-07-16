@@ -8,6 +8,12 @@ def compute_map_output(map_tensor: np.ndarray) -> np.ndarray:
     while map_output.ndim > 2 and map_output.shape[0] == 1:
         map_output = map_output[0]
 
-    if map_output.ndim != 2:
-        raise ValueError(f"Expected 2D output tensor, got {map_output.ndim}D.")
-    return map_output
+    if map_output.ndim == 2:
+        return map_output
+
+    if map_output.ndim == 3 and map_output.shape[-1] == 1:
+        return map_output[:, :, 0]
+
+    raise ValueError(
+        f"Expected HW, NHW, or HWN with singleton N; got {map_output.shape}."
+    )
