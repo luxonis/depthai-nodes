@@ -74,11 +74,14 @@ class SCRFDParser(DetectionParser):
         self.num_anchors = num_anchors
         self.input_size = input_size
         self.label_names = ["Face"]
-        self._cached_anchors = compute_anchor_centers(
-            self.feat_stride_fpn, self.input_size, self.num_anchors
-        )
+        self._refresh_cached_anchors()
         self._logger.debug(
             f"SCRFDParser initialized with output_layer_names={output_layer_names}, conf_threshold={conf_threshold}, iou_threshold={iou_threshold}, max_det={max_det}, input_size={input_size}, feat_stride_fpn={feat_stride_fpn}, num_anchors={num_anchors}"
+        )
+
+    def _refresh_cached_anchors(self) -> None:
+        self._cached_anchors = compute_anchor_centers(
+            self.feat_stride_fpn, self.input_size, self.num_anchors
         )
 
     def setOutputLayerNames(self, output_layer_names: list[str]) -> None:
@@ -105,6 +108,7 @@ class SCRFDParser(DetectionParser):
         if not all(isinstance(size, int) for size in input_size):
             raise ValueError("Input size must be a tuple of integers.")
         self.input_size = input_size
+        self._refresh_cached_anchors()
         self._logger.debug(f"Input size set to {self.input_size}")
 
     def setFeatStrideFPN(self, feat_stride_fpn: list[int]) -> None:
@@ -118,6 +122,7 @@ class SCRFDParser(DetectionParser):
         if not all(isinstance(stride, int) for stride in feat_stride_fpn):
             raise ValueError("Feature stride must be a list of integers.")
         self.feat_stride_fpn = feat_stride_fpn
+        self._refresh_cached_anchors()
         self._logger.debug(f"Feature stride set to {self.feat_stride_fpn}")
 
     def setNumAnchors(self, num_anchors: int) -> None:
@@ -129,6 +134,7 @@ class SCRFDParser(DetectionParser):
         if not isinstance(num_anchors, int):
             raise ValueError("Number of anchors must be an integer.")
         self.num_anchors = num_anchors
+        self._refresh_cached_anchors()
         self._logger.debug(f"Number of anchors set to {self.num_anchors}")
 
     def build(
@@ -160,9 +166,7 @@ class SCRFDParser(DetectionParser):
         self.output_layer_names = output_layers
         self.feat_stride_fpn = head_config.get("feat_stride_fpn", self.feat_stride_fpn)
         self.num_anchors = head_config.get("num_anchors", self.num_anchors)
-        self._cached_anchors = compute_anchor_centers(
-            self.feat_stride_fpn, self.input_size, self.num_anchors
-        )
+        self._refresh_cached_anchors()
 
         self._logger.debug(
             f"SCRFDParser built with output_layer_names={self.output_layer_names}, feat_stride_fpn={self.feat_stride_fpn}, num_anchors={self.num_anchors}"

@@ -525,6 +525,12 @@ def decode_yolo_output(
     @return: NMS output.
     @rtype: np.ndarray
     """
+    if len(strides) != len(yolo_outputs):
+        raise ValueError(
+            "Number of `strides` must match number of YOLO outputs. "
+            f"Got {len(strides)} strides for {len(yolo_outputs)} outputs."
+        )
+
     num_outputs = num_classes + 5
 
     # 1. Parse and concatenate all head outputs efficiently
@@ -698,7 +704,8 @@ def compute_yolo_detections(
         max_instance_id = np.iinfo(np.int16).max
         if results.shape[0] > max_instance_id + 1:
             raise ValueError(
-                "YOLO segmentation can encode at most 32768 instances in SegmentationMask."
+                "YOLO segmentation can encode at most "
+                f"{max_instance_id + 1} instance masks in SegmentationMask."
             )
         final_mask = np.full(input_shape, -1, dtype=np.int16)
 

@@ -407,8 +407,8 @@ def compute_fastsam_mask(
     points: tuple[int, int] | None,
     point_label: int | None,
     bbox: tuple[int, int, int, int] | None,
-) -> np.ndarray:
-    """Decode FastSAM outputs into a merged segmentation mask."""
+) -> tuple[np.ndarray, int]:
+    """Decode FastSAM outputs into a merged segmentation mask and mask count."""
     width = outputs_values[0].shape[3] * 8
     height = outputs_values[0].shape[2] * 8
     input_shape = (width, height)
@@ -462,5 +462,8 @@ def compute_fastsam_mask(
 
     if len(results_masks) == 0:
         results_masks = np.full((1, height, width), -1, dtype=np.int16)
+        results_mask_count = 0
+    else:
+        results_mask_count = len(results_masks)
 
-    return merge_masks(results_masks)
+    return merge_masks(results_masks), results_mask_count
