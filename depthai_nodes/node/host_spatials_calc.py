@@ -85,7 +85,8 @@ class HostSpatialsCalc:
         roi: list[int],
         averagingMethod: Callable = np.mean,
     ) -> dict[str, float]:
-        """Calculate spatial coordinates from the depth frame within the ROI.
+        """Calculate spatial coordinates from the depth frame within the ROI. Returns
+        x=0, y=0, z=0 in case of no valid depth inside the ROI.
 
         @param depthData: Depth frame used for coordinate estimation.
         @type depthData: dai.ImgFrame
@@ -111,9 +112,9 @@ class HostSpatialsCalc:
         valid_depths = depthROI[inRange]
         if valid_depths.size == 0:
             return {
-                "x": np.nan,
-                "y": np.nan,
-                "z": np.nan,
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
             }
         else:
             averageDepth = averagingMethod(valid_depths)
