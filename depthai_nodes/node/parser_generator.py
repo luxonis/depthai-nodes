@@ -82,7 +82,7 @@ class ParserGenerator(dai.node.ThreadedHostNode):
                     parser.setNNArchiveHead(head)
                     parsers[index] = parser
                     continue
-            elif parser_name == "YOLOExtendedParser":
+            elif parser_name == "YOLOExtendedParser" and not hostOnly:
                 yolo_subtype_str = head.metadata.subtype
                 if yolo_subtype_str is not None:
                     yolo_subtype = YOLOSubtype(yolo_subtype_str.lower())
