@@ -1,9 +1,8 @@
 import depthai as dai
 import pytest
 
-from depthai_nodes.node import HostParsingNeuralNetwork
+from depthai_nodes.node import HostParsingNeuralNetwork, YOLOExtendedParser
 from tests.utils import InputMock, NeuralNetworkMock, PipelineMock
-from tests.utils.nodes.mocks.pipeline import DetectionParserMock
 
 
 def get_model_archive(model_name: str) -> dai.NNArchive:
@@ -31,7 +30,7 @@ def test_yolo(pipeline: PipelineMock):
         input=InputMock(), nnSource=nn_archive, fps=30
     )
     parser = nn.getParser()
-    assert isinstance(parser, DetectionParserMock)
+    assert isinstance(parser, YOLOExtendedParser)
 
 
 def test_unsupported(pipeline: PipelineMock):
