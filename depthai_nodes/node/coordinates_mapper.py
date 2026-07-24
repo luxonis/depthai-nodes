@@ -108,7 +108,7 @@ except Exception as e:
         @return: The configured node instance.
         @rtype: CoordinatesMapper
         """
-        script = self._pipeline.create(dai.node.Script)
+        script = self.getParentPipeline().create(dai.node.Script)
         script.setScript(self.SCRIPT_CONTENT)
         toTransformationInput.link(script.inputs["message"])
         script.outputs["transformation"].setPossibleDatatypes(
