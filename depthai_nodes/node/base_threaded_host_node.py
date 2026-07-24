@@ -25,7 +25,6 @@ class BaseThreadedHostNode(dai.node.ThreadedHostNode, metaclass=CombinedMeta):
 
     def __init__(self) -> None:
         super().__init__()
-        self._pipeline = self.getParentPipeline()
         self._platform = self.getParentPipeline().getDefaultDevice().getPlatform()
 
         try:

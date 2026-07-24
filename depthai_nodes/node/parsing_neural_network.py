@@ -35,8 +35,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
     def __init__(self, *args, **kwargs) -> None:
         """Initialize the wrapper and create the internal neural-network node."""
         super().__init__(*args, **kwargs)
-        self._pipeline = self.getParentPipeline()
-        self._nn = self._pipeline.create(dai.node.NeuralNetwork)
+        self._nn = self.getParentPipeline().create(dai.node.NeuralNetwork)
         self._parsers: dict[int, BaseParser] = {}
         self._internal_sync: dai.node.Sync | None = None
         self._logger = get_logger(__name__)
@@ -273,7 +272,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
 
         Must be called before removing the node from the pipeline.
         """
-        self._pipeline.remove(self._nn)
+        self.getParentPipeline().remove(self._nn)
         self._nn = None
 
         self._removeOldParserNodes()
@@ -285,19 +284,20 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         self._parsers = self._getParserNodes(nnArchive)
 
     def _removeOldParserNodes(self) -> None:
+        pipeline = self.getParentPipeline()
         for parser in self._parsers.values():
-            self._pipeline.remove(parser)
+            pipeline.remove(parser)
         if self._internal_sync is not None:
-            self._pipeline.remove(self._internal_sync)
+            pipeline.remove(self._internal_sync)
 
     def _getParserNodes(self, nnArchive: dai.NNArchive) -> dict[int, BaseParser]:
-        parser_generator = self._pipeline.create(ParserGenerator)
+        parser_generator = self.getParentPipeline().create(ParserGenerator)
         parsers = self._generateParsers(parser_generator, nnArchive)
         for parser in parsers.values():
             self._nn.out.link(
                 parser.input
             )  # TODO: once NN node has output dictionary, link to the correct output
-        self._pipeline.remove(parser_generator)
+        self.getParentPipeline().remove(parser_generator)
         return parsers
 
     def _generateParsers(
@@ -335,7 +335,7 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
             raise RuntimeError(
                 "ParsingNeuralNetwork node must have at least two model heads to use sync node."
             )
-        self._internal_sync = self._pipeline.create(dai.node.Sync)
+        self._internal_sync = self.getParentPipeline().create(dai.node.Sync)
         self._internal_sync.setRunOnHost(True)
         outputs = [parser.out for parser in list(self._parsers.values())]
         for ix, output in enumerate(outputs):
