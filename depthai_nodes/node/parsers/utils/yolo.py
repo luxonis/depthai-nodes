@@ -27,8 +27,8 @@ class YOLOSubtype(str, Enum):
     V5 = "yolov5"
     V5U = "yolov5-u"
     V6 = "yolov6"
-    V6R1 = "yolov6r1"
-    V6R2 = "yolov6r2"  # NOTE: used by DAI but internally same as V6
+    V6R1 = "yolov6r1"  # NOTE: Semantically same as V6
+    V6R2 = "yolov6r2"
     V7 = "yolov7"
     V8 = "yolov8"
     V9 = "yolov9"
@@ -316,7 +316,7 @@ def parse_yolo_output(
         out[..., 0:2] = c_xy * stride
         out[..., 2:4] = wh * anchors
     else:
-        if subtype == YOLOSubtype.V6R1:
+        if subtype in [YOLOSubtype.V6R1, YOLOSubtype.V6]:
             c_xy = out[..., 0:2] + grid
             wh = np.exp(out[..., 2:4])
         else:
