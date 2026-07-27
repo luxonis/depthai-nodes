@@ -149,15 +149,17 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
             )
             self._has_camera_node_as_input = True
         else:
-            manip = self._pipeline.create(dai.node.ImageManip)
+            manip = self.getParentPipeline().create(dai.node.ImageManip)
             manip.setMaxOutputFrameSize(nn_w * nn_h * 3)
             manip.initialConfig.setFrameType(self.IMG_FRAME_TYPES[self._platform])
             manip.initialConfig.setOutputSize(w=nn_w, h=nn_h, mode=resizeMode)
             inputImage.link(manip.inputImage)
             image_out = manip.out
 
-        self._nn = self._pipeline.create(ParsingNeuralNetwork).build(
-            input=image_out, nnSource=nn_archive
+        self._nn = (
+            self.getParentPipeline()
+            .create(ParsingNeuralNetwork)
+            .build(input=image_out, nnSource=nn_archive)
         )
 
         try:
@@ -166,9 +168,13 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
             nn_output = self._nn.outputs
 
         if not self._has_camera_node_as_input:
-            self._coordinates_mapper = self._pipeline.create(CoordinatesMapper).build(
-                toTransformationInput=inputImage,
-                fromTransformationInput=nn_output,
+            self._coordinates_mapper = (
+                self.getParentPipeline()
+                .create(CoordinatesMapper)
+                .build(
+                    toTransformationInput=inputImage,
+                    fromTransformationInput=nn_output,
+                )
             )
 
         self._logger.debug("ExtendedNeuralNetwork built")
