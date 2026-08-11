@@ -668,9 +668,7 @@ def compute_yolo_detections(
         else:
             n_anchors_per_head = 1
 
-        num_classes_check = (
-            outputs_values[0].shape[1] // n_anchors_per_head
-        ) - 5
+        num_classes_check = (outputs_values[0].shape[1] // n_anchors_per_head) - 5
         if num_classes_check != n_classes:
             raise ValueError(
                 f"The provided number of classes {n_classes} does not match the model's {num_classes_check}."
