@@ -23,6 +23,7 @@ We are always listening to the community so feel free to report and feedback, is
 - [📦 Content](#-content)
   - [📨 Message](#-message)
   - [🧩 Node](#-node)
+  - [⚙️ Runtime](#-runtime)
 - [🤝 Contributing](#-contributing)
 
 ## 🛠️ Installation
@@ -51,10 +52,11 @@ pip install .
 
 ## 📦 Content
 
-This library is organized into two primary modules, each focused on a specific aspect of working with DepthAI on the host side:
+This library is organized into three primary modules, each focused on a specific aspect of working with DepthAI on the host side:
 
 - `message` - Custom message types
 - `node` - High-level, modular host-side nodes
+- `runtime` - Runtime integrations
 
 ### 📨 Message
 
@@ -73,6 +75,18 @@ The `node` module provides a collection of ready-to-use host-side nodes that abs
 This modular approach allows you to rapidly prototype and scale complex applications with less effort while keeping your code clean and maintainable.
 
 To read more about the nodes and see simple examples, please refer to the [nodes documentation](./depthai_nodes/node/README.md).
+
+### ⚙️ Runtime
+
+The `runtime` module contains runtime integrations. Its OAK4 QNN helper
+creates ONNX Runtime sessions on the Hexagon DSP when used with the
+`onnxruntime` variant of the `oakapp-base` image:
+
+```python
+from depthai_nodes.runtime import qnn_session
+
+session = qnn_session("model.onnx")
+```
 
 ## 🤝 Contributing
 
