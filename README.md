@@ -11,7 +11,7 @@
 
 ## 🌟 Overview
 
-DepthAI Nodes is a Python "contrib" library designed to simplify host-side development with a growing collection of modular, high-level nodes. These cover a range of common needs - from neural network post-processing and I/O patterns to utility nodes for faster prototyping. With just a few lines of code, you can scaffold sophisticated pipelines, saving time and reducing boilerplate. In order to use these nodes you need to have your pipeline written with `DepthAIv3`.
+DepthAI Nodes is a Python "contrib" library designed to simplify DepthAI development with a growing collection of modular, high-level host nodes and helpers. These cover a range of common needs - from neural network post-processing and I/O patterns to utility nodes for faster prototyping. Helper nodes can also route model post-processing through native DepthAI parser nodes. With just a few lines of code, you can scaffold sophisticated pipelines, saving time and reducing boilerplate. In order to use these nodes you need to have your pipeline written with `DepthAIv3`.
 
 **NOTE**:
 We are always listening to the community so feel free to report and feedback, issues or contribute to the library with our own host nodes.
@@ -64,11 +64,14 @@ These enhanced messages aim to reduce the boilerplate code needed for parsing an
 
 ### 🧩 Node
 
-The `node` module provides a collection of ready-to-use host-side nodes that abstract common processing patterns and tasks. These nodes fall into three main categories:
+The `node` module provides a collection of ready-to-use host-side nodes and pipeline helpers that abstract common processing patterns and tasks. These nodes fall into three main categories:
 
 - **Parser nodes** - Handle post-processing for specific model architectures such as YOLO, MediaPipe, YuNet, etc.
 - **Helper nodes** - Like ParsingNeuralNetwork and ParserGenerator which help manage simple or complex model outputs more efficiently.
 - **Utility nodes** – Perform common operations like detection filtering, drawing overlays, applying segmentation colormaps, and more - all in just a few lines of code.
+
+> \[!NOTE\]
+> `ParsingNeuralNetwork` and `ParserGenerator` use native DepthAI parsers by default. Most of these parsers currently live under `dai.beta.node`; detection and segmentation parsers live under `dai.node`. Use `HostParsingNeuralNetwork` or pass `hostOnly=True` to `ParserGenerator.build()` to use the parser implementations provided by depthai-nodes instead.
 
 This modular approach allows you to rapidly prototype and scale complex applications with less effort while keeping your code clean and maintainable.
 

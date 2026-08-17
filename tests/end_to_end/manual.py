@@ -4,7 +4,7 @@ import depthai as dai
 from utils import get_input_shape, get_num_inputs
 
 from depthai_nodes.logging import get_logger
-from depthai_nodes.node import ParsingNeuralNetwork
+from depthai_nodes.node import HostParsingNeuralNetwork
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -80,6 +80,15 @@ with dai.Pipeline(device) as pipeline:
         device.close()
         exit(8)
 
+    parser_names = {head.parser for head in nn_archive.getConfig().model.heads}
+    if "SSD" in parser_names:
+        logger.warning(
+            "SSD has no parser implementation in depthai-nodes and is not supported "
+            "by this host-parser test."
+        )
+        device.close()
+        exit(8)
+
     try:
         input_size = get_input_shape(nn_archive)
     except Exception as e:
@@ -108,13 +117,16 @@ with dai.Pipeline(device) as pipeline:
         camera_node.requestOutput(large_input_shape, type=image_type, fps=20.0).link(
             manip.inputImage
         )
-        nn_w_parser = pipeline.create(ParsingNeuralNetwork).build(manip.out, nn_archive)
-        logger.debug("(5) ImageManip node and ParsingNeuralNetwork node created.")
+        nn_w_parser = pipeline.create(HostParsingNeuralNetwork).build(
+            manip.out,
+            nn_archive,
+        )
+        logger.debug("(5) ImageManip and HostParsingNeuralNetwork nodes created.")
     else:
-        nn_w_parser = pipeline.create(ParsingNeuralNetwork).build(
+        nn_w_parser = pipeline.create(HostParsingNeuralNetwork).build(
             camera_node, nn_archive, fps=20.0
         )
-        logger.debug("(5) ParsingNeuralNetwork node created.")
+        logger.debug("(5) HostParsingNeuralNetwork node created.")
 
     head_indices = nn_w_parser._parsers.keys()
 
