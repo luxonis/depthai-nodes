@@ -4,7 +4,7 @@ import depthai as dai
 from utils import get_input_shape, get_num_inputs
 
 from depthai_nodes.logging import get_logger
-from depthai_nodes.node import HostParsingNeuralNetwork
+from depthai_nodes.node import HostParsingNeuralNetwork, ParsingNeuralNetwork
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -12,6 +12,11 @@ parser.add_argument(
 )
 parser.add_argument("-m", "--model", type=str, default=None, help="Model from HubAI.")
 parser.add_argument("-ip", type=str, default="", help="IP of the device")
+parser.add_argument(
+    "--native-parsers",
+    action="store_true",
+    help="Use native DepthAI parsers through ParsingNeuralNetwork.",
+)
 args = parser.parse_args()
 
 logger = get_logger(__name__)
@@ -81,7 +86,7 @@ with dai.Pipeline(device) as pipeline:
         exit(8)
 
     parser_names = {head.parser for head in nn_archive.getConfig().model.heads}
-    if "SSD" in parser_names:
+    if not args.native_parsers and "SSD" in parser_names:
         logger.warning(
             "SSD has no parser implementation in depthai-nodes and is not supported "
             "by this host-parser test."
@@ -113,20 +118,24 @@ with dai.Pipeline(device) as pipeline:
         manip.initialConfig.setOutputSize(input_size[0], input_size[1])
         large_input_shape = (input_size[0] * 4, input_size[1] * 4)
 
+    parsing_nn_class = (
+        ParsingNeuralNetwork if args.native_parsers else HostParsingNeuralNetwork
+    )
+
     if manip:
         camera_node.requestOutput(large_input_shape, type=image_type, fps=20.0).link(
             manip.inputImage
         )
-        nn_w_parser = pipeline.create(HostParsingNeuralNetwork).build(
+        nn_w_parser = pipeline.create(parsing_nn_class).build(
             manip.out,
             nn_archive,
         )
-        logger.debug("(5) ImageManip and HostParsingNeuralNetwork nodes created.")
+        logger.debug(f"(5) ImageManip and {parsing_nn_class.__name__} nodes created.")
     else:
-        nn_w_parser = pipeline.create(HostParsingNeuralNetwork).build(
+        nn_w_parser = pipeline.create(parsing_nn_class).build(
             camera_node, nn_archive, fps=20.0
         )
-        logger.debug("(5) HostParsingNeuralNetwork node created.")
+        logger.debug(f"(5) {parsing_nn_class.__name__} node created.")
 
     head_indices = nn_w_parser._parsers.keys()
 

@@ -1,7 +1,7 @@
 # End-to-end tests
 
 This directory contains end-to-end tests for DepthAI. These tests are designed to run on a real device and test the complete pipeline with camera, neural network, and parsers from depthai-nodes.
-The tests use `HostParsingNeuralNetwork` to run the model with parser implementations from depthai-nodes and verify that a parsed message is returned. Native DepthAI parser routing is covered separately by the `ParserGenerator` unit tests. Models such as SSD that do not have a depthai-nodes parser implementation are skipped. If an error is raised during the process, the test will fail.
+The broad model suite uses `HostParsingNeuralNetwork` to run models with parser implementations from depthai-nodes and verify that a parsed message is returned. Models such as SSD that do not have a depthai-nodes parser implementation are skipped. A smaller native-parser smoke suite also runs `ParsingNeuralNetwork` with YuNet, YOLOv6, and selfie segmentation on each selected platform. This covers a beta parser, native detection, and native segmentation without doubling the complete model matrix. If an error is raised during the process, the test will fail.
 
 ## Running the tests on GitHub Actions
 
@@ -44,7 +44,7 @@ Test specific parser on all models:
 python main.py -p <parser_name>
 ```
 
-You can also run `manual.py` with `-m` or `-nn` if want to debug parser quickly (without pytest) and by specifying `-ip` you can connect to the specifi device with IP or mxid.
+You can also run `manual.py` with `-m` or `-nn` if you want to debug a parser quickly (without pytest). Pass `--native-parsers` to exercise `ParsingNeuralNetwork`; without it, the script uses `HostParsingNeuralNetwork`. By specifying `-ip`, you can connect to a specific device by IP or MXID.
 
 ## Limitations
 
