@@ -49,10 +49,7 @@ class ParserGenerator(dai.node.ThreadedHostNode):
 
         parsers = {}
         pipeline = self.getParentPipeline()
-        run_native_parsers_on_host = (
-            not hostOnly
-            and pipeline.getDefaultDevice().getPlatform() == dai.Platform.RVC2
-        )
+        is_rvc2_device = pipeline.getDefaultDevice().getPlatform() == dai.Platform.RVC2
 
         for index, head in zip(indexes, heads):
             parser_name = head.parser
@@ -74,12 +71,17 @@ class ParserGenerator(dai.node.ThreadedHostNode):
                 nnArchive.getConfig().model.inputs,
             )
 
+            is_detection_parser = parser_name in self.DETECTION_PARSERS
+            run_native_parsers_on_host = is_rvc2_device and (
+                not is_detection_parser
+                or getattr(getattr(head, "metadata", None), "maskOutputs", None)
+                is not None
+            )
             if run_native_parsers_on_host:
                 self._logger.warning(
                     f"Native {parser_name} detected with an RVC2 device. "
                     "Parsing will run on the host machine."
                 )
-                parser.setRunOnHost(True)
 
             parsers[index] = parser
 
