@@ -4,6 +4,8 @@ import pytest
 
 from tests.end_to_end.pipeline_runner import get_platforms, run_pipeline
 
+pytestmark = pytest.mark.e2e
+
 
 @pytest.fixture
 def nn_archive_paths(request):
