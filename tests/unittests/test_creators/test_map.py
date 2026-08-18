@@ -1,7 +1,7 @@
+import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes import Map2D
 from depthai_nodes.message.creators import create_map_message
 
 MAP_ARRAY = np.random.rand(1, 480, 640).astype(np.float32)
@@ -10,39 +10,39 @@ MAP_ARRAY = np.random.rand(1, 480, 640).astype(np.float32)
 def test_valid_2d_input():
     message = create_map_message(MAP_ARRAY[0])
 
-    assert isinstance(message, Map2D)
-    assert message.map.shape == (480, 640)
-    assert message.map.dtype == np.float32
-    assert np.allclose(message.map, MAP_ARRAY[0])
+    assert isinstance(message, dai.beta.Map2D)
+    assert message.getMap().shape == (480, 640)
+    assert message.getMap().dtype == np.float32
+    assert np.allclose(message.getMap(), MAP_ARRAY[0])
 
 
 def test_valid_3d_input_nhw():
     message = create_map_message(MAP_ARRAY)
 
-    assert isinstance(message, Map2D)
-    assert message.map.shape == (480, 640)
-    assert message.map.dtype == np.float32
-    assert np.allclose(message.map, MAP_ARRAY[0])
+    assert isinstance(message, dai.beta.Map2D)
+    assert message.getMap().shape == (480, 640)
+    assert message.getMap().dtype == np.float32
+    assert np.allclose(message.getMap(), MAP_ARRAY[0])
 
 
 def test_valid_3d_input_hwn():
     message = create_map_message(MAP_ARRAY.transpose(1, 2, 0))
 
-    assert isinstance(message, Map2D)
-    assert message.map.shape == (480, 640)
-    assert message.map.dtype == np.float32
-    assert np.allclose(message.map, MAP_ARRAY[0])
+    assert isinstance(message, dai.beta.Map2D)
+    assert message.getMap().shape == (480, 640)
+    assert message.getMap().dtype == np.float32
+    assert np.allclose(message.getMap(), MAP_ARRAY[0])
 
 
 def test_min_max_scaling():
     map_array = MAP_ARRAY[0] * 100
     message = create_map_message(map_array, min_max_scaling=True)
 
-    assert isinstance(message, Map2D)
-    assert message.map.shape == (480, 640)
-    assert message.map.dtype == np.float32
-    assert np.all(message.map >= 0) and np.all(message.map <= 1)
-    assert np.allclose(message.map, MAP_ARRAY[0], atol=1e-3)
+    assert isinstance(message, dai.beta.Map2D)
+    assert message.getMap().shape == (480, 640)
+    assert message.getMap().dtype == np.float32
+    assert np.all(message.getMap() >= 0) and np.all(message.getMap() <= 1)
+    assert np.allclose(message.getMap(), MAP_ARRAY[0], atol=1e-3)
 
 
 def test_invalid_type():
@@ -64,7 +64,7 @@ def test_valid_input_non_float():
     map_array = np.random.randint(0, 256, (480, 640), dtype=np.uint8)
     message = create_map_message(map_array)
 
-    assert isinstance(message, Map2D)
-    assert message.map.shape == (480, 640)
-    assert message.map.dtype == np.float32
-    assert np.allclose(message.map, map_array, atol=1e-3)
+    assert isinstance(message, dai.beta.Map2D)
+    assert message.getMap().shape == (480, 640)
+    assert message.getMap().dtype == np.float32
+    assert np.allclose(message.getMap(), map_array, atol=1e-3)

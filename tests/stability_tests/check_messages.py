@@ -4,15 +4,6 @@ from typing import Any
 import depthai as dai
 import numpy as np
 
-from depthai_nodes import (
-    Classifications,
-    Clusters,
-    Keypoints,
-    Lines,
-    Map2D,
-    Predictions,
-)
-
 from .utils import extract_main_slug
 
 
@@ -23,7 +14,9 @@ def load_expected_output(model: str, parser: str) -> dict[str, Any]:
 
 
 def check_classification_msg(
-    message: Classifications, expected_output: dict[str, Any], verbose: bool = False
+    message: dai.beta.Classifications,
+    expected_output: dict[str, Any],
+    verbose: bool = False,
 ):
     """
     Expected output format:
@@ -35,22 +28,26 @@ def check_classification_msg(
     }
     """
     assert isinstance(
-        message, Classifications
-    ), f"The message is not a Classifications. Got {type(message)}."
+        message, dai.beta.Classifications
+    ), f"The message is not a dai.beta.Classifications. Got {type(message)}."
 
     if verbose:
         print(
-            f"Expected top class: {expected_output['class']}, predicted top class: {message.top_class}"
+            f"Expected top class: {expected_output['class']}, predicted top class: {message.getTopClass()}"
         )
         print(
-            f"Expected top score: {expected_output['score']}, predicted top score: {message.top_score}"
+            f"Expected top score: {expected_output['score']}, predicted top score: {message.getTopScore()}"
         )
-    assert message.top_class == expected_output["class"]
-    np.testing.assert_allclose(message.top_score, expected_output["score"], rtol=1e-2)
+    assert message.getTopClass() == expected_output["class"]
+    np.testing.assert_allclose(
+        message.getTopScore(), expected_output["score"], rtol=1e-2
+    )
 
 
 def check_classification_sequence_msg(
-    message: Classifications, expected_output: dict[str, Any], verbose: bool = False
+    message: dai.beta.Classifications,
+    expected_output: dict[str, Any],
+    verbose: bool = False,
 ):
     """
     Expected output format:
@@ -60,8 +57,8 @@ def check_classification_sequence_msg(
         "class": ['HELLO']
     """
     assert isinstance(
-        message, Classifications
-    ), f"The message is not a Classifications. Got {type(message)}."
+        message, dai.beta.Classifications
+    ), f"The message is not a dai.beta.Classifications. Got {type(message)}."
 
     if verbose:
         print(
@@ -148,7 +145,7 @@ def check_segmentation_msg(
 
 
 def check_keypoints_msg(
-    message: Keypoints,
+    message: dai.beta.Keypoints,
     expected_output: dict[str, Any],
     verbose: bool = False,
 ):
@@ -160,8 +157,8 @@ def check_keypoints_msg(
         "keypoints": [[0.1, 0.2], ...]
     """
     assert isinstance(
-        message, Keypoints
-    ), f"The message is not a Keypoints. Got {type(message)}."
+        message, dai.beta.Keypoints
+    ), f"The message is not a dai.beta.Keypoints. Got {type(message)}."
 
     keypoints = [
         [kp.imageCoordinates.x, kp.imageCoordinates.y] for kp in message.getKeypoints()
@@ -209,7 +206,9 @@ def check_image_msg(
 
 
 def check_cluster_msg(
-    message: Clusters, expected_output: dict[str, Any], verbose: bool = False
+    message: dai.beta.Clusters,
+    expected_output: dict[str, Any],
+    verbose: bool = False,
 ):
     """
     Expected output format:
@@ -219,8 +218,8 @@ def check_cluster_msg(
         "clusters": [[[0.1, 0.2], ...]]
     """
     assert isinstance(
-        message, Clusters
-    ), f"The message is not a Clusters. Got {type(message)}."
+        message, dai.beta.Clusters
+    ), f"The message is not a dai.beta.Clusters. Got {type(message)}."
 
     clusters = message.clusters
     expected_clusters = expected_output["clusters"]
@@ -243,7 +242,9 @@ def check_cluster_msg(
 
 
 def check_map_msg(
-    message: Map2D, expected_output: dict[str, Any], verbose: bool = False
+    message: dai.beta.Map2D,
+    expected_output: dict[str, Any],
+    verbose: bool = False,
 ):
     """
     Expected output format:
@@ -254,10 +255,10 @@ def check_map_msg(
     }
     """
     assert isinstance(
-        message, Map2D
-    ), f"The message is not a Map2D. Got {type(message)}."
+        message, dai.beta.Map2D
+    ), f"The message is not a dai.beta.Map2D. Got {type(message)}."
 
-    map_tensor = message.map
+    map_tensor = message.getMap()
     expected_map = expected_output["map"]
     if verbose:
         print(
@@ -385,7 +386,9 @@ def check_detection_msg(
 
 
 def check_line_msg(
-    message: Lines, expected_output: dict[str, Any], verbose: bool = False
+    message: dai.beta.Lines,
+    expected_output: dict[str, Any],
+    verbose: bool = False,
 ):
     """
     Expected output format:
@@ -403,16 +406,16 @@ def check_line_msg(
     }
     """
     assert isinstance(
-        message, Lines
-    ), f"The message is not a Lines. Got {type(message)}."
+        message, dai.beta.Lines
+    ), f"The message is not a dai.beta.Lines. Got {type(message)}."
 
     expected_lines: list[dict[str, Any]] = expected_output["lines"]
     predicted_lines = []
     for line in message.lines:
         line_dict = {
             "confidence": line.confidence,
-            "start_point": [line.start_point.x, line.start_point.y],
-            "end_point": [line.end_point.x, line.end_point.y],
+            "start_point": [line.startPoint.x, line.startPoint.y],
+            "end_point": [line.endPoint.x, line.endPoint.y],
         }
         predicted_lines.append(line_dict)
 
@@ -438,7 +441,9 @@ def check_line_msg(
 
 
 def check_regression_msg(
-    message: Predictions, expected_output: dict[str, Any], verbose: bool = False
+    message: dai.beta.Predictions,
+    expected_output: dict[str, Any],
+    verbose: bool = False,
 ):
     """
     Expected output format:
@@ -449,8 +454,8 @@ def check_regression_msg(
     }
     """
     assert isinstance(
-        message, Predictions
-    ), f"The message is not a Predictions. Got {type(message)}."
+        message, dai.beta.Predictions
+    ), f"The message is not a dai.beta.Predictions. Got {type(message)}."
 
     predictions = message.predictions
     predictions = np.array([pred.prediction for pred in predictions])
