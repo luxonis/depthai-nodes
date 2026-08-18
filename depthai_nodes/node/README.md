@@ -22,6 +22,8 @@
 
 Parser nodes are used to parse the output of a neural network. The main purpose of these nodes is to hide all postprocessing logic from the user. The node will send out a message with the parsed data (e.g. detections, keypoints, etc.).
 
+The parser classes listed below are the host-side implementations provided by depthai-nodes. `ParserGenerator` and `ParsingNeuralNetwork` use native DepthAI parser nodes by default. Use `hostOnly=True` or `HostParsingNeuralNetwork` when the depthai-nodes implementation is required.
+
 ### Object Detection
 
 - `YOLOExtendedParser`: Extended YOLO detection parser that supports all YOLO models and tasks (detection, pose estimation, instance segmentation). It will output the [`dai.ImgDetections`](https://docs.luxonis.com/software-v3/depthai/depthai-components/messages/img_detections) message with the detections.
@@ -73,9 +75,11 @@ Parser nodes are used to parse the output of a neural network. The main purpose 
 ### Neural Network Processing
 
 - `ExtendedNeuralNetwork`: Convenience wrapper around `dai.node.NeuralNetwork` with support for model-zoo / NN archive sources and pipeline-friendly setup.
-- `ParsingNeuralNetwork`: Node for creating a neural network node and relevant parser(s) for the given model from our Model ZOO. Does not send out any messages.
-- `HostParsingNeuralNetwork`: Host-side `ParsingNeuralNetwork` implementation. Does not send out any messages.
-- `ParserGenerator`: Generates parsers from the given NN archive. Does not send out any messages.
+- `ParsingNeuralNetwork`: Creates a neural network and its native DepthAI parser node(s) for the supplied model. Does not send out any messages itself.
+- `HostParsingNeuralNetwork`: Creates a neural network with parser implementation(s) from depthai-nodes. Does not send out any messages itself.
+- `ParserGenerator`: Generates parser nodes from the supplied NN archive. `hostOnly=False` (the default) selects native DepthAI parsers, while `hostOnly=True` selects parsers implemented by depthai-nodes. Does not send out any messages itself.
+
+`hostOnly` selects the parser implementation, not its execution location. With `hostOnly=False`, native parsers run on-device for RVC4. On RVC2, non-detection native parsers and detection parsers that produce mask outputs run on the host; ordinary detection parsers, including SSD and YOLO, remain device-side. Most native parser classes currently live under `dai.beta.node`; native detection and segmentation parsers live under `dai.node`.
 
 ### Detection and Filtering
 
@@ -117,7 +121,7 @@ nn = pipeline.create(ParsingNeuralNetwork).build(
 
 As `model_source` you can provide local NN Archive, model reference from Model ZOO or `dai.NNModelDescription` object.
 
-This code section creates the `dai.NeuralNetwork` and `SegmentationParser` nodes required for postprocessing the results. Additionally, the `ParsingNeuralNetwork` node handles all the necessary connections: It connects the `Camera` node to the `NeuralNetwork` node, the `NeuralNetwork` node to the `SegmentationParser` node, and passes the `SegmentationParser` output to the `nn.out`.
+This code section creates the `dai.NeuralNetwork` and native `dai.node.SegmentationParser` nodes required for postprocessing the results. Additionally, the `ParsingNeuralNetwork` node handles all the necessary connections: It connects the `Camera` node to the `NeuralNetwork` node, the `NeuralNetwork` node to the `SegmentationParser` node, and passes the `SegmentationParser` output to `nn.out`. Use `HostParsingNeuralNetwork` instead when the depthai-nodes `SegmentationParser` implementation is required.
 
 Similarly, you can create any other utility, helper or parser node. For example, if you want to filter out the detections based on the label, you can use the `ImgDetectionsFilter` node.
 

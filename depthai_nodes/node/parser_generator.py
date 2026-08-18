@@ -4,7 +4,6 @@ from depthai_nodes.logging import get_logger
 from depthai_nodes.node.parsers import *
 from depthai_nodes.node.parsers.base_parser import BaseParser
 from depthai_nodes.node.parsers.utils import decode_head
-from depthai_nodes.node.parsers.utils.yolo import YOLOSubtype, resolve_yolo_strides
 
 
 class ParserGenerator(dai.node.ThreadedHostNode):
@@ -14,25 +13,8 @@ class ParserGenerator(dai.node.ThreadedHostNode):
     """
 
     _logger = get_logger(__name__)
-    DEVICE_PARSERS = ["YOLO", "SSD"]
-    DAI_SUPPORTED_YOLO_SUBTYPES = [
-        YOLOSubtype.V3,
-        YOLOSubtype.V3T,
-        YOLOSubtype.V3UT,
-        YOLOSubtype.V5,
-        YOLOSubtype.V5U,
-        YOLOSubtype.V6,
-        YOLOSubtype.V6R1,
-        YOLOSubtype.V6R2,
-        YOLOSubtype.V7,
-        YOLOSubtype.V8,
-        YOLOSubtype.V9,
-        YOLOSubtype.V10,
-        YOLOSubtype.V11,
-        YOLOSubtype.V26,
-        YOLOSubtype.P,
-        YOLOSubtype.GOLD,
-    ]
+    DETECTION_PARSERS = {"DetectionParser", "SSD", "YOLO", "YOLOExtendedParser"}
+    HOST_PARSER_ALIASES = {"YOLO": "YOLOExtendedParser"}
 
     def build(
         self,
@@ -47,8 +29,8 @@ class ParserGenerator(dai.node.ThreadedHostNode):
         @param headIndex: Optional model head index to instantiate. If omitted, parsers
             are created for all heads.
         @type headIndex: int | None
-        @param hostOnly: If True, prefer host-side parser implementations where
-            available.
+        @param hostOnly: If True, use parser implementations from depthai-nodes.
+            Otherwise, always use native DepthAI parser nodes.
         @type hostOnly: bool
         @return: Mapping of model head index to parser node.
         @rtype: dict
@@ -72,117 +54,100 @@ class ParserGenerator(dai.node.ThreadedHostNode):
         for index, head in zip(indexes, heads):
             parser_name = head.parser
 
-            if parser_name in self.DEVICE_PARSERS:
-                if hostOnly:
-                    parser_name = self._getHostParserName(parser_name)
-                elif parser_name == "YOLO" and self._has_non_default_yolo_strides(head):
-                    parser_name = self._getHostParserName(parser_name)
-                else:
-                    parser = pipeline.create(dai.node.DetectionParser)
-                    parser.setNNArchiveHead(head)
-                    parsers[index] = parser
-                    continue
-            elif parser_name == "YOLOExtendedParser" and not hostOnly:
-                yolo_subtype_str = head.metadata.subtype
-                if yolo_subtype_str is not None:
-                    yolo_subtype = YOLOSubtype(yolo_subtype_str.lower())
-                    if (
-                        yolo_subtype in self.DAI_SUPPORTED_YOLO_SUBTYPES
-                        and not self._has_non_default_yolo_strides(head, yolo_subtype)
-                    ):
-                        parser = pipeline.create(dai.node.DetectionParser)
-                        parser.setNNArchiveHead(head)
-                        if head.metadata.maskOutputs is not None and is_rvc2_device:
-                            self._logger.warning(
-                                "Segmentation based model detected with RVC2 device. Parsing will be done on the host machine."
-                            )
-                            parser.setRunOnHost(True)
-                        parsers[index] = parser
-                        continue
-
-            elif parser_name == "SegmentationParser" and not hostOnly:
-                parser = pipeline.create(dai.node.SegmentationParser)
-                parser.setNNArchiveHead(head)
-                if is_rvc2_device:
-                    self._logger.warning(
-                        "Segmentation model detected with RVC2 device. Parsing will "
-                        "be done on the host machine."
-                    )
-                    parser.setRunOnHost(True)
-                parsers[index] = parser
+            if hostOnly:
+                parsers[index] = self._createHostParser(
+                    pipeline,
+                    parser_name,
+                    head,
+                    nnArchive.getConfig().model.inputs,
+                )
                 continue
 
-            parser = globals().get(parser_name)
+            parser = pipeline.create(self._getNativeParserClass(parser_name))
+            parser.setNNArchiveHead(head)
+            self._setNativeParserInputSize(
+                parser,
+                head,
+                nnArchive.getConfig().model.inputs,
+            )
 
-            if parser is None:
-                raise ValueError(f"Parser {parser_name} not a valid parser class.")
-            elif not issubclass(parser, BaseParser):
-                raise ValueError(
-                    f"Parser {parser_name} does not inherit from BaseParser class."
+            is_detection_parser = parser_name in self.DETECTION_PARSERS
+            run_native_parsers_on_host = is_rvc2_device and (
+                not is_detection_parser
+                or getattr(getattr(head, "metadata", None), "maskOutputs", None)
+                is not None
+            )
+            if run_native_parsers_on_host:
+                self._logger.warning(
+                    f"Native {parser_name} detected with an RVC2 device. "
+                    "Parsing will run on the host machine."
                 )
 
-            head_config = decode_head(head)
-            head_config["model_inputs"] = []
-            for input in nnArchive.getConfig().model.inputs:
-                head_config["model_inputs"].append(
-                    {"shape": input.shape, "layout": input.layout}
-                )
-            parsers[index] = pipeline.create(parser).build(head_config)
+            parsers[index] = parser
 
         return parsers
 
-    @staticmethod
-    def _has_non_default_yolo_strides(
-        head,
-        subtype: YOLOSubtype | None = None,
-    ) -> bool:
-        head_config = decode_head(head)
-        strides = head_config.get("strides")
-        if strides is None:
-            return False
+    def _createHostParser(self, pipeline, parser_name: str, head, model_inputs):
+        parser_name = self.HOST_PARSER_ALIASES.get(parser_name, parser_name)
+        parser_class = globals().get(parser_name)
 
-        metadata = getattr(head, "metadata", None)
-
-        if subtype is None:
-            yolo_subtype_str = getattr(metadata, "subtype", None)
-            if yolo_subtype_str is None:
-                subtype = YOLOSubtype.DEFAULT
-            else:
-                try:
-                    subtype = YOLOSubtype(yolo_subtype_str.lower())
-                except ValueError:
-                    return True
-
-        yolo_outputs = getattr(metadata, "yoloOutputs", None)
-        outputs = (
-            yolo_outputs if yolo_outputs is not None else head_config.get("outputs")
-        )
-        num_outputs = len(outputs or [])
-
-        try:
-            resolved_strides = resolve_yolo_strides(
-                strides,
-                subtype,
-                num_outputs,
+        if parser_class is None or not isinstance(parser_class, type):
+            raise ValueError(f"Parser {parser_name} is not available in depthai-nodes.")
+        if not issubclass(parser_class, BaseParser):
+            raise ValueError(
+                f"Parser {parser_name} does not inherit from BaseParser class."
             )
-        except ValueError:
-            return True
 
-        default_strides = resolve_yolo_strides(
-            None,
-            subtype,
-            num_outputs,
-        )
-        return resolved_strides != default_strides
+        head_config = decode_head(head)
+        head_config["model_inputs"] = [
+            {"shape": model_input.shape, "layout": model_input.layout}
+            for model_input in model_inputs
+        ]
+        return pipeline.create(parser_class).build(head_config)
+
+    def _getNativeParserClass(self, parser_name: str):
+        if parser_name in self.DETECTION_PARSERS:
+            return dai.node.DetectionParser
+        if parser_name == "SegmentationParser":
+            return dai.node.SegmentationParser
+
+        parser_class = getattr(dai.beta.node, parser_name, None)
+        if parser_class is None or not isinstance(parser_class, type):
+            raise ValueError(
+                f"Parser {parser_name} is not available as a native DepthAI parser."
+            )
+        return parser_class
+
+    @staticmethod
+    def _setNativeParserInputSize(parser, head, model_inputs) -> None:
+        if not hasattr(parser, "setInputSize") or not model_inputs:
+            return
+
+        head_config = decode_head(head)
+        if head.parser in {"XFeatMonoParser", "XFeatStereoParser"}:
+            if head_config.get("input_size") is not None:
+                return
+
+        model_input = model_inputs[0]
+        shape = model_input.shape
+        layout = str(model_input.layout).upper()
+
+        if len(shape) != 4:
+            raise ValueError(
+                f"Cannot derive parser input size from model input shape {shape}."
+            )
+        if layout.endswith("NCHW"):
+            width, height = shape[3], shape[2]
+        elif layout.endswith("NHWC"):
+            width, height = shape[2], shape[1]
+        else:
+            raise ValueError(
+                f"Cannot derive parser input size from model input layout "
+                f"{model_input.layout}."
+            )
+
+        parser.setInputSize(width, height)
 
     def run(self):
         """No-op required by ``dai.node.ThreadedHostNode``."""
         pass
-
-    def _getHostParserName(self, parser_name: str) -> str:
-        if parser_name == "YOLO":
-            return YOLOExtendedParser.__name__  # noqa: F405
-        else:
-            raise ValueError(
-                f"Parser {parser_name} is not supported for host only mode."
-            )
