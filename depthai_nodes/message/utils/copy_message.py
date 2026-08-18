@@ -126,6 +126,7 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         keypoint_copy = _copy_metadata(keypoint)
         keypoint_copy.imageCoordinates = _copy_point3f(keypoint.imageCoordinates)
         keypoint_copy.confidence = keypoint.confidence
+        keypoint_copy.label = keypoint.label
         keypoint_copy.labelName = keypoint.labelName
         return keypoint_copy
 
@@ -135,6 +136,51 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         rotated_rect_copy.size = _copy_size2f(rotated_rect.size)
         rotated_rect_copy.angle = rotated_rect.angle
         return rotated_rect_copy
+
+    def _copy_beta_message(msg: dai.Buffer) -> dai.Buffer:
+        msg_copy = _copy_metadata(msg)
+
+        if isinstance(msg, dai.beta.Classifications):
+            msg_copy.classes = list(msg.classes)
+            msg_copy.scores = msg.scores.copy()
+        elif isinstance(msg, dai.beta.Clusters):
+            clusters = []
+            for cluster in msg.clusters:
+                cluster_copy = dai.beta.Cluster()
+                cluster_copy.label = cluster.label
+                cluster_copy.points = dai.VectorPoint2f(
+                    [_copy_point2f(point) for point in cluster.points]
+                )
+                clusters.append(cluster_copy)
+            msg_copy.clusters = clusters
+        elif isinstance(msg, dai.beta.Keypoints):
+            msg_copy.setKeypoints(
+                _copy_keypoints(msg.getKeypoints()), copy.deepcopy(msg.getEdges())
+            )
+        elif isinstance(msg, dai.beta.Lines):
+            lines = []
+            for line in msg.lines:
+                line_copy = dai.beta.Line()
+                line_copy.startPoint = _copy_point2f(line.startPoint)
+                line_copy.endPoint = _copy_point2f(line.endPoint)
+                line_copy.confidence = line.confidence
+                lines.append(line_copy)
+            msg_copy.lines = lines
+        elif isinstance(msg, dai.beta.Map2D):
+            map_array = msg.getMap()
+            if map_array.size > 0:
+                msg_copy.setMap(map_array.copy())
+        elif isinstance(msg, dai.beta.Predictions):
+            predictions = []
+            for prediction in msg.predictions:
+                prediction_copy = dai.beta.Prediction()
+                prediction_copy.prediction = prediction.prediction
+                predictions.append(prediction_copy)
+            msg_copy.predictions = predictions
+        else:
+            raise TypeError(f"Unsupported beta message type {type(msg)}")
+
+        return msg_copy
 
     if isinstance(msg, dai.SegmentationMask):
         return _copy_segmentation_mask(msg)
@@ -148,6 +194,18 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         return _copy_keypoints_list(msg)
     elif isinstance(msg, dai.Point2f):
         return _copy_point2f(msg)
+    elif isinstance(
+        msg,
+        (
+            dai.beta.Classifications,
+            dai.beta.Clusters,
+            dai.beta.Keypoints,
+            dai.beta.Lines,
+            dai.beta.Map2D,
+            dai.beta.Predictions,
+        ),
+    ):
+        return _copy_beta_message(msg)
     else:
         # TODO: define logic for copying other message types
         raise TypeError(f"Copying of message type {type(msg)} is not supported.")

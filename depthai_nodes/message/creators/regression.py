@@ -1,13 +1,13 @@
-from depthai_nodes import Prediction, Predictions
+import depthai as dai
 
 
-def create_regression_message(predictions: list[float]) -> Predictions:
+def create_regression_message(predictions: list[float]) -> dai.beta.Predictions:
     """Create a DepthAI message for prediction models.
 
     @param predictions: Predicted value(s).
     @type predictions: list[float]
     @return: Predictions message containing the predicted value(s).
-    @rtype: Predictions
+    @rtype: dai.beta.Predictions
     @raise ValueError: If predictions is not a list.
     @raise ValueError: If each prediction is not a float.
     """
@@ -23,11 +23,11 @@ def create_regression_message(predictions: list[float]) -> Predictions:
 
     prediction_objects_list = []
     for prediction in predictions:
-        prediction_object = Prediction()
+        prediction_object = dai.beta.Prediction()
         prediction_object.prediction = prediction
         prediction_objects_list.append(prediction_object)
 
-    predictions_message = Predictions()
+    predictions_message = dai.beta.Predictions()
     predictions_message.predictions = prediction_objects_list
 
     return predictions_message

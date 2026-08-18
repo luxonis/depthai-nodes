@@ -30,7 +30,7 @@ class LaneDetectionParser(BaseParser):
 
     Output Message/s
     ----------------
-    **Type**: Clusters
+    **Type**: dai.beta.Clusters
     **Description**: Detected lanes represented as clusters of points.
 
     Error Handling

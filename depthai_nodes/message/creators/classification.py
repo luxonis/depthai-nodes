@@ -1,11 +1,10 @@
+import depthai as dai
 import numpy as np
-
-from depthai_nodes import Classifications
 
 
 def create_classification_message(
     classes: list[str], scores: np.ndarray | list
-) -> Classifications:
+) -> dai.beta.Classifications:
     """Create a message for classification. The message contains the class names and
     their respective scores, sorted in descending order of scores.
 
@@ -14,7 +13,7 @@ def create_classification_message(
     @type scores: np.ndarray
 
     @return: A message with attributes `classes` and `scores`. `classes` is a list of classes, sorted in descending order of scores. `scores` is a list of the corresponding scores.
-    @rtype: Classifications
+    @rtype: dai.beta.Classifications
 
     @raises ValueError: If the provided classes are None.
     @raises ValueError: If the provided classes are not a list.
@@ -73,7 +72,7 @@ def create_classification_message(
             f"Number of labels and scores mismatch. Provided {len(scores)} scores and {len(classes)} class names."
         )
 
-    classification_msg = Classifications()
+    classification_msg = dai.beta.Classifications()
     sorted_args = np.argsort(-scores, kind="stable")
     scores = scores[sorted_args]
 
@@ -89,7 +88,7 @@ def create_classification_sequence_message(
     ignored_indexes: list[int] | None = None,
     remove_duplicates: bool = False,
     concatenate_classes: bool = False,
-) -> Classifications:
+) -> dai.beta.Classifications:
     """Creates a message for a multi-class sequence. The message contains the class
     names and their respective scores, ordered according to the sequence. The 'scores'
     array is a sequence of probabilities for each class at each position in the
@@ -104,7 +103,7 @@ def create_classification_sequence_message(
     @param concatenate_classes: If True, concatenates consecutive classes based on the space character. Defaults to False.
     @type concatenate_classes: bool
     @return: A Classification message with attributes `classes` and `scores`, where `classes` is a list of class names and `scores` is a list of corresponding scores.
-    @rtype: Classifications
+    @rtype: dai.beta.Classifications
     @raises ValueError: If 'classes' is not a list of strings.
     @raises ValueError: If 'scores' is not a 2D array of list of shape (sequence_length, n_classes).
     @raises ValueError: If the number of classes does not match the number of columns in 'scores'.
@@ -190,7 +189,7 @@ def create_classification_sequence_message(
         mean_score = np.mean(score_list)
         score_list = np.array([mean_score])
 
-    classification_msg = Classifications()
+    classification_msg = dai.beta.Classifications()
 
     classification_msg.classes = class_list
     classification_msg.scores = score_list

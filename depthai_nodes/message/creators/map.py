@@ -1,9 +1,10 @@
+import depthai as dai
 import numpy as np
 
-from depthai_nodes import Map2D
 
-
-def create_map_message(map: np.ndarray, min_max_scaling: bool = False) -> Map2D:
+def create_map_message(
+    map: np.ndarray, min_max_scaling: bool = False
+) -> dai.beta.Map2D:
     """Create a DepthAI message for a map of floats.
 
     @param map: A NumPy array representing the map with shape HW or NHW/HWN. Here N
@@ -12,8 +13,8 @@ def create_map_message(map: np.ndarray, min_max_scaling: bool = False) -> Map2D:
     @param min_max_scaling: If True, the map is scaled to the range [0, 1]. Defaults to
         False.
     @type min_max_scaling: bool
-    @return: An Map2D object containing the density information.
-    @rtype: Map2D
+    @return: A native Map2D object containing the density information.
+    @rtype: dai.beta.Map2D
     @raise ValueError: If the density map is not a NumPy array.
     @raise ValueError: If the density map is not 2D or 3D.
     @raise ValueError: If the 3D density map shape is not NHW or HWN.
@@ -44,7 +45,7 @@ def create_map_message(map: np.ndarray, min_max_scaling: bool = False) -> Map2D:
     if map.dtype != np.float32:
         map = map.astype(np.float32)
 
-    map_2d = Map2D()
-    map_2d.map = map
+    map_2d = dai.beta.Map2D()
+    map_2d.setMap(map)
 
     return map_2d

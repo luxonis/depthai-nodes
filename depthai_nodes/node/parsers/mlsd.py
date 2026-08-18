@@ -28,9 +28,9 @@ class MLSDParser(BaseParser):
 
     Output Message/s
     ----------------
-    **Type**: LineDetections
+    **Type**: dai.beta.Lines
 
-    **Description**: LineDetections message containing detected lines and confidence scores.
+    **Description**: Native message containing detected lines and confidence scores.
     """
 
     def __init__(

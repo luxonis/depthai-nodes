@@ -34,8 +34,8 @@ The parser classes listed below are the host-side implementations provided by de
 
 ### Classification
 
-- `ClassificationParser`: General classification parser for postprocessing the output of a classification model and outputting the [`depthai_nodes.message.Classifications`](../message/README.md#classifications) message.
-- `ClassificationSequenceParser`: Parser for models that predict the classes multiple times and return a list of predicted classes, where each item corresponds to the relative step in the sequence. In addition to time series classification, this parser can also be used for text recognition models where words can be interpreted as a sequence of characters (classes). It will output the [`depthai_nodes.message.Classifications`](../message/README.md#classifications) message.
+- `ClassificationParser`: General classification parser for postprocessing the output of a classification model and outputting a native `dai.beta.Classifications` message.
+- `ClassificationSequenceParser`: Parser for models that predict the classes multiple times and return a list of predicted classes, where each item corresponds to the relative step in the sequence. In addition to time series classification, this parser can also be used for text recognition models where words can be interpreted as a sequence of characters (classes). It outputs a native `dai.beta.Classifications` message.
 
 ### Segmentation
 
@@ -49,11 +49,11 @@ The parser classes listed below are the host-side implementations provided by de
 
 ### Other
 
-- `LaneDetectionParser`: Special parser for parsing the output of the Ultra-Fast-Lane-Detection model. It will output the [`depthai_nodes.message.Clusters`](../message/README.md#clusters) message.
-- `MLSDParser`: Special parser for parsing the output of the MLSD model. It will output the [`depthai_nodes.message.Lines`](../message/README.md#lines) message.
+- `LaneDetectionParser`: Special parser for parsing the output of the Ultra-Fast-Lane-Detection model. It outputs a native `dai.beta.Clusters` message.
+- `MLSDParser`: Special parser for parsing the output of the MLSD model. It outputs a native `dai.beta.Lines` message.
 - `EmbeddingsParser`: Simple parser that will only forward the output of the neural network. It will output the `dai.NNData` message.
-- `RegressionParser`: Special parser for parsing the output of the regression models. It will output the [`depthai_nodes.message.Predictions`](../message/README.md#predictions) message.
-- `MapOutputParser`: Special parser for parsing the output of the model that produces a map (like depth estimation). It will output the [`depthai_nodes.message.Map2D`](../message/README.md#map2d) message.
+- `RegressionParser`: Special parser for parsing the output of the regression models. It outputs a native `dai.beta.Predictions` message.
+- `MapOutputParser`: Special parser for parsing the output of the model that produces a map (like depth estimation). It outputs a native `dai.beta.Map2D` message.
 - `ImageOutputParser`: Special parser for parsing the output of the model that produces an image (like super-resolution models). It will output the `dai.ImgFrame` message.
 
 ## Utility & Helper Nodes

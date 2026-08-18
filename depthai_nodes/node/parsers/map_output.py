@@ -20,9 +20,9 @@ class MapOutputParser(BaseParser):
 
     Output Message/s
     ----------------
-    **Type**: Map2D
+    **Type**: dai.beta.Map2D
 
-    **Description**: Density message containing the density map. The density map is represented with Map2D object.
+    **Description**: Density message containing the density map as a native dai.beta.Map2D object.
     """
 
     def __init__(
