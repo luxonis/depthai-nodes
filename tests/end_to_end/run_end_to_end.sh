@@ -49,20 +49,29 @@ export FLAGS
 export DEPTHAI_NODES_LEVEL="debug"
 export DEPTHAI_DEBUG="0"
 
-python3.12 -m venv --copies venv
+# The login shell activates /Users/hil/.hil, which is itself a virtual
+# environment. Create the project environment from its base interpreter rather
+# than nesting another environment inside HIL's one.
+BASE_PYTHON="$(python3.12 -c 'import sys; print(sys._base_executable)')"
+"$BASE_PYTHON" -m venv --clear --copies venv
 VENV_PYTHON="$PWD/venv/bin/python"
 
-# The HIL host has its own Python environment. Refuse to run the test if the
-# project virtual environment does not remain isolated from that environment.
+# The HIL host has its own Python environment. Refuse to run unless this is
+# specifically the project environment, not the pre-activated HIL environment.
 "$VENV_PYTHON" -c '
+import os
 import sys
 
 print(f"sys.executable={sys.executable}")
 print(f"sys.prefix={sys.prefix}")
 print(f"sys.base_prefix={sys.base_prefix}")
-if sys.prefix == sys.base_prefix:
-    raise SystemExit("The project virtual environment is not isolated")
-'
+expected_prefix = os.path.realpath(sys.argv[1])
+actual_prefix = os.path.realpath(sys.prefix)
+if actual_prefix != expected_prefix:
+    raise SystemExit(
+        f"Expected project virtual environment {expected_prefix}, got {actual_prefix}"
+    )
+' "$PWD/venv"
 
 "$VENV_PYTHON" -m pip install --upgrade pip
 "$VENV_PYTHON" -m pip install -e .
