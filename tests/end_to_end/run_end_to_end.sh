@@ -54,11 +54,11 @@ python3.12 -m venv venv
 source venv/bin/activate
 
 python -m pip install --upgrade pip
-pip install -e .
-pip install -r requirements-dev.txt
+python -m pip install -e .
+python -m pip install -r requirements-dev.txt
 
 # Install depthai with required indexes
-pip install --upgrade \
+python -m pip install --upgrade \
   --extra-index-url "https://artifacts.luxonis.com/artifactory/luxonis-python-snapshot-local/" \
   ${LUXONIS_EXTRA_INDEX_URL:+--extra-index-url "$LUXONIS_EXTRA_INDEX_URL"} \
   "depthai==${DEPTHAI_VERSION}"
@@ -67,4 +67,11 @@ cd tests/end_to_end
 
 source <(python setup_camera_ips.py)
 export DEPTHAI_NODES_LEVEL=debug
+
+# Record the interpreter and import path used to run the test. This makes a
+# virtual-environment activation issue immediately visible in the CI log.
+command -v python
+python --version
+python -c 'import sys, depthai_nodes; print(sys.executable); print(depthai_nodes.__file__)'
+
 python -u main.py --platform "${PLATFORM}"
