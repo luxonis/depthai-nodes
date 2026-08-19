@@ -49,29 +49,37 @@ export FLAGS
 export DEPTHAI_NODES_LEVEL="debug"
 export DEPTHAI_DEBUG="0"
 
-python3.12 -m venv venv
-# shellcheck disable=SC1091
-source venv/bin/activate
+python3.12 -m venv --copies venv
+VENV_PYTHON="$PWD/venv/bin/python"
 
-python -m pip install --upgrade pip
-python -m pip install -e .
-python -m pip install -r requirements-dev.txt
+# The HIL host has its own Python environment. Refuse to run the test if the
+# project virtual environment does not remain isolated from that environment.
+"$VENV_PYTHON" -c '
+import sys
+
+print(f"sys.executable={sys.executable}")
+print(f"sys.prefix={sys.prefix}")
+print(f"sys.base_prefix={sys.base_prefix}")
+if sys.prefix == sys.base_prefix:
+    raise SystemExit("The project virtual environment is not isolated")
+'
+
+"$VENV_PYTHON" -m pip install --upgrade pip
+"$VENV_PYTHON" -m pip install -e .
+"$VENV_PYTHON" -m pip install -r requirements-dev.txt
 
 # Install depthai with required indexes
-python -m pip install --upgrade \
+"$VENV_PYTHON" -m pip install --upgrade \
   --extra-index-url "https://artifacts.luxonis.com/artifactory/luxonis-python-snapshot-local/" \
   ${LUXONIS_EXTRA_INDEX_URL:+--extra-index-url "$LUXONIS_EXTRA_INDEX_URL"} \
   "depthai==${DEPTHAI_VERSION}"
 
 cd tests/end_to_end
 
-source <(python setup_camera_ips.py)
+source <("$VENV_PYTHON" setup_camera_ips.py)
 export DEPTHAI_NODES_LEVEL=debug
 
-# Record the interpreter and import path used to run the test. This makes a
-# virtual-environment activation issue immediately visible in the CI log.
-command -v python
-python --version
-python -c 'import sys, depthai_nodes; print(sys.executable); print(depthai_nodes.__file__)'
+# Verify the import in the exact interpreter that will execute the test.
+"$VENV_PYTHON" -c 'import sys, depthai_nodes; print(sys.executable); print(depthai_nodes.__file__)'
 
-python -u main.py --platform "${PLATFORM}"
+"$VENV_PYTHON" -u main.py --platform "${PLATFORM}"
