@@ -53,6 +53,14 @@ python3.12 -m venv venv
 # shellcheck disable=SC1091
 source venv/bin/activate
 
+echo "Python command resolution after activating the project virtual environment:"
+type -a python
+type -a pip
+command -v python
+command -v pip
+python -c 'import sys; print(f"python executable: {sys.executable}"); print(f"python prefix: {sys.prefix}")'
+venv/bin/python -c 'import sys; print(f"venv executable: {sys.executable}"); print(f"venv prefix: {sys.prefix}")'
+
 python -m pip install --upgrade pip
 pip install -e .
 pip install -r requirements-dev.txt
