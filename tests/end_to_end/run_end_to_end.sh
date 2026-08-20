@@ -49,7 +49,7 @@ export FLAGS
 export DEPTHAI_NODES_LEVEL="debug"
 export DEPTHAI_DEBUG="0"
 
-readonly UV_REQUIRED_VERSION="0.12.1"
+readonly UV_REQUIRED_VERSION="0.12.5"
 
 if ! command -v uv >/dev/null 2>&1; then
   echo "uv ${UV_REQUIRED_VERSION} is required on the macOS test host" >&2
