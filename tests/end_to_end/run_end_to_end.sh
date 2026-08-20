@@ -57,7 +57,8 @@ if ! command -v uv >/dev/null 2>&1; then
 fi
 
 UV_VERSION="$(uv --version)"
-if [[ "$UV_VERSION" != "uv ${UV_REQUIRED_VERSION}" ]]; then
+read -r UV_COMMAND UV_ACTUAL_VERSION _ <<< "$UV_VERSION"
+if [[ "$UV_COMMAND" != "uv" || "$UV_ACTUAL_VERSION" != "$UV_REQUIRED_VERSION" ]]; then
   echo "Expected uv ${UV_REQUIRED_VERSION}, found ${UV_VERSION}" >&2
   exit 1
 fi
