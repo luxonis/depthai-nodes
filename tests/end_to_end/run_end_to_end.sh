@@ -49,22 +49,37 @@ export FLAGS
 export DEPTHAI_NODES_LEVEL="debug"
 export DEPTHAI_DEBUG="0"
 
-python3.12 -m venv venv
-# shellcheck disable=SC1091
-source venv/bin/activate
+readonly UV_REQUIRED_VERSION="0.12.1"
 
-python -m pip install --upgrade pip
-pip install -e .
-pip install -r requirements-dev.txt
+if ! command -v uv >/dev/null 2>&1; then
+  echo "uv ${UV_REQUIRED_VERSION} is required on the macOS test host" >&2
+  exit 1
+fi
+
+UV_VERSION="$(uv --version)"
+if [[ "$UV_VERSION" != "uv ${UV_REQUIRED_VERSION}" ]]; then
+  echo "Expected uv ${UV_REQUIRED_VERSION}, found ${UV_VERSION}" >&2
+  exit 1
+fi
+
+uv venv --managed-python --clear --python 3.12 venv
+VENV_PYTHON="$PWD/venv/bin/python"
+
+echo "Project virtual environment:"
+"$VENV_PYTHON" -c 'import sys; print(f"executable: {sys.executable}"); print(f"prefix: {sys.prefix}"); print(f"base prefix: {sys.base_prefix}")'
+
+uv pip install --python "$VENV_PYTHON" --upgrade pip
+uv pip install --python "$VENV_PYTHON" -e .
+uv pip install --python "$VENV_PYTHON" -r requirements-dev.txt
 
 # Install depthai with required indexes
-pip install --upgrade \
+uv pip install --python "$VENV_PYTHON" --upgrade \
   --extra-index-url "https://artifacts.luxonis.com/artifactory/luxonis-python-snapshot-local/" \
   ${LUXONIS_EXTRA_INDEX_URL:+--extra-index-url "$LUXONIS_EXTRA_INDEX_URL"} \
   "depthai==${DEPTHAI_VERSION}"
 
 cd tests/end_to_end
 
-source <(python setup_camera_ips.py)
+source <("$VENV_PYTHON" setup_camera_ips.py)
 export DEPTHAI_NODES_LEVEL=debug
-python -u main.py --platform "${PLATFORM}"
+"$VENV_PYTHON" -u main.py --platform "${PLATFORM}"
