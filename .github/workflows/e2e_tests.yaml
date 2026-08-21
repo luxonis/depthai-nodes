@@ -74,6 +74,9 @@ jobs:
         platform: ${{ fromJSON(github.event_name == 'workflow_dispatch' && (github.event.inputs.platform == 'all' && '["rvc2", "rvc4", "rvc4-usb"]' || format('["{0}"]', github.event.inputs.platform)) || '["rvc2", "rvc4", "rvc4-usb"]') }}
 
     steps:
+      - name: Log GitHub Actions runner hostname
+        run: hostname
+
       - uses: actions/checkout@v3
 
       - name: Set up Python
@@ -129,6 +132,9 @@ jobs:
       (github.event_name == 'workflow_dispatch' &&
        (github.event.inputs.select-os == 'all' || github.event.inputs.select-os == 'windows-only'))
     steps:
+      - name: Log GitHub Actions runner hostname
+        run: hostname
+
       - uses: actions/checkout@v3
 
       - name: Set up Python
@@ -177,6 +183,9 @@ jobs:
       (github.event_name == 'workflow_dispatch' &&
        (github.event.inputs.select-os == 'all' || github.event.inputs.select-os == 'mac-only'))
     steps:
+      - name: Log GitHub Actions runner hostname
+        run: hostname
+
       # Backwards compatibility for bom
       - uses: actions/checkout@v4
         with:
