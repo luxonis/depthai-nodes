@@ -80,6 +80,8 @@ def test_pipelines(IP: str, ip_platform: str, nn_archive_path, model):
         if IP:
             command.extend(["-ip", IP])
 
+        print(f"Running manual.py with interpreter: {sys.executable}", flush=True)
+        print(f"Manual test command: {command}", flush=True)
         subprocess.run(
             command,
             check=True,
