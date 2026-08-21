@@ -86,10 +86,7 @@ jobs:
           cache: pip
 
       - name: Install HIL
-        env:
-          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         run: |
-          python -c 'import hashlib, os; print("GITLAB_TOKEN_SHA256=" + hashlib.sha256(os.environ["GITLAB_TOKEN"].encode()).hexdigest())'
           python -m pip install --upgrade pip==26.2.1
           python -m pip --version
           python -m pip install hil_framework --upgrade --index-url https://__token__:${{ secrets.GITLAB_TOKEN }}@gitlab.luxonis.com/api/v4/projects/213/packages/pypi/simple
@@ -144,10 +141,7 @@ jobs:
           cache: pip
 
       - name: Install HIL
-        env:
-          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         run: |
-          python -c 'import hashlib, os; print("GITLAB_TOKEN_SHA256=" + hashlib.sha256(os.environ["GITLAB_TOKEN"].encode()).hexdigest())'
           python -m pip install --upgrade pip==26.2.1
           python -m pip --version
           python -m pip install hil_framework --upgrade --index-url https://__token__:${{ secrets.GITLAB_TOKEN }}@gitlab.luxonis.com/api/v4/projects/213/packages/pypi/simple
@@ -199,14 +193,11 @@ jobs:
           path: depthai-nodes
 
       - name: Run Test
-        env:
-          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         run: |
           cp -n tests/end_to_end/run_end_to_end.sh depthai-nodes/tests/end_to_end/run_end_to_end.sh
           cd depthai-nodes
           python3 -m venv venv
           . venv/bin/activate
-          python -c 'import hashlib, os; print("GITLAB_TOKEN_SHA256=" + hashlib.sha256(os.environ["GITLAB_TOKEN"].encode()).hexdigest())'
           python -m pip install --upgrade pip==26.2.1
           python -m pip --version
           python -m pip install hil_framework --upgrade --index-url https://__token__:${{ secrets.GITLAB_TOKEN }}@gitlab.luxonis.com/api/v4/projects/213/packages/pypi/simple --no-cache-dir
