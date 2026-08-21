@@ -65,6 +65,8 @@ fi
 
 uv venv --managed-python --clear --python 3.12 venv
 VENV_PYTHON="$PWD/venv/bin/python"
+# shellcheck disable=SC1091
+source venv/bin/activate
 
 echo "Project virtual environment:"
 "$VENV_PYTHON" -c 'import sys; print(f"executable: {sys.executable}"); print(f"prefix: {sys.prefix}"); print(f"base prefix: {sys.base_prefix}")'
