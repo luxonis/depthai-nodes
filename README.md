@@ -23,7 +23,7 @@ We are always listening to the community so feel free to report and feedback, is
 - [📦 Content](#-content)
   - [📨 Message](#-message)
   - [🧩 Node](#-node)
-  - [⚙️ Runtime](#-runtime)
+  - [Runtime](#runtime)
 - [🤝 Contributing](#-contributing)
 
 ## 🛠️ Installation
@@ -76,7 +76,7 @@ This modular approach allows you to rapidly prototype and scale complex applicat
 
 To read more about the nodes and see simple examples, please refer to the [nodes documentation](./depthai_nodes/node/README.md).
 
-### ⚙️ Runtime
+### Runtime
 
 The `runtime` module contains runtime integrations. Its OAK4 QNN helper
 creates ONNX Runtime sessions on the Hexagon DSP when used with the

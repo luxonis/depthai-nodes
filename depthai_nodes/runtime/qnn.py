@@ -1,6 +1,7 @@
 """Create ONNX Runtime sessions on the OAK4 Hexagon DSP."""
 
 import hashlib
+import math
 import os
 import tempfile
 import time
@@ -63,7 +64,7 @@ def qnn_session(
         device_wait_s = float(device_wait_s)
     except (TypeError, ValueError) as exc:
         raise ValueError("device_wait_s must be a non-negative number") from exc
-    if device_wait_s < 0:
+    if not math.isfinite(device_wait_s) or device_wait_s < 0:
         raise ValueError("device_wait_s must be a non-negative number")
 
     so = session_options or ort.SessionOptions()
