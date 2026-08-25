@@ -5,7 +5,7 @@ from depthai_nodes.node.utils.util_constants import GMessage
 
 def remap_message(
     message: GMessage,
-    from_transformation: dai.ImgTransformation,
+    from_transformation: dai.ImgTransformation | None,
     to_transformation: dai.ImgTransformation,
 ) -> GMessage:
     """Remap a transformable DepthAI message to a target image transformation.
@@ -33,5 +33,7 @@ def remap_message(
         )
 
     if message.getTransformation() is None:
+        if from_transformation is None:
+            return message
         message.setTransformation(from_transformation)
     return message.transformTo(to_transformation)

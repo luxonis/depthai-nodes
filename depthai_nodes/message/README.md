@@ -3,6 +3,8 @@
 Parser creators return native DepthAI messages. The parser-specific message types
 are available under `dai.beta`:
 
+DepthAI version 3.9 or newer is required.
+
 - `dai.beta.Classifications`
 - `dai.beta.Clusters` and `dai.beta.Cluster`
 - `dai.beta.Keypoints`

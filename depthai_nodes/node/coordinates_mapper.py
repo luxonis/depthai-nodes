@@ -189,10 +189,14 @@ except Exception as e:
             new_collection.setSequenceNum(msg.getSequenceNum())
             new_collection.setTimestampDevice(msg.getTimestampDevice())
             return new_collection
+        from_transformation = msg.getTransformation()
+        if from_transformation is None:
+            return msg
+
         try:
             remapped_msg = remap_message(
                 message=msg,
-                from_transformation=msg.getTransformation(),
+                from_transformation=from_transformation,
                 to_transformation=to_transformation,
             )
         except TypeError as e:

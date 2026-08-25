@@ -22,7 +22,7 @@ class MapOutputParser(BaseParser):
     ----------------
     **Type**: dai.beta.Map2D
 
-    **Description**: Density message containing the density map as a native dai.beta.Map2D object.
+    **Description**: Map2D message containing the parsed map as a native dai.beta.Map2D object.
     """
 
     def __init__(
@@ -122,7 +122,7 @@ class MapOutputParser(BaseParser):
 
     def emit(self, output: dai.NNData, map_output) -> None:
         map_message = create_map_message(
-            map=map_output, min_max_scaling=self.min_max_scaling
+            map_array=map_output, min_max_scaling=self.min_max_scaling
         )
         map_message.setTimestamp(output.getTimestamp())
         map_message.setTimestampDevice(output.getTimestampDevice())
