@@ -64,25 +64,24 @@ if [[ "$UV_COMMAND" != "uv" || "$UV_ACTUAL_VERSION" != "$UV_REQUIRED_VERSION" ]]
 fi
 
 uv venv --managed-python --clear --python 3.12 venv
-VENV_PYTHON="$PWD/venv/bin/python"
 # shellcheck disable=SC1091
 source venv/bin/activate
 
 echo "Project virtual environment:"
-"$VENV_PYTHON" -c 'import sys; print(f"executable: {sys.executable}"); print(f"prefix: {sys.prefix}"); print(f"base prefix: {sys.base_prefix}")'
+python -c 'import sys; print(f"executable: {sys.executable}"); print(f"prefix: {sys.prefix}"); print(f"base prefix: {sys.base_prefix}")'
 
-uv pip install --python "$VENV_PYTHON" --upgrade pip
-uv pip install --python "$VENV_PYTHON" -e .
-uv pip install --python "$VENV_PYTHON" -r requirements-dev.txt
+uv pip install --upgrade pip
+uv pip install -e .
+uv pip install -r requirements-dev.txt
 
 # Install depthai with required indexes
-uv pip install --python "$VENV_PYTHON" --upgrade \
+uv pip install --upgrade \
   --extra-index-url "https://artifacts.luxonis.com/artifactory/luxonis-python-snapshot-local/" \
   ${LUXONIS_EXTRA_INDEX_URL:+--extra-index-url "$LUXONIS_EXTRA_INDEX_URL"} \
   "depthai==${DEPTHAI_VERSION}"
 
 cd tests/end_to_end
 
-source <("$VENV_PYTHON" setup_camera_ips.py)
+source <(python setup_camera_ips.py)
 export DEPTHAI_NODES_LEVEL=debug
-"$VENV_PYTHON" -u main.py --platform "${PLATFORM}"
+python -u main.py --platform "${PLATFORM}"
