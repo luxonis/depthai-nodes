@@ -664,12 +664,11 @@ def compute_yolo_detections(
 
         if anchors is not None:
             anchors = np.array(anchors).reshape(len(resolved_strides), -1)
+            n_anchors_per_head = anchors.shape[1] // 2
+        else:
+            n_anchors_per_head = 1
 
-        num_classes_check = (
-            outputs_values[0].shape[1] - 5
-            if anchors is None
-            else (outputs_values[0].shape[1] // anchors.shape[0]) - 5
-        )
+        num_classes_check = (outputs_values[0].shape[1] // n_anchors_per_head) - 5
         if num_classes_check != n_classes:
             raise ValueError(
                 f"The provided number of classes {n_classes} does not match the model's {num_classes_check}."
