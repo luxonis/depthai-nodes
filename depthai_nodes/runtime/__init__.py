@@ -1,5 +1,5 @@
 """Runtime integrations for DepthAI applications."""
 
-from .qnn import qnn_session
+from .onnx_qnn import onnx_qnn_session
 
-__all__ = ["qnn_session"]
+__all__ = ["onnx_qnn_session"]

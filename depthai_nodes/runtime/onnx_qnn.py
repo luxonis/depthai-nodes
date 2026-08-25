@@ -14,7 +14,7 @@ _registered = False
 logger = get_logger(__name__)
 
 
-def qnn_session(
+def onnx_qnn_session(
     model_path,
     *,
     fp16=True,

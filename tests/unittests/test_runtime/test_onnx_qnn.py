@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from depthai_nodes.runtime import qnn, qnn_session
+from depthai_nodes.runtime import onnx_qnn, onnx_qnn_session
 
 
 class FakeSessionOptions:
@@ -50,13 +50,13 @@ class FakeOrt:
 
 
 @pytest.fixture(autouse=True)
-def reset_qnn_registration():
-    qnn._registered = False
+def reset_onnx_qnn_registration():
+    onnx_qnn._registered = False
     yield
-    qnn._registered = False
+    onnx_qnn._registered = False
 
 
-def test_qnn_session_falls_back_to_cpu_without_qnn_plugin(tmp_path, monkeypatch):
+def test_onnx_qnn_session_falls_back_to_cpu_without_qnn_plugin(tmp_path, monkeypatch):
     model_path = tmp_path / "model.onnx"
     model_path.touch()
     ort = FakeOrt([])
@@ -71,9 +71,9 @@ def test_qnn_session_falls_back_to_cpu_without_qnn_plugin(tmp_path, monkeypatch)
 
     monkeypatch.setattr(builtins, "__import__", import_without_qnn)
     logger = MagicMock()
-    monkeypatch.setattr(qnn, "logger", logger)
+    monkeypatch.setattr(onnx_qnn, "logger", logger)
 
-    qnn_session(model_path, device_wait_s=0)
+    onnx_qnn_session(model_path, device_wait_s=0)
 
     args, kwargs, _ = ort.sessions[0]
     assert args[0] == str(model_path)
@@ -86,7 +86,7 @@ def test_qnn_session_falls_back_to_cpu_without_qnn_plugin(tmp_path, monkeypatch)
     )
 
 
-def test_qnn_session_registers_qnn_provider_and_disables_runtime_fallback(
+def test_onnx_qnn_session_registers_qnn_provider_and_disables_runtime_fallback(
     tmp_path, monkeypatch
 ):
     model_path = tmp_path / "model.onnx"
@@ -100,7 +100,7 @@ def test_qnn_session_registers_qnn_provider_and_disables_runtime_fallback(
     monkeypatch.setitem(sys.modules, "onnxruntime", ort)
     monkeypatch.setitem(sys.modules, "onnxruntime_qnn", qnn_plugin)
 
-    session = qnn_session(
+    session = onnx_qnn_session(
         model_path,
         cache_context=False,
         ep_options={"foo": 1},

@@ -83,9 +83,9 @@ creates ONNX Runtime sessions on the Hexagon DSP when used with the
 `onnxruntime` variant of the `oakapp-base` image:
 
 ```python
-from depthai_nodes.runtime import qnn_session
+from depthai_nodes.runtime import onnx_qnn_session
 
-session = qnn_session("model.onnx")
+session = onnx_qnn_session("model.onnx")
 ```
 
 ## 🤝 Contributing
