@@ -76,22 +76,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.12
-          cache: pip
-
-      - name: Install HIL
-        run: |
-          pip install hil_framework --upgrade --index-url https://__token__:${{ secrets.GITLAB_TOKEN }}@gitlab.luxonis.com/api/v4/projects/213/packages/pypi/simple
-
       - name: Run Test
         env:
           SAFE_REF_NAME: ${{ github.ref_name }}
           SAFE_MATRIX_PLATFORM: ${{ matrix.platform }}
         run: |
-          export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#$SAFE_MATRIX_PLATFORM"
+          JOB=${{ job.check_run_id }}
+          export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/job/${JOB}"
+          python3 -m venv venv
+          . venv/bin/activate
+          pip install hil_framework --upgrade --index-url https://__token__:${{ secrets.GITLAB_TOKEN }}@gitlab.luxonis.com/api/v4/projects/213/packages/pypi/simple --no-cache-dir
           PLATFORM="$SAFE_MATRIX_PLATFORM"
           if [ "$PLATFORM" = "rvc4-usb" ]; then
             PLATFORM="rvc4"
@@ -126,21 +120,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.12
-          cache: pip
-
-      - name: Install HIL
-        run: |
-          pip install hil_framework --upgrade --index-url https://__token__:${{ secrets.GITLAB_TOKEN }}@gitlab.luxonis.com/api/v4/projects/213/packages/pypi/simple
-
       - name: Run Test
         env:
           SAFE_REF_NAME: ${{ github.ref_name }}
         run: |
-          export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#windows-rvc4"
+          JOB=${{ job.check_run_id }}
+          export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/job/${JOB}"
+          python3 -m venv venv
+          . venv/bin/activate
+          pip install hil_framework --upgrade --index-url https://__token__:${{ secrets.GITLAB_TOKEN }}@gitlab.luxonis.com/api/v4/projects/213/packages/pypi/simple --no-cache-dir
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             if [[ -n "${{ github.event.inputs.reservation_name }}" ]]; then
                 RESERVATION_OPTION="--reservation-name ${{ github.event.inputs.reservation_name }}"
@@ -185,8 +173,9 @@ jobs:
           cd depthai-nodes
           python3 -m venv venv
           . venv/bin/activate
-          pip install hil_framework --upgrade --index-url https://__token__:${{ secrets.GITLAB_TOKEN }}@gitlab.luxonis.com/api/v4/projects/213/packages/pypi/simple
-          export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#mac-rvc4"
+          pip install hil_framework --upgrade --index-url https://__token__:${{ secrets.GITLAB_TOKEN }}@gitlab.luxonis.com/api/v4/projects/213/packages/pypi/simple --no-cache-dir
+          JOB=${{ job.check_run_id }}
+          export RESERVATION_NAME="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/job/${JOB}"
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             if [[ -n "${{ github.event.inputs.reservation_name }}" ]]; then
                 RESERVATION_OPTION="--reservation-name ${{ github.event.inputs.reservation_name }}"
