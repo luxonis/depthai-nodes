@@ -56,8 +56,6 @@ pip --version
 which pip
 
 pip freeze
-DEPTHAI_VERSION
-
 
 python -m venv venv
 # shellcheck disable=SC1091
