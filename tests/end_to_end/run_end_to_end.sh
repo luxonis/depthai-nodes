@@ -54,6 +54,11 @@ python --version
 which python
 pip --version
 which pip
+
+pip freeze
+DEPTHAI_VERSION
+
+
 python -m venv venv
 # shellcheck disable=SC1091
 source venv/bin/activate
@@ -79,4 +84,6 @@ cd tests/end_to_end
 
 source <(python setup_camera_ips.py)
 export DEPTHAI_NODES_LEVEL=debug
+pip freeze
+DEPTHAI_VERSION
 python -u main.py --platform "${PLATFORM}"
