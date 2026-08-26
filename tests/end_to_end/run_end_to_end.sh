@@ -62,6 +62,12 @@ pip install --upgrade \
   --extra-index-url "https://artifacts.luxonis.com/artifactory/luxonis-python-snapshot-local/" \
   ${LUXONIS_EXTRA_INDEX_URL:+--extra-index-url "$LUXONIS_EXTRA_INDEX_URL"} \
   "depthai==${DEPTHAI_VERSION}"
+echo "PATH IS"
+echo $PATH
+python --version
+which python
+pip --version
+which pip
 
 cd tests/end_to_end
 
