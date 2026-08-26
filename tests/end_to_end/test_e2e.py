@@ -1,6 +1,7 @@
 import ast
 import os
 import subprocess
+import sys
 import time
 
 import pytest
@@ -71,20 +72,21 @@ def test_pipelines(IP: str, ip_platform: str, nn_archive_path, model):
             f"Testing model {model} from NN archive {nn_archive_path} on device with IP {IP} ({ip_platform})",
             flush=True,
         )
+        command = [sys.executable, "manual.py"]
         if model:
-            subprocess.run(
-                f"python manual.py -m {model} {'-ip' if IP else ''} {IP}",
-                shell=True,
-                check=True,
-                timeout=120,
-            )
+            command.extend(["-m", model])
         else:
-            subprocess.run(
-                f"python manual.py -nn {nn_archive_path} {'-ip' if IP else ''} {IP}",
-                shell=True,
-                check=True,
-                timeout=120,
-            )
+            command.extend(["-nn", nn_archive_path])
+        if IP:
+            command.extend(["-ip", IP])
+
+        print(f"Running manual.py with interpreter: {sys.executable}", flush=True)
+        print(f"Manual test command: {command}", flush=True)
+        subprocess.run(
+            command,
+            check=True,
+            timeout=120,
+        )
     except subprocess.CalledProcessError as e:
         if e.returncode == 5:
             pytest.skip(f"Model {model} not supported on {ip_platform}.")
