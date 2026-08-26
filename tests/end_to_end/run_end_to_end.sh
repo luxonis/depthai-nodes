@@ -85,5 +85,10 @@ cd tests/end_to_end
 source <(python setup_camera_ips.py)
 export DEPTHAI_NODES_LEVEL=debug
 pip freeze
-DEPTHAI_VERSION
+echo "PATH IS"
+echo $PATH
+python --version
+which python
+pip --version
+which pip
 python -u main.py --platform "${PLATFORM}"
