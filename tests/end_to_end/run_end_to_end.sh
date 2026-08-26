@@ -48,11 +48,22 @@ export HUBAI_API_KEY
 export FLAGS
 export DEPTHAI_NODES_LEVEL="debug"
 export DEPTHAI_DEBUG="0"
-
+echo "PATH IS"
+echo $PATH
+python --version
+which python
+pip --version
+which pip
 python -m venv venv
 # shellcheck disable=SC1091
 source venv/bin/activate
-
+echo "PATH IS"
+echo $PATH
+python --version
+which python
+pip --version
+which pip
+python -m venv venv
 python -m pip install --upgrade pip
 pip install -e .
 pip install -r requirements-dev.txt
@@ -62,12 +73,7 @@ pip install --upgrade \
   --extra-index-url "https://artifacts.luxonis.com/artifactory/luxonis-python-snapshot-local/" \
   ${LUXONIS_EXTRA_INDEX_URL:+--extra-index-url "$LUXONIS_EXTRA_INDEX_URL"} \
   "depthai==${DEPTHAI_VERSION}"
-echo "PATH IS"
-echo $PATH
-python --version
-which python
-pip --version
-which pip
+
 
 cd tests/end_to_end
 
