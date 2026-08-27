@@ -68,7 +68,7 @@ PROJECT_ROOT="$SCRIPT_DIR/../.."
 cd "$PROJECT_ROOT"
 
 # ---- Create and activate virtual environment
-
+rm -rf venv
 /opt/homebrew/bin/python3.12 -m venv venv
 
 source venv/bin/activate
