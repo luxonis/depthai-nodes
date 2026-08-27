@@ -87,8 +87,6 @@ pip install --upgrade \
 cd tests/end_to_end
 
 python setup_camera_ips.py > camera_ips.env
-source camera_ips.env
-echo $RVC4_IP
-echo $RVC2_IP
+source ./camera_ips.env
 export DEPTHAI_NODES_LEVEL=debug
 python -u main.py --platform "${PLATFORM}"
