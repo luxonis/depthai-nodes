@@ -169,7 +169,7 @@ jobs:
 
       - name: Run Test
         run: |
-          cp -n tests/end_to_end/run_end_to_end_mac.sh depthai-nodes/tests/end_to_end/run_end_to_end.sh
+          cp -n tests/end_to_end/run_end_to_end_mac.sh depthai-nodes/tests/end_to_end/run_end_to_end_mac.sh
           cd depthai-nodes
           python3 -m venv venv
           . venv/bin/activate
