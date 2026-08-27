@@ -64,6 +64,7 @@ case "$(uname -s)" in
     ;;
   *)
     echo "Other OS: $(uname -s)"
+    exit 1
     ;;
 esac
 
