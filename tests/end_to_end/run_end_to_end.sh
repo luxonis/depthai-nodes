@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+set -xv
 
 # ============================================
 # Usage:
@@ -22,7 +23,6 @@ set -euo pipefail
 #   HUBAI_API_KEY
 #   FLAGS = "<ADDITIONAL_PARAMETER...>"
 # ============================================
-
 HUBAI_API_KEY="${1:-}"
 HUBAI_TEAM_SLUG="${2:-}"
 DEPTHAI_VERSION="${3:-}"
@@ -57,16 +57,9 @@ which pip
 
 pip freeze
 
-python -m venv venv
 # shellcheck disable=SC1091
+/opt/homebrew/bin/python3.12 -m venv venv
 source venv/bin/activate
-echo "PATH IS"
-echo $PATH
-python --version
-which python
-pip --version
-which pip
-python -m venv venv
 python -m pip install --upgrade pip
 pip install -e .
 pip install -r requirements-dev.txt
