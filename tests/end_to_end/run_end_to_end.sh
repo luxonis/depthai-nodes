@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-set -xv
 
 # ============================================
 # Usage:
@@ -23,6 +22,7 @@ set -xv
 #   HUBAI_API_KEY
 #   FLAGS = "<ADDITIONAL_PARAMETER...>"
 # ============================================
+
 HUBAI_API_KEY="${1:-}"
 HUBAI_TEAM_SLUG="${2:-}"
 DEPTHAI_VERSION="${3:-}"
@@ -48,18 +48,26 @@ export HUBAI_API_KEY
 export FLAGS
 export DEPTHAI_NODES_LEVEL="debug"
 export DEPTHAI_DEBUG="0"
-echo "PATH IS"
-echo $PATH
-python --version
-which python
-pip --version
-which pip
 
-pip freeze
+case "$(uname -s)" in
+  Darwin)
+    HIL_VENV="venv"
+    PYTHON312="$(brew --prefix python@3.12)/bin/python3.12"
+    uv venv --seed --python "$PYTHON312" "$HIL_VENV"
+    # shellcheck disable=SC1091
+    source "$HIL_VENV/bin/activate"
+    ;;
+  Linux)
+    python3.12 -m venv venv
+    # shellcheck disable=SC1091
+    source venv/bin/activate
+    ;;
+  *)
+    echo "Other OS: $(uname -s)"
+    ;;
+esac
 
-# shellcheck disable=SC1091
-/opt/homebrew/bin/python3.12 -m venv venv
-source venv/bin/activate
+
 python -m pip install --upgrade pip
 pip install -e .
 pip install -r requirements-dev.txt
@@ -70,16 +78,8 @@ pip install --upgrade \
   ${LUXONIS_EXTRA_INDEX_URL:+--extra-index-url "$LUXONIS_EXTRA_INDEX_URL"} \
   "depthai==${DEPTHAI_VERSION}"
 
-
 cd tests/end_to_end
 
 source <(python setup_camera_ips.py)
 export DEPTHAI_NODES_LEVEL=debug
-pip freeze
-echo "PATH IS"
-echo $PATH
-python --version
-which python
-pip --version
-which pip
 python -u main.py --platform "${PLATFORM}"
