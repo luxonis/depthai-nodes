@@ -69,7 +69,7 @@ cd "$PROJECT_ROOT"
 
 # ---- Create and activate virtual environment
 
-/opt/homebrew/bin/python3.12 -m venv --copies venv
+/opt/homebrew/bin/python3.12 -m venv venv
 
 source venv/bin/activate
 
