@@ -53,7 +53,8 @@ case "$(uname -s)" in
   Darwin)
     HIL_VENV="venv"
     PYTHON312="$(brew --prefix python@3.12)/bin/python3.12"
-    uv venv --clear --seed --python "$PYTHON312" "$HIL_VENV"
+    #uv venv --clear --seed --python "$PYTHON312" "$HIL_VENV"
+    python3.12 -m venv venv
     # shellcheck disable=SC1091
     source "$HIL_VENV/bin/activate"
     ;;
