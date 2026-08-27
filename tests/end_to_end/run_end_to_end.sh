@@ -52,6 +52,11 @@ export DEPTHAI_DEBUG="0"
 case "$(uname -s)" in
   Darwin)
     HIL_VENV="venv"
+    if [[ "$(uname -m)" == "arm64" ]]; then
+      eval "$(/opt/homebrew/bin/brew shellenv)"
+    else
+      eval "$(/usr/local/bin/brew shellenv)"
+    fi
     PYTHON312="$(brew --prefix python@3.12)/bin/python3.12"
     uv venv --clear --seed --python "$PYTHON312" "$HIL_VENV"
     # shellcheck disable=SC1091
@@ -81,6 +86,9 @@ pip install --upgrade \
 
 cd tests/end_to_end
 
-source <(python setup_camera_ips.py)
+python setup_camera_ips.py > camera_ips.env
+source camera_ips.env
+echo $RVC4_IP
+echo $RVC2_IP
 export DEPTHAI_NODES_LEVEL=debug
 python -u main.py --platform "${PLATFORM}"
