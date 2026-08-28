@@ -333,6 +333,16 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
                 request_kwargs["fps"] = fps
             return input.requestOutput(**request_kwargs)
 
+        if not hasattr(input, "link"):
+            source_output = getattr(input, "out", None)
+            if source_output is None or not hasattr(source_output, "link"):
+                raise TypeError(
+                    "ParsingNeuralNetwork fallback expects a Camera, a "
+                    "linkable Node.Output, or a node exposing a linkable "
+                    "`out` output."
+                )
+            input = source_output
+
         manip = self.getParentPipeline().create(dai.node.ImageManip)
         manip.setMaxOutputFrameSize(nn_w * nn_h * 3)
         manip.initialConfig.setFrameType(frame_type)
