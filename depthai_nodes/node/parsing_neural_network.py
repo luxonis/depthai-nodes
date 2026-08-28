@@ -38,7 +38,6 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         self._nn = self.getParentPipeline().create(dai.node.NeuralNetwork)
         self._parsers: dict[int, BaseParser] = {}
         self._internal_sync: dai.node.Sync | None = None
-        self._input_adapter: dai.DeviceNode | None = None
         self._logger = get_logger(__name__)
         self._logger.debug("ParsingNeuralNetwork initialized")
 
@@ -247,26 +246,9 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
             )
 
         kwargs = {"fps": fps} if fps else {}
-        built_via_set_nn_archive = False
+        self._nn.build(input, self._nn_archive, **kwargs)
 
-        try:
-            self._nn.build(input, self._nn_archive, **kwargs)
-        except RuntimeError as exc:
-            if not self._should_use_manual_input_fallback(exc):
-                raise
-
-            self._logger.warning(
-                "NNArchive build rejected grayscale image input. "
-                "Falling back to explicit BGR preprocessing before the "
-                "NeuralNetwork node."
-            )
-            prepared_input = self._prepare_manual_nn_input(input, fps=fps)
-            self.setNNArchive(self._nn_archive)
-            prepared_input.link(self._nn.input)
-            built_via_set_nn_archive = True
-
-        if not built_via_set_nn_archive:
-            self._updateParsers(self._nn_archive)
+        self._updateParsers(self._nn_archive)
 
         if len(self._parsers) > 1:
             self._createSyncNode()
@@ -276,84 +258,6 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         )
 
         return self
-
-    def _should_use_manual_input_fallback(self, exc: RuntimeError) -> bool:
-        message = str(exc)
-        if "Unsupported input type" not in message:
-            return False
-
-        dai_type = self._get_archive_input_dai_type()
-        return dai_type.startswith("GRAY")
-
-    def _get_archive_input_dai_type(self) -> str:
-        model_inputs = getattr(self._nn_archive.getConfig().model, "inputs", [])
-        if not model_inputs:
-            return ""
-
-        preprocessing = getattr(model_inputs[0], "preprocessing", None)
-        if preprocessing is None:
-            return ""
-
-        dai_type = getattr(preprocessing, "daiType", None) or getattr(
-            preprocessing,
-            "dai_type",
-            None,
-        )
-        if dai_type is None:
-            return ""
-        if not isinstance(dai_type, str):
-            dai_type = getattr(dai_type, "name", None) or getattr(
-                dai_type,
-                "value",
-                "",
-            )
-        return str(dai_type).upper()
-
-    def _prepare_manual_nn_input(
-        self,
-        input: dai.Node.Output | dai.node.Camera,
-        *,
-        fps: float | None,
-    ) -> dai.Node.Output:
-        nn_w = self._nn_archive.getInputWidth()
-        nn_h = self._nn_archive.getInputHeight()
-        platform = self.getParentPipeline().getDefaultDevice().getPlatform()
-        frame_type = (
-            dai.ImgFrame.Type.BGR888p
-            if platform == dai.Platform.RVC2
-            else dai.ImgFrame.Type.BGR888i
-        )
-
-        if isinstance(input, dai.node.Camera):
-            request_kwargs = {
-                "size": (nn_w, nn_h),
-                "type": frame_type,
-            }
-            if fps is not None:
-                request_kwargs["fps"] = fps
-            return input.requestOutput(**request_kwargs)
-
-        if not hasattr(input, "link"):
-            source_output = getattr(input, "out", None)
-            if source_output is None or not hasattr(source_output, "link"):
-                raise TypeError(
-                    "ParsingNeuralNetwork fallback expects a Camera, a "
-                    "linkable Node.Output, or a node exposing a linkable "
-                    "`out` output."
-                )
-            input = source_output
-
-        manip = self.getParentPipeline().create(dai.node.ImageManip)
-        manip.setMaxOutputFrameSize(nn_w * nn_h * 3)
-        manip.initialConfig.setFrameType(frame_type)
-        manip.initialConfig.setOutputSize(
-            w=nn_w,
-            h=nn_h,
-            mode=dai.ImageManipConfig.ResizeMode.CENTER_CROP,
-        )
-        input.link(manip.inputImage)
-        self._input_adapter = manip
-        return manip.out
 
     def run(self) -> None:
         """Methods inherited from ThreadedHostNode.
@@ -372,9 +276,6 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         self._nn = None
 
         self._removeOldParserNodes()
-        if self._input_adapter is not None:
-            self.getParentPipeline().remove(self._input_adapter)
-            self._input_adapter = None
         self._internal_sync = None
         self._parsers = {}
 
