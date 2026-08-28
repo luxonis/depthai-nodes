@@ -3,9 +3,17 @@ from typing import Any
 import depthai as dai
 import numpy as np
 
-from depthai_nodes.message.creators import create_classification_sequence_message
+from depthai_nodes.message.creators import (
+    create_classification_sequence_message,
+    create_code128_classification_message,
+)
 from depthai_nodes.node.parsers.utils.classification_sequence import (
     compute_classification_sequence_scores,
+)
+from depthai_nodes.node.parsers.utils.code128 import (
+    beam_search_code128,
+    normalize_candidate_scores,
+    select_best_code128_candidate,
 )
 
 from .classification import ClassificationParser
@@ -49,6 +57,11 @@ class ClassificationSequenceParser(ClassificationParser):
         ignored_indexes: list[int] = None,
         remove_duplicates: bool = False,
         concatenate_classes: bool = False,
+        target_mode: str = "payload",
+        beam_width: int = 10,
+        top_k: int = 5,
+        token_prune: int | None = None,
+        prefer_valid_checksum: bool = True,
     ) -> None:
         """Initializes the parser node.
 
@@ -76,8 +89,20 @@ class ClassificationSequenceParser(ClassificationParser):
         self.ignored_indexes = ignored_indexes if ignored_indexes is not None else []
         self.remove_duplicates = remove_duplicates
         self.concatenate_classes = concatenate_classes
+        self.target_mode = target_mode
+        self.beam_width = beam_width
+        self.top_k = top_k
+        self.token_prune = token_prune
+        self.prefer_valid_checksum = prefer_valid_checksum
         self._logger.debug(
-            f"ClassificationSequenceParser initialized with output_layer_name='{output_layer_name}', classes={classes}, is_softmax={is_softmax}, ignored_indexes={ignored_indexes}, remove_duplicates={remove_duplicates}, concatenate_classes={concatenate_classes}"
+            "ClassificationSequenceParser initialized with "
+            f"output_layer_name='{output_layer_name}', classes={classes}, "
+            f"is_softmax={is_softmax}, ignored_indexes={ignored_indexes}, "
+            f"remove_duplicates={remove_duplicates}, "
+            f"concatenate_classes={concatenate_classes}, "
+            f"target_mode={target_mode}, beam_width={beam_width}, top_k={top_k}, "
+            f"token_prune={token_prune}, "
+            f"prefer_valid_checksum={prefer_valid_checksum}"
         )
 
     def setRemoveDuplicates(self, remove_duplicates: bool) -> None:
@@ -135,9 +160,23 @@ class ClassificationSequenceParser(ClassificationParser):
         self.concatenate_classes = head_config.get(
             "concatenate_classes", self.concatenate_classes
         )
+        self.target_mode = head_config.get("target_mode", self.target_mode)
+        self.beam_width = head_config.get("beam_width", self.beam_width)
+        self.top_k = head_config.get("top_k", self.top_k)
+        self.token_prune = head_config.get("token_prune", self.token_prune)
+        self.prefer_valid_checksum = head_config.get(
+            "prefer_valid_checksum",
+            self.prefer_valid_checksum,
+        )
 
         self._logger.debug(
-            f"ClassificationSequenceParser built with ignored_indexes={self.ignored_indexes}, remove_duplicates={self.remove_duplicates}, concatenate_classes={self.concatenate_classes}"
+            "ClassificationSequenceParser built with "
+            f"ignored_indexes={self.ignored_indexes}, "
+            f"remove_duplicates={self.remove_duplicates}, "
+            f"concatenate_classes={self.concatenate_classes}, "
+            f"target_mode={self.target_mode}, beam_width={self.beam_width}, "
+            f"top_k={self.top_k}, token_prune={self.token_prune}, "
+            f"prefer_valid_checksum={self.prefer_valid_checksum}"
         )
 
         return self
@@ -177,13 +216,38 @@ class ClassificationSequenceParser(ClassificationParser):
         return compute_classification_sequence_scores(scores, is_softmax=is_softmax)
 
     def emit(self, output: dai.NNData, scores: np.ndarray) -> None:
-        msg = create_classification_sequence_message(
-            classes=self.classes,
-            scores=scores,
-            remove_duplicates=self.remove_duplicates,
-            ignored_indexes=self.ignored_indexes,
-            concatenate_classes=self.concatenate_classes,
-        )
+        if self.target_mode == "codewords":
+            candidates = beam_search_code128(
+                scores,
+                beam_width=self.beam_width,
+                top_k=self.top_k,
+                token_prune=self.token_prune,
+            )
+            best_candidate = select_best_code128_candidate(
+                candidates,
+                prefer_valid_checksum=self.prefer_valid_checksum,
+            )
+            ordered_candidates = [best_candidate] + [
+                candidate
+                for candidate in candidates
+                if candidate != best_candidate
+            ]
+            msg = create_code128_classification_message(
+                ordered_candidates,
+                normalize_candidate_scores(ordered_candidates),
+                target_mode=self.target_mode,
+                best_candidate=best_candidate,
+                beam_width=self.beam_width,
+                token_prune=self.token_prune,
+            )
+        else:
+            msg = create_classification_sequence_message(
+                classes=self.classes,
+                scores=scores,
+                remove_duplicates=self.remove_duplicates,
+                ignored_indexes=self.ignored_indexes,
+                concatenate_classes=self.concatenate_classes,
+            )
         msg.setTimestamp(output.getTimestamp())
         msg.setSequenceNum(output.getSequenceNum())
         msg.setTimestampDevice(output.getTimestampDevice())

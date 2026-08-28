@@ -1,6 +1,9 @@
+from typing import Any
+
 import numpy as np
 
 from depthai_nodes import Classifications
+from depthai_nodes.node.parsers.utils.code128 import Code128BeamCandidate
 
 
 def create_classification_message(
@@ -196,3 +199,56 @@ def create_classification_sequence_message(
     classification_msg.scores = score_list
 
     return classification_msg
+
+
+def create_code128_classification_message(
+    candidates: list[Code128BeamCandidate],
+    scores: np.ndarray,
+    *,
+    target_mode: str,
+    best_candidate: Code128BeamCandidate,
+    beam_width: int,
+    token_prune: int | None,
+) -> Classifications:
+    """Create a Code128 classification message from beam-search results."""
+    if not candidates:
+        raise ValueError("Code128 candidates should not be empty.")
+
+    if scores.ndim != 1:
+        raise ValueError(f"Scores should be a 1D array, got {scores.shape}.")
+
+    if len(scores) != len(candidates):
+        raise ValueError(
+            "Number of candidate scores and Code128 candidates must match."
+        )
+
+    classification_msg = Classifications()
+    classification_msg.classes = [candidate.text for candidate in candidates]
+    classification_msg.scores = scores.astype(np.float32)
+    classification_msg.metadata = {
+        "target_mode": target_mode,
+        "beam_width": beam_width,
+        "top_k": len(candidates),
+        "token_prune": token_prune,
+        "decoded_text": best_candidate.text,
+        "decoded_codewords": list(best_candidate.codewords),
+        "valid": best_candidate.valid,
+        "checksum_valid": best_candidate.checksum_valid,
+        "candidates": [
+            _serialize_code128_candidate(candidate)
+            for candidate in candidates
+        ],
+    }
+    return classification_msg
+
+
+def _serialize_code128_candidate(
+    candidate: Code128BeamCandidate,
+) -> dict[str, Any]:
+    return {
+        "text": candidate.text,
+        "score": candidate.score,
+        "codewords": list(candidate.codewords),
+        "valid": candidate.valid,
+        "checksum_valid": candidate.checksum_valid,
+    }

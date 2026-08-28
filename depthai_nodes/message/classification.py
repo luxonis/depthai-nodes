@@ -1,4 +1,5 @@
 import copy
+from typing import Any
 
 import depthai as dai
 import numpy as np
@@ -19,6 +20,8 @@ class Classifications(dai.Buffer):
         Corresponding probability scores.
     transformation : dai.ImgTransformation
         Image transformation object.
+    metadata : dict[str, Any]
+        Optional parser-specific metadata.
     """
 
     def __init__(self):
@@ -27,6 +30,7 @@ class Classifications(dai.Buffer):
         self._classes: list[str] = []
         self._scores: NDArray[np.float32] = np.array([])
         self._transformation: dai.ImgTransformation | None = None
+        self._metadata: dict[str, Any] = {}
 
     def copy(self):
         """Creates a new instance of the Classifications class and copies the
@@ -38,6 +42,7 @@ class Classifications(dai.Buffer):
         new_obj = Classifications()
         new_obj.classes = copy.deepcopy(self.classes)
         new_obj.scores = copy.deepcopy(self.scores)
+        new_obj.metadata = copy.deepcopy(self.metadata)
         new_obj.setSequenceNum(self.getSequenceNum())
         new_obj.setTimestamp(self.getTimestamp())
         new_obj.setTimestampDevice(self.getTimestampDevice())
@@ -138,6 +143,20 @@ class Classifications(dai.Buffer):
                     f"Transformation must be a dai.ImgTransformation object, instead got {type(value)}."
                 )
         self._transformation = value
+
+    @property
+    def metadata(self) -> dict[str, Any]:
+        """Returns parser-specific metadata attached to the message."""
+        return self._metadata
+
+    @metadata.setter
+    def metadata(self, value: dict[str, Any]) -> None:
+        """Sets parser-specific metadata."""
+        if not isinstance(value, dict):
+            raise TypeError(
+                f"Metadata must be a dict, instead got {type(value)}."
+            )
+        self._metadata = value
 
     def setTransformation(self, transformation: dai.ImgTransformation | None):
         """Sets the Image Transformation object.

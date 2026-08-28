@@ -13,6 +13,7 @@ def classifications():
 def test_initialization(classifications: Classifications):
     assert classifications.classes == []
     assert np.array_equal(classifications.scores, np.array([]))
+    assert classifications.metadata == {}
     assert classifications.transformation is None
 
 
@@ -67,3 +68,23 @@ def test_set_transformation(classifications: Classifications):
 def test_set_transformation_none(classifications: Classifications):
     classifications.transformation = None
     assert classifications.transformation is None
+
+
+def test_set_metadata(classifications: Classifications):
+    metadata = {"decoded_text": "ABC"}
+    classifications.metadata = metadata
+    assert classifications.metadata == metadata
+
+    with pytest.raises(TypeError):
+        classifications.metadata = "not a dict"
+
+
+def test_copy_preserves_metadata(classifications: Classifications):
+    classifications.classes = ["ABC"]
+    classifications.scores = np.array([1.0], dtype=np.float32)
+    classifications.metadata = {"candidates": [{"text": "ABC"}]}
+
+    copied = classifications.copy()
+
+    assert copied.metadata == classifications.metadata
+    assert copied.metadata is not classifications.metadata

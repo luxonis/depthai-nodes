@@ -270,4 +270,5 @@ def remap_classifications(
     new_classifications = Classifications()
     new_classifications.classes = classifications.classes
     new_classifications.scores = classifications.scores
+    new_classifications.metadata = classifications.metadata.copy()
     return new_classifications
