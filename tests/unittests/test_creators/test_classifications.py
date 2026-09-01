@@ -1,7 +1,7 @@
+import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes import Classifications
 from depthai_nodes.message.creators import (
     create_classification_message,
 )
@@ -13,7 +13,7 @@ SCORES = [0.7, 0.2, 0.1]
 def test_valid_input():
     message = create_classification_message(CLASSES, SCORES)
 
-    assert isinstance(message, Classifications)
+    assert isinstance(message, dai.beta.Classifications)
     assert message.classes == ["cat", "dog", "bird"]
     assert np.array_equal(message.scores, np.array(SCORES, dtype=np.float32))
 
@@ -53,7 +53,7 @@ def test_very_small_scores():
 
     message = create_classification_message(CLASSES, scores)
 
-    assert isinstance(message, Classifications)
+    assert isinstance(message, dai.beta.Classifications)
     assert message.classes == ["bird", "cat", "dog"]
     assert np.all(
         message.scores == np.array([1 - 2e-10, 1e-10, 1e-10], dtype=np.float32)

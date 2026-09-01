@@ -1,8 +1,6 @@
 import depthai as dai
 import numpy as np
 
-from depthai_nodes.message.keypoints import Keypoints
-
 
 def create_keypoints_message(
     keypoints: np.ndarray | list[list[float]],
@@ -10,8 +8,8 @@ def create_keypoints_message(
     confidence_threshold: float | None = None,
     label_names: list[str] | None = None,
     edges: list[tuple[int, int]] | None = None,
-) -> Keypoints:
-    """Create a native DepthAI keypoints message."""
+) -> dai.beta.Keypoints:
+    """Create a native ``dai.beta.Keypoints`` message."""
 
     if not isinstance(keypoints, (np.ndarray, list)):
         raise ValueError(
@@ -140,6 +138,6 @@ def create_keypoints_message(
 
         keypoints_list.setEdges(filtered_edges)
 
-    keypoints_msg = Keypoints()
-    keypoints_msg.keypoints_list = keypoints_list
+    keypoints_msg = dai.beta.Keypoints()
+    keypoints_msg.keypointsList = keypoints_list
     return keypoints_msg

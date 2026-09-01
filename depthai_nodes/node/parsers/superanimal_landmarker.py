@@ -30,7 +30,7 @@ class SuperAnimalParser(KeypointParser):
 
     Output Message/s
     ----------------
-    **Type**: Keypoints
+    **Type**: dai.beta.Keypoints
 
     **Description**: Output containing detected keypoints that exceed the confidence threshold.
     """
