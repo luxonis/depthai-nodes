@@ -58,7 +58,7 @@ def process_single_mask(
     @type bbox: np.ndarray
     @param output_shape: Target mask shape as (height, width).
     @type output_shape: tuple[int, int]
-    @return: Processed mask.
+    @return: Processed binary mask resized to `output_shape`.
     @rtype: np.ndarray
     """
     c, mh, mw = protos.shape  # CHW
