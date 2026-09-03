@@ -104,16 +104,18 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         return keypoints_copy
 
     def _copy_point2f(point2f: dai.Point2f) -> dai.Point2f:
-        point2f_copy = _copy_metadata(point2f)
-        point2f_copy.x = point2f.x
-        point2f_copy.y = point2f.y
-        return point2f_copy
+        return dai.Point2f(
+            point2f.x,
+            point2f.y,
+            normalized=point2f.isNormalized(),
+        )
 
     def _copy_size2f(size2f: dai.Size2f) -> dai.Size2f:
-        size2f_copy = _copy_metadata(size2f)
-        size2f_copy.width = size2f.width
-        size2f_copy.height = size2f.height
-        return size2f_copy
+        return dai.Size2f(
+            size2f.width,
+            size2f.height,
+            normalized=size2f.isNormalized(),
+        )
 
     def _copy_point3f(point3f: dai.Point3f) -> dai.Point3f:
         point3f_copy = _copy_metadata(point3f)
