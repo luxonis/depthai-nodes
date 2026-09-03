@@ -5,6 +5,15 @@ import numpy as np
 from depthai_nodes.node.parsers.utils import sigmoid
 
 
+def probability_to_logit_threshold(probability: float) -> float:
+    """Convert a probability threshold into the equivalent logit threshold."""
+    if probability <= 0.0:
+        return float("-inf")
+    if probability >= 1.0:
+        return float("inf")
+    return float(np.log(probability / (1.0 - probability)))
+
+
 def crop_mask(mask: np.ndarray, bbox: np.ndarray) -> np.ndarray:
     """It takes a mask and a bounding box, and returns a mask that is cropped to the
     bounding box.
@@ -113,15 +122,11 @@ def process_single_mask_rfdetr(
             f"RF-DETR mask logits should have shape (H, W), got {mask_logits.shape}."
         )
 
-    mask_h, mask_w = mask_logits.shape
-    scaled_bbox = bbox * np.array([mask_w, mask_h, mask_w, mask_h])
-
-    mask = sigmoid(mask_logits)
-    mask = crop_mask(mask, scaled_bbox)
-    mask = (mask > mask_conf).astype(np.uint8)
-
-    return cv2.resize(
-        mask,
+    _ = bbox
+    resized_mask_logits = cv2.resize(
+        mask_logits,
         (input_shape[1], input_shape[0]),
-        interpolation=cv2.INTER_NEAREST,
+        interpolation=cv2.INTER_LINEAR,
     )
+    logit_threshold = probability_to_logit_threshold(mask_conf)
+    return (resized_mask_logits > logit_threshold).astype(np.uint8)
