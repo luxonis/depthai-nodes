@@ -54,9 +54,7 @@ def process_single_mask(
     """
     c, mh, mw = protos.shape  # CHW
     scaled_bbox = bbox * np.array([mw, mh, mw, mh])
-    mask_logits = np.sum(
-        protos * mask_coeff[..., np.newaxis, np.newaxis], axis=0
-    )
+    mask_logits = np.sum(protos * mask_coeff[..., np.newaxis, np.newaxis], axis=0)
     mask_logits = crop_mask(mask_logits, scaled_bbox)
     mask_logits = cv2.resize(
         mask_logits,
