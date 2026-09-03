@@ -34,6 +34,7 @@ def process_single_mask(
     mask_coeff: np.ndarray,
     mask_conf: float,
     bbox: np.ndarray,
+    output_shape: tuple[int, int],
 ) -> np.ndarray:
     """Process a single mask.
 
@@ -46,14 +47,23 @@ def process_single_mask(
     @param bbox: A numpy array of bbox coordinates in (x_center, y_center, width,
         height) normalized format.
     @type bbox: np.ndarray
+    @param output_shape: Target mask shape as (height, width).
+    @type output_shape: tuple[int, int]
     @return: Processed mask.
     @rtype: np.ndarray
     """
     c, mh, mw = protos.shape  # CHW
     scaled_bbox = bbox * np.array([mw, mh, mw, mh])
-    mask = sigmoid(np.sum(protos * mask_coeff[..., np.newaxis, np.newaxis], axis=0))
-    mask = crop_mask(mask, scaled_bbox)
-    return (mask > mask_conf).astype(np.uint8)
+    mask_logits = np.sum(
+        protos * mask_coeff[..., np.newaxis, np.newaxis], axis=0
+    )
+    mask_logits = crop_mask(mask_logits, scaled_bbox)
+    mask_logits = cv2.resize(
+        mask_logits,
+        (output_shape[1], output_shape[0]),
+        interpolation=cv2.INTER_LINEAR,
+    )
+    return (sigmoid(mask_logits) > mask_conf).astype(np.uint8)
 
 
 def get_segmentation_outputs(
