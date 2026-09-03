@@ -30,6 +30,14 @@ on:
         description: 'Platform to use for testing. By default both RVC2 and RVC4 are used but you can use only one by passing only `rvc2` or `rvc4`(use lowercase).'
         default: "all"
         required: false
+      protocol:
+        description: 'Protocol to use for testing. TCP is used.'
+        type: choice
+        options:
+          - tcpip
+          - usb
+        default: tcpip
+        required: false
       select-os:
         description: 'Select which os to tests when dispatching'
         type: choice
@@ -103,7 +111,7 @@ jobs:
             fi
 
             if [[ "${{ github.event.inputs.bom_mode }}" == 'true' ]]; then
-              exec hil_runner --hold-reservation $ADDITIONAL_OPTIONS --models 'oak4_s or oak4_pro or oak4_d' --wait $RESERVATION_OPTION --dockerfile ./tests/end_to_end/Dockerfile --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=${{ github.event.inputs.depthai-version }} --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=${{ github.event.inputs.depthai-nodes-version }} --env FLAGS=\"${{ github.event.inputs.additional-parameter }} -v ${{ github.event.inputs.depthai-nodes-version }} --platform ${{ matrix.platform }}\""
+              exec hil_runner --hold-reservation $ADDITIONAL_OPTIONS --models 'oak4_s or oak4_pro or oak4_d' --wait $RESERVATION_OPTION --dockerfile ./tests/end_to_end/Dockerfile --docker-run-args "--DEPTHAI_PROTOCOL=${{ github.event.inputs.protocol }} --env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=${{ github.event.inputs.depthai-version }} --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=${{ github.event.inputs.depthai-nodes-version }} --env FLAGS=\"${{ github.event.inputs.additional-parameter }} -v ${{ github.event.inputs.depthai-nodes-version }} --platform ${{ matrix.platform }}\""
             else
               exec hil_runner --platforms $PLATFORM --wait $RESERVATION_OPTION --before-docker-pull "echo ${{ github.token }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin" --docker-image ghcr.io/luxonis/depthai-nodes-testing --docker-run-args "--env LUXONIS_EXTRA_INDEX_URL=${{secrets.LUXONIS_EXTRA_INDEX_URL}} --env DEPTHAI_VERSION=${{ github.event.inputs.depthai-version }} --env HUBAI_TEAM_SLUG=${{ secrets.HUBAI_TEAM_SLUG }} --env HUBAI_API_KEY=${{ secrets.HUBAI_API_KEY }} --env BRANCH=${{ github.event.inputs.depthai-nodes-version }} --env FLAGS=\"${{ github.event.inputs.additional-parameter }} -v ${{ github.event.inputs.depthai-nodes-version }} --platform ${{ matrix.platform }}\""
             fi
