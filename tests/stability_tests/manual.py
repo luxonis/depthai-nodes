@@ -81,7 +81,10 @@ class Sender(dai.node.ThreadedHostNode):
 
 
 with dai.Pipeline(device) as pipeline:
-    parser = pipeline.create(ParserGenerator).build(nnArchive=nn_archive)[0]
+    parser = pipeline.create(ParserGenerator).build(
+        nnArchive=nn_archive,
+        hostOnly=True,
+    )[0]
 
     sender = pipeline.create(Sender)
 

@@ -51,3 +51,8 @@ ignore_missing_imports = true
 
 [tool.pyright]
 typeCheckingMode = "basic"
+
+[tool.pytest.ini_options]
+markers = [
+  "e2e: requires HubAI credentials and a physical DepthAI device.",
+]

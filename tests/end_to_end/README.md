@@ -1,7 +1,7 @@
 # End-to-end tests
 
-This directory contains end-to-end tests for DepthAI. These tests are designed to run on a real device and test the complete pipeline with camera, neural network, and parsers.
-The tests check if the device is able to run a model with neural network node and parse the output with parser node and return the message. If the error is raised during the process, the test will fail.
+This directory contains end-to-end tests for DepthAI. These tests are designed to run on a real device and test the complete pipeline with camera, neural network, and parsers from depthai-nodes.
+The broad model suite uses `HostParsingNeuralNetwork` to run models with parser implementations from depthai-nodes and verify that a parsed message is returned. Models such as SSD that do not have a depthai-nodes parser implementation are skipped. A smaller native-parser smoke suite also runs `ParsingNeuralNetwork` with YuNet, YOLOv6, and selfie segmentation on each selected platform. This covers a beta parser, native detection, and native segmentation without doubling the complete model matrix. If an error is raised during the process, the test will fail.
 
 ## Running the tests on GitHub Actions
 
@@ -13,7 +13,7 @@ There are 3 required parameters that need to be set when triggering the Github a
 
 - `additional-parameter`: The parameter that specifies the desired test. Default is `-all` which runs tests on all public models. The available options are: `-all`, `-p <parser_name>`, `-m <model_1> <model_2> ...`.
 - `depthai-nodes-version`: The branch or release on which the tests will be run. Default is `main`.
-- `depthai-version`: The version of the DepthAI that will be used for the tests. Default is `3.0.0rc2`.
+- `depthai-version`: The version of DepthAI that will be used for the tests. Default is `3.9.0`.
 
 ## Running the tests locally
 
@@ -44,7 +44,7 @@ Test specific parser on all models:
 python main.py -p <parser_name>
 ```
 
-You can also run `manual.py` with `-m` or `-nn` if want to debug parser quickly (without pytest) and by specifying `-ip` you can connect to the specifi device with IP or mxid.
+You can also run `manual.py` with `-m` or `-nn` if you want to debug a parser quickly (without pytest). Pass `--native-parsers` to exercise `ParsingNeuralNetwork`; without it, the script uses `HostParsingNeuralNetwork`. By specifying `-ip`, you can connect to a specific device by IP or MXID.
 
 ## Limitations
 
