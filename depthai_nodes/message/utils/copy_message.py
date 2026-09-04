@@ -29,7 +29,7 @@ def copy_message(msg: dai.Buffer) -> dai.Buffer:
         raise TypeError(f"Copying of message type {type(msg)} is not supported.") from e
 
 
-def _copy(msg: dai.Buffer) -> dai.Buffer:
+def _copy(msg: dai.Buffer) -> dai.Buffer | object:
     def _copy_metadata(msg: dai.Buffer) -> dai.Buffer:
         msg_type = type(msg)
         msg_copy = msg_type()
@@ -97,46 +97,42 @@ def _copy(msg: dai.Buffer) -> dai.Buffer:
         return keypoints_copy
 
     def _copy_keypoints_list(keypoints: dai.KeypointsList) -> dai.KeypointsList:
-        keypoints_copy = _copy_metadata(keypoints)
-        assert isinstance(keypoints_copy, dai.KeypointsList)
-        keypoints_copy.setKeypoints(_copy_keypoints(keypoints.getKeypoints()))
-        keypoints_copy.setEdges(copy.deepcopy(keypoints.getEdges()))
-        return keypoints_copy
+        return dai.KeypointsList(
+            keypoints=_copy_keypoints(keypoints.getKeypoints()),
+            edges=copy.deepcopy(keypoints.getEdges()),
+        )
 
     def _copy_point2f(point2f: dai.Point2f) -> dai.Point2f:
         return dai.Point2f(
-            point2f.x,
-            point2f.y,
+            x=point2f.x,
+            y=point2f.y,
             normalized=point2f.isNormalized(),
         )
 
     def _copy_size2f(size2f: dai.Size2f) -> dai.Size2f:
         return dai.Size2f(
-            size2f.width,
-            size2f.height,
+            width=size2f.width,
+            height=size2f.height,
             normalized=size2f.isNormalized(),
         )
 
     def _copy_point3f(point3f: dai.Point3f) -> dai.Point3f:
-        point3f_copy = _copy_metadata(point3f)
-        point3f_copy.x = point3f.x
-        point3f_copy.y = point3f.y
-        point3f_copy.z = point3f.z
-        return point3f_copy
+        return dai.Point3f(x=point3f.x, y=point3f.y, z=point3f.z)
 
     def _copy_keypoint(keypoint: dai.Keypoint) -> dai.Keypoint:
-        keypoint_copy = _copy_metadata(keypoint)
-        keypoint_copy.imageCoordinates = _copy_point3f(keypoint.imageCoordinates)
-        keypoint_copy.confidence = keypoint.confidence
-        keypoint_copy.labelName = keypoint.labelName
-        return keypoint_copy
+        return dai.Keypoint(
+            coordinates=_copy_point3f(keypoint.imageCoordinates),
+            confidence=keypoint.confidence,
+            label=keypoint.label,
+            labelName=keypoint.labelName,
+        )
 
     def _copy_rotated_rect(rotated_rect: dai.RotatedRect) -> dai.RotatedRect:
-        rotated_rect_copy: dai.RotatedRect = _copy_metadata(rotated_rect)
-        rotated_rect_copy.center = _copy_point2f(rotated_rect.center)
-        rotated_rect_copy.size = _copy_size2f(rotated_rect.size)
-        rotated_rect_copy.angle = rotated_rect.angle
-        return rotated_rect_copy
+        return dai.RotatedRect(
+            center=_copy_point2f(rotated_rect.center),
+            size=_copy_size2f(rotated_rect.size),
+            angle=rotated_rect.angle,
+        )
 
     if isinstance(msg, dai.SegmentationMask):
         return _copy_segmentation_mask(msg)
