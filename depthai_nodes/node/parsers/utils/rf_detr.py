@@ -66,11 +66,10 @@ def compute_rfdetr_detections(
             )
 
         final_mask = np.full(input_shape, 255, dtype=np.uint8)
-        for i, (mask_logits, bbox) in enumerate(zip(masks, boxes_cxcywh)):
+        for i, mask_logits in enumerate(masks):
             resized_mask = process_single_mask_rfdetr(
                 mask_logits=mask_logits,
                 mask_conf=mask_conf,
-                bbox=bbox,
                 input_shape=input_shape,
             )
             foreground = resized_mask > 0
