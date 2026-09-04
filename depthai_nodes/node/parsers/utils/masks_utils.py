@@ -59,19 +59,25 @@ def process_single_mask(
     @return: Processed binary mask resized to `output_shape`.
     @rtype: np.ndarray
     """
+    _, mask_h, mask_w = protos.shape  # CHW
+    scaled_bbox = bbox * np.array([mask_w, mask_h, mask_w, mask_h])
+    logit_threshold = probability_to_logit_threshold(mask_conf)
+
     mask_logits = np.sum(protos * mask_coeff[..., np.newaxis, np.newaxis], axis=0)
+    # Replace logits outside the bounding box with zero before interpolation.
+    mask_logits = crop_mask(mask_logits, scaled_bbox)
     mask_logits = cv2.resize(
         mask_logits,
         (output_shape[1], output_shape[0]),
         interpolation=cv2.INTER_LINEAR,
     )
-    logit_threshold = probability_to_logit_threshold(mask_conf)
     mask = (mask_logits > logit_threshold).astype(np.uint8)
 
-    scaled_bbox = bbox * np.array(
+    # Enforce the bounding box because zero-filled pixels can pass thresholding.
+    scaled_output_bbox = bbox * np.array(
         [output_shape[1], output_shape[0], output_shape[1], output_shape[0]]
     )
-    return crop_mask(mask, scaled_bbox)
+    return crop_mask(mask, scaled_output_bbox)
 
 
 def get_segmentation_outputs(
@@ -101,7 +107,6 @@ def get_segmentation_outputs(
 def process_single_mask_rfdetr(
     mask_logits: np.ndarray,
     mask_conf: float,
-    bbox: np.ndarray,
     input_shape: tuple[int, int],
 ) -> np.ndarray:
     """Process a single RF-DETR instance segmentation mask.
@@ -110,9 +115,6 @@ def process_single_mask_rfdetr(
     @type mask_logits: np.ndarray
     @param mask_conf: Mask confidence threshold.
     @type mask_conf: float
-    @param bbox: A numpy array of bbox coordinates in (x_center, y_center, width,
-        height) normalized format.
-    @type bbox: np.ndarray
     @param input_shape: Target output mask shape as (height, width).
     @type input_shape: tuple[int, int]
     @return: Processed mask resized to the model input shape.
@@ -129,9 +131,4 @@ def process_single_mask_rfdetr(
         interpolation=cv2.INTER_LINEAR,
     )
     logit_threshold = probability_to_logit_threshold(mask_conf)
-    mask = (resized_mask_logits > logit_threshold).astype(np.uint8)
-
-    scaled_bbox = bbox * np.array(
-        [input_shape[1], input_shape[0], input_shape[1], input_shape[0]]
-    )
-    return crop_mask(mask, scaled_bbox)
+    return (resized_mask_logits > logit_threshold).astype(np.uint8)
