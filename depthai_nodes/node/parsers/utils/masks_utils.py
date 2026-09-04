@@ -2,8 +2,6 @@ import cv2
 import depthai as dai
 import numpy as np
 
-from depthai_nodes.node.parsers.utils import sigmoid
-
 
 def probability_to_logit_threshold(probability: float) -> float:
     """Convert a probability threshold into the equivalent logit threshold."""
@@ -61,16 +59,19 @@ def process_single_mask(
     @return: Processed binary mask resized to `output_shape`.
     @rtype: np.ndarray
     """
-    c, mh, mw = protos.shape  # CHW
-    scaled_bbox = bbox * np.array([mw, mh, mw, mh])
     mask_logits = np.sum(protos * mask_coeff[..., np.newaxis, np.newaxis], axis=0)
-    mask_logits = crop_mask(mask_logits, scaled_bbox)
     mask_logits = cv2.resize(
         mask_logits,
         (output_shape[1], output_shape[0]),
         interpolation=cv2.INTER_LINEAR,
     )
-    return (sigmoid(mask_logits) > mask_conf).astype(np.uint8)
+    logit_threshold = probability_to_logit_threshold(mask_conf)
+    mask = (mask_logits > logit_threshold).astype(np.uint8)
+
+    scaled_bbox = bbox * np.array(
+        [output_shape[1], output_shape[0], output_shape[1], output_shape[0]]
+    )
+    return crop_mask(mask, scaled_bbox)
 
 
 def get_segmentation_outputs(
@@ -122,11 +123,15 @@ def process_single_mask_rfdetr(
             f"RF-DETR mask logits should have shape (H, W), got {mask_logits.shape}."
         )
 
-    _ = bbox
     resized_mask_logits = cv2.resize(
         mask_logits,
         (input_shape[1], input_shape[0]),
         interpolation=cv2.INTER_LINEAR,
     )
     logit_threshold = probability_to_logit_threshold(mask_conf)
-    return (resized_mask_logits > logit_threshold).astype(np.uint8)
+    mask = (resized_mask_logits > logit_threshold).astype(np.uint8)
+
+    scaled_bbox = bbox * np.array(
+        [input_shape[1], input_shape[0], input_shape[1], input_shape[0]]
+    )
+    return crop_mask(mask, scaled_bbox)
