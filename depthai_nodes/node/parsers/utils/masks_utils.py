@@ -59,19 +59,18 @@ def process_single_mask(
     @return: Processed binary mask resized to `output_shape`.
     @rtype: np.ndarray
     """
+    _, mask_h, mask_w = protos.shape  # CHW
+    scaled_bbox = bbox * np.array([mask_w, mask_h, mask_w, mask_h])
+
     mask_logits = np.sum(protos * mask_coeff[..., np.newaxis, np.newaxis], axis=0)
+    mask_logits = crop_mask(mask_logits, scaled_bbox)
     mask_logits = cv2.resize(
         mask_logits,
         (output_shape[1], output_shape[0]),
         interpolation=cv2.INTER_LINEAR,
     )
     logit_threshold = probability_to_logit_threshold(mask_conf)
-    mask = (mask_logits > logit_threshold).astype(np.uint8)
-
-    scaled_bbox = bbox * np.array(
-        [output_shape[1], output_shape[0], output_shape[1], output_shape[0]]
-    )
-    return crop_mask(mask, scaled_bbox)
+    return (mask_logits > logit_threshold).astype(np.uint8)
 
 
 def get_segmentation_outputs(
