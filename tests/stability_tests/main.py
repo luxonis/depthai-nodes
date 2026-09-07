@@ -102,7 +102,7 @@ def main():
     if run_all:
         try:
             subprocess.run(
-                f'pytest ../ --duration {duration} -v --tb=short -r a --log-cli-level=DEBUG --color=yes -s -k "not test_creators and not test_messages"',
+                f'pytest ../ --duration {duration} -v --tb=short -r a --log-cli-level=DEBUG --color=yes -s -m "not e2e" -k "not test_creators and not test_messages"',
                 shell=True,
                 check=True,
             )

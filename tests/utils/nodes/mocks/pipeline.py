@@ -87,6 +87,9 @@ class PipelineMock:
         elif node_type == dai.node.DetectionParser:
             node = DetectionParserMock()
 
+        elif node_type.__module__ == "depthai.beta.node":
+            node = NativeParserMock(node_type)
+
         else:
 
             class NodeMock(node_type):
@@ -199,3 +202,13 @@ class DetectionParserMock:
     @property
     def runOnHost(self):
         return self._run_on_host
+
+
+class NativeParserMock(DetectionParserMock):
+    def __init__(self, node_type):
+        super().__init__()
+        self.node_type = node_type
+        self._input_size = None
+
+    def setInputSize(self, width, height):
+        self._input_size = (width, height)

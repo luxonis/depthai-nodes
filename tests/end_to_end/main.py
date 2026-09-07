@@ -97,6 +97,7 @@ def main():
 
     command = [
         "test_e2e.py",
+        "test_native_parsing_neural_network.py",
         f"--nn_archive_path={nn_archive_path}",
         f"--platform={rvc_platform}",
         "-v",
@@ -110,6 +111,7 @@ def main():
     if model:
         command = [
             "test_e2e.py",
+            "test_native_parsing_neural_network.py",
             f"--model={model}",
             f"--platform={rvc_platform}",
             "-v",
