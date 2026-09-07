@@ -12,7 +12,9 @@ def probability_to_logit_threshold(probability: float) -> float:
     return float(np.log(probability / (1.0 - probability)))
 
 
-def crop_mask(mask: np.ndarray, bbox: np.ndarray) -> np.ndarray:
+def crop_mask(
+    mask: np.ndarray, bbox: np.ndarray, fill_value: float | int = 0
+) -> np.ndarray:
     """It takes a mask and a bounding box, and returns a mask that is cropped to the
     bounding box.
 
@@ -21,6 +23,8 @@ def crop_mask(mask: np.ndarray, bbox: np.ndarray) -> np.ndarray:
     @param bbox: A numpy array of bbox coordinates in (x_center, y_center, width,
         height) format
     @type bbox: np.ndarray
+    @param fill_value: Value assigned to pixels outside the bounding box.
+    @type fill_value: float | int
     @return: A mask that is cropped to the bounding box
     @rtype: np.ndarray
     """
@@ -33,7 +37,8 @@ def crop_mask(mask: np.ndarray, bbox: np.ndarray) -> np.ndarray:
     r = np.arange(w).reshape(1, w)
     c = np.arange(h).reshape(h, 1)
 
-    return mask * ((r >= x1) * (r < x2) * (c >= y1) * (c < y2))
+    inside_bbox = (r >= x1) * (r < x2) * (c >= y1) * (c < y2)
+    return np.where(inside_bbox, mask, fill_value)
 
 
 def process_single_mask(
@@ -64,20 +69,17 @@ def process_single_mask(
     logit_threshold = probability_to_logit_threshold(mask_conf)
 
     mask_logits = np.sum(protos * mask_coeff[..., np.newaxis, np.newaxis], axis=0)
-    # Replace logits outside the bounding box with zero before interpolation.
-    mask_logits = crop_mask(mask_logits, scaled_bbox)
+    mask_logits = crop_mask(
+        mask_logits,
+        scaled_bbox,
+        fill_value=logit_threshold,
+    )
     mask_logits = cv2.resize(
         mask_logits,
         (output_shape[1], output_shape[0]),
         interpolation=cv2.INTER_LINEAR,
     )
-    mask = (mask_logits > logit_threshold).astype(np.uint8)
-
-    # Enforce the bounding box because zero-filled pixels can pass thresholding.
-    scaled_output_bbox = bbox * np.array(
-        [output_shape[1], output_shape[0], output_shape[1], output_shape[0]]
-    )
-    return crop_mask(mask, scaled_output_bbox)
+    return (mask_logits > logit_threshold).astype(np.uint8)
 
 
 def get_segmentation_outputs(
