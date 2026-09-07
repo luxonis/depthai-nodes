@@ -66,9 +66,15 @@ def process_single_mask(
     """
     _, mask_h, mask_w = protos.shape  # CHW
     scaled_bbox = bbox * np.array([mask_w, mask_h, mask_w, mask_h])
-    logit_threshold = probability_to_logit_threshold(mask_conf)
 
     mask_logits = np.sum(protos * mask_coeff[..., np.newaxis, np.newaxis], axis=0)
+    logit_threshold = probability_to_logit_threshold(mask_conf)
+    # OpenCV interpolation with infinite fill values produces NaNs at crop edges.
+    if mask_conf == 0:
+        logit_threshold = np.finfo(mask_logits.dtype).min
+    if mask_conf == 1:
+        logit_threshold = np.finfo(mask_logits.dtype).max
+
     mask_logits = crop_mask(
         mask_logits,
         scaled_bbox,
