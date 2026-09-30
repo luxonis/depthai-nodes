@@ -1,4 +1,8 @@
+import pytest
+
 from tests.end_to_end.pipeline_runner import get_platforms, run_pipeline
+
+pytestmark = pytest.mark.e2e
 
 NATIVE_PARSER_SMOKE_MODELS = [
     "luxonis/yunet:320x240",

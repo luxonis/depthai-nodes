@@ -79,7 +79,7 @@ The parser classes listed below are the host-side implementations provided by de
 - `HostParsingNeuralNetwork`: Creates a neural network with parser implementation(s) from depthai-nodes. Does not send out any messages itself.
 - `ParserGenerator`: Generates parser nodes from the supplied NN archive. `hostOnly=False` (the default) selects native DepthAI parsers, while `hostOnly=True` selects parsers implemented by depthai-nodes. Does not send out any messages itself.
 
-`hostOnly` selects the parser implementation, not its execution location. With `hostOnly=False`, native parsers run on the host for RVC2 and on-device for RVC4. Most native parser classes currently live under `dai.beta.node`; native detection and segmentation parsers live under `dai.node`.
+`hostOnly` selects the parser implementation, not its execution location. With `hostOnly=False`, native parsers run on-device for RVC4. On RVC2, non-detection native parsers and detection parsers that produce mask outputs run on the host; ordinary detection parsers, including SSD and YOLO, remain device-side. Most native parser classes currently live under `dai.beta.node`; native detection and segmentation parsers live under `dai.node`.
 
 ### Detection and Filtering
 
