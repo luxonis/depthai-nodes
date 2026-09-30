@@ -1,7 +1,6 @@
 import time
 from enum import Enum
 
-import cv2
 import numpy as np
 
 from depthai_nodes.logging import get_logger
@@ -737,7 +736,13 @@ def compute_yolo_detections(
         elif mode == seg_mode:
             if subtype == YOLOSubtype.V26:
                 mask_coeff = v26_seg_mask_coeffs[i]
-                mask = process_single_mask(v26_seg_protos, mask_coeff, mask_conf, bbox)
+                mask = process_single_mask(
+                    v26_seg_protos,
+                    mask_coeff,
+                    mask_conf,
+                    bbox,
+                    input_shape,
+                )
             else:
                 seg_coeff = other.astype(int)
                 hi, ai, xi, yi = seg_coeff
@@ -745,14 +750,13 @@ def compute_yolo_detections(
                     0, ai * protos_len : (ai + 1) * protos_len, yi, xi
                 ]
                 mask = process_single_mask(
-                    protos_output[0], mask_coeff, mask_conf, bbox
+                    protos_output[0],
+                    mask_coeff,
+                    mask_conf,
+                    bbox,
+                    input_shape,
                 )
-            resized_mask = cv2.resize(
-                mask,
-                (input_shape[1], input_shape[0]),
-                interpolation=cv2.INTER_NEAREST,
-            )
-            final_mask[resized_mask > 0] = i
+            final_mask[mask > 0] = i
 
     bboxes = np.array(bboxes)
     bboxes = np.clip(bboxes, 0, 1)

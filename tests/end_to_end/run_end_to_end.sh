@@ -49,6 +49,7 @@ export FLAGS
 export DEPTHAI_NODES_LEVEL="debug"
 export DEPTHAI_DEBUG="0"
 
+rm -rf venv
 python3.12 -m venv venv
 # shellcheck disable=SC1091
 source venv/bin/activate

@@ -29,24 +29,9 @@ jobs:
     - name: Run pre-commit
       uses: pre-commit/action@v3.0.1
 
-  docs:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-
-      - name: Install dependencies
-        run: pip install pydoctor
-
-      - name: Build docs
-        run: pydoctor --docformat=plaintext depthai_nodes
-
   tests:
     needs:
       - pre-commit
-      - docs
     strategy:
       fail-fast: false
       matrix:

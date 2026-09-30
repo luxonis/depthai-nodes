@@ -3,7 +3,9 @@ from typing import Any
 import cv2
 import numpy as np
 
-from depthai_nodes.node.parsers.utils import sigmoid
+from depthai_nodes.node.parsers.utils.masks_utils import (
+    probability_to_logit_threshold,
+)
 from depthai_nodes.node.parsers.utils.yolo import (
     decode_yolo_output,
 )
@@ -338,6 +340,7 @@ def process_masks(
     """
     num_results = parsed_results.shape[0]
     out_w, out_h = orig_shape[0], orig_shape[1]
+    logit_threshold = probability_to_logit_threshold(mask_conf)
 
     results_masks = np.empty((num_results, out_h, out_w), dtype=np.uint8)
     bboxes_int = parsed_results[:, :4].astype(int)
@@ -349,26 +352,26 @@ def process_masks(
     mask_resized = np.empty((out_h, out_w), dtype=np.float32)
 
     for idx in range(num_results):
-        mask_small = sigmoid(np.sum(protos * mask_coeffs[idx][:, None, None], axis=0))
+        mask_logits = np.sum(protos * mask_coeffs[idx][:, None, None], axis=0)
         cv2.resize(
-            mask_small,
+            mask_logits,
             (out_w, out_h),
             dst=mask_resized,
-            interpolation=cv2.INTER_NEAREST,
+            interpolation=cv2.INTER_LINEAR,
         )
+        np.greater(mask_resized, logit_threshold, out=results_masks[idx])
 
         x1, y1, x2, y2 = bboxes_clamped[idx]
+        current_mask = results_masks[idx]
 
         if y1 > 0:
-            mask_resized[:y1, :] = 0
+            current_mask[:y1, :] = 0
         if y2 < out_h:
-            mask_resized[y2:, :] = 0
+            current_mask[y2:, :] = 0
         if x1 > 0:
-            mask_resized[:, :x1] = 0
+            current_mask[:, :x1] = 0
         if x2 < out_w:
-            mask_resized[:, x2:] = 0
-
-        np.greater(mask_resized, mask_conf, out=results_masks[idx])
+            current_mask[:, x2:] = 0
 
     return results_masks
 
