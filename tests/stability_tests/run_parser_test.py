@@ -90,10 +90,8 @@ def test_parser(parser_generator, model: str, parser_name: str, duration: int):
         exit(9)
 
     # Create and build parser
-    parser = parser_generator.build(
-        nnArchive=nn_archive,
-        hostOnly=parser_name == "SegmentationParser",
-    )[0]
+    # Stability tests validate the parser implementations from depthai-nodes.
+    parser = parser_generator.build(nnArchive=nn_archive, hostOnly=True)[0]
     parser.input._queue.duration = duration
 
     # Load and send test data
