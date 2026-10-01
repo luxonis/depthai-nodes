@@ -1,7 +1,6 @@
 import depthai as dai
 import pytest
 
-from depthai_nodes import Keypoints
 from depthai_nodes.message.creators import create_keypoints_message
 
 KPTS = [[0.1, 0.2], [0.3, 0.4]]
@@ -11,8 +10,8 @@ SCORES = [0.9, 0.8]
 def test_valid_2d_keypoints():
     message = create_keypoints_message(KPTS, SCORES)
 
-    assert isinstance(message, Keypoints)
-    assert isinstance(message.keypoints_list, dai.KeypointsList)
+    assert isinstance(message, dai.beta.Keypoints)
+    assert isinstance(message.keypointsList, dai.KeypointsList)
     assert len(message.getKeypoints()) == 2
     for i, kp in enumerate(message.getKeypoints()):
         assert kp.imageCoordinates.x == pytest.approx(KPTS[i][0])
@@ -26,7 +25,7 @@ def test_valid_3d_keypoints():
     scores = [0.9, 0.8]
     message = create_keypoints_message(keypoints, scores)
 
-    assert isinstance(message, Keypoints)
+    assert isinstance(message, dai.beta.Keypoints)
     assert len(message.getKeypoints()) == 2
     for i, kp in enumerate(message.getKeypoints()):
         assert kp.imageCoordinates.x == pytest.approx(keypoints[i][0])
@@ -38,7 +37,7 @@ def test_valid_3d_keypoints():
 def test_valid_keypoints_no_scores():
     message = create_keypoints_message(KPTS)
 
-    assert isinstance(message, Keypoints)
+    assert isinstance(message, dai.beta.Keypoints)
     assert len(message.getKeypoints()) == 2
     for kp in message.getKeypoints():
         assert kp.confidence == -1

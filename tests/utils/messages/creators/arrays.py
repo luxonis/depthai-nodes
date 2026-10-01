@@ -16,7 +16,7 @@ def create_img_frame(
 
 
 def create_map(map: np.ndarray = ARRAYS["2d"]):
-    return creators.create_map_message(map=map.astype(np.float32))
+    return creators.create_map_message(map_array=map.astype(np.float32))
 
 
 def create_segmentation(mask: np.ndarray = ARRAYS["2d"]):

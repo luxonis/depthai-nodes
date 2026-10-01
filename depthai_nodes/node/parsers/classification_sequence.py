@@ -35,7 +35,7 @@ class ClassificationSequenceParser(ClassificationParser):
 
     Output Message/s
     ----------------
-    **Type**: Classifications(dai.Buffer)
+    **Type**: dai.beta.Classifications
 
     **Description**:
         An object with attributes `classes` and `scores`. `classes` is a list containing the predicted classes. `scores` is a list of corresponding probability scores.

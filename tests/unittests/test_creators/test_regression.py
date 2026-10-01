@@ -1,6 +1,6 @@
+import depthai as dai
 import pytest
 
-from depthai_nodes import Prediction, Predictions
 from depthai_nodes.message.creators import create_regression_message
 
 
@@ -8,19 +8,19 @@ def test_valid_input():
     predictions = [0.1, 0.2, 0.3]
     message = create_regression_message(predictions)
 
-    assert isinstance(message, Predictions)
+    assert isinstance(message, dai.beta.Predictions)
     assert len(message.predictions) == 3
-    assert all(isinstance(pred, Prediction) for pred in message.predictions)
-    assert message.predictions[0].prediction == 0.1
-    assert message.predictions[1].prediction == 0.2
-    assert message.predictions[2].prediction == 0.3
+    assert all(isinstance(pred, dai.beta.Prediction) for pred in message.predictions)
+    assert message.predictions[0].prediction == pytest.approx(0.1)
+    assert message.predictions[1].prediction == pytest.approx(0.2)
+    assert message.predictions[2].prediction == pytest.approx(0.3)
 
 
 def test_empty_list():
     predictions = []
     message = create_regression_message(predictions)
 
-    assert isinstance(message, Predictions)
+    assert isinstance(message, dai.beta.Predictions)
     assert len(message.predictions) == 0
 
 

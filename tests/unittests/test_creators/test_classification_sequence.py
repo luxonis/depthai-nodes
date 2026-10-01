@@ -1,7 +1,7 @@
+import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes import Classifications
 from depthai_nodes.message.creators import (
     create_classification_sequence_message,
 )
@@ -21,7 +21,7 @@ PROBS = [
 def test_valid_input():
     message = create_classification_sequence_message(CLASSES, SCORES)
 
-    assert isinstance(message, Classifications)
+    assert isinstance(message, dai.beta.Classifications)
     assert message.classes == CLASSES
     assert np.array_equal(message.scores, np.array(CORRECT_SCORES, dtype=np.float32))
 

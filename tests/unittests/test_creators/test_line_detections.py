@@ -1,7 +1,7 @@
+import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes import Line, Lines
 from depthai_nodes.message.creators import create_line_detection_message
 
 LINE = np.array([[0.1, 0.2, 0.3, 0.4]])
@@ -13,15 +13,15 @@ def test_valid_input():
     scores = np.array([0.9, 0.8])
     message = create_line_detection_message(lines, scores)
 
-    assert isinstance(message, Lines)
+    assert isinstance(message, dai.beta.Lines)
     assert len(message.lines) == 2
 
     for i, line in enumerate(message.lines):
-        assert isinstance(line, Line)
-        assert np.allclose(line.start_point.x, lines[i][0], atol=1e-3)
-        assert np.allclose(line.start_point.y, lines[i][1], atol=1e-3)
-        assert np.allclose(line.end_point.x, lines[i][2], atol=1e-3)
-        assert np.allclose(line.end_point.y, lines[i][3], atol=1e-3)
+        assert isinstance(line, dai.beta.Line)
+        assert np.allclose(line.startPoint.x, lines[i][0], atol=1e-3)
+        assert np.allclose(line.startPoint.y, lines[i][1], atol=1e-3)
+        assert np.allclose(line.endPoint.x, lines[i][2], atol=1e-3)
+        assert np.allclose(line.endPoint.y, lines[i][3], atol=1e-3)
         assert np.allclose(line.confidence, scores[i], atol=1e-3)
 
 
@@ -30,7 +30,7 @@ def test_empty_lines():
     scores = np.array([])
     message = create_line_detection_message(lines, scores)
 
-    assert isinstance(message, Lines)
+    assert isinstance(message, dai.beta.Lines)
     assert len(message.lines) == 0
 
 

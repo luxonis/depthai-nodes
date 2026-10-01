@@ -30,7 +30,7 @@ class KeypointParser(BaseParser):
 
     Output Message/s
     ----------------
-    **Type**: Keypoints
+    **Type**: dai.beta.Keypoints
 
     **Description**: Output containing 2D or 3D keypoints.
 

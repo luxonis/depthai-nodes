@@ -4,6 +4,8 @@ from typing import Generic, TypeVar
 
 import depthai as dai
 
+from .utils.copy_message import copy_message
+
 T = TypeVar("T")
 
 
@@ -62,9 +64,9 @@ class Collection(dai.Buffer, Generic[T]):
     def copy(self) -> Collection:
         new_list = []
         for item in self.items:
-            new_list.append(item.copy())
+            new_list.append(copy_message(item))
         new_collection = Collection(new_list)
         new_collection.setSequenceNum(self.getSequenceNum())
         new_collection.setTimestampDevice(self.getTimestampDevice())
         new_collection.setTimestamp(self.getTimestamp())
-        return Collection(new_list)
+        return new_collection

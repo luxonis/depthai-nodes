@@ -1,16 +1,16 @@
 import depthai as dai
 
-from depthai_nodes import Cluster, Clusters
 
-
-def create_cluster_message(clusters: list[list[list[float | int]]]) -> Clusters:
+def create_cluster_message(
+    clusters: list[list[list[float | int]]],
+) -> dai.beta.Clusters:
     """Create a DepthAI message for clusters.
 
     @param clusters: List of clusters. Each cluster is a list of points with x and y
         coordinates.
     @type clusters: list[list[list[float | int]]]
     @return: Clusters message containing the detected clusters.
-    @rtype: Clusters
+    @rtype: dai.beta.Clusters
     @raise TypeError: If the clusters are not a list.
     @raise TypeError: If each cluster is not a list.
     @raise TypeError: If each point is not a list.
@@ -35,14 +35,14 @@ def create_cluster_message(clusters: list[list[list[float | int]]]) -> Clusters:
                         f"All items in points must be of type int or float, got {type(value)}"
                     )
 
-    message = Clusters()
+    message = dai.beta.Clusters()
     temp = []
     for i, cluster in enumerate(clusters):
-        temp_cluster = Cluster()
+        temp_cluster = dai.beta.Cluster()
         temp_cluster.label = i
-        temp_cluster.points = [
-            dai.Point2f(float(point[0]), float(point[1])) for point in cluster
-        ]
+        temp_cluster.points = dai.VectorPoint2f(
+            [dai.Point2f(float(point[0]), float(point[1])) for point in cluster]
+        )
 
         temp.append(temp_cluster)
 

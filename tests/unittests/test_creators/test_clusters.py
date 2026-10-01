@@ -1,6 +1,6 @@
+import depthai as dai
 import pytest
 
-from depthai_nodes import Cluster, Clusters
 from depthai_nodes.message.creators import (
     create_cluster_message,
 )
@@ -10,9 +10,9 @@ def test_valid_input():
     clusters = [[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]]
     message = create_cluster_message(clusters)
 
-    assert isinstance(message, Clusters)
+    assert isinstance(message, dai.beta.Clusters)
     assert len(message.clusters) == 2
-    assert all(isinstance(cluster, Cluster) for cluster in message.clusters)
+    assert all(isinstance(cluster, dai.beta.Cluster) for cluster in message.clusters)
     assert message.clusters[0].label == 0
     assert message.clusters[1].label == 1
     assert len(message.clusters[0].points) == 2
@@ -58,7 +58,7 @@ def test_empty_clusters():
     clusters = []
     message = create_cluster_message(clusters)
 
-    assert isinstance(message, Clusters)
+    assert isinstance(message, dai.beta.Clusters)
     assert len(message.clusters) == 0
 
 
@@ -66,6 +66,6 @@ def test_empty_cluster():
     clusters = [[]]
     message = create_cluster_message(clusters)
 
-    assert isinstance(message, Clusters)
+    assert isinstance(message, dai.beta.Clusters)
     assert len(message.clusters) == 1
     assert len(message.clusters[0].points) == 0

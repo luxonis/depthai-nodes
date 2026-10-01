@@ -21,7 +21,7 @@ class RegressionParser(BaseParser):
 
     Output Message/s
     ----------------
-    **Type**: Predictions
+    **Type**: dai.beta.Predictions
 
     **Description**: Message containing the prediction(s).
     """

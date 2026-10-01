@@ -1,10 +1,10 @@
 import depthai as dai
 import numpy as np
 
-from depthai_nodes import Line, Lines
 
-
-def create_line_detection_message(lines: np.ndarray, scores: np.ndarray):
+def create_line_detection_message(
+    lines: np.ndarray, scores: np.ndarray
+) -> dai.beta.Lines:
     """Create a DepthAI message for a line detection.
 
     @param lines: Detected lines of shape (N,4) meaning [...,[x_start, y_start, x_end, y_end],...].
@@ -13,7 +13,7 @@ def create_line_detection_message(lines: np.ndarray, scores: np.ndarray):
     @type scores: np.ndarray
 
     @return: Message containing the lines and confidence scores of detected lines.
-    @rtype: Lines
+    @rtype: dai.beta.Lines
 
     @raise ValueError: If the lines are not a numpy array.
     @raise ValueError: If the lines are not of shape (N,4).
@@ -57,12 +57,12 @@ def create_line_detection_message(lines: np.ndarray, scores: np.ndarray):
 
     line_detections = []
     for i, line in enumerate(lines):
-        line_detection = Line()
-        line_detection.start_point = dai.Point2f(line[0], line[1])
-        line_detection.end_point = dai.Point2f(line[2], line[3])
+        line_detection = dai.beta.Line()
+        line_detection.startPoint = dai.Point2f(line[0], line[1])
+        line_detection.endPoint = dai.Point2f(line[2], line[3])
         line_detection.confidence = float(scores[i])
         line_detections.append(line_detection)
 
-    lines_msg = Lines()
+    lines_msg = dai.beta.Lines()
     lines_msg.lines = line_detections
     return lines_msg
