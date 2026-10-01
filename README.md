@@ -14,6 +14,8 @@
 
 DepthAI Nodes provides reusable nodes and helpers for **DepthAI v3** pipelines, including neural network post-processing, image utilities, message handling, and runtime integrations. Inference helpers support both native DepthAI parsers and Python host parsers.
 
+For complete Python API documentation, see the [DepthAINodes documentation and API reference](https://docs.luxonis.com/software-v3/ai-inference/inference/depthai-nodes/depthai-nodes-api-reference/).
+
 ## 📜 Table of Contents
 
 - [🌟 Overview](#overview)
