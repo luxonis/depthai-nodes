@@ -215,6 +215,27 @@ def test_remap_pixels(kind, operation, through_node):
         assert remapped.detections[0].confidence == message.detections[0].confidence
 
 
+@pytest.mark.parametrize("kind", ["map", "segmentation", "detections"])
+@pytest.mark.parametrize("crop", [False, True])
+def test_remap_pixels_with_different_transformation_dimensions(kind, crop):
+    pixels = np.arange(48).reshape(6, 8)
+    source = dai.ImgTransformation().setSourceSize(4, 2).setSize(4, 2)
+    target = dai.ImgTransformation().setSourceSize(4, 2).setSize(4, 2)
+    expected = pixels[::3, ::2]
+    if crop:
+        target.addCrop(1, 0, 2, 2)
+        expected = expected[:, 1:3]
+    message = _pixel_message(kind, pixels)
+    message.setTransformation(source)
+    original = _pixels(message).copy()
+
+    remapped = remap_message(message, None, target)
+
+    np.testing.assert_array_equal(_pixels(remapped), expected)
+    np.testing.assert_array_equal(_pixels(message), original)
+    assert remapped.getTransformation().getSize() == target.getSize()
+
+
 def test_remap_detections_without_segmentation_mask():
     message = create_detection_message(
         bboxes=np.array([[0.5, 0.5, 0.5, 0.5]]), scores=np.array([0.9])

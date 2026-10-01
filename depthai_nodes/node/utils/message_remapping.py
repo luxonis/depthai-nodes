@@ -68,7 +68,13 @@ def _remap_pixels(
     source: dai.ImgTransformation,
     target: dai.ImgTransformation,
 ) -> np.ndarray:
-    matrix = np.array(target.getMatrix()) @ np.array(source.getMatrixInv())
+    height, width = pixels.shape[:2]
+    source_width, source_height = source.getSize()
+    # Pixel arrays may have a different resolution than their transformation.
+    pixel_to_source = np.diag([source_width / width, source_height / height, 1])
+    matrix = (
+        np.array(target.getMatrix()) @ np.array(source.getMatrixInv()) @ pixel_to_source
+    )
     # Preserve the previous background values and discrete mask labels.
     border_value = 255 if pixels.dtype == np.uint8 else -1
     return cv2.warpPerspective(
