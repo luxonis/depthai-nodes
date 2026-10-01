@@ -124,6 +124,11 @@ class MPPalmDetectionParser(DetectionParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("MPPalmDetectionParser run started")
         while self.isRunning():
             try:
@@ -145,6 +150,20 @@ class MPPalmDetectionParser(DetectionParser):
             self.emit(output, bboxes, scores, angles, labels, label_names)
 
     def extract(self, output: dai.NNData) -> tuple[np.ndarray, np.ndarray]:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            Palm box/landmark predictions reshaped to ``(N, 18)`` and flattened scores,
+            selected by their final tensor dimensions.
+
+        Raises:
+            ValueError: If no tensors are available or box tensors cannot be reshaped to
+                18 values per anchor.
+        """
         all_tensors = output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {all_tensors}")
 
@@ -179,6 +198,29 @@ class MPPalmDetectionParser(DetectionParser):
         scale: int,
         label_names: list[str] | None = None,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[str] | None]:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            bboxes: Per-anchor palm box and landmark predictions.
+            scores: Per-anchor palm score logits.
+            anchors: Precomputed anchor coordinates used to decode model predictions.
+            conf_threshold: Minimum detection confidence used to filter candidates.
+            iou_threshold: Intersection-over-union threshold for non-maximum
+                suppression.
+            max_det: Maximum number of detection candidates to retain or consider during
+                suppression.
+            scale: Side length of the square model input in pixels.
+            label_names: Optional class-name lookup indexed by predicted class ID.
+
+        Returns:
+            Normalized center-XY/width/height boxes, confidence scores, angles in
+            degrees, zero-valued class IDs, and optional class names.
+
+        Note:
+            Uses
+            `depthai_nodes.node.parsers.utils.medipipe.compute_mediapipe_palm_detections`;
+            see that helper for tensor layout and validation details.
+        """
         return compute_mediapipe_palm_detections(
             bboxes,
             scores,
@@ -199,6 +241,20 @@ class MPPalmDetectionParser(DetectionParser):
         labels: np.ndarray,
         label_names: list[str] | None,
     ) -> None:
+        """Create a ``dai.ImgDetections`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            bboxes: Normalized center-XY/width/height boxes returned by ``compute()``.
+            scores: Confidence scores corresponding to the computed payload.
+            angles: Rotation angles in degrees corresponding to the boxes.
+            labels: Integer class IDs corresponding to the boxes.
+            label_names: Optional class names corresponding to the detections.
+        """
         detections_msg = create_detection_message(
             bboxes=bboxes,
             scores=scores,

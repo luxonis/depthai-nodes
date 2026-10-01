@@ -11,26 +11,23 @@ TParser = TypeVar("TParser", bound=BaseParser | dai.DeviceNode)
 
 
 class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
-    Propeties = dai.node.NeuralNetwork.Properties
-    """Node that wraps the NeuralNetwork node and adds parsing capabilities. A
-    NeuralNetwork node is created with it's appropriate parser nodes for each model
-    head. Parser nodes are chosen based on the supplied NNArchive.
+    """Build inference with native parsers for each NN Archive head.
 
-    Attributes
-    ----------
-    input : Node.Input
-        Neural network input.
-    inputs : Node.InputMap
-        Neural network inputs.
-    out : Node.Output
-        Neural network output. Can be used only when there is exactly one model head. Otherwise, getOutput method must be used.
-    outputs: Node.Output
-        Neural network output having dai.MessageGroup as a payload which contains outputs of all model heads and can be accessed as a dictionary with str(model head index) as a key. Can be used only when there is at least two model heads. Otherwise, out property must be used.
-    passthrough : Node.Output
-        Neural network passthrough.
-    passthroughs : Node.OutputMap
-        Neural network passthroughs.
+    ``build()`` accepts an NN Archive, model description, or Model Zoo slug. Parser
+    outputs preserve their native message types. Use ``HostParsingNeuralNetwork``
+    when Python parser implementations are needed.
+
+    Attributes:
+        input: Primary neural-network input.
+        inputs: Neural-network input map.
+        out: Parser output, available only for a single-head model.
+        outputs: Synchronized ``dai.MessageGroup`` output for a multi-head model,
+            keyed by string head indexes.
+        passthrough: Primary network passthrough stream.
+        passthroughs: Network passthrough stream map.
     """
+
+    Propeties = dai.node.NeuralNetwork.Properties
 
     def __init__(self, *args, **kwargs) -> None:
         """Initialize the wrapper and create the internal neural-network node."""
@@ -112,6 +109,10 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
 
         Returns:
             Parser node matching the requested head.
+
+        Raises:
+            KeyError: If the model-head index is unavailable.
+            TypeError: If the parser does not match the requested parser type.
         """
         index = 0
         parser_type = None
@@ -146,7 +147,17 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         return parser
 
     def getOutput(self, head: int) -> dai.Node.Output:
-        """Return the output stream for the specified model head."""
+        """Select an individual model-head output.
+
+        Args:
+            head: Zero-based head index from the archive.
+
+        Returns:
+            Parser output for the selected head.
+
+        Raises:
+            KeyError: If the head is not available.
+        """
         if head not in self._parsers:
             raise KeyError(
                 f"Head {head} is not available. Available heads for the model {self._getModelName()} are {list(self._parsers.keys())}."
@@ -154,29 +165,74 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         return self._parsers[head].out
 
     def setBackend(self, setBackend: str) -> None:
-        """Set the backend used by the underlying neural-network node."""
+        """Forward configuration to the underlying native NeuralNetwork node.
+
+        Args:
+            setBackend: Backend identifier accepted by DepthAI.
+
+        Note:
+            Backend and platform validation is performed by DepthAI. This forwarding
+            method does not rebuild parser nodes.
+        """
         self._nn.setBackend(setBackend)
 
     def setBackendProperties(self, setBackendProperties: dict[str, str]) -> None:
-        """Set backend-specific properties on the underlying neural-network node."""
+        """Forward configuration to the underlying native NeuralNetwork node.
+
+        Args:
+            setBackendProperties: Backend-specific string properties.
+
+        Note:
+            Backend and platform validation is performed by DepthAI. This forwarding
+            method does not rebuild parser nodes.
+        """
         self._nn.setBackendProperties(setBackendProperties)
 
     def setBlob(self, blob: Path | dai.OpenVINO.Blob) -> None:
-        """Set the blob used by the underlying neural-network node."""
+        """Forward configuration to the underlying native NeuralNetwork node.
+
+        Args:
+            blob: OpenVINO blob or path accepted by DepthAI.
+
+        Note:
+            Backend and platform validation is performed by DepthAI. This forwarding
+            method does not rebuild parser nodes.
+        """
         self._nn.setBlob(blob)
 
     def setBlobPath(self, path: Path) -> None:
-        """Set the blob path used by the underlying neural-network node."""
+        """Forward configuration to the underlying native NeuralNetwork node.
+
+        Args:
+            path: Local OpenVINO blob path.
+
+        Note:
+            Backend and platform validation is performed by DepthAI. This forwarding
+            method does not rebuild parser nodes.
+        """
         self._nn.setBlobPath(path)
 
     def setFromModelZoo(
         self, description: dai.NNModelDescription, useCached: bool
     ) -> None:
-        """Load the model from the model zoo into the underlying NN node."""
+        """Load a model into the native network without rebuilding parsers.
+
+        Args:
+            description: Model Zoo description passed to DepthAI.
+            useCached: Whether DepthAI may reuse a cached model.
+        """
         self._nn.setFromModelZoo(description, useCached)
 
     def setModelPath(self, modelPath: Path) -> None:
-        """Set the model path used by the underlying neural-network node."""
+        """Forward configuration to the underlying native NeuralNetwork node.
+
+        Args:
+            modelPath: Local model path accepted by the native node.
+
+        Note:
+            Backend and platform validation is performed by DepthAI. This forwarding
+            method does not rebuild parser nodes.
+        """
         self._nn.setModelPath(modelPath)
 
     def setNNArchive(
@@ -196,19 +252,53 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
         self._updateParsers(nnArchive)
 
     def setNumInferenceThreads(self, numThreads: int) -> None:
-        """Sets the number of inference threads of the NeuralNetwork node."""
+        """Forward configuration to the underlying native NeuralNetwork node.
+
+        Args:
+            numThreads: Requested number of parallel inference threads.
+
+        Note:
+            Backend and platform validation is performed by DepthAI. This forwarding
+            method does not rebuild parser nodes.
+        """
         self._nn.setNumInferenceThreads(numThreads)
 
     def setNumNCEPerInferenceThread(self, numNCEPerThread: int) -> None:
-        """Sets the number of NCE per inference thread of the NeuralNetwork node."""
+        """Forward configuration to the underlying native NeuralNetwork node.
+
+        Args:
+            numNCEPerThread: Number of neural compute engines allocated per inference
+                thread.
+
+        Note:
+            Backend and platform validation is performed by DepthAI. This forwarding
+            method does not rebuild parser nodes.
+        """
         self._nn.setNumNCEPerInferenceThread(numNCEPerThread)
 
     def setNumPoolFrames(self, numFrames: int) -> None:
-        """Sets the number of pool frames of the NeuralNetwork node."""
+        """Forward configuration to the underlying native NeuralNetwork node.
+
+        Args:
+            numFrames: Number of frames in the network output pool.
+
+        Note:
+            Backend and platform validation is performed by DepthAI. This forwarding
+            method does not rebuild parser nodes.
+        """
         self._nn.setNumPoolFrames(numFrames)
 
     def setNumShavesPerInferenceThread(self, numShavesPerInferenceThread: int) -> None:
-        """Sets the number of shaves per inference thread of the NeuralNetwork node."""
+        """Forward configuration to the underlying native NeuralNetwork node.
+
+        Args:
+            numShavesPerInferenceThread: Number of SHAVE cores allocated per inference
+                thread.
+
+        Note:
+            Backend and platform validation is performed by DepthAI. This forwarding
+            method does not rebuild parser nodes.
+        """
         self._nn.setNumShavesPerInferenceThread(numShavesPerInferenceThread)
 
     def build(
@@ -227,6 +317,10 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
 
         Returns:
             The configured node instance.
+
+        Raises:
+            ValueError: If ``nnSource`` is not an archive, model description, or Model
+                Zoo slug, or its parser configuration is invalid.
         """
 
         platform = self.getParentPipeline().getDefaultDevice().getPlatformAsString()

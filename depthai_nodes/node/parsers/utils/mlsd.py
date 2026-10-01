@@ -88,7 +88,21 @@ def compute_mlsd_lines(
     score_thr: float,
     dist_thr: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Decode MLSD outputs into lines and scores."""
+    """Decode line segments from M-LSD displacement and heat tensors.
+
+    Args:
+        tpMap: Four-dimensional line-displacement tensor in NCHW layout.
+        heat: Heat tensor used to rank line-center candidates.
+        topk_n: Maximum number of line-center candidates to examine.
+        score_thr: Minimum candidate score.
+        dist_thr: Minimum line length in output-map pixels.
+
+    Returns:
+        Normalized endpoint coordinates of shape ``(N, 4)`` and float32 line scores.
+
+    Raises:
+        ValueError: If ``tpMap`` is not four-dimensional.
+    """
     if len(tpMap.shape) != 4:
         raise ValueError("Invalid shape of the tpMap tensor. Should be 4D.")
 

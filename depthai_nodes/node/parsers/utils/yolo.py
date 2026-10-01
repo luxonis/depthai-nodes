@@ -569,7 +569,49 @@ def compute_yolo_detections(
     v26_protos: np.ndarray | None = None,
     v26_pose_kpts: np.ndarray | None = None,
 ) -> dict[str, np.ndarray | list[str] | int | None]:
-    """Decode YOLO detection, pose, or segmentation outputs into message payloads."""
+    """Decode YOLO detection, pose, or segmentation tensors.
+
+    Args:
+        subtype: YOLO variant controlling tensor decoding.
+        layer_names: Output layer names used to distinguish detection, pose, and
+            segmentation modes.
+        outputs_values: Detection tensors ordered by output head.
+        strides: Output head strides. If omitted, use the subtype-specific defaults.
+        conf_threshold: Minimum detection confidence used to filter candidates.
+        n_classes: Number of object classes encoded in the detection tensors.
+        iou_threshold: Intersection-over-union threshold for non-maximum suppression.
+        max_det: Maximum retained YOLO26 detections. Other subtypes use the
+            suppression defaults in ``decode_yolo_output``.
+        anchors: Precomputed anchor coordinates used to decode model predictions.
+        n_keypoints: Number of keypoints encoded per prediction.
+        label_names: Optional class-name lookup indexed by predicted class ID.
+        keypoint_label_names: Optional names for the keypoints in each detection.
+        keypoint_edges: Optional pairs of keypoint indexes defining skeleton edges.
+        input_shape: Model input image shape as ``(height, width)``.
+        kpts_outputs: Per-head pose tensors for non-YOLO26 models.
+        masks_outputs_values: Mask coefficient tensors ordered to match the detection
+            heads.
+        protos_output: Batched prototype tensor with shape ``(1, channels, height,
+            width)``.
+        protos_len: Number of prototype channels used by each mask coefficient vector.
+        mask_conf: Probability threshold used to binarize mask logits.
+        v26_mask_coeffs: YOLO26 mask coefficients aligned with detection queries.
+        v26_protos: YOLO26 prototype masks.
+        v26_pose_kpts: YOLO26 pose coordinates and confidences aligned with detection
+            queries.
+
+    Returns:
+        A dictionary containing ``mode`` (0 detection, 1 pose, 2 segmentation),
+        normalized ``bboxes``, ``scores``, ``labels``, ``label_names``, ``keypoints``,
+        ``keypoints_scores``, ``keypoint_label_names``, ``keypoint_edges``, and
+        ``masks``. Boxes use center-XY/width/height. A segmentation mask contains int16
+        detection indexes and -1 background; other modes return ``None`` for masks.
+
+    Raises:
+        ValueError: If required YOLO26 input geometry or detection outputs are missing,
+            class/keypoint counts disagree with tensor shapes, or the mask instance
+            count exceeds int16 capacity.
+    """
     det_mode = 0
     kpts_mode = 1
     seg_mode = 2

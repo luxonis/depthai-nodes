@@ -35,6 +35,15 @@ class ApplyColormap(BaseHostNode):
         colormapValue: int | np.ndarray = cv2.COLORMAP_JET,
         maxValue: int = 0,
     ) -> None:
+        """Initialize the image-processing node.
+
+        Args:
+            colormapValue: OpenCV colormap enum (e.g. cv2.COLORMAP_JET) or a custom
+                OpenCV-compatible colormap LUT. Default is cv2.COLORMAP_JET.
+            maxValue: Maximum value used for normalization. If set to 0, the maximum
+                value
+                is determined per-frame. Default is 0.
+        """
         super().__init__()
 
         self.out.setPossibleDatatypes([(dai.DatatypeEnum.ImgFrame, True)])
@@ -51,6 +60,10 @@ class ApplyColormap(BaseHostNode):
 
         Args:
             colormapValue: OpenCV colormap enum value or a custom OpenCV-compatible LUT.
+
+        Raises:
+            ValueError: If a custom colormap is not a uint8 array of shape ``(256, 1,
+                3)``.
         """
         self._colormap = self._make_colormap(colormapValue)
         if isinstance(colormapValue, int):
@@ -64,6 +77,9 @@ class ApplyColormap(BaseHostNode):
         Args:
             maxValue: Maximum input value used for normalization. 0 keeps per-frame
                 normalization.
+
+        Raises:
+            ValueError: If the ceiling is not a non-negative integer.
         """
         self._max_value = self._validate_max_value(maxValue)
 
@@ -81,7 +97,16 @@ class ApplyColormap(BaseHostNode):
         return self
 
     def process(self, frame: dai.Buffer) -> None:
-        """Convert the incoming map-like message into a colorized image frame."""
+        """Colorize a numeric map and emit an image with source metadata.
+
+        Args:
+            frame: RAW ImgFrame, beta Map2D, SegmentationMask, or ImgDetections with an
+                instance mask. Mask label 255 is background.
+
+        Raises:
+            TypeError: If an ImgFrame does not use a RAW pixel format.
+            ValueError: If the message type is unsupported.
+        """
         self._logger.debug("Processing new input")
         input_map = self._get_input_map(frame)
         color_map = self._colorize(input_map)

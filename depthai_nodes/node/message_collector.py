@@ -12,34 +12,20 @@ TCollected = TypeVar("TCollected", bound=dai.Buffer)
 
 
 class MessageCollector(dai.node.ThreadedHostNode, Generic[TCollected]):
-    """Threaded host node that collects multiple data messages from a single input
-    matched by timestamp.
+    """Batch timestamp-matched messages from a single input stream.
 
-    The node receives one input stream:
+    A group contains messages within half a frame interval of its first timestamp.
+    The first newer message outside that tolerance emits the preceding group;
+    older out-of-window messages are discarded. Output metadata comes from the
+    last message added to the group. There is no explicit final flush when the
+    stream stops, so the final group needs a newer message to be emitted.
 
-    - **data_input**: messages to be collected.
-
-    For each reference timestamp, the node waits until the number of gathered
-    data messages equals ``wait_count_fn(reference)``. Once ready, it emits a
-    ``depthai_nodes.Collection`` message containing the gathered items.
-
-    The default ``wait_count_fn`` uses ``len(reference.detections)``, which works
-    out-of-the-box for messages that expose a ``detections`` attribute (e.g.
-    ``dai.ImgDetections``).
-
-    Inputs:
-
-    * ``_data_input : dai.Node.Input``: Stream of data messages to be gathered (type
-      ``TGathered``).
-
-    Outputs:
-
-    * ``out : dai.Node.Output``: Emits ``depthai_nodes.Collection`` objects with:
-      ``items`` (list of data).
+    Attributes:
+        out: Stream of ``Collection`` messages containing the matched items.
     """
 
     def __init__(self) -> None:
-        """Initializes the GatherData node."""
+        """Create the collection input and output ports."""
         super().__init__()
         self._camera_fps: int | None = None
 
@@ -57,10 +43,13 @@ class MessageCollector(dai.node.ThreadedHostNode, Generic[TCollected]):
         return self._out
 
     def setCameraFps(self, fps: int) -> None:
-        """Set the camera frame rate used for timestamp matching.
+        """Set the frame rate used to compute timestamp matching tolerance.
 
         Args:
-            fps: Positive camera frame rate used for matching tolerance and polling.
+            fps: Positive frame rate; the matching window is ``1 / (2 * fps)`` seconds.
+
+        Raises:
+            ValueError: If the frame rate is not positive.
         """
         if fps <= 0:
             raise ValueError(f"Camera FPS must be positive, got {fps}")
@@ -72,15 +61,18 @@ class MessageCollector(dai.node.ThreadedHostNode, Generic[TCollected]):
         cameraFps: int,
         inputData: dai.Node.Output,
     ) -> "MessageCollector[TCollected]":
-        """Connect the data and reference streams used for gathering.
+        """Connect the data stream and set its timestamp tolerance.
 
         Args:
-            cameraFps: Camera frame rate used to derive timestamp matching tolerance and
-                polling interval.
-            inputData: Upstream output producing the data messages to gather.
+            cameraFps: Positive frame rate. Matching tolerance is half its frame
+                interval.
+            inputData: Input stream of messages to batch.
 
         Returns:
-            The configured node instance.
+            This collector node.
+
+        Raises:
+            ValueError: If the frame rate is not positive.
         """
         self.setCameraFps(cameraFps)
         inputData.link(self._data_input)
@@ -88,7 +80,11 @@ class MessageCollector(dai.node.ThreadedHostNode, Generic[TCollected]):
         return self
 
     def run(self) -> None:
-        """Poll both inputs, match messages by timestamp, and emit ready groups."""
+        """Read the input stream and emit groups when newer timestamps arrive.
+
+        Raises:
+            ValueError: If the camera frame rate has not been configured.
+        """
         self._logger.debug("MessageCollector run started")
         if not self._camera_fps:
             raise ValueError(

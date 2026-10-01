@@ -9,7 +9,30 @@ def create_keypoints_message(
     label_names: list[str] | None = None,
     edges: list[tuple[int, int]] | None = None,
 ) -> dai.beta.Keypoints:
-    """Create a native ``dai.beta.Keypoints`` message."""
+    """Create keypoints with optional confidence filtering and skeleton edges.
+
+    Args:
+        keypoints: Array or list of points of shape ``(N, 2)`` or ``(N, 3)``. Lists must
+            contain floating-point coordinates. Values are copied without scaling or
+            clipping; 2D points receive Z=0. Empty input is supported.
+        scores: Optional floating-point confidences in [0, 1], one per point. Omitted
+            scores produce confidence -1.
+        confidence_threshold: Optional float in [0, 1]. Points below it are removed only
+            when scores are supplied.
+        label_names: Optional list of strings with one entry available for every point
+            retained from the input.
+        edges: Optional pairs of original point indexes. Edges incident to removed or
+            absent points are dropped, and retained indexes are remapped.
+
+    Returns:
+        Native keypoints message containing retained coordinates, confidences, names,
+        and edges.
+
+    Raises:
+        ValueError: If points, scores, threshold, names, or edges fail type, shape, or
+            value validation.
+        IndexError: If ``label_names`` has no entry for a retained input point.
+    """
 
     if not isinstance(keypoints, (np.ndarray, list)):
         raise ValueError(

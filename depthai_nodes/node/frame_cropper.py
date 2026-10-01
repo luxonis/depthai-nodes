@@ -162,11 +162,26 @@ class FrameCropper(BaseThreadedHostNode):
         padding: float = 0.0,
         syncThreshold: timedelta = timedelta(milliseconds=10),
     ) -> "FrameCropper":
-        """Configure cropping from an ImgDetections stream.
+        """Select detection-driven cropping before calling ``build()``.
 
-        In this mode the node strictly timestamp-synchronizes images and detections,
-        generates ImageManipConfig messages per detection (via Script), and outputs one
-        cropped ImgFrame per detection. ``padding`` expands the crop region.
+        Args:
+            inputImgDetections: Output stream of ``dai.ImgDetections`` to synchronize
+                with image frames.
+            outputSize: Crop output size as ``(width, height)`` pixels.
+            resizeMode: ImageManip resize policy applied to each crop.
+            padding: Normalized padding added to each side of the detection region.
+            syncThreshold: Maximum timestamp difference used to synchronize detections
+                and frames.
+
+        Returns:
+            This node for fluent configuration.
+
+        Raises:
+            RuntimeError: If either crop configuration mode was already selected.
+
+        Note:
+            Produces one crop per detection. The image stream is connected later by
+            ``build()``.
         """
         if self._version_selected:
             raise RuntimeError(
@@ -194,16 +209,23 @@ class FrameCropper(BaseThreadedHostNode):
         waitForConfig: bool,
         syncThreshold: timedelta | None = None,
     ) -> "FrameCropper":
-        """Configure cropping from a stream of precomputed ImageManipConfig groups.
+        """Select cropping from groups of ImageManip configuration messages.
 
-        Expects ``inputManipConfigs`` to output dai.MessageGroup messages where each
-        value is an ImageManipConfig. An on-device Script node pairs each config with
-        the current frame and forwards them to ImageManip. When ``waitForConfig`` is
-        true, images and config groups are strictly timestamp-synchronized using
-        ``syncThreshold``. When false, the latest config group is reused for every frame
-        and no Sync is used.
+        Args:
+            inputManipConfigs: Stream of ``dai.MessageGroup`` objects whose values are
+                ``dai.ImageManipConfig`` messages. Group keys are arbitrary.
+            maxOutputFrameSize: Maximum output image buffer size in bytes.
+            waitForConfig: If true, synchronize each frame with a configuration group.
+                Otherwise, reuse the latest group for subsequent frames.
+            syncThreshold: Optional timestamp tolerance. May only be set when
+                ``waitForConfig`` is true.
 
-        Key naming is arbitrary; all values in the MessageGroup are treated as configs.
+        Returns:
+            This node for fluent configuration.
+
+        Raises:
+            RuntimeError: If a configuration mode was already selected, or a sync
+                threshold is supplied without waiting for configuration.
         """
         if self._version_selected:
             raise RuntimeError(
@@ -226,11 +248,17 @@ class FrameCropper(BaseThreadedHostNode):
         self,
         inputImage: dai.Node.Output,
     ) -> "FrameCropper":
-        """Build the internal pipeline and set output size / resize behavior.
+        """Connect image input and construct the configured crop pipeline.
 
-        Requires that exactly one configuration path was selected via
-        ``fromImgDetections`` or ``fromManipConfigs`` before calling. Returns ``self``
-        for fluent chaining.
+        Args:
+            inputImage: Image stream to crop. Call ``fromImgDetections()`` or
+                ``fromManipConfigs()`` first.
+
+        Returns:
+            This node, with cropped frames available on ``out``.
+
+        Raises:
+            RuntimeError: If no crop configuration mode has been selected.
         """
         if not self._version_selected:
             raise RuntimeError(

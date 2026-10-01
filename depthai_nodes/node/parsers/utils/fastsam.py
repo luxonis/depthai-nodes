@@ -399,7 +399,28 @@ def compute_fastsam_mask(
     point_label: int | None,
     bbox: tuple[int, int, int, int] | None,
 ) -> tuple[np.ndarray, int]:
-    """Decode FastSAM outputs into a merged segmentation mask and mask count."""
+    """Decode FastSAM outputs and apply the configured mask prompt.
+
+    Args:
+        outputs_values: Detection tensors ordered by output head.
+        masks_outputs_values: Mask coefficient tensors ordered to match the detection
+            heads.
+        protos_output: Batched prototype tensor with shape ``(1, channels, height,
+            width)``.
+        protos_len: Number of prototype channels used by each mask coefficient vector.
+        conf_threshold: Minimum detection confidence used to filter candidates.
+        n_classes: Number of object classes encoded in the detection tensors.
+        iou_threshold: Intersection-over-union threshold for non-maximum suppression.
+        mask_conf: Probability threshold used to binarize mask logits.
+        prompt: Mask selection mode: ``"everything"``, ``"bbox"``, or ``"point"``.
+        points: Prompt point in image pixel coordinates for point selection.
+        point_label: Point-prompt label used to include or exclude matching masks.
+        bbox: Bounding-box prompt in image pixel coordinates.
+
+    Returns:
+        A pair of the merged instance mask and the number of selected masks. No selected
+        masks produces a background mask with value -1 and count 0.
+    """
     width = outputs_values[0].shape[3] * 8
     height = outputs_values[0].shape[2] * 8
     input_shape = (width, height)

@@ -67,10 +67,12 @@ class RFDETRParser(BaseParser):
 
     @property
     def input(self) -> dai.Node.Input:
+        """Input port accepting ``dai.NNData``."""
         return self._input
 
     @property
     def out(self) -> dai.Node.Output:
+        """Output port carrying parsed messages."""
         return self._out
 
     def setConfidenceThreshold(self, threshold: float) -> None:
@@ -183,6 +185,11 @@ class RFDETRParser(BaseParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("RFDETRParser run started")
 
         while self.isRunning():
@@ -207,6 +214,19 @@ class RFDETRParser(BaseParser):
     def extract(
         self, output: dai.NNData
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            Float32 box, class-logit, and optional mask tensors in configured layer
+            order. Without a mask layer, the third value is ``None``.
+
+        Raises:
+            ValueError: If the selected outputs do not contain two or three layers.
+        """
         layer_names = self.output_layer_names or output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layer_names}")
 
@@ -241,6 +261,30 @@ class RFDETRParser(BaseParser):
         input_shape: tuple[int, int] | None,
         masks_tensor: np.ndarray | None = None,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[str] | None, np.ndarray | None]:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            boxes_tensor: Batched normalized center-XY/width/height predictions.
+            logits_tensor: Class logits of shape ``(1, queries, classes)``.
+            conf_threshold: Minimum detection confidence used to filter candidates.
+            max_det: Maximum number of detection candidates to retain or consider during
+                suppression.
+            label_names: Optional class-name lookup indexed by predicted class ID.
+            mask_conf: Probability threshold used to binarize mask logits.
+            input_shape: Model input image shape as ``(height, width)``.
+            masks_tensor: Optional per-query mask logits, ordered like the box
+                predictions.
+
+        Returns:
+            Boxes in normalized center-XY/width/height format, scores, integer class
+            IDs, optional class names, and an optional HW uint8 instance mask. Mask
+            values index returned detections; 255 is background. Segmentation retains at
+            most 255 instances, and higher-confidence masks win overlaps.
+
+        Note:
+            Uses `depthai_nodes.node.parsers.utils.rf_detr.compute_rfdetr_detections`;
+            see that helper for tensor layout and validation details.
+        """
         return compute_rfdetr_detections(
             boxes_tensor,
             logits_tensor,
@@ -262,6 +306,21 @@ class RFDETRParser(BaseParser):
         label_names_list: list[str] | None,
         final_mask: np.ndarray | None,
     ) -> None:
+        """Create a ``dai.ImgDetections`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            boxes: Normalized center-XY/width/height boxes returned by ``compute()``.
+            scores: Confidence scores corresponding to the computed payload.
+            labels: Integer class IDs corresponding to the boxes.
+            label_names_list: Optional class names corresponding to the detections.
+            final_mask: Optional instance mask whose IDs index the returned detections;
+                255 is background.
+        """
         message = create_detection_message(
             bboxes=boxes,
             scores=scores,

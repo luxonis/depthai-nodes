@@ -17,6 +17,14 @@ class ImgFrameOverlay(BaseHostNode):
     """
 
     def __init__(self, alpha: float = 0.5, preserveBackground: bool = False) -> None:
+        """Initialize the image-processing node.
+
+        Args:
+            alpha: Background weight between 0 and 1. The default of 0.5 gives
+                background
+                and foreground equal weight.
+            preserveBackground: Preserve background pixels where the foreground is zero.
+        """
         super().__init__()
         self.setAlpha(alpha)
         self.setPreserveBackground(preserveBackground)
@@ -81,7 +89,13 @@ class ImgFrameOverlay(BaseHostNode):
         return self
 
     def process(self, frame1: dai.Buffer, frame2: dai.Buffer) -> None:
-        """Overlay the foreground frame onto the background frame."""
+        """Blend a synchronized background and foreground frame and emit the result.
+
+        Args:
+            frame1: Background image frame.
+            frame2: Foreground image frame, resized to the background dimensions before
+                blending.
+        """
         self._logger.debug("Processing new input")
         assert isinstance(frame1, dai.ImgFrame)
         assert isinstance(frame2, dai.ImgFrame)

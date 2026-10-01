@@ -176,7 +176,24 @@ def compute_scrfd_detections(
     anchors: dict[int, np.ndarray],
     label_names: list[str] | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[str] | None]:
-    """Decode SCRFD outputs into final detection payloads."""
+    """Decode SCRFD heads into normalized face detections.
+
+    Args:
+        bboxes_concatenated: Box-distance tensors ordered by feature-pyramid stride.
+        scores_concatenated: Confidence tensors ordered by feature-pyramid stride.
+        kps_concatenated: Keypoint-offset tensors ordered by feature-pyramid stride.
+        feat_stride_fpn: Feature-pyramid strides corresponding to the tensor lists.
+        input_size: Model input size as ``(width, height)``.
+        num_anchors: Number of anchors per feature-map location.
+        score_threshold: Minimum face confidence.
+        nms_threshold: Intersection-over-union threshold for suppression.
+        anchors: Mapping from each feature stride to its precomputed anchor centers.
+        label_names: Optional class-name lookup indexed by predicted class ID.
+
+    Returns:
+        Normalized center-XY/width/height boxes, scores, keypoints, zero-valued face
+        class IDs, and optional mapped class names.
+    """
     bboxes, scores, keypoints = decode_scrfd(
         bboxes_concatenated=bboxes_concatenated,
         scores_concatenated=scores_concatenated,

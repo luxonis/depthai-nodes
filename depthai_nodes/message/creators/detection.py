@@ -95,43 +95,39 @@ def create_detection_message(
     keypoint_edges: list[tuple[int, int]] | None = None,
     masks: np.ndarray | None = None,
 ) -> dai.ImgDetections:
-    """Create a DepthAI message for object detection. The message contains the bounding
-    boxes in X_center, Y_center, Width, Height format with optional angles, labels and
-    detected object keypoints and masks.
+    """Create native detections with optional keypoints and an instance mask.
 
     Args:
-        bboxes: Bounding boxes of detected objects in (x_center, y_center, width,
-            height) format.
-        scores: Confidence scores of the detected objects of shape (N,).
-        angles: Angles of detected objects expressed in degrees. Defaults to None.
-        labels: Labels of detected objects of shape (N,). Defaults to None.
-        label_names: Names of the labels (classes)
-        keypoints: Keypoints of detected objects of shape (N, n_keypoints, dim) where
-            dim is 2 or 3. Defaults to None.
-        keypoints_scores: Confidence scores of detected keypoints of shape (N,
-            n_keypoints). Defaults to None.
-        keypoint_label_names: Labels of keypoints. Defaults to None.
-        keypoint_edges: Connection pairs of keypoints. Defaults to None. Example:
-            [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
-            1, keypoint 1 is connected to keypoint 2, etc.
-        masks: Masks of detected objects of shape (H, W). Defaults to None.
+        bboxes: NumPy array of normalized ``(N, 4)`` center-XY/width/height boxes. An
+            empty array returns an empty detection message immediately.
+        scores: NumPy array of shape ``(N,)`` with detection confidences.
+        angles: Optional angle per detection in degrees within [-360, 360].
+        labels: Optional NumPy array of class IDs, one per detection. Values are
+            converted to integers.
+        label_names: Optional names in detection order, one per detection. Names are
+            assigned only when ``labels`` is supplied. This is not a class-ID lookup
+            table.
+        keypoints: Optional coordinates of shape ``(N, K, 2)`` or ``(N, K, 3)``.
+            Two-dimensional points receive Z=0.
+        keypoints_scores: Optional floating-point confidences of shape ``(N, K)`` in [0,
+            1]; requires ``keypoints``.
+        keypoint_label_names: Optional list of keypoint names. Currently validated but
+            not attached to the output keypoints.
+        keypoint_edges: Optional integer index pairs defining the skeleton for each
+            detection.
+        masks: Optional HW instance-ID mask, converted to uint8. IDs correspond to
+            detection indexes; reserve 255 for background. Conversion does not validate
+            representability.
 
     Returns:
-        Message containing the bounding boxes, labels, confidence scores, and keypoints
-        of detected objects.
+        Native detection message with the supplied payload. Caller sets timestamps,
+        sequence number, and transformation.
 
     Raises:
-        ValueError: If the bboxes are not a numpy array. If the bboxes are not of shape
-            (N,4). If the scores are not a numpy array. If the scores are not of shape
-            (N,). If the scores do not have the same length as bboxes. If the angles do
-            not have the same length as bboxes. If the angles are not between -360 and
-            360. If the labels are not a list of integers. If the labels do not have the
-            same length as bboxes. If the keypoints are not a numpy array of shape (N,
-            M, 2 or 3). If the masks are not a 3D numpy array of shape (img_height,
-            img_width, N) or (N, img_height, img_width). If the keypoints scores are not
-            a numpy array. If the keypoints scores are not of shape [n_detections,
-            n_keypoints, 1]. If the keypoints scores do not have the same length as
-            keypoints. If the keypoints scores are not between 0 and 1.
+        ValueError: If supplied arrays or optional metadata fail type, length, shape, or
+            range checks.
+        IndexError: If a per-detection name or score array cannot be indexed as
+            required.
     """
 
     if not isinstance(bboxes, np.ndarray):

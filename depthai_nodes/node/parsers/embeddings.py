@@ -59,6 +59,11 @@ class EmbeddingsParser(BaseParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("EmbeddingsParser run started")
         while self.isRunning():
             try:
@@ -71,6 +76,19 @@ class EmbeddingsParser(BaseParser):
             self.emit(computed)
 
     def extract(self, output: dai.NNData) -> dai.NNData:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            The same NNData message, after checking that exactly one embedding output is
+            selected.
+
+        Raises:
+            AssertionError: If the selected embedding output count is not one.
+        """
         output_names = (
             [self.output_layer_name]
             if self.output_layer_name is not None
@@ -95,9 +113,28 @@ class EmbeddingsParser(BaseParser):
 
     @staticmethod
     def compute(output: dai.NNData) -> dai.NNData:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            output: Embedding payload, typically a ``dai.NNData`` message.
+
+        Returns:
+            The same object passed as ``output``; no copy or normalization is performed.
+
+        Note:
+            Uses
+            `depthai_nodes.node.parsers.utils.embeddings.compute_embeddings_output`; see
+            that helper for tensor layout and validation details.
+        """
         return compute_embeddings_output(output)
 
     def emit(self, output: dai.NNData) -> None:
+        """Forward the same NNData message on ``out``, preserving its metadata.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+        """
         output.setSequenceNum(output.getSequenceNum())
         output.setTimestamp(output.getTimestamp())
         output.setTimestampDevice(output.getTimestampDevice())

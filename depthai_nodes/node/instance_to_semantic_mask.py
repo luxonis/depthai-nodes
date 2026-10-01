@@ -6,13 +6,12 @@ from depthai_nodes.node.base_host_node import BaseHostNode
 
 
 class InstanceToSemanticMask(BaseHostNode):
-    """Converts a dai.ImgDetections instance mask into a semantic mask by mapping unique
-    instance IDs to detection class labels.
+    """Replace instance-mask IDs with detection class labels.
 
-    Attributes:
-        detections (``dai.ImgDetections``): Input detections with instance segmentation
-            masks.
-        out (``dai.ImgDetections``): Output detections with semantic segmentation masks.
+    The input and output are ``dai.ImgDetections`` messages. A copied message is
+    emitted; its mask is replaced when both a mask and detections are present.
+    Class labels must be representable in uint8, with 255 reserved for background.
+    Missing or empty masks pass through on the copied message unchanged.
     """
 
     def __init__(self) -> None:
@@ -20,12 +19,27 @@ class InstanceToSemanticMask(BaseHostNode):
         self.out.setPossibleDatatypes([(dai.DatatypeEnum.ImgDetections, True)])
 
     def build(self, detections: dai.Node.Output) -> "InstanceToSemanticMask":
-        """Connect the detections stream to the semantic-mask converter."""
+        """Connect a detection stream with instance masks.
+
+        Args:
+            detections: Output producing ``dai.ImgDetections``.
+
+        Returns:
+            This node.
+        """
         self.link_args(detections)
         return self
 
     def process(self, msg: dai.Buffer) -> None:
-        """Convert instance IDs in the segmentation mask into class labels."""
+        """Copy detections and convert valid mask indexes to class labels.
+
+        Args:
+            msg: Detections with a mask of non-negative instance indexes. Values of 255
+                or indexes beyond the detection list become background.
+
+        Raises:
+            TypeError: If the input is not ``dai.ImgDetections``.
+        """
         if not isinstance(msg, dai.ImgDetections):
             raise TypeError(f"Expected dai.ImgDetections input type, got {type(msg)}.")
 

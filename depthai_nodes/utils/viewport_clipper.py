@@ -13,6 +13,14 @@ class ViewportClipper:
         TOP = 0b1000
 
     def __init__(self, min_x: float, max_x: float, min_y: float, max_y: float):
+        """Define rectangular clipping bounds.
+
+        Args:
+            min_x: Left coordinate of the viewport.
+            max_x: Right coordinate of the viewport.
+            min_y: Top coordinate of the viewport.
+            max_y: Bottom coordinate of the viewport.
+        """
         self._min_x = min_x
         self._max_x = max_x
         self._min_y = min_y

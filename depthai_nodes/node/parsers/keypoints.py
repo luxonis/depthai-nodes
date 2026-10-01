@@ -189,6 +189,11 @@ class KeypointParser(BaseParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("KeypointParser run started")
         if self.n_keypoints is None:
             raise ValueError("Number of keypoints must be specified!")
@@ -208,6 +213,19 @@ class KeypointParser(BaseParser):
             self.emit(output, keypoints)
 
     def extract(self, output: dai.NNData) -> np.ndarray:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            Dequantized float32 keypoint tensor.
+
+        Raises:
+            ValueError: If no output name is configured and the message does not contain
+                exactly one layer, or configured class requirements are not met.
+        """
         layers = output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layers}")
         if len(layers) == 1 and self.output_layer_name == "":
@@ -228,6 +246,22 @@ class KeypointParser(BaseParser):
         n_keypoints: int,
         scale_factor: float = 1.0,
     ) -> np.ndarray:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            keypoints: Model keypoint tensor.
+            n_keypoints: Number of keypoints encoded per prediction.
+            scale_factor: Nonzero divisor used to convert model coordinates to
+                normalized coordinates.
+
+        Returns:
+            Float32 coordinates of shape ``(n_keypoints, 2)`` or ``(n_keypoints, 3)``,
+            divided by ``scale_factor`` and clipped to [0, 1].
+
+        Note:
+            Uses `depthai_nodes.node.parsers.utils.keypoints.compute_keypoints`; see
+            that helper for tensor layout and validation details.
+        """
         return compute_keypoints(
             keypoints,
             n_keypoints=n_keypoints,
@@ -235,6 +269,16 @@ class KeypointParser(BaseParser):
         )
 
     def emit(self, output: dai.NNData, keypoints: np.ndarray) -> None:
+        """Create a ``dai.beta.Keypoints`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            keypoints: Normalized keypoint coordinates returned by ``compute()``.
+        """
         msg = create_keypoints_message(
             keypoints, edges=self.edges, label_names=self.label_names
         )

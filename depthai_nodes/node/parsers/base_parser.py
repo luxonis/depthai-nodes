@@ -28,6 +28,8 @@ class BaseParser(dai.node.ThreadedHostNode, metaclass=BaseMeta):
     """
 
     def __init__(self) -> None:
+        """Create NNData input and parsed-message output ports and initialize
+        logging."""
         super().__init__()
         self._input = self.createInput()
         self._out = self.createOutput()
@@ -36,22 +38,31 @@ class BaseParser(dai.node.ThreadedHostNode, metaclass=BaseMeta):
     @property
     @abstractmethod
     def input(self) -> dai.Node.Input:
+        """Input port accepting neural-network output messages."""
         return self._input
 
     @property
     @abstractmethod
     def out(self) -> dai.Node.Output:
+        """Output port carrying parsed native DepthAI messages."""
         return self._out
 
     @input.setter
     def input(self, node: dai.Node.Input) -> None:
-        """Linking point to which the Neural Network's output is linked."""
+        """Replace the stored parser port.
+
+        Args:
+            node: Input port to store as the parser input.
+        """
         self._input = node
 
     @out.setter
     def out(self, node: dai.Node.Output) -> None:
-        """Output node to which the processed network results are sent in the form of a
-        DepthAI message."""
+        """Replace the stored parser port.
+
+        Args:
+            node: Output port to store as the parsed-message output.
+        """
         self._out = node
 
     @abstractmethod

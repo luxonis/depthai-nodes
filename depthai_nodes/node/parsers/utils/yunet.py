@@ -305,7 +305,29 @@ def compute_yunet_detections(
     nms_fn: Callable[..., np.ndarray],
     top_left_wh_to_xywh_fn: Callable[[np.ndarray], np.ndarray],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[str] | None]:
-    """Decode YuNet outputs into final detection payloads."""
+    """Decode YuNet tensors, filter scores, and suppress overlapping faces.
+
+    Args:
+        input_size: Model input size as ``(width, height)``.
+        loc: Per-anchor box and five-landmark offsets.
+        conf: Per-anchor class-confidence tensor.
+        iou: Per-anchor IoU confidence tensor.
+        conf_threshold: Minimum detection confidence used to filter candidates.
+        iou_threshold: Intersection-over-union threshold for non-maximum suppression.
+        max_det: Maximum number of detection candidates to retain or consider during
+            suppression.
+        anchors: Precomputed anchor coordinates used to decode model predictions.
+        label_names: Optional class-name lookup indexed by predicted class ID.
+        nms_fn: Suppression callable accepting boxes, scores, confidence/IoU thresholds,
+            and ``max_det``; returns retained indexes.
+        top_left_wh_to_xywh_fn: Callable converting top-left XY/width/height boxes to
+            center-XY/width/height.
+
+    Returns:
+        Normalized center-XY/width/height boxes, five normalized XY landmarks per face,
+        scores, zero-valued class IDs, and optional class names. No candidates produces
+        empty arrays.
+    """
     bboxes, keypoints, scores = decode_and_prune_detections(
         input_size=input_size,
         loc=loc,

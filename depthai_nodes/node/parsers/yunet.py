@@ -183,6 +183,11 @@ class YuNetParser(DetectionParser):
         return self._cached_anchors
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("YuNetParser run started")
         while self.isRunning():
             try:
@@ -207,6 +212,21 @@ class YuNetParser(DetectionParser):
             self.emit(output, bboxes, keypoints, scores, labels, label_names)
 
     def extract(self, output: dai.NNData) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            The localization, class-confidence, and IoU tensors, in that order. Missing
+            configured names are inferred from unique ``loc``, ``conf``, and ``iou``
+            prefixes.
+
+        Raises:
+            ValueError: If a configured layer is absent or inferred layer prefixes are
+                missing or ambiguous.
+        """
         output_layer_names = output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {output_layer_names}")
 
@@ -293,6 +313,34 @@ class YuNetParser(DetectionParser):
         nms_fn: Callable[..., np.ndarray],
         top_left_wh_to_xywh_fn: Callable[[np.ndarray], np.ndarray],
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[str] | None]:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            input_size: Model input size as ``(width, height)``.
+            loc: Per-anchor box and five-landmark offsets.
+            conf: Per-anchor class-confidence tensor.
+            iou: Per-anchor IoU confidence tensor.
+            conf_threshold: Minimum detection confidence used to filter candidates.
+            iou_threshold: Intersection-over-union threshold for non-maximum
+                suppression.
+            max_det: Maximum number of detection candidates to retain or consider during
+                suppression.
+            anchors: Precomputed anchor coordinates used to decode model predictions.
+            label_names: Optional class-name lookup indexed by predicted class ID.
+            nms_fn: Suppression callable accepting boxes, scores, confidence/IoU
+                thresholds, and ``max_det``; returns retained indexes.
+            top_left_wh_to_xywh_fn: Callable converting top-left XY/width/height boxes
+                to center-XY/width/height.
+
+        Returns:
+            Normalized center-XY/width/height boxes, five normalized XY landmarks per
+            face, scores, zero-valued class IDs, and optional class names. No candidates
+            produces empty arrays.
+
+        Note:
+            Uses `depthai_nodes.node.parsers.utils.yunet.compute_yunet_detections`; see
+            that helper for tensor layout and validation details.
+        """
         return compute_yunet_detections(
             input_size=input_size,
             loc=loc,
@@ -316,6 +364,20 @@ class YuNetParser(DetectionParser):
         labels: np.ndarray,
         label_names: list[str] | None,
     ) -> None:
+        """Create a ``dai.ImgDetections`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            bboxes: Normalized center-XY/width/height boxes returned by ``compute()``.
+            keypoints: Normalized keypoint coordinates returned by ``compute()``.
+            scores: Confidence scores corresponding to the computed payload.
+            labels: Integer class IDs corresponding to the boxes.
+            label_names: Optional class names corresponding to the detections.
+        """
         detections_message = create_detection_message(
             bboxes=bboxes,
             scores=scores,

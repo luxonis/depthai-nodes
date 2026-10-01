@@ -16,6 +16,8 @@ from depthai_nodes.logging import get_logger
 
 @runtime_checkable
 class HasDetections(Protocol):
+    """Protocol for references exposing a list of detections."""
+
     @property
     def detections(self) -> list:
         """Return the detections used to derive the default wait count."""
@@ -105,6 +107,9 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
 
         Args:
             fps: Positive camera frame rate used for matching tolerance and polling.
+
+        Raises:
+            ValueError: If the frame rate is not positive.
         """
         if fps <= 0:
             raise ValueError(f"Camera FPS must be positive, got {fps}")
@@ -112,7 +117,12 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         self._logger.debug(f"Camera FPS set to {fps}")
 
     def setWaitCountFn(self, fn: Callable[[TReference], int]) -> None:
-        """Set the callback that returns the expected item count per reference."""
+        """Set the expected gathered-item count for each reference.
+
+        Args:
+            fn: Callback accepting the reference message and returning the number of
+                items to wait for. A count of zero emits an empty group immediately.
+        """
         self._wait_count_fn = fn
 
     def build(

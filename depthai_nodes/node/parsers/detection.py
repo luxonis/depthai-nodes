@@ -115,6 +115,11 @@ class DetectionParser(BaseParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("DetectionParser run started")
         while self.isRunning():
             try:
@@ -133,6 +138,20 @@ class DetectionParser(BaseParser):
             self.emit(output, bboxes, scores)
 
     def extract(self, output: dai.NNData) -> tuple[np.ndarray, np.ndarray]:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            A pair of boxes reshaped to ``(N, 4)`` and flattened scores. The box tensor
+            is identified by its final dimension of four.
+
+        Raises:
+            ValueError: If exactly two tensors are not available, or boxes and scores
+                cannot be identified.
+        """
         layers = output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layers}")
         if len(layers) != 2:
@@ -166,6 +185,26 @@ class DetectionParser(BaseParser):
         iou_threshold: float,
         max_det: int,
     ) -> tuple[np.ndarray, np.ndarray]:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            bboxes: Bounding boxes of shape ``(N, 4)`` in ``[xmin, ymin, xmax, ymax]``
+                format.
+            scores: Confidence scores of shape ``(N,)``.
+            conf_threshold: Minimum detection confidence used to filter candidates.
+            iou_threshold: Intersection-over-union threshold for non-maximum
+                suppression.
+            max_det: Maximum number of detection candidates to retain or consider during
+                suppression.
+
+        Returns:
+            Retained center-XY/width/height boxes and corresponding scores. Coordinates
+            retain their input units. Both arrays are empty if no boxes survive.
+
+        Note:
+            Uses `depthai_nodes.node.parsers.utils.detection.compute_detection_outputs`;
+            see that helper for tensor layout and validation details.
+        """
         return compute_detection_outputs(
             bboxes,
             scores,
@@ -175,6 +214,17 @@ class DetectionParser(BaseParser):
         )
 
     def emit(self, output: dai.NNData, bboxes: np.ndarray, scores: np.ndarray) -> None:
+        """Create a ``dai.ImgDetections`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            bboxes: Normalized center-XY/width/height boxes returned by ``compute()``.
+            scores: Confidence scores corresponding to the computed payload.
+        """
         message = create_detection_message(
             bboxes=bboxes, scores=scores, label_names=self.label_names
         )

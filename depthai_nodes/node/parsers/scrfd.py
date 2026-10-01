@@ -161,6 +161,11 @@ class SCRFDParser(DetectionParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("SCRFDParser run started")
         while self.isRunning():
             try:
@@ -190,6 +195,19 @@ class SCRFDParser(DetectionParser):
     def extract(
         self, output: dai.NNData
     ) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            Lists of box, score, and keypoint tensors in configured stride order, shaped
+            ``(N, 4)``, ``(N,)``, and ``(N, 10)`` per stride.
+
+        Raises:
+            ValueError: If a configured stride has no score, box, or keypoint layer.
+        """
         scores_concatenated = []
         bboxes_concatenated = []
         kps_concatenated = []
@@ -240,6 +258,16 @@ class SCRFDParser(DetectionParser):
 
     @staticmethod
     def compute(**kwargs):
+        """Decode SCRFD arrays without sending a message.
+
+        Args:
+            **kwargs: Keyword arguments accepted by
+                `depthai_nodes.node.parsers.utils.scrfd.compute_scrfd_detections`.
+
+        Returns:
+            Normalized center-XY/width/height boxes, scores, keypoints, zero-valued face
+            class IDs, and optional mapped class names.
+        """
         return compute_scrfd_detections(**kwargs)
 
     def emit(
@@ -251,6 +279,20 @@ class SCRFDParser(DetectionParser):
         labels: np.ndarray,
         label_names: list[str] | None,
     ) -> None:
+        """Create a ``dai.ImgDetections`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            bboxes: Normalized center-XY/width/height boxes returned by ``compute()``.
+            scores: Confidence scores corresponding to the computed payload.
+            keypoints: Normalized keypoint coordinates returned by ``compute()``.
+            labels: Integer class IDs corresponding to the boxes.
+            label_names: Optional class names corresponding to the detections.
+        """
         message = create_detection_message(
             bboxes=bboxes,
             scores=scores,

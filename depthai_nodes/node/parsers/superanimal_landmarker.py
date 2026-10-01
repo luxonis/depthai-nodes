@@ -80,6 +80,11 @@ class SuperAnimalParser(KeypointParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("SuperAnimalParser run started")
         while self.isRunning():
             try:
@@ -92,6 +97,19 @@ class SuperAnimalParser(KeypointParser):
             self.emit(output, keypoints, scores)
 
     def extract(self, output: dai.NNData) -> np.ndarray:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            Dequantized float32 heatmaps in the model tensor layout.
+
+        Raises:
+            ValueError: If no output name is configured and the message does not contain
+                exactly one layer, or configured class requirements are not met.
+        """
         layers = output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layers}")
         if len(layers) == 1 and self.output_layer_name == "":
@@ -111,6 +129,22 @@ class SuperAnimalParser(KeypointParser):
         *,
         scale_factor: float,
     ) -> tuple[np.ndarray, np.ndarray]:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            heatmaps: Model heatmap tensor.
+            scale_factor: Nonzero divisor used to convert model coordinates to
+                normalized coordinates.
+
+        Returns:
+            A pair of ``(N, 2)`` keypoint coordinates and ``(N,)`` scores. Coordinates
+            are divided by ``scale_factor``.
+
+        Note:
+            Uses
+            `depthai_nodes.node.parsers.utils.superanimal.compute_superanimal_keypoints`;
+            see that helper for tensor layout and validation details.
+        """
         return compute_superanimal_keypoints(
             heatmaps,
             scale_factor=scale_factor,
@@ -119,6 +153,17 @@ class SuperAnimalParser(KeypointParser):
     def emit(
         self, output: dai.NNData, keypoints: np.ndarray, scores: np.ndarray
     ) -> None:
+        """Create a ``dai.beta.Keypoints`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            keypoints: Normalized keypoint coordinates returned by ``compute()``.
+            scores: Confidence scores corresponding to the computed payload.
+        """
         msg = create_keypoints_message(
             keypoints,
             scores,

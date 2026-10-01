@@ -265,6 +265,11 @@ class FastSAMParser(BaseParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("FastSAMParser run started")
         if self.prompt not in ["everything", "bbox", "point"]:
             raise ValueError("Prompt must be one of 'everything', 'bbox', or 'point'")
@@ -300,6 +305,17 @@ class FastSAMParser(BaseParser):
     def extract(
         self, output: dai.NNData
     ) -> tuple[list[np.ndarray], list[np.ndarray], np.ndarray, int]:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            Detection heads in lexical layer-name order, mask coefficient heads,
+            prototype tensor, and prototype channel count; arrays are dequantized
+            float32 in NCHW order.
+        """
         outputs_names = sorted([name for name in self.yolo_outputs])
         self._logger.debug(f"Processing input with layers: {outputs_names}")
         outputs_values = [
@@ -332,6 +348,34 @@ class FastSAMParser(BaseParser):
         point_label: int | None,
         bbox: tuple[int, int, int, int] | None,
     ) -> tuple[np.ndarray, int]:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            outputs_values: Detection tensors ordered by output head.
+            masks_outputs_values: Mask coefficient tensors ordered to match the
+                detection heads.
+            protos_output: Batched prototype tensor with shape ``(1, channels, height,
+                width)``.
+            protos_len: Number of prototype channels used by each mask coefficient
+                vector.
+            conf_threshold: Minimum detection confidence used to filter candidates.
+            n_classes: Number of object classes encoded in the detection tensors.
+            iou_threshold: Intersection-over-union threshold for non-maximum
+                suppression.
+            mask_conf: Probability threshold used to binarize mask logits.
+            prompt: Mask selection mode: ``"everything"``, ``"bbox"``, or ``"point"``.
+            points: Prompt point in image pixel coordinates for point selection.
+            point_label: Point-prompt label used to include or exclude matching masks.
+            bbox: Bounding-box prompt in image pixel coordinates.
+
+        Returns:
+            A pair of the merged instance mask and the number of selected masks. No
+            selected masks produces a background mask with value -1 and count 0.
+
+        Note:
+            Uses `depthai_nodes.node.parsers.utils.fastsam.compute_fastsam_mask`; see
+            that helper for tensor layout and validation details.
+        """
         return compute_fastsam_mask(
             outputs_values,
             masks_outputs_values,
@@ -350,6 +394,17 @@ class FastSAMParser(BaseParser):
     def emit(
         self, output: dai.NNData, results_masks: np.ndarray, mask_count: int
     ) -> None:
+        """Create a ``dai.SegmentationMask`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            results_masks: Merged instance mask returned by ``compute()``.
+            mask_count: Number of selected masks, used for logging.
+        """
         segmentation_message = create_segmentation_message(results_masks)
         transformation = output.getTransformation()
         if transformation is not None:

@@ -8,19 +8,22 @@ def create_image_message(
     is_bgr: bool = True,
     img_frame_type: dai.ImgFrame.Type = dai.ImgFrame.Type.BGR888i,
 ) -> dai.ImgFrame:
-    """Create a DepthAI message for an image array.
+    """Create an ImgFrame from an integer image array.
 
     Args:
-        image: Image array in HWC or CHW format.
-        is_bgr: If True, the image is in BGR format. If False, the image is in RGB
-            format. Defaults to True.
-        img_frame_type: Output ImgFrame type. Defaults to BGR888i.
+        image: Non-empty CHW or HWC image with one or three channels. When both layouts
+            are plausible, a leading size of 1 or 3 selects CHW. Floating-point image
+            values are rejected.
+        is_bgr: Whether three-channel input is BGR. False converts RGB input to BGR.
+        img_frame_type: Requested DepthAI frame type. Grayscale input switches to GRAY8
+            unless the requested type begins with RAW or GRAY.
 
     Returns:
-        dai.ImgFrame object containing the image information.
+        Image message with payload, dimensions, and frame type set.
 
     Raises:
-        ValueError: If the image shape is not CHW or HWC.
+        ValueError: If neither channel layout is recognized or the image contains
+            floating-point values.
     """
 
     if image.shape[0] in [1, 3]:

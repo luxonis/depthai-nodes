@@ -24,6 +24,12 @@ class DepthMerger(BaseHostNode):
     """
 
     def __init__(self, shrinkingFactor: float = 0) -> None:
+        """Create a spatial-detection output and set ROI shrinking.
+
+        Args:
+            shrinkingFactor: Fraction trimmed from each side before sampling depth. The
+                build call supplies its own value.
+        """
         super().__init__()
 
         # TODO: We should make it consistant and use either output or out - IMO out is preferred to match DAI
@@ -67,7 +73,16 @@ class DepthMerger(BaseHostNode):
         return self
 
     def process(self, message2d: dai.Buffer, depth: dai.ImgFrame) -> None:
-        """Merge incoming detections with depth to produce spatial detections."""
+        """Convert detections to spatial detections and send them through ``output``.
+
+        Args:
+            message2d: ``dai.ImgDetection`` or ``dai.ImgDetections`` to project into
+                camera space.
+            depth: Depth frame aligned to the configured calibration camera.
+
+        Raises:
+            ValueError: If the detection input type is unsupported.
+        """
         self._logger.debug("Processing new input")
         spatial_dets = self._transform(message2d, depth)
         self._logger.debug("Spatial detections message created")

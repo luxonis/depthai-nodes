@@ -4,7 +4,15 @@ import numpy as np
 
 
 def probability_to_logit_threshold(probability: float) -> float:
-    """Convert a probability threshold into the equivalent logit threshold."""
+    """Convert a probability threshold to logit space.
+
+    Args:
+        probability: Probability threshold; values at or below 0 and at or above 1 are
+            handled as boundary cases.
+
+    Returns:
+        The log odds, or negative/positive infinity at the lower/upper boundary.
+    """
     if probability <= 0.0:
         return float("-inf")
     if probability >= 1.0:
@@ -89,7 +97,19 @@ def get_segmentation_outputs(
     mask_output_layer_names: list[str] | None = None,
     protos_output_layer_name: str | None = None,
 ) -> tuple[list[np.ndarray], np.ndarray, int]:
-    """Get the segmentation outputs from the Neural Network data."""
+    """Extract dequantized NCHW mask coefficients and prototypes.
+
+    Args:
+        output: Neural network output message.
+        mask_output_layer_names: Candidate mask-layer names. If omitted or empty,
+            inspect every layer; select names containing ``"mask"`` and sort them
+            lexically.
+        protos_output_layer_name: Prototype layer name; defaults to ``"protos_output"``.
+
+    Returns:
+        A list of float32 coefficient tensors, the float32 prototype tensor, and its
+        channel count.
+    """
     # Get all the layer names
     layer_names = mask_output_layer_names or output.getAllLayerNames()
     mask_outputs = sorted([name for name in layer_names if "mask" in name])

@@ -52,7 +52,15 @@ class ImgDetectionsFilter(BaseHostNode):
         self._logger.debug("ImgDetectionsFilter initialized")
 
     def setLabels(self, labels: list[int], keep: bool) -> None:
-        """Deprecated wrapper for configuring label inclusion or exclusion."""
+        """Configure filtering through a deprecated compatibility setter.
+
+        Args:
+            labels: Class indexes to include or exclude.
+            keep: Include the labels when true; exclude them otherwise.
+
+        Note:
+            Emits ``FutureWarning``. Use ``keepLabels() or rejectLabels()`` instead.
+        """
         warnings.warn(
             "setLabels() is deprecated; use keepLabels() or rejectLabels() instead.",
             FutureWarning,
@@ -64,7 +72,14 @@ class ImgDetectionsFilter(BaseHostNode):
             self.rejectLabels(labels=labels)
 
     def setConfidenceThreshold(self, confidenceThreshold: float | None) -> None:
-        """Deprecated wrapper for setting the minimum confidence."""
+        """Configure filtering through a deprecated compatibility setter.
+
+        Args:
+            confidenceThreshold: Minimum confidence, or None to disable filtering.
+
+        Note:
+            Emits ``FutureWarning``. Use ``minConfidence()`` instead.
+        """
         warnings.warn(
             "setConfidenceThreshold() is deprecated; use minConfidence() instead.",
             FutureWarning,
@@ -73,7 +88,14 @@ class ImgDetectionsFilter(BaseHostNode):
         self.minConfidence(threshold=confidenceThreshold)
 
     def setMaxDetections(self, maxDetections: int) -> None:
-        """Deprecated wrapper for limiting the number of detections."""
+        """Configure filtering through a deprecated compatibility setter.
+
+        Args:
+            maxDetections: Slice stop index for the retained detections.
+
+        Note:
+            Emits ``FutureWarning``. Use ``takeFirstK()`` instead.
+        """
         warnings.warn(
             "setMaxDetections() is deprecated; use takeFirstK() instead.",
             FutureWarning,
@@ -82,7 +104,15 @@ class ImgDetectionsFilter(BaseHostNode):
         self.takeFirstK(k=maxDetections)
 
     def setSortByConfidence(self, sortByConfidence: bool) -> None:
-        """Deprecated wrapper for toggling confidence-based sorting."""
+        """Configure filtering through a deprecated compatibility setter.
+
+        Args:
+            sortByConfidence: Enable sorting when true; disable it otherwise.
+
+        Note:
+            Emits ``FutureWarning``. Use ``enableSorting() or disableSorting()``
+            instead.
+        """
         warnings.warn(
             "setSortByConfidence() is deprecated; use sortByConfidence(), enableSorting() and disableSorting() instead.",
             FutureWarning,
@@ -94,7 +124,14 @@ class ImgDetectionsFilter(BaseHostNode):
             self.disableSorting()
 
     def setMinArea(self, minArea: float) -> None:
-        """Deprecated wrapper for setting the minimum detection area."""
+        """Configure filtering through a deprecated compatibility setter.
+
+        Args:
+            minArea: Minimum normalized bounding-box area.
+
+        Note:
+            Emits ``FutureWarning``. Use ``minArea()`` instead.
+        """
         warnings.warn(
             "setMinArea() is deprecated; use minArea() instead.",
             FutureWarning,
@@ -103,7 +140,14 @@ class ImgDetectionsFilter(BaseHostNode):
         self.minArea(area=minArea)
 
     def keepLabels(self, labels: list[int]) -> "ImgDetectionsFilter":
-        """Keep only detections whose label is in ``labels``."""
+        """Keep only the selected labels and clear any rejection list.
+
+        Args:
+            labels: Class indexes to retain. An empty list rejects all detections.
+
+        Returns:
+            This node for fluent configuration.
+        """
         self._cfg.labels_to_keep = labels
         if self._cfg.labels_to_reject is not None:
             self._logger.warn(
@@ -113,7 +157,14 @@ class ImgDetectionsFilter(BaseHostNode):
         return self
 
     def rejectLabels(self, labels: list[int]) -> "ImgDetectionsFilter":
-        """Drop detections whose label is in ``labels``."""
+        """Reject selected labels and clear any inclusion list.
+
+        Args:
+            labels: Class indexes to remove. An empty list removes no detections.
+
+        Returns:
+            This node for fluent configuration.
+        """
         self._cfg.labels_to_reject = labels
         if self._cfg.labels_to_keep is not None:
             self._logger.warn(
@@ -123,19 +174,37 @@ class ImgDetectionsFilter(BaseHostNode):
         return self
 
     def minConfidence(self, threshold: float) -> "ImgDetectionsFilter":
-        """Require detections to meet the minimum confidence threshold."""
+        """Configure the inclusive minimum detection confidence.
+
+        Args:
+            threshold: Minimum score; ``None`` disables this filter.
+
+        Returns:
+            This node for fluent configuration.
+        """
         self._cfg.min_confidence = threshold
         return self
 
     def minArea(self, area: float) -> "ImgDetectionsFilter":
-        """Require detections to meet the minimum normalized bounding-box area."""
+        """Configure the inclusive minimum normalized bounding-box area.
+
+        Args:
+            area: Minimum width-times-height area; ``None`` disables this filter.
+
+        Returns:
+            This node for fluent configuration.
+        """
         self._cfg.min_area = area
         return self
 
     def sortByConfidence(self, *, desc: bool = True) -> "ImgDetectionsFilter":
-        """Enable sorting by confidence (before top-k).
+        """Enable confidence sorting before the count limit.
 
-        Set direction via ``desc``.
+        Args:
+            desc: Sort highest confidence first when true; lowest first otherwise.
+
+        Returns:
+            This node for fluent configuration.
         """
         self._cfg.sort_disabled = False
         self._cfg.sort_desc = desc
@@ -144,7 +213,15 @@ class ImgDetectionsFilter(BaseHostNode):
     def useNms(
         self, *, confThresh: float = 0.3, iouThresh: float = 0.4
     ) -> "ImgDetectionsFilter":
-        """Enable NMS after filtering and configure its thresholds."""
+        """Enable per-class suppression after label, confidence, and area filtering.
+
+        Args:
+            confThresh: Minimum confidence passed to suppression.
+            iouThresh: Intersection-over-union threshold for overlapping boxes.
+
+        Returns:
+            This node for fluent configuration.
+        """
         self._cfg.nms_disabled = False
         self._cfg.nms_conf_thresh = confThresh
         self._cfg.nms_iou_thresh = iouThresh
@@ -161,18 +238,44 @@ class ImgDetectionsFilter(BaseHostNode):
         return self
 
     def takeFirstK(self, k: int | None):
-        """Keep only the first ``k`` detections after filtering and sorting."""
+        """Configure slicing after filtering, suppression, and sorting.
+
+        Args:
+            k: Slice stop index. ``None`` retains all detections, zero retains none, and
+                negative values follow Python slice semantics.
+
+        Returns:
+            This node for fluent configuration.
+        """
         self._cfg.first_k = k
         return self
 
     def build(self, input: dai.Node.Output) -> "ImgDetectionsFilter":
-        """Connect the detections stream to the filter node."""
+        """Connect the stream of detections to filter.
+
+        Args:
+            input: Output producing ``dai.ImgDetections`` or
+                ``dai.SpatialImgDetections``.
+
+        Returns:
+            This node for fluent configuration.
+        """
         self.link_args(input)
         self._logger.debug(self._plan_string())
         return self
 
     def process(self, msg: dai.Buffer) -> None:
-        """Filter, optionally suppress, sort, and emit the detections message."""
+        """Filter a copied message and emit it through ``out``.
+
+        Args:
+            msg: Native image or spatial detections. Attached uint8 instance-mask IDs
+                are reindexed to match retained detections; removed IDs become
+                background 255.
+
+        Raises:
+            AssertionError: If the input or its copy is not a supported detection
+                message.
+        """
         assert isinstance(msg, (dai.ImgDetections, dai.SpatialImgDetections))
         msg_new = copy_message(msg)
         assert isinstance(msg_new, (dai.ImgDetections, dai.SpatialImgDetections))

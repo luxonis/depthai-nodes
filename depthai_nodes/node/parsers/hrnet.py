@@ -80,6 +80,11 @@ class HRNetParser(KeypointParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("HRNetParser run started")
         while self.isRunning():
             try:
@@ -92,6 +97,19 @@ class HRNetParser(KeypointParser):
             self.emit(output, keypoints, scores)
 
     def extract(self, output: dai.NNData) -> np.ndarray:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            Dequantized heatmaps requested in NCHW storage order.
+
+        Raises:
+            ValueError: If no output name is configured and the message does not contain
+                exactly one layer, or configured class requirements are not met.
+        """
         layers = output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layers}")
         if len(layers) == 1 and self.output_layer_name == "":
@@ -109,12 +127,38 @@ class HRNetParser(KeypointParser):
 
     @staticmethod
     def compute(heatmaps: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            heatmaps: Heatmaps of shape ``(1, keypoints, height, width)`` or
+                ``(keypoints, height, width)``. The first axis is removed when its size
+                is 1.
+
+        Returns:
+            A pair of normalized ``(N, 2)`` XY coordinates and ``(N,)`` peak scores
+            clipped to [0, 1].
+
+        Note:
+            Uses `depthai_nodes.node.parsers.utils.hrnet.compute_hrnet_keypoints`; see
+            that helper for tensor layout and validation details.
+        """
         keypoints, scores = compute_hrnet_keypoints(heatmaps)
         return keypoints, scores
 
     def emit(
         self, output: dai.NNData, keypoints: np.ndarray, scores: np.ndarray
     ) -> None:
+        """Create a ``dai.beta.Keypoints`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            keypoints: Normalized keypoint coordinates returned by ``compute()``.
+            scores: Confidence scores corresponding to the computed payload.
+        """
         keypoints_message = create_keypoints_message(
             keypoints=keypoints,
             scores=scores,

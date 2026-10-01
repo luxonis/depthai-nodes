@@ -144,6 +144,11 @@ class MLSDParser(BaseParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("MLSDParser run started")
         if self.output_layer_tpmap == "":
             raise ValueError(
@@ -171,6 +176,16 @@ class MLSDParser(BaseParser):
             self.emit(output, lines, scores)
 
     def extract(self, output: dai.NNData) -> tuple[np.ndarray, np.ndarray]:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            Float32 displacement and heat tensors. Displacement is requested in NCHW
+            order.
+        """
         self._logger.debug(f"Processing input with layers: {output.getAllLayerNames()}")
         tpMap = output.getTensor(
             self.output_layer_tpmap,
@@ -191,6 +206,22 @@ class MLSDParser(BaseParser):
         score_thr: float,
         dist_thr: float,
     ) -> tuple[np.ndarray, np.ndarray]:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            tpMap: Four-dimensional line-displacement tensor in NCHW layout.
+            heat_np: Heat tensor used to rank line-center candidates.
+            topk_n: Maximum number of line-center candidates to examine.
+            score_thr: Minimum candidate score.
+            dist_thr: Minimum line length in output-map pixels.
+
+        Returns:
+            Normalized endpoint coordinates of shape ``(N, 4)`` and float32 line scores.
+
+        Note:
+            Uses `depthai_nodes.node.parsers.utils.mlsd.compute_mlsd_lines`; see that
+            helper for tensor layout and validation details.
+        """
         return compute_mlsd_lines(
             tpMap,
             heat_np,
@@ -200,6 +231,17 @@ class MLSDParser(BaseParser):
         )
 
     def emit(self, output: dai.NNData, lines: np.ndarray, scores: np.ndarray) -> None:
+        """Create a ``dai.beta.Lines`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            lines: Normalized ``[x1, y1, x2, y2]`` line endpoints.
+            scores: Confidence scores corresponding to the computed payload.
+        """
         message = create_line_detection_message(lines, scores)
         message.setTimestamp(output.getTimestamp())
         message.setSequenceNum(output.getSequenceNum())

@@ -123,6 +123,11 @@ class ClassificationParser(BaseParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("ClassificationParser run started")
         while self.isRunning():
             try:
@@ -135,6 +140,20 @@ class ClassificationParser(BaseParser):
             self.emit(output, scores)
 
     def extract(self, output: dai.NNData) -> np.ndarray:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            Flattened dequantized class scores. Their count must match configured
+            classes when a nonzero class count is set.
+
+        Raises:
+            ValueError: If no output name is configured and the message does not contain
+                exactly one layer, or configured class requirements are not met.
+        """
         layers = output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layers}")
         if len(layers) == 1 and self.output_layer_name == "":
@@ -159,9 +178,34 @@ class ClassificationParser(BaseParser):
         *,
         is_softmax: bool = True,
     ) -> np.ndarray:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            scores: Model score tensor.
+            is_softmax: Whether scores already contain probabilities. If false, apply
+                softmax.
+
+        Returns:
+            One-dimensional array with one score per class.
+
+        Note:
+            Uses
+            `depthai_nodes.node.parsers.utils.classification.compute_classification_scores`;
+            see that helper for tensor layout and validation details.
+        """
         return compute_classification_scores(scores, is_softmax=is_softmax)
 
     def emit(self, output: dai.NNData, scores: np.ndarray) -> None:
+        """Create a ``dai.beta.Classifications`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            scores: Confidence scores corresponding to the computed payload.
+        """
         msg = create_classification_message(self.classes, scores)
         transformation = output.getTransformation()
         if transformation is not None:

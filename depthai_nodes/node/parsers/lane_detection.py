@@ -170,6 +170,11 @@ class LaneDetectionParser(BaseParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("LaneDetectionParser run started")
         if self.row_anchors is None:
             raise ValueError("Row anchors must be specified!")
@@ -195,6 +200,19 @@ class LaneDetectionParser(BaseParser):
             self.emit(output, points)
 
     def extract(self, output: dai.NNData) -> np.ndarray:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            Dequantized float32 batched UFLD grid tensor.
+
+        Raises:
+            ValueError: If no output name is configured and the message does not contain
+                exactly one layer, or configured class requirements are not met.
+        """
         layers = output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layers}")
         if len(layers) == 1 and self.output_layer_name == "":
@@ -217,6 +235,25 @@ class LaneDetectionParser(BaseParser):
         cls_num_per_lane: int,
         input_size: tuple[int, int],
     ) -> list[list[tuple[int, int]]]:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            tensor: Batched logits with grid classes, sampled rows, and lanes as the
+                remaining axes; only the first batch item is used.
+            row_anchors: Image row positions, in pixels, for the lane sampling grid.
+            griding_num: Number of horizontal grid cells, excluding the no-lane class.
+            cls_num_per_lane: Number of sampled row positions per lane.
+            input_size: Model input size as ``(width, height)``.
+
+        Returns:
+            One list per lane containing normalized XY point tuples. Lanes with fewer
+            than three valid samples have empty lists.
+
+        Note:
+            Uses
+            `depthai_nodes.node.parsers.utils.lane_detection.compute_lane_detection_points`;
+            see that helper for tensor layout and validation details.
+        """
         return compute_lane_detection_points(
             tensor,
             row_anchors=row_anchors,
@@ -226,6 +263,16 @@ class LaneDetectionParser(BaseParser):
         )
 
     def emit(self, output: dai.NNData, points) -> None:
+        """Create a ``dai.beta.Clusters`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            points: Lists of normalized XY points, one list per lane.
+        """
         msg = create_cluster_message(points)
         msg.setTimestamp(output.getTimestamp())
         msg.setSequenceNum(output.getSequenceNum())

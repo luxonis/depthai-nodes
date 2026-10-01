@@ -182,7 +182,20 @@ def compute_pp_text_detections(
     conf_threshold: float,
     max_det: int,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Decode PaddleOCR text detection output into boxes, angles, and scores."""
+    """Decode PaddleOCR text regions into rotated boxes.
+
+    Args:
+        predictions: Text probability tensor accepted by
+            ``parse_paddle_detection_outputs``.
+        mask_threshold: Threshold used to binarize the text probability map.
+        conf_threshold: Minimum detection confidence used to filter candidates.
+        max_det: Maximum number of detection candidates to retain or consider during
+            suppression.
+
+    Returns:
+        Normalized center-XY/width/height boxes, rotation angles in degrees, and
+        confidence scores.
+    """
     return parse_paddle_detection_outputs(
         predictions,
         mask_threshold,

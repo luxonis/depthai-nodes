@@ -24,6 +24,12 @@ class BaseHostNode(dai.node.HostNode, metaclass=CombinedMeta):
     }
 
     def __init__(self) -> None:
+        """Initialize logging and the platform-specific output image format.
+
+        Raises:
+            ValueError: If the pipeline device platform has no configured image-frame
+                format.
+        """
         super().__init__()
 
         self._platform = self.getParentPipeline().getDefaultDevice().getPlatform()

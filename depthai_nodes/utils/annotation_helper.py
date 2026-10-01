@@ -21,6 +21,12 @@ class AnnotationHelper:
     """
 
     def __init__(self, viewport_clipper: ViewportClipper | None = None):
+        """Create an empty annotation builder.
+
+        Args:
+            viewport_clipper: Optional clipping bounds. Defaults to the normalized unit
+                viewport [0, 1] on both axes.
+        """
         self.annotation: dai.ImgAnnotation = dai.ImgAnnotation()
         if not viewport_clipper:
             viewport_clipper = ViewportClipper(

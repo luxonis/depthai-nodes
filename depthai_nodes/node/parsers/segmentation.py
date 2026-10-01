@@ -152,6 +152,11 @@ class SegmentationParser(BaseParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("SegmentationParser run started")
         while self.isRunning():
             try:
@@ -168,6 +173,20 @@ class SegmentationParser(BaseParser):
             self.emit(output, class_map)
 
     def extract(self, output: dai.NNData):
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            Dequantized segmentation tensor, with the first batch item selected if the
+            tensor is 4D.
+
+        Raises:
+            ValueError: If no output name is configured and the message does not contain
+                exactly one layer, or configured class requirements are not met.
+        """
         layers = output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layers}")
         if len(layers) == 1 and self.output_layer_name == "":
@@ -189,6 +208,25 @@ class SegmentationParser(BaseParser):
         classes_in_one_layer: bool = False,
         background_class: bool = False,
     ) -> np.ndarray:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            segmentation_mask: CHW or HWC tensor, optionally batched. A 4D tensor uses
+                its first batch item; the smallest axis is treated as the class axis.
+            classes_in_one_layer: Whether a single channel already encodes class IDs
+                rather than foreground scores.
+            background_class: Replace winning class 0 with 255 for multi-class score
+                tensors.
+
+        Returns:
+            An HW uint8 label map. Unassigned pixels are 255. A single foreground-score
+            channel is compared against zero and emits class 0 for positive pixels.
+
+        Note:
+            Uses
+            `depthai_nodes.node.parsers.utils.segmentation.compute_segmentation_class_map`;
+            see that helper for tensor layout and validation details.
+        """
         return compute_segmentation_class_map(
             segmentation_mask,
             classes_in_one_layer=classes_in_one_layer,
@@ -196,6 +234,16 @@ class SegmentationParser(BaseParser):
         )
 
     def emit(self, output: dai.NNData, class_map: np.ndarray) -> None:
+        """Create a ``dai.SegmentationMask`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            class_map: HW class-index mask with 255 reserved for background.
+        """
         mask_message = create_segmentation_message(class_map)
         mask_message.setTimestamp(output.getTimestamp())
         mask_message.setSequenceNum(output.getSequenceNum())

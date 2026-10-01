@@ -4,18 +4,20 @@ import depthai as dai
 def create_cluster_message(
     clusters: list[list[list[float | int]]],
 ) -> dai.beta.Clusters:
-    """Create a DepthAI message for clusters.
+    """Create a native cluster message from grouped 2D points.
 
     Args:
-        clusters: List of clusters. Each cluster is a list of points with x and y
-            coordinates.
+        clusters: List of clusters, each a list of XY points. Points may be lists or
+            tuples containing two numeric coordinates. Coordinates are copied without
+            scaling; empty clusters are retained.
 
     Returns:
-        Clusters message containing the detected clusters.
+        A message with one cluster per input list, labeled by its zero-based list index.
 
     Raises:
-        TypeError: If the clusters are not a list. If each cluster is not a list. If
-            each point is not a list. If each value in the point is not an int or float.
+        TypeError: If clusters or their point containers have unsupported types, or a
+            coordinate is not an int or float.
+        ValueError: If a point does not contain exactly two coordinates.
     """
 
     if not isinstance(clusters, list):

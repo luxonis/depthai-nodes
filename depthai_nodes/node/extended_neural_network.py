@@ -119,6 +119,10 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
 
         Returns:
             The configured node instance.
+
+        Raises:
+            ValueError: If ``nnSource`` is not an archive, model description, or Model
+                Zoo slug.
         """
 
         if isinstance(nnSource, str):

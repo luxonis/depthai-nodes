@@ -88,6 +88,11 @@ class MapOutputParser(BaseParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("MapOutputParser run started")
         while self.isRunning():
             try:
@@ -100,6 +105,19 @@ class MapOutputParser(BaseParser):
             self.emit(output, map_output)
 
     def extract(self, output: dai.NNData):
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            Dequantized numeric map tensor.
+
+        Raises:
+            ValueError: If no output name is configured and the message does not contain
+                exactly one layer, or configured class requirements are not met.
+        """
         layers = output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layers}")
         if len(layers) == 1 and self.output_layer_name == "":
@@ -113,9 +131,32 @@ class MapOutputParser(BaseParser):
 
     @staticmethod
     def compute(map_tensor):
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            map_tensor: HW map, a map with leading singleton axes, or an HW1 map.
+
+        Returns:
+            A two-dimensional array. Values and dtype are preserved; the result may
+            share input storage.
+
+        Note:
+            Uses `depthai_nodes.node.parsers.utils.map_output.compute_map_output`; see
+            that helper for tensor layout and validation details.
+        """
         return compute_map_output(map_tensor)
 
     def emit(self, output: dai.NNData, map_output) -> None:
+        """Create a ``dai.beta.Map2D`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            map_output: Two-dimensional map returned by ``compute()``.
+        """
         map_message = create_map_message(
             map_array=map_output, min_max_scaling=self.min_max_scaling
         )

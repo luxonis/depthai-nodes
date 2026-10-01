@@ -37,6 +37,14 @@ class ApplyDepthColormap(BaseHostNode):
         pLow: float = 2.0,
         pHigh: float = 98.0,
     ) -> None:
+        """Initialize the image-processing node.
+
+        Args:
+            colormapValue: OpenCV colormap enum (e.g. cv2.COLORMAP_JET) or a custom
+                OpenCV-compatible colormap LUT. Default is cv2.COLORMAP_JET.
+            pLow: Lower normalization percentile in [0, 100). Default 2.0.
+            pHigh: Upper normalization percentile in (0, 100]. Default 98.0.
+        """
         super().__init__()
         self.out.setPossibleDatatypes([(dai.DatatypeEnum.ImgFrame, True)])
 
@@ -55,6 +63,10 @@ class ApplyDepthColormap(BaseHostNode):
 
         Args:
             colormapValue: OpenCV colormap enum value or a custom OpenCV-compatible LUT.
+
+        Raises:
+            ValueError: If a custom colormap is not a uint8 array of shape ``(256, 1,
+                3)``.
         """
         self._colormap = self._make_colormap(colormapValue)
         if isinstance(colormapValue, int):
@@ -68,6 +80,9 @@ class ApplyDepthColormap(BaseHostNode):
         Args:
             low: Lower percentile in the range [0, 100).
             high: Upper percentile in the range (0, 100].
+
+        Raises:
+            ValueError: If the bounds do not satisfy ``0 <= low < high <= 100``.
         """
         self._p_low, self._p_high = self._validate_percentile_range(low, high)
         self._logger.debug(
@@ -88,7 +103,15 @@ class ApplyDepthColormap(BaseHostNode):
         return self
 
     def process(self, frame: dai.Buffer) -> None:
-        """Convert the incoming depth frame into a colorized image frame."""
+        """Colorize valid depth samples and emit an image with source metadata.
+
+        Args:
+            frame: RAW depth or disparity ImgFrame. Non-positive pixels become black.
+                Frames without a usable normalization range produce an all-black image.
+
+        Raises:
+            TypeError: If the input is not an ImgFrame with a RAW format.
+        """
         self._logger.debug("Processing new input")
         depth = self._get_depth_map(frame)
 

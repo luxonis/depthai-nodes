@@ -8,7 +8,22 @@ def compute_classification_sequence_scores(
     *,
     is_softmax: bool = True,
 ) -> np.ndarray:
-    """Return per-step classification scores, applying softmax when needed."""
+    """Normalize the layout of per-step classification scores.
+
+    Args:
+        scores: Scores or logits of shape ``(steps, classes)``, ``(1, steps, classes)``,
+            or ``(steps, classes, 1)``.
+        is_softmax: Whether scores already contain probabilities. If false, apply
+            softmax.
+
+    Returns:
+        Float32 array of shape ``(steps, classes)``. Softmax, when requested, runs over
+        classes independently for each step.
+
+    Raises:
+        ValueError: If the rank is not 2 or 3, or a 3D tensor has no supported singleton
+            axis.
+    """
     computed_scores = np.asarray(scores, dtype=np.float32)
 
     if computed_scores.ndim not in (2, 3):

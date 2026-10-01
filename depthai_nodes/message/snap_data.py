@@ -19,6 +19,18 @@ class SnapData(dai.Buffer):
         tags: list[str] | None = None,
         extras: dict[str, str] | None = None,
     ):
+        """Create a snap payload for the Hub Events API.
+
+        Args:
+            snap_name: Logical event name.
+            file_group: Image and associated files to upload.
+            tags: Optional event tags; defaults to an empty list.
+            extras: Optional string metadata; defaults to an empty dictionary.
+
+        Note:
+            Non-empty tag lists and metadata dictionaries are stored by reference, not
+            copied.
+        """
         super().__init__()
         self.snap_name = snap_name
         self.file_group = file_group

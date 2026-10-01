@@ -91,6 +91,11 @@ class ImageOutputParser(BaseParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("ImageOutputParser run started")
         while self.isRunning():
             try:
@@ -103,6 +108,19 @@ class ImageOutputParser(BaseParser):
             self.emit(output, image)
 
     def extract(self, output: dai.NNData):
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            Dequantized image tensor retaining the model tensor layout.
+
+        Raises:
+            ValueError: If no output name is configured and the message does not contain
+                exactly one layer, or configured class requirements are not met.
+        """
         layers = output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layers}")
         if len(layers) == 1 and self.output_layer_name == "":
@@ -116,9 +134,33 @@ class ImageOutputParser(BaseParser):
 
     @staticmethod
     def compute(output_image):
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            output_image: CHW or HWC tensor, optionally preceded by a singleton batch
+                dimension.
+
+        Returns:
+            A uint8 array with the same channel layout as the unbatched input. Values
+            are min-max scaled to [0, 255]; constant tensors become zero.
+
+        Note:
+            Uses `depthai_nodes.node.parsers.utils.image_output.compute_image_output`;
+            see that helper for tensor layout and validation details.
+        """
         return compute_image_output(output_image)
 
     def emit(self, output: dai.NNData, image) -> None:
+        """Create a ``dai.ImgFrame`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            image: Image array returned by ``compute()``.
+        """
         image_message = create_image_message(
             image=image,
             is_bgr=self.output_is_bgr,

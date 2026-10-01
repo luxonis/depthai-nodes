@@ -28,6 +28,12 @@ class Collection(dai.Buffer, Generic[T]):
     """
 
     def __init__(self, items: list[T]):
+        """Initialize the collection and infer its runtime item type.
+
+        Args:
+            items: Initial items. An empty list defers type inference until the first
+                insertion.
+        """
         super().__init__()
         self._item_cls: type[T] | None = type(items[0]) if items else None
         self.items: list[T] = items
@@ -39,10 +45,26 @@ class Collection(dai.Buffer, Generic[T]):
 
     @property
     def items(self) -> list[T]:
+        """Return the stored list of items.
+
+        The list is mutable. Direct list mutations bypass collection type checks; use
+        ``append()``, ``extend()``, or assignment to ``items`` when validation is
+        needed.
+        """
         return self._items
 
     @items.setter
     def items(self, value: list[T]) -> None:
+        """Replace the item list after checking runtime types.
+
+        Args:
+            value: Replacement list. An empty list preserves the previously inferred
+                item type.
+
+        Raises:
+            TypeError: If the value is not a list or contains items incompatible with
+                the inferred type.
+        """
         if not isinstance(value, list):
             raise TypeError(f"items must be a list, got {type(value)}")
 
@@ -59,6 +81,14 @@ class Collection(dai.Buffer, Generic[T]):
         self._items = value
 
     def append(self, item: T) -> None:
+        """Append one item, inferring the type if necessary.
+
+        Args:
+            item: Item compatible with the type of the first item ever inserted.
+
+        Raises:
+            TypeError: If the item is incompatible with the inferred runtime type.
+        """
         if self._item_cls is None:
             self._item_cls = type(item)
         elif not isinstance(item, self._item_cls):
@@ -69,9 +99,28 @@ class Collection(dai.Buffer, Generic[T]):
 
     def extend(self, items: list[T]) -> None:
         # Reuse setter validation
+        """Append items after validating the combined list.
+
+        Args:
+            items: Items to append. Existing contents remain unchanged if validation
+                fails.
+
+        Raises:
+            TypeError: If any item is incompatible with the inferred runtime type.
+        """
         self.items = [*self._items, *items]
 
     def copy(self) -> Collection:
+        """Copy items and preserve container timestamps and sequence number.
+
+        Returns:
+            A new ``Collection`` with items copied through ``copy_message``. This
+            returns the base container even when called on a subclass; subclass-specific
+            fields are not copied.
+
+        Raises:
+            TypeError: If an item cannot be copied by ``copy_message``.
+        """
         new_list = []
         for item in self.items:
             new_list.append(copy_message(item))

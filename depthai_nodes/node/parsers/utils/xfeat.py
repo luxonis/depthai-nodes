@@ -286,7 +286,23 @@ def compute_xfeat_result(
     input_size: tuple[int, int],
     max_keypoints: int,
 ) -> list[dict[str, Any]] | None:
-    """Compute XFeat keypoints, scores, and descriptors."""
+    """Compute ranked XFeat keypoints and descriptors.
+
+    Args:
+        feats: Batched dense feature-descriptor tensor.
+        keypoints: Model keypoint tensor.
+        heatmaps: Model heatmap tensor.
+        resize_rate_w: Horizontal scale factor mapping model coordinates to the source
+            image.
+        resize_rate_h: Vertical scale factor mapping model coordinates to the source
+            image.
+        input_size: Model input size as ``(width, height)``.
+        max_keypoints: Maximum number of highest-scoring keypoints retained per image.
+
+    Returns:
+        One result dictionary per batch item, with ``keypoints``, ``scores``, and
+        ``descriptors``. Returns ``None`` when no candidate keypoints are found.
+    """
     return detect_and_compute(
         feats,
         keypoints,
@@ -359,5 +375,15 @@ def match(
 def compute_xfeat_matches(
     result1: dict[str, Any], result2: dict[str, Any], min_cossim: float = -1
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Compute matched XFeat keypoints."""
+    """Match XFeat descriptors by mutual nearest-neighbor similarity.
+
+    Args:
+        result1: Reference result containing ``keypoints`` and ``descriptors``.
+        result2: Target result containing ``keypoints`` and ``descriptors``.
+        min_cossim: Minimum descriptor cosine similarity; a non-positive value disables
+            this threshold.
+
+    Returns:
+        Reference and target keypoint arrays of shape ``(N, 2)`` in corresponding order.
+    """
     return match(result1, result2, min_cossim=min_cossim)

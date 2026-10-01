@@ -40,7 +40,22 @@ def compute_keypoints(
     n_keypoints: int,
     scale_factor: float = 1.0,
 ) -> np.ndarray:
-    """Reshape and normalize a keypoint tensor."""
+    """Reshape and normalize a keypoint tensor.
+
+    Args:
+        keypoints: Model keypoint tensor.
+        n_keypoints: Number of keypoints encoded per prediction.
+        scale_factor: Nonzero divisor used to convert model coordinates to normalized
+            coordinates.
+
+    Returns:
+        Float32 coordinates of shape ``(n_keypoints, 2)`` or ``(n_keypoints, 3)``,
+        divided by ``scale_factor`` and clipped to [0, 1].
+
+    Raises:
+        ValueError: If the tensor does not contain two or three coordinates per
+            keypoint.
+    """
     parsed_keypoints = np.asarray(keypoints, dtype=np.float32)
     num_coords = int(np.prod(parsed_keypoints.shape) / n_keypoints)
 

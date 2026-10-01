@@ -48,7 +48,16 @@ class XFeatBaseParser(BaseParser):
         input_size: tuple[float, float] = (640, 352),
         max_keypoints: int = 4096,
     ) -> None:
-        """Initializes the parser node."""
+        """Store tensor names and image geometry for XFeat decoding.
+
+        Args:
+            output_layer_feats: Feature-descriptor layer name.
+            output_layer_keypoints: Keypoint-logit layer name.
+            output_layer_heatmaps: Reliability heatmap layer name.
+            original_size: Source image size as ``(width, height)``.
+            input_size: Model input size as ``(width, height)``.
+            max_keypoints: Maximum number of feature points to keep.
+        """
         super().__init__()
         self._target_input = self.createInput()  # used in stereo mode
 
@@ -75,12 +84,20 @@ class XFeatBaseParser(BaseParser):
 
     @reference_input.setter
     def reference_input(self, reference_input: dai.Node.Input | None):
-        """Sets the reference input."""
+        """Replace the stored XFeat input port.
+
+        Args:
+            reference_input: Input port for the corresponding neural-network stream.
+        """
         self.input = reference_input
 
     @target_input.setter
     def target_input(self, target_input: dai.Node.Input | None):
-        """Sets the target input."""
+        """Replace the stored XFeat input port.
+
+        Args:
+            target_input: Input port for the corresponding neural-network stream.
+        """
         self._target_input = target_input
 
     def setOutputLayerFeats(self, output_layer_feats: str) -> None:
@@ -315,6 +332,11 @@ class XFeatMonoParser(XFeatBaseParser):
         self._logger.debug(f"Trigger set to {self.trigger}")
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("XFeatMonoParser run started")
         self.validateParams()
 
@@ -338,6 +360,16 @@ class XFeatMonoParser(XFeatBaseParser):
             self.emit(output, result)
 
     def extract(self, output: dai.NNData) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Extract feature, keypoint, and heatmap tensors from one network result.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            A tuple of feature descriptors, keypoint logits, and heatmaps, as produced
+            by ``extractTensors()``.
+        """
         self._logger.debug(f"Processing input with layers: {output.getAllLayerNames()}")
         return self.extractTensors(output)
 
@@ -350,6 +382,21 @@ class XFeatMonoParser(XFeatBaseParser):
         resize_rate_w: float,
         resize_rate_h: float,
     ) -> dict[str, Any] | None:
+        """Compute features for the first batch item.
+
+        Args:
+            feats: Batched dense feature-descriptor tensor.
+            keypoints: Model keypoint tensor.
+            heatmaps: Model heatmap tensor.
+            resize_rate_w: Horizontal scale factor mapping model coordinates to the
+                source image.
+            resize_rate_h: Vertical scale factor mapping model coordinates to the source
+                image.
+
+        Returns:
+            A dictionary containing keypoints, scores, and descriptors for the first
+            image, or ``None`` when no candidates are found.
+        """
         result = compute_xfeat_result(
             feats,
             keypoints,
@@ -364,6 +411,18 @@ class XFeatMonoParser(XFeatBaseParser):
         return None
 
     def emit(self, output: dai.NNData, result: dict[str, Any] | None) -> None:
+        """Match features against the stored reference and emit tracked points.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            result: Current computed keypoints, scores, and descriptors, or ``None``.
+
+        Note:
+            Emits an empty message if no current features or no reference is available.
+            Copies current timestamps and sequence number. A pending trigger replaces
+            the stored reference with a non-None result after matching.
+        """
         if result is None:
             matched_points = dai.TrackedFeatures()
             matched_points.setTimestamp(output.getTimestamp())
@@ -467,6 +526,11 @@ class XFeatStereoParser(XFeatBaseParser):
         )
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("XFeatStereoParser run started")
         self.validateParams()
 
@@ -497,6 +561,16 @@ class XFeatStereoParser(XFeatBaseParser):
         tuple[np.ndarray, np.ndarray, np.ndarray],
         tuple[np.ndarray, np.ndarray, np.ndarray],
     ]:
+        """Extract matching tensors from both network results.
+
+        Args:
+            reference_output: Reference-image network output.
+            target_output: Target-image network output.
+
+        Returns:
+            Reference and target tuples, each containing features, keypoint logits, and
+            heatmaps.
+        """
         self._logger.debug(
             f"Processing reference input with layers: {reference_output.getAllLayerNames()}"
         )
@@ -513,6 +587,18 @@ class XFeatStereoParser(XFeatBaseParser):
         resize_rate_w: float,
         resize_rate_h: float,
     ) -> dict[str, tuple[np.ndarray, np.ndarray] | str | None]:
+        """Compute and match features between reference and target tensors.
+
+        Args:
+            reference_tensors: Reference feature, keypoint, and heatmap tensors.
+            target_tensors: Target feature, keypoint, and heatmap tensors.
+            resize_rate_w: Horizontal scale factor applied to keypoint coordinates.
+            resize_rate_h: Vertical scale factor applied to keypoint coordinates.
+
+        Returns:
+            Dictionary with ``status`` (``matched``, ``reference_missing``, or
+            ``target_missing``) and ``match_result`` (paired point arrays, or ``None``).
+        """
         reference_result = compute_xfeat_result(
             *reference_tensors,
             resize_rate_w=resize_rate_w,
@@ -546,6 +632,14 @@ class XFeatStereoParser(XFeatBaseParser):
         target_output: dai.NNData,
         result: dict[str, tuple[np.ndarray, np.ndarray] | str | None],
     ) -> None:
+        """Emit matched reference and target points, or an empty feature message.
+
+        Args:
+            reference_output: Supplies the sequence number and, if reference features
+                are missing, timestamps.
+            target_output: Supplies timestamps for matches and missing target features.
+            result: Status and paired points returned by ``compute()``.
+        """
         status = result["status"]
         match_result = result["match_result"]
         if match_result is None:

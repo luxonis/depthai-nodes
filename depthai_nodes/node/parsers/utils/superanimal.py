@@ -67,7 +67,17 @@ def compute_superanimal_keypoints(
     *,
     scale_factor: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Extract normalized keypoints and scores from SuperAnimal heatmaps."""
+    """Decode SuperAnimal heatmaps into normalized landmarks.
+
+    Args:
+        heatmaps: Model heatmap tensor.
+        scale_factor: Nonzero divisor used to convert model coordinates to normalized
+            coordinates.
+
+    Returns:
+        A pair of ``(N, 2)`` keypoint coordinates and ``(N,)`` scores. Coordinates are
+        divided by ``scale_factor``.
+    """
     heatmaps_scale_factor = (
         scale_factor / heatmaps.shape[1],
         scale_factor / heatmaps.shape[2],

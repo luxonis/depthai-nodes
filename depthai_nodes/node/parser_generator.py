@@ -34,6 +34,11 @@ class ParserGenerator(dai.node.ThreadedHostNode):
 
         Returns:
             Mapping of model head index to parser node.
+
+        Raises:
+            ValueError: If the archive has no heads, a requested parser is unavailable,
+                or required model geometry is invalid.
+            IndexError: If ``headIndex`` is outside the archive head list.
         """
 
         heads: list = nnArchive.getConfig().model.heads  # type: ignore

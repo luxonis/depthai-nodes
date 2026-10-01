@@ -7,7 +7,24 @@ def compute_segmentation_class_map(
     classes_in_one_layer: bool = False,
     background_class: bool = False,
 ) -> np.ndarray:
-    """Convert segmentation logits into a class map."""
+    """Convert segmentation scores or encoded labels into a uint8 class map.
+
+    Args:
+        segmentation_mask: CHW or HWC tensor, optionally batched. A 4D tensor uses its
+            first batch item; the smallest axis is treated as the class axis.
+        classes_in_one_layer: Whether a single channel already encodes class IDs rather
+            than foreground scores.
+        background_class: Replace winning class 0 with 255 for multi-class score
+            tensors.
+
+    Returns:
+        An HW uint8 label map. Unassigned pixels are 255. A single foreground-score
+        channel is compared against zero and emits class 0 for positive pixels.
+
+    Raises:
+        ValueError: If the unbatched tensor is not 3D or the resulting values are
+            outside [0, 255].
+    """
     mask = np.asarray(segmentation_mask)
 
     if mask.ndim == 4:

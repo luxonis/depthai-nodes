@@ -18,6 +18,16 @@ from depthai_nodes.node.parsers.utils.yolo import (
 
 @dataclass(frozen=True)
 class YOLOComputeInputs:
+    """Immutable configuration and tensor bundle for YOLO decoding.
+
+    Created by ``YOLOExtendedParser.extract()`` and consumed by ``compute()``.
+    Fields correspond to arguments of
+    `depthai_nodes.node.parsers.utils.yolo.compute_yolo_detections`. Optional pose and
+    mask fields
+    are populated only for the selected model mode. Array contents remain mutable
+    even though the dataclass fields cannot be reassigned.
+    """
+
     subtype: YOLOSubtype
     layer_names: list[str]
     outputs_values: list[np.ndarray]
@@ -440,6 +450,11 @@ class YOLOExtendedParser(BaseParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("YOLOExtendedParser run started")
         while self.isRunning():
             try:
@@ -451,6 +466,20 @@ class YOLOExtendedParser(BaseParser):
             self.emit(output, payload)
 
     def extract(self, output: dai.NNData) -> YOLOComputeInputs:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            A ``YOLOComputeInputs`` bundle with dequantized tensors, resolved image
+            geometry, strides, and current parser settings.
+
+        Raises:
+            ValueError: If YOLO26 has no configured input shape, or head strides cannot
+                be resolved.
+        """
         layer_names = self.output_layer_names or output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layer_names}")
 
@@ -569,6 +598,23 @@ class YOLOExtendedParser(BaseParser):
 
     @staticmethod
     def compute(inputs: YOLOComputeInputs) -> dict[str, Any]:
+        """Decode a prepared YOLO input bundle.
+
+        Args:
+            inputs: Tensor and configuration bundle returned by ``extract()``.
+
+        Returns:
+            A dictionary containing ``mode`` (0 detection, 1 pose, 2 segmentation),
+            normalized ``bboxes``, ``scores``, ``labels``, ``label_names``,
+            ``keypoints``, ``keypoints_scores``, ``keypoint_label_names``,
+            ``keypoint_edges``, and ``masks``. Boxes use center-XY/width/height. A
+            segmentation mask contains int16 detection indexes and -1 background; other
+            modes return ``None`` for masks.
+
+        Note:
+            Uses `depthai_nodes.node.parsers.utils.yolo.compute_yolo_detections` for
+            decoding and validation.
+        """
         return compute_yolo_detections(
             subtype=inputs.subtype,
             layer_names=inputs.layer_names,
@@ -595,6 +641,17 @@ class YOLOExtendedParser(BaseParser):
         )
 
     def emit(self, output: dai.NNData, payload: dict[str, Any]) -> None:
+        """Create a ``dai.ImgDetections`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            payload: Dictionary returned by ``compute()`` with the mode-specific boxes,
+                scores, labels, keypoints, and masks.
+        """
         mode = payload["mode"]
         if mode == self._KPTS_MODE:
             detections_message = create_detection_message(

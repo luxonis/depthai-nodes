@@ -4,6 +4,8 @@ from enum import Enum
 
 
 class LogLevel(Enum):
+    """Log-level names accepted by depthai-nodes configuration."""
+
     CRITICAL = "CRITICAL"
     DEBUG = "DEBUG"
     ERR = "ERR"
@@ -12,6 +14,14 @@ class LogLevel(Enum):
 
 
 def get_logger(name: str | None = None) -> logging.Logger:
+    """Get the package logger or one of its children.
+
+    Args:
+        name: Optional child name below the ``depthai-nodes`` logger.
+
+    Returns:
+        The package logger when no name is supplied, otherwise its named child.
+    """
     logger = logging.getLogger("depthai-nodes")
     if name:
         logger = logger.getChild(name)
@@ -56,6 +66,18 @@ def setup_logging(level: str | None = None, file: str | None = None):
 
 
 def get_log_level(level_str: str | None) -> LogLevel | None:
+    """Parse a case-insensitive logging level.
+
+    Args:
+        level_str: Level name, or ``None``. DepthAI ``OFF`` maps to ``WARN`` and
+            ``TRACE`` maps to ``INFO``.
+
+    Returns:
+        Matching ``LogLevel``, or ``None`` for an omitted level.
+
+    Raises:
+        ValueError: If the name is not recognized.
+    """
     try:
         if level_str is None:
             return None
