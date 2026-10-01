@@ -15,34 +15,28 @@ class XFeatBaseParser(BaseParser):
     """Base parser class for parsing the output of the XFeat model. It is the parent
     class of the XFeatMonoParser and XFeatStereoParser classes.
 
-    Attributes
-    ----------
-    reference_input : Node.Input
-        Reference input for stereo mode. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    target_input : Node.Input
-        Target input for stereo mode. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    output_layer_feats : str
-        Name of the output layer containing features.
-    output_layer_keypoints : str
-        Name of the output layer containing keypoints.
-    output_layer_heatmaps : str
-        Name of the output layer containing heatmaps.
-    original_size : tuple[float, float]
-        Original image size.
-    input_size : tuple[float, float]
-        Input image size.
-    max_keypoints : int
-        Maximum number of keypoints to keep.
+    Attributes:
+        reference_input (``Node.Input``): Reference input for stereo mode. It is a
+            linking point to which the Neural Network's output is linked. It accepts the
+            output of the Neural Network node.
+        target_input (``Node.Input``): Target input for stereo mode. It is a linking
+            point to which the Neural Network's output is linked. It accepts the output
+            of the Neural Network node.
+        output_layer_feats (``str``): Name of the output layer containing features.
+        output_layer_keypoints (``str``): Name of the output layer containing keypoints.
+        output_layer_heatmaps (``str``): Name of the output layer containing heatmaps.
+        original_size (``tuple[float, float]``): Original image size.
+        input_size (``tuple[float, float]``): Input image size.
+        max_keypoints (``int``): Maximum number of keypoints to keep.
 
-    Error Handling
-    --------------
-    **ValueError**: If the number of output layers is not E{3}.
-    **ValueError**: If the original image size is not specified.
-    **ValueError**: If the input image size is not specified.
-    **ValueError**: If the maximum number of keypoints is not specified.
-    **ValueError**: If the output layer containing features is not specified.
-    **ValueError**: If the output layer containing keypoints is not specified.
-    **ValueError**: If the output layer containing heatmaps is not specified.
+    Raises:
+        ValueError: If the number of output layers is not 3.
+        ValueError: If the original image size is not specified.
+        ValueError: If the input image size is not specified.
+        ValueError: If the maximum number of keypoints is not specified.
+        ValueError: If the output layer containing features is not specified.
+        ValueError: If the output layer containing keypoints is not specified.
+        ValueError: If the output layer containing heatmaps is not specified.
     """
 
     def __init__(
@@ -54,7 +48,16 @@ class XFeatBaseParser(BaseParser):
         input_size: tuple[float, float] = (640, 352),
         max_keypoints: int = 4096,
     ) -> None:
-        """Initializes the parser node."""
+        """Store tensor names and image geometry for XFeat decoding.
+
+        Args:
+            output_layer_feats: Feature-descriptor layer name.
+            output_layer_keypoints: Keypoint-logit layer name.
+            output_layer_heatmaps: Reliability heatmap layer name.
+            original_size: Source image size as ``(width, height)``.
+            input_size: Model input size as ``(width, height)``.
+            max_keypoints: Maximum number of feature points to keep.
+        """
         super().__init__()
         self._target_input = self.createInput()  # used in stereo mode
 
@@ -81,19 +84,27 @@ class XFeatBaseParser(BaseParser):
 
     @reference_input.setter
     def reference_input(self, reference_input: dai.Node.Input | None):
-        """Sets the reference input."""
+        """Replace the stored XFeat input port.
+
+        Args:
+            reference_input: Input port for the corresponding neural-network stream.
+        """
         self.input = reference_input
 
     @target_input.setter
     def target_input(self, target_input: dai.Node.Input | None):
-        """Sets the target input."""
+        """Replace the stored XFeat input port.
+
+        Args:
+            target_input: Input port for the corresponding neural-network stream.
+        """
         self._target_input = target_input
 
     def setOutputLayerFeats(self, output_layer_feats: str) -> None:
         """Sets the output layer containing features.
 
-        @param output_layer_feats: Name of the output layer containing features.
-        @type output_layer_feats: str
+        Args:
+            output_layer_feats: Name of the output layer containing features.
         """
         if not isinstance(output_layer_feats, str):
             raise ValueError("Output layer containing features must be a string!")
@@ -105,8 +116,8 @@ class XFeatBaseParser(BaseParser):
     def setOutputLayerKeypoints(self, output_layer_keypoints: str) -> None:
         """Sets the output layer containing keypoints.
 
-        @param output_layer_keypoints: Name of the output layer containing keypoints.
-        @type output_layer_keypoints: str
+        Args:
+            output_layer_keypoints: Name of the output layer containing keypoints.
         """
         if not isinstance(output_layer_keypoints, str):
             raise ValueError("Output layer containing keypoints must be a string!")
@@ -118,8 +129,8 @@ class XFeatBaseParser(BaseParser):
     def setOutputLayerHeatmaps(self, output_layer_heatmaps: str) -> None:
         """Sets the output layer containing heatmaps.
 
-        @param output_layer_heatmaps: Name of the output layer containing heatmaps.
-        @type output_layer_heatmaps: str
+        Args:
+            output_layer_heatmaps: Name of the output layer containing heatmaps.
         """
         if not isinstance(output_layer_heatmaps, str):
             raise ValueError("Output layer containing heatmaps must be a string!")
@@ -131,8 +142,8 @@ class XFeatBaseParser(BaseParser):
     def setOriginalSize(self, original_size: tuple[int, int]) -> None:
         """Sets the original image size.
 
-        @param original_size: Original image size.
-        @type original_size: tuple[int, int]
+        Args:
+            original_size: Original image size.
         """
         if not isinstance(original_size, tuple) or len(original_size) != 2:
             raise ValueError("Original image size must be a tuple of two ints!")
@@ -145,8 +156,8 @@ class XFeatBaseParser(BaseParser):
     def setInputSize(self, input_size: tuple[int, int]) -> None:
         """Sets the input image size.
 
-        @param input_size: Input image size.
-        @type input_size: tuple[int, int]
+        Args:
+            input_size: Input image size.
         """
         if not isinstance(input_size, tuple) or len(input_size) != 2:
             raise ValueError("Input image size must be a tuple of two ints!")
@@ -159,8 +170,8 @@ class XFeatBaseParser(BaseParser):
     def setMaxKeypoints(self, max_keypoints: int) -> None:
         """Sets the maximum number of keypoints to keep.
 
-        @param max_keypoints: Maximum number of keypoints.
-        @type max_keypoints: int
+        Args:
+            max_keypoints: Maximum number of keypoints.
         """
         if not isinstance(max_keypoints, int):
             raise ValueError("Maximum number of keypoints must be an int!")
@@ -173,10 +184,11 @@ class XFeatBaseParser(BaseParser):
     ) -> "XFeatBaseParser":
         """Configures the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: XFeatBaseParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
 
         output_layers = head_config.get("outputs", [])
@@ -225,10 +237,11 @@ class XFeatBaseParser(BaseParser):
         heatmaps. It also handles the reshaping of the tensors by requesting the NCHW
         storage order.
 
-        @param output: Output from the Neural Network node.
-        @type output: dai.NNData
-        @return: Tuple of features, keypoints, and heatmaps.
-        @rtype: tuple[np.ndarray, np.ndarray, np.ndarray]
+        Args:
+            output: Output from the Neural Network node.
+
+        Returns:
+            Tuple of features, keypoints, and heatmaps.
         """
         feats = output.getTensor(
             self.output_layer_feats,
@@ -254,39 +267,28 @@ class XFeatMonoParser(XFeatBaseParser):
     parsing the output from one source (e.g. one camera). The reference frame can be set
     with trigger method.
 
-    Attributes
-    ----------
-    output_layer_feats : str
-        Name of the output layer containing features.
-    output_layer_keypoints : str
-        Name of the output layer containing keypoints.
-    output_layer_heatmaps : str
-        Name of the output layer containing heatmaps.
-    original_size : tuple[float, float]
-        Original image size.
-    input_size : tuple[float, float]
-        Input image size.
-    max_keypoints : int
-        Maximum number of keypoints to keep.
-    previous_results : np.ndarray
-        Previous results from the model. Previous results are used to match keypoints between two frames.
-    trigger : bool
-        Trigger to set the reference frame.
+    Attributes:
+        output_layer_feats (``str``): Name of the output layer containing features.
+        output_layer_keypoints (``str``): Name of the output layer containing keypoints.
+        output_layer_heatmaps (``str``): Name of the output layer containing heatmaps.
+        original_size (``tuple[float, float]``): Original image size.
+        input_size (``tuple[float, float]``): Input image size.
+        max_keypoints (``int``): Maximum number of keypoints to keep.
+        previous_results (``np.ndarray``): Previous results from the model. Previous
+            results are used to match keypoints between two frames.
+        trigger (``bool``): Trigger to set the reference frame.
 
-    Output Message/s
-    ----------------
-    **Type**: dai.TrackedFeatures
+    Note:
+        Emits ``dai.TrackedFeatures`` messages. TrackedFeatures message containing
+        matched keypoints with the same ID.
 
-    **Description**: TrackedFeatures message containing matched keypoints with the same ID.
-
-    Error Handling
-    --------------
-    **ValueError**: If the original image size is not specified.
-    **ValueError**: If the input image size is not specified.
-    **ValueError**: If the maximum number of keypoints is not specified.
-    **ValueError**: If the output layer containing features is not specified.
-    **ValueError**: If the output layer containing keypoints is not specified.
-    **ValueError**: If the output layer containing heatmaps is not specified.
+    Raises:
+        ValueError: If the original image size is not specified.
+        ValueError: If the input image size is not specified.
+        ValueError: If the maximum number of keypoints is not specified.
+        ValueError: If the output layer containing features is not specified.
+        ValueError: If the output layer containing keypoints is not specified.
+        ValueError: If the output layer containing heatmaps is not specified.
     """
 
     def __init__(
@@ -300,18 +302,13 @@ class XFeatMonoParser(XFeatBaseParser):
     ) -> None:
         """Initializes the XFeatParser node.
 
-        @param output_layer_feats: Name of the output layer containing features.
-        @type output_layer_feats: str
-        @param output_layer_keypoints: Name of the output layer containing keypoints.
-        @type output_layer_keypoints: str
-        @param output_layer_heatmaps: Name of the output layer containing heatmaps.
-        @type output_layer_heatmaps: str
-        @param original_size: Original image size.
-        @type original_size: tuple[float, float]
-        @param input_size: Input image size.
-        @type input_size: tuple[float, float]
-        @param max_keypoints: Maximum number of keypoints to keep.
-        @type max_keypoints: int
+        Args:
+            output_layer_feats: Name of the output layer containing features.
+            output_layer_keypoints: Name of the output layer containing keypoints.
+            output_layer_heatmaps: Name of the output layer containing heatmaps.
+            original_size: Original image size.
+            input_size: Input image size.
+            max_keypoints: Maximum number of keypoints to keep.
         """
         super().__init__(
             output_layer_feats,
@@ -335,6 +332,11 @@ class XFeatMonoParser(XFeatBaseParser):
         self._logger.debug(f"Trigger set to {self.trigger}")
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("XFeatMonoParser run started")
         self.validateParams()
 
@@ -358,6 +360,16 @@ class XFeatMonoParser(XFeatBaseParser):
             self.emit(output, result)
 
     def extract(self, output: dai.NNData) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Extract feature, keypoint, and heatmap tensors from one network result.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            A tuple of feature descriptors, keypoint logits, and heatmaps, as produced
+            by ``extractTensors()``.
+        """
         self._logger.debug(f"Processing input with layers: {output.getAllLayerNames()}")
         return self.extractTensors(output)
 
@@ -370,6 +382,21 @@ class XFeatMonoParser(XFeatBaseParser):
         resize_rate_w: float,
         resize_rate_h: float,
     ) -> dict[str, Any] | None:
+        """Compute features for the first batch item.
+
+        Args:
+            feats: Batched dense feature-descriptor tensor.
+            keypoints: Model keypoint tensor.
+            heatmaps: Model heatmap tensor.
+            resize_rate_w: Horizontal scale factor mapping model coordinates to the
+                source image.
+            resize_rate_h: Vertical scale factor mapping model coordinates to the source
+                image.
+
+        Returns:
+            A dictionary containing keypoints, scores, and descriptors for the first
+            image, or ``None`` when no candidates are found.
+        """
         result = compute_xfeat_result(
             feats,
             keypoints,
@@ -384,6 +411,18 @@ class XFeatMonoParser(XFeatBaseParser):
         return None
 
     def emit(self, output: dai.NNData, result: dict[str, Any] | None) -> None:
+        """Match features against the stored reference and emit tracked points.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            result: Current computed keypoints, scores, and descriptors, or ``None``.
+
+        Note:
+            Emits an empty message if no current features or no reference is available.
+            Copies current timestamps and sequence number. A pending trigger replaces
+            the stored reference with a non-None result after matching.
+        """
         if result is None:
             matched_points = dai.TrackedFeatures()
             matched_points.setTimestamp(output.getTimestamp())
@@ -418,43 +457,40 @@ class XFeatMonoParser(XFeatBaseParser):
 
 
 class XFeatStereoParser(XFeatBaseParser):
-    """Parser class for parsing the output of the XFeat model. It can be used for parsing the output from two sources (e.g. two cameras - left and right).
+    """Parser class for parsing the output of the XFeat model. It can be used for parsing
+    the output from two sources (e.g. two cameras - left and right).
 
-    Attributes
-    ----------
-    reference_input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    target_input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
-    output_layer_feats : str
-        Name of the output layer from which the features are extracted.
-    output_layer_keypoints : str
-        Name of the output layer from which the keypoints are extracted.
-    output_layer_heatmaps : str
-        Name of the output layer from which the heatmaps are extracted.
-    original_size : tuple[float, float]
-        Original image size.
-    input_size : tuple[float, float]
-        Input image size.
-    max_keypoints : int
-        Maximum number of keypoints to keep.
+    Attributes:
+        reference_input (``Node.Input``): Node's input. It is a linking point to which
+            the Neural Network's output is linked. It accepts the output of the Neural
+            Network node.
+        target_input (``Node.Input``): Node's input. It is a linking point to which the
+            Neural Network's output is linked. It accepts the output of the Neural
+            Network node.
+        out (``Node.Output``): Parser sends the processed network results to this output
+            in a form of DepthAI message. It is a linking point from which the processed
+            network results are retrieved.
+        output_layer_feats (``str``): Name of the output layer from which the features
+            are extracted.
+        output_layer_keypoints (``str``): Name of the output layer from which the
+            keypoints are extracted.
+        output_layer_heatmaps (``str``): Name of the output layer from which the
+            heatmaps are extracted.
+        original_size (``tuple[float, float]``): Original image size.
+        input_size (``tuple[float, float]``): Input image size.
+        max_keypoints (``int``): Maximum number of keypoints to keep.
 
-    Output Message/s
-    ----------------
-    **Type**: dai.TrackedFeatures
+    Note:
+        Emits ``dai.TrackedFeatures`` messages. TrackedFeatures message containing
+        matched keypoints with the same ID.
 
-    **Description**: TrackedFeatures message containing matched keypoints with the same ID.
-
-    Error Handling
-    --------------
-    **ValueError**: If the original image size is not specified.
-    **ValueError**: If the input image size is not specified.
-    **ValueError**: If the maximum number of keypoints is not specified.
-    **ValueError**: If the output layer containing features is not specified.
-    **ValueError**: If the output layer containing keypoints is not specified.
-    **ValueError**: If the output layer containing heatmaps is not specified.
+    Raises:
+        ValueError: If the original image size is not specified.
+        ValueError: If the input image size is not specified.
+        ValueError: If the maximum number of keypoints is not specified.
+        ValueError: If the output layer containing features is not specified.
+        ValueError: If the output layer containing keypoints is not specified.
+        ValueError: If the output layer containing heatmaps is not specified.
     """
 
     def __init__(
@@ -468,18 +504,13 @@ class XFeatStereoParser(XFeatBaseParser):
     ) -> None:
         """Initializes the XFeatParser node.
 
-        @param output_layer_feats: Name of the output layer containing features.
-        @type output_layer_feats: str
-        @param output_layer_keypoints: Name of the output layer containing keypoints.
-        @type output_layer_keypoints: str
-        @param output_layer_heatmaps: Name of the output layer containing heatmaps.
-        @type output_layer_heatmaps: str
-        @param original_size: Original image size.
-        @type original_size: tuple[float, float]
-        @param input_size: Input image size.
-        @type input_size: tuple[float, float]
-        @param max_keypoints: Maximum number of keypoints to keep.
-        @type max_keypoints: int
+        Args:
+            output_layer_feats: Name of the output layer containing features.
+            output_layer_keypoints: Name of the output layer containing keypoints.
+            output_layer_heatmaps: Name of the output layer containing heatmaps.
+            original_size: Original image size.
+            input_size: Input image size.
+            max_keypoints: Maximum number of keypoints to keep.
         """
         super().__init__(
             output_layer_feats,
@@ -495,6 +526,11 @@ class XFeatStereoParser(XFeatBaseParser):
         )
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("XFeatStereoParser run started")
         self.validateParams()
 
@@ -525,6 +561,16 @@ class XFeatStereoParser(XFeatBaseParser):
         tuple[np.ndarray, np.ndarray, np.ndarray],
         tuple[np.ndarray, np.ndarray, np.ndarray],
     ]:
+        """Extract matching tensors from both network results.
+
+        Args:
+            reference_output: Reference-image network output.
+            target_output: Target-image network output.
+
+        Returns:
+            Reference and target tuples, each containing features, keypoint logits, and
+            heatmaps.
+        """
         self._logger.debug(
             f"Processing reference input with layers: {reference_output.getAllLayerNames()}"
         )
@@ -541,6 +587,18 @@ class XFeatStereoParser(XFeatBaseParser):
         resize_rate_w: float,
         resize_rate_h: float,
     ) -> dict[str, tuple[np.ndarray, np.ndarray] | str | None]:
+        """Compute and match features between reference and target tensors.
+
+        Args:
+            reference_tensors: Reference feature, keypoint, and heatmap tensors.
+            target_tensors: Target feature, keypoint, and heatmap tensors.
+            resize_rate_w: Horizontal scale factor applied to keypoint coordinates.
+            resize_rate_h: Vertical scale factor applied to keypoint coordinates.
+
+        Returns:
+            Dictionary with ``status`` (``matched``, ``reference_missing``, or
+            ``target_missing``) and ``match_result`` (paired point arrays, or ``None``).
+        """
         reference_result = compute_xfeat_result(
             *reference_tensors,
             resize_rate_w=resize_rate_w,
@@ -574,6 +632,14 @@ class XFeatStereoParser(XFeatBaseParser):
         target_output: dai.NNData,
         result: dict[str, tuple[np.ndarray, np.ndarray] | str | None],
     ) -> None:
+        """Emit matched reference and target points, or an empty feature message.
+
+        Args:
+            reference_output: Supplies the sequence number and, if reference features
+                are missing, timestamps.
+            target_output: Supplies timestamps for matches and missing target features.
+            result: Status and paired points returned by ``compute()``.
+        """
         status = result["status"]
         match_result = result["match_result"]
         if match_result is None:

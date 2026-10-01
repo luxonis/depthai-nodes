@@ -6,11 +6,12 @@ def compute_area(
 ):
     """Computes the normalized area of a detection bounding box.
 
-    @param detection: Detection object to compute the area for. Can be of type
-        dai.ImgDetection, or dai.SpatialImgDetection.
-    @type detection: dai.ImgDetection | dai.SpatialImgDetection
-    @return: Normalized area (width * height) of the detection bounding box.
-    @rtype: float
+    Args:
+        detection: Detection object to compute the area for. Can be of type
+            dai.ImgDetection, or dai.SpatialImgDetection.
+
+    Returns:
+        ``float``: Normalized area (width * height) of the detection bounding box.
     """
     if isinstance(detection, (dai.ImgDetection, dai.SpatialImgDetection)):
         width = detection.xmax - detection.xmin

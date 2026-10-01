@@ -4,16 +4,11 @@ import numpy as np
 def normalize_keypoints(keypoints: np.ndarray, height: int, width: int) -> np.ndarray:
     """Normalize keypoint coordinates to (0, 1).
 
-    Parameters:
-    @param keypoints: A numpy array of shape (N, 2) or (N, K, 2) where N is the number of keypoint sets and K is the number of keypoint in each set.
-    @type np.ndarray
-    @param height: The height of the image.
-    @type height: int
-    @param width: The width of the image.
-    @type width: int
-
-    Returns:
-    np.ndarray: A numpy array of shape (N, 2) containing the normalized keypoints.
+    Args:
+        keypoints: A numpy array of shape (N, 2) or (N, K, 2) where N is the number of
+            keypoint sets and K is the number of keypoint in each set.
+        height: The height of the image.
+        width: The width of the image.
     """
     keypoints = keypoints.astype(np.float32)
     if not isinstance(keypoints, np.ndarray):
@@ -45,7 +40,22 @@ def compute_keypoints(
     n_keypoints: int,
     scale_factor: float = 1.0,
 ) -> np.ndarray:
-    """Reshape and normalize a keypoint tensor."""
+    """Reshape and normalize a keypoint tensor.
+
+    Args:
+        keypoints: Model keypoint tensor.
+        n_keypoints: Number of keypoints encoded per prediction.
+        scale_factor: Nonzero divisor used to convert model coordinates to normalized
+            coordinates.
+
+    Returns:
+        Float32 coordinates of shape ``(n_keypoints, 2)`` or ``(n_keypoints, 3)``,
+        divided by ``scale_factor`` and clipped to [0, 1].
+
+    Raises:
+        ValueError: If the tensor does not contain two or three coordinates per
+            keypoint.
+    """
     parsed_keypoints = np.asarray(keypoints, dtype=np.float32)
     num_coords = int(np.prod(parsed_keypoints.shape) / n_keypoints)
 

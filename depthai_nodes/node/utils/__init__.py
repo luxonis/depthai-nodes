@@ -1,3 +1,5 @@
+"""Helpers for coordinate remapping, cropping scripts, image layout, and suppression."""
+
 from .detection_config_generator import generate_script_content
 from .nms import nms_detections
 from .to_planar import to_planar

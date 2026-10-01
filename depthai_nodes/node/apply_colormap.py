@@ -10,27 +10,24 @@ class ApplyColormap(BaseHostNode):
     """A host node that applies a colormap to a 2D array (e.g. depth maps, segmentation
     masks, heatmaps, etc.).
 
-    This node is generic and uses per-frame max-value normalization. For depth visualization prefer 'ApplyDepthColormap'
-    to avoid flicker caused by the changing normalization range.
+    This node is generic and uses per-frame max-value normalization. For depth
+    visualization prefer 'ApplyDepthColormap' to avoid flicker caused by the changing
+    normalization range.
 
-    Parameters
-    ----------
-    colormapValue : int | np.ndarray, optional
-        OpenCV colormap enum (e.g. cv2.COLORMAP_JET) or a custom OpenCV-compatible
-        colormap LUT. Default is cv2.COLORMAP_JET.
-    maxValue : int, optional
-        Maximum value used for normalization. If set to 0, the maximum value
-        is determined per-frame. Default is 0.
+    Args:
+        colormapValue: OpenCV colormap enum (e.g. cv2.COLORMAP_JET) or a custom
+            OpenCV-compatible colormap LUT. Default is cv2.COLORMAP_JET.
+        maxValue: Maximum value used for normalization. If set to 0, the maximum value
+            is determined per-frame. Default is 0.
 
-    Inputs
-    ------
-    frame : dai.ImgFrame | dai.beta.Map2D | dai.ImgDetections | dai.SegmentationMask
-        Input message containing a 2D array to be colorized.
+    Inputs:
 
-    Outputs
-    -------
-    output : dai.ImgFrame
-        Colorized output frame (3-channel BGR).
+    * ``frame : dai.ImgFrame | dai.beta.Map2D | dai.ImgDetections |
+      dai.SegmentationMask``: Input message containing a 2D array to be colorized.
+
+    Outputs:
+
+    * ``output : dai.ImgFrame``: Colorized output frame (3-channel BGR).
     """
 
     def __init__(
@@ -38,6 +35,15 @@ class ApplyColormap(BaseHostNode):
         colormapValue: int | np.ndarray = cv2.COLORMAP_JET,
         maxValue: int = 0,
     ) -> None:
+        """Initialize the image-processing node.
+
+        Args:
+            colormapValue: OpenCV colormap enum (e.g. cv2.COLORMAP_JET) or a custom
+                OpenCV-compatible colormap LUT. Default is cv2.COLORMAP_JET.
+            maxValue: Maximum value used for normalization. If set to 0, the maximum
+                value
+                is determined per-frame. Default is 0.
+        """
         super().__init__()
 
         self.out.setPossibleDatatypes([(dai.DatatypeEnum.ImgFrame, True)])
@@ -52,9 +58,12 @@ class ApplyColormap(BaseHostNode):
     def setColormap(self, colormapValue: int | np.ndarray) -> None:
         """Set the color mapping applied to incoming maps.
 
-        @param colormapValue: OpenCV colormap enum value or a custom OpenCV-compatible
-            LUT.
-        @type colormapValue: int | np.ndarray
+        Args:
+            colormapValue: OpenCV colormap enum value or a custom OpenCV-compatible LUT.
+
+        Raises:
+            ValueError: If a custom colormap is not a uint8 array of shape ``(256, 1,
+                3)``.
         """
         self._colormap = self._make_colormap(colormapValue)
         if isinstance(colormapValue, int):
@@ -65,26 +74,39 @@ class ApplyColormap(BaseHostNode):
     def setMaxValue(self, maxValue: int) -> None:
         """Set the normalization ceiling used during colorization.
 
-        @param maxValue: Maximum input value used for normalization. 0 keeps per-frame
-            normalization.
-        @type maxValue: int
+        Args:
+            maxValue: Maximum input value used for normalization. 0 keeps per-frame
+                normalization.
+
+        Raises:
+            ValueError: If the ceiling is not a non-negative integer.
         """
         self._max_value = self._validate_max_value(maxValue)
 
     def build(self, frame: dai.Node.Output) -> "ApplyColormap":
         """Connect the input stream to the node.
 
-        @param frame: Upstream output producing the map-like message to colorize.
-        @type frame: dai.Node.Output
-        @return: The configured node instance.
-        @rtype: ApplyColormap
+        Args:
+            frame: Upstream output producing the map-like message to colorize.
+
+        Returns:
+            The configured node instance.
         """
         self.link_args(frame)
         self._logger.debug("ApplyColormap built")
         return self
 
     def process(self, frame: dai.Buffer) -> None:
-        """Convert the incoming map-like message into a colorized image frame."""
+        """Colorize a numeric map and emit an image with source metadata.
+
+        Args:
+            frame: RAW ImgFrame, beta Map2D, SegmentationMask, or ImgDetections with an
+                instance mask. Mask label 255 is background.
+
+        Raises:
+            TypeError: If an ImgFrame does not use a RAW pixel format.
+            ValueError: If the message type is unsupported.
+        """
         self._logger.debug("Processing new input")
         input_map = self._get_input_map(frame)
         color_map = self._colorize(input_map)

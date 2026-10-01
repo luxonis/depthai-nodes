@@ -5,12 +5,12 @@ import numpy as np
 def nms(dets: np.ndarray, nms_thresh: float = 0.5) -> list[int]:
     """Non-maximum suppression.
 
-    @param dets: Bounding boxes and confidence scores.
-    @type dets: np.ndarray
-    @param nms_thresh: Non-maximum suppression threshold.
-    @type nms_thresh: float
-    @return: Indices of the detections to keep.
-    @rtype: list[int]
+    Args:
+        dets: Bounding boxes and confidence scores.
+        nms_thresh: Non-maximum suppression threshold.
+
+    Returns:
+        Indices of the detections to keep.
     """
     thresh = nms_thresh
     x1 = dets[:, 0]
@@ -49,16 +49,18 @@ def nms_cv2(
     iou_threshold: float,
     max_det: int,
 ):
-    """Non-maximum suppression from the opencv-python library.
+    """Apply OpenCV non-maximum suppression to bounding boxes.
 
-    @param bboxes: A numpy array of shape (N, 4) containing the bounding boxes.
-    @type bboxes: np.ndarray
-    @param scores: A numpy array of shape (N,) containing the scores.
-    @type scores: np.ndarray
-    @param nms_thresh: Non-maximum suppression threshold.
-    @type nms_thresh: float
-    @return: Indices of the detections to keep.
-    @rtype: list[int]
+    Args:
+        bboxes: Array of shape ``(N, 4)`` in ``[x, y, width, height]`` format.
+        scores: Confidence scores of shape ``(N,)``.
+        conf_threshold: Score threshold for filtering candidates.
+        iou_threshold: Intersection-over-union threshold for suppression.
+        max_det: Maximum number of candidates considered by OpenCV.
+
+    Returns:
+        ``list[int]``: Indices of the retained boxes, or an empty list when there are no
+            candidates.
     """
 
     # NMS

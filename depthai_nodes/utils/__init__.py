@@ -1,3 +1,5 @@
+"""Annotation drawing, annotation sizes, and viewport clipping utilities."""
+
 from .annotation_helper import AnnotationHelper
 from .annotation_sizes import AnnotationSizes
 from .smaller_annotation_sizes import SmallerAnnotationSizes

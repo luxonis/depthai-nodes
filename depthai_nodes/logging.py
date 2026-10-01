@@ -4,6 +4,8 @@ from enum import Enum
 
 
 class LogLevel(Enum):
+    """Log-level names accepted by depthai-nodes configuration."""
+
     CRITICAL = "CRITICAL"
     DEBUG = "DEBUG"
     ERR = "ERR"
@@ -12,6 +14,14 @@ class LogLevel(Enum):
 
 
 def get_logger(name: str | None = None) -> logging.Logger:
+    """Get the package logger or one of its children.
+
+    Args:
+        name: Optional child name below the ``depthai-nodes`` logger.
+
+    Returns:
+        The package logger when no name is supplied, otherwise its named child.
+    """
     logger = logging.getLogger("depthai-nodes")
     if name:
         logger = logger.getChild(name)
@@ -21,13 +31,12 @@ def get_logger(name: str | None = None) -> logging.Logger:
 def setup_logging(level: str | None = None, file: str | None = None):
     """Globally configures logging for depthai_nodes package.
 
-    @type level: str or None
-    @param level: Logging level. One of "CRITICAL", "DEBUG", "ERR", "INFO", and "WARN".
-        Can be changed using "DEPTHAI_NODES_LEVEL" env variable. If not set defaults to
-        "DEPTHAI_LEVEL" if set or "WARN".
-    @type file: str or None
-    @param file: Path to a file where logs will be saved. If None, logs will not be
-        saved. Defaults to None.
+    Args:
+        level: Logging level. One of "CRITICAL", "DEBUG", "ERR", "INFO", and "WARN". Can
+            be changed using "DEPTHAI_NODES_LEVEL" env variable. If not set defaults to
+            "DEPTHAI_LEVEL" if set or "WARN".
+        file: Path to a file where logs will be saved. If None, logs will not be saved.
+            Defaults to None.
     """
     logger = get_logger()
     passed_level = get_log_level(level)
@@ -57,6 +66,18 @@ def setup_logging(level: str | None = None, file: str | None = None):
 
 
 def get_log_level(level_str: str | None) -> LogLevel | None:
+    """Parse a case-insensitive logging level.
+
+    Args:
+        level_str: Level name, or ``None``. DepthAI ``OFF`` maps to ``WARN`` and
+            ``TRACE`` maps to ``INFO``.
+
+    Returns:
+        Matching ``LogLevel``, or ``None`` for an omitted level.
+
+    Raises:
+        ValueError: If the name is not recognized.
+    """
     try:
         if level_str is None:
             return None

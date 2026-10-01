@@ -47,14 +47,13 @@ def resolve_yolo_strides(
 ) -> list[int]:
     """Resolve YOLO strides from metadata or default fallback.
 
-    @param strides: Optional strides from NNArchive head metadata.
-    @type strides: list[int] | tuple[int, ...] | None
-    @param subtype: YOLO subtype.
-    @type subtype: YOLOSubtype
-    @param num_outputs: Number of YOLO output heads.
-    @type num_outputs: int
-    @return: Resolved YOLO strides.
-    @rtype: list[int]
+    Args:
+        strides: Optional strides from NNArchive head metadata.
+        subtype: YOLO subtype.
+        num_outputs: Number of YOLO output heads.
+
+    Returns:
+        Resolved YOLO strides.
     """
     if strides is None:
         return (
@@ -92,14 +91,13 @@ def resolve_yolo_strides(
 def make_grid_numpy(ny: int, nx: int, na: int) -> np.ndarray:
     """Create a grid of shape (1, na, ny, nx, 2)
 
-    @param ny: Number of y coordinates.
-    @type ny: int
-    @param nx: Number of x coordinates.
-    @type nx: int
-    @param na: Number of anchors.
-    @type na: int
-    @return: Grid.
-    @rtype: np.ndarray
+    Args:
+        ny: Number of y coordinates.
+        nx: Number of x coordinates.
+        na: Number of anchors.
+
+    Returns:
+        Grid.
     """
     yv, xv = np.meshgrid(np.arange(ny), np.arange(nx), indexing="ij")
     return np.stack((xv, yv), 2).reshape(1, na, ny, nx, 2)
@@ -122,34 +120,25 @@ def non_max_suppression(
 ) -> list[np.ndarray]:
     """Performs Non-Maximum Suppression (NMS) on inference results.
 
-    @param prediction: Prediction from the model, shape = (batch_size, boxes, xy+wh+...)
-    @type prediction: np.ndarray
-    @param conf_thres: Confidence threshold.
-    @type conf_thres: float
-    @param iou_thres: Intersection over union threshold.
-    @type iou_thres: float
-    @param classes: For filtering by classes.
-    @type classes: list | None
-    @param num_classes: Number of classes.
-    @type num_classes: int
-    @param agnostic: Runs NMS on all boxes together rather than per class if True.
-    @type agnostic: bool
-    @param multi_label: Multilabel classification.
-    @type multi_label: bool
-    @param max_det: Limiting detections.
-    @type max_det: int
-    @param max_time_img: Maximum time for processing an image.
-    @type max_time_img: float
-    @param max_nms: Maximum number of boxes.
-    @type max_nms: int
-    @param max_wh: Maximum width and height.
-    @type max_wh: int
-    @param kpts_mode: Keypoints mode.
-    @type kpts_mode: bool
-    @param det_mode: Detection only mode. If True, the output will only contain bbox detections.
-    @type det_mode: bool
-    @return: An array of detections. If det_mode is False, the detections may include kpts or segmentation outputs.
-    @rtype: list[np.ndarray]
+    Args:
+        prediction: Prediction from the model, shape = (batch_size, boxes, xy+wh+...)
+        conf_thres: Confidence threshold.
+        iou_thres: Intersection over union threshold.
+        classes: For filtering by classes.
+        num_classes: Number of classes.
+        agnostic: Runs NMS on all boxes together rather than per class if True.
+        multi_label: Multilabel classification.
+        max_det: Limiting detections.
+        max_time_img: Maximum time for processing an image.
+        max_nms: Maximum number of boxes.
+        max_wh: Maximum width and height.
+        kpts_mode: Keypoints mode.
+        det_mode: Detection only mode. If True, the output will only contain bbox
+            detections.
+
+    Returns:
+        An array of detections. If det_mode is False, the detections may include kpts or
+        segmentation outputs.
     """
     bs = prediction.shape[0]  # batch size
 
@@ -254,24 +243,18 @@ def parse_yolo_output(
 ) -> np.ndarray:
     """Parse a single channel output of an YOLO model.
 
-    @param out: A single output of an YOLO model for the given channel.
-    @type out: np.ndarray
-    @param stride: Stride.
-    @type stride: int
-    @param num_outputs: Number of outputs of the model.
-    @type num_outputs: int
-    @param anchors: Anchors for the given head.
-    @type anchors: np.ndarray | None
-    @param head_id: Head ID.
-    @type head_id: int
-    @param kpts: A single output of keypoints for the given channel.
-    @type kpts: np.ndarray | None
-    @param det_mode: Detection only mode.
-    @type det_mode: bool
-    @param subtype: YOLO version.
-    @type subtype: YOLOSubtype
-    @return: Parsed output.
-    @rtype: np.ndarray
+    Args:
+        out: A single output of an YOLO model for the given channel.
+        stride: Stride.
+        num_outputs: Number of outputs of the model.
+        anchors: Anchors for the given head.
+        head_id: Head ID.
+        kpts: A single output of keypoints for the given channel.
+        det_mode: Detection only mode.
+        subtype: YOLO version.
+
+    Returns:
+        Parsed output.
     """
     na = (
         anchors.shape[0] // 2 if anchors is not None else 1
@@ -368,14 +351,13 @@ def parse_kpts(
 ) -> list[tuple[float, float, float]]:
     """Parse keypoints.
 
-    @param kpts: Result keypoints.
-    @type kpts: np.ndarray
-    @param n_keypoints: Number of keypoints.
-    @type n_keypoints: int
-    @param img_shape: Image shape of the model input in (height, width) format.
-    @type img_shape: tuple[int, int]
-    @return: Parsed keypoints.
-    @rtype: list[tuple[float, float, float]]
+    Args:
+        kpts: Result keypoints.
+        n_keypoints: Number of keypoints.
+        img_shape: Image shape of the model input in (height, width) format.
+
+    Returns:
+        Parsed keypoints.
     """
     h, w = img_shape
     kps = []
@@ -397,21 +379,18 @@ def _apply_conf_and_topk(
 ) -> tuple[np.ndarray, np.ndarray | None]:
     """Apply confidence threshold and top-k filtering.
 
-    @param boxes: Bounding boxes array (A, 4).
-    @type boxes: np.ndarray
-    @param conf: Pre-computed confidence scores (A,).
-    @type conf: np.ndarray
-    @param cls_ids: Class indices (A,).
-    @type cls_ids: np.ndarray
-    @param conf_threshold: Confidence threshold.
-    @type conf_threshold: float
-    @param max_det: Maximum number of detections.
-    @type max_det: int
-    @param auxiliary: generic parameter for task-specific data (mask coefficients for
-        segmentation and keypoints for pose) to be filtered according to the detections
-    @type auxiliary: np.ndarray | None
-    @return: Tuple of (results array (K, 6), filtered auxiliary or None).
-    @rtype: tuple[np.ndarray, np.ndarray | None]
+    Args:
+        boxes: Bounding boxes array (A, 4).
+        conf: Pre-computed confidence scores (A,).
+        cls_ids: Class indices (A,).
+        conf_threshold: Confidence threshold.
+        max_det: Maximum number of detections.
+        auxiliary: generic parameter for task-specific data (mask coefficients for
+            segmentation and keypoints for pose) to be filtered according to the
+            detections
+
+    Returns:
+        Tuple of (results array (K, 6), filtered auxiliary or None).
     """
     keep = conf >= conf_threshold
 
@@ -457,21 +436,19 @@ def decode_yolo26(
 
     YOLO26 end2end output is already decoded to xyxy pixel boxes and includes a
     pre-computed confidence score (ReduceMax over class scores) in column 4. This
-    path only applies confidence thresholding and top-k filtering. It can also filter
-    an auxiliary tensor such as mask coefficients or keypoints using the kept rows.
+    path only applies confidence thresholding and top-k filtering. It can also filter an
+    auxiliary tensor such as mask coefficients or keypoints using the kept rows.
 
-    @param raw: Raw detection tensor (N, A, 5+nc) where columns are
-        [x1, y1, x2, y2, conf, cls_0, ..., cls_nc-1].
-    @type raw: np.ndarray
-    @param conf_threshold: Confidence threshold.
-    @type conf_threshold: float
-    @param max_det: Maximum number of detections.
-    @type max_det: int
-    @param extra_raw: Optional auxiliary tensor (N, A, M) such as mask coefficients or
-        keypoints. When provided the kept rows are returned as the second element.
-    @type extra_raw: np.ndarray | None
-    @return: Tuple of (detection results (K, 6), kept auxiliary data (K, M) or None).
-    @rtype: tuple[np.ndarray, np.ndarray | None]
+    Args:
+        raw: Raw detection tensor (N, A, 5+nc) where columns are [x1, y1, x2, y2, conf,
+            cls_0, ..., cls_nc-1].
+        conf_threshold: Confidence threshold.
+        max_det: Maximum number of detections.
+        extra_raw: Optional auxiliary tensor (N, A, M) such as mask coefficients or
+            keypoints. When provided the kept rows are returned as the second element.
+
+    Returns:
+        Tuple of (detection results (K, 6), kept auxiliary data (K, M) or None).
     """
     det_results = raw[0]  # (A, 5+nc)
     extra = extra_raw[0] if extra_raw is not None else None
@@ -500,29 +477,21 @@ def decode_yolo_output(
 ) -> np.ndarray:
     """Decode the output of an YOLO instance segmentation or pose estimation model.
 
-    @param yolo_outputs: List of YOLO outputs.
-    @type yolo_outputs: list[np.ndarray]
-    @param strides: List of strides.
-    @type strides: list[int]
-    @param anchors: An optional array of anchors.
-    @type anchors: np.ndarray | None
-    @param kpts: An optional list of keypoints.
-    @type kpts: list[np.ndarray] | None
-    @param conf_thres: Confidence threshold.
-    @type conf_thres: float
-    @param iou_thres: Intersection over union threshold.
-    @type iou_thres: float
-    @param num_classes: Number of classes.
-    @type num_classes: int
-    @param det_mode: Detection only mode. If True, the output will only contain bbox
-        detections.
-    @type det_mode: bool
-    @param subtype: YOLO version.
-    @type subtype: YOLOSubtype
-    @param max_nms: Maximum number of boxes to keep after NMS.
-    @type max_nms: int
-    @return: NMS output.
-    @rtype: np.ndarray
+    Args:
+        yolo_outputs: List of YOLO outputs.
+        strides: List of strides.
+        anchors: An optional array of anchors.
+        kpts: An optional list of keypoints.
+        conf_thres: Confidence threshold.
+        iou_thres: Intersection over union threshold.
+        num_classes: Number of classes.
+        det_mode: Detection only mode. If True, the output will only contain bbox
+            detections.
+        subtype: YOLO version.
+        max_nms: Maximum number of boxes to keep after NMS.
+
+    Returns:
+        NMS output.
     """
     if len(strides) != len(yolo_outputs):
         raise ValueError(
@@ -600,7 +569,49 @@ def compute_yolo_detections(
     v26_protos: np.ndarray | None = None,
     v26_pose_kpts: np.ndarray | None = None,
 ) -> dict[str, np.ndarray | list[str] | int | None]:
-    """Decode YOLO detection, pose, or segmentation outputs into message payloads."""
+    """Decode YOLO detection, pose, or segmentation tensors.
+
+    Args:
+        subtype: YOLO variant controlling tensor decoding.
+        layer_names: Output layer names used to distinguish detection, pose, and
+            segmentation modes.
+        outputs_values: Detection tensors ordered by output head.
+        strides: Output head strides. If omitted, use the subtype-specific defaults.
+        conf_threshold: Minimum detection confidence used to filter candidates.
+        n_classes: Number of object classes encoded in the detection tensors.
+        iou_threshold: Intersection-over-union threshold for non-maximum suppression.
+        max_det: Maximum retained YOLO26 detections. Other subtypes use the
+            suppression defaults in ``decode_yolo_output``.
+        anchors: Precomputed anchor coordinates used to decode model predictions.
+        n_keypoints: Number of keypoints encoded per prediction.
+        label_names: Optional class-name lookup indexed by predicted class ID.
+        keypoint_label_names: Optional names for the keypoints in each detection.
+        keypoint_edges: Optional pairs of keypoint indexes defining skeleton edges.
+        input_shape: Model input image shape as ``(height, width)``.
+        kpts_outputs: Per-head pose tensors for non-YOLO26 models.
+        masks_outputs_values: Mask coefficient tensors ordered to match the detection
+            heads.
+        protos_output: Batched prototype tensor with shape ``(1, channels, height,
+            width)``.
+        protos_len: Number of prototype channels used by each mask coefficient vector.
+        mask_conf: Probability threshold used to binarize mask logits.
+        v26_mask_coeffs: YOLO26 mask coefficients aligned with detection queries.
+        v26_protos: YOLO26 prototype masks.
+        v26_pose_kpts: YOLO26 pose coordinates and confidences aligned with detection
+            queries.
+
+    Returns:
+        A dictionary containing ``mode`` (0 detection, 1 pose, 2 segmentation),
+        normalized ``bboxes``, ``scores``, ``labels``, ``label_names``, ``keypoints``,
+        ``keypoints_scores``, ``keypoint_label_names``, ``keypoint_edges``, and
+        ``masks``. Boxes use center-XY/width/height. A segmentation mask contains int16
+        detection indexes and -1 background; other modes return ``None`` for masks.
+
+    Raises:
+        ValueError: If required YOLO26 input geometry or detection outputs are missing,
+            class/keypoint counts disagree with tensor shapes, or the mask instance
+            count exceeds int16 capacity.
+    """
     det_mode = 0
     kpts_mode = 1
     seg_mode = 2

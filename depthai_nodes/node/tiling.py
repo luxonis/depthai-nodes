@@ -8,6 +8,19 @@ from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
 
 @dataclass
 class TilingCfg:
+    """Configuration shared by tiling geometry and ImageManip generation.
+
+    Attributes:
+        overlap: Fractional overlap between adjacent cells, in [0, 1).
+        gridSize: Grid dimensions as ``(columns, rows)``.
+        canvasShape: Source canvas size as ``(width, height)`` pixels.
+        resizeShape: Output crop size as ``(width, height)`` pixels.
+        resizeMode: ImageManip resizing policy for each crop.
+        globalDetection: Prepend a crop covering the entire canvas when true.
+        gridMatrix: Optional row-major grid labels. Four-connected cells with equal
+            labels are merged into their enclosing rectangle.
+    """
+
     overlap: float
     gridSize: tuple[int, int]
     canvasShape: tuple[int, int]
@@ -18,15 +31,21 @@ class TilingCfg:
 
 
 class Tiling(BaseThreadedHostNode):
-    """Produces tiling ImageManipConfig groups and supports runtime reconfiguration.
+    """Emit groups of ImageManip crop configurations at startup and on updates.
 
-    The node computes a :class:`dai.MessageGroup` of :class:`dai.ImageManipConfig`
-    messages from the current tiling configuration. An internal Script node caches
-    the latest config group from the ``cfg`` input using ``tryGet()`` and emits that
-    group whenever a message arrives on the ``trigger`` input.
+    ``build()`` stores the initial configuration. When the pipeline invokes
+    ``run()``, the node sends the first ``dai.MessageGroup``. Each call to
+    ``updateTilingConfig()`` recomputes and sends another group. Keys are
+    zero-based string indexes. There is no trigger input.
 
-    The main intended downstream consumer is :class:`depthai_nodes.node.FrameCropper`
-    configured via ``fromManipConfigs``.
+    Use with ``FrameCropper.fromManipConfigs(waitForConfig=False)`` to reuse the
+    latest group for subsequent frames.
+
+    Attributes:
+        out: Stream of crop-configuration groups.
+        tilePositions: Computed pixel rectangles after optional cell grouping.
+        tileCount: Grid-cell count plus the optional full-image crop; grouping
+            may make this differ from the actual number of output crops.
     """
 
     def __init__(self) -> None:
@@ -51,6 +70,11 @@ class Tiling(BaseThreadedHostNode):
 
     @property
     def tilePositions(self) -> list[tuple[int, int, int, int]]:
+        """Return crop rectangles as ``(xmin, ymin, xmax, ymax)`` pixel bounds.
+
+        Requires ``build()`` first. Includes the full canvas first when global
+        detection is enabled, followed by the computed cell or group rectangles.
+        """
         return self._computeTilePositions(tiling_cfg=self._tiling_cfg)
 
     def updateTilingConfig(
@@ -63,25 +87,33 @@ class Tiling(BaseThreadedHostNode):
         globalDetection: bool | None = None,
         gridMatrix: np.ndarray | list | None | None = None,
     ) -> None:
-        """Update the tiling configuration used for future trigger messages.
+        """Update selected settings and immediately emit a new configuration group.
 
-        @param overlap: Fractional overlap between adjacent tiles in the range [0, 1).
-        @type overlap: float | None
-        @param gridSize: Tile grid as (columns, rows).
-        @type gridSize: tuple[int, int] | None
-        @param canvasShape: Shape of the image space the tiling is defined on. Crop
-            coordinates are computed in this absolute coordinate system.
-        @type canvasShape: tuple[int, int] | None
-        @param resizeShape: Output size applied to each tile after cropping. This is the
-            shape expected by downstream consumers, not necessarily a neural network.
-        @type resizeShape: tuple[int, int] | None
-        @param resizeMode: Resize strategy used when adapting each crop to resizeShape.
-        @type resizeMode: dai.ImageManipConfig.ResizeMode | None
-        @param globalDetection: If True, prepend a config covering the whole canvas.
-        @type globalDetection: bool | None
-        @param gridMatrix: Optional grouping matrix for merging neighboring grid cells
-            into larger crops.
-        @type gridMatrix: np.ndarray | list | None | None
+        Args:
+            overlap: Fractional overlap between adjacent cells, in [0, 1). ``None``
+                preserves the current value.
+            gridSize: Grid dimensions as ``(columns, rows)``. ``None`` preserves the
+                current value.
+            canvasShape: Source canvas size as ``(width, height)`` pixels. ``None``
+                preserves the current value.
+            resizeShape: Output crop size as ``(width, height)`` pixels. ``None``
+                preserves the current value.
+            resizeMode: ImageManip resizing policy for each crop. ``None`` preserves the
+                current value.
+            globalDetection: Prepend a crop covering the entire canvas when true.
+                ``None`` preserves the current value.
+            gridMatrix: Optional row-major grid labels. Four-connected cells with equal
+                labels are merged into their enclosing rectangle. ``None`` preserves the
+                current value.
+
+        Raises:
+            RuntimeError: If ``build()`` has not been called.
+            ValueError: If overlap is outside [0, 1) or the grid matrix dimensions
+                disagree with ``gridSize``.
+
+        Note:
+            Updates mutate the stored configuration before crop validation. ``None``
+            cannot be used to clear an existing grid matrix.
         """
         if self._tiling_cfg is None:
             raise RuntimeError("Tiling was not built yet. Call `build()` first.")
@@ -113,27 +145,20 @@ class Tiling(BaseThreadedHostNode):
         globalDetection: bool = False,
         gridMatrix: np.ndarray | list | None = None,
     ) -> "Tiling":
-        """Configure the tiling node and link the trigger stream.
+        """Store the initial configuration for emission when the pipeline starts.
 
-        @param overlap: Fractional overlap between adjacent tiles in the range [0, 1).
-        @type overlap: float
-        @param gridSize: Tile grid as (columns, rows).
-        @type gridSize: tuple[int, int]
-        @param canvasShape: Shape of the image space the tiling is defined on. Crop
-            coordinates are computed in this absolute coordinate system.
-        @type canvasShape: tuple[int, int]
-        @param resizeShape: Output size applied to each tile after cropping. This is the
-            shape expected by downstream consumers, not necessarily a neural network.
-        @type resizeShape: tuple[int, int]
-        @param resizeMode: Resize strategy used when adapting each crop to resizeShape.
-        @type resizeMode: dai.ImageManipConfig.ResizeMode
-        @param globalDetection: If True, prepend a config covering the whole canvas.
-        @type globalDetection: bool
-        @param gridMatrix: Optional grouping matrix for merging neighboring grid cells
-            into larger crops.
-        @type gridMatrix: np.ndarray | list | None
-        @return: The configured node instance.
-        @rtype: Tiling
+        Args:
+            overlap: Fractional overlap between adjacent cells, in [0, 1).
+            gridSize: Grid dimensions as ``(columns, rows)``.
+            canvasShape: Source canvas size as ``(width, height)`` pixels.
+            resizeShape: Output crop size as ``(width, height)`` pixels.
+            resizeMode: ImageManip resizing policy for each crop.
+            globalDetection: Prepend a crop covering the entire canvas when true.
+            gridMatrix: Optional row-major grid labels. Four-connected cells with equal
+                labels are merged into their enclosing rectangle.
+
+        Returns:
+            This node. Crop generation and validation occur when it runs.
         """
         self._tiling_cfg = TilingCfg(
             overlap=overlap,
@@ -155,7 +180,7 @@ class Tiling(BaseThreadedHostNode):
         return self
 
     def run(self) -> None:
-        """Send the initial tiling configuration to the script node when updated."""
+        """Compute and send the initial crop-configuration group once."""
         self._process_tiling_config()
 
     def _process_tiling_config(self) -> None:

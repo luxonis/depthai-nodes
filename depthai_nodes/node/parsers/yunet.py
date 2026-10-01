@@ -17,28 +17,21 @@ from depthai_nodes.node.parsers.utils.yunet import (
 class YuNetParser(DetectionParser):
     """Parser class for parsing the output of the YuNet face detection model.
 
-    Attributes
-    ----------
-    conf_threshold : float
-        Confidence score threshold for detected faces.
-    iou_threshold : float
-        Non-maximum suppression threshold.
-    max_det : int
-        Maximum number of detections to keep.
-    input_size : tuple[int, int]
-        Input size (width, height).
-    loc_output_layer_name: str
-        Name of the output layer containing the location predictions.
-    conf_output_layer_name: str
-        Name of the output layer containing the confidence predictions.
-    iou_output_layer_name: str
-        Name of the output layer containing the IoU predictions.
+    Attributes:
+        conf_threshold (``float``): Confidence score threshold for detected faces.
+        iou_threshold (``float``): Non-maximum suppression threshold.
+        max_det (``int``): Maximum number of detections to keep.
+        input_size (``tuple[int, int]``): Input size (width, height).
+        loc_output_layer_name (``str``): Name of the output layer containing the
+            location predictions.
+        conf_output_layer_name (``str``): Name of the output layer containing the
+            confidence predictions.
+        iou_output_layer_name (``str``): Name of the output layer containing the IoU
+            predictions.
 
-    Output Message/s
-    ----------------
-    **Type**: dai.ImgDetections
-
-    **Description**: dai.ImgDetections message containing bounding boxes, labels, confidence scores, and keypoints of detected faces.
+    Note:
+        Emits ``dai.ImgDetections`` messages. dai.ImgDetections message containing
+        bounding boxes, labels, confidence scores, and keypoints of detected faces.
     """
 
     def __init__(
@@ -53,20 +46,14 @@ class YuNetParser(DetectionParser):
     ) -> None:
         """Initializes the parser node.
 
-        @param conf_threshold: Confidence score threshold for detected faces.
-        @type conf_threshold: float
-        @param iou_threshold: Non-maximum suppression threshold.
-        @type iou_threshold: float
-        @param max_det: Maximum number of detections to keep.
-        @type max_det: int
-        @param input_size: Input size of the model (width, height).
-        @type input_size: tuple[int, int]
-        @param loc_output_layer_name: Output layer name for the location predictions.
-        @type loc_output_layer_name: str
-        @param conf_output_layer_name: Output layer name for the confidence predictions.
-        @type conf_output_layer_name: str
-        @param iou_output_layer_name: Output layer name for the IoU predictions.
-        @type iou_output_layer_name: str
+        Args:
+            conf_threshold: Confidence score threshold for detected faces.
+            iou_threshold: Non-maximum suppression threshold.
+            max_det: Maximum number of detections to keep.
+            input_size: Input size of the model (width, height).
+            loc_output_layer_name: Output layer name for the location predictions.
+            conf_output_layer_name: Output layer name for the confidence predictions.
+            iou_output_layer_name: Output layer name for the IoU predictions.
         """
         super().__init__(conf_threshold, iou_threshold, max_det)
         self._out = self.createOutput(
@@ -90,8 +77,8 @@ class YuNetParser(DetectionParser):
     def setInputSize(self, input_size: tuple[int, int]) -> None:
         """Sets the input size of the model.
 
-        @param input_size: Input size of the model (width, height).
-        @type input_size: list
+        Args:
+            input_size: Input size of the model (width, height).
         """
         if not isinstance(input_size, tuple):
             raise ValueError("Input size must be a tuple.")
@@ -105,8 +92,8 @@ class YuNetParser(DetectionParser):
     def setOutputLayerLoc(self, loc_output_layer_name: str) -> None:
         """Sets the name of the output layer containing the location predictions.
 
-        @param loc_output_layer_name: Output layer name for the loc tensor.
-        @type loc_output_layer_name: str
+        Args:
+            loc_output_layer_name: Output layer name for the loc tensor.
         """
         if not isinstance(loc_output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
@@ -118,8 +105,8 @@ class YuNetParser(DetectionParser):
     def setOutputLayerConf(self, conf_output_layer_name: str) -> None:
         """Sets the name of the output layer containing the confidence predictions.
 
-        @param conf_output_layer_name: Output layer name for the conf tensor.
-        @type conf_output_layer_name: str
+        Args:
+            conf_output_layer_name: Output layer name for the conf tensor.
         """
         if not isinstance(conf_output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
@@ -131,8 +118,8 @@ class YuNetParser(DetectionParser):
     def setOutputLayerIou(self, iou_output_layer_name: str) -> None:
         """Sets the name of the output layer containing the IoU predictions.
 
-        @param iou_output_layer_name: Output layer name for the IoU tensor.
-        @type iou_output_layer_name: str
+        Args:
+            iou_output_layer_name: Output layer name for the IoU tensor.
         """
         if not isinstance(iou_output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
@@ -147,10 +134,11 @@ class YuNetParser(DetectionParser):
     ) -> "YuNetParser":
         """Configures the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: YuNetParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
 
         super().build(head_config)
@@ -195,6 +183,11 @@ class YuNetParser(DetectionParser):
         return self._cached_anchors
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("YuNetParser run started")
         while self.isRunning():
             try:
@@ -219,6 +212,21 @@ class YuNetParser(DetectionParser):
             self.emit(output, bboxes, keypoints, scores, labels, label_names)
 
     def extract(self, output: dai.NNData) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            The localization, class-confidence, and IoU tensors, in that order. Missing
+            configured names are inferred from unique ``loc``, ``conf``, and ``iou``
+            prefixes.
+
+        Raises:
+            ValueError: If a configured layer is absent or inferred layer prefixes are
+                missing or ambiguous.
+        """
         output_layer_names = output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {output_layer_names}")
 
@@ -305,6 +313,34 @@ class YuNetParser(DetectionParser):
         nms_fn: Callable[..., np.ndarray],
         top_left_wh_to_xywh_fn: Callable[[np.ndarray], np.ndarray],
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[str] | None]:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            input_size: Model input size as ``(width, height)``.
+            loc: Per-anchor box and five-landmark offsets.
+            conf: Per-anchor class-confidence tensor.
+            iou: Per-anchor IoU confidence tensor.
+            conf_threshold: Minimum detection confidence used to filter candidates.
+            iou_threshold: Intersection-over-union threshold for non-maximum
+                suppression.
+            max_det: Maximum number of detection candidates to retain or consider during
+                suppression.
+            anchors: Precomputed anchor coordinates used to decode model predictions.
+            label_names: Optional class-name lookup indexed by predicted class ID.
+            nms_fn: Suppression callable accepting boxes, scores, confidence/IoU
+                thresholds, and ``max_det``; returns retained indexes.
+            top_left_wh_to_xywh_fn: Callable converting top-left XY/width/height boxes
+                to center-XY/width/height.
+
+        Returns:
+            Normalized center-XY/width/height boxes, five normalized XY landmarks per
+            face, scores, zero-valued class IDs, and optional class names. No candidates
+            produces empty arrays.
+
+        Note:
+            Uses `depthai_nodes.node.parsers.utils.yunet.compute_yunet_detections`; see
+            that helper for tensor layout and validation details.
+        """
         return compute_yunet_detections(
             input_size=input_size,
             loc=loc,
@@ -328,6 +364,20 @@ class YuNetParser(DetectionParser):
         labels: np.ndarray,
         label_names: list[str] | None,
     ) -> None:
+        """Create a ``dai.ImgDetections`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            bboxes: Normalized center-XY/width/height boxes returned by ``compute()``.
+            keypoints: Normalized keypoint coordinates returned by ``compute()``.
+            scores: Confidence scores corresponding to the computed payload.
+            labels: Integer class IDs corresponding to the boxes.
+            label_names: Optional class names corresponding to the detections.
+        """
         detections_message = create_detection_message(
             bboxes=bboxes,
             scores=scores,

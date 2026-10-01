@@ -5,26 +5,21 @@ import numpy as np
 def create_classification_message(
     classes: list[str], scores: np.ndarray | list
 ) -> dai.beta.Classifications:
-    """Create a message for classification. The message contains the class names and
-    their respective scores, sorted in descending order of scores.
+    """Create a classification message sorted by descending score.
 
-    @param classes: A list containing class names.
-    @type classes: list[str]    @param scores: A numpy array of shape (n_classes,) containing the probability score of each class.
-    @type scores: np.ndarray
+    Args:
+        classes: Non-empty list of class names.
+        scores: Floating-point probabilities corresponding to ``classes``. Values must
+            be between 0 and 1 and sum to 1 within an absolute tolerance of 0.1. A list
+            or array that can be flattened to one probability per class is accepted.
 
-    @return: A message with attributes `classes` and `scores`. `classes` is a list of classes, sorted in descending order of scores. `scores` is a list of the corresponding scores.
-    @rtype: dai.beta.Classifications
+    Returns:
+        Native classification message containing sorted class names and scores. Classes
+        with equal scores retain their input order.
 
-    @raises ValueError: If the provided classes are None.
-    @raises ValueError: If the provided classes are not a list.
-    @raises ValueError: If the provided classes are empty.
-    @raises ValueError: If the provided scores are None.
-    @raises ValueError: If the provided scores are not a list or a numpy array.
-    @raises ValueError: If the provided scores are empty.
-    @raises ValueError: If the provided scores are not a 1D array.
-    @raises ValueError: If the provided scores are not of type float.
-    @raises ValueError: If the provided scores do not sum to 1.
-    @raises ValueError: If the number of labels and scores mismatch.
+    Raises:
+        ValueError: If classes or scores are empty, have unsupported types, differ in
+            length, or scores are not valid floating-point probabilities.
     """
     if isinstance(classes, type(None)):
         raise ValueError("Classes should not be None.")
@@ -89,27 +84,28 @@ def create_classification_sequence_message(
     remove_duplicates: bool = False,
     concatenate_classes: bool = False,
 ) -> dai.beta.Classifications:
-    """Creates a message for a multi-class sequence. The message contains the class
-    names and their respective scores, ordered according to the sequence. The 'scores'
-    array is a sequence of probabilities for each class at each position in the
-    sequence.
+    """Create a classification sequence from per-position class probabilities.
 
-    @param classes: A list of class names, with length 'n_classes'.
-    @type classes: list    @param scores: A numpy array of shape (sequence_length, n_classes) containing the (row-wise) probability distributions over the classes.
-    @type scores: np.ndarray
-    @param ignored_indexes: A list of indexes to ignore during classification generation (e.g., background class, padding class). Defaults to None.
-    @type ignored_indexes: list[int] | None    @param remove_duplicates: If True, removes consecutive duplicates from the sequence. Defaults to False.
-    @type remove_duplicates: bool
-    @param concatenate_classes: If True, concatenates consecutive classes based on the space character. Defaults to False.
-    @type concatenate_classes: bool
-    @return: A Classification message with attributes `classes` and `scores`, where `classes` is a list of class names and `scores` is a list of corresponding scores.
-    @rtype: dai.beta.Classifications
-    @raises ValueError: If 'classes' is not a list of strings.
-    @raises ValueError: If 'scores' is not a 2D array of list of shape (sequence_length, n_classes).
-    @raises ValueError: If the number of classes does not match the number of columns in 'scores'.
-    @raises ValueError: If any score is not in the range [0, 1].
-    @raises ValueError: If the probabilities in any row of 'scores' do not sum to 1.
-    @raises ValueError: If 'ignored_indexes' in not None or a list of valid indexes within the range [0, n_classes - 1].
+    Args:
+        classes: Class names, indexed by the columns of ``scores``.
+        scores: Array or nested list of shape ``(sequence_length, n_classes)``. Each row
+            must contain probabilities between 0 and 1 that sum to 1 within an absolute
+            tolerance of 0.01.
+        ignored_indexes: Class indexes to omit, such as a padding or background class.
+        remove_duplicates: Remove adjacent repeated winning classes before filtering
+            ignored indexes.
+        concatenate_classes: If all selected class names have at most one character,
+            join them into words separated by spaces and average the scores within each
+            word.
+
+    Returns:
+        Native classification message with selected class names and scores in sequence
+        order.
+
+    Raises:
+        ValueError: If classes are not a list, scores have incompatible dimensions or
+            invalid probabilities, or ignored indexes are not a list of valid integer
+            class indexes.
     """
 
     if not isinstance(classes, list):

@@ -1,3 +1,5 @@
+"""Message-copying strategies and detection geometry helpers."""
+
 from .copy_message import copy_message
 from .detection_utils import compute_area
 

@@ -16,6 +16,8 @@ from depthai_nodes.logging import get_logger
 
 @runtime_checkable
 class HasDetections(Protocol):
+    """Protocol for references exposing a list of detections."""
+
     @property
     def detections(self) -> list:
         """Return the detections used to derive the default wait count."""
@@ -39,45 +41,40 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
       within a tolerance derived from the camera FPS.
 
     For each reference timestamp, the node waits until the number of gathered
-    data messages equals `wait_count_fn(reference)`. Once ready, it emits a
-    :class:`depthai_nodes.GatheredData` message containing the reference message
-      and the gathered items.
+    data messages equals ``wait_count_fn(reference)``. Once ready, it emits a
+    ``depthai_nodes.GatheredData`` message containing the reference message and the
+    gathered items.
 
-    The default `wait_count_fn` uses ``len(reference.detections)``, which works
+    The default ``wait_count_fn`` uses ``len(reference.detections)``, which works
     out-of-the-box for messages that expose a ``detections`` attribute (e.g.
     ``dai.ImgDetections``).
 
-    Notes
-    -----
-    - Timestamp matching uses ``Buffer.getTimestamp().total_seconds()`` and a
-      tolerance of ``1 / (camera_fps * FPS_TOLERANCE_DIVISOR)``.
-    - If ``wait_count_fn(reference) == 0``, the node emits immediately for that
-      reference (with an empty items list).
-    - The node periodically polls inputs using ``tryGet()`` at a rate derived
-      from ``camera_fps`` and ``INPUT_CHECKS_PER_FPS``.
+    Attributes:
+        FPS_TOLERANCE_DIVISOR (``float``): Divides the per-frame time interval to
+            compute timestamp matching tolerance. Higher values make matching stricter.
+        INPUT_CHECKS_PER_FPS (``int``): Number of polling iterations per frame interval.
+            Effective loop sleep is ``1 / (INPUT_CHECKS_PER_FPS * camera_fps)``.
 
-    Inputs
-    ------
-    _data_input : dai.Node.Input
-        Stream of data messages to be gathered (type ``TGathered``).
-    _reference_input : dai.Node.Input
-        Stream of reference messages used for grouping and deciding how many
-        items to gather (type ``TReference``).
+    Note:
+        - Timestamp matching uses ``Buffer.getTimestamp().total_seconds()`` and a
+          tolerance of ``1 / (camera_fps * FPS_TOLERANCE_DIVISOR)``.
+        - If ``wait_count_fn(reference) == 0``, the node emits immediately for that
+          reference (with an empty items list).
+        - The node periodically polls inputs using ``tryGet()`` at a rate derived
+          from ``camera_fps`` and ``INPUT_CHECKS_PER_FPS``.
 
-    Outputs
-    -------
-    out : dai.Node.Output
-        Emits :class:`depthai_nodes.GatheredData` objects with:
-        ``reference_data`` (the matched reference) and ``items`` (list of data).
+    Inputs:
 
-    Class Attributes
-    ---------------
-    FPS_TOLERANCE_DIVISOR : float
-        Divides the per-frame time interval to compute timestamp matching tolerance.
-        Higher values make matching stricter.
-    INPUT_CHECKS_PER_FPS : int
-        Number of polling iterations per frame interval. Effective loop sleep is
-        ``1 / (INPUT_CHECKS_PER_FPS * camera_fps)``.
+    * ``_data_input : dai.Node.Input``: Stream of data messages to be gathered (type
+      ``TGathered``).
+    * ``_reference_input : dai.Node.Input``: Stream of reference messages used for
+      grouping and deciding how many
+      items to gather (type ``TReference``).
+
+    Outputs:
+
+    * ``out : dai.Node.Output``: Emits ``depthai_nodes.GatheredData`` objects with:
+      ``reference_data`` (the matched reference) and ``items`` (list of data).
     """
 
     FPS_TOLERANCE_DIVISOR = 2.0
@@ -108,8 +105,11 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     def setCameraFps(self, fps: int) -> None:
         """Set the camera frame rate used for timestamp matching.
 
-        @param fps: Positive camera frame rate used for matching tolerance and polling.
-        @type fps: int
+        Args:
+            fps: Positive camera frame rate used for matching tolerance and polling.
+
+        Raises:
+            ValueError: If the frame rate is not positive.
         """
         if fps <= 0:
             raise ValueError(f"Camera FPS must be positive, got {fps}")
@@ -117,7 +117,12 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         self._logger.debug(f"Camera FPS set to {fps}")
 
     def setWaitCountFn(self, fn: Callable[[TReference], int]) -> None:
-        """Set the callback that returns the expected item count per reference."""
+        """Set the expected gathered-item count for each reference.
+
+        Args:
+            fn: Callback accepting the reference message and returning the number of
+                items to wait for. A count of zero emits an empty group immediately.
+        """
         self._wait_count_fn = fn
 
     def build(
@@ -129,19 +134,17 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     ) -> "GatherData[TReference, TGathered]":
         """Connect the data and reference streams used for gathering.
 
-        @param cameraFps: Camera frame rate used to derive timestamp matching tolerance
-            and polling interval.
-        @type cameraFps: int
-        @param inputData: Upstream output producing the data messages to gather.
-        @type inputData: dai.Node.Output
-        @param inputReference: Upstream output producing the reference messages.
-        @type inputReference: dai.Node.Output
-        @param waitCountFn: Optional callback returning the number of data messages
-            expected for a given reference. If omitted, defaults to
-            len(reference.detections).
-        @type waitCountFn: Callable[[TReference], int] | None
-        @return: The configured node instance.
-        @rtype: GatherData[TReference, TGathered]
+        Args:
+            cameraFps: Camera frame rate used to derive timestamp matching tolerance and
+                polling interval.
+            inputData: Upstream output producing the data messages to gather.
+            inputReference: Upstream output producing the reference messages.
+            waitCountFn: Optional callback returning the number of data messages
+                expected for a given reference. If omitted, defaults to
+                len(reference.detections).
+
+        Returns:
+            The configured node instance.
         """
         self.setCameraFps(cameraFps)
         if waitCountFn is None:

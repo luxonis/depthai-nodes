@@ -9,52 +9,47 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
     """A high-level host node that performs neural network inference with automatic
     input resizing and optional coordinate remapping.
 
-    `ExtendedNeuralNetwork` is a convenience wrapper around an internal
-    :class:`ParsingNeuralNetwork` node. It handles:
+    ``ExtendedNeuralNetwork`` is a convenience wrapper around an internal
+    ``ParsingNeuralNetwork`` node. It handles:
 
-    - Model loading from HubAI slug, :class:`dai.NNModelDescription`,
-      or :class:`dai.NNArchive`.
+    - Model loading from HubAI slug, ``dai.NNModelDescription``,
+      or ``dai.NNArchive``.
     - Automatic input resizing to match the neural network input resolution.
     - Optional coordinate remapping when the input is not a camera node.
 
     Two input modes are supported:
 
-    - **Camera input**: When `inputImage` is a :class:`dai.node.Camera`,
-      the node requests a resized output directly from the camera using
-      the appropriate hardware resize mode. In this case, the neural
-      network outputs are already aligned with the original image
-      coordinates and no additional mapping is required.
+    - **Camera input**: When ``inputImage`` is a ``dai.node.Camera``,
+      the node requests a resized output directly from the camera using the appropriate
+      hardware resize mode. In this case, the neural network outputs are already aligned
+      with the original image coordinates and no additional mapping is required.
 
-    - **Generic stream input**: When `inputImage` is a
-      :class:`dai.Node.Output`, an internal :class:`dai.node.ImageManip`
-      node resizes frames to the network's expected input size. A
-      :class:`CoordinatesMapper` node is then inserted to map neural
-      network outputs back to the original image coordinate space.
+    - **Generic stream input**: When ``inputImage`` is a
+      ``dai.Node.Output``, an internal ``dai.node.ImageManip`` node resizes frames to
+      the network's expected input size. A ``CoordinatesMapper`` node is then inserted
+      to map neural network outputs back to the original image coordinate space.
 
-    The node exposes neural network outputs via :attr:`out`, and
-    passthrough frames via :attr:`passthrough`.
+    The node exposes neural network outputs via ``out``, and passthrough frames via
+    ``passthrough``.
 
-    Notes
-    -----
-    - This node is currently not supported on the RVC2 platform.
-    - When a non-camera input is used, an additional ImageManip node
-      is inserted into the pipeline.
-    - Coordinate remapping is performed automatically when resizing
-      occurs outside of a camera node.
+    Note:
+        - This node is currently not supported on the RVC2 platform.
+        - When a non-camera input is used, an additional ImageManip node
+          is inserted into the pipeline.
+        - Coordinate remapping is performed automatically when resizing
+          occurs outside of a camera node.
 
-    Outputs
-    -------
-    out : dai.Node.Output
-        Parsed neural network output stream. If coordinate remapping
-        is required, this stream contains remapped results.
-    outputs : dai.Node.Output
-        Alias for :attr:`out` or the raw neural network outputs,
-        depending on input mode.
-    passthrough : dai.Node.Output
-        Passthrough stream from the underlying neural network node.
+    Outputs:
 
-    See Also
-    --------
+    * ``out : dai.Node.Output``: Parsed neural network output stream. If coordinate
+      remapping is required, this stream contains remapped results.
+    * ``outputs : dai.Node.Output``: Alias for ``out`` or the raw neural network
+      outputs, depending on input mode.
+    * ``passthrough : dai.Node.Output``: Passthrough stream from the underlying neural
+      network node.
+
+    See also:
+
     ParsingNeuralNetwork
         Node responsible for running inference and parsing results.
     CoordinatesMapper
@@ -115,16 +110,19 @@ class ExtendedNeuralNetwork(BaseThreadedHostNode):
     ) -> "ExtendedNeuralNetwork":
         """Build the internal inference pipeline.
 
-        @param inputImage: Source of input frames. Camera nodes are resized on-device by
-            the camera; generic outputs are resized via an internal ImageManip.
-        @type inputImage: dai.node.Camera | dai.Node.Output
-        @param nnSource: HubAI model slug, dai.NNModelDescription, or dai.NNArchive.
-        @type nnSource: dai.NNModelDescription | dai.NNArchive | str
-        @param resizeMode: Resize strategy used when adapting frames to the network
-            input shape.
-        @type resizeMode: dai.ImageManipConfig.ResizeMode
-        @return: The configured node instance.
-        @rtype: ExtendedNeuralNetwork
+        Args:
+            inputImage: Source of input frames. Camera nodes are resized on-device by
+                the camera; generic outputs are resized via an internal ImageManip.
+            nnSource: HubAI model slug, dai.NNModelDescription, or dai.NNArchive.
+            resizeMode: Resize strategy used when adapting frames to the network input
+                shape.
+
+        Returns:
+            The configured node instance.
+
+        Raises:
+            ValueError: If ``nnSource`` is not an archive, model description, or Model
+                Zoo slug.
         """
 
         if isinstance(nnSource, str):

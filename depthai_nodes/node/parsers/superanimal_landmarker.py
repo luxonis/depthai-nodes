@@ -13,26 +13,19 @@ from depthai_nodes.node.parsers.utils.superanimal import (
 class SuperAnimalParser(KeypointParser):
     """Parser class for parsing the output of the SuperAnimal landmark model.
 
-    Attributes
-    ----------
-    output_layer_name: str
-        Name of the output layer relevant to the parser.
-    scale_factor : float
-        Scale factor to divide the keypoints by.
-    n_keypoints : int
-        Number of keypoints.
-    score_threshold : float
-        Confidence score threshold for detected keypoints.
-    label_names : list[str]
-        Label names for the keypoints.
-    edges : list[tuple[int, int]]
-        Keypoint connection pairs for visualizing the skeleton. Example: [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint 1, keypoint 1 is connected to keypoint 2, etc.
+    Attributes:
+        output_layer_name (``str``): Name of the output layer relevant to the parser.
+        scale_factor (``float``): Scale factor to divide the keypoints by.
+        n_keypoints (``int``): Number of keypoints.
+        score_threshold (``float``): Confidence score threshold for detected keypoints.
+        label_names (``list[str]``): Label names for the keypoints.
+        edges (``list[tuple[int, int]]``): Pairs of keypoint indexes defining skeleton
+            edges. For example, ``[(0, 1), (1, 2)]`` connects keypoint 0 to 1 and 1 to
+            2.
 
-    Output Message/s
-    ----------------
-    **Type**: dai.beta.Keypoints
-
-    **Description**: Output containing detected keypoints that exceed the confidence threshold.
+    Note:
+        Emits ``dai.beta.Keypoints`` messages. Output containing detected keypoints that
+        exceed the confidence threshold.
     """
 
     def __init__(
@@ -46,20 +39,14 @@ class SuperAnimalParser(KeypointParser):
     ) -> None:
         """Initializes the parser node.
 
-        @param output_layer_name: Name of the output layer relevant to the parser.
-        @type output_layer_name: str
-        @param n_keypoints: Number of keypoints.
-        @type n_keypoints: int
-        @param score_threshold: Confidence score threshold for detected keypoints.
-        @type score_threshold: float
-        @param scale_factor: Scale factor to divide the keypoints by.
-        @type scale_factor: float
-        @param label_names: Label names for the keypoints.
-        @type label_names: list[str] | None
-        @param edges: Keypoint connection pairs for visualizing the skeleton. Example:
-            [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
-            1, keypoint 1 is connected to keypoint 2, etc.
-        @type edges: list[tuple[int, int]] | None
+        Args:
+            output_layer_name: Name of the output layer relevant to the parser.
+            n_keypoints: Number of keypoints.
+            score_threshold: Confidence score threshold for detected keypoints.
+            scale_factor: Scale factor to divide the keypoints by.
+            label_names: Label names for the keypoints.
+            edges: Pairs of keypoint indexes defining skeleton edges. For example,
+                ``[(0, 1), (1, 2)]`` connects keypoint 0 to 1 and 1 to 2.
         """
         super().__init__(
             output_layer_name,
@@ -79,10 +66,11 @@ class SuperAnimalParser(KeypointParser):
     ) -> "SuperAnimalParser":
         """Configures the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: SuperAnimalParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
 
         super().build(head_config)
@@ -92,6 +80,11 @@ class SuperAnimalParser(KeypointParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("SuperAnimalParser run started")
         while self.isRunning():
             try:
@@ -104,6 +97,19 @@ class SuperAnimalParser(KeypointParser):
             self.emit(output, keypoints, scores)
 
     def extract(self, output: dai.NNData) -> np.ndarray:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            Dequantized float32 heatmaps in the model tensor layout.
+
+        Raises:
+            ValueError: If no output name is configured and the message does not contain
+                exactly one layer, or configured class requirements are not met.
+        """
         layers = output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layers}")
         if len(layers) == 1 and self.output_layer_name == "":
@@ -123,6 +129,22 @@ class SuperAnimalParser(KeypointParser):
         *,
         scale_factor: float,
     ) -> tuple[np.ndarray, np.ndarray]:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            heatmaps: Model heatmap tensor.
+            scale_factor: Nonzero divisor used to convert model coordinates to
+                normalized coordinates.
+
+        Returns:
+            A pair of ``(N, 2)`` keypoint coordinates and ``(N,)`` scores. Coordinates
+            are divided by ``scale_factor``.
+
+        Note:
+            Uses
+            `depthai_nodes.node.parsers.utils.superanimal.compute_superanimal_keypoints`;
+            see that helper for tensor layout and validation details.
+        """
         return compute_superanimal_keypoints(
             heatmaps,
             scale_factor=scale_factor,
@@ -131,6 +153,17 @@ class SuperAnimalParser(KeypointParser):
     def emit(
         self, output: dai.NNData, keypoints: np.ndarray, scores: np.ndarray
     ) -> None:
+        """Create a ``dai.beta.Keypoints`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            keypoints: Normalized keypoint coordinates returned by ``compute()``.
+            scores: Confidence scores corresponding to the computed payload.
+        """
         msg = create_keypoints_message(
             keypoints,
             scores,

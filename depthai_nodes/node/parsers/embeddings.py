@@ -9,16 +9,12 @@ from depthai_nodes.node.parsers.utils.embeddings import compute_embeddings_outpu
 class EmbeddingsParser(BaseParser):
     """Parser class for parsing the output of embeddings neural network model head.
 
-    Attributes
-    ----------
-    output_layer_name: str
-        Name of the output layer relevant to the parser.
+    Attributes:
+        output_layer_name (``str``): Name of the output layer relevant to the parser.
 
-    Output Message/s
-    ----------------
-    **Type**: dai.NNData
-
-    **Description**: The output layer of the neural network model head.
+    Note:
+        Emits ``dai.NNData`` messages. The output layer of the neural network model
+        head.
     """
 
     def __init__(self) -> None:
@@ -32,8 +28,8 @@ class EmbeddingsParser(BaseParser):
     def setOutputLayerNames(self, output_layer_name: str) -> None:
         """Sets the output layer name for the parser.
 
-        @param output_layer_name: The output layer name for the parser.
-        @type output_layer_name: str
+        Args:
+            output_layer_name: The output layer name for the parser.
         """
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
@@ -44,10 +40,11 @@ class EmbeddingsParser(BaseParser):
     def build(self, head_config: dict[str, Any]) -> "EmbeddingsParser":
         """Sets the head configuration for the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: EmbeddingsParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
         output_names = self._normalize_output_layer_names(head_config["outputs"])
         assert (
@@ -62,6 +59,11 @@ class EmbeddingsParser(BaseParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("EmbeddingsParser run started")
         while self.isRunning():
             try:
@@ -74,6 +76,19 @@ class EmbeddingsParser(BaseParser):
             self.emit(computed)
 
     def extract(self, output: dai.NNData) -> dai.NNData:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            The same NNData message, after checking that exactly one embedding output is
+            selected.
+
+        Raises:
+            AssertionError: If the selected embedding output count is not one.
+        """
         output_names = (
             [self.output_layer_name]
             if self.output_layer_name is not None
@@ -98,9 +113,28 @@ class EmbeddingsParser(BaseParser):
 
     @staticmethod
     def compute(output: dai.NNData) -> dai.NNData:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            output: Embedding payload, typically a ``dai.NNData`` message.
+
+        Returns:
+            The same object passed as ``output``; no copy or normalization is performed.
+
+        Note:
+            Uses
+            `depthai_nodes.node.parsers.utils.embeddings.compute_embeddings_output`; see
+            that helper for tensor layout and validation details.
+        """
         return compute_embeddings_output(output)
 
     def emit(self, output: dai.NNData) -> None:
+        """Forward the same NNData message on ``out``, preserving its metadata.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+        """
         output.setSequenceNum(output.getSequenceNum())
         output.setTimestamp(output.getTimestamp())
         output.setTimestampDevice(output.getTimestampDevice())

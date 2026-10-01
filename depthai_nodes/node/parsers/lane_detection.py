@@ -11,33 +11,26 @@ from depthai_nodes.node.parsers.utils.lane_detection import (
 
 
 class LaneDetectionParser(BaseParser):
-    """
-    Parser class for Ultra-Fast-Lane-Detection model. It expects one ouput layer containing the lane detection results.
-    It supports two versions of the model: CuLane and TuSimple. Results are representented with clusters of points.
+    """Parser class for Ultra-Fast-Lane-Detection model. It expects one output layer
+    containing the lane detection results. It supports two versions of the model: CuLane
+    and TuSimple. Results are representented with clusters of points.
 
-    Attributes
-    ----------
-    output_layer_name: str
-        Name of the output layer relevant to the parser.
-    row_anchors : list[int]
-        List of row anchors.
-    griding_num : int
-        Griding number.
-    cls_num_per_lane : int
-        Number of points per lane.
-    input_size : tuple[int, int]
-        Input size (width,height).
+    Attributes:
+        output_layer_name (``str``): Name of the output layer relevant to the parser.
+        row_anchors (``list[int]``): List of row anchors.
+        griding_num (``int``): Griding number.
+        cls_num_per_lane (``int``): Number of points per lane.
+        input_size (``tuple[int, int]``): Input size (width,height).
 
-    Output Message/s
-    ----------------
+    Output messages:
+
     **Type**: dai.beta.Clusters
     **Description**: Detected lanes represented as clusters of points.
 
-    Error Handling
-    --------------
-    **ValueError**: If the row anchors are not specified.
-    **ValueError**: If the griding number is not specified.
-    **ValueError**: If the number of points per lane is not specified.
+    Raises:
+        ValueError: If the row anchors are not specified.
+        ValueError: If the griding number is not specified.
+        ValueError: If the number of points per lane is not specified.
     """
 
     def __init__(
@@ -50,16 +43,12 @@ class LaneDetectionParser(BaseParser):
     ) -> None:
         """Initializes the lane detection parser node.
 
-        @param output_layer_name: Name of the output layer relevant to the parser.
-        @type output_layer_name: str
-        @param row_anchors: List of row anchors.
-        @type row_anchors: list[int]
-        @param griding_num: Griding number.
-        @type griding_num: int
-        @param cls_num_per_lane: Number of points per lane.
-        @type cls_num_per_lane: int
-        @param input_size: Input size (width,height).
-        @type input_size: tuple[int, int]
+        Args:
+            output_layer_name: Name of the output layer relevant to the parser.
+            row_anchors: List of row anchors.
+            griding_num: Griding number.
+            cls_num_per_lane: Number of points per lane.
+            input_size: Input size (width,height).
         """
         super().__init__()
         self.output_layer_name = output_layer_name
@@ -75,8 +64,8 @@ class LaneDetectionParser(BaseParser):
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Set the output layer name for the lane detection model.
 
-        @param output_layer_name: Name of the output layer.
-        @type output_layer_name: str
+        Args:
+            output_layer_name: Name of the output layer.
         """
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
@@ -86,8 +75,8 @@ class LaneDetectionParser(BaseParser):
     def setRowAnchors(self, row_anchors: list[int]) -> None:
         """Set the row anchors for the lane detection model.
 
-        @param row_anchors: List of row anchors.
-        @type row_anchors: list[int]
+        Args:
+            row_anchors: List of row anchors.
         """
         if not isinstance(row_anchors, list):
             raise ValueError("Row anchors must be a list.")
@@ -99,8 +88,8 @@ class LaneDetectionParser(BaseParser):
     def setGridingNum(self, griding_num: int) -> None:
         """Set the griding number for the lane detection model.
 
-        @param griding_num: Griding number.
-        @type griding_num: int
+        Args:
+            griding_num: Griding number.
         """
         if not isinstance(griding_num, int):
             raise ValueError("Griding number must be an integer.")
@@ -110,8 +99,8 @@ class LaneDetectionParser(BaseParser):
     def setClsNumPerLane(self, cls_num_per_lane: int) -> None:
         """Set the number of points per lane for the lane detection model.
 
-        @param cls_num_per_lane: Number of classes per lane.
-        @type cls_num_per_lane: int
+        Args:
+            cls_num_per_lane: Number of classes per lane.
         """
         if not isinstance(cls_num_per_lane, int):
             raise ValueError("Number of points per lane must be an integer.")
@@ -121,8 +110,8 @@ class LaneDetectionParser(BaseParser):
     def setInputSize(self, input_size: tuple[int, int]) -> None:
         """Set the input size for the lane detection model.
 
-        @param input_size: Input size (width,height).
-        @type input_size: tuple[int, int]
+        Args:
+            input_size: Input size (width,height).
         """
         if not isinstance(input_size, tuple):
             raise ValueError("Input size must be a tuple.")
@@ -139,10 +128,11 @@ class LaneDetectionParser(BaseParser):
     ) -> "LaneDetectionParser":
         """Configures the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: LaneDetectionParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
 
         output_layers = head_config.get("outputs", [])
@@ -180,6 +170,11 @@ class LaneDetectionParser(BaseParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("LaneDetectionParser run started")
         if self.row_anchors is None:
             raise ValueError("Row anchors must be specified!")
@@ -205,6 +200,19 @@ class LaneDetectionParser(BaseParser):
             self.emit(output, points)
 
     def extract(self, output: dai.NNData) -> np.ndarray:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            Dequantized float32 batched UFLD grid tensor.
+
+        Raises:
+            ValueError: If no output name is configured and the message does not contain
+                exactly one layer, or configured class requirements are not met.
+        """
         layers = output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layers}")
         if len(layers) == 1 and self.output_layer_name == "":
@@ -227,6 +235,25 @@ class LaneDetectionParser(BaseParser):
         cls_num_per_lane: int,
         input_size: tuple[int, int],
     ) -> list[list[tuple[int, int]]]:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            tensor: Batched logits with grid classes, sampled rows, and lanes as the
+                remaining axes; only the first batch item is used.
+            row_anchors: Image row positions, in pixels, for the lane sampling grid.
+            griding_num: Number of horizontal grid cells, excluding the no-lane class.
+            cls_num_per_lane: Number of sampled row positions per lane.
+            input_size: Model input size as ``(width, height)``.
+
+        Returns:
+            One list per lane containing normalized XY point tuples. Lanes with fewer
+            than three valid samples have empty lists.
+
+        Note:
+            Uses
+            `depthai_nodes.node.parsers.utils.lane_detection.compute_lane_detection_points`;
+            see that helper for tensor layout and validation details.
+        """
         return compute_lane_detection_points(
             tensor,
             row_anchors=row_anchors,
@@ -236,6 +263,16 @@ class LaneDetectionParser(BaseParser):
         )
 
     def emit(self, output: dai.NNData, points) -> None:
+        """Create a ``dai.beta.Clusters`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            points: Lists of normalized XY points, one list per lane.
+        """
         msg = create_cluster_message(points)
         msg.setTimestamp(output.getTimestamp())
         msg.setSequenceNum(output.getSequenceNum())

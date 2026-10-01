@@ -7,16 +7,16 @@ def nms_detections(
     conf_thresh=0.3,
     iou_thresh=0.4,
 ):
-    """Applies Non-Maximum Suppression (NMS) on a list of dai.ImgDetection objects.
+    """Apply non-maximum suppression independently to each detection class.
 
-    @param detections: List of dai.ImgDetection objects. @type
-    detections: list[dai.ImgDetection] @param conf_thresh: Confidence
-    threshold for filtering boxes. @type conf_thresh: float @param
-    iou_thresh: IoU threshold for Non-Maximum Suppression (NMS). @type
-    iou_thresh: float
+    Args:
+        detections: Detections with normalized bounding boxes.
+        conf_thresh (``float``): Minimum confidence score to retain.
+        iou_thresh (``float``): Intersection-over-union threshold for suppression.
 
-    @return: A list of dai.ImgDetection objects after applying NMS.
-    @rtype: list[dai.ImgDetection]
+    Returns:
+        ``list[dai.ImgDetection]``: Detections that pass confidence filtering and
+            per-class suppression.
     """
     # Filter out detections below confidence threshold
     filtered_detections = [det for det in detections if det.confidence >= conf_thresh]
@@ -57,16 +57,15 @@ def nms_detections(
 def nms(boxes, scores, iou_thresh):
     """Perform Non-Maximum Suppression (NMS).
 
-    @param boxes: An ndarray of shape (N, 4), where each row is [xmin, ymin, xmax,
-        ymax].
-    @type boxes: np.ndarray
-    @param scores: An ndarray of shape (N,), containing the confidence scores for each
-        box.
-    @type scores: np.ndarray
-    @param iou_thresh: The IoU threshold for Non-Maximum Suppression (NMS).
-    @type iou_thresh: float
-    @return: A list of indices of the boxes to keep after applying NMS.
-    @rtype: list[int]
+    Args:
+        boxes (``np.ndarray``): An ndarray of shape (N, 4), where each row is [xmin,
+            ymin, xmax, ymax].
+        scores (``np.ndarray``): An ndarray of shape (N,), containing the confidence
+            scores for each box.
+        iou_thresh (``float``): The IoU threshold for Non-Maximum Suppression (NMS).
+
+    Returns:
+        ``list[int]``: A list of indices of the boxes to keep after applying NMS.
     """
     x1 = boxes[:, 0]
     y1 = boxes[:, 1]

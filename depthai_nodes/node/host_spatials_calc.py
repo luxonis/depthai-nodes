@@ -5,21 +5,13 @@ import numpy as np
 
 
 class HostSpatialsCalc:
-    """HostSpatialsCalc is a helper class for calculating spatial coordinates from depth
-    data.
+    """Compute camera-space coordinates from depth regions.
 
-    Attributes
-    ----------
-    calibData : dai.CalibrationHandler
-        Calibration data handler for the device.
-    depthAlignmentSocket : dai.CameraBoardSocket
-        The camera socket used for depth alignment.
-    delta : int
-        The delta value for ROI calculation. Default is 5 - means 10x10 depth pixels around point for depth averaging.
-    threshLow : int
-        The lower threshold for depth values. Default is 200 - means 20cm.
-    threshHigh : int
-        The upper threshold for depth values. Default is 30000 - means 30m.
+    Depth values and returned coordinates use the same units, normally millimeters.
+
+    Note:
+        Four-coordinate ROIs are used as NumPy slice bounds without clipping. Point
+        inputs are clamped so the sampling square fits inside the frame.
     """
 
     # We need device object to get calibration data
@@ -31,6 +23,15 @@ class HostSpatialsCalc:
         threshLow: int = 200,
         threshHigh: int = 30000,
     ):
+        """Configure calibration, point sampling, and accepted depth range.
+
+        Args:
+            calibData: Device calibration used to obtain camera intrinsics.
+            depthAlignmentSocket: Camera to which depth pixels are aligned.
+            delta: Half-size in pixels of the square sampled around point inputs.
+            threshLow: Inclusive minimum accepted depth, in the depth frame units.
+            threshHigh: Inclusive maximum accepted depth, in the depth frame units.
+        """
         self.calibData = calibData
         self.depth_alignment_socket = depthAlignmentSocket
 
@@ -41,8 +42,8 @@ class HostSpatialsCalc:
     def setLowerThreshold(self, thresholdLow: int) -> None:
         """Set the lower depth threshold used during ROI averaging.
 
-        @param thresholdLow: Lower accepted depth value.
-        @type thresholdLow: int
+        Args:
+            thresholdLow: Lower accepted depth value.
         """
         if not isinstance(thresholdLow, int):
             if isinstance(thresholdLow, float):
@@ -56,8 +57,8 @@ class HostSpatialsCalc:
     def setUpperThreshold(self, thresholdHigh: int) -> None:
         """Set the upper depth threshold used during ROI averaging.
 
-        @param thresholdHigh: Upper accepted depth value.
-        @type thresholdHigh: int
+        Args:
+            thresholdHigh: Upper accepted depth value.
         """
         if not isinstance(thresholdHigh, int):
             if isinstance(thresholdHigh, float):
@@ -69,7 +70,14 @@ class HostSpatialsCalc:
         self.thresh_high = thresholdHigh
 
     def setDeltaRoi(self, delta: int) -> None:
-        """Set the half-size of the ROI used around point inputs."""
+        """Set the point-sampling square half-size.
+
+        Args:
+            delta: Half-size in pixels. Floating-point values are truncated to integers.
+
+        Raises:
+            TypeError: If delta is neither an int nor a float.
+        """
         if not isinstance(delta, int):
             if isinstance(delta, float):
                 delta = int(delta)
@@ -85,18 +93,21 @@ class HostSpatialsCalc:
         roi: list[int],
         averagingMethod: Callable = np.mean,
     ) -> dict[str, float]:
-        """Calculate spatial coordinates from the depth frame within the ROI. Returns
-        x=0, y=0, z=0 in case of no valid depth inside the ROI.
+        """Project the depth-region centroid into camera space.
 
-        @param depthData: Depth frame used for coordinate estimation.
-        @type depthData: dai.ImgFrame
-        @param roi: Region of interest or point.
-        @type roi: list[int]
-        @param averagingMethod: Callable used to reduce valid depth values inside the
-            ROI.
-        @type averagingMethod: Callable
-        @return: Spatial coordinates in camera space.
-        @rtype: dict[str, float]
+        Args:
+            depthData: Depth frame aligned to the configured camera.
+            roi: Pixel coordinates as ``[xmin, ymin, xmax, ymax]``, or a point ``[x,
+                y]`` expanded by ``delta``. Slice upper bounds are exclusive.
+            averagingMethod: Reducer for depth samples within the inclusive configured
+                thresholds; defaults to the mean.
+
+        Returns:
+            Dictionary with ``x``, ``y``, and ``z`` in depth-frame units. All values are
+            zero if no samples pass the depth thresholds.
+
+        Raises:
+            ValueError: If the ROI contains neither two nor four coordinates.
         """
         depthFrame = depthData.getFrame()
 

@@ -4,7 +4,19 @@ import numpy as np
 def compute_hrnet_keypoints(
     heatmaps: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Extract normalized keypoints and scores from HRNet heatmaps."""
+    """Find each HRNet heatmap maximum and normalize its coordinates.
+
+    Args:
+        heatmaps: Heatmaps of shape ``(1, keypoints, height, width)`` or ``(keypoints,
+            height, width)``. The first axis is removed when its size is 1.
+
+    Returns:
+        A pair of normalized ``(N, 2)`` XY coordinates and ``(N,)`` peak scores clipped
+        to [0, 1].
+
+    Raises:
+        ValueError: If the heatmaps are not 3D after removal of a singleton first axis.
+    """
     maps = np.asarray(heatmaps)
 
     if maps.shape[0] == 1:

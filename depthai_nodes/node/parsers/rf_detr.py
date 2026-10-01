@@ -13,32 +13,26 @@ from depthai_nodes.node.parsers.utils.rf_detr import (
 class RFDETRParser(BaseParser):
     """Parser class for parsing the output of the RF-DETR object detection model.
 
-    RF-DETR from Roboflow is a detection transformer model that
-    outputs bounding boxes and class probabilities. The model can optionally output
-    instance segmentation masks.
+    RF-DETR from Roboflow is a detection transformer model that outputs bounding boxes
+    and class probabilities. The model can optionally output instance segmentation
+    masks.
 
-    Attributes
-    ----------
-    conf_threshold : float
-        Confidence score threshold for detected objects.
-    max_det : int
-        Maximum number of detections to keep.
-    label_names : list[str] | None
-        List of label names for detected objects.
-    mask_conf : float
-        Confidence threshold for binarizing instance segmentation masks.
-    output_layer_names : list[str]
-        Names of the output layers (boxes, logits, and optionally masks).
+    Attributes:
+        conf_threshold (``float``): Confidence score threshold for detected objects.
+        max_det (``int``): Maximum number of detections to keep.
+        label_names (``list[str] | None``): List of label names for detected objects.
+        mask_conf (``float``): Confidence threshold for binarizing instance segmentation
+            masks.
+        output_layer_names (``list[str]``): Names of the output layers (boxes, logits,
+            and optionally masks).
 
-    Output Message/s
-    ----------------
-    **Type**: ImgDetectionsExtended
+    Note:
+        Emits ``dai.ImgDetections`` messages. dai.ImgDetections message containing
+        bounding boxes, labels, confidence scores, and optionally instance segmentation
+        masks.
 
-    **Description**: ImgDetectionsExtended message containing bounding boxes, labels,
-    confidence scores, and optionally instance segmentation masks.
+    References:
 
-    References
-    ----------
     RF-DETR: https://github.com/roboflow/rf-detr
     """
 
@@ -54,14 +48,11 @@ class RFDETRParser(BaseParser):
     ) -> None:
         """Initializes the parser node.
 
-        @param conf_threshold: Confidence score threshold for detected objects.
-        @type conf_threshold: float
-        @param max_det: Maximum number of detections to keep.
-        @type max_det: int
-        @param label_names: List of label names for detected objects.
-        @type label_names: list[str] | None
-        @param mask_conf: Mask confidence threshold for instance segmentation masks.
-        @type mask_conf: float
+        Args:
+            conf_threshold: Confidence score threshold for detected objects.
+            max_det: Maximum number of detections to keep.
+            label_names: List of label names for detected objects.
+            mask_conf: Mask confidence threshold for instance segmentation masks.
         """
         super().__init__()
         self.conf_threshold = conf_threshold
@@ -76,17 +67,19 @@ class RFDETRParser(BaseParser):
 
     @property
     def input(self) -> dai.Node.Input:
+        """Input port accepting ``dai.NNData``."""
         return self._input
 
     @property
     def out(self) -> dai.Node.Output:
+        """Output port carrying parsed messages."""
         return self._out
 
     def setConfidenceThreshold(self, threshold: float) -> None:
         """Sets the confidence score threshold for detected objects.
 
-        @param threshold: Confidence score threshold for detected objects.
-        @type threshold: float
+        Args:
+            threshold: Confidence score threshold for detected objects.
         """
         if not isinstance(threshold, float):
             raise ValueError("Confidence threshold must be a float.")
@@ -98,8 +91,8 @@ class RFDETRParser(BaseParser):
     def setMaxDetections(self, max_det: int) -> None:
         """Sets the maximum number of detections to keep.
 
-        @param max_det: Maximum number of detections to keep.
-        @type max_det: int
+        Args:
+            max_det: Maximum number of detections to keep.
         """
         if not isinstance(max_det, int):
             raise ValueError("Max detections must be an integer.")
@@ -111,8 +104,8 @@ class RFDETRParser(BaseParser):
     def setLabelNames(self, label_names: list[str]) -> None:
         """Sets the label names for detected objects.
 
-        @param label_names: List of label names for detected objects.
-        @type label_names: list[str]
+        Args:
+            label_names: List of label names for detected objects.
         """
         if not isinstance(label_names, list):
             raise ValueError("Label names must be a list.")
@@ -124,8 +117,8 @@ class RFDETRParser(BaseParser):
     def setMaskConfidence(self, mask_conf: float) -> None:
         """Sets the mask confidence threshold.
 
-        @param mask_conf: The mask confidence threshold.
-        @type mask_conf: float
+        Args:
+            mask_conf: The mask confidence threshold.
         """
         if not isinstance(mask_conf, float):
             raise ValueError("Mask confidence threshold must be a float.")
@@ -139,8 +132,8 @@ class RFDETRParser(BaseParser):
     def setOutputLayerNames(self, output_layer_names: list[str]) -> None:
         """Sets the output layer names for the parser.
 
-        @param output_layer_names: List of output layer names.
-        @type output_layer_names: list[str]
+        Args:
+            output_layer_names: List of output layer names.
         """
         if not isinstance(output_layer_names, list):
             raise ValueError("Output layer names must be a list.")
@@ -152,10 +145,11 @@ class RFDETRParser(BaseParser):
     def build(self, head_config: dict[str, Any]) -> "RFDETRParser":
         """Configures the parser based on the head configuration.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: RFDETRParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
         self.conf_threshold = head_config.get("conf_threshold", self.conf_threshold)
         self.max_det = head_config.get("max_det", self.max_det)
@@ -191,6 +185,11 @@ class RFDETRParser(BaseParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("RFDETRParser run started")
 
         while self.isRunning():
@@ -215,6 +214,19 @@ class RFDETRParser(BaseParser):
     def extract(
         self, output: dai.NNData
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            Float32 box, class-logit, and optional mask tensors in configured layer
+            order. Without a mask layer, the third value is ``None``.
+
+        Raises:
+            ValueError: If the selected outputs do not contain two or three layers.
+        """
         layer_names = self.output_layer_names or output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layer_names}")
 
@@ -249,6 +261,30 @@ class RFDETRParser(BaseParser):
         input_shape: tuple[int, int] | None,
         masks_tensor: np.ndarray | None = None,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[str] | None, np.ndarray | None]:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            boxes_tensor: Batched normalized center-XY/width/height predictions.
+            logits_tensor: Class logits of shape ``(1, queries, classes)``.
+            conf_threshold: Minimum detection confidence used to filter candidates.
+            max_det: Maximum number of detection candidates to retain or consider during
+                suppression.
+            label_names: Optional class-name lookup indexed by predicted class ID.
+            mask_conf: Probability threshold used to binarize mask logits.
+            input_shape: Model input image shape as ``(height, width)``.
+            masks_tensor: Optional per-query mask logits, ordered like the box
+                predictions.
+
+        Returns:
+            Boxes in normalized center-XY/width/height format, scores, integer class
+            IDs, optional class names, and an optional HW uint8 instance mask. Mask
+            values index returned detections; 255 is background. Segmentation retains at
+            most 255 instances, and higher-confidence masks win overlaps.
+
+        Note:
+            Uses `depthai_nodes.node.parsers.utils.rf_detr.compute_rfdetr_detections`;
+            see that helper for tensor layout and validation details.
+        """
         return compute_rfdetr_detections(
             boxes_tensor,
             logits_tensor,
@@ -270,6 +306,21 @@ class RFDETRParser(BaseParser):
         label_names_list: list[str] | None,
         final_mask: np.ndarray | None,
     ) -> None:
+        """Create a ``dai.ImgDetections`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            boxes: Normalized center-XY/width/height boxes returned by ``compute()``.
+            scores: Confidence scores corresponding to the computed payload.
+            labels: Integer class IDs corresponding to the boxes.
+            label_names_list: Optional class names corresponding to the detections.
+            final_mask: Optional instance mask whose IDs index the returned detections;
+                255 is background.
+        """
         message = create_detection_message(
             bboxes=boxes,
             scores=scores,

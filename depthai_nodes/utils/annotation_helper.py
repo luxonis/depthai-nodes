@@ -14,12 +14,19 @@ ColorRGBA = tuple[float, float, float, float]
 
 
 class AnnotationHelper:
-    """Simplifies `dai.ImgAnnotation` creation.
+    """Simplifies ``dai.ImgAnnotation`` creation.
 
-    After calling the desired drawing methods, call the `build` method to create the `ImgAnnotations` message.
+    After calling the desired drawing methods, call the ``build`` method to create the
+    ``ImgAnnotations`` message.
     """
 
     def __init__(self, viewport_clipper: ViewportClipper | None = None):
+        """Create an empty annotation builder.
+
+        Args:
+            viewport_clipper: Optional clipping bounds. Defaults to the normalized unit
+                viewport [0, 1] on both axes.
+        """
         self.annotation: dai.ImgAnnotation = dai.ImgAnnotation()
         if not viewport_clipper:
             viewport_clipper = ViewportClipper(
@@ -37,18 +44,15 @@ class AnnotationHelper:
     ) -> "AnnotationHelper":
         """Draws a line between two points.
 
-        @param pt1: Start of the line
-        @type pt1: Point | dai.Point2f
-        @param pt2: End of the line
-        @type pt2: Point | dai.Point2f
-        @param color: Line color
-        @type color: ColorRGBA | dai.Color
-        @param thickness: Line thickness
-        @type thickness: float
-        @param clip_to_viewport: Indication whether to clip the line to the viewport
-        @type clip_to_viewport: bool
-        @return: self
-        @rtype: AnnotationHelper
+        Args:
+            pt1: Start of the line
+            pt2: End of the line
+            color: Line color
+            thickness: Line thickness
+            clip_to_viewport: Indication whether to clip the line to the viewport
+
+        Returns:
+            self
         """
         if not isinstance(pt1, dai.Point2f):
             pt1 = self._create_point(pt1)
@@ -81,18 +85,15 @@ class AnnotationHelper:
     ) -> "AnnotationHelper":
         """Draws a polyline.
 
-        @param points: List of points of the polyline
-        @type points: list[Point] | list[dai.Point2f]
-        @param outline_color: Outline color
-        @type outline_color: ColorRGBA | dai.Color
-        @param fill_color: Fill color (None for no fill)
-        @type fill_color: ColorRGBA | dai.Color | None
-        @param thickness: Line thickness
-        @type thickness: float
-        @param closed: Creates polygon, instead of polyline if True
-        @type closed: bool
-        @return: self
-        @rtype: AnnotationHelper
+        Args:
+            points: List of points of the polyline
+            outline_color: Outline color
+            fill_color: Fill color (None for no fill)
+            thickness: Line thickness
+            closed: Creates polygon, instead of polyline if True
+
+        Returns:
+            self
         """
         points_type = (
             dai.PointsAnnotationType.LINE_STRIP
@@ -121,14 +122,13 @@ class AnnotationHelper:
     ) -> "AnnotationHelper":
         """Draws points.
 
-        @param points: List of points to draw
-        @type points: list[Point] | list[dai.Point2f]
-        @param color: Color of the points
-        @type color: ColorRGBA | dai.Color
-        @param thickness: Size of the points
-        @type thickness: float
-        @return: self
-        @rtype: AnnotationHelper
+        Args:
+            points: List of points to draw
+            color: Color of the points
+            thickness: Size of the points
+
+        Returns:
+            self
         """
         # TODO: Visualizer currently does not show dai.PointsAnnotationType.POINTS
         if not all(isinstance(pt, dai.Point2f) for pt in points):
@@ -152,18 +152,15 @@ class AnnotationHelper:
     ) -> "AnnotationHelper":
         """Draws a circle.
 
-        @param center: Center of the circle
-        @type center: Point | dai.Point2f
-        @param radius: Radius of the circle
-        @type radius: float
-        @param outline_color: Outline color
-        @type outline_color: ColorRGBA | dai.Color
-        @param fill_color: Fill color (None for no fill)
-        @type fill_color: ColorRGBA | dai.Color | None
-        @param thickness: Outline thickness
-        @type thickness: float
-        @return: self
-        @rtype: AnnotationHelper
+        Args:
+            center: Center of the circle
+            radius: Radius of the circle
+            outline_color: Outline color
+            fill_color: Fill color (None for no fill)
+            thickness: Outline thickness
+
+        Returns:
+            self
         """
         circle = dai.CircleAnnotation()
         if not isinstance(outline_color, dai.Color):
@@ -192,20 +189,16 @@ class AnnotationHelper:
     ) -> "AnnotationHelper":
         """Draws a rectangle.
 
-        @param top_left: Top left corner of the rectangle
-        @type top_left: Point | dai.Point2f
-        @param bottom_right: Bottom right corner of the rectangle
-        @type bottom_right: Point | dai.Point2f
-        @param outline_color: Outline color
-        @type outline_color: ColorRGBA | dai.Color
-        @param fill_color: Fill color (None for no fill)
-        @type fill_color: ColorRGBA | dai.Color | None
-        @param thickness: Outline thickness
-        @type thickness: float
-        @param clip_to_viewport: Indication whether to clip the line to the viewport
-        @type clip_to_viewport: bool
-        @return: self
-        @rtype: AnnotationHelper
+        Args:
+            top_left: Top left corner of the rectangle
+            bottom_right: Bottom right corner of the rectangle
+            outline_color: Outline color
+            fill_color: Fill color (None for no fill)
+            thickness: Outline thickness
+            clip_to_viewport: Indication whether to clip the line to the viewport
+
+        Returns:
+            self
         """
         if isinstance(top_left, dai.Point2f):
             top_left = (top_left.x, top_left.y)
@@ -233,18 +226,15 @@ class AnnotationHelper:
     ) -> "AnnotationHelper":
         """Draws text.
 
-        @param text: Text string
-        @type text: str
-        @param position: Text position
-        @type position: Point | dai.Point2f
-        @param color: Text color
-        @type color: ColorRGBA | dai.Color
-        @param background_color: Background color (None for no background)
-        @type background_color: ColorRGBA | dai.Color | None
-        @param size: Text size
-        @type size: float
-        @return: self
-        @rtype: AnnotationHelper
+        Args:
+            text: Text string
+            position: Text position
+            color: Text color
+            background_color: Background color (None for no background)
+            size: Text size
+
+        Returns:
+            self
         """
         text_annot = dai.TextAnnotation()
         if not isinstance(position, dai.Point2f):
@@ -274,22 +264,17 @@ class AnnotationHelper:
     ) -> "AnnotationHelper":
         """Draws a rotated rectangle.
 
-        @param center: Center of the rectangle
-        @type center: Point | dai.Point2f
-        @param size: Size of the rectangle (width, height)
-        @type size: tuple[float, float] | dai.Size2f
-        @param angle: Angle of rotation in degrees
-        @type angle: float
-        @param outline_color: Outline color
-        @type outline_color: ColorRGBA | dai.Color
-        @param fill_color: Fill color (None for no fill)
-        @type fill_color: ColorRGBA | dai.Color | None
-        @param thickness: Outline thickness
-        @type thickness: float
-        @param clip_to_viewport: Indication whether to clip the line to the viewport
-        @type clip_to_viewport: bool
-        @return: self
-        @rtype: AnnotationHelper
+        Args:
+            center: Center of the rectangle
+            size: Size of the rectangle (width, height)
+            angle: Angle of rotation in degrees
+            outline_color: Outline color
+            fill_color: Fill color (None for no fill)
+            thickness: Outline thickness
+            clip_to_viewport: Indication whether to clip the line to the viewport
+
+        Returns:
+            self
         """
         if not isinstance(center, dai.Point2f):
             center = self._create_point(center)
@@ -304,12 +289,12 @@ class AnnotationHelper:
     def build(self, timestamp: timedelta, sequence_num: int) -> dai.ImgAnnotations:
         """Creates an ImgAnnotations message.
 
-        @param timestamp: Message timestamp
-        @type timestamp: timedelta
-        @param sequence_num: Message sequence number
-        @type sequence_num: int
-        @return: Created ImgAnnotations message
-        @rtype: dai.ImgAnnotations
+        Args:
+            timestamp: Message timestamp
+            sequence_num: Message sequence number
+
+        Returns:
+            Created ImgAnnotations message
         """
         annotations_msg = dai.ImgAnnotations()
         annotations_msg.annotations = dai.VectorImgAnnotation([self.annotation])

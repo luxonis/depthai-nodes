@@ -7,14 +7,13 @@ def decode_scores_and_points(
     """Decode the scores and points from the neural network output tensors. Used for
     MLSD model.
 
-    @param tpMap: Tensor containing the vector map.
-    @type tpMap: np.ndarray
-    @param heat: Tensor containing the heat map.
-    @type heat: np.ndarray
-    @param topk_n: Number of top candidates to keep.
-    @type topk_n: int
-    @return: Detected points, confidence scores for the detected points, and vector map.
-    @rtype: tuple[np.ndarray, np.ndarray, np.ndarray]
+    Args:
+        tpMap: Tensor containing the vector map.
+        heat: Tensor containing the heat map.
+        topk_n: Number of top candidates to keep.
+
+    Returns:
+        Detected points, confidence scores for the detected points, and vector map.
     """
     _, _, h, w = tpMap.shape
     displacement = tpMap[0, 1:5]  # shape (4, h, w)
@@ -50,20 +49,16 @@ def get_lines(
     """Get lines from the detected points and scores. The lines are filtered by the
     score threshold and distance threshold. Used for MLSD model.
 
-    @param pts: Detected points.
-    @type pts: np.ndarray
-    @param pts_score: Confidence scores for the detected points.
-    @type pts_score: np.ndarray
-    @param vmap: Vector map.
-    @type vmap: np.ndarray
-    @param score_thr: Confidence score threshold for detected lines.
-    @type score_thr: float
-    @param dist_thr: Distance threshold for merging lines.
-    @type dist_thr: float
-    @param input_size: Input size of the model.
-    @type input_size: int
-    @return: Detected lines and their confidence scores.
-    @rtype: tuple[np.ndarray, list[float]]
+    Args:
+        pts: Detected points.
+        pts_score: Confidence scores for the detected points.
+        vmap: Vector map.
+        score_thr: Confidence score threshold for detected lines.
+        dist_thr: Minimum line length in output-map pixels.
+        input_size: Input size of the model.
+
+    Returns:
+        Detected lines and their confidence scores.
     """
     # Extract coordinates for all points
     ys, xs = pts[:, 0], pts[:, 1]
@@ -93,7 +88,21 @@ def compute_mlsd_lines(
     score_thr: float,
     dist_thr: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Decode MLSD outputs into lines and scores."""
+    """Decode line segments from M-LSD displacement and heat tensors.
+
+    Args:
+        tpMap: Four-dimensional line-displacement tensor in NCHW layout.
+        heat: Heat tensor used to rank line-center candidates.
+        topk_n: Maximum number of line-center candidates to examine.
+        score_thr: Minimum candidate score.
+        dist_thr: Minimum line length in output-map pixels.
+
+    Returns:
+        Normalized endpoint coordinates of shape ``(N, 4)`` and float32 line scores.
+
+    Raises:
+        ValueError: If ``tpMap`` is not four-dimensional.
+    """
     if len(tpMap.shape) != 4:
         raise ValueError("Invalid shape of the tpMap tensor. Should be 4D.")
 

@@ -1,3 +1,5 @@
+"""Tensor decoding, geometry conversion, and postprocessing helpers for host parsers."""
+
 from .activations import sigmoid, softmax
 from .bbox_format_converters import (
     corners_to_rotated_bbox,

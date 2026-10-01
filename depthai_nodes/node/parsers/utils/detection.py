@@ -12,7 +12,21 @@ def compute_detection_outputs(
     iou_threshold: float,
     max_det: int,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Filter detection outputs and convert boxes to center-width-height format."""
+    """Suppress overlapping detections and convert retained boxes.
+
+    Args:
+        bboxes: Bounding boxes of shape ``(N, 4)`` in ``[xmin, ymin, xmax, ymax]``
+            format.
+        scores: Confidence scores of shape ``(N,)``.
+        conf_threshold: Minimum detection confidence used to filter candidates.
+        iou_threshold: Intersection-over-union threshold for non-maximum suppression.
+        max_det: Maximum number of detection candidates to retain or consider during
+            suppression.
+
+    Returns:
+        Retained center-XY/width/height boxes and corresponding scores. Coordinates
+        retain their input units. Both arrays are empty if no boxes survive.
+    """
     nms_bboxes = np.column_stack((bboxes[:, :2], bboxes[:, 2:] - bboxes[:, :2]))
     indices = np.asarray(
         nms_cv2(nms_bboxes, scores, conf_threshold, iou_threshold, max_det)

@@ -11,21 +11,17 @@ from depthai_nodes.node.parsers.utils.ppdet import compute_pp_text_detections
 class PPTextDetectionParser(DetectionParser):
     """Parser class for parsing the output of the PaddlePaddle OCR text detection model.
 
-    Attributes
-    ----------
-    output_layer_name: str
-        Name of the output layer relevant to the parser.
-    conf_threshold : float
-        The threshold for bounding boxes.
-    mask_threshold : float
-        The threshold for the mask.
-    max_det : int
-        The maximum number of candidate bounding boxes.
+    Attributes:
+        output_layer_name (``str``): Name of the output layer relevant to the parser.
+        conf_threshold (``float``): The threshold for bounding boxes.
+        mask_threshold (``float``): The threshold for the mask.
+        max_det (``int``): The maximum number of candidate bounding boxes.
 
-    Output Message/s
-    -------
+    Output messages:
+
     **Type**: dai.ImgDetections
-    **Description**: dai.ImgDetections message containing bounding boxes and the respective confidence scores of detected text.
+    **Description**: dai.ImgDetections message containing bounding boxes and the
+    respective confidence scores of detected text.
     """
 
     def __init__(
@@ -37,14 +33,11 @@ class PPTextDetectionParser(DetectionParser):
     ) -> None:
         """Initializes the parser node.
 
-        @param output_layer_name: Name of the output layer relevant to the parser.
-        @type output_layer_name: str
-        @param conf_threshold: The threshold for bounding boxes.
-        @type conf_threshold: float
-        @param mask_threshold: The threshold for the mask.
-        @type mask_threshold: float
-        @param max_det: The maximum number of candidate bounding boxes.
-        @type max_det:
+        Args:
+            output_layer_name: Name of the output layer relevant to the parser.
+            conf_threshold: The threshold for bounding boxes.
+            mask_threshold: The threshold for the mask.
+            max_det: The maximum number of candidate bounding boxes.
         """
         super().__init__(
             conf_threshold=conf_threshold,
@@ -60,8 +53,8 @@ class PPTextDetectionParser(DetectionParser):
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
 
-        @param output_layer_name: The name of the output layer.
-        @type output_layer_name: str
+        Args:
+            output_layer_name: The name of the output layer.
         """
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
@@ -72,8 +65,8 @@ class PPTextDetectionParser(DetectionParser):
         """Sets the mask threshold for creating the mask from model output
         probabilities.
 
-        @param threshold: The threshold for the mask.
-        @type threshold: float
+        Args:
+            mask_threshold: The threshold for the mask.
         """
         if not isinstance(mask_threshold, float):
             raise ValueError("Mask threshold must be a float.")
@@ -83,10 +76,11 @@ class PPTextDetectionParser(DetectionParser):
     def build(self, head_config: dict[str, Any]) -> "PPTextDetectionParser":
         """Configures the parser.
 
-        @param config: The head configuration for the parser.
-        @type config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: PPTextDetectionParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
 
         super().build(head_config)
@@ -99,6 +93,11 @@ class PPTextDetectionParser(DetectionParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("PPTextDetectionParser run started")
         while self.isRunning():
             try:
@@ -116,6 +115,19 @@ class PPTextDetectionParser(DetectionParser):
             self.emit(output, bboxes, angles, scores)
 
     def extract(self, output: dai.NNData) -> np.ndarray:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            Dequantized text probability tensor requested in NCHW storage order.
+
+        Raises:
+            ValueError: If no output name is configured and the message does not contain
+                exactly one layer, or configured class requirements are not met.
+        """
         layers = output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layers}")
         if len(layers) == 1 and self.output_layer_name == "":
@@ -141,6 +153,24 @@ class PPTextDetectionParser(DetectionParser):
         conf_threshold: float,
         max_det: int,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            predictions: Text probability tensor accepted by
+                ``parse_paddle_detection_outputs``.
+            mask_threshold: Threshold used to binarize the text probability map.
+            conf_threshold: Minimum detection confidence used to filter candidates.
+            max_det: Maximum number of detection candidates to retain or consider during
+                suppression.
+
+        Returns:
+            Normalized center-XY/width/height boxes, rotation angles in degrees, and
+            confidence scores.
+
+        Note:
+            Uses `depthai_nodes.node.parsers.utils.ppdet.compute_pp_text_detections`;
+            see that helper for tensor layout and validation details.
+        """
         return compute_pp_text_detections(
             predictions,
             mask_threshold=mask_threshold,
@@ -155,6 +185,18 @@ class PPTextDetectionParser(DetectionParser):
         angles: np.ndarray,
         scores: np.ndarray,
     ) -> None:
+        """Create a ``dai.ImgDetections`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            bboxes: Normalized center-XY/width/height boxes returned by ``compute()``.
+            angles: Rotation angles in degrees corresponding to the boxes.
+            scores: Confidence scores corresponding to the computed payload.
+        """
         message = create_detection_message(bboxes=bboxes, scores=scores, angles=angles)
         message.setTimestamp(output.getTimestamp())
         message.setSequenceNum(output.getSequenceNum())

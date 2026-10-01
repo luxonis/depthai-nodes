@@ -4,7 +4,15 @@ import numpy as np
 
 
 def probability_to_logit_threshold(probability: float) -> float:
-    """Convert a probability threshold into the equivalent logit threshold."""
+    """Convert a probability threshold to logit space.
+
+    Args:
+        probability: Probability threshold; values at or below 0 and at or above 1 are
+            handled as boundary cases.
+
+    Returns:
+        The log odds, or negative/positive infinity at the lower/upper boundary.
+    """
     if probability <= 0.0:
         return float("-inf")
     if probability >= 1.0:
@@ -18,15 +26,14 @@ def crop_mask(
     """It takes a mask and a bounding box, and returns a mask that is cropped to the
     bounding box.
 
-    @param mask: [h, w] numpy array of a single mask
-    @type mask: np.ndarray
-    @param bbox: A numpy array of bbox coordinates in (x_center, y_center, width,
-        height) format
-    @type bbox: np.ndarray
-    @param fill_value: Value assigned to pixels outside the bounding box.
-    @type fill_value: float | int
-    @return: A mask that is cropped to the bounding box
-    @rtype: np.ndarray
+    Args:
+        mask: [h, w] numpy array of a single mask
+        bbox: A numpy array of bbox coordinates in (x_center, y_center, width, height)
+            format
+        fill_value: Value assigned to pixels outside the bounding box.
+
+    Returns:
+        A mask that is cropped to the bounding box
     """
     h, w = mask.shape
     c_x, c_y, width, height = bbox
@@ -50,19 +57,16 @@ def process_single_mask(
 ) -> np.ndarray:
     """Process a single mask.
 
-    @param protos: Protos.
-    @type protos: np.ndarray
-    @param mask_coeff: Mask coefficient.
-    @type mask_coeff: np.ndarray
-    @param mask_conf: Mask confidence.
-    @type mask_conf: float
-    @param bbox: A numpy array of bbox coordinates in (x_center, y_center, width,
-        height) normalized format.
-    @type bbox: np.ndarray
-    @param output_shape: Target mask shape as (height, width).
-    @type output_shape: tuple[int, int]
-    @return: Processed binary mask resized to `output_shape`.
-    @rtype: np.ndarray
+    Args:
+        protos: Protos.
+        mask_coeff: Mask coefficient.
+        mask_conf: Mask confidence.
+        bbox: A numpy array of bbox coordinates in (x_center, y_center, width, height)
+            normalized format.
+        output_shape: Target mask shape as (height, width).
+
+    Returns:
+        Processed binary mask resized to ``output_shape``.
     """
     _, mask_h, mask_w = protos.shape  # CHW
     scaled_bbox = bbox * np.array([mask_w, mask_h, mask_w, mask_h])
@@ -93,7 +97,19 @@ def get_segmentation_outputs(
     mask_output_layer_names: list[str] | None = None,
     protos_output_layer_name: str | None = None,
 ) -> tuple[list[np.ndarray], np.ndarray, int]:
-    """Get the segmentation outputs from the Neural Network data."""
+    """Extract dequantized NCHW mask coefficients and prototypes.
+
+    Args:
+        output: Neural network output message.
+        mask_output_layer_names: Candidate mask-layer names. If omitted or empty,
+            inspect every layer; select names containing ``"mask"`` and sort them
+            lexically.
+        protos_output_layer_name: Prototype layer name; defaults to ``"protos_output"``.
+
+    Returns:
+        A list of float32 coefficient tensors, the float32 prototype tensor, and its
+        channel count.
+    """
     # Get all the layer names
     layer_names = mask_output_layer_names or output.getAllLayerNames()
     mask_outputs = sorted([name for name in layer_names if "mask" in name])
@@ -119,14 +135,13 @@ def process_single_mask_rfdetr(
 ) -> np.ndarray:
     """Process a single RF-DETR instance segmentation mask.
 
-    @param mask_logits: Mask logits for a single detection.
-    @type mask_logits: np.ndarray
-    @param mask_conf: Mask confidence threshold.
-    @type mask_conf: float
-    @param input_shape: Target output mask shape as (height, width).
-    @type input_shape: tuple[int, int]
-    @return: Processed mask resized to the model input shape.
-    @rtype: np.ndarray
+    Args:
+        mask_logits: Mask logits for a single detection.
+        mask_conf: Mask confidence threshold.
+        input_shape: Target output mask shape as (height, width).
+
+    Returns:
+        Processed mask resized to the model input shape.
     """
     if mask_logits.ndim != 2:
         raise ValueError(

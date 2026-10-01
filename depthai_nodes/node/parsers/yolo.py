@@ -18,6 +18,16 @@ from depthai_nodes.node.parsers.utils.yolo import (
 
 @dataclass(frozen=True)
 class YOLOComputeInputs:
+    """Immutable configuration and tensor bundle for YOLO decoding.
+
+    Created by ``YOLOExtendedParser.extract()`` and consumed by ``compute()``.
+    Fields correspond to arguments of
+    `depthai_nodes.node.parsers.utils.yolo.compute_yolo_detections`. Optional pose and
+    mask fields
+    are populated only for the selected model mode. Array contents remain mutable
+    even though the dataclass fields cannot be reassigned.
+    """
+
     subtype: YOLOSubtype
     layer_names: list[str]
     outputs_values: list[np.ndarray]
@@ -46,37 +56,27 @@ class YOLOExtendedParser(BaseParser):
     """Parser class for parsing the output of the YOLO Instance Segmentation and Pose
     Estimation models.
 
-    Attributes
-    ----------
-    conf_threshold : float
-        Confidence score threshold for detected faces.
-    n_classes : int
-        Number of classes in the model.
-    label_names : list[str] | None
-        Names of the classes.
-    iou_threshold : float
-        Intersection over union threshold.
-    mask_conf : float
-        Mask confidence threshold.
-    n_keypoints : int
-        Number of keypoints in the model.
-    anchors : list[list[list[float]]] | None
-        Anchors for the YOLO model (optional).
-    strides : list[int] | tuple[int, ...] | None
-        Strides for the YOLO output heads.
-    keypoint_label_names : list[str] | None
-        Labels for the keypoints.
-    keypoint_edges : list[tuple[int, int]] | None
-        Keypoint connection pairs for visualizing the skeleton. Example: [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint 1, keypoint 1 is connected to keypoint 2, etc.
-    subtype : str
-        Version of the YOLO model.
+    Attributes:
+        conf_threshold (``float``): Confidence score threshold for detected objects.
+        n_classes (``int``): Number of classes in the model.
+        label_names (``list[str] | None``): Names of the classes.
+        iou_threshold (``float``): Intersection over union threshold.
+        mask_conf (``float``): Mask confidence threshold.
+        n_keypoints (``int``): Number of keypoints in the model.
+        anchors (``list[list[list[float]]] | None``): Anchors for the YOLO model
+            (optional).
+        strides (``list[int] | tuple[int, ...] | None``): Strides for the YOLO output
+            heads.
+        keypoint_label_names (``list[str] | None``): Labels for the keypoints.
+        keypoint_edges (``list[tuple[int, int]] | None``): Pairs of keypoint indexes
+            defining skeleton edges. For example, ``[(0, 1), (1, 2)]`` connects keypoint
+            0 to 1 and 1 to 2.
+        subtype (``str``): Version of the YOLO model.
 
-
-    Output Message/s
-    ----------------
-    **Type**: dai.ImgDetections
-
-    **Description**: dai.ImgDetections message containing bounding boxes, labels, label names, confidence scores, and keypoints or masks and protos of the detected objects.
+    Note:
+        Emits ``dai.ImgDetections`` messages. dai.ImgDetections message containing
+        bounding boxes, labels, label names, confidence scores, and keypoints or masks
+        and protos of the detected objects.
     """
 
     _DET_MODE = 0
@@ -99,28 +99,20 @@ class YOLOExtendedParser(BaseParser):
     ):
         """Initialize the parser node.
 
-        @param conf_threshold: The confidence threshold for the detections
-        @type conf_threshold: float
-        @param n_classes: The number of classes in the model
-        @type n_classes: int
-        @param label_names: The names of the classes
-        @type label_names: list[str] | None
-        @param iou_threshold: The intersection over union threshold
-        @type iou_threshold: float
-        @param mask_conf: The mask confidence threshold
-        @type mask_conf: float
-        @param n_keypoints: The number of keypoints in the model
-        @type n_keypoints: int
-        @param anchors: The anchors for the YOLO model
-        @type anchors: list[list[list[float]]] | None
-        @param subtype: The version of the YOLO model
-        @type subtype: str
-        @param keypoint_label_names: The labels for the keypoints
-        @type keypoint_label_names: list[str] | None
-        @param keypoint_edges: Connection pairs of the keypoints. Example: [(0,1),
-            (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint 1,
-            keypoint 1 is connected to keypoint 2, etc.
-        @type keypoint_edges: list[tuple[int, int]] | None
+        Args:
+            conf_threshold: The confidence threshold for the detections
+            n_classes: The number of classes in the model
+            label_names: The names of the classes
+            iou_threshold: The intersection over union threshold
+            mask_conf: The mask confidence threshold
+            n_keypoints: The number of keypoints in the model
+            anchors: The anchors for the YOLO model
+            subtype: The version of the YOLO model
+            keypoint_label_names: The labels for the keypoints
+            keypoint_edges: Connection pairs of the keypoints. Example: [(0,1), (1,2),
+                (2,3), (3,0)] shows that keypoint 0 is connected to keypoint 1, keypoint
+                1 is connected to keypoint 2, etc.
+            max_det: Maximum number of detections to retain.
         """
         super().__init__()
 
@@ -151,8 +143,8 @@ class YOLOExtendedParser(BaseParser):
     def setOutputLayerNames(self, output_layer_names: list[str]) -> None:
         """Sets the output layer names for the parser.
 
-        @param output_layer_names: The output layer names for the parser.
-        @type output_layer_names: list[str]
+        Args:
+            output_layer_names: The output layer names for the parser.
         """
         if not isinstance(output_layer_names, list):
             raise ValueError("Output layer names must be a list.")
@@ -163,10 +155,10 @@ class YOLOExtendedParser(BaseParser):
         self._logger.debug(f"Output layer names set to {self.output_layer_names}")
 
     def setConfidenceThreshold(self, threshold: float) -> None:
-        """Sets the confidence score threshold for detected faces.
+        """Sets the confidence score threshold for detected objects.
 
-        @param threshold: Confidence score threshold for detected faces.
-        @type threshold: float
+        Args:
+            threshold: Confidence score threshold for detected objects.
         """
         if not isinstance(threshold, float):
             raise ValueError("Confidence score threshold must be a float.")
@@ -180,8 +172,8 @@ class YOLOExtendedParser(BaseParser):
     def setNumClasses(self, n_classes: int) -> None:
         """Sets the number of classes in the model.
 
-        @param numClasses: The number of classes in the model.
-        @type numClasses: int
+        Args:
+            n_classes: The number of classes in the model.
         """
         if not isinstance(n_classes, int):
             raise ValueError("Number of classes must be an integer.")
@@ -194,8 +186,8 @@ class YOLOExtendedParser(BaseParser):
     def setIouThreshold(self, iou_threshold: float) -> None:
         """Sets the intersection over union threshold.
 
-        @param iou_threshold: The intersection over union threshold.
-        @type iou_threshold: float
+        Args:
+            iou_threshold: The intersection over union threshold.
         """
         if not isinstance(iou_threshold, float):
             raise ValueError("Intersection over union threshold must be a float.")
@@ -212,8 +204,8 @@ class YOLOExtendedParser(BaseParser):
     def setMaskConfidence(self, mask_conf: float) -> None:
         """Sets the mask confidence threshold.
 
-        @param mask_conf: The mask confidence threshold.
-        @type mask_conf: float
+        Args:
+            mask_conf: The mask confidence threshold.
         """
         if not isinstance(mask_conf, float):
             raise ValueError("Mask confidence threshold must be a float.")
@@ -226,8 +218,8 @@ class YOLOExtendedParser(BaseParser):
     def setNumKeypoints(self, n_keypoints: int) -> None:
         """Sets the number of keypoints in the model.
 
-        @param n_keypoints: The number of keypoints in the model.
-        @type n_keypoints: int
+        Args:
+            n_keypoints: The number of keypoints in the model.
         """
         if not isinstance(n_keypoints, int):
             raise ValueError("Number of keypoints must be an integer.")
@@ -240,8 +232,8 @@ class YOLOExtendedParser(BaseParser):
     def setAnchors(self, anchors: list[list[list[float]]]) -> None:
         """Sets the anchors for the YOLO model.
 
-        @param anchors: The anchors for the YOLO model.
-        @type anchors: list[list[list[float]]]
+        Args:
+            anchors: The anchors for the YOLO model.
         """
         for anchor in anchors:
             if not isinstance(anchor, list):
@@ -257,8 +249,8 @@ class YOLOExtendedParser(BaseParser):
     def setStrides(self, strides: list[int] | tuple[int, ...]) -> None:
         """Sets the strides for YOLO output heads.
 
-        @param strides: Strides for YOLO output heads.
-        @type strides: list[int] | tuple[int, ...]
+        Args:
+            strides: Strides for YOLO output heads.
         """
         if not isinstance(strides, (list, tuple)):
             raise ValueError("Strides must be a list or tuple.")
@@ -275,8 +267,8 @@ class YOLOExtendedParser(BaseParser):
     def setSubtype(self, subtype: str) -> None:
         """Sets the subtype of the YOLO model.
 
-        @param subtype: The subtype of the YOLO model.
-        @type subtype: YOLOSubtype
+        Args:
+            subtype: The subtype of the YOLO model.
         """
         if not isinstance(subtype, str):
             raise ValueError("Subtype must be a string.")
@@ -293,8 +285,8 @@ class YOLOExtendedParser(BaseParser):
     def setLabelNames(self, label_names: list[str]) -> None:
         """Sets the names of the classes.
 
-        @param label_names: The names of the classes.
-        @type label_names: list[str]
+        Args:
+            label_names: The names of the classes.
         """
         if not isinstance(label_names, list):
             raise ValueError("Label names must be a list.")
@@ -307,8 +299,8 @@ class YOLOExtendedParser(BaseParser):
     def setKeypointLabelNames(self, keypoint_label_names: list[str]) -> None:
         """Sets the label names for the keypoints.
 
-        @param keypoint_label_names: The labels for the keypoints.
-        @type keypoint_label_names: list[str]
+        Args:
+            keypoint_label_names: The labels for the keypoints.
         """
         if not isinstance(keypoint_label_names, list):
             raise ValueError("Keypoint labels must be a list.")
@@ -321,8 +313,8 @@ class YOLOExtendedParser(BaseParser):
     def setKeypointEdges(self, keypoint_edges: list[tuple[int, int]]) -> None:
         """Sets the edges for the keypoints.
 
-        @param keypoint_edges: The edges for the keypoints.
-        @type keypoint_edges: list[tuple[int, int]]
+        Args:
+            keypoint_edges: The edges for the keypoints.
         """
         if not isinstance(keypoint_edges, list) and not isinstance(
             keypoint_edges, tuple
@@ -345,10 +337,11 @@ class YOLOExtendedParser(BaseParser):
     ):
         """Configures the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: YOLOExtendedParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            ``YOLOExtendedParser``: The parser object with the head configuration set.
         """
 
         output_layers = head_config.get("outputs", [])
@@ -457,6 +450,11 @@ class YOLOExtendedParser(BaseParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("YOLOExtendedParser run started")
         while self.isRunning():
             try:
@@ -468,6 +466,20 @@ class YOLOExtendedParser(BaseParser):
             self.emit(output, payload)
 
     def extract(self, output: dai.NNData) -> YOLOComputeInputs:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            A ``YOLOComputeInputs`` bundle with dequantized tensors, resolved image
+            geometry, strides, and current parser settings.
+
+        Raises:
+            ValueError: If YOLO26 has no configured input shape, or head strides cannot
+                be resolved.
+        """
         layer_names = self.output_layer_names or output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layer_names}")
 
@@ -586,6 +598,23 @@ class YOLOExtendedParser(BaseParser):
 
     @staticmethod
     def compute(inputs: YOLOComputeInputs) -> dict[str, Any]:
+        """Decode a prepared YOLO input bundle.
+
+        Args:
+            inputs: Tensor and configuration bundle returned by ``extract()``.
+
+        Returns:
+            A dictionary containing ``mode`` (0 detection, 1 pose, 2 segmentation),
+            normalized ``bboxes``, ``scores``, ``labels``, ``label_names``,
+            ``keypoints``, ``keypoints_scores``, ``keypoint_label_names``,
+            ``keypoint_edges``, and ``masks``. Boxes use center-XY/width/height. A
+            segmentation mask contains int16 detection indexes and -1 background; other
+            modes return ``None`` for masks.
+
+        Note:
+            Uses `depthai_nodes.node.parsers.utils.yolo.compute_yolo_detections` for
+            decoding and validation.
+        """
         return compute_yolo_detections(
             subtype=inputs.subtype,
             layer_names=inputs.layer_names,
@@ -612,6 +641,17 @@ class YOLOExtendedParser(BaseParser):
         )
 
     def emit(self, output: dai.NNData, payload: dict[str, Any]) -> None:
+        """Create a ``dai.ImgDetections`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            payload: Dictionary returned by ``compute()`` with the mode-specific boxes,
+                scores, labels, keypoints, and masks.
+        """
         mode = payload["mode"]
         if mode == self._KPTS_MODE:
             detections_message = create_detection_message(

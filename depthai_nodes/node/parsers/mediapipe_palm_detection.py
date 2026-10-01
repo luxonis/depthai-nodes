@@ -16,27 +16,20 @@ class MPPalmDetectionParser(DetectionParser):
     result, the node sends out the detected hands in the form of a message containing
     bounding boxes, labels, and confidence scores.
 
-    Attributes
-    ----------
-    output_layer_names: list[str]
-    Names of the output layers relevant to the parser.
-    conf_threshold : float
-        Confidence score threshold for detected hands.
-    iou_threshold : float
-        Non-maximum suppression threshold.
-    max_det : int
-        Maximum number of detections to keep.
-    scale : int
-        Scale of the input image.
+    Attributes:
+        output_layer_names (``list[str]``): Names of the output layers relevant to the
+            parser.
+        conf_threshold (``float``): Confidence score threshold for detected hands.
+        iou_threshold (``float``): Non-maximum suppression threshold.
+        max_det (``int``): Maximum number of detections to keep.
+        scale (``int``): Scale of the input image.
 
-    Output Message/s
-    -------
-    **Type**: dai.ImgDetections
+    Note:
+        Emits ``dai.ImgDetections`` messages. dai.ImgDetections message containing
+        bounding boxes, labels, and confidence scores of detected hands.
 
-    **Description**: dai.ImgDetections message containing bounding boxes, labels, and confidence scores of detected hands.
+    See also:
 
-    See also
-    --------
     Official MediaPipe Hands solution:
     https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker
     """
@@ -51,16 +44,12 @@ class MPPalmDetectionParser(DetectionParser):
     ) -> None:
         """Initializes the parser node.
 
-        @param output_layer_names: Names of the output layers relevant to the parser.
-        @type output_layer_names: list[str]
-        @param conf_threshold: Confidence score threshold for detected hands.
-        @type conf_threshold: float
-        @param iou_threshold: Non-maximum suppression threshold.
-        @type iou_threshold: float
-        @param max_det: Maximum number of detections to keep.
-        @type max_det: int
-        @param scale: Scale of the input image.
-        @type scale: int
+        Args:
+            output_layer_names: Names of the output layers relevant to the parser.
+            conf_threshold: Confidence score threshold for detected hands.
+            iou_threshold: Non-maximum suppression threshold.
+            max_det: Maximum number of detections to keep.
+            scale: Scale of the input image.
         """
         super().__init__(conf_threshold, iou_threshold, max_det)
         self.output_layer_names = (
@@ -79,9 +68,9 @@ class MPPalmDetectionParser(DetectionParser):
     def setOutputLayerNames(self, output_layer_names: list[str]) -> None:
         """Sets the output layer name(s) for the parser.
 
-        @param output_layer_names: The name of the output layer(s) from which the scores
-            are extracted.
-        @type output_layer_names: list[str]
+        Args:
+            output_layer_names: The name of the output layer(s) from which the scores
+                are extracted.
         """
         if not isinstance(output_layer_names, list):
             raise ValueError("Output layer name must be a list.")
@@ -97,8 +86,8 @@ class MPPalmDetectionParser(DetectionParser):
     def setScale(self, scale: int) -> None:
         """Sets the scale of the input image.
 
-        @param scale: Scale of the input image.
-        @type scale: int
+        Args:
+            scale: Scale of the input image.
         """
         if not isinstance(scale, int):
             raise ValueError("Scale must be an integer.")
@@ -111,10 +100,11 @@ class MPPalmDetectionParser(DetectionParser):
     ) -> "MPPalmDetectionParser":
         """Configures the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: MPPalmDetectionParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
 
         super().build(head_config)
@@ -134,6 +124,11 @@ class MPPalmDetectionParser(DetectionParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("MPPalmDetectionParser run started")
         while self.isRunning():
             try:
@@ -155,6 +150,20 @@ class MPPalmDetectionParser(DetectionParser):
             self.emit(output, bboxes, scores, angles, labels, label_names)
 
     def extract(self, output: dai.NNData) -> tuple[np.ndarray, np.ndarray]:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            Palm box/landmark predictions reshaped to ``(N, 18)`` and flattened scores,
+            selected by their final tensor dimensions.
+
+        Raises:
+            ValueError: If no tensors are available or box tensors cannot be reshaped to
+                18 values per anchor.
+        """
         all_tensors = output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {all_tensors}")
 
@@ -189,6 +198,29 @@ class MPPalmDetectionParser(DetectionParser):
         scale: int,
         label_names: list[str] | None = None,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[str] | None]:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            bboxes: Per-anchor palm box and landmark predictions.
+            scores: Per-anchor palm score logits.
+            anchors: Precomputed anchor coordinates used to decode model predictions.
+            conf_threshold: Minimum detection confidence used to filter candidates.
+            iou_threshold: Intersection-over-union threshold for non-maximum
+                suppression.
+            max_det: Maximum number of detection candidates to retain or consider during
+                suppression.
+            scale: Side length of the square model input in pixels.
+            label_names: Optional class-name lookup indexed by predicted class ID.
+
+        Returns:
+            Normalized center-XY/width/height boxes, confidence scores, angles in
+            degrees, zero-valued class IDs, and optional class names.
+
+        Note:
+            Uses
+            `depthai_nodes.node.parsers.utils.medipipe.compute_mediapipe_palm_detections`;
+            see that helper for tensor layout and validation details.
+        """
         return compute_mediapipe_palm_detections(
             bboxes,
             scores,
@@ -209,6 +241,20 @@ class MPPalmDetectionParser(DetectionParser):
         labels: np.ndarray,
         label_names: list[str] | None,
     ) -> None:
+        """Create a ``dai.ImgDetections`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            bboxes: Normalized center-XY/width/height boxes returned by ``compute()``.
+            scores: Confidence scores corresponding to the computed payload.
+            angles: Rotation angles in degrees corresponding to the boxes.
+            labels: Integer class IDs corresponding to the boxes.
+            label_names: Optional class names corresponding to the detections.
+        """
         detections_msg = create_detection_message(
             bboxes=bboxes,
             scores=scores,

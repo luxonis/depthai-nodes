@@ -17,7 +17,29 @@ def compute_rfdetr_detections(
     masks_tensor: np.ndarray | None = None,
     logger=None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[str] | None, np.ndarray | None]:
-    """Decode RF-DETR detections and optional masks."""
+    """Decode RF-DETR detections and optional instance masks.
+
+    Args:
+        boxes_tensor: Batched normalized center-XY/width/height predictions.
+        logits_tensor: Class logits of shape ``(1, queries, classes)``.
+        conf_threshold: Minimum detection confidence used to filter candidates.
+        max_det: Maximum number of detection candidates to retain or consider during
+            suppression.
+        label_names: Optional class-name lookup indexed by predicted class ID.
+        mask_conf: Probability threshold used to binarize mask logits.
+        input_shape: Model input image shape as ``(height, width)``.
+        masks_tensor: Optional per-query mask logits, ordered like the box predictions.
+        logger: Optional logger used to report discarded segmentation instances.
+
+    Returns:
+        Boxes in normalized center-XY/width/height format, scores, integer class IDs,
+        optional class names, and an optional HW uint8 instance mask. Mask values index
+        returned detections; 255 is background. Segmentation retains at most 255
+        instances, and higher-confidence masks win overlaps.
+
+    Raises:
+        ValueError: If mask decoding is requested without ``input_shape``.
+    """
     prob = sigmoid(logits_tensor)
 
     scores = np.max(prob, axis=2).squeeze()

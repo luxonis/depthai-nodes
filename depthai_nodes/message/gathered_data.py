@@ -11,16 +11,19 @@ TGathered = TypeVar("TGathered", bound=dai.Buffer)
 class GatheredData(Collection[TGathered], Generic[TReference, TGathered]):
     """Contains N messages and reference data that the messages were matched with.
 
-    Attributes
-    ----------
-    reference_data: TReference
-        Data that is used to determine how many of TGathered to gather.
-    items: list[TGathered]
-        List of gathered data.
+    Attributes:
+        reference_data (``TReference``): Data that is used to determine how many of
+            TGathered to gather.
+        items (``list[TGathered]``): List of gathered data.
     """
 
     def __init__(self, reference_data: TReference, items: list[TGathered]) -> None:
-        """Initializes the GatheredData object."""
+        """Initialize gathered items and copy metadata from the reference message.
+
+        Args:
+            reference_data: Reference whose timestamps and sequence number are copied.
+            items: Messages gathered for this reference, all of the same runtime type.
+        """
         super().__init__(items=items)
         self.reference_data = reference_data
 
@@ -28,8 +31,8 @@ class GatheredData(Collection[TGathered], Generic[TReference, TGathered]):
     def reference_data(self) -> TReference:
         """Returns the reference data.
 
-        @return: Reference data.
-        @rtype: TReference
+        Returns:
+            Reference data.
         """
         return self._reference_data
 
@@ -37,8 +40,8 @@ class GatheredData(Collection[TGathered], Generic[TReference, TGathered]):
     def reference_data(self, value: TReference):
         """Sets the reference data.
 
-        @param value: Reference data.
-        @type value: TReference
+        Args:
+            value: Reference data.
         """
         self.setSequenceNum(value.getSequenceNum())
         self.setTimestamp(value.getTimestamp())

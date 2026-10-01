@@ -11,6 +11,20 @@ def decode_ufld(
     input_height: int,
     y: np.ndarray,
 ) -> list[list[tuple[int, int]]]:
+    """Decode a UFLD grid into normalized lane points.
+
+    Args:
+        anchors: Row anchor positions in image pixels.
+        griding_num: Number of horizontal grid classes, excluding the no-lane class.
+        cls_num_per_lane: Number of row anchors per lane.
+        input_width: Image width used to normalize X coordinates.
+        input_height: Image height used to normalize Y coordinates.
+        y: Unbatched logits with axes ``(grid_classes, row_anchors, lanes)``.
+
+    Returns:
+        One list of normalized XY tuples per lane. Lanes with fewer than three valid
+        sampled positions are empty.
+    """
     col_sample = np.linspace(0, input_width - 1, griding_num)
     col_sample_w = col_sample[1] - col_sample[0]
 

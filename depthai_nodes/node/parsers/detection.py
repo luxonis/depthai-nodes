@@ -10,32 +10,18 @@ from .base_parser import BaseParser
 
 
 class DetectionParser(BaseParser):
-    """Parser class for parsing the output of a "general" detection model. The parser expects the
-    output of the model to have two tensors: one for bounding boxes and one for scores.
-    Tensor for bboxes should be of shape (N, 4) and scores should be of shape (N,).
-    Bboxes are expected to be in the format [xmin, ymin, xmax, ymax]. If this is not the case you can check other parsers
-    or create a new one. As the result, the node sends out the detected objects in the form of a message
-    containing bounding boxes and confidence scores.
+    """Parse bounding boxes and scores from a detection model.
 
-    Attributes
-    ----------
-    output_layer_name: str
-        Name of the output layer relevant to the parser.
-    conf_threshold : float
-        Confidence score threshold of detected bounding boxes.
-    iou_threshold : float
-        Non-maximum suppression threshold.
-    max_det : int
-        Maximum number of detections to keep.
-    label_names : list[str]
-    List of label names for detected objects.
+    The model must produce bounding boxes of shape ``(N, 4)`` in
+    ``[xmin, ymin, xmax, ymax]`` format and scores of shape ``(N,)``.
+    The output is a ``dai.ImgDetections`` message containing the detected objects and
+    their confidence scores.
 
-    Output Message/s
-        -------
-        **Type**: dai.ImgDetections
-
-        **Description**: dai.ImgDetections message containing bounding boxes and confidence scores of detected objects.
-    ----------------
+    Attributes:
+        conf_threshold: Minimum confidence score for detections.
+        iou_threshold: Intersection-over-union threshold for non-maximum suppression.
+        max_det: Maximum number of detections to keep.
+        label_names: Optional class names for detected objects.
     """
 
     def __init__(
@@ -47,12 +33,11 @@ class DetectionParser(BaseParser):
     ) -> None:
         """Initializes the parser node.
 
-        @param conf_threshold: Confidence score threshold of detected bounding boxes.
-        @type conf_threshold: float
-        @param iou_threshold: Non-maximum suppression threshold.
-        @type iou_threshold: float
-        @param max_det: Maximum number of detections to keep.
-        @type max_det: int
+        Args:
+            conf_threshold: Confidence score threshold of detected bounding boxes.
+            iou_threshold: Non-maximum suppression threshold.
+            max_det: Maximum number of detections to keep.
+            label_names: Optional class names for detected objects.
         """
         super().__init__()
         self.conf_threshold = conf_threshold
@@ -66,8 +51,8 @@ class DetectionParser(BaseParser):
     def setConfidenceThreshold(self, threshold: float) -> None:
         """Sets the confidence score threshold for detected objects.
 
-        @param threshold: Confidence score threshold for detected objects.
-        @type threshold: float
+        Args:
+            threshold: Confidence score threshold for detected objects.
         """
         if not isinstance(threshold, float):
             raise ValueError("Confidence threshold must be a float.")
@@ -77,8 +62,8 @@ class DetectionParser(BaseParser):
     def setIouThreshold(self, threshold: float) -> None:
         """Sets the non-maximum suppression threshold.
 
-        @param threshold: Non-maximum suppression threshold.
-        @type threshold: float
+        Args:
+            threshold: Non-maximum suppression threshold.
         """
         if not isinstance(threshold, float):
             raise ValueError("IOU threshold must be a float.")
@@ -88,8 +73,8 @@ class DetectionParser(BaseParser):
     def setMaxDetections(self, max_det: int) -> None:
         """Sets the maximum number of detections to keep.
 
-        @param max_det: Maximum number of detections to keep.
-        @type max_det: int
+        Args:
+            max_det: Maximum number of detections to keep.
         """
         if not isinstance(max_det, int):
             raise ValueError("Max detections must be an integer.")
@@ -99,8 +84,8 @@ class DetectionParser(BaseParser):
     def setLabelNames(self, label_names: list[str]) -> None:
         """Sets the label names for detected objects.
 
-        @param label_names: List of label names for detected objects.
-        @type label_names: list[str]
+        Args:
+            label_names: List of label names for detected objects.
         """
         if not isinstance(label_names, list):
             raise ValueError("Label names must be a list.")
@@ -112,10 +97,11 @@ class DetectionParser(BaseParser):
     def build(self, head_config) -> "DetectionParser":
         """Configures the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: DetectionParser
+        Args:
+            head_config (``dict[str, Any]``): The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
 
         self.conf_threshold = head_config.get("conf_threshold", self.conf_threshold)
@@ -129,6 +115,11 @@ class DetectionParser(BaseParser):
         return self
 
     def run(self):
+        """Read queued network outputs, parse them, and emit results while running.
+
+        The pipeline invokes this processing loop. It exits when the input queue closes
+        or the node stops.
+        """
         self._logger.debug("DetectionParser run started")
         while self.isRunning():
             try:
@@ -147,6 +138,20 @@ class DetectionParser(BaseParser):
             self.emit(output, bboxes, scores)
 
     def extract(self, output: dai.NNData) -> tuple[np.ndarray, np.ndarray]:
+        """Select and dequantize the model tensors needed for parsing.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+
+        Returns:
+            A pair of boxes reshaped to ``(N, 4)`` and flattened scores. The box tensor
+            is identified by its final dimension of four.
+
+        Raises:
+            ValueError: If exactly two tensors are not available, or boxes and scores
+                cannot be identified.
+        """
         layers = output.getAllLayerNames()
         self._logger.debug(f"Processing input with layers: {layers}")
         if len(layers) != 2:
@@ -180,6 +185,26 @@ class DetectionParser(BaseParser):
         iou_threshold: float,
         max_det: int,
     ) -> tuple[np.ndarray, np.ndarray]:
+        """Compute parser results from extracted tensors without sending messages.
+
+        Args:
+            bboxes: Bounding boxes of shape ``(N, 4)`` in ``[xmin, ymin, xmax, ymax]``
+                format.
+            scores: Confidence scores of shape ``(N,)``.
+            conf_threshold: Minimum detection confidence used to filter candidates.
+            iou_threshold: Intersection-over-union threshold for non-maximum
+                suppression.
+            max_det: Maximum number of detection candidates to retain or consider during
+                suppression.
+
+        Returns:
+            Retained center-XY/width/height boxes and corresponding scores. Coordinates
+            retain their input units. Both arrays are empty if no boxes survive.
+
+        Note:
+            Uses `depthai_nodes.node.parsers.utils.detection.compute_detection_outputs`;
+            see that helper for tensor layout and validation details.
+        """
         return compute_detection_outputs(
             bboxes,
             scores,
@@ -189,6 +214,17 @@ class DetectionParser(BaseParser):
         )
 
     def emit(self, output: dai.NNData, bboxes: np.ndarray, scores: np.ndarray) -> None:
+        """Create a ``dai.ImgDetections`` message and send it on ``out``.
+
+        Copies source timestamps and sequence number, and carries the source image
+        transformation when present.
+
+        Args:
+            output: Neural network output carrying tensors and source timestamps,
+                sequence number, and optional image transformation.
+            bboxes: Normalized center-XY/width/height boxes returned by ``compute()``.
+            scores: Confidence scores corresponding to the computed payload.
+        """
         message = create_detection_message(
             bboxes=bboxes, scores=scores, label_names=self.label_names
         )

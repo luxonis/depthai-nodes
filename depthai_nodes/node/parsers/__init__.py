@@ -1,3 +1,13 @@
+"""Host implementations of neural network output parsers.
+
+Parsers read ``dai.NNData`` tensors and emit native DepthAI messages. Configure
+them from NN Archive head metadata with ``build()`` or use
+``HostParsingNeuralNetwork`` to create and connect them automatically.
+
+Native DepthAI parsers are selected by default by ``ParserGenerator``; pass
+``hostOnly=True`` to select these Python implementations.
+"""
+
 from .base_parser import BaseParser
 from .classification import ClassificationParser
 from .classification_sequence import ClassificationSequenceParser

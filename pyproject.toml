@@ -44,6 +44,14 @@ select = ["E4", "E7", "E9", "F", "W", "B", "I"]
 
 [tool.docformatter]
 black = true
+style = "google"
+wrap-summaries = 88
+wrap-descriptions = 88
+
+[tool.pydoctor]
+docformat = "google"
+warnings-as-errors = true
+project-name = "DepthAI Nodes"
 
 [tool.mypy]
 python_version = "3.10"

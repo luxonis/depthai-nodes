@@ -4,16 +4,12 @@ import depthai as dai
 class SnapData(dai.Buffer):
     """DepthAI-compatible message for representing a single snap event.
 
-    Attributes
-    ----------
-    snap_name : str
-        Logical name of the snap.
-    file_group : dai.FileGroup
-        Object containing the snap image and associated data.
-    tags : list[str]
-        Optional list of tags to include.
-    extras : dict[str, str]
-        Additional metadata.
+    Attributes:
+        snap_name (``str``): Logical name of the snap.
+        file_group (``dai.FileGroup``): Object containing the snap image and associated
+            data.
+        tags (``list[str]``): Optional list of tags to include.
+        extras (``dict[str, str]``): Additional metadata.
     """
 
     def __init__(
@@ -23,6 +19,18 @@ class SnapData(dai.Buffer):
         tags: list[str] | None = None,
         extras: dict[str, str] | None = None,
     ):
+        """Create a snap payload for the Hub Events API.
+
+        Args:
+            snap_name: Logical event name.
+            file_group: Image and associated files to upload.
+            tags: Optional event tags; defaults to an empty list.
+            extras: Optional string metadata; defaults to an empty dictionary.
+
+        Note:
+            Non-empty tag lists and metadata dictionaries are stored by reference, not
+            copied.
+        """
         super().__init__()
         self.snap_name = snap_name
         self.file_group = file_group

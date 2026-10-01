@@ -7,77 +7,62 @@
 
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Docformatter](https://img.shields.io/badge/%20formatter-docformatter-fedcba.svg)](https://github.com/PyCQA/docformatter)
-[![Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+<a name="overview"></a>
 
 ## 🌟 Overview
 
-DepthAI Nodes is a Python "contrib" library designed to simplify DepthAI development with a growing collection of modular, high-level host nodes and helpers. These cover a range of common needs - from neural network post-processing and I/O patterns to utility nodes for faster prototyping. Helper nodes can also route model post-processing through native DepthAI parser nodes. With just a few lines of code, you can scaffold sophisticated pipelines, saving time and reducing boilerplate. In order to use these nodes you need to have your pipeline written with `DepthAIv3`.
-
-**NOTE**:
-We are always listening to the community so feel free to report and feedback, issues or contribute to the library with our own host nodes.
+DepthAI Nodes provides reusable nodes and helpers for **DepthAI v3** pipelines, including neural network post-processing, image utilities, message handling, and runtime integrations. Inference helpers support both native DepthAI parsers and Python host parsers.
 
 ## 📜 Table of Contents
 
 - [🌟 Overview](#overview)
-- [🛠️ Installation](#-installation)
+- [🛠️ Installation](#installation)
 - [📦 Content](#-content)
   - [📨 Message](#-message)
   - [🧩 Node](#-node)
   - [Runtime](#runtime)
 - [🤝 Contributing](#-contributing)
 
+<a name="installation"></a>
+
 ## 🛠️ Installation
 
-The `depthai_nodes` package is hosted on PyPI, so you can install it with `pip`.
-
-To install the package, run:
+Install from PyPI:
 
 ```bash
 pip install depthai-nodes
 ```
 
-### Manual installation
-
-If you want to manually install the package from the GitHub repository you can run:
+Or install from source:
 
 ```bash
-git clone git@github.com:luxonis/depthai-nodes.git
-```
-
-and then inside the directory run:
-
-```bash
+git clone https://github.com/luxonis/depthai-nodes.git
+cd depthai-nodes
 pip install .
 ```
 
 ## 📦 Content
 
-This library is organized into three primary modules, each focused on a specific aspect of working with DepthAI on the host side:
-
-- `message` - Custom message types
-- `node` - High-level, modular host-side nodes
-- `runtime` - Runtime integrations
-
 ### 📨 Message
 
-The `message` module defines a set of extended message types designed to simplify working with outputs from various neural networks. These go beyond the standard DepthAI messages and include richer data structures for tasks such as object detection, segmentation, classification, pose estimation, and more.
-
-These enhanced messages aim to reduce the boilerplate code needed for parsing and interpreting NN outputs, making it easier to plug them into visualization or processing pipelines. You can learn more about each message type in the dedicated [README](./depthai_nodes/message/README.md).
+The `message` module provides `Collection`, `GatheredData`, and `SnapData`
+messages, plus creator functions for native DepthAI parser messages. Creators
+cover detections, segmentation, classification, keypoints, maps, and other model
+outputs. See the [message package documentation](./depthai_nodes/message/__init__.py) for the available
+types and their roles.
 
 ### 🧩 Node
 
-The `node` module provides a collection of ready-to-use host-side nodes and pipeline helpers that abstract common processing patterns and tasks. These nodes fall into three main categories:
+The `node` module provides parsers and pipeline helpers:
 
-- **Parser nodes** - Handle post-processing for specific model architectures such as YOLO, MediaPipe, YuNet, etc.
-- **Helper nodes** - Like ParsingNeuralNetwork and ParserGenerator which help manage simple or complex model outputs more efficiently.
-- **Utility nodes** – Perform common operations like detection filtering, drawing overlays, applying segmentation colormaps, and more - all in just a few lines of code.
+- **Parser nodes** handle model post-processing for architectures such as YOLO, MediaPipe, and YuNet.
+- **Inference helpers**, including `ParsingNeuralNetwork` and `ParserGenerator`, create and connect inference and parser nodes.
+- **Utility nodes** handle detection filtering, image overlays, colormaps, and message collection.
 
-> \[!NOTE\]
-> `ParsingNeuralNetwork` and `ParserGenerator` use native DepthAI parsers by default. Most of these parsers currently live under `dai.beta.node`; detection and segmentation parsers live under `dai.node`. Use `HostParsingNeuralNetwork` or pass `hostOnly=True` to `ParserGenerator.build()` to use the parser implementations provided by depthai-nodes instead.
+`ParsingNeuralNetwork` and `ParserGenerator` use native DepthAI parsers by default. Use `HostParsingNeuralNetwork` or pass `hostOnly=True` to `ParserGenerator.build()` to select this package's host parsers.
 
-This modular approach allows you to rapidly prototype and scale complex applications with less effort while keeping your code clean and maintainable.
-
-To read more about the nodes and see simple examples, please refer to the [nodes documentation](./depthai_nodes/node/README.md).
+See the [node package documentation](./depthai_nodes/node/__init__.py) for available nodes and examples.
 
 ### Runtime
 
@@ -93,4 +78,4 @@ session = onnx_qnn_session("model.onnx")
 
 ## 🤝 Contributing
 
-If you want to contribute to this project, read the instructions in [CONTRIBUTING.md](./CONTRIBUTING.md)
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup, parser guidelines, and testing instructions. Feedback and bug reports are welcome in [GitHub issues](https://github.com/luxonis/depthai-nodes/issues).
