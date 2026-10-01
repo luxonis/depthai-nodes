@@ -11,21 +11,17 @@ from depthai_nodes.node.parsers.utils.ppdet import compute_pp_text_detections
 class PPTextDetectionParser(DetectionParser):
     """Parser class for parsing the output of the PaddlePaddle OCR text detection model.
 
-    Attributes
-    ----------
-    output_layer_name: str
-        Name of the output layer relevant to the parser.
-    conf_threshold : float
-        The threshold for bounding boxes.
-    mask_threshold : float
-        The threshold for the mask.
-    max_det : int
-        The maximum number of candidate bounding boxes.
+    Attributes:
+        output_layer_name (``str``): Name of the output layer relevant to the parser.
+        conf_threshold (``float``): The threshold for bounding boxes.
+        mask_threshold (``float``): The threshold for the mask.
+        max_det (``int``): The maximum number of candidate bounding boxes.
 
-    Output Message/s
-    -------
+    Output messages:
+
     **Type**: dai.ImgDetections
-    **Description**: dai.ImgDetections message containing bounding boxes and the respective confidence scores of detected text.
+    **Description**: dai.ImgDetections message containing bounding boxes and the
+    respective confidence scores of detected text.
     """
 
     def __init__(
@@ -37,14 +33,11 @@ class PPTextDetectionParser(DetectionParser):
     ) -> None:
         """Initializes the parser node.
 
-        @param output_layer_name: Name of the output layer relevant to the parser.
-        @type output_layer_name: str
-        @param conf_threshold: The threshold for bounding boxes.
-        @type conf_threshold: float
-        @param mask_threshold: The threshold for the mask.
-        @type mask_threshold: float
-        @param max_det: The maximum number of candidate bounding boxes.
-        @type max_det:
+        Args:
+            output_layer_name: Name of the output layer relevant to the parser.
+            conf_threshold: The threshold for bounding boxes.
+            mask_threshold: The threshold for the mask.
+            max_det: The maximum number of candidate bounding boxes.
         """
         super().__init__(
             conf_threshold=conf_threshold,
@@ -60,8 +53,8 @@ class PPTextDetectionParser(DetectionParser):
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
 
-        @param output_layer_name: The name of the output layer.
-        @type output_layer_name: str
+        Args:
+            output_layer_name: The name of the output layer.
         """
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
@@ -72,8 +65,8 @@ class PPTextDetectionParser(DetectionParser):
         """Sets the mask threshold for creating the mask from model output
         probabilities.
 
-        @param threshold: The threshold for the mask.
-        @type threshold: float
+        Args:
+            mask_threshold: The threshold for the mask.
         """
         if not isinstance(mask_threshold, float):
             raise ValueError("Mask threshold must be a float.")
@@ -83,10 +76,11 @@ class PPTextDetectionParser(DetectionParser):
     def build(self, head_config: dict[str, Any]) -> "PPTextDetectionParser":
         """Configures the parser.
 
-        @param config: The head configuration for the parser.
-        @type config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: PPTextDetectionParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
 
         super().build(head_config)

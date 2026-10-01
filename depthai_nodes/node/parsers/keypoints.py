@@ -9,38 +9,29 @@ from depthai_nodes.node.parsers.utils.keypoints import compute_keypoints
 
 
 class KeypointParser(BaseParser):
-    """Parser class for 2D or 3D keypoints models. It expects one ouput layer containing
-    keypoints. The number of keypoints must be specified. Moreover, the keypoints are
-    normalized by a scale factor if provided.
+    """Parser class for 2D or 3D keypoints models. It expects one output layer
+    containing keypoints. The number of keypoints must be specified. Moreover, the
+    keypoints are normalized by a scale factor if provided.
 
-    Attributes
-    ----------
-    output_layer_name: str
-        Name of the output layer relevant to the parser.
-    scale_factor : float
-        Scale factor to divide the keypoints by.
-    n_keypoints : int
-        Number of keypoints the model detects.
-    score_threshold : float
-        Confidence score threshold for detected keypoints.
-    label_names : list[str]
-        Label names for the keypoints.
-    edges : list[tuple[int, int]]
-        Keypoint connection pairs for visualizing the skeleton. Example: [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint 1, keypoint 1 is connected to keypoint 2, etc.
+    Attributes:
+        output_layer_name (``str``): Name of the output layer relevant to the parser.
+        scale_factor (``float``): Scale factor to divide the keypoints by.
+        n_keypoints (``int``): Number of keypoints the model detects.
+        score_threshold (``float``): Confidence score threshold for detected keypoints.
+        label_names (``list[str]``): Label names for the keypoints.
+        edges (``list[tuple[int, int]]``): Pairs of keypoint indexes defining skeleton
+            edges. For example, ``[(0, 1), (1, 2)]`` connects keypoint 0 to 1 and 1 to
+            2.
 
-    Output Message/s
-    ----------------
-    **Type**: dai.beta.Keypoints
+    Note:
+        Emits ``dai.beta.Keypoints`` messages. Output containing 2D or 3D keypoints.
 
-    **Description**: Output containing 2D or 3D keypoints.
+    Raises:
+        ValueError: If the number of keypoints is not specified.
 
-    Error Handling
-    --------------
-    **ValueError**: If the number of keypoints is not specified.
+        ValueError: If the number of coordinates per keypoint is not 2 or 3.
 
-    **ValueError**: If the number of coordinates per keypoint is not 2 or 3.
-
-    **ValueError**: If the number of output layers is not 1.
+        ValueError: If the number of output layers is not 1.
     """
 
     def __init__(
@@ -54,18 +45,15 @@ class KeypointParser(BaseParser):
     ) -> None:
         """Initializes the parser node.
 
-        @param output_layer_name: Name of the output layer relevant to the parser.
-        @type output_layer_name: str
-        @param scale_factor: Scale factor to divide the keypoints by.
-        @type scale_factor: float
-        @param n_keypoints: Number of keypoints.
-        @type n_keypoints: int
-        @param label_names: Label names for the keypoints.
-        @type label_names: list[str] | None
-        @param edges: Keypoint connection pairs for visualizing the skeleton. Example:
-            [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
-            1, keypoint 1 is connected to keypoint 2, etc.
-        @type edges: list[tuple[int, int]] | None
+        Args:
+            output_layer_name: Name of the output layer relevant to the parser.
+            scale_factor: Scale factor to divide the keypoints by.
+            n_keypoints: Number of keypoints.
+            label_names: Label names for the keypoints.
+            edges: Pairs of keypoint indexes defining skeleton edges. For example,
+                ``[(0, 1), (1, 2)]`` connects keypoint 0 to 1 and 1 to 2.
+            score_threshold: Optional confidence threshold stored in the parser
+                configuration.
         """
         super().__init__()
         self.output_layer_name = output_layer_name
@@ -81,8 +69,8 @@ class KeypointParser(BaseParser):
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
 
-        @param output_layer_name: The name of the output layer.
-        @type output_layer_name: str
+        Args:
+            output_layer_name: The name of the output layer.
         """
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
@@ -92,8 +80,8 @@ class KeypointParser(BaseParser):
     def setScaleFactor(self, scale_factor: float) -> None:
         """Sets the scale factor to divide the keypoints by.
 
-        @param scale_factor: Scale factor to divide the keypoints by.
-        @type scale_factor: float
+        Args:
+            scale_factor: Scale factor to divide the keypoints by.
         """
         if not isinstance(scale_factor, float):
             raise ValueError("Scale factor must be a float.")
@@ -107,8 +95,8 @@ class KeypointParser(BaseParser):
     def setNumKeypoints(self, n_keypoints: int) -> None:
         """Sets the number of keypoints.
 
-        @param n_keypoints: Number of keypoints.
-        @type n_keypoints: int
+        Args:
+            n_keypoints: Number of keypoints.
         """
         if not isinstance(n_keypoints, int):
             raise ValueError("Number of keypoints must be an integer.")
@@ -122,8 +110,8 @@ class KeypointParser(BaseParser):
     def setScoreThreshold(self, threshold: float) -> None:
         """Sets the confidence score threshold for the detected body keypoints.
 
-        @param threshold: Confidence score threshold for detected keypoints.
-        @type threshold: float
+        Args:
+            threshold: Confidence score threshold for detected keypoints.
         """
         if not isinstance(threshold, float):
             raise ValueError("Confidence threshold must be a float.")
@@ -137,8 +125,8 @@ class KeypointParser(BaseParser):
     def setLabelNames(self, label_names: list[str]) -> None:
         """Sets the label names for the keypoints.
 
-        @param label_names: List of label names for the keypoints.
-        @type label_names: list[str]
+        Args:
+            label_names: List of label names for the keypoints.
         """
         if not isinstance(label_names, list):
             raise ValueError("Label names must be a list.")
@@ -150,10 +138,10 @@ class KeypointParser(BaseParser):
     def setEdges(self, edges: list[tuple[int, int]]) -> None:
         """Sets the edges for the keypoints.
 
-        @param edges: List of edges for the keypoints. Example: [(0,1), (1,2), (2,3),
-            (3,0)] shows that keypoint 0 is connected to keypoint 1, keypoint 1 is
-            connected to keypoint 2, etc.
-        @type edges: list[tuple[int, int]]
+        Args:
+            edges: List of edges for the keypoints. Example: [(0,1), (1,2), (2,3),
+                (3,0)] shows that keypoint 0 is connected to keypoint 1, keypoint 1 is
+                connected to keypoint 2, etc.
         """
         if not isinstance(edges, list):
             raise ValueError("Edges must be a list.")
@@ -173,10 +161,11 @@ class KeypointParser(BaseParser):
     ) -> "KeypointParser":
         """Configures the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: KeypointParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
 
         output_layers = head_config["outputs"]

@@ -1,3 +1,11 @@
+"""Create native DepthAI messages from postprocessed model outputs.
+
+Creators validate array shapes and values, populate message fields, and return messages
+for detections, keypoints, classifications, maps, lines, segmentation masks, and other
+parser results. See each function for the required coordinate convention and tensor
+layout.
+"""
+
 from .classification import (
     create_classification_message,
     create_classification_sequence_message,

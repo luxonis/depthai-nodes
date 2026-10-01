@@ -10,11 +10,21 @@ T = TypeVar("T")
 
 
 class Collection(dai.Buffer, Generic[T]):
-    """A generic DepthAI message containing a list of items of a single type T.
+    """Store a list of items of one runtime type in a DepthAI message.
 
-    Notes:
-    - Python generics are erased at runtime, so runtime type checking is inferred
-      from the first item when the collection becomes non-empty.
+    The first item establishes the accepted type. Later assignments, appends, and
+    extensions must contain instances of that type. An initially empty collection infers
+    its type when the first item is added.
+
+    Args:
+        items: Initial list of items.
+
+    Attributes:
+        items: Stored items. Assignment validates their types.
+        item_cls: Inferred runtime item type, or ``None`` until an item is added.
+
+    Raises:
+        TypeError: If ``items`` is not a list or contains incompatible item types.
     """
 
     def __init__(self, items: list[T]):

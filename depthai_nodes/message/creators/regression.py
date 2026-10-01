@@ -4,12 +4,14 @@ import depthai as dai
 def create_regression_message(predictions: list[float]) -> dai.beta.Predictions:
     """Create a DepthAI message for prediction models.
 
-    @param predictions: Predicted value(s).
-    @type predictions: list[float]
-    @return: Predictions message containing the predicted value(s).
-    @rtype: dai.beta.Predictions
-    @raise ValueError: If predictions is not a list.
-    @raise ValueError: If each prediction is not a float.
+    Args:
+        predictions: Predicted value(s).
+
+    Returns:
+        Predictions message containing the predicted value(s).
+
+    Raises:
+        ValueError: If predictions is not a list. If each prediction is not a float.
     """
 
     if not isinstance(predictions, list):

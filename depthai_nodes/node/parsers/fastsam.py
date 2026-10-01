@@ -14,39 +14,22 @@ from depthai_nodes.node.parsers.utils.masks_utils import get_segmentation_output
 class FastSAMParser(BaseParser):
     """Parser class for parsing the output of the FastSAM model.
 
-    Attributes
-    ----------
-    conf_threshold : float
-        Confidence score threshold for detected faces.
-    n_classes : int
-        Number of classes in the model.
-    iou_threshold : float
-        Non-maximum suppression threshold.
-    mask_conf : float
-        Mask confidence threshold.
-    prompt : str
-        Prompt type.
-    points : tuple[int, int]
-        Points.
-    point_label : int
-        Point label.
-    bbox : tuple[int, int, int, int]
-        Bounding box.
-    yolo_outputs : list[str]
-        Names of the YOLO outputs.
-    mask_outputs : list[str]
-        Names of the mask outputs.
-    protos_output : str
-        Name of the protos output.
+    Attributes:
+        conf_threshold (``float``): Confidence score threshold for detected objects.
+        n_classes (``int``): Number of classes in the model.
+        iou_threshold (``float``): Non-maximum suppression threshold.
+        mask_conf (``float``): Mask confidence threshold.
+        prompt (``str``): Prompt type.
+        points (``tuple[int, int]``): Points.
+        point_label (``int``): Point label.
+        bbox (``tuple[int, int, int, int]``): Bounding box.
+        yolo_outputs (``list[str]``): Names of the YOLO outputs.
+        mask_outputs (``list[str]``): Names of the mask outputs.
+        protos_output (``str``): Name of the protos output.
 
-    Output Message/s
-    ----------------
-    **Type**: dai.SegmentationMask
-
-    **Description**: dai.SegmentationMask message containing the resulting segmentation masks given the prompt.
-
-    Error Handling
-    --------------
+    Note:
+        Emits ``dai.SegmentationMask`` messages. dai.SegmentationMask message containing
+        the resulting segmentation masks given the prompt.
     """
 
     def __init__(
@@ -65,28 +48,18 @@ class FastSAMParser(BaseParser):
     ) -> None:
         """Initializes the parser node.
 
-        @param conf_threshold: The confidence threshold for the detections
-        @type conf_threshold: float
-        @param n_classes: The number of classes in the model
-        @type n_classes: int
-        @param iou_threshold: The intersection over union threshold
-        @type iou_threshold: float
-        @param mask_conf: The mask confidence threshold
-        @type mask_conf: float
-        @param prompt: The prompt type
-        @type prompt: str
-        @param points: The points
-        @type points: tuple[int, int] | None
-        @param point_label: The point label
-        @type point_label: int | None
-        @param bbox: The bounding box
-        @type bbox: tuple[int, int, int, int] | None
-        @param yolo_outputs: The YOLO outputs
-        @type yolo_outputs: list[str]
-        @param mask_outputs: The mask outputs
-        @type mask_outputs: list[str]
-        @param protos_output: The protos output
-        @type protos_output: str
+        Args:
+            conf_threshold: The confidence threshold for the detections
+            n_classes: The number of classes in the model
+            iou_threshold: The intersection over union threshold
+            mask_conf: The mask confidence threshold
+            prompt: The prompt type
+            points: The points
+            point_label: The point label
+            bbox: The bounding box
+            yolo_outputs: The YOLO outputs
+            mask_outputs: The mask outputs
+            protos_output: The protos output
         """
         super().__init__()
         self.conf_threshold = conf_threshold
@@ -115,8 +88,8 @@ class FastSAMParser(BaseParser):
     def setConfidenceThreshold(self, threshold: float) -> None:
         """Sets the confidence score threshold.
 
-        @param threshold: Confidence score threshold.
-        @type threshold: float
+        Args:
+            threshold: Confidence score threshold.
         """
         if not isinstance(threshold, float):
             raise ValueError("Confidence threshold must be a float.")
@@ -128,8 +101,8 @@ class FastSAMParser(BaseParser):
     def setNumClasses(self, n_classes: int) -> None:
         """Sets the number of classes in the model.
 
-        @param numClasses: The number of classes in the model.
-        @type numClasses: int
+        Args:
+            n_classes: The number of classes in the model.
         """
         if not isinstance(n_classes, int):
             raise ValueError("Number of classes must be an integer.")
@@ -139,8 +112,8 @@ class FastSAMParser(BaseParser):
     def setIouThreshold(self, iou_threshold: float) -> None:
         """Sets the intersection over union threshold.
 
-        @param iou_threshold: The intersection over union threshold.
-        @type iou_threshold: float
+        Args:
+            iou_threshold: The intersection over union threshold.
         """
         if not isinstance(iou_threshold, float):
             raise ValueError("IOU threshold must be a float.")
@@ -154,8 +127,8 @@ class FastSAMParser(BaseParser):
     def setMaskConfidence(self, mask_conf: float) -> None:
         """Sets the mask confidence threshold.
 
-        @param mask_conf: The mask confidence threshold.
-        @type mask_conf: float
+        Args:
+            mask_conf: The mask confidence threshold.
         """
         if not isinstance(mask_conf, float):
             raise ValueError("Mask confidence must be a float.")
@@ -167,8 +140,8 @@ class FastSAMParser(BaseParser):
     def setPrompt(self, prompt: str) -> None:
         """Sets the prompt type.
 
-        @param prompt: The prompt type
-        @type prompt: str
+        Args:
+            prompt: The prompt type
         """
         if not isinstance(prompt, str):
             raise ValueError("Prompt must be a string.")
@@ -180,8 +153,8 @@ class FastSAMParser(BaseParser):
     def setPoints(self, points: tuple[int, int]) -> None:
         """Sets the points.
 
-        @param points: The points
-        @type points: tuple[int, int]
+        Args:
+            points: The points
         """
         if not isinstance(points, tuple):
             raise ValueError("Points must be a tuple.")
@@ -195,8 +168,8 @@ class FastSAMParser(BaseParser):
     def setPointLabel(self, point_label: int) -> None:
         """Sets the point label.
 
-        @param point_label: The point label
-        @type point_label: int
+        Args:
+            point_label: The point label
         """
         if not isinstance(point_label, int):
             raise ValueError("Point label must be an integer.")
@@ -206,8 +179,8 @@ class FastSAMParser(BaseParser):
     def setBoundingBox(self, bbox: tuple[int, int, int, int]) -> None:
         """Sets the bounding box.
 
-        @param bbox: The bounding box
-        @type bbox: tuple[int, int, int, int]
+        Args:
+            bbox: The bounding box
         """
         if not isinstance(bbox, tuple):
             raise ValueError("Bounding box must be a tuple.")
@@ -221,8 +194,8 @@ class FastSAMParser(BaseParser):
     def setYoloOutputs(self, yolo_outputs: list[str]) -> None:
         """Sets the YOLO outputs.
 
-        @param yolo_outputs: The YOLO outputs
-        @type yolo_outputs: list[str]
+        Args:
+            yolo_outputs: The YOLO outputs
         """
         if not isinstance(yolo_outputs, list):
             raise ValueError("YOLO outputs must be a list.")
@@ -234,8 +207,8 @@ class FastSAMParser(BaseParser):
     def setMaskOutputs(self, mask_outputs: list[str]) -> None:
         """Sets the mask outputs.
 
-        @param mask_outputs: The mask outputs
-        @type mask_outputs: list[str]
+        Args:
+            mask_outputs: The mask outputs
         """
         if not isinstance(mask_outputs, list):
             raise ValueError("Mask outputs must be a list.")
@@ -247,8 +220,8 @@ class FastSAMParser(BaseParser):
     def setProtosOutput(self, protos_output: str) -> None:
         """Sets the protos output.
 
-        @param protos_output: The protos output
-        @type protos_output: str
+        Args:
+            protos_output: The protos output
         """
         if not isinstance(protos_output, str):
             raise ValueError("Protos output must be a string.")
@@ -258,10 +231,11 @@ class FastSAMParser(BaseParser):
     def build(self, head_config: dict[str, Any]) -> "FastSAMParser":
         """Configures the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: FastSAMParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
 
         output_layers = head_config["outputs"]

@@ -21,13 +21,12 @@ def get_logger(name: str | None = None) -> logging.Logger:
 def setup_logging(level: str | None = None, file: str | None = None):
     """Globally configures logging for depthai_nodes package.
 
-    @type level: str or None
-    @param level: Logging level. One of "CRITICAL", "DEBUG", "ERR", "INFO", and "WARN".
-        Can be changed using "DEPTHAI_NODES_LEVEL" env variable. If not set defaults to
-        "DEPTHAI_LEVEL" if set or "WARN".
-    @type file: str or None
-    @param file: Path to a file where logs will be saved. If None, logs will not be
-        saved. Defaults to None.
+    Args:
+        level: Logging level. One of "CRITICAL", "DEBUG", "ERR", "INFO", and "WARN". Can
+            be changed using "DEPTHAI_NODES_LEVEL" env variable. If not set defaults to
+            "DEPTHAI_LEVEL" if set or "WARN".
+        file: Path to a file where logs will be saved. If None, logs will not be saved.
+            Defaults to None.
     """
     logger = get_logger()
     passed_level = get_log_level(level)

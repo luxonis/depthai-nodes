@@ -5,14 +5,16 @@ from depthai import SegmentationMask
 def create_segmentation_message(mask: np.ndarray) -> SegmentationMask:
     """Create a DepthAI message for segmentation mask.
 
-    @param mask: Segmentation map array of shape (H, W) where each value represents a
-        segmented object class. Index 255 represents background.
-    @type mask: np.array
-    @return: Segmentation mask message.
-    @rtype: SegmentationMask
-    @raise ValueError: If mask is not a numpy array.
-    @raise ValueError: If mask is not 2D.
-    @raise ValueError: If mask is not of type uint8.
+    Args:
+        mask: Segmentation map array of shape (H, W) where each value represents a
+            segmented object class. Index 255 represents background.
+
+    Returns:
+        Segmentation mask message.
+
+    Raises:
+        ValueError: If mask is not a numpy array. If mask is not 2D. If mask is not of
+            type uint8.
     """
 
     if not isinstance(mask, np.ndarray):

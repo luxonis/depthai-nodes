@@ -18,13 +18,10 @@ def check_classification_msg(
     expected_output: dict[str, Any],
     verbose: bool = False,
 ):
-    """
-    Expected output format:
+    """Expected output format:
     {
-        "model": "luxonis/efficientnet-lite:lite0-224x224",
-        "parser": "ClassificationParser",
-        "class": "car",
-        "score": 0.9
+        "model": "luxonis/efficientnet-lite:lite0-224x224", "parser":
+        "ClassificationParser", "class": "car", "score": 0.9
     }
     """
     assert isinstance(
@@ -49,12 +46,10 @@ def check_classification_sequence_msg(
     expected_output: dict[str, Any],
     verbose: bool = False,
 ):
-    """
-    Expected output format:
+    """Expected output format:
     {
-        "model": "luxonis/efficientnet-lite:lite0-224x224",
-        "parser": "ClassificationSequenceParser",
-        "class": ['HELLO']
+        "model": "luxonis/efficientnet-lite:lite0-224x224", "parser":
+        "ClassificationSequenceParser", "class": ['HELLO']
     """
     assert isinstance(
         message, dai.beta.Classifications
@@ -76,11 +71,9 @@ def check_classification_sequence_msg(
 def check_embeddings_msg(
     message: dai.NNData, expected_output: dict[str, Any], verbose: bool = False
 ):
-    """
-    Expected output format:
+    """Expected output format:
     {
-        "model": "luxonis/arcface:lfw-112x112",
-        "parser": "EmbeddingsParser",
+        "model": "luxonis/arcface:lfw-112x112", "parser": "EmbeddingsParser",
         "embeddings": array([[-9.47265625e-02, -1.23901367e-01,...]])
     }
     """
@@ -108,11 +101,9 @@ def check_segmentation_msg(
     threshold: float = 0.9,
     verbose: bool = False,
 ):
-    """
-    Expected output format:
+    """Expected output format:
     {
-        "model": "luxonis/fastsam-s:512x288",
-        "parser": "FastSAMParser",
+        "model": "luxonis/fastsam-s:512x288", "parser": "FastSAMParser",
         "mask": np.array([[0, 0, 0, ..., 0, 0, 0]])
     }
     """
@@ -149,12 +140,10 @@ def check_keypoints_msg(
     expected_output: dict[str, Any],
     verbose: bool = False,
 ):
-    """
-    Expected output format:
+    """Expected output format:
     {
-        "model": "luxonis/mediapipe-face-landmarker:192x192",
-        "parser": "KeypointParser",
-        "keypoints": [[0.1, 0.2], ...]
+        "model": "luxonis/mediapipe-face-landmarker:192x192", "parser":
+        "KeypointParser", "keypoints": [[0.1, 0.2], ...]
     """
     assert isinstance(
         message, dai.beta.Keypoints
@@ -181,11 +170,9 @@ def check_keypoints_msg(
 def check_image_msg(
     message: dai.ImgFrame, expected_output: dict[str, Any], verbose: bool = False
 ):
-    """
-    Expected output format:
+    """Expected output format:
     {
-        "model": "luxonis/dncnn3:240x320",
-        "parser": "ImageOutputParser",
+        "model": "luxonis/dncnn3:240x320", "parser": "ImageOutputParser",
         "output": np.array([[0, 0, 0, ..., 0, 0, 0]])
     }
     """
@@ -210,12 +197,10 @@ def check_cluster_msg(
     expected_output: dict[str, Any],
     verbose: bool = False,
 ):
-    """
-    Expected output format:
+    """Expected output format:
     {
-        "model": "luxonis/ultra-fast-lane-detection:culane-800x288",
-        "parser": "LaneDetectionParser",
-        "clusters": [[[0.1, 0.2], ...]]
+        "model": "luxonis/ultra-fast-lane-detection:culane-800x288", "parser":
+        "LaneDetectionParser", "clusters": [[[0.1, 0.2], ...]]
     """
     assert isinstance(
         message, dai.beta.Clusters
@@ -246,11 +231,9 @@ def check_map_msg(
     expected_output: dict[str, Any],
     verbose: bool = False,
 ):
-    """
-    Expected output format:
+    """Expected output format:
     {
-        "model": "luxonis/dm-count:sha-144x256",
-        "parser": "MapOutputParser",
+        "model": "luxonis/dm-count:sha-144x256", "parser": "MapOutputParser",
         "map": np.array([[0, 0, 0, ..., 0, 0, 0]])
     }
     """
@@ -275,21 +258,14 @@ def check_detection_msg(
     expected_output: dict[str, Any],
     verbose: bool = False,
 ):
-    """
-    Expected output format:
+    """Expected output format:
     {
-        "model": "luxonis/scrfd-face-detection:10g-640x640",
-        "parser": "SCRFDParser",
+        "model": "luxonis/scrfd-face-detection:10g-640x640", "parser": "SCRFDParser",
         "detections": [
             {
-                "confidence": 0.9,
-                "label": "person",
-                "x_center": 0.1,
-                "y_center": 0.2,
-                "width": 0.3,
-                "height": 0.4,
-                "angle": 0.5,
-                "keypoints": [[0.1, 0.2, 0.3], ...],
+                "confidence": 0.9, "label": "person", "x_center": 0.1, "y_center": 0.2,
+                "width": 0.3, "height": 0.4, "angle": 0.5, "keypoints": [[0.1, 0.2,
+                0.3], ...],
                 "mask": np.array([[0, 0, 0, ..., 0, 0, 0]])
             },
             ...
@@ -390,16 +366,11 @@ def check_line_msg(
     expected_output: dict[str, Any],
     verbose: bool = False,
 ):
-    """
-    Expected output format:
+    """Expected output format:
     {
-        "model": "luxonis/m-mlsd-tiny:512x512",
-        "parser": "MLSDParser",
-        "lines": [
+        "model": "luxonis/m-mlsd-tiny:512x512", "parser": "MLSDParser", "lines": [
             {
-                "confidence": 0.9,
-                "start_point": [0.1, 0.2],
-                "end_point": [0.3, 0.4]
+                "confidence": 0.9, "start_point": [0.1, 0.2], "end_point": [0.3, 0.4]
             },
             ...
         ]
@@ -445,12 +416,10 @@ def check_regression_msg(
     expected_output: dict[str, Any],
     verbose: bool = False,
 ):
-    """
-    Expected output format:
+    """Expected output format:
     {
-        "model": "luxonis/gaze-estimation-adas:60x60:0.0.1",
-        "parser": "RegressionParser",
-        "value": [0.4, 0.2, 0.1]
+        "model": "luxonis/gaze-estimation-adas:60x60:0.0.1", "parser":
+        "RegressionParser", "value": [0.4, 0.2, 0.1]
     }
     """
     assert isinstance(

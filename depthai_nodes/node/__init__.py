@@ -1,3 +1,14 @@
+"""Pipeline nodes for inference, postprocessing, and host-side message handling.
+
+``ParsingNeuralNetwork`` combines inference with native DepthAI parsers.
+``HostParsingNeuralNetwork`` uses parsers implemented by this package.
+``ParserGenerator`` creates parser nodes from NN Archive head metadata.
+
+Utility nodes support filtering, cropping, coordinate remapping, depth processing,
+message collection, and snap uploads. Build nodes through
+``pipeline.create(...)`` and connect their input and output ports.
+"""
+
 from .apply_colormap import ApplyColormap
 from .apply_depth_colormap import ApplyDepthColormap
 from .base_host_node import BaseHostNode

@@ -24,28 +24,20 @@ class _FilterCfg:
 
 
 class ImgDetectionsFilter(BaseHostNode):
-    """Filters out detections based on the specified criteria and outputs them as a separate message.
-    The order of operations:
-        1. Filter by label/confidence/area;
-        2. Sort (if applicable);
-        3. Subset.
+    """Filter detections and send the retained items as a separate message.
 
-    Attributes
-    ----------
-    keepLabels(labels)
-        Keep only detections whose label is present in ``labels``.
-    rejectLabels(labels)
-        Drop detections whose label is present in ``labels``.
-    minConfidence(threshold)
-        Require detections to meet a minimum confidence.
-    minArea(area)
-        Require detections to meet a minimum normalized bounding-box area.
-    useNms(confThresh=..., iouThresh=...)
-        Enable non-maximum suppression after filtering.
-    sortByConfidence(desc=True)
-        Sort detections by confidence before optional top-k truncation.
-    takeFirstK(k)
-        Keep only the first ``k`` detections after all previous steps.
+    Filtering runs in this order: label inclusion or exclusion, confidence, area,
+    optional non-maximum suppression, optional confidence sorting, and optional
+    truncation to the first K detections.
+
+    Configure these stages with ``keepLabels()``, ``rejectLabels()``,
+    ``minConfidence()``, ``minArea()``, ``useNms()``, ``sortByConfidence()``,
+    and ``takeFirstK()``. Sorting and non-maximum suppression are disabled
+    by default.
+
+    Attributes:
+        out: Output stream of ``dai.ImgDetections`` or ``dai.SpatialImgDetections``
+            messages.
     """
 
     def __init__(self):
@@ -143,7 +135,7 @@ class ImgDetectionsFilter(BaseHostNode):
     def sortByConfidence(self, *, desc: bool = True) -> "ImgDetectionsFilter":
         """Enable sorting by confidence (before top-k).
 
-        Set direction via `desc`.
+        Set direction via ``desc``.
         """
         self._cfg.sort_disabled = False
         self._cfg.sort_desc = desc

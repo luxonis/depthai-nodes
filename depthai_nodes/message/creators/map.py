@@ -7,17 +7,18 @@ def create_map_message(
 ) -> dai.beta.Map2D:
     """Create a DepthAI message for a map of floats.
 
-    @param map_array: A NumPy array representing the map with shape HW or NHW/HWN. Here
-        N stands for batch dimension.
-    @type map_array: np.array
-    @param min_max_scaling: If True, the map is scaled to the range [0, 1]. Defaults to
-        False.
-    @type min_max_scaling: bool
-    @return: A native Map2D object containing the density information.
-    @rtype: dai.beta.Map2D
-    @raise ValueError: If the density map is not a NumPy array.
-    @raise ValueError: If the density map is not 2D or 3D.
-    @raise ValueError: If the 3D density map shape is not NHW or HWN.
+    Args:
+        map_array: A NumPy array representing the map with shape HW or NHW/HWN. Here N
+            stands for batch dimension.
+        min_max_scaling: If True, the map is scaled to the range [0, 1]. Defaults to
+            False.
+
+    Returns:
+        A native Map2D object containing the density information.
+
+    Raises:
+        ValueError: If the density map is not a NumPy array. If the density map is not
+            2D or 3D. If the 3D density map shape is not NHW or HWN.
     """
 
     if not isinstance(map_array, np.ndarray):

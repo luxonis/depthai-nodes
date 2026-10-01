@@ -1,5 +1,8 @@
 # Nodes
 
+For method signatures, parameters, and return values, build the Google-style
+[API reference](../../CONTRIBUTING.md#documentation) with `pydoctor depthai_nodes`.
+
 ## Table of Contents
 
 - [Parser Nodes](#parser-nodes)

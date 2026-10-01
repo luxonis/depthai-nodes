@@ -16,27 +16,20 @@ class MPPalmDetectionParser(DetectionParser):
     result, the node sends out the detected hands in the form of a message containing
     bounding boxes, labels, and confidence scores.
 
-    Attributes
-    ----------
-    output_layer_names: list[str]
-    Names of the output layers relevant to the parser.
-    conf_threshold : float
-        Confidence score threshold for detected hands.
-    iou_threshold : float
-        Non-maximum suppression threshold.
-    max_det : int
-        Maximum number of detections to keep.
-    scale : int
-        Scale of the input image.
+    Attributes:
+        output_layer_names (``list[str]``): Names of the output layers relevant to the
+            parser.
+        conf_threshold (``float``): Confidence score threshold for detected hands.
+        iou_threshold (``float``): Non-maximum suppression threshold.
+        max_det (``int``): Maximum number of detections to keep.
+        scale (``int``): Scale of the input image.
 
-    Output Message/s
-    -------
-    **Type**: dai.ImgDetections
+    Note:
+        Emits ``dai.ImgDetections`` messages. dai.ImgDetections message containing
+        bounding boxes, labels, and confidence scores of detected hands.
 
-    **Description**: dai.ImgDetections message containing bounding boxes, labels, and confidence scores of detected hands.
+    See also:
 
-    See also
-    --------
     Official MediaPipe Hands solution:
     https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker
     """
@@ -51,16 +44,12 @@ class MPPalmDetectionParser(DetectionParser):
     ) -> None:
         """Initializes the parser node.
 
-        @param output_layer_names: Names of the output layers relevant to the parser.
-        @type output_layer_names: list[str]
-        @param conf_threshold: Confidence score threshold for detected hands.
-        @type conf_threshold: float
-        @param iou_threshold: Non-maximum suppression threshold.
-        @type iou_threshold: float
-        @param max_det: Maximum number of detections to keep.
-        @type max_det: int
-        @param scale: Scale of the input image.
-        @type scale: int
+        Args:
+            output_layer_names: Names of the output layers relevant to the parser.
+            conf_threshold: Confidence score threshold for detected hands.
+            iou_threshold: Non-maximum suppression threshold.
+            max_det: Maximum number of detections to keep.
+            scale: Scale of the input image.
         """
         super().__init__(conf_threshold, iou_threshold, max_det)
         self.output_layer_names = (
@@ -79,9 +68,9 @@ class MPPalmDetectionParser(DetectionParser):
     def setOutputLayerNames(self, output_layer_names: list[str]) -> None:
         """Sets the output layer name(s) for the parser.
 
-        @param output_layer_names: The name of the output layer(s) from which the scores
-            are extracted.
-        @type output_layer_names: list[str]
+        Args:
+            output_layer_names: The name of the output layer(s) from which the scores
+                are extracted.
         """
         if not isinstance(output_layer_names, list):
             raise ValueError("Output layer name must be a list.")
@@ -97,8 +86,8 @@ class MPPalmDetectionParser(DetectionParser):
     def setScale(self, scale: int) -> None:
         """Sets the scale of the input image.
 
-        @param scale: Scale of the input image.
-        @type scale: int
+        Args:
+            scale: Scale of the input image.
         """
         if not isinstance(scale, int):
             raise ValueError("Scale must be an integer.")
@@ -111,10 +100,11 @@ class MPPalmDetectionParser(DetectionParser):
     ) -> "MPPalmDetectionParser":
         """Configures the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: MPPalmDetectionParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
 
         super().build(head_config)

@@ -17,28 +17,21 @@ from depthai_nodes.node.parsers.utils.yunet import (
 class YuNetParser(DetectionParser):
     """Parser class for parsing the output of the YuNet face detection model.
 
-    Attributes
-    ----------
-    conf_threshold : float
-        Confidence score threshold for detected faces.
-    iou_threshold : float
-        Non-maximum suppression threshold.
-    max_det : int
-        Maximum number of detections to keep.
-    input_size : tuple[int, int]
-        Input size (width, height).
-    loc_output_layer_name: str
-        Name of the output layer containing the location predictions.
-    conf_output_layer_name: str
-        Name of the output layer containing the confidence predictions.
-    iou_output_layer_name: str
-        Name of the output layer containing the IoU predictions.
+    Attributes:
+        conf_threshold (``float``): Confidence score threshold for detected faces.
+        iou_threshold (``float``): Non-maximum suppression threshold.
+        max_det (``int``): Maximum number of detections to keep.
+        input_size (``tuple[int, int]``): Input size (width, height).
+        loc_output_layer_name (``str``): Name of the output layer containing the
+            location predictions.
+        conf_output_layer_name (``str``): Name of the output layer containing the
+            confidence predictions.
+        iou_output_layer_name (``str``): Name of the output layer containing the IoU
+            predictions.
 
-    Output Message/s
-    ----------------
-    **Type**: dai.ImgDetections
-
-    **Description**: dai.ImgDetections message containing bounding boxes, labels, confidence scores, and keypoints of detected faces.
+    Note:
+        Emits ``dai.ImgDetections`` messages. dai.ImgDetections message containing
+        bounding boxes, labels, confidence scores, and keypoints of detected faces.
     """
 
     def __init__(
@@ -53,20 +46,14 @@ class YuNetParser(DetectionParser):
     ) -> None:
         """Initializes the parser node.
 
-        @param conf_threshold: Confidence score threshold for detected faces.
-        @type conf_threshold: float
-        @param iou_threshold: Non-maximum suppression threshold.
-        @type iou_threshold: float
-        @param max_det: Maximum number of detections to keep.
-        @type max_det: int
-        @param input_size: Input size of the model (width, height).
-        @type input_size: tuple[int, int]
-        @param loc_output_layer_name: Output layer name for the location predictions.
-        @type loc_output_layer_name: str
-        @param conf_output_layer_name: Output layer name for the confidence predictions.
-        @type conf_output_layer_name: str
-        @param iou_output_layer_name: Output layer name for the IoU predictions.
-        @type iou_output_layer_name: str
+        Args:
+            conf_threshold: Confidence score threshold for detected faces.
+            iou_threshold: Non-maximum suppression threshold.
+            max_det: Maximum number of detections to keep.
+            input_size: Input size of the model (width, height).
+            loc_output_layer_name: Output layer name for the location predictions.
+            conf_output_layer_name: Output layer name for the confidence predictions.
+            iou_output_layer_name: Output layer name for the IoU predictions.
         """
         super().__init__(conf_threshold, iou_threshold, max_det)
         self._out = self.createOutput(
@@ -90,8 +77,8 @@ class YuNetParser(DetectionParser):
     def setInputSize(self, input_size: tuple[int, int]) -> None:
         """Sets the input size of the model.
 
-        @param input_size: Input size of the model (width, height).
-        @type input_size: list
+        Args:
+            input_size: Input size of the model (width, height).
         """
         if not isinstance(input_size, tuple):
             raise ValueError("Input size must be a tuple.")
@@ -105,8 +92,8 @@ class YuNetParser(DetectionParser):
     def setOutputLayerLoc(self, loc_output_layer_name: str) -> None:
         """Sets the name of the output layer containing the location predictions.
 
-        @param loc_output_layer_name: Output layer name for the loc tensor.
-        @type loc_output_layer_name: str
+        Args:
+            loc_output_layer_name: Output layer name for the loc tensor.
         """
         if not isinstance(loc_output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
@@ -118,8 +105,8 @@ class YuNetParser(DetectionParser):
     def setOutputLayerConf(self, conf_output_layer_name: str) -> None:
         """Sets the name of the output layer containing the confidence predictions.
 
-        @param conf_output_layer_name: Output layer name for the conf tensor.
-        @type conf_output_layer_name: str
+        Args:
+            conf_output_layer_name: Output layer name for the conf tensor.
         """
         if not isinstance(conf_output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
@@ -131,8 +118,8 @@ class YuNetParser(DetectionParser):
     def setOutputLayerIou(self, iou_output_layer_name: str) -> None:
         """Sets the name of the output layer containing the IoU predictions.
 
-        @param iou_output_layer_name: Output layer name for the IoU tensor.
-        @type iou_output_layer_name: str
+        Args:
+            iou_output_layer_name: Output layer name for the IoU tensor.
         """
         if not isinstance(iou_output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
@@ -147,10 +134,11 @@ class YuNetParser(DetectionParser):
     ) -> "YuNetParser":
         """Configures the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: YuNetParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
 
         super().build(head_config)

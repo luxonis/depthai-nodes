@@ -9,30 +9,26 @@ class ApplyDepthColormap(BaseHostNode):
     """A host node that applies a colormap to a depth map using percentile-based
     normalization to reduce flicker.
 
-    Works with RAW 2D dai.ImgFrame outputs such as stereo.depth and stereo.disparity frames.
-    Percentile normalization is typically more beneficial for stereo.depth since disparity often has a fixed output range.
+    Works with RAW 2D dai.ImgFrame outputs such as stereo.depth and stereo.disparity
+    frames. Percentile normalization is typically more beneficial for stereo.depth since
+    disparity often has a fixed output range.
 
-    Invalid depth values (<= 0) are ignored when computing percentiles and are rendered as black in the output.
+    Invalid depth values (<= 0) are ignored when computing percentiles and are rendered
+    as black in the output.
 
-    Parameters
-    ----------
-    colormapValue : int | np.ndarray, optional
-        OpenCV colormap enum (e.g. cv2.COLORMAP_JET) or a custom OpenCV-compatible
-        colormap LUT. Default is cv2.COLORMAP_JET.
-    pLow : float, optional
-        Lower normalization percentile in [0, 100). Default 2.0.
-    pHigh : float, optional
-        Upper normalization percentile in (0, 100]. Default 98.0.
+    Args:
+        colormapValue: OpenCV colormap enum (e.g. cv2.COLORMAP_JET) or a custom
+            OpenCV-compatible colormap LUT. Default is cv2.COLORMAP_JET.
+        pLow: Lower normalization percentile in [0, 100). Default 2.0.
+        pHigh: Upper normalization percentile in (0, 100]. Default 98.0.
 
-    Inputs
-    ------
-    frame : dai.ImgFrame
-        Input message containing a 2D array to be colorized.
+    Inputs:
 
-    Outputs
-    -------
-    output : dai.ImgFrame
-        Colorized output frame (3-channel BGR).
+    * ``frame : dai.ImgFrame``: Input message containing a 2D array to be colorized.
+
+    Outputs:
+
+    * ``output : dai.ImgFrame``: Colorized output frame (3-channel BGR).
     """
 
     def __init__(
@@ -57,9 +53,8 @@ class ApplyDepthColormap(BaseHostNode):
     def setColormap(self, colormapValue: int | np.ndarray) -> None:
         """Set the color mapping applied to depth images.
 
-        @param colormapValue: OpenCV colormap enum value or a custom OpenCV-compatible
-            LUT.
-        @type colormapValue: int | np.ndarray
+        Args:
+            colormapValue: OpenCV colormap enum value or a custom OpenCV-compatible LUT.
         """
         self._colormap = self._make_colormap(colormapValue)
         if isinstance(colormapValue, int):
@@ -70,10 +65,9 @@ class ApplyDepthColormap(BaseHostNode):
     def setPercentileRange(self, low: float, high: float) -> None:
         """Set the percentile clipping range used for normalization.
 
-        @param low: Lower percentile in the range [0, 100).
-        @type low: float
-        @param high: Upper percentile in the range (0, 100].
-        @type high: float
+        Args:
+            low: Lower percentile in the range [0, 100).
+            high: Upper percentile in the range (0, 100].
         """
         self._p_low, self._p_high = self._validate_percentile_range(low, high)
         self._logger.debug(
@@ -83,10 +77,11 @@ class ApplyDepthColormap(BaseHostNode):
     def build(self, frame: dai.Node.Output) -> "ApplyDepthColormap":
         """Connect the input depth stream to the node.
 
-        @param frame: Upstream output producing a RAW depth dai.ImgFrame.
-        @type frame: dai.Node.Output
-        @return: The configured node instance.
-        @rtype: ApplyDepthColormap
+        Args:
+            frame: Upstream output producing a RAW depth dai.ImgFrame.
+
+        Returns:
+            The configured node instance.
         """
         self.link_args(frame)
         self._logger.debug("ApplyDepthColormap built")

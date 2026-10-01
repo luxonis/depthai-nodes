@@ -10,28 +10,22 @@ def generate_script_content(
     """Generates the script content for the dai.Script node.
 
     It crops and resizes the input image based on the detected object, with optional
-    padding and label filtering. If a zero-area detection is encountered, an error
-    message is issued.
+    padding. If a zero-area detection is encountered, an error message is issued.
 
-    @param resize_width: Target width for the resized image
-    @type resize_width: int
-    @param resize_height: Target height for the resized image
-    @type resize_height: int
-    @param resize_mode: Resize mode for the image. Supported values: "CENTER_CROP",
-        "LETTERBOX", "NONE", "STRETCH". Default: "STRETCH".
-        "STRETCH" - stretches the image so that the corners of the region are now in the corners of the output image.
-        "CENTER_CROP" - resizes + crops the image to keep aspect ratio and fill the final size.
-        "LETTERBOX" - resizes + pads the image to the final size to keep aspect ratio.
-        "NONE" - does not scale and pads top, bottom, left and right to fill the final image.
-    @type resize_mode: str
-    @param padding: Additional padding around the detection in normalized coordinates
-        (0-1)
-    @type padding: float
-    @param valid_labels: List of valid label indices to filter detections. If None, all
-        detections are processed
-    @type valid_labels: list[int] | None
-    @return: Generated script content as a string
-    @rtype: str
+    Args:
+        resize_width: Target width for the resized image
+        resize_height: Target height for the resized image
+        resize_mode: Resize mode for the image. Supported values: "CENTER_CROP",
+            "LETTERBOX", "NONE", "STRETCH". Default: "STRETCH". "STRETCH" - stretches
+            the image so that the corners of the region are now in the corners of the
+            output image. "CENTER_CROP" - resizes + crops the image to keep aspect ratio
+            and fill the final size. "LETTERBOX" - resizes + pads the image to the final
+            size to keep aspect ratio. "NONE" - does not scale and pads top, bottom,
+            left and right to fill the final image.
+        padding: Additional padding around the detection in normalized coordinates (0-1)
+
+    Returns:
+        Generated script content as a string
     """
 
     if resize_mode not in ["CENTER_CROP", "LETTERBOX", "NONE", "STRETCH"]:

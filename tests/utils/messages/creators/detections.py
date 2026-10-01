@@ -11,13 +11,15 @@ def create_img_detection(
     label: int = DETECTIONS["labels"][0],
     score: float = DETECTIONS["scores"][0],
 ):
-    """Creates a dai.ImgDetection object.
+    """Create a single detection for tests.
 
-    @param det: Detection dict with keys "bbox" ([xmin, ymin, xmax, ymax]), "label"
-        (int), and "confidence" (float).
-    @type det: dict
-    @return: The created dai.ImgDetection object.
-    @rtype: dai.ImgDetection
+    Args:
+        bbox: Normalized ``[xmin, ymin, xmax, ymax]`` coordinates.
+        label: Class index.
+        score: Detection confidence.
+
+    Returns:
+        ``dai.ImgDetection``: Detection populated with the supplied values.
     """
 
     img_det = dai.ImgDetection()
@@ -33,13 +35,16 @@ def create_img_detections(
     scores: np.ndarray = DETECTIONS["scores"],
     timestamp: int = timedelta(days=1, hours=1, minutes=1, seconds=1, milliseconds=0),
 ):
-    """Creates a dai.ImgDetections object.
+    """Create a timestamped detection message for tests.
 
-    @param dets: List of detection dicts, each containing "bbox" ([xmin, ymin, xmax,
-        ymax]), "label" (int), and "confidence" (float).
-    @type dets: list[dict]
-    @return: The created dai.ImgDetections object.
-    @rtype: dai.ImgDetections
+    Args:
+        bboxs: Array of normalized ``[xmin, ymin, xmax, ymax]`` boxes.
+        labels: Class indexes corresponding to the boxes.
+        scores: Confidence scores corresponding to the boxes.
+        timestamp: Timestamp assigned to the message.
+
+    Returns:
+        ``dai.ImgDetections``: Message containing the supplied detections.
     """
     img_dets = dai.ImgDetections()
     img_dets.detections = [

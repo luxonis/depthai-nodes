@@ -9,62 +9,56 @@ from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
 
 class FrameCropper(BaseThreadedHostNode):
     """A host node that crops detection regions from frames and outputs one cropped
-    :class:`dai.ImgFrame` per region.
+    ``dai.ImgFrame`` per region.
 
-    `FrameCropper` is a convenience wrapper around an internal
-    :class:`dai.node.ImageManip` configured for cropping + resizing. It supports
+    ``FrameCropper`` is a convenience wrapper around an internal ``dai.node.ImageManip``
+    configured for cropping + resizing. It supports
     two input modes:
 
-    - **fromImgDetections**: Provide :class:`dai.ImgDetections`
-      and the node will generate :class:`dai.ImageManipConfig` messages for each
-      detection via a :class:`dai.node.Script` node. Each config is paired with
-      the corresponding input frame, producing one cropped output frame per
-      detection.
+    - **fromImgDetections**: Provide ``dai.ImgDetections``
+      and the node will generate ``dai.ImageManipConfig`` messages for each detection
+      via a ``dai.node.Script`` node. Each config is paired with the corresponding input
+      frame, producing one cropped output frame per detection.
     - **fromManipConfigs**: Provide an upstream stream of cropping configs packed
-      in :class:`dai.MessageGroup` messages. An on-device :class:`dai.node.Script`
-      node pairs each config with the current frame and forwards them to the
-      internal :class:`dai.node.ImageManip`.
+      in ``dai.MessageGroup`` messages. An on-device ``dai.node.Script`` node pairs each
+      config with the current frame and forwards them to the internal
+      ``dai.node.ImageManip``.
 
-    Configuration is provided via :meth:`fromImgDetections` or
-    :meth:`fromManipConfigs`. The pipeline nodes are constructed only once
-    :meth:`build` is called.
+    Configuration is provided via ``fromImgDetections`` or ``fromManipConfigs``. The
+    pipeline nodes are constructed only once ``build`` is called.
 
-    Notes
-    -----
-    - Exactly one configuration path must be selected: only one of
-      :meth:`fromImgDetections` and :meth:`fromManipConfigs` can be used.
-    - Output frames are always resized to `outputSize` using the provided
-      `resizeMode` (default: ``CENTER_CROP``).
-    - In `fromImgDetections` mode, a :class:`dai.node.Script` node drives the
-      cropping by emitting one :class:`dai.ImageManipConfig` per detection.
-    - In `fromManipConfigs` mode, the `inputManipConfigs` stream **must**
-      output :class:`dai.MessageGroup` messages where each value is a
-      :class:`dai.ImageManipConfig`. Key naming is arbitrary.
+    Note:
+        - Exactly one configuration path must be selected: only one of
+          ``fromImgDetections`` and ``fromManipConfigs`` can be used.
+        - Output frames are always resized to ``outputSize`` using the provided
+          ``resizeMode`` (default: ``CENTER_CROP``).
+        - In ``fromImgDetections`` mode, a ``dai.node.Script`` node drives the
+          cropping by emitting one ``dai.ImageManipConfig`` per detection.
+        - In ``fromManipConfigs`` mode, the ``inputManipConfigs`` stream **must**
+          output ``dai.MessageGroup`` messages where each value is a
+          ``dai.ImageManipConfig``. Key naming is arbitrary.
 
-    Parameters
-    ----------
-    fromImgDetections(padding=0.0)
-        Optional padding factor applied around each detection region.
-    build(outputSize, resizeMode)
-        Sets the crop output size and the resize mode used by ImageManip.
+    Use ``fromImgDetections(padding=0.0)`` to set optional padding around each
+    detection region. ``build(outputSize, resizeMode)`` sets the crop size and
+    resize mode.
 
-    Outputs
-    -------
-    out : dai.Node.Output
-        Stream of cropped :class:`dai.ImgFrame` messages. One output frame is
-        produced per crop configuration (per detection in `fromImgDetections`
-        mode; per config in the received `MessageGroup` in `fromManipConfigs` mode).
+    Outputs:
 
-    See Also
-    --------
+    * ``out : dai.Node.Output``: Stream of cropped ``dai.ImgFrame`` messages. One output
+      frame is
+      produced per crop configuration (per detection in ``fromImgDetections``
+      mode; per config in the received ``MessageGroup`` in ``fromManipConfigs`` mode).
+
+    See also:
+
     dai.node.ImageManip
         Node used to perform cropping and resizing.
     dai.ImageManipConfig
         Cropping configuration messages forwarded to ImageManip.
     dai.ImgDetections
-        Detection message type used in `fromImgDetections` mode.
+        Detection message type used in ``fromImgDetections`` mode.
     dai.MessageGroup
-        Message type expected by `fromManipConfigs`.
+        Message type expected by ``fromManipConfigs``.
     """
 
     IMG_DETECTIONS_SCRIPT_CONTENT = Template(
@@ -172,7 +166,7 @@ class FrameCropper(BaseThreadedHostNode):
 
         In this mode the node strictly timestamp-synchronizes images and detections,
         generates ImageManipConfig messages per detection (via Script), and outputs one
-        cropped ImgFrame per detection. `padding` expands the crop region.
+        cropped ImgFrame per detection. ``padding`` expands the crop region.
         """
         if self._version_selected:
             raise RuntimeError(
@@ -202,11 +196,12 @@ class FrameCropper(BaseThreadedHostNode):
     ) -> "FrameCropper":
         """Configure cropping from a stream of precomputed ImageManipConfig groups.
 
-        Expects `inputManipConfigs` to output dai.MessageGroup messages where each
+        Expects ``inputManipConfigs`` to output dai.MessageGroup messages where each
         value is an ImageManipConfig. An on-device Script node pairs each config with
-        the current frame and forwards them to ImageManip. When `waitForConfig` is true,
-        images and config groups are strictly timestamp-synchronized using `syncThreshold`.
-        When false, the latest config group is reused for every frame and no Sync is used.
+        the current frame and forwards them to ImageManip. When ``waitForConfig`` is
+        true, images and config groups are strictly timestamp-synchronized using
+        ``syncThreshold``. When false, the latest config group is reused for every frame
+        and no Sync is used.
 
         Key naming is arbitrary; all values in the MessageGroup are treated as configs.
         """
@@ -233,8 +228,9 @@ class FrameCropper(BaseThreadedHostNode):
     ) -> "FrameCropper":
         """Build the internal pipeline and set output size / resize behavior.
 
-        Requires that exactly one configuration path was selected via `fromImgDetections`
-        or `fromManipConfigs` before calling. Returns `self` for fluent chaining.
+        Requires that exactly one configuration path was selected via
+        ``fromImgDetections`` or ``fromManipConfigs`` before calling. Returns ``self``
+        for fluent chaining.
         """
         if not self._version_selected:
             raise RuntimeError(

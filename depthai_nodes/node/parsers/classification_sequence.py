@@ -18,27 +18,26 @@ class ClassificationSequenceParser(ClassificationParser):
     classification, this parser can also be used for text recognition models where words
     can be interpreted as a sequence of characters (classes).
 
-    Attributes
-    ----------
-    output_layer_name: str
-        Name of the output layer relevant to the parser.
-    classes: list[str]
-        List of available classes for the model.
-    is_softmax: bool
-        If False, the scores are converted to probabilities using softmax function.
-    ignored_indexes: list[int]
-        List of indexes to ignore during classification generation (e.g., background class, blank space).
-    remove_duplicates: bool
-        If True, removes consecutive duplicates from the sequence.
-    concatenate_classes: bool
-        If True, concatenates consecutive words based on the predicted spaces.
+    Attributes:
+        output_layer_name (``str``): Name of the output layer relevant to the parser.
+        classes (``list[str]``): List of available classes for the model.
+        is_softmax (``bool``): If False, the scores are converted to probabilities using
+            softmax function.
+        ignored_indexes (``list[int]``): List of indexes to ignore during classification
+            generation (e.g., background class, blank space).
+        remove_duplicates (``bool``): If True, removes consecutive duplicates from the
+            sequence.
+        concatenate_classes (``bool``): If True, concatenates consecutive words based on
+            the predicted spaces.
 
-    Output Message/s
-    ----------------
+    Output messages:
+
     **Type**: dai.beta.Classifications
 
     **Description**:
-        An object with attributes `classes` and `scores`. `classes` is a list containing the predicted classes. `scores` is a list of corresponding probability scores.
+        An object with attributes ``classes`` and ``scores``. ``classes`` is a list
+        containing the predicted classes. ``scores`` is a list of corresponding
+        probability scores.
     """
 
     def __init__(
@@ -52,22 +51,17 @@ class ClassificationSequenceParser(ClassificationParser):
     ) -> None:
         """Initializes the parser node.
 
-        @param output_layer_name: Name of the output layer relevant to the parser.
-        @type output_layer_name: str
-        @param classes: List of available classes for the model.
-        @type classes: list[str]
-        @param ignored_indexes: List of indexes to ignore during classification
-            generation (e.g., background class, blank space).
-        @type ignored_indexes: list[int]
-        @param is_softmax: If False, the scores are converted to probabilities using
-            softmax function.
-        @type is_softmax: bool
-        @param remove_duplicates: If True, removes consecutive duplicates from the
-            sequence.
-        @type remove_duplicates: bool
-        @param concatenate_classes: If True, concatenates consecutive words based on the
-            predicted spaces.
-        @type concatenate_classes: bool
+        Args:
+            output_layer_name: Name of the output layer relevant to the parser.
+            classes: List of available classes for the model.
+            ignored_indexes: List of indexes to ignore during classification generation
+                (e.g., background class, blank space).
+            is_softmax: If False, the scores are converted to probabilities using
+                softmax function.
+            remove_duplicates: If True, removes consecutive duplicates from the
+                sequence.
+            concatenate_classes: If True, concatenates consecutive words based on the
+                predicted spaces.
         """
         super().__init__(
             output_layer_name=output_layer_name, classes=classes, is_softmax=is_softmax
@@ -83,9 +77,9 @@ class ClassificationSequenceParser(ClassificationParser):
     def setRemoveDuplicates(self, remove_duplicates: bool) -> None:
         """Sets the remove_duplicates flag for the classification sequence model.
 
-        @param remove_duplicates: If True, removes consecutive duplicates from the
-            sequence.
-        @type remove_duplicates: bool
+        Args:
+            remove_duplicates: If True, removes consecutive duplicates from the
+                sequence.
         """
         if not isinstance(remove_duplicates, bool):
             raise ValueError("remove_duplicates must be a boolean.")
@@ -95,9 +89,9 @@ class ClassificationSequenceParser(ClassificationParser):
     def setIgnoredIndexes(self, ignored_indexes: list[int]) -> None:
         """Sets the ignored_indexes for the classification sequence model.
 
-        @param ignored_indexes: A list of indexes to ignore during classification
-            generation.
-        @type ignored_indexes: list[int]
+        Args:
+            ignored_indexes: A list of indexes to ignore during classification
+                generation.
         """
         if not isinstance(ignored_indexes, list):
             raise ValueError("Ignored indexes must be a list.")
@@ -109,9 +103,9 @@ class ClassificationSequenceParser(ClassificationParser):
     def setConcatenateClasses(self, concatenate_classes: bool) -> None:
         """Sets the concatenate_classes flag for the classification sequence model.
 
-        @param concatenate_classes: If True, concatenates consecutive classes into a
-            single string. Used mostly for text processing.
-        @type concatenate_classes: bool
+        Args:
+            concatenate_classes: If True, concatenates consecutive classes into a single
+                string. Used mostly for text processing.
         """
         if not isinstance(concatenate_classes, bool):
             raise ValueError("concatenate_classes must be a boolean.")
@@ -121,11 +115,14 @@ class ClassificationSequenceParser(ClassificationParser):
     def build(self, head_config: dict[str, Any]) -> "ClassificationSequenceParser":
         """Configures the parser.
 
-        @param head_config: The head configuration for the parser. The required keys are `classes`, `n_classes`, and `is_softmax`.
-        In addition to these, there are three optional keys that are mostly used for text processing: `ignored_indexes`, `remove_duplicates` and `concatenate_classes`.
-        @type head_config: dict[str, Any]
-        @return: Returns the instantiated parser with the correct configuration.
-        @rtype: ClassificationParser
+        Args:
+            head_config: The head configuration for the parser. The required keys are
+                ``classes``, ``n_classes``, and ``is_softmax``. In addition to these,
+                there are three optional keys that are mostly used for text processing:
+                ``ignored_indexes``, ``remove_duplicates`` and ``concatenate_classes``.
+
+        Returns:
+            Returns the instantiated parser with the correct configuration.
         """
         super().build(head_config)
         self.ignored_indexes = head_config.get("ignored_indexes", [])

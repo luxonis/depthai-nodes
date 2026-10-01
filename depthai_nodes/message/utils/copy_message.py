@@ -4,12 +4,20 @@ import depthai as dai
 
 
 def copy_message(msg: dai.Buffer) -> dai.Buffer:
-    """Copies the incoming message and returns it.
+    """Copy a DepthAI message using the first supported copying strategy.
 
-    @param msg: The input message.
-    @type msg: dai.Buffer
-    @return: The copied message.
-    @rtype: dai.Buffer
+    Prefer the message's native ``copy()`` method, then the supported custom
+    message copiers, and finally ``copy.deepcopy``. Buffer ownership follows the
+    selected strategy; native copies may share underlying pixel storage.
+
+    Args:
+        msg: Message to copy.
+
+    Returns:
+        A copy of the input message.
+
+    Raises:
+        TypeError: If no copying strategy supports the message type.
     """
 
     # 1st attempt: native .copy() method

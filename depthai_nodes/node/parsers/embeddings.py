@@ -9,16 +9,12 @@ from depthai_nodes.node.parsers.utils.embeddings import compute_embeddings_outpu
 class EmbeddingsParser(BaseParser):
     """Parser class for parsing the output of embeddings neural network model head.
 
-    Attributes
-    ----------
-    output_layer_name: str
-        Name of the output layer relevant to the parser.
+    Attributes:
+        output_layer_name (``str``): Name of the output layer relevant to the parser.
 
-    Output Message/s
-    ----------------
-    **Type**: dai.NNData
-
-    **Description**: The output layer of the neural network model head.
+    Note:
+        Emits ``dai.NNData`` messages. The output layer of the neural network model
+        head.
     """
 
     def __init__(self) -> None:
@@ -32,8 +28,8 @@ class EmbeddingsParser(BaseParser):
     def setOutputLayerNames(self, output_layer_name: str) -> None:
         """Sets the output layer name for the parser.
 
-        @param output_layer_name: The output layer name for the parser.
-        @type output_layer_name: str
+        Args:
+            output_layer_name: The output layer name for the parser.
         """
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
@@ -44,10 +40,11 @@ class EmbeddingsParser(BaseParser):
     def build(self, head_config: dict[str, Any]) -> "EmbeddingsParser":
         """Sets the head configuration for the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: EmbeddingsParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
         output_names = self._normalize_output_layer_names(head_config["outputs"])
         assert (

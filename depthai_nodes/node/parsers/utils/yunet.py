@@ -22,17 +22,19 @@ def generate_anchors(
     min_sizes: list[list[int]] | None = None,
     strides: list[int] | None = None,
 ):
-    """Generate a set of default bounding boxes, known as anchors.
-    The code is taken from https://github.com/Kazuhito00/YuNet-ONNX-TFLite-Sample/tree/main
+    """Generate a set of default bounding boxes, known as anchors. The code is taken from
+    https://github.com/Kazuhito00/YuNet-ONNX-TFLite-Sample/tree/main
 
-    @param input_size: A tuple representing the width and height of the input image.
-    @type input_size: tuple[int, int]
-    @param min_sizes: A list of lists, where each inner list contains the minimum sizes of the anchors for different feature maps. If None then '[[10, 16, 24], [32, 48], [64, 96], [128, 192, 256]]' will be used. Defaults to None.
-    @type min_sizes list[list[int]] | None
-    @param strides: Strides for each feature map layer. If None then '[8, 16, 32, 64]' will be used. Defaults to None.
-    @type strides: list[int] | None
-    @return: Anchors.
-    @rtype: np.ndarray
+    Args:
+        input_size: A tuple representing the width and height of the input image.
+        min_sizes: A list of lists, where each inner list contains the minimum sizes of
+            the anchors for different feature maps. If None then '[[10, 16, 24], [32,
+            48], [64, 96], [128, 192, 256]]' will be used. Defaults to None.
+        strides: Strides for each feature map layer. If None then '[8, 16, 32, 64]' will
+            be used. Defaults to None.
+
+    Returns:
+        ``np.ndarray``: Anchors.
     """
     w, h = input_size
 
@@ -74,25 +76,29 @@ def decode_detections(
     iou: np.ndarray,
     variance: list[float] | None = None,
 ):
-    """
-    Decodes the output of an object detection model by converting the model's predictions (localization, confidence, and IoU scores) into bounding boxes, keypoints, and scores.
-    The code is taken from https://github.com/Kazuhito00/YuNet-ONNX-TFLite-Sample/tree/main
+    """Decodes the output of an object detection model by converting the model's
+    predictions (localization, confidence, and IoU scores) into bounding boxes,
+    keypoints, and scores. The code is taken from
+    https://github.com/Kazuhito00/YuNet-ONNX-TFLite-Sample/tree/main
 
-    @param input_size: The size of the input image (height, width).
-    @type input_size: tuple
-    @param loc: The predicted locations (or offsets) of the bounding boxes.
-    @type loc: np.ndarray
-    @param conf: The predicted class confidence scores.
-    @type conf: np.ndarray
-    @param iou: The predicted IoU (Intersection over Union) scores.
-    @type iou: np.ndarray
-    @param variance: A list of variances used to decode the bounding box predictions. If None then [0.1,0.2] will be used. Defaults to None.
-    @type variance: list[float] | None
-    @return: A tuple of bboxes, keypoints, and scores.
-        - bboxes: NumPy array of shape (N, 4) containing the decoded bounding boxes in the format [x_min, y_min, width, height].
-        - keypoints: A NumPy array of shape (N, 10) containing the decoded keypoint coordinates for each anchor.
-        - scores: A NumPy array of shape (N, 1) containing the combined scores for each anchor.
-    @rtype: tuple[np.ndarray, np.ndarray, np.ndarray]
+    Args:
+        input_size: The size of the input image (height, width).
+        loc: The predicted locations (or offsets) of the bounding boxes.
+        conf: The predicted class confidence scores.
+        iou: The predicted IoU (Intersection over Union) scores.
+        variance: A list of variances used to decode the bounding box predictions. If
+            None then [0.1,0.2] will be used. Defaults to None.
+
+    Returns:
+        ``tuple[np.ndarray, np.ndarray, np.ndarray]``: A tuple of bboxes, keypoints, and
+            scores:
+
+            - bboxes: NumPy array of shape (N, 4) containing the decoded bounding boxes
+              in the format [x_min, y_min, width, height].
+            - keypoints: A NumPy array of shape (N, 10) containing the decoded keypoint
+              coordinates for each anchor.
+            - scores: A NumPy array of shape (N, 1) containing the combined scores for
+              each anchor.
     """
 
     w, h = input_size
@@ -141,20 +147,22 @@ def prune_detections(
 ):
     """Prune detections based on confidence threshold.
 
-    Parameters:
-    @param bboxes: A numpy array of shape (N, 4) containing the bounding boxes.
-    @type np.ndarray
-    @param keypoints: A numpy array of shape (N, 10) containing the keypoints.
-    @type np.ndarray
-    @param scores: A numpy array of shape (N,) containing the scores.
-    @type np.ndarray
-    @param conf_threshold: The confidence threshold.
-    @type float
-    @return: A tuple of bboxes, keypoints, and scores.
-        - bboxes: NumPy array of shape (N, 4) containing the decoded bounding boxes in the format [x_min, y_min, width, height].
-        - keypoints: A NumPy array of shape (N, 10) containing the decoded keypoint coordinates for each anchor.
-        - scores: A NumPy array of shape (N, 1) containing the combined scores for each anchor.
-    @rtype: tuple[np.ndarray, np.ndarray, np.ndarray]
+    Args:
+        bboxes: A numpy array of shape (N, 4) containing the bounding boxes.
+        keypoints: A numpy array of shape (N, 10) containing the keypoints.
+        scores: A numpy array of shape (N,) containing the scores.
+        conf_threshold: The confidence threshold.
+
+    Returns:
+        ``tuple[np.ndarray, np.ndarray, np.ndarray]``: A tuple of bboxes, keypoints, and
+            scores:
+
+            - bboxes: NumPy array of shape (N, 4) containing the decoded bounding boxes
+              in the format [x_min, y_min, width, height].
+            - keypoints: A NumPy array of shape (N, 10) containing the decoded keypoint
+              coordinates for each anchor.
+            - scores: A NumPy array of shape (N, 1) containing the combined scores for
+              each anchor.
     """
 
     keep_indices = np.where(scores.squeeze() > conf_threshold)
@@ -169,19 +177,22 @@ def format_detections(
 ):
     """Format detections into a list of dictionaries.
 
-    @param bboxes: A numpy array of shape (N, 4) containing the bounding boxes.
-    @type np.ndarray
-    @param keypoints: A numpy array of shape (N, 10) containing the keypoints.
-    @type np.ndarray
-    @param scores: A numpy array of shape (N,) containing the scores.
-    @type np.ndarray
-    @param input_size: A tuple representing the width and height of the input image.
-    @type input_size: tuple
-    @return: A tuple of bboxes, keypoints, and scores.
-        - bboxes: NumPy array of shape (N, 4) containing the decoded bounding boxes in the format [x_min, y_min, width, height].
-        - keypoints: A NumPy array of shape (N, 10) containing the decoded keypoint coordinates for each anchor.
-        - scores: A NumPy array of shape (N, 1) containing the combined scores for each anchor.
-    @rtype: tuple[np.ndarray, np.ndarray, np.ndarray]
+    Args:
+        bboxes: A numpy array of shape (N, 4) containing the bounding boxes.
+        keypoints: A numpy array of shape (N, 10) containing the keypoints.
+        scores: A numpy array of shape (N,) containing the scores.
+        input_size: A tuple representing the width and height of the input image.
+
+    Returns:
+        ``tuple[np.ndarray, np.ndarray, np.ndarray]``: A tuple of bboxes, keypoints, and
+            scores:
+
+            - bboxes: NumPy array of shape (N, 4) containing the decoded bounding boxes
+              in the format [x_min, y_min, width, height].
+            - keypoints: A NumPy array of shape (N, 10) containing the decoded keypoint
+              coordinates for each anchor.
+            - scores: A NumPy array of shape (N, 1) containing the combined scores for
+              each anchor.
     """
 
     w, h = input_size
@@ -210,14 +221,17 @@ def decode_and_prune_detections(
     """Optimized function that combines decode_detections and prune_detections. Performs
     early pruning to avoid processing low-confidence detections.
 
-    @param input_size: The size of the input image (width, height).
-    @param loc: The predicted locations (or offsets) of the bounding boxes.
-    @param conf: The predicted class confidence scores.
-    @param iou: The predicted IoU (Intersection over Union) scores.
-    @param conf_threshold: The confidence threshold for pruning.
-    @param anchors: Pre-computed anchors to avoid regeneration.
-    @param variance: A list of variances used to decode the bounding box predictions.
-    @return: A tuple of bboxes, keypoints, and scores.
+    Args:
+        input_size: The size of the input image (width, height).
+        loc: The predicted locations (or offsets) of the bounding boxes.
+        conf: The predicted class confidence scores.
+        iou: The predicted IoU (Intersection over Union) scores.
+        conf_threshold: The confidence threshold for pruning.
+        anchors: Pre-computed anchors to avoid regeneration.
+        variance: A list of variances used to decode the bounding box predictions.
+
+    Returns:
+        A tuple of bboxes, keypoints, and scores.
     """
     w, h = input_size
 

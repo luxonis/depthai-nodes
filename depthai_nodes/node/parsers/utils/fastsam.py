@@ -17,17 +17,17 @@ def box_prompt(
     """Modifies the bounding box properties and calculates IoU between masks and
     bounding box.
 
-    Source: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/prompt.py#L286
+    Source:
+    https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/prompt.py#L286
     Modified so it uses numpy instead of torch.
 
-    @param masks: The resulting masks of the FastSAM model
-    @type masks: np.ndarray
-    @param bbox: The prompt bounding box coordinates
-    @type bbox: tuple[int, int, int, int]
-    @param orig_shape: The original shape of the image
-    @type orig_shape: tuple[int, int](height, width)
-    @return: The modified masks
-    @rtype: np.ndarray
+    Args:
+        masks: The resulting masks of the FastSAM model
+        bbox: The prompt bounding box coordinates
+        orig_shape: The original shape of the image
+
+    Returns:
+        The modified masks
     """
     if masks is not None:
         assert bbox[2] != 0 and bbox[3] != 0
@@ -64,16 +64,16 @@ def format_results(
     """Formats detection results into list of annotations each containing ID,
     segmentation, bounding box, score and area.
 
-    Source: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/prompt.py#L56
+    Source:
+    https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/prompt.py#L56
 
-    @param bboxes: The bounding boxes of the detected objects
-    @type bboxes: np.ndarray
-    @param masks: The masks of the detected objects
-    @type masks: np.ndarray
-    @param filter: The filter value
-    @type filter: int
-    @return: The formatted annotations
-    @rtype: list[dict[str, Any]]
+    Args:
+        bboxes: The bounding boxes of the detected objects
+        masks: The masks of the detected objects
+        filter: The filter value
+
+    Returns:
+        The formatted annotations
     """
     annotations = []
     n = len(masks) if masks is not None else 0
@@ -101,21 +101,19 @@ def point_prompt(
     """Adjusts points on detected masks based on user input and returns the modified
     results.
 
-    Source: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/prompt.py#L321
+    Source:
+    https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/prompt.py#L321
     Modified so it uses numpy instead of torch.
 
-    @param bboxes: The bounding boxes of the detected objects
-    @type bboxes: np.ndarray
-    @param masks: The masks of the detected objects
-    @type masks: np.ndarray
-    @param points: The points to adjust
-    @type points: list[tuple[int, int]]
-    @param pointlabel: The point labels
-    @type pointlabel: list[int]
-    @param orig_shape: The original shape of the image
-    @type orig_shape: tuple[int, int](height, width)
-    @return: The modified masks
-    @rtype: np.ndarray
+    Args:
+        bboxes: The bounding boxes of the detected objects
+        masks: The masks of the detected objects
+        points: The points to adjust
+        pointlabel: The point labels
+        orig_shape: The original shape of the image
+
+    Returns:
+        The modified masks
     """
     if masks is not None:
         masks = format_results(bboxes, masks, 0)
@@ -147,18 +145,19 @@ def point_prompt(
 def adjust_bboxes_to_image_border(
     boxes: np.ndarray, image_shape: tuple[int, int], threshold: int = 20
 ) -> np.ndarray:
-    """
-    Source: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/utils.py#L6 (Ultralytics)
-    Adjust bounding boxes to stick to image border if they are within a certain threshold.
+    """Source:
+    https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/utils.py#L6
+    (Ultralytics)
+    Adjust bounding boxes to stick to image border if they are within a certain
+    threshold.
 
-    @param boxes: Bounding boxes
-    @type boxes: np.ndarray
-    @param image_shape: Image shape
-    @type image_shape: tuple[int, int]
-    @param threshold: Pixel threshold
-    @type threshold: int
-    @return: Adjusted bounding boxes
-    @rtype: np.ndarray
+    Args:
+        boxes: Bounding boxes
+        image_shape: Image shape
+        threshold: Pixel threshold
+
+    Returns:
+        Adjusted bounding boxes
     """
     # Image dimensions
     h, w = image_shape
@@ -178,22 +177,21 @@ def bbox_iou(
     image_shape: tuple[int, int] = (640, 640),
     raw_output: bool = False,
 ) -> np.ndarray:
-    """
-    Source: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/utils.py#L30 (Ultralytics - rewritten to numpy)
-    Compute the Intersection-Over-Union of a bounding box with respect to an array of other bounding boxes.
+    """Source:
+    https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/utils.py#L30
+    (Ultralytics - rewritten to numpy)
+    Compute the Intersection-Over-Union of a bounding box with respect to an array of
+    other bounding boxes.
 
-    @param box1: Array of shape (4, ) representing a single bounding box.
-    @type box1: np.ndarray
-    @param boxes: Array of shape (n, 4) representing multiple bounding boxes.
-    @type boxes: np.ndarray
-    @param iou_thres: IoU threshold
-    @type iou_thres: float
-    @param image_shape: Image shape (height, width)
-    @type image_shape: tuple[int, int]
-    @param raw_output: If True, return the raw IoU values instead of the indices
-    @type raw_output: bool
-    @return: Indices of boxes with IoU > thres, or the raw IoU values if raw_output is True
-    @rtype: np.ndarray
+    Args:
+        box1: Array of shape (4, ) representing a single bounding box.
+        boxes: Array of shape (n, 4) representing multiple bounding boxes.
+        iou_thres: IoU threshold
+        image_shape: Image shape (height, width)
+        raw_output: If True, return the raw IoU values instead of the indices
+
+    Returns:
+        Indices of boxes with IoU > thres, or the raw IoU values if raw_output is True
     """
     boxes = adjust_bboxes_to_image_border(boxes, image_shape)
 
@@ -233,22 +231,17 @@ def decode_fastsam_output(
 ) -> np.ndarray:
     """Decode the output of the FastSAM model.
 
-    @param outputs: List of FastSAM outputs
-    @type outputs: list[np.ndarray]
-    @param strides: List of strides
-    @type strides: list[int]
-    @param anchors: List of anchors
-    @type anchors: list[np.ndarray | None]
-    @param img_shape: Image shape
-    @type img_shape: tuple[int, int]
-    @param conf_thres: Confidence threshold
-    @type conf_thres: float
-    @param iou_thres: IoU threshold
-    @type iou_thres: float
-    @param num_classes: Number of classes
-    @type num_classes: int
-    @return: NMS output
-    @rtype: np.ndarray
+    Args:
+        outputs: List of FastSAM outputs
+        strides: List of strides
+        anchors: List of anchors
+        img_shape: Image shape
+        conf_thres: Confidence threshold
+        iou_thres: IoU threshold
+        num_classes: Number of classes
+
+    Returns:
+        NMS output
     """
     output_nms = decode_yolo_output(
         yolo_outputs=outputs,
@@ -289,12 +282,10 @@ def build_mask_coeffs(
 ) -> np.ndarray:
     """Gather mask coefficients for all detections, grouped by head.
 
-    @param parsed_results: FastSAM decoded outputs
-    @type parsed_results: np.ndarray
-    @param masks_outputs_values: Model mask outputs
-    @type masks_outputs_values: list[np.ndarray]
-    @param protos_len: Number of protos
-    @type protos_len: int
+    Args:
+        parsed_results: FastSAM decoded outputs
+        masks_outputs_values: Model mask outputs
+        protos_len: Number of protos
     """
     num_results = parsed_results.shape[0]
     seg_coeffs = parsed_results[:, 6:].astype(int)
@@ -327,16 +318,12 @@ def process_masks(
 ) -> np.ndarray:
     """Process output into full-size masks for all detections.
 
-    @param parsed_results: FastSAM decoded outputs
-    @type parsed_results: np.ndarray
-    @param mask_coeffs: Mask coefficients
-    @type mask_coeffs: np.ndarray
-    @param protos: Protos from model output
-    @type protos: np.ndarray
-    @param orig_shape: Input shape of the model
-    @type orig_shape: np.ndarray
-    @param mask_conf: Mask confidence
-    @type mask_conf: float
+    Args:
+        parsed_results: FastSAM decoded outputs
+        mask_coeffs: Mask coefficients
+        protos: Protos from model output
+        orig_shape: Input shape of the model
+        mask_conf: Mask confidence
     """
     num_results = parsed_results.shape[0]
     out_w, out_h = orig_shape[0], orig_shape[1]
@@ -379,10 +366,11 @@ def process_masks(
 def merge_masks(masks: np.ndarray) -> np.ndarray:
     """Merge masks to a 2D array where each object is represented by a unique label.
 
-    @param masks: 3D array of masks
-    @type masks: np.ndarray
-    @return: 2D array of masks
-    @rtype: np.ndarray
+    Args:
+        masks: 3D array of masks
+
+    Returns:
+        2D array of masks
     """
     if masks.ndim == 3:
         n, height, width = masks.shape

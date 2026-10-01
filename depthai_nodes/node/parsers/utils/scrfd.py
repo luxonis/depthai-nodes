@@ -10,14 +10,13 @@ def compute_anchor_centers(
     """Compute the anchor centers for a given list of strides, input size, and number of
     anchors.
 
-    @param strides: List of strides.
-    @type strides: list[int]
-    @param input_size: Input size.
-    @type input_size: tuple[int, int]
-    @param num_anchors: Number of anchors.
-    @type num_anchors: int
-    @return: Dictionary of anchor centers.
-    @rtype: dict[int, np.ndarray]
+    Args:
+        strides: List of strides.
+        input_size: Input size.
+        num_anchors: Number of anchors.
+
+    Returns:
+        Dictionary of anchor centers.
     """
     anchor_centers_dict = {}
     for stride in strides:
@@ -38,15 +37,14 @@ def compute_anchor_centers(
 def distance2bbox(points, distance, max_shape=None):
     """Decode distance prediction to bounding box.
 
-    @param points: Shape (n, 2), [x, y].
-    @type points: np.ndarray
-    @param distance: Distance from the given point to 4 boundaries (left, top, right,
-        bottom).
-    @type distance: np.ndarray
-    @param max_shape: Shape of the image.
-    @type max_shape: tuple[int, int]
-    @return: Decoded bboxes.
-    @rtype: np.ndarray
+    Args:
+        points (``np.ndarray``): Shape (n, 2), [x, y].
+        distance (``np.ndarray``): Distance from the given point to 4 boundaries (left,
+            top, right, bottom).
+        max_shape (``tuple[int, int]``): Shape of the image.
+
+    Returns:
+        ``np.ndarray``: Decoded bboxes.
     """
     x1 = points[:, 0] - distance[:, 0]
     y1 = points[:, 1] - distance[:, 1]
@@ -63,15 +61,14 @@ def distance2bbox(points, distance, max_shape=None):
 def distance2kps(points, distance, max_shape=None):
     """Decode distance prediction to keypoints.
 
-    @param points: Shape (n, 2), [x, y].
-    @type points: np.ndarray
-    @param distance: Distance from the given point to 4 boundaries (left, top, right,
-        bottom).
-    @type distance: np.ndarray
-    @param max_shape: Shape of the image.
-    @type max_shape: tuple[int, int]
-    @return: Decoded keypoints.
-    @rtype: np.ndarray
+    Args:
+        points (``np.ndarray``): Shape (n, 2), [x, y].
+        distance (``np.ndarray``): Distance from the given point to 4 boundaries (left,
+            top, right, bottom).
+        max_shape (``tuple[int, int]``): Shape of the image.
+
+    Returns:
+        ``np.ndarray``: Decoded keypoints.
     """
     preds = []
     for i in range(0, distance.shape[1], 2):
@@ -98,26 +95,23 @@ def decode_scrfd(
 ):
     """Decode the detection results of SCRFD.
 
-    @param bboxes_concatenated: List of bounding box predictions for each scale.
-    @type bboxes_concatenated: list[np.ndarray]
-    @param scores_concatenated: List of confidence score predictions for each scale.
-    @type scores_concatenated: list[np.ndarray]
-    @param kps_concatenated: List of keypoint predictions for each scale.
-    @type kps_concatenated: list[np.ndarray]
-    @param feat_stride_fpn: List of feature strides for each scale.
-    @type feat_stride_fpn: list[int]
-    @param input_size: Input size of the model.
-    @type input_size: tuple[int]
-    @param num_anchors: Number of anchors.
-    @type num_anchors: int
-    @param score_threshold: Confidence score threshold.
-    @type score_threshold: float
-    @param nms_threshold: Non-maximum suppression threshold.
-    @type nms_threshold: float
-    @param anchors: Dictionary of anchors.
-    @type anchors: dict[int, np.ndarray]
-    @return: Bounding boxes, confidence scores, and keypoints of detected objects.
-    @rtype: tuple[np.ndarray, np.ndarray, np.ndarray]
+    Args:
+        bboxes_concatenated (``list[np.ndarray]``): List of bounding box predictions for
+            each scale.
+        scores_concatenated (``list[np.ndarray]``): List of confidence score predictions
+            for each scale.
+        kps_concatenated (``list[np.ndarray]``): List of keypoint predictions for each
+            scale.
+        feat_stride_fpn (``list[int]``): List of feature strides for each scale.
+        input_size (``tuple[int]``): Input size of the model.
+        num_anchors (``int``): Number of anchors.
+        score_threshold (``float``): Confidence score threshold.
+        nms_threshold (``float``): Non-maximum suppression threshold.
+        anchors (``dict[int, np.ndarray]``): Dictionary of anchors.
+
+    Returns:
+        ``tuple[np.ndarray, np.ndarray, np.ndarray]``: Bounding boxes, confidence
+            scores, and keypoints of detected objects.
     """
     scores_list = []
     bboxes_list = []

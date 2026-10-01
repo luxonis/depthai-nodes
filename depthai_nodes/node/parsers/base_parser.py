@@ -15,15 +15,16 @@ class BaseParser(dai.node.ThreadedHostNode, metaclass=BaseMeta):
     for specific parser implementations used to postprocess the outputs of neural
     network models. Each parser is attached to a model "head" that governs the parsing
     process as it contains all the necessary information for the parser to function
-    correctly. Subclasses should implement `build` method to correctly set all
-    parameters of the parser and the `run` method to define the parsing logic.
+    correctly. Subclasses should implement ``build`` method to correctly set all
+    parameters of the parser and the ``run`` method to define the parsing logic.
 
-    Attributes
-    ----------
-    input : Node.Input
-        Node's input. It is a linking point to which the Neural Network's output is linked. It accepts the output of the Neural Network node.
-    out : Node.Output
-        Parser sends the processed network results to this output in a form of DepthAI message. It is a linking point from which the processed network results are retrieved.
+    Attributes:
+        input (``Node.Input``): Node's input. It is a linking point to which the Neural
+            Network's output is linked. It accepts the output of the Neural Network
+            node.
+        out (``Node.Output``): Parser sends the processed network results to this output
+            in a form of DepthAI message. It is a linking point from which the processed
+            network results are retrieved.
     """
 
     def __init__(self) -> None:
@@ -57,25 +58,20 @@ class BaseParser(dai.node.ThreadedHostNode, metaclass=BaseMeta):
     def build(self, head_config: dict[str, Any]) -> "BaseParser":
         """Configures the parser based on the specified head configuration.
 
-        @param head_config: A dictionary containing configuration details relevant to
-            the parser, including parameters and settings required for output parsing.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: BaseParser
+        Args:
+            head_config: A dictionary containing configuration details relevant to the
+                parser, including parameters and settings required for output parsing.
+
+        Returns:
+            The parser object with the head configuration set.
         """
         pass
 
     @abstractmethod
     def run(self):
-        """Parses the output from the neural network head.
+        """Read neural network outputs and send parsed messages through ``out``.
 
-        This method should be overridden by subclasses to implement the specific parsing
-        logic. It accepts arbitrary keyword arguments for flexibility.
-
-        @param kwargs: Arbitrary keyword arguments for the parsing process.
-        @type kwargs: Any
-        @return message: The parsed output message, as defined by the logic in the
-            subclass.
-        @rtype message: Any
+        Subclasses implement their processing loop here. The pipeline invokes this
+        method when the threaded host node starts.
         """
         pass

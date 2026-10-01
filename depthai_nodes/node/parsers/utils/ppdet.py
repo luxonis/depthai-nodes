@@ -9,11 +9,12 @@ from depthai_nodes.node.parsers.utils import (
 def _get_mini_boxes(contour: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Internal function to get the minimum bounding box of a contour.
 
-    @param contour: The contour to get the minimum bounding box of the text.
-    @type contour: np.ndarray
-    @return: The minimum rotated bounding box defined as [x_center, y_center, width,
-        height, angle] and the corners of the box.
-    @rtype: tuple[np.ndarray, np.ndarray]
+    Args:
+        contour: The contour to get the minimum bounding box of the text.
+
+    Returns:
+        The minimum rotated bounding box defined as [x_center, y_center, width, height,
+        angle] and the corners of the box.
     """
     bounding_box = cv2.minAreaRect(contour)
     points = sorted(list(cv2.boxPoints(bounding_box)), key=lambda x: x[0])
@@ -43,12 +44,12 @@ def _dilate_box(corners: np.ndarray, pixels: int) -> np.ndarray:
     """Internal function to dilate the bounding box area by a specified number of
     pixels.
 
-    @param corners: The corners of the bounding box.
-    @type corners: np.ndarray
-    @param pixels: The number of pixels to dilate the bounding box area by.
-    @type pixels: int
-    @return: The dilated bounding box corners.
-    @rtype: np.ndarray
+    Args:
+        corners: The corners of the bounding box.
+        pixels: The number of pixels to dilate the bounding box area by.
+
+    Returns:
+        The dilated bounding box corners.
     """
     corners[0] = corners[0] - pixels
     corners[1][0] = corners[1][0] + pixels
@@ -64,12 +65,12 @@ def _box_score(predictions: np.ndarray, _corners: np.ndarray) -> float:
     """Internal function to calculate the score of a bounding box based on the mean
     pixel values within the box area.
 
-    @params predictions: The predictions from the model.
-    @type predictions: np.ndarray
-    @params _corners: The corners of the bounding box.
-    @type _corners: np.ndarray
-    @return: The score of the bounding box.
-    @rtype: float
+    Args:
+        predictions: The predictions from the model.
+        _corners: The corners of the bounding box.
+
+    Returns:
+        The score of the bounding box.
     """
     h, w = predictions.shape[:2]
     corners = _dilate_box(_corners, -2)
@@ -85,12 +86,12 @@ def _unclip(
 ) -> np.ndarray:
     """Internal function to dilate the bounding box area by a specified ratio.
 
-    @param box: The rotated bounding box.
-    @type box: np.ndarray
-    @param unclip_ratio: The ratio to dilate the bounding box area by.
-    @type unclip_ratio: float = 3
-    @return: The dilated bounding box corners.
-    @rtype: np.ndarray
+    Args:
+        box: The rotated bounding box.
+        unclip_ratio: The ratio to dilate the bounding box area by.
+
+    Returns:
+        The dilated bounding box corners.
     """
 
     box[2] = box[2] * np.sqrt(unclip_ratio)
@@ -111,20 +112,16 @@ def parse_paddle_detection_outputs(
     probabilities into rotated bounding boxes with additional corners saved as
     keypoints.
 
-    @param predictions: The output of a PaddlePaddle Text Detection model.
-    @type predictions: np.ndarray
-    @param mask_threshold: The threshold for the mask.
-    @type mask_threshold: float
-    @param bbox_threshold: The threshold for bounding boxes.
-    @type bbox_threshold: float
-    @param max_detections: The maximum number of candidate bounding boxes.
-    @type max_detections: int
-    @param width: The width of the image.
-    @type width: int | None
-    @param height: The height of the image.
-    @type height: int | None
-    @return: A touple containing the rotated bounding boxes, corners and scores.
-    @rtype: Touple[np.ndarray, np.ndarray, np.ndarray]
+    Args:
+        predictions: The output of a PaddlePaddle Text Detection model.
+        mask_threshold: The threshold for the mask.
+        bbox_threshold: The threshold for bounding boxes.
+        max_detections: The maximum number of candidate bounding boxes.
+        width: The width of the image.
+        height: The height of the image.
+
+    Returns:
+        A touple containing the rotated bounding boxes, corners and scores.
     """
 
     if len(predictions.shape) == 4:

@@ -7,20 +7,19 @@ def create_line_detection_message(
 ) -> dai.beta.Lines:
     """Create a DepthAI message for a line detection.
 
-    @param lines: Detected lines of shape (N,4) meaning [...,[x_start, y_start, x_end, y_end],...].
-    @type lines: np.ndarray
-    @param scores: Confidence scores of detected lines of shape (N,).
-    @type scores: np.ndarray
+    Args:
+        lines: Detected lines of shape (N,4) meaning [...,[x_start, y_start, x_end,
+            y_end],...].
+        scores: Confidence scores of detected lines of shape (N,).
 
-    @return: Message containing the lines and confidence scores of detected lines.
-    @rtype: dai.beta.Lines
+    Returns:
+        Message containing the lines and confidence scores of detected lines.
 
-    @raise ValueError: If the lines are not a numpy array.
-    @raise ValueError: If the lines are not of shape (N,4).
-    @raise ValueError: If the lines 2nd dimension is not of size E{4}.
-    @raise ValueError: If the scores are not a numpy array.
-    @raise ValueError: If the scores are not of shape (N,).
-    @raise ValueError: If the scores do not have the same length as lines.
+    Raises:
+        ValueError: If the lines are not a numpy array. If the lines are not of shape
+            (N,4). If the lines 2nd dimension is not of size 4. If the scores are not a
+            numpy array. If the scores are not of shape (N,). If the scores do not have
+            the same length as lines.
     """
 
     # checks for lines

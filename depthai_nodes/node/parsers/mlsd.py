@@ -13,24 +13,18 @@ class MLSDParser(BaseParser):
     is specifically designed to parse the output of the M-LSD model. As the result, the
     node sends out the detected lines in the form of a message.
 
-    Attributes
-    ----------
-    output_layer_tpmap : str
-        Name of the output layer containing the tpMap tensor.
-    output_layer_heat : str
-        Name of the output layer containing the heat tensor.
-    topk_n : int
-        Number of top candidates to keep.
-    score_thr : float
-        Confidence score threshold for detected lines.
-    dist_thr : float
-        Distance threshold for merging lines.
+    Attributes:
+        output_layer_tpmap (``str``): Name of the output layer containing the tpMap
+            tensor.
+        output_layer_heat (``str``): Name of the output layer containing the heat
+            tensor.
+        topk_n (``int``): Number of top candidates to keep.
+        score_thr (``float``): Confidence score threshold for detected lines.
+        dist_thr (``float``): Minimum line length in output-map pixels.
 
-    Output Message/s
-    ----------------
-    **Type**: dai.beta.Lines
-
-    **Description**: Native message containing detected lines and confidence scores.
+    Note:
+        Emits ``dai.beta.Lines`` messages. Native message containing detected lines and
+        confidence scores.
     """
 
     def __init__(
@@ -43,12 +37,12 @@ class MLSDParser(BaseParser):
     ) -> None:
         """Initializes the parser node.
 
-        @param topk_n: Number of top candidates to keep.
-        @type topk_n: int
-        @param score_thr: Confidence score threshold for detected lines.
-        @type score_thr: float
-        @param dist_thr: Distance threshold for merging lines.
-        @type dist_thr: float
+        Args:
+            topk_n: Number of top candidates to keep.
+            score_thr: Confidence score threshold for detected lines.
+            dist_thr: Minimum line length in output-map pixels.
+            output_layer_tpmap: Name of the output tensor containing line displacements.
+            output_layer_heat: Name of the output tensor containing the heatmap.
         """
         super().__init__()
         self.output_layer_tpmap = output_layer_tpmap
@@ -64,8 +58,8 @@ class MLSDParser(BaseParser):
     def setOutputLayerTPMap(self, output_layer_tpmap: str) -> None:
         """Sets the name of the output layer containing the tpMap tensor.
 
-        @param output_layer_tpmap: Name of the output layer containing the tpMap tensor.
-        @type output_layer_tpmap: str
+        Args:
+            output_layer_tpmap: Name of the output layer containing the tpMap tensor.
         """
         if not isinstance(output_layer_tpmap, str):
             raise ValueError("Output layer name must be a string.")
@@ -75,8 +69,8 @@ class MLSDParser(BaseParser):
     def setOutputLayerHeat(self, output_layer_heat: str) -> None:
         """Sets the name of the output layer containing the heat tensor.
 
-        @param output_layer_heat: Name of the output layer containing the heat tensor.
-        @type output_layer_heat: str
+        Args:
+            output_layer_heat: Name of the output layer containing the heat tensor.
         """
         if not isinstance(output_layer_heat, str):
             raise ValueError("Output layer name must be a string.")
@@ -86,8 +80,8 @@ class MLSDParser(BaseParser):
     def setTopK(self, topk_n: int) -> None:
         """Sets the number of top candidates to keep.
 
-        @param topk_n: Number of top candidates to keep.
-        @type topk_n: int
+        Args:
+            topk_n: Number of top candidates to keep.
         """
         if not isinstance(topk_n, int):
             raise ValueError("topk_n must be an integer.")
@@ -97,8 +91,8 @@ class MLSDParser(BaseParser):
     def setScoreThreshold(self, score_thr: float) -> None:
         """Sets the confidence score threshold for detected lines.
 
-        @param score_thr: Confidence score threshold for detected lines.
-        @type score_thr: float
+        Args:
+            score_thr: Confidence score threshold for detected lines.
         """
         if not isinstance(score_thr, float):
             raise ValueError("score_thr must be a float.")
@@ -108,8 +102,8 @@ class MLSDParser(BaseParser):
     def setDistanceThreshold(self, dist_thr: float) -> None:
         """Sets the distance threshold for merging lines.
 
-        @param dist_thr: Distance threshold for merging lines.
-        @type dist_thr: float
+        Args:
+            dist_thr: Minimum line length in output-map pixels.
         """
         if not isinstance(dist_thr, float):
             raise ValueError("dist_thr must be a float.")
@@ -122,10 +116,11 @@ class MLSDParser(BaseParser):
     ) -> "MLSDParser":
         """Configures the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: MLSDParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
 
         output_layers = head_config.get("outputs", [])

@@ -11,18 +11,13 @@ class MapOutputParser(BaseParser):
     """A parser class for models that produce map outputs, such as depth maps (e.g.
     DepthAnything), density maps (e.g. DM-Count), heat maps, and similar.
 
-    Attributes
-    ----------
-    output_layer_name: str
-        Name of the output layer relevant to the parser.
-    min_max_scaling : bool
-        If True, the map is scaled to the range [0, 1].
+    Attributes:
+        output_layer_name (``str``): Name of the output layer relevant to the parser.
+        min_max_scaling (``bool``): If True, the map is scaled to the range [0, 1].
 
-    Output Message/s
-    ----------------
-    **Type**: dai.beta.Map2D
-
-    **Description**: Map2D message containing the parsed map as a native dai.beta.Map2D object.
+    Note:
+        Emits ``dai.beta.Map2D`` messages. Map2D message containing the parsed map as a
+        native dai.beta.Map2D object.
     """
 
     def __init__(
@@ -32,10 +27,9 @@ class MapOutputParser(BaseParser):
     ) -> None:
         """Initializes the parser node.
 
-        @param output_layer_name: Name of the output layer relevant to the parser.
-        @type output_layer_name: str
-        @param min_max_scaling: If True, the map is scaled to the range [0, 1].
-        @type min_max_scaling: bool
+        Args:
+            output_layer_name: Name of the output layer relevant to the parser.
+            min_max_scaling: If True, the map is scaled to the range [0, 1].
         """
         super().__init__()
         self.min_max_scaling = min_max_scaling
@@ -47,8 +41,8 @@ class MapOutputParser(BaseParser):
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
 
-        @param output_layer_name: The name of the output layer.
-        @type output_layer_name: str
+        Args:
+            output_layer_name: The name of the output layer.
         """
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
@@ -58,8 +52,8 @@ class MapOutputParser(BaseParser):
     def setMinMaxScaling(self, min_max_scaling: bool) -> None:
         """Sets the min_max_scaling flag.
 
-        @param min_max_scaling: If True, the map is scaled to the range [0, 1].
-        @type min_max_scaling: bool
+        Args:
+            min_max_scaling: If True, the map is scaled to the range [0, 1].
         """
         if not isinstance(min_max_scaling, bool):
             raise ValueError("min_max_scaling must be a boolean.")
@@ -72,10 +66,11 @@ class MapOutputParser(BaseParser):
     ) -> "MapOutputParser":
         """Configures the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: MapOutputParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
 
         output_layers = head_config.get("outputs", [])

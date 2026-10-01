@@ -23,10 +23,11 @@ class ViewportClipper:
 
         Uses Sutherland-Hodgman polygon clipping algorithm.
 
-        @param points: List of points defining the polygon vertices
-        @type points: list[tuple[float, float]]
-        @return: List of points defining the clipped polygon vertices
-        @rtype: list[tuple[float, float]]
+        Args:
+            points: List of points defining the polygon vertices
+
+        Returns:
+            List of points defining the clipped polygon vertices
         """
         if not points:
             return []
@@ -105,13 +106,14 @@ class ViewportClipper:
 
         Uses Cohen-Sutherland line clipping algorithm.
 
-        @param pt1: Start point of the line
-        @type pt1: tuple[float, float]
-        @param pt2: End point of the line
-        @type pt2: tuple[float, float]
-        @return: Clipped line segment as (start_point, end_point) or None if line is
-            completely outside of the viewport
-        @rtype: tuple[tuple[float, float], tuple[float, float]] | None
+        Args:
+            pt1: Start point of the line
+            pt2: End point of the line
+
+        Returns:
+            ``tuple[tuple[float, float], tuple[float, float]] | None``: Clipped line
+                segment as (start_point, end_point) or None if line is
+                completely outside of the viewport
         """
         location1 = self._get_location(pt1)
         location2 = self._get_location(pt2)

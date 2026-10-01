@@ -1,5 +1,8 @@
 # Message Types
 
+For method signatures, parameters, and return values, build the Google-style
+[API reference](../../CONTRIBUTING.md#documentation) with `pydoctor depthai_nodes`.
+
 Parser creators return native DepthAI messages. The parser-specific message types
 are available under `dai.beta`:
 

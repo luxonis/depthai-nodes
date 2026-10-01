@@ -1,8 +1,10 @@
 """mediapipe.py.
 
-Description: This script contains utility functions for decoding the output of the MediaPipe hand tracking model.
+Description: This script contains utility functions for decoding the output of the
+MediaPipe hand tracking model.
 
-This script contains code that is based on or directly taken from a public GitHub repository:
+This script contains code that is based on or directly taken from a public GitHub
+repository:
 https://github.com/geaxgx/depthai_hand_tracker
 
 Original code author(s): geaxgx
@@ -20,19 +22,23 @@ import numpy as np
 
 
 class HandRegion:
-    """
+    """Store a detected palm and its derived rotated region.
+
     Attributes:
-    pd_score : detection score
-    pd_box : detection box [x, y, w, h], normalized [0,1] in the squared image
-    pd_kps : detection keypoints coordinates [x, y], normalized [0,1] in the squared image
-    rect_x_center, rect_y_center : center coordinates of the rotated bounding rectangle, normalized [0,1] in the squared image
-    rect_w, rect_h : width and height of the rotated bounding rectangle, normalized in the squared image (may be > 1)
-    rotation : rotation angle of rotated bounding rectangle with y-axis in radian
-    rect_x_center_a, rect_y_center_a : center coordinates of the rotated bounding rectangle, in pixels in the squared image
-    rect_w, rect_h : width and height of the rotated bounding rectangle, in pixels in the squared image
-    rect_points : list of the 4 points coordinates of the rotated bounding rectangle, in pixels
-            expressed in the squared image during processing,
-            expressed in the source rectangular image when returned to the user
+        pd_score: Palm detection confidence.
+        pd_box: Normalized ``[x, y, width, height]`` box in the square image.
+        pd_kps: Normalized ``[x, y]`` palm keypoints in the square image.
+        rect_x_center: Normalized rotated-rectangle center X coordinate.
+        rect_y_center: Normalized rotated-rectangle center Y coordinate.
+        rect_w: Normalized rectangle width, which may exceed 1.
+        rect_h: Normalized rectangle height, which may exceed 1.
+        rotation: Rectangle rotation relative to the Y axis, in radians.
+        rect_x_center_a: Rectangle center X coordinate in square-image pixels.
+        rect_y_center_a: Rectangle center Y coordinate in square-image pixels.
+        rect_w_a: Rectangle width in square-image pixels.
+        rect_h_a: Rectangle height in square-image pixels.
+        rect_points: Four rectangle corners in pixels. Coordinates refer to the square
+            image during processing and the source image on return.
     """
 
     def __init__(self, pd_score=None, pd_box=None, pd_kps=None):
@@ -68,9 +74,15 @@ def calculate_scale(min_scale, max_scale, stride_index, num_strides):
 
 
 def generate_anchors(options):
-    """
-    option : SSDAnchorOptions
-    # https://github.com/google/mediapipe/blob/master/mediapipe/calculators/tflite/ssd_anchors_calculator.cc
+    """Generate SSD anchors using MediaPipe's anchor layout.
+
+    Based on the MediaPipe ``ssd_anchors_calculator.cc`` implementation.
+
+    Args:
+        options (``SSDAnchorOptions``): Layer sizes, strides, scales, and aspect ratios.
+
+    Returns:
+        Array of anchors in ``[x_center, y_center, width, height]`` format.
     """
     anchors = []
     layer_id = 0

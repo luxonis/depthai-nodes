@@ -11,12 +11,29 @@ def remap_message(
     from_transformation: dai.ImgTransformation | None,
     to_transformation: dai.ImgTransformation,
 ) -> GMessage:
-    """Remap a transformable DepthAI message to a target image transformation.
+    """Remap a supported DepthAI message into a target image transformation.
 
-    ``from_transformation`` remains part of the API for callers which resolve the
-    source transformation explicitly. Native messages carry that transformation
-    themselves. Native ``transformTo`` handles coordinates; pixel arrays are
-    warped explicitly because native map and mask transformations do not do so.
+    Native ``transformTo`` maps coordinate fields. Map and mask pixel arrays are warped
+    separately with nearest-neighbor interpolation and detached from the source buffer
+    before writing. Pixels outside the source image are filled with 255 for ``uint8``
+    arrays and -1 for other dtypes.
+
+    Args:
+        message: An ``ImgDetections``, ``SegmentationMask``, or beta ``Keypoints``,
+            ``Clusters``, ``Map2D``, ``Lines``, ``Predictions``, or ``Classifications``
+            message.
+        from_transformation: Fallback source transformation. If the message has no
+            transformation, this value is attached to it before remapping. An existing
+            message transformation takes precedence.
+        to_transformation: Target coordinate space and output pixel dimensions.
+
+    Returns:
+        Remapped message carrying the target transformation. If neither the message nor
+        ``from_transformation`` provides a source transformation, returns the original
+        message unchanged.
+
+    Raises:
+        TypeError: If the message type is unsupported.
     """
 
     if not isinstance(
@@ -68,6 +85,17 @@ def _remap_pixels(
     source: dai.ImgTransformation,
     target: dai.ImgTransformation,
 ) -> np.ndarray:
+    """Warp a pixel array between image transformations.
+
+    Args:
+        pixels: Source map or mask, whose resolution may differ from ``source``.
+        source: Transformation describing the source coordinate space.
+        target: Transformation defining the output space and image size.
+
+    Returns:
+        Warped array using nearest-neighbor interpolation, with 255 as the border value
+        for ``uint8`` arrays and -1 for other dtypes.
+    """
     height, width = pixels.shape[:2]
     source_width, source_height = source.getSize()
     # Pixel arrays may have a different resolution than their transformation.

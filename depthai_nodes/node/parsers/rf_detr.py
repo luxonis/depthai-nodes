@@ -13,32 +13,26 @@ from depthai_nodes.node.parsers.utils.rf_detr import (
 class RFDETRParser(BaseParser):
     """Parser class for parsing the output of the RF-DETR object detection model.
 
-    RF-DETR from Roboflow is a detection transformer model that
-    outputs bounding boxes and class probabilities. The model can optionally output
-    instance segmentation masks.
+    RF-DETR from Roboflow is a detection transformer model that outputs bounding boxes
+    and class probabilities. The model can optionally output instance segmentation
+    masks.
 
-    Attributes
-    ----------
-    conf_threshold : float
-        Confidence score threshold for detected objects.
-    max_det : int
-        Maximum number of detections to keep.
-    label_names : list[str] | None
-        List of label names for detected objects.
-    mask_conf : float
-        Confidence threshold for binarizing instance segmentation masks.
-    output_layer_names : list[str]
-        Names of the output layers (boxes, logits, and optionally masks).
+    Attributes:
+        conf_threshold (``float``): Confidence score threshold for detected objects.
+        max_det (``int``): Maximum number of detections to keep.
+        label_names (``list[str] | None``): List of label names for detected objects.
+        mask_conf (``float``): Confidence threshold for binarizing instance segmentation
+            masks.
+        output_layer_names (``list[str]``): Names of the output layers (boxes, logits,
+            and optionally masks).
 
-    Output Message/s
-    ----------------
-    **Type**: ImgDetectionsExtended
+    Note:
+        Emits ``dai.ImgDetections`` messages. dai.ImgDetections message containing
+        bounding boxes, labels, confidence scores, and optionally instance segmentation
+        masks.
 
-    **Description**: ImgDetectionsExtended message containing bounding boxes, labels,
-    confidence scores, and optionally instance segmentation masks.
+    References:
 
-    References
-    ----------
     RF-DETR: https://github.com/roboflow/rf-detr
     """
 
@@ -54,14 +48,11 @@ class RFDETRParser(BaseParser):
     ) -> None:
         """Initializes the parser node.
 
-        @param conf_threshold: Confidence score threshold for detected objects.
-        @type conf_threshold: float
-        @param max_det: Maximum number of detections to keep.
-        @type max_det: int
-        @param label_names: List of label names for detected objects.
-        @type label_names: list[str] | None
-        @param mask_conf: Mask confidence threshold for instance segmentation masks.
-        @type mask_conf: float
+        Args:
+            conf_threshold: Confidence score threshold for detected objects.
+            max_det: Maximum number of detections to keep.
+            label_names: List of label names for detected objects.
+            mask_conf: Mask confidence threshold for instance segmentation masks.
         """
         super().__init__()
         self.conf_threshold = conf_threshold
@@ -85,8 +76,8 @@ class RFDETRParser(BaseParser):
     def setConfidenceThreshold(self, threshold: float) -> None:
         """Sets the confidence score threshold for detected objects.
 
-        @param threshold: Confidence score threshold for detected objects.
-        @type threshold: float
+        Args:
+            threshold: Confidence score threshold for detected objects.
         """
         if not isinstance(threshold, float):
             raise ValueError("Confidence threshold must be a float.")
@@ -98,8 +89,8 @@ class RFDETRParser(BaseParser):
     def setMaxDetections(self, max_det: int) -> None:
         """Sets the maximum number of detections to keep.
 
-        @param max_det: Maximum number of detections to keep.
-        @type max_det: int
+        Args:
+            max_det: Maximum number of detections to keep.
         """
         if not isinstance(max_det, int):
             raise ValueError("Max detections must be an integer.")
@@ -111,8 +102,8 @@ class RFDETRParser(BaseParser):
     def setLabelNames(self, label_names: list[str]) -> None:
         """Sets the label names for detected objects.
 
-        @param label_names: List of label names for detected objects.
-        @type label_names: list[str]
+        Args:
+            label_names: List of label names for detected objects.
         """
         if not isinstance(label_names, list):
             raise ValueError("Label names must be a list.")
@@ -124,8 +115,8 @@ class RFDETRParser(BaseParser):
     def setMaskConfidence(self, mask_conf: float) -> None:
         """Sets the mask confidence threshold.
 
-        @param mask_conf: The mask confidence threshold.
-        @type mask_conf: float
+        Args:
+            mask_conf: The mask confidence threshold.
         """
         if not isinstance(mask_conf, float):
             raise ValueError("Mask confidence threshold must be a float.")
@@ -139,8 +130,8 @@ class RFDETRParser(BaseParser):
     def setOutputLayerNames(self, output_layer_names: list[str]) -> None:
         """Sets the output layer names for the parser.
 
-        @param output_layer_names: List of output layer names.
-        @type output_layer_names: list[str]
+        Args:
+            output_layer_names: List of output layer names.
         """
         if not isinstance(output_layer_names, list):
             raise ValueError("Output layer names must be a list.")
@@ -152,10 +143,11 @@ class RFDETRParser(BaseParser):
     def build(self, head_config: dict[str, Any]) -> "RFDETRParser":
         """Configures the parser based on the head configuration.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: RFDETRParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
         self.conf_threshold = head_config.get("conf_threshold", self.conf_threshold)
         self.max_det = head_config.get("max_det", self.max_det)

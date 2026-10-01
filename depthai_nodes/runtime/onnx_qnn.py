@@ -29,23 +29,23 @@ def onnx_qnn_session(
 ):
     """Create an ONNX Runtime session running on the OAK4 DSP (HTP).
 
-    This helper is intended for the ``onnxruntime`` variant of ``oakapp-base``.
-    That image provides the FastRPC setup, QNN plugin, and required device nodes.
+    This helper is intended for the ``onnxruntime`` variant of ``oakapp-base``. That
+    image provides the FastRPC setup, QNN plugin, and required device nodes.
 
     Args:
         model_path: path to a .onnx model. Inputs must have static shapes.
         fp16: run fp32 graphs in fp16 on the HTP (no-op for QDQ int8 models).
-        cache_context: cache the compiled QNN graph (EPContext) next to the
-            model so subsequent session creations skip HTP graph compilation.
+        cache_context: cache the compiled QNN graph (EPContext) next to the model so
+            subsequent session creations skip HTP graph compilation.
         performance_mode: QNN HTP performance mode (for example, ``burst``).
-        fallback_to_cpu: if False, raise when the DSP is unavailable during
-            session creation or any node cannot be placed on it. If True,
-            return a CPU session when no QNN device is available.
-        runtime_fallback: behavior after a QNN execution error. ``"ort"``
-            keeps ONNX Runtime's automatic fallback behavior; ``"raise"``
-            disables it so the caller can handle the error explicitly.
-        device_wait_s: seconds to wait for a QNN device to appear during
-            startup. Set to 0 to check once.
+        fallback_to_cpu: if False, raise when the DSP is unavailable during session
+            creation or any node cannot be placed on it. If True, return a CPU session
+            when no QNN device is available.
+        runtime_fallback: behavior after a QNN execution error. ``"ort"`` keeps ONNX
+            Runtime's automatic fallback behavior; ``"raise"`` disables it so the caller
+            can handle the error explicitly.
+        device_wait_s: seconds to wait for a QNN device to appear during startup. Set to
+            0 to check once.
         ep_options: extra QNN EP provider options (dict), merged last.
         session_options: pre-configured ort.SessionOptions to extend.
         verbose: enable verbose ORT logging.

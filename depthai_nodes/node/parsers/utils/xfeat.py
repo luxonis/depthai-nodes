@@ -6,12 +6,12 @@ import numpy as np
 def local_maximum_filter(x: np.ndarray, kernel_size: int) -> np.ndarray:
     """Apply a local maximum filter to the input array.
 
-    @param x: Input array.
-    @type x: np.ndarray
-    @param kernel_size: Size of the local maximum filter.
-    @type kernel_size: int
-    @return: Output array after applying the local maximum filter.
-    @rtype: np.ndarray
+    Args:
+        x: Input array.
+        kernel_size: Size of the local maximum filter.
+
+    Returns:
+        Output array after applying the local maximum filter.
     """
     # Ensure input is a 4D array (e.g., batch, channels, height, width)
     if len(x.shape) != 4:
@@ -61,14 +61,13 @@ def local_maximum_filter(x: np.ndarray, kernel_size: int) -> np.ndarray:
 def normgrid(x, H, W):
     """Normalize coords to [-1,1].
 
-    @param x: Input coordinates, shape (N, Hg, Wg, 2)
-    @type x: np.ndarray
-    @param H: Height of the output feature map
-    @type H: int
-    @param W: Width of the output feature map
-    @type W: int
-    @return: Normalized coordinates, shape (N, Hg, Wg, 2)
-    @rtype: np.ndarray
+    Args:
+        x (``np.ndarray``): Input coordinates, shape (N, Hg, Wg, 2)
+        H (``int``): Height of the output feature map
+        W (``int``): Width of the output feature map
+
+    Returns:
+        ``np.ndarray``: Normalized coordinates, shape (N, Hg, Wg, 2)
     """
     return 2.0 * (x / np.array([W - 1, H - 1], dtype=x.dtype)) - 1.0
 
@@ -78,16 +77,14 @@ def bilinear(im, pos, H, W):
     pixel locations from grid. Supported only bilinear interpolation method to sample
     the input pixels.
 
-    @param im: Input feature map, shape (N, C, H, W)
-    @type im: np.ndarray
-    @param pos: Point coordinates, shape (N, Hg, Wg, 2)
-    @type pos: np.ndarray
-    @param H: Height of the output feature map
-    @type H: int
-    @param W: Width of the output feature map
-    @type W: int
-    @return: A tensor with sampled points, shape (N, C, Hg, Wg)
-    @rtype: np.ndarray
+    Args:
+        im (``np.ndarray``): Input feature map, shape (N, C, H, W)
+        pos (``np.ndarray``): Point coordinates, shape (N, Hg, Wg, 2)
+        H (``int``): Height of the output feature map
+        W (``int``): Width of the output feature map
+
+    Returns:
+        ``np.ndarray``: A tensor with sampled points, shape (N, C, Hg, Wg)
     """
     align_corners = False
     n, c, h, w = im.shape
@@ -159,12 +156,12 @@ def _get_kpts_heatmap(
 ) -> np.ndarray:
     """Get the keypoints heatmap.
 
-    @param kpts: Keypoints.
-    @type kpts: np.ndarray
-    @param softmax_temp: Softmax temperature.
-    @type softmax_temp: float
-    @return: Keypoints heatmap.
-    @rtype: np.ndarray
+    Args:
+        kpts: Keypoints.
+        softmax_temp: Softmax temperature.
+
+    Returns:
+        Keypoints heatmap.
     """
     kpts = np.exp(kpts * softmax_temp)
     scores = kpts / np.sum(kpts, axis=1, keepdims=True)
@@ -182,14 +179,13 @@ def _nms(
 ) -> np.ndarray:
     """Non-Maximum Suppression.
 
-    @param x: Input array.
-    @type x: np.ndarray
-    @param threshold: Non-maximum suppression threshold.
-    @type threshold: float
-    @param kernel_size: Size of the local maximum filter.
-    @type kernel_size: int
-    @return: Output array after applying non-maximum suppression.
-    @rtype: np.ndarray
+    Args:
+        x: Input array.
+        threshold: Non-maximum suppression threshold.
+        kernel_size: Size of the local maximum filter.
+
+    Returns:
+        Output array after applying non-maximum suppression.
     """
     # Non-Maximum Suppression
     B, _, H, W = x.shape
@@ -218,22 +214,17 @@ def detect_and_compute(
 ) -> list[dict[str, Any]]:
     """Detect and compute keypoints.
 
-    @param feats: Features.
-    @type feats: np.ndarray
-    @param kpts: Keypoints.
-    @type kpts: np.ndarray
-    @param heatmaps: Heatmaps.
-    @type heatmaps: np.ndarray
-    @param resize_rate_w: Resize rate for width.
-    @type resize_rate_w: float
-    @param resize_rate_h: Resize rate for height.
-    @type resize_rate_h: float
-    @param input_size: Input size.
-    @type input_size: tuple[int, int]
-    @param top_k: Maximum number of keypoints to keep.
-    @type top_k: int
-    @return: List of dictionaries containing keypoints, scores, and descriptors.
-    @rtype: list[dict[str, Any]]
+    Args:
+        feats: Features.
+        kpts: Keypoints.
+        heatmaps: Heatmaps.
+        resize_rate_w: Resize rate for width.
+        resize_rate_h: Resize rate for height.
+        input_size: Input size.
+        top_k: Maximum number of keypoints to keep.
+
+    Returns:
+        List of dictionaries containing keypoints, scores, and descriptors.
     """
     norm = np.linalg.norm(feats, axis=1, keepdims=True)
     feats = feats / norm
@@ -312,14 +303,13 @@ def _match_mkpts(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Match features.
 
-    @param feats1: Features 1.
-    @type feats1: np.ndarray
-    @param feats2: Features 2.
-    @type feats2: np.ndarray
-    @param min_cossim: Minimum cosine similarity.
-    @type min_cossim: float
-    @return: Matched features.
-    @rtype: tuple[np.ndarray, np.ndarray]
+    Args:
+        feats1: Features 1.
+        feats2: Features 2.
+        min_cossim: Minimum cosine similarity.
+
+    Returns:
+        Matched features.
     """
     cossim = feats1 @ feats2.T
     cossim_t = feats2 @ feats1.T
@@ -346,14 +336,13 @@ def match(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Match keypoints.
 
-    @param result1: Result 1.
-    @type result1: dict[str, Any]
-    @param result2: Result 2.
-    @type result2: dict[str, Any]
-    @param min_cossim: Minimum cosine similarity.
-    @type min_cossim: float
-    @return: Matched keypoints.
-    @rtype: tuple[np.ndarray, np.ndarray]
+    Args:
+        result1: Result 1.
+        result2: Result 2.
+        min_cossim: Minimum cosine similarity.
+
+    Returns:
+        Matched keypoints.
     """
     indexes1, indexes2 = _match_mkpts(
         result1["descriptors"],

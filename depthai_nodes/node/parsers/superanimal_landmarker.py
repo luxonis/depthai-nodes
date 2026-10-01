@@ -13,26 +13,19 @@ from depthai_nodes.node.parsers.utils.superanimal import (
 class SuperAnimalParser(KeypointParser):
     """Parser class for parsing the output of the SuperAnimal landmark model.
 
-    Attributes
-    ----------
-    output_layer_name: str
-        Name of the output layer relevant to the parser.
-    scale_factor : float
-        Scale factor to divide the keypoints by.
-    n_keypoints : int
-        Number of keypoints.
-    score_threshold : float
-        Confidence score threshold for detected keypoints.
-    label_names : list[str]
-        Label names for the keypoints.
-    edges : list[tuple[int, int]]
-        Keypoint connection pairs for visualizing the skeleton. Example: [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint 1, keypoint 1 is connected to keypoint 2, etc.
+    Attributes:
+        output_layer_name (``str``): Name of the output layer relevant to the parser.
+        scale_factor (``float``): Scale factor to divide the keypoints by.
+        n_keypoints (``int``): Number of keypoints.
+        score_threshold (``float``): Confidence score threshold for detected keypoints.
+        label_names (``list[str]``): Label names for the keypoints.
+        edges (``list[tuple[int, int]]``): Pairs of keypoint indexes defining skeleton
+            edges. For example, ``[(0, 1), (1, 2)]`` connects keypoint 0 to 1 and 1 to
+            2.
 
-    Output Message/s
-    ----------------
-    **Type**: dai.beta.Keypoints
-
-    **Description**: Output containing detected keypoints that exceed the confidence threshold.
+    Note:
+        Emits ``dai.beta.Keypoints`` messages. Output containing detected keypoints that
+        exceed the confidence threshold.
     """
 
     def __init__(
@@ -46,20 +39,14 @@ class SuperAnimalParser(KeypointParser):
     ) -> None:
         """Initializes the parser node.
 
-        @param output_layer_name: Name of the output layer relevant to the parser.
-        @type output_layer_name: str
-        @param n_keypoints: Number of keypoints.
-        @type n_keypoints: int
-        @param score_threshold: Confidence score threshold for detected keypoints.
-        @type score_threshold: float
-        @param scale_factor: Scale factor to divide the keypoints by.
-        @type scale_factor: float
-        @param label_names: Label names for the keypoints.
-        @type label_names: list[str] | None
-        @param edges: Keypoint connection pairs for visualizing the skeleton. Example:
-            [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
-            1, keypoint 1 is connected to keypoint 2, etc.
-        @type edges: list[tuple[int, int]] | None
+        Args:
+            output_layer_name: Name of the output layer relevant to the parser.
+            n_keypoints: Number of keypoints.
+            score_threshold: Confidence score threshold for detected keypoints.
+            scale_factor: Scale factor to divide the keypoints by.
+            label_names: Label names for the keypoints.
+            edges: Pairs of keypoint indexes defining skeleton edges. For example,
+                ``[(0, 1), (1, 2)]`` connects keypoint 0 to 1 and 1 to 2.
         """
         super().__init__(
             output_layer_name,
@@ -79,10 +66,11 @@ class SuperAnimalParser(KeypointParser):
     ) -> "SuperAnimalParser":
         """Configures the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: SuperAnimalParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
 
         super().build(head_config)

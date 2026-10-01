@@ -13,24 +13,21 @@ from depthai_nodes.node.parsers.utils.segmentation import (
 class SegmentationParser(BaseParser):
     """Parser class for parsing the output of the segmentation models.
 
-    Attributes
-    ----------
-    output_layer_name: str
-        Name of the output layer relevant to the parser.
-    classes_in_one_layer : bool
-        Whether all classes are in one layer in the multi-class segmentation model. Default is False. If True, the parser will use np.max instead of np.argmax to get the class map.
+    Attributes:
+        output_layer_name (``str``): Name of the output layer relevant to the parser.
+        classes_in_one_layer (``bool``): Whether all classes are in one layer in the
+            multi-class segmentation model. Default is False. If True, the parser will
+            use np.max instead of np.argmax to get the class map.
 
-    Output Message/s
-    ----------------
-    **Type**: dai.SegmentationMask
+    Note:
+        Emits ``dai.SegmentationMask`` messages. dai.SegmentationMask containing the
+        segmentation mask. Every pixel belongs to exactly one class. Unassigned pixels
+        are represented with "255" and class pixels with non-negative integers.
 
-    **Description**: dai.SegmentationMask containing the segmentation mask. Every pixel belongs to exactly one class. Unassigned pixels are represented with "255" and class pixels with non-negative integers.
+    Raises:
+        ValueError: If the number of output layers is not 1.
 
-    Error Handling
-    --------------
-    **ValueError**: If the number of output layers is not E{1}.
-
-    **ValueError**: If the number of dimensions of the output tensor is not E{3}.
+        ValueError: If the number of dimensions of the output tensor is not 3.
     """
 
     def __init__(
@@ -41,14 +38,12 @@ class SegmentationParser(BaseParser):
     ) -> None:
         """Initializes the parser node.
 
-        @param output_layer_name: Name of the output layer relevant to the parser.
-        @type output_layer_name: str
-        @param classes_in_one_layer: Whether all classes are in one layer in the multi-
-            class segmentation model. Default is False. If True, the parser will use
-            np.max instead of np.argmax to get the class map.
-        @type classes_in_one_layer: bool
-        @param background_class: Whether class index 0 should be treated as background.
-        @type background_class: bool
+        Args:
+            output_layer_name: Name of the output layer relevant to the parser.
+            classes_in_one_layer: Whether all classes are in one layer in the multi-
+                class segmentation model. Default is False. If True, the parser will use
+                np.max instead of np.argmax to get the class map.
+            background_class: Whether class index 0 should be treated as background.
         """
         super().__init__()
         self.output_layer_name = output_layer_name
@@ -67,8 +62,8 @@ class SegmentationParser(BaseParser):
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
 
-        @param output_layer_name: The name of the output layer.
-        @type output_layer_name: str
+        Args:
+            output_layer_name: The name of the output layer.
         """
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
@@ -78,8 +73,8 @@ class SegmentationParser(BaseParser):
     def setClassesInOneLayer(self, classes_in_one_layer: bool) -> None:
         """Sets the flag indicating whether all classes are in one layer.
 
-        @param classes_in_one_layer: Whether all classes are in one layer.
-        @type classes_in_one_layer: bool
+        Args:
+            classes_in_one_layer: Whether all classes are in one layer.
         """
         if not isinstance(classes_in_one_layer, bool):
             raise ValueError("classes_in_one_layer must be a boolean.")
@@ -89,8 +84,8 @@ class SegmentationParser(BaseParser):
     def setBackgroundClass(self, background_class: bool) -> None:
         """Sets whether class index 0 should be treated as background.
 
-        @param background_class: Whether class index 0 is background.
-        @type background_class: bool
+        Args:
+            background_class: Whether class index 0 is background.
         """
         if not isinstance(background_class, bool):
             raise ValueError("background_class must be a boolean.")
@@ -121,10 +116,11 @@ class SegmentationParser(BaseParser):
     ) -> "SegmentationParser":
         """Configures the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: SegmentationParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
 
         output_layers = head_config.get("outputs", [])

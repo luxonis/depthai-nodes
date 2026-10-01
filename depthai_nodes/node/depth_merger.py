@@ -6,23 +6,21 @@ from .host_spatials_calc import HostSpatialsCalc
 
 
 class DepthMerger(BaseHostNode):
-    """DepthMerger is a custom host node for merging 2D detections with depth
-    information to produce spatial detections.
+    """Merge 2D detections with aligned depth to produce spatial detections.
 
-    Attributes
-    ----------
-    output : dai.Node.Output
-        The output of the DepthMerger node containing spatial detections.
-    shrinkingFactor : float
-        The percentage of the bounding box to shrink from each side before
-        sampling depth.
+    Attributes:
+        output: Output stream containing spatial detections.
+        shrinking_factor: Fraction of each bounding-box edge trimmed before sampling
+            depth.
 
-    Usage
-    -----
-    depth_merger = pipeline.create(DepthMerger).build(
-        output2d=nn.out,
-        outputDepth=stereo.depth
-    )
+    Example:
+        With a pipeline, neural network, stereo node, and device calibration::
+
+            depth_merger = pipeline.create(DepthMerger).build(
+                output2d=nn.out,
+                outputDepth=stereo.depth,
+                calibData=calibration,
+            )
     """
 
     def __init__(self, shrinkingFactor: float = 0) -> None:
@@ -50,20 +48,17 @@ class DepthMerger(BaseHostNode):
     ) -> "DepthMerger":
         """Connect detection and depth streams and initialize spatial conversion.
 
-        @param output2d: Upstream output producing 2D detections.
-        @type output2d: dai.Node.Output
-        @param outputDepth: Upstream output producing aligned depth frames.
-        @type outputDepth: dai.Node.Output
-        @param calibData: Device calibration used to convert image coordinates into
-            spatial coordinates.
-        @type calibData: dai.CalibrationHandler
-        @param depthAlignmentSocket: Camera socket the depth frame is aligned to.
-        @type depthAlignmentSocket: dai.CameraBoardSocket
-        @param shrinkingFactor: Percentage of each bounding box edge trimmed before
-            depth averaging.
-        @type shrinkingFactor: float
-        @return: The configured node instance.
-        @rtype: DepthMerger
+        Args:
+            output2d: Upstream output producing 2D detections.
+            outputDepth: Upstream output producing aligned depth frames.
+            calibData: Device calibration used to convert image coordinates into spatial
+                coordinates.
+            depthAlignmentSocket: Camera socket the depth frame is aligned to.
+            shrinkingFactor: Percentage of each bounding box edge trimmed before depth
+                averaging.
+
+        Returns:
+            The configured node instance.
         """
         self.link_args(output2d, outputDepth)
         self.shrinking_factor = shrinkingFactor

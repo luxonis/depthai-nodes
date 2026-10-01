@@ -9,12 +9,10 @@ class InstanceToSemanticMask(BaseHostNode):
     """Converts a dai.ImgDetections instance mask into a semantic mask by mapping unique
     instance IDs to detection class labels.
 
-    Attributes
-    ----------
-    detections: dai.ImgDetections
-        Input detections with instance segmentation masks.
-    out: dai.ImgDetections
-        Output detections with semantic segmentation masks.
+    Attributes:
+        detections (``dai.ImgDetections``): Input detections with instance segmentation
+            masks.
+        out (``dai.ImgDetections``): Output detections with semantic segmentation masks.
     """
 
     def __init__(self) -> None:

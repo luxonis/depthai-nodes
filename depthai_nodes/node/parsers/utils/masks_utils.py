@@ -18,15 +18,14 @@ def crop_mask(
     """It takes a mask and a bounding box, and returns a mask that is cropped to the
     bounding box.
 
-    @param mask: [h, w] numpy array of a single mask
-    @type mask: np.ndarray
-    @param bbox: A numpy array of bbox coordinates in (x_center, y_center, width,
-        height) format
-    @type bbox: np.ndarray
-    @param fill_value: Value assigned to pixels outside the bounding box.
-    @type fill_value: float | int
-    @return: A mask that is cropped to the bounding box
-    @rtype: np.ndarray
+    Args:
+        mask: [h, w] numpy array of a single mask
+        bbox: A numpy array of bbox coordinates in (x_center, y_center, width, height)
+            format
+        fill_value: Value assigned to pixels outside the bounding box.
+
+    Returns:
+        A mask that is cropped to the bounding box
     """
     h, w = mask.shape
     c_x, c_y, width, height = bbox
@@ -50,19 +49,16 @@ def process_single_mask(
 ) -> np.ndarray:
     """Process a single mask.
 
-    @param protos: Protos.
-    @type protos: np.ndarray
-    @param mask_coeff: Mask coefficient.
-    @type mask_coeff: np.ndarray
-    @param mask_conf: Mask confidence.
-    @type mask_conf: float
-    @param bbox: A numpy array of bbox coordinates in (x_center, y_center, width,
-        height) normalized format.
-    @type bbox: np.ndarray
-    @param output_shape: Target mask shape as (height, width).
-    @type output_shape: tuple[int, int]
-    @return: Processed binary mask resized to `output_shape`.
-    @rtype: np.ndarray
+    Args:
+        protos: Protos.
+        mask_coeff: Mask coefficient.
+        mask_conf: Mask confidence.
+        bbox: A numpy array of bbox coordinates in (x_center, y_center, width, height)
+            normalized format.
+        output_shape: Target mask shape as (height, width).
+
+    Returns:
+        Processed binary mask resized to ``output_shape``.
     """
     _, mask_h, mask_w = protos.shape  # CHW
     scaled_bbox = bbox * np.array([mask_w, mask_h, mask_w, mask_h])
@@ -119,14 +115,13 @@ def process_single_mask_rfdetr(
 ) -> np.ndarray:
     """Process a single RF-DETR instance segmentation mask.
 
-    @param mask_logits: Mask logits for a single detection.
-    @type mask_logits: np.ndarray
-    @param mask_conf: Mask confidence threshold.
-    @type mask_conf: float
-    @param input_shape: Target output mask shape as (height, width).
-    @type input_shape: tuple[int, int]
-    @return: Processed mask resized to the model input shape.
-    @rtype: np.ndarray
+    Args:
+        mask_logits: Mask logits for a single detection.
+        mask_conf: Mask confidence threshold.
+        input_shape: Target output mask shape as (height, width).
+
+    Returns:
+        Processed mask resized to the model input shape.
     """
     if mask_logits.ndim != 2:
         raise ValueError(

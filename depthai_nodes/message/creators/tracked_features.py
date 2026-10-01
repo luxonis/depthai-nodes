@@ -5,16 +5,14 @@ import numpy as np
 def create_feature_point(x: float, y: float, id: int, age: int) -> dai.TrackedFeature:
     """Create a tracked feature point.
 
-    @param x: X coordinate of the feature point.
-    @type x: float
-    @param y: Y coordinate of the feature point.
-    @type y: float
-    @param id: ID of the feature point.
-    @type id: int
-    @param age: Age of the feature point.
-    @type age: int
-    @return: Tracked feature point.
-    @rtype: dai.TrackedFeature
+    Args:
+        x: X coordinate of the feature point.
+        y: Y coordinate of the feature point.
+        id: ID of the feature point.
+        age: Age of the feature point.
+
+    Returns:
+        Tracked feature point.
     """
 
     feature = dai.TrackedFeature()
@@ -29,22 +27,20 @@ def create_feature_point(x: float, y: float, id: int, age: int) -> dai.TrackedFe
 def create_tracked_features_message(
     reference_points: np.ndarray, target_points: np.ndarray
 ) -> dai.TrackedFeatures:
-    """Create a DepthAI message for tracked features.
+    """Create paired tracked features from reference and target points.
 
-    @param reference_points: Reference points of shape (N,2) meaning [...,[x, y],...].
-    @type reference_points: np.ndarray
-    @param target_points: Target points of shape (N,2) meaning [...,[x, y],...].
-    @type target_points: np.ndarray
+    Args:
+        reference_points: NumPy array of shape ``(N, 2)`` with reference ``[x, y]``
+            points.
+        target_points: NumPy array of shape ``(N, 2)`` with matching target points.
 
-    @return: Message containing the tracked features.
-    @rtype: dai.TrackedFeatures
+    Returns:
+        Message containing alternating reference and target features. Each pair shares
+        an ID; reference features have age 0 and target features have age 1.
 
-    @raise ValueError: If the reference_points are not a numpy array.
-    @raise ValueError: If the reference_points are not of shape (N,2).
-    @raise ValueError: If the reference_points 2nd dimension is not of size E{2}.
-    @raise ValueError: If the target_points are not a numpy array.
-    @raise ValueError: If the target_points are not of shape (N,2).
-    @raise ValueError: If the target_points 2nd dimension is not of size E{2}.
+    Raises:
+        ValueError: If either input is not a NumPy array of shape ``(N, 2)``, or the
+            arrays contain different numbers of points.
     """
 
     if not isinstance(reference_points, np.ndarray):

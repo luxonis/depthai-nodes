@@ -6,57 +6,32 @@ from depthai_nodes.node.utils.message_remapping import remap_message
 
 
 class CoordinatesMapper(BaseThreadedHostNode):
-    """Threaded host node that remaps message coordinates into a cached reference frame.
+    """Remap supported messages into a cached target image transformation.
 
-    This is a temporary node, this functionality will be added to the ImageAlign depthai node.
+    The first target message establishes the reference frame. Subsequent messages update
+    the cached transformation when available. An on-device Script node forwards only the
+    target transformation, timestamps, and an empty image frame to reduce host-device
+    traffic.
 
-    The node takes two inputs:
-    - a **target transformation** stream used to establish and update the cached
-      reference frame,
-    - a message stream whose coordinates should be remapped.
+    ``MessageGroup``, ``Collection``, and ``GatheredData`` items are remapped
+    recursively while preserving container timestamps and sequence numbers.
+    ``GatheredData.reference_data`` remains unchanged. Supported leaf messages are those
+    accepted by ``remap_message``; they must expose
+    ``getTransformation()``. Messages without a source transformation pass
+    through unchanged.
 
-    Any DepthAI message that provides a ``getTransformation()`` and a ``setTransformation()`` method can be
-    remapped. Internally, coordinate fields are transformed from the message’s
-    original reference frame into the target reference frame.
+    Attributes:
+        out: Output stream of remapped messages.
 
-    On-device, a lightweight Script node extracts only the
-    :class:`dai.ImgTransformation` from incoming messages and forwards it to the
-    host. This avoids transferring large image payloads and reduces
-    host–device bandwidth usage.
+    Raises:
+        RuntimeError: If constructed on RVC2, or if a target message has no usable
+            transformation when processing starts.
+        TypeError: If a leaf message with a source transformation has an unsupported
+            type.
 
-    The first target transformation message is required before any source messages
-    can be remapped. After that, the node keeps using the cached transformation and
-    updates it only when a newer target message is available via ``tryGet()``.
-
-    Message groups are handled recursively: each contained message is remapped
-    individually while preserving timestamps and sequence numbers.
-
-    Notes
-    -----
-    - Messages that do not support coordinate remapping are passed through
-      unchanged.
-    - The output message always carries the target transformation as its
-      transformation.
-    - This node is currently **not supported on RVC2**.
-
-    Inputs
-    ------
-    toTransformationInput : dai.Node.Output
-        Output producing messages that define the target reference frame.
-        Only the transformation is extracted on-device.
-    fromTransformationInput : dai.Node.Output
-        Output producing messages whose coordinates should be remapped.
-
-    Outputs
-    -------
-    out : dai.Node.Output
-        Messages with coordinates remapped into the target reference frame.
-
-    Raises
-    ------
-    RuntimeError
-        If used on an unsupported platform (RVC2), or if the target
-        transformation cannot be obtained from the input message.
+    Note:
+        This temporary host node is intended to be replaced by equivalent functionality
+        in DepthAI's ``ImageAlign`` node.
     """
 
     SCRIPT_CONTENT = """
@@ -99,14 +74,14 @@ except Exception as e:
     ) -> "CoordinatesMapper":
         """Connect the target and source streams used for coordinate remapping.
 
-        @param toTransformationInput: Stream providing messages whose transformation
-            defines the target reference frame.
-        @type toTransformationInput: dai.Node.Output
-        @param fromTransformationInput: Stream providing messages whose coordinates
-            should be remapped.
-        @type fromTransformationInput: dai.Node.Output
-        @return: The configured node instance.
-        @rtype: CoordinatesMapper
+        Args:
+            toTransformationInput: Stream providing messages whose transformation
+                defines the target reference frame.
+            fromTransformationInput: Stream providing messages whose coordinates should
+                be remapped.
+
+        Returns:
+            The configured node instance.
         """
         script = self.getParentPipeline().create(dai.node.Script)
         script.setScript(self.SCRIPT_CONTENT)

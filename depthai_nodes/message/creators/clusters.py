@@ -6,15 +6,16 @@ def create_cluster_message(
 ) -> dai.beta.Clusters:
     """Create a DepthAI message for clusters.
 
-    @param clusters: List of clusters. Each cluster is a list of points with x and y
-        coordinates.
-    @type clusters: list[list[list[float | int]]]
-    @return: Clusters message containing the detected clusters.
-    @rtype: dai.beta.Clusters
-    @raise TypeError: If the clusters are not a list.
-    @raise TypeError: If each cluster is not a list.
-    @raise TypeError: If each point is not a list.
-    @raise TypeError: If each value in the point is not an int or float.
+    Args:
+        clusters: List of clusters. Each cluster is a list of points with x and y
+            coordinates.
+
+    Returns:
+        Clusters message containing the detected clusters.
+
+    Raises:
+        TypeError: If the clusters are not a list. If each cluster is not a list. If
+            each point is not a list. If each value in the point is not an int or float.
     """
 
     if not isinstance(clusters, list):

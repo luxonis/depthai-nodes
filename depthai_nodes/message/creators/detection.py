@@ -99,51 +99,39 @@ def create_detection_message(
     boxes in X_center, Y_center, Width, Height format with optional angles, labels and
     detected object keypoints and masks.
 
-    @param bbox: Bounding boxes of detected objects in (x_center, y_center, width,
-        height) format.
-    @type bbox: np.ndarray
-    @param scores: Confidence scores of the detected objects of shape (N,).
-    @type scores: np.ndarray
-    @param angles: Angles of detected objects expressed in degrees. Defaults to None.
-    @type angles: np.ndarray | None
-    @param labels: Labels of detected objects of shape (N,). Defaults to None.
-    @type labels: np.ndarray | None
-    @param label_names: Names of the labels (classes)
-    @type label_names: list[str] | None
-    @param keypoints: Keypoints of detected objects of shape (N, n_keypoints, dim) where
-        dim is 2 or 3. Defaults to None.
-    @type keypoints: np.array | None
-    @param keypoints_scores: Confidence scores of detected keypoints of shape (N,
-        n_keypoints). Defaults to None.
-    @type keypoints_scores: np.ndarray | None
-    @param keypoint_label_names: Labels of keypoints. Defaults to None.
-    @type keypoint_label_names: list[str] | None
-    @param keypoint_edges: Connection pairs of keypoints. Defaults to None. Example:
-        [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint 1,
-        keypoint 1 is connected to keypoint 2, etc.
-    @type keypoint_edges: list[tuple[int, int]] | None
-    @param masks: Masks of detected objects of shape (H, W). Defaults to None.
-    @type masks: np.ndarray | None
-    @return: Message containing the bounding boxes, labels, confidence scores, and
-        keypoints of detected objects.
-    @rtype: dai.ImgDetections
-    @raise ValueError: If the bboxes are not a numpy array.
-    @raise ValueError: If the bboxes are not of shape (N,4).
-    @raise ValueError: If the scores are not a numpy array.
-    @raise ValueError: If the scores are not of shape (N,).
-    @raise ValueError: If the scores do not have the same length as bboxes.
-    @raise ValueError: If the angles do not have the same length as bboxes.
-    @raise ValueError: If the angles are not between -360 and 360.
-    @raise ValueError: If the labels are not a list of integers.
-    @raise ValueError: If the labels do not have the same length as bboxes.
-    @raise ValueError: If the keypoints are not a numpy array of shape (N, M, 2 or 3).
-    @raise ValueError: If the masks are not a 3D numpy array of shape (img_height,
-        img_width, N) or (N, img_height, img_width).
-    @raise ValueError: If the keypoints scores are not a numpy array.
-    @raise ValueError: If the keypoints scores are not of shape [n_detections,
-        n_keypoints, 1].
-    @raise ValueError: If the keypoints scores do not have the same length as keypoints.
-    @raise ValueError: If the keypoints scores are not between 0 and 1.
+    Args:
+        bboxes: Bounding boxes of detected objects in (x_center, y_center, width,
+            height) format.
+        scores: Confidence scores of the detected objects of shape (N,).
+        angles: Angles of detected objects expressed in degrees. Defaults to None.
+        labels: Labels of detected objects of shape (N,). Defaults to None.
+        label_names: Names of the labels (classes)
+        keypoints: Keypoints of detected objects of shape (N, n_keypoints, dim) where
+            dim is 2 or 3. Defaults to None.
+        keypoints_scores: Confidence scores of detected keypoints of shape (N,
+            n_keypoints). Defaults to None.
+        keypoint_label_names: Labels of keypoints. Defaults to None.
+        keypoint_edges: Connection pairs of keypoints. Defaults to None. Example:
+            [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
+            1, keypoint 1 is connected to keypoint 2, etc.
+        masks: Masks of detected objects of shape (H, W). Defaults to None.
+
+    Returns:
+        Message containing the bounding boxes, labels, confidence scores, and keypoints
+        of detected objects.
+
+    Raises:
+        ValueError: If the bboxes are not a numpy array. If the bboxes are not of shape
+            (N,4). If the scores are not a numpy array. If the scores are not of shape
+            (N,). If the scores do not have the same length as bboxes. If the angles do
+            not have the same length as bboxes. If the angles are not between -360 and
+            360. If the labels are not a list of integers. If the labels do not have the
+            same length as bboxes. If the keypoints are not a numpy array of shape (N,
+            M, 2 or 3). If the masks are not a 3D numpy array of shape (img_height,
+            img_width, N) or (N, img_height, img_width). If the keypoints scores are not
+            a numpy array. If the keypoints scores are not of shape [n_detections,
+            n_keypoints, 1]. If the keypoints scores do not have the same length as
+            keypoints. If the keypoints scores are not between 0 and 1.
     """
 
     if not isinstance(bboxes, np.ndarray):

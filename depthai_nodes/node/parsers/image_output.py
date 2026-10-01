@@ -9,37 +9,32 @@ from depthai_nodes.node.parsers.utils.image_output import compute_image_output
 
 class ImageOutputParser(BaseParser):
     """Parser class for image-to-image models (e.g. DnCNN3, zero-dce etc.) where the
-    output is a modifed image (denoised, enhanced etc.).
+    output is a modified image (denoised, enhanced etc.).
 
-    Attributes
-    ----------
-    output_layer_name: str
-        Name of the output layer relevant to the parser.
-    output_is_bgr : bool
-        Flag indicating if the output image is in BGR (Blue-Green-Red) format.
+    Attributes:
+        output_layer_name (``str``): Name of the output layer relevant to the parser.
+        output_is_bgr (``bool``): Flag indicating if the output image is in BGR
+            (Blue-Green-Red) format.
 
-    Output Message/s
-    -------
-    **Type**: dai.ImgFrame
+    Note:
+        Emits ``dai.ImgFrame`` messages. Image message containing the output image e.g.
+        denoised or enhanced images.
 
-    **Description**: Image message containing the output image e.g. denoised or enhanced images.
+    Raises:
+        ValueError: If the output is not 3- or 4-dimensional.
 
-    Error Handling
-    --------------
-    **ValueError**: If the output is not 3- or 4-dimensional.
-
-    **ValueError**: If the number of output layers is not 1.
+        ValueError: If the number of output layers is not 1.
     """
 
     def __init__(
         self, output_layer_name: str = "", output_is_bgr: bool = False
     ) -> None:
-        """Initializes the parser node.
+        """Initialize the parser node.
 
-        param output_layer_name: Name of the output layer relevant to the parser.
-        type output_layer_name: str
-        @param output_is_bgr: Flag indicating if the output image is in BGR.
-        @type output_is_bgr: bool
+        Args:
+            output_layer_name: Output tensor name. An empty name selects the only
+                available output layer during extraction.
+            output_is_bgr: Whether the output image uses BGR channel order.
         """
         super().__init__()
         self.output_layer_name = output_layer_name
@@ -55,8 +50,8 @@ class ImageOutputParser(BaseParser):
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
 
-        @param output_layer_name: The name of the output layer.
-        @type output_layer_name: str
+        Args:
+            output_layer_name: The name of the output layer.
         """
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
@@ -74,10 +69,11 @@ class ImageOutputParser(BaseParser):
     ) -> "ImageOutputParser":
         """Configures the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: ImageOutputParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
 
         output_layers = head_config.get("outputs", [])

@@ -93,23 +93,25 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
 
     @overload
     def getParser(self, index: int = 0) -> BaseParser | dai.DeviceNode:
-        """Return the parser for the requested model head."""
         ...
 
     @overload
     def getParser(self, parserType: type[TParser], index: int = 0) -> TParser:
-        """Return the parser for the requested model head."""
         ...
 
     def getParser(self, *args, **kwargs) -> BaseParser | dai.DeviceNode:
         """Return the parser for the requested model head.
 
-        @param parserType: Optional expected parser type used for runtime type checking.
-        @type parserType: type[TParser]
-        @param index: Model head index. Defaults to 0.
-        @type index: int
-        @return: Parser node matching the requested head.
-        @rtype: BaseParser | dai.DeviceNode
+        Args:
+            *args: Either a head index, a parser type, or a parser type and head index.
+            **kwargs: Optional ``parserType`` and ``index`` keyword arguments.
+
+        Keyword Args:
+            parserType: Optional expected parser type used for runtime type checking.
+            index: Model head index. Defaults to 0.
+
+        Returns:
+            Parser node matching the requested head.
         """
         index = 0
         parser_type = None
@@ -182,11 +184,9 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
     ) -> None:
         """Set the active model archive and rebuild parser nodes.
 
-        @param nnArchive: Neural-network archive containing the model and parser config.
-        @type nnArchive: dai.NNArchive
-        @param numShaves: Optional number of shaves allocated to the neural-network
-            node.
-        @type numShaves: int | None
+        Args:
+            nnArchive: Neural-network archive containing the model and parser config.
+            numShaves: Optional number of shaves allocated to the neural-network node.
         """
         self._nn_archive = nnArchive
         if numShaves:
@@ -219,15 +219,14 @@ class ParsingNeuralNetwork(dai.node.ThreadedHostNode):
     ) -> "ParsingNeuralNetwork":
         """Build the neural-network node and create parser nodes for each head.
 
-        @param input: Upstream output or camera feeding frames into the neural-network
-            node.
-        @type input: dai.Node.Output | dai.node.Camera
-        @param nnSource: dai.NNModelDescription, dai.NNArchive, or HubAI model slug.
-        @type nnSource: dai.NNModelDescription | dai.NNArchive | str
-        @param fps: Optional runtime FPS limit for the neural-network node.
-        @type fps: float | None
-        @return: The configured node instance.
-        @rtype: ParsingNeuralNetwork
+        Args:
+            input: Upstream output or camera feeding frames into the neural-network
+                node.
+            nnSource: dai.NNModelDescription, dai.NNArchive, or HubAI model slug.
+            fps: Optional runtime FPS limit for the neural-network node.
+
+        Returns:
+            The configured node instance.
         """
 
         platform = self.getParentPipeline().getDefaultDevice().getPlatformAsString()

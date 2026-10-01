@@ -9,7 +9,8 @@ from depthai_nodes.node.parsers.utils import decode_head
 class ParserGenerator(dai.node.ThreadedHostNode):
     """General interface for instantiating parsers based on the provided model archive.
 
-    The `build` method creates parsers based on the head information stored in the NN Archive. The method then returns a dictionary of these parsers.
+    The ``build`` method creates parsers based on the head information stored in the NN
+    Archive. The method then returns a dictionary of these parsers.
     """
 
     _logger = get_logger(__name__)
@@ -24,16 +25,15 @@ class ParserGenerator(dai.node.ThreadedHostNode):
     ) -> dict:
         """Instantiate parser nodes for the supplied model archive.
 
-        @param nnArchive: Model archive describing the parser configuration.
-        @type nnArchive: dai.NNArchive
-        @param headIndex: Optional model head index to instantiate. If omitted, parsers
-            are created for all heads.
-        @type headIndex: int | None
-        @param hostOnly: If True, use parser implementations from depthai-nodes.
-            Otherwise, always use native DepthAI parser nodes.
-        @type hostOnly: bool
-        @return: Mapping of model head index to parser node.
-        @rtype: dict
+        Args:
+            nnArchive: Model archive describing the parser configuration.
+            headIndex: Optional model head index to instantiate. If omitted, parsers are
+                created for all heads.
+            hostOnly: If True, use parser implementations from depthai-nodes. Otherwise,
+                always use native DepthAI parser nodes.
+
+        Returns:
+            Mapping of model head index to parser node.
         """
 
         heads: list = nnArchive.getConfig().model.heads  # type: ignore

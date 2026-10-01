@@ -9,26 +9,20 @@ from depthai_nodes.node.parsers.utils.hrnet import compute_hrnet_keypoints
 
 
 class HRNetParser(KeypointParser):
-    """Parser class for parsing the output of the HRNet pose estimation model. The code is inspired by https://github.com/ibaiGorordo/ONNX-HRNET-Human-Pose-Estimation.
+    """Parser class for parsing the output of the HRNet pose estimation model. The code is
+    inspired by https://github.com/ibaiGorordo/ONNX-HRNET-Human-Pose-Estimation.
 
-    Attributes
-    ----------
-    output_layer_name: str
-        Name of the output layer relevant to the parser.
-    score_threshold : float
-        Confidence score threshold for detected keypoints.
-    label_names: list[str] | None
-        Label names for the keypoints.
-    edges: list[tuple[int, int]] | None
-        Keypoint connection pairs for visualizing the skeleton. Example:
-            [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
-            1, keypoint 1 is connected to keypoint 2, etc.
+    Attributes:
+        output_layer_name (``str``): Name of the output layer relevant to the parser.
+        score_threshold (``float``): Confidence score threshold for detected keypoints.
+        label_names (``list[str] | None``): Label names for the keypoints.
+        edges (``list[tuple[int, int]] | None``): Pairs of keypoint indexes defining
+            skeleton edges. For example, ``[(0, 1), (1, 2)]`` connects keypoint 0 to 1
+            and 1 to 2.
 
-    Output Message/s
-    ----------------
-    **Type**: dai.beta.Keypoints
-
-    **Description**: Output containing detected body keypoints.
+    Note:
+        Emits ``dai.beta.Keypoints`` messages. Output containing detected body
+        keypoints.
     """
 
     def __init__(
@@ -40,16 +34,12 @@ class HRNetParser(KeypointParser):
     ) -> None:
         """Initializes the parser node.
 
-        @param output_layer_name: Name of the output layer relevant to the parser.
-        @type output_layer_name: str
-        @param score_threshold: Confidence score threshold for detected keypoints.
-        @type score_threshold: float
-        @param label_names: Label names for the keypoints.
-        @type label_names: list[str] | None
-        @param edges: Keypoint connection pairs for visualizing the skeleton. Example:
-            [(0,1), (1,2), (2,3), (3,0)] shows that keypoint 0 is connected to keypoint
-            1, keypoint 1 is connected to keypoint 2, etc.
-        @type edges: list[tuple[int, int]] | None
+        Args:
+            output_layer_name: Name of the output layer relevant to the parser.
+            score_threshold: Confidence score threshold for detected keypoints.
+            label_names: Label names for the keypoints.
+            edges: Pairs of keypoint indexes defining skeleton edges. For example,
+                ``[(0, 1), (1, 2)]`` connects keypoint 0 to 1 and 1 to 2.
         """
         super().__init__(
             output_layer_name,
@@ -64,8 +54,8 @@ class HRNetParser(KeypointParser):
     def setOutputLayerName(self, output_layer_name: str) -> None:
         """Sets the name of the output layer.
 
-        @param output_layer_name: The name of the output layer.
-        @type output_layer_name: str
+        Args:
+            output_layer_name: The name of the output layer.
         """
         if not isinstance(output_layer_name, str):
             raise ValueError("Output layer name must be a string.")
@@ -78,10 +68,11 @@ class HRNetParser(KeypointParser):
     ) -> "HRNetParser":
         """Configures the parser.
 
-        @param head_config: The head configuration for the parser.
-        @type head_config: dict[str, Any]
-        @return: The parser object with the head configuration set.
-        @rtype: HRNetParser
+        Args:
+            head_config: The head configuration for the parser.
+
+        Returns:
+            The parser object with the head configuration set.
         """
 
         super().build(head_config)
