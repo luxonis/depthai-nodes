@@ -525,13 +525,15 @@ class YOLOExtendedParser(BaseParser):
             outputs_names = sorted(
                 [name for name in layer_names if "_yolo" in name or "yolo-" in name]
             )
+            anchors_per_head = (
+                np.asarray(self.anchors).reshape(len(outputs_names), -1).shape[1] // 2
+                if self.anchors is not None
+                else 1
+            )
+            expected_channels = anchors_per_head * (self.n_classes + 5)
             outputs_values = [
-                output.getTensor(
-                    o,
-                    dequantize=True,
-                    storageOrder=dai.TensorInfo.StorageOrder.NCHW,
-                ).astype(np.float32)
-                for o in outputs_names
+                self._getDetectionTensor(output, name, expected_channels)
+                for name in outputs_names
             ]
 
             if (
@@ -692,3 +694,34 @@ class YOLOExtendedParser(BaseParser):
         )
         self.out.send(detections_message)
         self._logger.debug("Detection message sent successfully")
+
+    @staticmethod
+    def _getDetectionTensor(
+        output: dai.NNData, name: str, expected_channels: int
+    ) -> np.ndarray:
+        """Read NCHW detections, recovering from incorrect device layout metadata.
+
+        Some RVC4 DLC outputs are NCHW but tagged NHWC. Like the native DetectionParser,
+        validate the channel dimension before trusting that tag. Keep valid metadata
+        authoritative; only infer a replacement layout when exactly one non-batch axis
+        matches the configured channel count.
+        """
+        tensor = output.getTensor(
+            name, dequantize=True, storageOrder=dai.TensorInfo.StorageOrder.NCHW
+        )
+        if tensor.ndim == 4 and tensor.shape[1] == expected_channels:
+            return tensor.astype(np.float32)
+
+        raw = output.getTensor(name, dequantize=True)
+        if raw.ndim == 4:
+            channel_axes = [
+                axis for axis in (1, 2, 3) if raw.shape[axis] == expected_channels
+            ]
+            if len(channel_axes) == 1:
+                return np.moveaxis(raw, channel_axes[0], 1).astype(np.float32)
+
+        raise ValueError(
+            f"Cannot determine YOLO output layout for '{name}': expected "
+            f"{expected_channels} channels, got NCHW shape {tensor.shape} "
+            f"and stored shape {raw.shape}."
+        )
