@@ -18,7 +18,7 @@ def box_prompt(
     bounding box.
 
     Source:
-    https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/prompt.py#L286
+    https://github.com/ultralytics/ultralytics/blob/8094df3c474fe83d874fd83da19f704205e1eef3/ultralytics/models/fastsam/prompt.py#L284
     Modified so it uses numpy instead of torch.
 
     Args:
@@ -65,7 +65,7 @@ def format_results(
     segmentation, bounding box, score and area.
 
     Source:
-    https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/prompt.py#L56
+    https://github.com/ultralytics/ultralytics/blob/8094df3c474fe83d874fd83da19f704205e1eef3/ultralytics/models/fastsam/prompt.py#L59
 
     Args:
         bboxes: The bounding boxes of the detected objects
@@ -102,7 +102,7 @@ def point_prompt(
     results.
 
     Source:
-    https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/prompt.py#L321
+    https://github.com/ultralytics/ultralytics/blob/8094df3c474fe83d874fd83da19f704205e1eef3/ultralytics/models/fastsam/prompt.py#L317
     Modified so it uses numpy instead of torch.
 
     Args:
@@ -146,7 +146,7 @@ def adjust_bboxes_to_image_border(
     boxes: np.ndarray, image_shape: tuple[int, int], threshold: int = 20
 ) -> np.ndarray:
     """Source:
-    https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/utils.py#L6
+    https://github.com/ultralytics/ultralytics/blob/8094df3c474fe83d874fd83da19f704205e1eef3/ultralytics/models/fastsam/utils.py#L6
     (Ultralytics)
     Adjust bounding boxes to stick to image border if they are within a certain
     threshold.
@@ -178,7 +178,7 @@ def bbox_iou(
     raw_output: bool = False,
 ) -> np.ndarray:
     """Source:
-    https://github.com/ultralytics/ultralytics/blob/main/ultralytics/models/fastsam/utils.py#L30
+    https://github.com/ultralytics/ultralytics/blob/8094df3c474fe83d874fd83da19f704205e1eef3/ultralytics/models/fastsam/utils.py#L30
     (Ultralytics - rewritten to numpy)
     Compute the Intersection-Over-Union of a bounding box with respect to an array of
     other bounding boxes.

@@ -11,6 +11,8 @@ on:
 
 jobs:
   Integration-tests:
+    env:
+      DEPTHAI_TELEMETRY: "0"
     strategy:
       fail-fast: false
       matrix:

@@ -29,6 +29,8 @@ jobs:
         run: echo ${{ github.event.inputs.distinct_id }}
 
   Stability-tests:
+    env:
+      DEPTHAI_TELEMETRY: "0"
     runs-on: ['self-hosted', 'testbed-runner']
 
     steps:
