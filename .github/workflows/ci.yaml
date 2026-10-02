@@ -52,6 +52,8 @@ jobs:
       run: pydoctor depthai_nodes
 
   tests:
+    env:
+      DEPTHAI_TELEMETRY: "0"
     needs:
       - pre-commit
     strategy:
