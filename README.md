@@ -81,3 +81,30 @@ session = onnx_qnn_session("model.onnx")
 ## 🤝 Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup, parser guidelines, and testing instructions. Feedback and bug reports are welcome in [GitHub issues](https://github.com/luxonis/depthai-nodes/issues).
+
+## Code 128 CTC decoding
+
+`Code128CTCParser` is a Python host parser for raw Code 128 network outputs.
+Run inference with `HostParsingNeuralNetwork` (or use
+`ParserGenerator.build(..., hostOnly=True)`). RVC4 runs the neural network;
+CTC post-processing runs on the host without a PyTorch dependency.
+
+The NNArchive head must specify `parser: "Code128CTCParser"`, one output tensor,
+`target_mode: "codewords"`, and the 108-class codeword alphabet: blank at index
+0, codeword n at index n+1. `is_softmax` determines whether the tensor already
+contains probabilities. `output_layout` accepts NTC (default), NCT, TC or CT.
+
+Optional metadata: `decoding_method` (`greedy` or `beam_search`), `beam_width`
+(10), `top_k` (5), `token_prune` (null), `require_valid_checksum` (true).
+`top_k` cannot exceed `beam_width`. Before pipeline start, override these with
+`nn.getParser(Code128CTCParser).configure(decoding_method="beam_search")`.
+
+The parser emits one `Code128Result` per input, even for invalid symbols. It
+preserves source timestamps and sequence numbers. Results expose `text` (None
+on failure), `codewords`, `valid`, `checksum_valid`, `score`, `error` and ranked
+`candidates`. Scores are CTC sequence log probabilities, not calibrated
+confidence. Beam search selects the highest-scoring valid candidate among
+the retained top-k hypotheses. Search width/pruning can exclude valid symbols.
+Code sets A/B/C, SHIFT, FNC1 and FNC4 are supported. Leading FNC1 is omitted
+from text; later FNC1 becomes ASCII GS. FNC2/FNC3 are rejected because they
+require application-level semantics.

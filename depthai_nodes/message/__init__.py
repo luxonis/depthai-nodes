@@ -65,6 +65,7 @@ Note:
 """
 
 from .collection import Collection
+from .code128 import Code128Result
 from .gathered_data import GatheredData
 from .snap_data import SnapData
 
@@ -72,4 +73,5 @@ __all__ = [
     "GatheredData",
     "SnapData",
     "Collection",
+    "Code128Result",
 ]

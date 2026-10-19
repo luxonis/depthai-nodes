@@ -11,6 +11,7 @@ Native DepthAI parsers are selected by default by ``ParserGenerator``; pass
 from .base_parser import BaseParser
 from .classification import ClassificationParser
 from .classification_sequence import ClassificationSequenceParser
+from .code128_ctc import Code128CTCParser
 from .detection import DetectionParser
 from .embeddings import EmbeddingsParser
 from .fastsam import FastSAMParser
@@ -50,6 +51,7 @@ __all__ = [
     "PPTextDetectionParser",
     "MapOutputParser",
     "ClassificationSequenceParser",
+    "Code128CTCParser",
     "LaneDetectionParser",
     "BaseParser",
     "DetectionParser",

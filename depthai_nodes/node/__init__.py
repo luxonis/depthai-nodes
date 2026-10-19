@@ -185,6 +185,7 @@ from .parser_generator import ParserGenerator
 from .parsers.base_parser import BaseParser
 from .parsers.classification import ClassificationParser
 from .parsers.classification_sequence import ClassificationSequenceParser
+from .parsers.code128_ctc import Code128CTCParser
 from .parsers.detection import DetectionParser
 from .parsers.embeddings import EmbeddingsParser
 from .parsers.fastsam import FastSAMParser
@@ -238,6 +239,7 @@ __all__ = [
     "PPTextDetectionParser",
     "MapOutputParser",
     "ClassificationSequenceParser",
+    "Code128CTCParser",
     "LaneDetectionParser",
     "BaseParser",
     "DetectionParser",
