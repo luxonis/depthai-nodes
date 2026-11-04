@@ -10,3 +10,6 @@ class DeviceMock:
 
     def getPlatform(self):
         return self._platform
+
+    def setPlatform(self, platform: dai.Platform):
+        self._platform = platform

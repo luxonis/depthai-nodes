@@ -25,6 +25,9 @@ class PipelineMock:
     def getDefaultDevice(self):
         return self._defaultDevice
 
+    def getAllNodes(self):
+        return list(self._nodes)
+
     def remove(self, node):
         self._nodes.remove(node)
 
@@ -95,6 +98,8 @@ class PipelineMock:
             class NodeMock(node_type):
                 def __init__(self, pipeline):
                     self._pipeline = pipeline
+                    # Host nodes such as ImgDetectionsFilter use `out` in __init__.
+                    self._out = OutputMock()
                     super().__init__()
                     if (
                         self.__class__.__bases__[0].__bases__[0].__name__
@@ -167,6 +172,7 @@ class DetectionParserMock:
         self._out = OutputMock()
         self._nn_archive = None
         self._run_on_host = False
+        self._confidence_threshold = None
 
     @property
     def input(self):
@@ -192,6 +198,12 @@ class DetectionParserMock:
 
     def setNNArchiveHead(self, head) -> None:
         self._nn_archive_head = head
+
+    def setConfidenceThreshold(self, threshold: float):
+        self._confidence_threshold = threshold
+
+    def getConfidenceThreshold(self):
+        return self._confidence_threshold
 
     def setRunOnHost(self, run_on_host: bool):
         self._run_on_host = run_on_host

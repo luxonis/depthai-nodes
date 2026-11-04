@@ -15,7 +15,7 @@ class NeuralNetworkMock:
         self,
         input: InputMock,
         model: dai.NNModelDescription | dai.NNArchive,
-        fps: float,
+        fps: float | None = None,
     ):
         self._nn_archive = model
         self._input = input

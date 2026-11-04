@@ -170,6 +170,7 @@ from .apply_colormap import ApplyColormap
 from .apply_depth_colormap import ApplyDepthColormap
 from .base_host_node import BaseHostNode
 from .base_threaded_host_node import BaseThreadedHostNode
+from .box_detector import BoxDetector
 from .box_dimensioner import BoxDimensioner
 from .coordinates_mapper import CoordinatesMapper
 from .depth_merger import DepthMerger
@@ -253,4 +254,5 @@ __all__ = [
     "FrameCropper",
     "BaseThreadedHostNode",
     "BoxDimensioner",
+    "BoxDetector",
 ]
