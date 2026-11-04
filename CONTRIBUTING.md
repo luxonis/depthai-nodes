@@ -80,6 +80,8 @@ Run from the repository root:
 pytest tests/unittests
 ```
 
+Install the extra with `pip install -e .[dev,box-measurement]` to run the box measurement tests; without open3d they are skipped.
+
 ### Integration tests
 
 Ask the code owners for test-data bucket credentials, then set them in your environment:

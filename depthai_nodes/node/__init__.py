@@ -170,6 +170,7 @@ from .apply_colormap import ApplyColormap
 from .apply_depth_colormap import ApplyDepthColormap
 from .base_host_node import BaseHostNode
 from .base_threaded_host_node import BaseThreadedHostNode
+from .box_dimensioner import BoxDimensioner
 from .coordinates_mapper import CoordinatesMapper
 from .depth_merger import DepthMerger
 from .extended_neural_network import ExtendedNeuralNetwork
@@ -251,4 +252,5 @@ __all__ = [
     "InstanceToSemanticMask",
     "FrameCropper",
     "BaseThreadedHostNode",
+    "BoxDimensioner",
 ]
