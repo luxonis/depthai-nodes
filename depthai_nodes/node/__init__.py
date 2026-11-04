@@ -208,6 +208,7 @@ from .parsers.yolo import YOLOExtendedParser
 from .parsers.yunet import YuNetParser
 from .parsing_neural_network import ParsingNeuralNetwork
 from .snaps_uploader import SnapsUploader
+from .support_plane_calibrator import SupportPlaneCalibrator
 from .tiling import Tiling
 
 __all__ = [
@@ -255,4 +256,5 @@ __all__ = [
     "BaseThreadedHostNode",
     "BoxDimensioner",
     "BoxDetector",
+    "SupportPlaneCalibrator",
 ]

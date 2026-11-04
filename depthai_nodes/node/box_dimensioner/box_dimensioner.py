@@ -17,8 +17,9 @@ from depthai_nodes.message.box_measurements import (
 from depthai_nodes.message.support_plane import SupportPlane
 from depthai_nodes.message.utils.value_checks import check_instance, check_int
 from depthai_nodes.node.base_host_node import BaseHostNode
+from depthai_nodes.node.utils.open3d_dependency import require_open3d
 
-from .box_geometry import BoxGeometry, require_open3d
+from .box_geometry import BoxGeometry
 
 # Fraction of the frame; larger detections are false positives on the whole scene.
 MAX_BBOX_AREA = 0.5

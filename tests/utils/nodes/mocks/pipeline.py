@@ -137,7 +137,7 @@ class PipelineMock:
                     else:
                         self._nn_archive = nn_archive
 
-                def createInput(self):
+                def createInput(self, *args, **kwargs):
                     if (
                         self.__class__.__bases__[0].__bases__[0].__name__
                         == "ThreadedHostNodeMock"
@@ -154,7 +154,9 @@ class PipelineMock:
                     self._is_running = is_running
 
                 def createOutput(
-                    self, possibleDatatypes: list[tuple[dai.DatatypeEnum, bool]] = None
+                    self,
+                    possibleDatatypes: list[tuple[dai.DatatypeEnum, bool]] = None,
+                    **kwargs,
                 ):
                     self._out = OutputMock()
                     return self._out
