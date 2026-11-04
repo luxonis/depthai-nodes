@@ -49,7 +49,8 @@ pip install .
 ### 📨 Message
 
 The `message` module provides `Collection`, `GatheredData`, and `SnapData`
-messages, plus creator functions for native DepthAI parser messages. Creators
+messages, box measurement messages such as `BoxDetections`, `BoxMeasurements`,
+and `SupportPlane`, plus creator functions for native DepthAI parser messages. Creators
 cover detections, segmentation, classification, keypoints, maps, and other model
 outputs. See the [message package documentation](./depthai_nodes/message/__init__.py) for the available
 types and their roles.
