@@ -62,6 +62,10 @@ def _check_instance(name: str, value: Any, expected: type) -> None:
 # Pause between run-loop passes, as DepthAI's DynamicCalibration does.
 PASS_SLEEP_SECONDS = 0.005
 
+# Oldest IMU sample, by host arrival time, used for gravity. The IMU streams at
+# tens to hundreds of hertz, so an older sample means the stream has stalled.
+IMU_MAX_AGE_SECONDS = 0.5
+
 
 class CalibratorState(Enum):
     """Where the calibrator is in an attempt; see `SupportPlaneCalibrator`."""
@@ -100,6 +104,10 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
     Verification is independent of attempts: verify commands are answered in
     order once an IMU sample is available.
 
+    An IMU sample counts as available for ``IMU_MAX_AGE_SECONDS`` after it
+    arrives; if the IMU stream stalls, fitting and verification wait for a new
+    sample rather than use stale gravity.
+
     Errors: a non-``PointCloudData`` cloud, or a fit that raises
     ``ValueError`` or ``RuntimeError``, fails the attempt. Any other error is a
     bug and is not caught: DepthAI prints it with the raising line and aborts
@@ -123,6 +131,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         self._fitter: SupportPlaneFitter | None = None
         self._verifications: deque[SupportPlane] = deque()
         self._latest_imu: dai.IMUData | None = None
+        self._latest_imu_arrival = 0.0
 
     @property
     def inputControl(self) -> dai.Node.Input:
@@ -242,12 +251,20 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                 self._state = CalibratorState.IDLE
 
     def _take_latest_imu(self) -> None:
+        """Keep the newest IMU sample and drop it once it is too old."""
+        now = time.monotonic()
         while True:
             imu = self._imu_input.tryGet()
             if imu is None:
-                return
+                break
             if isinstance(imu, dai.IMUData):
                 self._latest_imu = imu
+                self._latest_imu_arrival = now
+        if (
+            self._latest_imu is not None
+            and now - self._latest_imu_arrival > IMU_MAX_AGE_SECONDS
+        ):
+            self._latest_imu = None
 
     def _finish(
         self, outcome: CalibrationOutcome, candidates: list[SupportPlane], info: str

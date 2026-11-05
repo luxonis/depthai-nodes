@@ -18,6 +18,9 @@ from depthai_nodes.node import (  # noqa: E402
     PlaneCalibrationConfig,
     SupportPlaneCalibrator,
 )
+from depthai_nodes.node.support_plane_calibrator.support_plane_calibrator import (  # noqa: E402
+    IMU_MAX_AGE_SECONDS,
+)
 from tests.utils import (  # noqa: E402
     InputMock,
     OutputMock,
@@ -415,6 +418,66 @@ def test_verifications_wait_for_imu_and_are_answered_once_in_order(calibrator):
 
     assert [calibrator.verification().plane for _ in planes] == planes
     assert calibrator.verifications.is_empty()
+
+
+class Clock:
+    """A stand-in for ``time.monotonic`` that moves only when advanced."""
+
+    def __init__(self):
+        self.now = 1000.0
+
+    def __call__(self):
+        return self.now
+
+
+@pytest.fixture
+def clock():
+    clock = Clock()
+    with patch(
+        "depthai_nodes.node.support_plane_calibrator.support_plane_calibrator"
+        ".time.monotonic",
+        clock,
+    ):
+        yield clock
+
+
+def test_stale_imu_is_not_used_for_verification(calibrator, clock):
+    calibrator.gravity()
+    calibrator.run()
+    clock.now += IMU_MAX_AGE_SECONDS + 0.01
+
+    calibrator.verify(tilted_plane(0))
+    calibrator.run()
+    assert calibrator.verifications.is_empty()
+
+    calibrator.gravity()
+    calibrator.run()
+    assert calibrator.verification().accepted
+
+
+def test_stale_imu_is_not_used_for_fitting(calibrator, clock):
+    calibrator.gravity()
+    calibrator.run()
+    clock.now += IMU_MAX_AGE_SECONDS + 0.01
+
+    calibrator.start()
+    calibrator.plane_cloud()
+    calibrator.run()
+    assert calibrator.no_result()
+
+    calibrator.gravity()
+    calibrator.run()
+    assert calibrator.result().outcome is CalibrationOutcome.SUCCEEDED
+
+
+def test_imu_within_the_age_limit_is_reused(calibrator, clock):
+    calibrator.gravity()
+    calibrator.run()
+    clock.now += IMU_MAX_AGE_SECONDS
+
+    calibrator.verify(tilted_plane(0))
+    calibrator.run()
+    assert calibrator.verification().accepted
 
 
 def test_verification_does_not_affect_attempts(calibrator):
