@@ -130,6 +130,8 @@ class BoxDetections(Collection[BoxDetection]):
             raise TypeError("Segmentation mask must be a numpy array")
         if segmentation_mask.ndim != 2 or segmentation_mask.dtype != np.uint8:
             raise ValueError("Segmentation mask must be a 2-D uint8 label image")
+        if items and segmentation_mask.size == 0:
+            raise ValueError("Segmentation mask must not be empty when items exist")
         labels = segmentation_mask[segmentation_mask != BACKGROUND_LABEL]
         if labels.size and int(labels.max()) >= len(items):
             raise ValueError("Segmentation mask labels must index detection items")
