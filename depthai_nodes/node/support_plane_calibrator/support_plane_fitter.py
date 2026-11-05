@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -101,7 +102,9 @@ class SupportPlaneFitter:
         config = self._config
         min_inliers = max(
             config.ransac_sample_points,
-            int(config.min_inlier_ratio * len(cloud.points)),
+            # Round first so float noise (0.07 * 100 = 7.000000000000001) does
+            # not push an exact count up by one.
+            math.ceil(round(config.min_inlier_ratio * len(cloud.points), 9)),
         )
         fits: list[PlaneFit] = []
         for _ in range(config.max_plane_passes):
