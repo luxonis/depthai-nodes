@@ -12,27 +12,21 @@ from .segmentation_matching import match_tracklets_to_detections
 class BoxDetectionAssembler(dai.node.HostNode):
     """Emit one box detection per tracked box with a non-empty segmentation.
 
-    Detections below the confidence threshold are dropped after tracking, with the
-    tracklets paired to them, and the instance mask is renumbered to match the kept
-    box detections.
-
     Attributes:
         out: Output stream of ``BoxDetections`` carrying the timestamps and sequence
             number of the input detections.
     """
 
     def __init__(self) -> None:
-        """Initialize the assembler with a placeholder mask size and threshold 0."""
+        """Initialize the assembler with a placeholder mask size."""
         super().__init__()
         self._mask_size = (1, 1)
-        self._confidence_threshold = 0.0
 
     def build(
         self,
         tracklets: dai.Node.Output,
         detections: dai.Node.Output,
         maskSize: tuple[int, int],
-        confidenceThreshold: float = 0.0,
     ) -> "BoxDetectionAssembler":
         """Link the tracker and detection streams.
 
@@ -41,31 +35,20 @@ class BoxDetectionAssembler(dai.node.HostNode):
             detections: Output producing ``dai.ImgDetections`` with an instance mask.
             maskSize: ``(width, height)`` of the network input, used for the mask of
                 frames that carry none.
-            confidenceThreshold: Minimum confidence of an emitted detection.
 
         Returns:
             This node.
         """
         self._mask_size = maskSize
-        self.setConfidenceThreshold(confidenceThreshold)
         self.link_args(tracklets, detections)
         return self
-
-    def setConfidenceThreshold(self, confidenceThreshold: float) -> None:
-        """Set the minimum confidence of an emitted detection, from any thread.
-
-        Args:
-            confidenceThreshold: Minimum confidence; it applies from the next frame.
-        """
-        # A single attribute store, read once per frame, so no lock is needed.
-        self._confidence_threshold = float(confidenceThreshold)
 
     def process(self, tracklets: dai.Buffer, detections: dai.Buffer) -> None:
         """Assemble and emit the box detections of one frame.
 
         Args:
             tracklets: Tracker output for the frame.
-            detections: All detections of the frame with their instance mask.
+            detections: Detections of the frame with their instance mask.
 
         Raises:
             TypeError: If the inputs are not ``dai.Tracklets`` and
@@ -95,7 +78,6 @@ class BoxDetectionAssembler(dai.node.HostNode):
             mask = np.full((height, width), BACKGROUND_LABEL, dtype=np.uint8)
             return BoxDetections([], mask)
 
-        threshold = self._confidence_threshold
         mask = np.full(source_mask.shape, BACKGROUND_LABEL, dtype=np.uint8)
         items: list[BoxDetection] = []
         active = [
@@ -104,12 +86,9 @@ class BoxDetectionAssembler(dai.node.HostNode):
             if t.status != dai.Tracklet.TrackingStatus.REMOVED
         ]
         matches = match_tracklets_to_detections(active, detections.detections)
-        # Pair on all detections, as the tracker saw them, then drop the weak ones.
-        # Kept detections stay in the parser's order, so mask IDs keep it too.
+        # Emit in the parser's order, so mask IDs keep it too.
         for track_index, det_index in sorted(matches.items(), key=lambda m: m[1]):
             track, det = active[track_index], detections.detections[det_index]
-            if det.confidence < threshold:
-                continue
             region = source_mask == det_index
             if not region.any() or len(items) >= BACKGROUND_LABEL:
                 continue

@@ -173,6 +173,8 @@ class DetectionParserMock:
         self._nn_archive = None
         self._run_on_host = False
         self._confidence_threshold = None
+        self._iou_threshold = 0.5
+        self._input_config = InputMock()
 
     @property
     def input(self):
@@ -204,6 +206,16 @@ class DetectionParserMock:
 
     def getConfidenceThreshold(self):
         return self._confidence_threshold
+
+    def setIouThreshold(self, threshold: float):
+        self._iou_threshold = threshold
+
+    def getIouThreshold(self):
+        return self._iou_threshold
+
+    @property
+    def inputConfig(self):
+        return self._input_config
 
     def setRunOnHost(self, run_on_host: bool):
         self._run_on_host = run_on_host

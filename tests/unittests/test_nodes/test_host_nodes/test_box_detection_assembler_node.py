@@ -63,14 +63,8 @@ def region(rows: slice, cols: slice) -> np.ndarray:
     return expected
 
 
-def assemble(
-    tracklets: dai.Tracklets,
-    detections: dai.ImgDetections,
-    confidenceThreshold: float = 0.0,
-):
-    assembler = BoxDetectionAssembler().build(
-        OutputMock(), OutputMock(), MASK_SIZE, confidenceThreshold
-    )
+def assemble(tracklets: dai.Tracklets, detections: dai.ImgDetections):
+    assembler = BoxDetectionAssembler().build(OutputMock(), OutputMock(), MASK_SIZE)
     queue = assembler.out.createOutputQueue()
     assembler.process(tracklets, detections)
     message = queue.get()
@@ -135,26 +129,6 @@ def test_only_current_tracks_with_a_nonempty_segmentation_are_kept():
         message.getMask(index_b), region(slice(14, 22), slice(19, 29))
     )
     assert set(np.unique(message.segmentation_mask).tolist()) == {0, 1, 255}
-
-
-def test_dropping_a_middle_detection_renumbers_the_mask():
-    mask = np.full((MASK_SIZE[1], MASK_SIZE[0]), 255, dtype=np.uint8)
-    mask[2:7, 3:10] = 0
-    mask[0:3, 13:16] = 1
-    mask[14:22, 19:29] = 2
-    message = assemble(
-        create_tracklets(
-            [(3, TRACKED, BOX_A), (4, TRACKED, BOX_EMPTY), (5, NEW, BOX_B)]
-        ),
-        create_detections([(BOX_A, 0.9), (BOX_EMPTY, 0.3), (BOX_B, 0.7)], mask),
-        confidenceThreshold=0.5,
-    )
-
-    assert [item.track_id for item in message.items] == [3, 5]
-    expected = np.full((MASK_SIZE[1], MASK_SIZE[0]), 255, dtype=np.uint8)
-    expected[2:7, 3:10] = 0
-    expected[14:22, 19:29] = 1
-    np.testing.assert_array_equal(message.segmentation_mask, expected)
 
 
 def test_frame_without_a_mask_emits_empty_detections_of_the_mask_size():

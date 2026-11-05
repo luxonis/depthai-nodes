@@ -5,9 +5,6 @@ import numpy as np
 import pytest
 
 from depthai_nodes.node import BoxDetector
-from depthai_nodes.node.box_detector.box_detection_assembler import (
-    BoxDetectionAssembler,
-)
 from tests.utils import (
     ImageManipMock,
     NeuralNetworkMock,
@@ -52,85 +49,67 @@ def find_node(pipeline: PipelineMock, node_type: type):
     return node
 
 
-def emitted_confidences(
-    pipeline: PipelineMock, confidences: list[float]
-) -> list[float]:
-    """Feed side-by-side tracked boxes and return the confidences emitted."""
-    tracklets, items = [], []
-    mask = np.full((2, 2 * len(confidences)), 255, dtype=np.uint8)
-    for index, confidence in enumerate(confidences):
-        xmin, xmax = index / len(confidences), (index + 1) / len(confidences)
-        detection = dai.ImgDetection()
-        detection.confidence = confidence
-        detection.xmin, detection.ymin, detection.xmax, detection.ymax = (
-            xmin,
-            0,
-            xmax,
-            1,
-        )
-        items.append(detection)
-        tracklet = dai.Tracklet()
-        tracklet.id = index
-        tracklet.status = dai.Tracklet.TrackingStatus.TRACKED
-        tracklet.roi = dai.Rect(dai.Point2f(xmin, 0), dai.Point2f(xmax, 1))
-        tracklets.append(tracklet)
-        mask[:, 2 * index : 2 * index + 2] = index
-    detections = dai.ImgDetections()
-    detections.detections = items
-    detections.setCvSegmentationMask(mask)
-    tracks = dai.Tracklets()
-    tracks.tracklets = tracklets
-    assembler = find_node(pipeline, BoxDetectionAssembler)
-    queue = assembler.out.createOutputQueue()
-    assembler.process(tracks, detections)
-    return [round(item.confidence, 2) for item in queue.get().items]
+def parser(pipeline: PipelineMock) -> DetectionParserMock:
+    return find_node(pipeline, DetectionParserMock)
 
 
-def test_build_fixes_the_parser_threshold_at_zero(pipeline: PipelineMock):
+def sent_configs(pipeline: PipelineMock) -> list[dai.DetectionParserConfig]:
+    configs, config_input = [], parser(pipeline).inputConfig
+    while (config := config_input.tryGet()) is not None:
+        configs.append(config)
+    return configs
+
+
+def test_build_sets_the_parser_threshold(pipeline: PipelineMock):
     pipeline.create(BoxDetector).build(OutputMock(), confidenceThreshold=0.65)
 
-    assert find_node(pipeline, DetectionParserMock).getConfidenceThreshold() == 0
-
-
-def test_build_threshold_drops_detections_below_it(pipeline: PipelineMock):
-    pipeline.create(BoxDetector).build(OutputMock(), confidenceThreshold=0.65)
-
-    assert emitted_confidences(pipeline, [0.6, 0.7]) == [0.7]
+    assert parser(pipeline).getConfidenceThreshold() == pytest.approx(0.65)
+    assert sent_configs(pipeline) == []
 
 
 def test_default_threshold_is_one_half(pipeline: PipelineMock):
     pipeline.create(BoxDetector).build(OutputMock())
 
-    assert emitted_confidences(pipeline, [0.4, 0.5]) == [0.5]
+    assert parser(pipeline).getConfidenceThreshold() == 0.5
 
 
-def test_live_threshold_changes_the_emitted_detections(pipeline: PipelineMock):
+def test_live_threshold_sends_a_parser_config(pipeline: PipelineMock):
     detector = pipeline.create(BoxDetector).build(OutputMock())
+    parser(pipeline).setIouThreshold(0.4)
 
     detector.setConfidenceThreshold(0.7)
-
-    assert emitted_confidences(pipeline, [0.6, 0.8]) == [0.8]
-    assert find_node(pipeline, DetectionParserMock).getConfidenceThreshold() == 0
-
-
-def test_lowering_the_live_threshold_emits_detections_again(pipeline: PipelineMock):
-    detector = pipeline.create(BoxDetector).build(OutputMock(), confidenceThreshold=0.7)
-    assert emitted_confidences(pipeline, [0.4, 0.8]) == [0.8]
-
     detector.setConfidenceThreshold(0.3)
 
-    assert emitted_confidences(pipeline, [0.4, 0.8]) == [0.4, 0.8]
+    configs = sent_configs(pipeline)
+    assert [round(c.getConfidenceThreshold(), 2) for c in configs] == [0.7, 0.3]
+    assert [round(c.getIouThreshold(), 2) for c in configs] == [0.4, 0.4]
+
+
+@pytest.mark.parametrize("missing", ["inputConfig", "DetectionParserConfig"])
+def test_live_threshold_needs_depthai_3_11(
+    pipeline: PipelineMock, monkeypatch: pytest.MonkeyPatch, missing: str
+):
+    owner = DetectionParserMock if missing == "inputConfig" else dai
+    monkeypatch.delattr(owner, missing)
+    detector = pipeline.create(BoxDetector).build(
+        OutputMock(), confidenceThreshold=0.65
+    )
+
+    assert parser(pipeline).getConfidenceThreshold() == pytest.approx(0.65)
+    with pytest.raises(RuntimeError, match="3.11"):
+        detector.setConfidenceThreshold(0.7)
 
 
 def test_threshold_accepts_bounds_and_numpy_scalars(pipeline: PipelineMock):
     detector = pipeline.create(BoxDetector).build(
         OutputMock(), confidenceThreshold=np.float32(0.25)
     )
-    assert emitted_confidences(pipeline, [0.2, 0.3]) == [0.3]
+    assert parser(pipeline).getConfidenceThreshold() == pytest.approx(0.25)
 
     detector.setConfidenceThreshold(0)
-    detector.setConfidenceThreshold(1)
-    assert emitted_confidences(pipeline, [0.9, 1.0]) == [1.0]
+    detector.setConfidenceThreshold(np.float64(1))
+    configs = sent_configs(pipeline)
+    assert [c.getConfidenceThreshold() for c in configs] == [0, 1]
 
 
 @pytest.mark.parametrize("value", INVALID_VALUES)

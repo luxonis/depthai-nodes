@@ -16,6 +16,9 @@ class InputMock:
     def send(self, message):
         self._queue.send(message)
 
+    def createInputQueue(self):
+        return self
+
 
 class InfiniteInputMock(InputMock):
     """Special input class that uses InfiniteQueue to simulate a long running test."""
