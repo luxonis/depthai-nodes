@@ -81,6 +81,10 @@ jobs:
         python-version: ${{ matrix.python-version }}
         cache: pip
 
+    - name: Install open3d system deps
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libgomp1
+
     - name: Install package
       run: pip install -e .[dev,box-measurement]
 
