@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, TypeAlias
+from typing import TypeAlias
 
 import depthai as dai
 import numpy as np
 
 from .support_plane import SupportPlane
-from .utils.value_checks import check_float, check_instance, check_int
+from .utils.value_checks import check_bool, check_float, check_instance, check_int
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -334,21 +334,3 @@ class SupportPlaneVerificationResult(dai.Buffer):
     def accepted(self) -> bool:
         """Whether the plane passed the gravity check."""
         return self._accepted
-
-
-def check_bool(name: str, value: Any) -> bool:
-    """Return a ``bool`` or numpy ``bool_`` as a built-in ``bool``.
-
-    Args:
-        name: Field name used in error messages.
-        value: Value to check.
-
-    Returns:
-        The value as a ``bool``.
-
-    Raises:
-        TypeError: If the value is not a ``bool`` or numpy ``bool_``.
-    """
-    if not isinstance(value, (bool, np.bool_)):
-        raise TypeError(f"{name} must be a bool, got {type(value).__name__}")
-    return bool(value)

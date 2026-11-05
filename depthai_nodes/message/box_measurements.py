@@ -133,7 +133,7 @@ class BoxMeasurements(Collection[BoxMeasurementResult]):
                 (xmin, ymin), (xmax, ymax), fill_color=None, thickness=3.0
             )
             annotations.draw_text(
-                label(box),
+                annotation_text(box),
                 (xmin, max(0.0, ymin - 0.01)),
                 color=(1.0, 1.0, 1.0, 1.0),
                 background_color=(0.0, 0.0, 0.0, 0.6),
@@ -144,11 +144,11 @@ class BoxMeasurements(Collection[BoxMeasurementResult]):
         return message
 
 
-def label(box: BoxMeasurementResult) -> str:
-    """Return the annotation label of a measured box.
+def annotation_text(box: BoxMeasurementResult) -> str:
+    """Return the annotation text of a measured box.
 
     Args:
-        box: Measurement result to label.
+        box: Measurement result to describe.
 
     Returns:
         Track ID and confidence, followed by the dimensions in centimeters and

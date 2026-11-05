@@ -74,7 +74,7 @@ class BoxDetector(BaseThreadedHostNode):
             confidenceThreshold: Minimum detection confidence, between zero and one.
 
         Returns:
-            This node.
+            The configured node instance.
 
         Raises:
             RuntimeError: If the node is already built.

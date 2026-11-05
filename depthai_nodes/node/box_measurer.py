@@ -1,8 +1,6 @@
 """Box measurement from color and a point cloud, composed of detection and
 dimensioning."""
 
-from typing import Optional, Tuple
-
 import depthai as dai
 
 from depthai_nodes.message.support_plane import SupportPlane
@@ -44,8 +42,8 @@ class BoxMeasurer(BaseThreadedHostNode):
         self,
         color: dai.Node.Output,
         pointCloud: dai.Node.Output,
-        pointCloudSize: Tuple[int, int],
-        supportPlane: Optional[SupportPlane] = None,
+        pointCloudSize: tuple[int, int],
+        supportPlane: SupportPlane | None = None,
         confidenceThreshold: float = 0.5,
     ) -> "BoxMeasurer":
         """Build the detector and the dimensioner.
@@ -60,7 +58,7 @@ class BoxMeasurer(BaseThreadedHostNode):
             confidenceThreshold: Minimum detection confidence, between zero and one.
 
         Returns:
-            ``BoxMeasurer``: The built node.
+            The configured node instance.
 
         Raises:
             ImportError: If open3d is not installed.
@@ -108,7 +106,7 @@ class BoxMeasurer(BaseThreadedHostNode):
         """
         self._dimensioner.setSupportPlane(supportPlane)
 
-    def getSupportPlane(self) -> Optional[SupportPlane]:
+    def getSupportPlane(self) -> SupportPlane | None:
         """Return the active support plane.
 
         Returns:

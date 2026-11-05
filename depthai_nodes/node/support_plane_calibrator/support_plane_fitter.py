@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Inlier count, unit plane equation and inlier centroid of one RANSAC plane.
-PlaneFit = Tuple[int, np.ndarray, np.ndarray]
+PlaneFit = tuple[int, np.ndarray, np.ndarray]
 
 
 class SupportPlaneFitter:
@@ -30,7 +30,7 @@ class SupportPlaneFitter:
     """
 
     def __init__(
-        self, cloud_size: Tuple[int, int], config: PlaneCalibrationConfig
+        self, cloud_size: tuple[int, int], config: PlaneCalibrationConfig
     ) -> None:
         """Create a fitter for clouds of one size.
 
@@ -43,7 +43,7 @@ class SupportPlaneFitter:
 
     def find_candidates(
         self, points: np.ndarray, gravity: np.ndarray
-    ) -> List[SupportPlane]:
+    ) -> list[SupportPlane]:
         """Find planes facing against gravity, best first.
 
         Planes are ranked by inlier count, then by distance to the camera.
@@ -75,7 +75,7 @@ class SupportPlaneFitter:
             return []
         return self._rank(self._drop_duplicates(fits))
 
-    def _preprocess(self, points: np.ndarray) -> Optional[o3d.geometry.PointCloud]:
+    def _preprocess(self, points: np.ndarray) -> o3d.geometry.PointCloud | None:
         # open3d is an optional extra, so import it only when fitting.
         import open3d as o3d
 
@@ -96,14 +96,14 @@ class SupportPlaneFitter:
 
     def _fit_planes(
         self, cloud: o3d.geometry.PointCloud, gravity: np.ndarray
-    ) -> List[PlaneFit]:
+    ) -> list[PlaneFit]:
         """Extract planes with repeated RANSAC, keeping the horizontal ones."""
         config = self._config
         min_inliers = max(
             config.ransac_sample_points,
             int(config.min_inlier_ratio * len(cloud.points)),
         )
-        fits: List[PlaneFit] = []
+        fits: list[PlaneFit] = []
         for _ in range(config.max_plane_passes):
             if len(cloud.points) < min_inliers:
                 break
@@ -136,12 +136,12 @@ class SupportPlaneFitter:
             cloud = cloud.select_by_index(inliers, invert=True)
         return fits
 
-    def _drop_duplicates(self, fits: List[PlaneFit]) -> List[PlaneFit]:
+    def _drop_duplicates(self, fits: list[PlaneFit]) -> list[PlaneFit]:
         """Keep one plane per surface, the one with the most inliers.
 
         Noisy depth can make RANSAC split one surface into near-parallel planes.
         """
-        unique: List[PlaneFit] = []
+        unique: list[PlaneFit] = []
         for fit in sorted(fits, key=lambda f: -f[0]):
             _, plane_eq, centroid = fit
             if any(
@@ -168,7 +168,7 @@ class SupportPlaneFitter:
         return max(dist_ab, dist_ba) < self._config.merge_distance_threshold_mm
 
     @staticmethod
-    def _rank(fits: List[PlaneFit]) -> List[SupportPlane]:
+    def _rank(fits: list[PlaneFit]) -> list[SupportPlane]:
         """Order by inlier count, then by distance to the camera."""
         ranked = sorted(fits, key=lambda f: (-f[0], abs(f[1][3])))
         return [

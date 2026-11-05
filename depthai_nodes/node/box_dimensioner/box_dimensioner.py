@@ -1,7 +1,7 @@
 from collections import deque
 from statistics import median
 from threading import Lock
-from typing import Optional, Tuple
+from typing import cast
 
 import cv2
 import depthai as dai
@@ -15,7 +15,7 @@ from depthai_nodes.message.box_measurements import (
     MeasurementStatus,
 )
 from depthai_nodes.message.support_plane import SupportPlane
-from depthai_nodes.message.utils.value_checks import check_instance, check_int
+from depthai_nodes.message.utils.value_checks import check_instance, check_size
 from depthai_nodes.node.base_host_node import BaseHostNode
 from depthai_nodes.node.utils.open3d_dependency import require_open3d
 
@@ -52,15 +52,15 @@ class BoxDimensioner(BaseHostNode):
     def __init__(self) -> None:
         """Create the measurement and box-cloud outputs."""
         super().__init__()
-        self._box_cloud_output = self.createOutput()
+        self._box_cloud_output = self.createOutput(name="box_cloud")
         self._plane_lock = Lock()
-        self._plane: Optional[SupportPlane] = None
+        self._plane: SupportPlane | None = None
         self._plane_revision = 0
         self._seen_plane_revision = -1
         self._samples: dict[int, deque[BoxDimensions]] = {}
         self._absent: dict[int, int] = {}
         self._geometry = BoxGeometry()
-        self._size: Optional[Tuple[int, int]] = None
+        self._size: tuple[int, int] | None = None
 
     @property
     def boxCloudOutput(self) -> dai.Node.Output:
@@ -75,8 +75,8 @@ class BoxDimensioner(BaseHostNode):
         self,
         detections: dai.Node.Output,
         pointCloud: dai.Node.Output,
-        pointCloudSize: Tuple[int, int],
-        supportPlane: Optional[SupportPlane] = None,
+        pointCloudSize: tuple[int, int],
+        supportPlane: SupportPlane | None = None,
     ) -> "BoxDimensioner":
         """Link the inputs and set the cloud size and the support plane.
 
@@ -89,7 +89,7 @@ class BoxDimensioner(BaseHostNode):
                 ineligible until `setSupportPlane` is called.
 
         Returns:
-            ``BoxDimensioner``: The built node.
+            The configured node instance.
 
         Raises:
             ImportError: If open3d is not installed.
@@ -101,15 +101,7 @@ class BoxDimensioner(BaseHostNode):
         require_open3d(type(self).__name__)
         if self._size is not None:
             raise RuntimeError("BoxDimensioner is already built")
-        check_instance("pointCloudSize", pointCloudSize, tuple)
-        if len(pointCloudSize) != 2:
-            raise ValueError("pointCloudSize must be (width, height)")
-        width = check_int("pointCloudSize width", pointCloudSize[0])
-        height = check_int("pointCloudSize height", pointCloudSize[1])
-        if width <= 0 or height <= 0:
-            raise ValueError(
-                f"pointCloudSize must be positive, got ({width}, {height})"
-            )
+        width, height = check_size("pointCloudSize", pointCloudSize)
         if supportPlane is not None:
             self.setSupportPlane(supportPlane)
         self._size = (width, height)
@@ -132,7 +124,7 @@ class BoxDimensioner(BaseHostNode):
             self._plane = supportPlane
             self._plane_revision += 1
 
-    def getSupportPlane(self) -> Optional[SupportPlane]:
+    def getSupportPlane(self) -> SupportPlane | None:
         """Return the active support plane.
 
         Returns:
@@ -171,8 +163,8 @@ class BoxDimensioner(BaseHostNode):
     def _process(self, detections: dai.Buffer, point_cloud: dai.Buffer) -> None:
         check_instance("detections", detections, BoxDetections)
         check_instance("pointCloud", point_cloud, dai.PointCloudData)
-        assert isinstance(detections, BoxDetections)
-        assert isinstance(point_cloud, dai.PointCloudData)
+        detections = cast(BoxDetections, detections)
+        point_cloud = cast(dai.PointCloudData, point_cloud)
         with self._plane_lock:
             plane, revision = self._plane, self._plane_revision
         if revision != self._seen_plane_revision:
@@ -234,7 +226,7 @@ class BoxDimensioner(BaseHostNode):
                 except (ValueError, RuntimeError, cv2.error):
                     dimensions = None
                 if dimensions is not None and all(
-                    np.isfinite(v) and v > 0
+                    v > 0
                     for v in (
                         dimensions.length_mm,
                         dimensions.width_mm,
@@ -279,7 +271,7 @@ class BoxDimensioner(BaseHostNode):
         message.setTimestampDevice(source.getTimestampDevice())
         message.setSequenceNum(source.getSequenceNum())
 
-    def _aggregate(self, track_id: int) -> Optional[BoxDimensions]:
+    def _aggregate(self, track_id: int) -> BoxDimensions | None:
         samples = self._samples.get(track_id)
         if not samples:
             return None

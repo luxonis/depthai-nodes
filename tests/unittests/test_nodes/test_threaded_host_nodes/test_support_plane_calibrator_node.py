@@ -462,16 +462,22 @@ def build(size=CLOUD_SIZE, config=None):
     return MockedCalibrator().build(output, output, size, config)
 
 
-@pytest.mark.parametrize("size", [(0, 48), (64, -1), (64,), (1, 2, 3)])
+@pytest.mark.parametrize("size", [(0, 48), (64, -1), (64,), (1, 2, 3), [64]])
 def test_build_rejects_invalid_point_cloud_sizes(size):
     with pytest.raises(ValueError):
         build(size)
 
 
-@pytest.mark.parametrize("size", [(64.0, 48), (True, True), ("64", 48), [64, 48], None])
+@pytest.mark.parametrize(
+    "size", [(64.0, 48), (True, True), ("64", 48), [64, True], None, 64, b"ab"]
+)
 def test_build_rejects_point_cloud_sizes_of_the_wrong_type(size):
     with pytest.raises(TypeError):
         build(size)
+
+
+def test_build_accepts_a_point_cloud_size_list():
+    build([20, 20])
 
 
 def test_build_accepts_numpy_integer_sizes():

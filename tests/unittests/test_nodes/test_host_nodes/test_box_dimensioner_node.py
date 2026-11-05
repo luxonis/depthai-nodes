@@ -153,18 +153,30 @@ def test_measurements_carry_the_cloud_timing():
     assert message.getTimestampDevice() == cloud.getTimestampDevice()
 
 
-@pytest.mark.parametrize("size", [(0, 48), (64, -1), (64,), (64, 48, 1)])
+@pytest.mark.parametrize("size", [(0, 48), (64, -1), (64,), (64, 48, 1), [64]])
 def test_build_rejects_cloud_sizes_without_two_positive_values(size):
     with pytest.raises(ValueError):
         build(size)
 
 
 @pytest.mark.parametrize(
-    "size", [(64.0, 48), (True, True), (64, True), ("64", 48), (None, 48), [64, 48]]
+    "size",
+    [(64.0, 48), (True, True), (64, True), ("64", 48), (None, 48), None, 64, "64"],
 )
 def test_build_rejects_cloud_sizes_that_are_not_integer_pairs(size):
     with pytest.raises(TypeError):
         build(size)
+
+
+def test_build_accepts_a_cloud_size_list():
+    dimensioner = build([64, 48])
+    queue = dimensioner.out.createOutputQueue()
+
+    dimensioner.process(BoxDetections([box()], centered_mask()), flat_top_cloud())
+
+    assert (
+        measurements(queue).items[0].measurement_status == MeasurementStatus.INELIGIBLE
+    )
 
 
 def test_build_accepts_numpy_integer_cloud_size():

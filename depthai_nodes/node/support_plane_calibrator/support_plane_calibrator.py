@@ -1,7 +1,6 @@
 import time
 from collections import deque
 from enum import Enum
-from typing import List, Optional, Tuple
 
 import depthai as dai
 import numpy as np
@@ -14,7 +13,7 @@ from depthai_nodes.message.support_plane_calibration import (
     SupportPlaneCalibrationResult,
     SupportPlaneVerificationResult,
 )
-from depthai_nodes.message.utils.value_checks import check_instance, check_int
+from depthai_nodes.message.utils.value_checks import check_instance, check_size
 from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
 from depthai_nodes.node.utils.open3d_dependency import require_open3d
 
@@ -81,10 +80,10 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         )
         self._imu_input = self.createInput(name="imu")
         self._state = CalibratorState.IDLE
-        self._config: Optional[PlaneCalibrationConfig] = None
-        self._fitter: Optional[SupportPlaneFitter] = None
+        self._config: PlaneCalibrationConfig | None = None
+        self._fitter: SupportPlaneFitter | None = None
         self._verifications: deque[SupportPlane] = deque()
-        self._latest_imu: Optional[dai.IMUData] = None
+        self._latest_imu: dai.IMUData | None = None
 
     @property
     def inputControl(self) -> dai.Node.Input:
@@ -117,8 +116,8 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         self,
         pointCloud: dai.Node.Output,
         imu: dai.Node.Output,
-        pointCloudSize: Tuple[int, int],
-        config: Optional[PlaneCalibrationConfig] = None,
+        pointCloudSize: tuple[int, int],
+        config: PlaneCalibrationConfig | None = None,
     ) -> "SupportPlaneCalibrator":
         """Link the inputs and fix the cloud size and fitting settings.
 
@@ -130,7 +129,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             config: Plane-fitting settings; ``None`` uses the defaults.
 
         Returns:
-            ``SupportPlaneCalibrator``: The built node.
+            The configured node instance.
 
         Raises:
             ImportError: If open3d is not installed.
@@ -145,15 +144,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                 "SupportPlaneCalibrator is already built; create a new node to "
                 "change its configuration"
             )
-        check_instance("pointCloudSize", pointCloudSize, tuple)
-        if len(pointCloudSize) != 2:
-            raise ValueError("pointCloudSize must be (width, height)")
-        width = check_int("pointCloudSize width", pointCloudSize[0])
-        height = check_int("pointCloudSize height", pointCloudSize[1])
-        if width <= 0 or height <= 0:
-            raise ValueError(
-                f"pointCloudSize must be positive, got ({width}, {height})"
-            )
+        width, height = check_size("pointCloudSize", pointCloudSize)
         if config is None:
             config = PlaneCalibrationConfig()
         check_instance("config", config, PlaneCalibrationConfig)
@@ -214,7 +205,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                 self._latest_imu = imu
 
     def _finish(
-        self, outcome: CalibrationOutcome, candidates: List[SupportPlane], info: str
+        self, outcome: CalibrationOutcome, candidates: list[SupportPlane], info: str
     ) -> None:
         # Like DepthAI MultiDeviceCalibration, a stopped attempt needs no reset.
         self._state = (
@@ -227,7 +218,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
     def _answer_verifications(self, imu: dai.IMUData) -> None:
         if not self._verifications:
             return
-        gravity = _gravity(imu)
+        gravity = imu_gravity(imu)
         if gravity is None:
             return
         assert self._config is not None
@@ -244,7 +235,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             )
 
     def _process_cloud(self, cloud: dai.ADatatype, imu: dai.IMUData) -> None:
-        gravity = _gravity(imu)
+        gravity = imu_gravity(imu)
         if gravity is None:
             return
         if not isinstance(cloud, dai.PointCloudData):
@@ -268,8 +259,15 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             )
 
 
-def _gravity(imu: dai.IMUData) -> Optional[np.ndarray]:
-    """Raw accelerometer gravity from the first packet that carries it."""
+def imu_gravity(imu: dai.IMUData) -> np.ndarray | None:
+    """Return the raw accelerometer gravity from the first packet carrying it.
+
+    Args:
+        imu: IMU message to read.
+
+    Returns:
+        The accelerometer ``(x, y, z)`` vector, or ``None`` if no packet has one.
+    """
     for packet in imu.packets:
         acceleration = packet.acceleroMeter
         if acceleration is not None:

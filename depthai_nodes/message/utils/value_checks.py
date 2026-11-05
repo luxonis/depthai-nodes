@@ -7,7 +7,10 @@ as built-in ``float`` or ``int``.
 
 import math
 import numbers
+from collections.abc import Sequence
 from typing import Any
+
+import numpy as np
 
 
 def check_float(name: str, value: Any) -> float:
@@ -48,6 +51,52 @@ def check_int(name: str, value: Any) -> int:
     if isinstance(value, bool) or not isinstance(value, numbers.Integral):
         raise TypeError(f"{name} must be an integer, got {type(value).__name__}")
     return int(value)
+
+
+def check_bool(name: str, value: Any) -> bool:
+    """Return a ``bool`` or numpy ``bool_`` as a built-in ``bool``.
+
+    Args:
+        name: Field name used in error messages.
+        value: Value to check.
+
+    Returns:
+        The value as a ``bool``.
+
+    Raises:
+        TypeError: If the value is not a ``bool`` or numpy ``bool_``.
+    """
+    if not isinstance(value, (bool, np.bool_)):
+        raise TypeError(f"{name} must be a bool, got {type(value).__name__}")
+    return bool(value)
+
+
+def check_size(name: str, value: Any) -> tuple[int, int]:
+    """Return a ``(width, height)`` pair of positive integers as a tuple.
+
+    Args:
+        name: Field name used in error messages.
+        value: Any sequence of two integers, such as a tuple or a list.
+
+    Returns:
+        The pair as a tuple of built-in ``int``.
+
+    Raises:
+        TypeError: If the value is not a sequence, is a ``str`` or ``bytes``, or
+            holds elements that are not integers.
+        ValueError: If the value does not have exactly two positive elements.
+    """
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        raise TypeError(
+            f"{name} must be a (width, height) sequence, got {type(value).__name__}"
+        )
+    if len(value) != 2:
+        raise ValueError(f"{name} must be (width, height), got {len(value)} values")
+    width = check_int(f"{name} width", value[0])
+    height = check_int(f"{name} height", value[1])
+    if width <= 0 or height <= 0:
+        raise ValueError(f"{name} must be positive, got ({width}, {height})")
+    return width, height
 
 
 def check_instance(name: str, value: Any, expected: type) -> None:
