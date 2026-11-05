@@ -52,6 +52,7 @@ def _check_instance(name: str, value: Any, expected: type) -> None:
 
 
 BACKGROUND_LABEL = 255
+MAX_DETECTIONS = BACKGROUND_LABEL
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -92,14 +93,27 @@ class BoxDetection:
         _check_instance("track_status", self.track_status, dai.Tracklet.TrackingStatus)
 
 
+def _check_count(count: int) -> None:
+    """Check that ``count`` detections can each have their own mask label.
+
+    Raises:
+        ValueError: If ``count`` exceeds ``MAX_DETECTIONS``.
+    """
+    if count > MAX_DETECTIONS:
+        raise ValueError(
+            f"BoxDetections holds at most {MAX_DETECTIONS} items, got {count}"
+        )
+
+
 class BoxDetections(Collection[BoxDetection]):
     """Box detections sharing one segmentation label mask.
 
     The mask covers the whole source frame, stretched to its own resolution. A
     pixel value is the index of the item it belongs to; 255 is background.
 
-    The mask is checked against the items only at construction. Assigning
-    ``items``, ``append()`` and ``extend()`` do not recheck it.
+    At most ``MAX_DETECTIONS`` (255) items fit, since label 255 is
+    background. The mask is checked against the items only at construction.
+    Assigning ``items``, ``append()`` and ``extend()`` do not recheck it.
 
     Args:
         items: Detections, indexed by the mask labels.
@@ -108,8 +122,9 @@ class BoxDetections(Collection[BoxDetection]):
     Raises:
         TypeError: If ``segmentation_mask`` is not a numpy array, or ``items``
             is not a list of one type.
-        ValueError: If ``segmentation_mask`` is not a 2-D ``uint8`` array, or a
-            label does not index an item.
+        ValueError: If ``segmentation_mask`` is not a 2-D ``uint8`` array, a
+            label does not index an item, or there are more than
+            ``MAX_DETECTIONS`` items.
     """
 
     def __init__(self, items: list[BoxDetection], segmentation_mask: np.ndarray):
@@ -123,7 +138,8 @@ class BoxDetections(Collection[BoxDetection]):
             TypeError: If ``segmentation_mask`` is not a numpy array, or
                 ``items`` is not a list of one type.
             ValueError: If ``segmentation_mask`` is not a 2-D ``uint8`` array,
-                or a label does not index an item.
+                a label does not index an item, or there are more than
+                ``MAX_DETECTIONS`` items.
         """
         super().__init__(items)
         if not isinstance(segmentation_mask, np.ndarray):
@@ -136,6 +152,35 @@ class BoxDetections(Collection[BoxDetection]):
         if labels.size and int(labels.max()) >= len(items):
             raise ValueError("Segmentation mask labels must index detection items")
         self._segmentation_mask = segmentation_mask
+
+    @property
+    def items(self) -> list[BoxDetection]:
+        """The detections, indexed by the mask labels."""
+        return self._items
+
+    @items.setter
+    def items(self, value: list[BoxDetection]) -> None:
+        """Replace the detections after checking their count and types.
+
+        Raises:
+            TypeError: If the value is not a list of one type.
+            ValueError: If there are more than ``MAX_DETECTIONS`` items.
+        """
+        if isinstance(value, list):
+            _check_count(len(value))
+        # Look the base property up directly; pyright types ``Collection.items`` as
+        # the list it holds, not the property.
+        vars(Collection)["items"].fset(self, value)
+
+    def append(self, item: BoxDetection) -> None:
+        """Append one detection.
+
+        Raises:
+            TypeError: If the item is not a ``BoxDetection``.
+            ValueError: If the collection already holds ``MAX_DETECTIONS`` items.
+        """
+        _check_count(len(self._items) + 1)
+        super().append(item)
 
     @property
     def segmentation_mask(self) -> np.ndarray:

@@ -135,6 +135,48 @@ def test_constructor_takes_no_timestamps():
         )
 
 
+def many_detections(count: int) -> list[BoxDetection]:
+    return [create_box_detection(track_id) for track_id in range(count)]
+
+
+def test_up_to_255_detections_fit():
+    message = create_box_detections(many_detections(254))
+
+    message.append(create_box_detection())
+
+    assert len(message.items) == 255
+
+
+def test_more_than_255_detections_are_rejected_at_construction():
+    with pytest.raises(ValueError):
+        create_box_detections(many_detections(256))
+
+
+def test_assigning_more_than_255_detections_keeps_the_old_items(detections):
+    old_items = detections.items
+
+    with pytest.raises(ValueError):
+        detections.items = many_detections(256)
+    assert detections.items is old_items
+
+
+def test_append_beyond_255_detections_is_rejected():
+    message = create_box_detections(many_detections(255))
+
+    with pytest.raises(ValueError):
+        message.append(create_box_detection())
+    assert len(message.items) == 255
+
+
+def test_extend_beyond_255_detections_is_rejected(detections):
+    with pytest.raises(ValueError):
+        detections.extend(many_detections(254))
+    assert len(detections.items) == 2
+
+    detections.extend(many_detections(253))
+    assert len(detections.items) == 255
+
+
 def test_empty_detections_carry_an_all_background_mask():
     message = create_box_detections()
 
