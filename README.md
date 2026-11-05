@@ -68,7 +68,7 @@ The `node` module provides parsers and pipeline helpers:
 - **Parser nodes** handle model post-processing for architectures such as YOLO, MediaPipe, and YuNet.
 - **Inference helpers**, including `ParsingNeuralNetwork` and `ParserGenerator`, create and connect inference and parser nodes.
 - **Utility nodes** handle detection filtering, image overlays, colormaps, and message collection.
-- **Box measurement nodes** detect, track, and measure boxes from color and a point cloud on RVC4.
+- **Box measurement nodes** detect, track, and measure boxes from color and a point cloud. `BoxDetector` and `BoxMeasurer` run on RVC4 only. `BoxDimensioner` requires open3d and has no RVC4-only check.
 
 `ParsingNeuralNetwork` and `ParserGenerator` use native DepthAI parsers by default. Use `HostParsingNeuralNetwork` or pass `hostOnly=True` to `ParserGenerator.build()` to select this package's host parsers.
 
