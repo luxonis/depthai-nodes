@@ -110,7 +110,13 @@ def _copy(msg: dai.Buffer) -> dai.Buffer | object:
             edges=copy.deepcopy(keypoints.getEdges()),
         )
 
+    # depthai >= 3.12 tracks whether `normalized` was set explicitly
+    # (`hasNormalized`); otherwise `isNormalized()` infers it from the values.
+    # Passing the inferred value to the constructor would turn it into an
+    # explicit one, so only pass it when the source had it set explicitly.
     def _copy_point2f(point2f: dai.Point2f) -> dai.Point2f:
+        if not getattr(point2f, "hasNormalized", True):
+            return dai.Point2f(x=point2f.x, y=point2f.y)
         return dai.Point2f(
             x=point2f.x,
             y=point2f.y,
@@ -118,6 +124,8 @@ def _copy(msg: dai.Buffer) -> dai.Buffer | object:
         )
 
     def _copy_size2f(size2f: dai.Size2f) -> dai.Size2f:
+        if not getattr(size2f, "hasNormalized", True):
+            return dai.Size2f(width=size2f.width, height=size2f.height)
         return dai.Size2f(
             width=size2f.width,
             height=size2f.height,
