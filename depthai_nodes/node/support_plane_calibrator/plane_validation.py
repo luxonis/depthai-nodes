@@ -16,9 +16,12 @@ def is_valid_horizontal_plane(
 
     Returns:
         ``True`` if the normal is within the angle and the offset ``d`` is not
-        positive.
+        positive. ``False`` if ``gravity`` is the zero vector.
     """
-    normalized_gravity = gravity / (np.linalg.norm(gravity) + 1e-9)
+    gravity_norm = np.linalg.norm(gravity)
+    if gravity_norm == 0:
+        return False
+    normalized_gravity = gravity / gravity_norm
     return bool(
         np.dot(plane_eq[:3], normalized_gravity)
         <= -np.cos(np.deg2rad(max_gravity_angle_deg))

@@ -35,3 +35,7 @@ def test_rejects_a_plane_behind_the_camera():
 def test_rejects_the_opposite_sign_equation_of_an_accepted_plane():
     assert is_valid_horizontal_plane(np.array([0, 0, 1, -1000.0]), GRAVITY, 6.5)
     assert not is_valid_horizontal_plane(np.array([0, 0, -1, 1000.0]), GRAVITY, 6.5)
+
+
+def test_rejects_any_plane_when_gravity_is_zero():
+    assert not is_valid_horizontal_plane(tilted(0), np.zeros(3), 90)
