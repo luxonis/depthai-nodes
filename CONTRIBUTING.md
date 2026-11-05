@@ -80,7 +80,7 @@ Run from the repository root:
 pytest tests/unittests
 ```
 
-Install the extra with `pip install -e .[dev,box-measurement]` to run the box measurement tests; without open3d they are skipped.
+Install the extra with `pip install -e .[dev,box-measurement]` to run all box measurement tests. Without open3d, the tests in modules that call `pytest.importorskip("open3d")` are skipped. The message, box detector, and missing-open3d import tests still run.
 
 ### Integration tests
 
