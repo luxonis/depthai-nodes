@@ -4,7 +4,10 @@ import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes.node import BoxDetector, ImgDetectionsFilter
+from depthai_nodes.node import BoxDetector
+from depthai_nodes.node.box_detector.box_detection_assembler import (
+    BoxDetectionAssembler,
+)
 from tests.utils import (
     ImageManipMock,
     NeuralNetworkMock,
@@ -49,20 +52,38 @@ def find_node(pipeline: PipelineMock, node_type: type):
     return node
 
 
-def kept_confidences(pipeline: PipelineMock, confidences: list[float]) -> list[float]:
-    detections = dai.ImgDetections()
-    items = []
-    for confidence in confidences:
+def emitted_confidences(
+    pipeline: PipelineMock, confidences: list[float]
+) -> list[float]:
+    """Feed side-by-side tracked boxes and return the confidences emitted."""
+    tracklets, items = [], []
+    mask = np.full((2, 2 * len(confidences)), 255, dtype=np.uint8)
+    for index, confidence in enumerate(confidences):
+        xmin, xmax = index / len(confidences), (index + 1) / len(confidences)
         detection = dai.ImgDetection()
         detection.confidence = confidence
-        detection.xmin, detection.ymin, detection.xmax, detection.ymax = (0, 0, 1, 1)
+        detection.xmin, detection.ymin, detection.xmax, detection.ymax = (
+            xmin,
+            0,
+            xmax,
+            1,
+        )
         items.append(detection)
+        tracklet = dai.Tracklet()
+        tracklet.id = index
+        tracklet.status = dai.Tracklet.TrackingStatus.TRACKED
+        tracklet.roi = dai.Rect(dai.Point2f(xmin, 0), dai.Point2f(xmax, 1))
+        tracklets.append(tracklet)
+        mask[:, 2 * index : 2 * index + 2] = index
+    detections = dai.ImgDetections()
     detections.detections = items
-    detections.setCvSegmentationMask(np.full((2, 2), 255, dtype=np.uint8))
-    detection_filter = find_node(pipeline, ImgDetectionsFilter)
-    queue = detection_filter.out.createOutputQueue()
-    detection_filter.process(detections)
-    return [round(d.confidence, 2) for d in queue.get().detections]
+    detections.setCvSegmentationMask(mask)
+    tracks = dai.Tracklets()
+    tracks.tracklets = tracklets
+    assembler = find_node(pipeline, BoxDetectionAssembler)
+    queue = assembler.out.createOutputQueue()
+    assembler.process(tracks, detections)
+    return [round(item.confidence, 2) for item in queue.get().items]
 
 
 def test_build_fixes_the_parser_threshold_at_zero(pipeline: PipelineMock):
@@ -71,36 +92,45 @@ def test_build_fixes_the_parser_threshold_at_zero(pipeline: PipelineMock):
     assert find_node(pipeline, DetectionParserMock).getConfidenceThreshold() == 0
 
 
-def test_build_threshold_filters_detections(pipeline: PipelineMock):
+def test_build_threshold_drops_detections_below_it(pipeline: PipelineMock):
     pipeline.create(BoxDetector).build(OutputMock(), confidenceThreshold=0.65)
 
-    assert kept_confidences(pipeline, [0.6, 0.7]) == [0.7]
+    assert emitted_confidences(pipeline, [0.6, 0.7]) == [0.7]
 
 
 def test_default_threshold_is_one_half(pipeline: PipelineMock):
     pipeline.create(BoxDetector).build(OutputMock())
 
-    assert kept_confidences(pipeline, [0.4, 0.5]) == [0.5]
+    assert emitted_confidences(pipeline, [0.4, 0.5]) == [0.5]
 
 
-def test_live_threshold_changes_the_filter(pipeline: PipelineMock):
+def test_live_threshold_changes_the_emitted_detections(pipeline: PipelineMock):
     detector = pipeline.create(BoxDetector).build(OutputMock())
 
     detector.setConfidenceThreshold(0.7)
 
-    assert kept_confidences(pipeline, [0.6, 0.8]) == [0.8]
+    assert emitted_confidences(pipeline, [0.6, 0.8]) == [0.8]
     assert find_node(pipeline, DetectionParserMock).getConfidenceThreshold() == 0
+
+
+def test_lowering_the_live_threshold_emits_detections_again(pipeline: PipelineMock):
+    detector = pipeline.create(BoxDetector).build(OutputMock(), confidenceThreshold=0.7)
+    assert emitted_confidences(pipeline, [0.4, 0.8]) == [0.8]
+
+    detector.setConfidenceThreshold(0.3)
+
+    assert emitted_confidences(pipeline, [0.4, 0.8]) == [0.4, 0.8]
 
 
 def test_threshold_accepts_bounds_and_numpy_scalars(pipeline: PipelineMock):
     detector = pipeline.create(BoxDetector).build(
         OutputMock(), confidenceThreshold=np.float32(0.25)
     )
-    assert kept_confidences(pipeline, [0.2, 0.3]) == [0.3]
+    assert emitted_confidences(pipeline, [0.2, 0.3]) == [0.3]
 
     detector.setConfidenceThreshold(0)
     detector.setConfidenceThreshold(1)
-    assert kept_confidences(pipeline, [0.9, 1.0]) == [1.0]
+    assert emitted_confidences(pipeline, [0.9, 1.0]) == [1.0]
 
 
 @pytest.mark.parametrize("value", INVALID_VALUES)

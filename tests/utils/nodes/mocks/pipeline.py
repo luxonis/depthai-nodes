@@ -98,8 +98,6 @@ class PipelineMock:
             class NodeMock(node_type):
                 def __init__(self, pipeline):
                     self._pipeline = pipeline
-                    # Host nodes such as ImgDetectionsFilter use `out` in __init__.
-                    self._out = OutputMock()
                     super().__init__()
                     if (
                         self.__class__.__bases__[0].__bases__[0].__name__

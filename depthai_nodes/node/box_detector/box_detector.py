@@ -6,7 +6,6 @@ import depthai as dai
 
 from depthai_nodes.message.utils.value_checks import check_float
 from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
-from depthai_nodes.node.img_detections_filter import ImgDetectionsFilter
 from depthai_nodes.node.parsing_neural_network import ParsingNeuralNetwork
 
 from .box_detection_assembler import BoxDetectionAssembler
@@ -43,8 +42,8 @@ class BoxDetector(BaseThreadedHostNode):
     Attributes:
         out: Output stream of `depthai_nodes.message.BoxDetections`: one per
             processed frame, holding a box detection for every tracked box with a
-            current, non-empty segmentation, and carrying the frame's timestamps
-            and sequence number.
+            current, non-empty segmentation and a confidence at or above the
+            threshold, and carrying the frame's timestamps and sequence number.
     """
 
     def __init__(self) -> None:
@@ -60,13 +59,13 @@ class BoxDetector(BaseThreadedHostNode):
             if self.getParentPipeline().getDefaultDevice() is not None:
                 raise
             raise ValueError("BoxDetector currently requires an RVC4 device") from None
-        self._filter: ImgDetectionsFilter | None = None
+        self._built = False
         self._assembler = self.createSubnode(BoxDetectionAssembler)
 
     def build(
         self, color: dai.Node.Output, confidenceThreshold: float = 0.5
     ) -> "BoxDetector":
-        """Build the detection, filtering and tracking subnodes.
+        """Build the detection, tracking and assembly subnodes.
 
         Args:
             color: Color stream to detect boxes in.
@@ -82,7 +81,7 @@ class BoxDetector(BaseThreadedHostNode):
                 zero and one, if the device is not an RVC4, or if the model archive
                 has no input size.
         """
-        if self._filter is not None:
+        if self._built:
             raise RuntimeError("BoxDetector is already built")
         threshold = check_threshold(confidenceThreshold)
         if self._platform != dai.Platform.RVC4:
@@ -101,18 +100,17 @@ class BoxDetector(BaseThreadedHostNode):
         color.link(resize.inputImage)
         nn = self.createSubnode(ParsingNeuralNetwork).build(resize.out, archive)
 
-        # Parser at 0 and threshold in a filter: live parser config needs depthai 3.11.
+        # Parser at 0 and threshold applied on host after tracking: this keeps the
+        # parser -> tracker path on device and live changes work on depthai 3.9.
         nn.getParser(dai.node.DetectionParser).setConfidenceThreshold(0)
-        detection_filter = self.createSubnode(ImgDetectionsFilter).build(nn.out)
-        detection_filter.minConfidence(threshold)
 
         tracker = self.createSubnode(dai.node.ObjectTracker)
         tracker.setTrackerType(dai.TrackerType.SHORT_TERM_IMAGELESS)
         tracker.setTrackerIdAssignmentPolicy(dai.TrackerIdAssignmentPolicy.UNIQUE_ID)
-        detection_filter.out.link(tracker.inputDetections)
+        nn.out.link(tracker.inputDetections)
         color.link(tracker.inputTrackerFrame)
-        self._assembler.build(tracker.out, detection_filter.out, size)
-        self._filter = detection_filter
+        self._assembler.build(tracker.out, nn.out, size, threshold)
+        self._built = True
         return self
 
     @property
@@ -132,9 +130,9 @@ class BoxDetector(BaseThreadedHostNode):
             ValueError: If ``confidenceThreshold`` is not finite or not between
                 zero and one.
         """
-        if self._filter is None:
+        if not self._built:
             raise RuntimeError("BoxDetector is not built")
-        self._filter.minConfidence(check_threshold(confidenceThreshold))
+        self._assembler.setConfidenceThreshold(check_threshold(confidenceThreshold))
 
     def run(self) -> None:
         """Do nothing: the subnodes do the work."""
