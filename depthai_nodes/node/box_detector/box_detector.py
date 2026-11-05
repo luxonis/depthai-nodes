@@ -64,18 +64,8 @@ class BoxDetector(BaseThreadedHostNode):
     """
 
     def __init__(self) -> None:
-        """Create the node and its detection assembler.
-
-        Raises:
-            ValueError: If the pipeline has no default device.
-        """
-        try:
-            super().__init__()
-        except AttributeError:
-            # The depthai-nodes base reads the default device's platform.
-            if self.getParentPipeline().getDefaultDevice() is not None:
-                raise
-            raise ValueError("BoxDetector currently requires an RVC4 device") from None
+        """Create the node and its detection assembler."""
+        super().__init__()
         self._parser: dai.node.DetectionParser | None = None
         self._config_queue: dai.InputQueue | None = None
         self._assembler = self.createSubnode(BoxDetectionAssembler)

@@ -23,18 +23,8 @@ class BoxMeasurer(BaseThreadedHostNode):
     """
 
     def __init__(self) -> None:
-        """Create the detection and dimensioning subnodes.
-
-        Raises:
-            ValueError: If the pipeline has no default device.
-        """
-        try:
-            super().__init__()
-        except AttributeError:
-            # The depthai-nodes base reads the default device's platform.
-            if self.getParentPipeline().getDefaultDevice() is not None:
-                raise
-            raise ValueError("BoxMeasurer currently requires an RVC4 device") from None
+        """Create the detection and dimensioning subnodes."""
+        super().__init__()
         self._detector = self.createSubnode(BoxDetector)
         self._dimensioner = self.createSubnode(BoxDimensioner)
 
