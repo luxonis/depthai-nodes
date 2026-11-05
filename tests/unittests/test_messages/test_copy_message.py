@@ -20,6 +20,10 @@ def equal_attributes(obj1, obj2):
     if np.isscalar(obj1):
         # int, float, str, bool, bytes, np.int32, np.float64, np.bool_, etc.
         return obj1 == obj2
+    elif hasattr(type(obj1), "__members__"):
+        # pybind11 enum value; its members are reachable as attributes of each
+        # value (e.g. Fsync.INPUT.INPUT...), so walking them never terminates
+        return obj1 == obj2
     elif isinstance(obj1, np.ndarray):
         return np.array_equal(obj1, obj2)
     elif isinstance(obj1, (list, tuple)):
