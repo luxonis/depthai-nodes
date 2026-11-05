@@ -167,3 +167,18 @@ def test_a_second_build_is_rejected(pipeline: PipelineMock):
     measurer = build(pipeline)
     with pytest.raises(RuntimeError):
         measurer.build(output(), output(), CLOUD_SIZE)
+
+
+def test_build_can_be_retried_after_the_detector_fails(
+    pipeline: PipelineMock, monkeypatch: pytest.MonkeyPatch
+):
+    def offline(description):
+        raise ConnectionError("zoo unreachable")
+
+    measurer = create(pipeline)
+    with monkeypatch.context() as patch:
+        patch.setattr(dai, "getModelFromZoo", offline)
+        with pytest.raises(ConnectionError):
+            measurer.build(output(), output(), CLOUD_SIZE)
+
+    measurer.build(output(), output(), CLOUD_SIZE)

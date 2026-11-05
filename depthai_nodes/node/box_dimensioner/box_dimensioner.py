@@ -136,6 +136,21 @@ class BoxDimensioner(BaseHostNode):
                 ``supportPlane`` is not a ``SupportPlane``.
             ValueError: If ``pointCloudSize`` does not have two positive values.
         """
+        size = self._check_build(pointCloudSize, supportPlane)
+        if supportPlane is not None:
+            self.setSupportPlane(supportPlane)
+        self._size = size
+        self.link_args(detections, pointCloud)
+        return self
+
+    def _check_build(
+        self, pointCloudSize: tuple[int, int], supportPlane: SupportPlane | None
+    ) -> tuple[int, int]:
+        """Raise what `build` would raise for these arguments, changing nothing.
+
+        Returns:
+            The checked cloud ``(width, height)``.
+        """
         try:
             import open3d  # noqa: F401
         except ImportError as e:
@@ -145,12 +160,10 @@ class BoxDimensioner(BaseHostNode):
             ) from e
         if self._size is not None:
             raise RuntimeError("BoxDimensioner is already built")
-        width, height = _check_size("pointCloudSize", pointCloudSize)
+        size = _check_size("pointCloudSize", pointCloudSize)
         if supportPlane is not None:
-            self.setSupportPlane(supportPlane)
-        self._size = (width, height)
-        self.link_args(detections, pointCloud)
-        return self
+            _check_instance("supportPlane", supportPlane, SupportPlane)
+        return size
 
     def setSupportPlane(self, supportPlane: SupportPlane) -> None:
         """Measure against a support plane from the next frame.

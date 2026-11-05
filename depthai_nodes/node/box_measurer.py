@@ -60,12 +60,14 @@ class BoxMeasurer(BaseThreadedHostNode):
                 if ``confidenceThreshold`` is not finite or not between zero and
                 one, or if the device is not an RVC4.
         """
-        # The dimensioner checks open3d and the cloud size before the detector
-        # fetches the model.
+        # Check open3d and the cloud size before the detector fetches the model,
+        # and build the dimensioner last so a detector failure leaves it unlinked
+        # and the build can be retried.
+        self._dimensioner._check_build(pointCloudSize, supportPlane)
+        self._detector.build(color, confidenceThreshold)
         self._dimensioner.build(
             self._detector.out, pointCloud, pointCloudSize, supportPlane
         )
-        self._detector.build(color, confidenceThreshold)
         return self
 
     @property
