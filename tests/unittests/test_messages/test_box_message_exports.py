@@ -16,7 +16,6 @@ BOX_NAMES = [
     "SupportPlaneCalibrationResult",
     "SupportPlaneVerificationResult",
     "CalibrationOutcome",
-    "PlaneCalibrationConfig",
 ]
 
 

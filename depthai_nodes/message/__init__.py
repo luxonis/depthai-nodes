@@ -87,8 +87,7 @@ in millimeters, normalized on construction. ``toJson()``, ``fromJson()``,
 to verify a plane. `SupportPlaneCalibrationResult` ends an attempt with a
 `CalibrationOutcome` and, only when it succeeded, its calibration candidates,
 best first. `SupportPlaneVerificationResult` reports a verified plane's angle to
-gravity and whether it was accepted. `PlaneCalibrationConfig` holds the
-plane-fitting settings. The fields of these messages are read-only.
+gravity and whether it was accepted. The fields of these messages are read-only.
 
 The value types are frozen dataclasses that take keyword arguments and raise
 ``TypeError`` for a wrong type or ``ValueError`` for an invalid value.
@@ -107,7 +106,6 @@ from .snap_data import SnapData
 from .support_plane import SupportPlane
 from .support_plane_calibration import (
     CalibrationOutcome,
-    PlaneCalibrationConfig,
     SupportPlaneCalibrationControl,
     SupportPlaneCalibrationResult,
     SupportPlaneVerificationResult,
@@ -128,5 +126,4 @@ __all__ = [
     "SupportPlaneCalibrationResult",
     "SupportPlaneVerificationResult",
     "CalibrationOutcome",
-    "PlaneCalibrationConfig",
 ]

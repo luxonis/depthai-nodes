@@ -1,6 +1,9 @@
 """Per-frame box detections, before any measurement."""
 
+import math
+import numbers
 from dataclasses import dataclass
+from typing import Any
 
 import depthai as dai
 import numpy as np
@@ -8,7 +11,45 @@ import numpy as np
 from depthai_nodes.utils import AnnotationHelper
 
 from .collection import Collection
-from .utils.value_checks import check_float, check_instance, check_int
+
+
+def _check_float(name: str, value: Any) -> float:
+    """Return a finite real number, ``bool`` excluded, as a built-in ``float``.
+
+    Raises:
+        TypeError: If the value is a ``bool`` or not a ``numbers.Real``.
+        ValueError: If the value is not finite.
+    """
+    if isinstance(value, bool) or not isinstance(value, numbers.Real):
+        raise TypeError(f"{name} must be a real number, got {type(value).__name__}")
+    result = float(value)
+    if not math.isfinite(result):
+        raise ValueError(f"{name} must be finite, got {result}")
+    return result
+
+
+def _check_int(name: str, value: Any) -> int:
+    """Return an integral number, ``bool`` excluded, as a built-in ``int``.
+
+    Raises:
+        TypeError: If the value is a ``bool`` or not a ``numbers.Integral``.
+    """
+    if isinstance(value, bool) or not isinstance(value, numbers.Integral):
+        raise TypeError(f"{name} must be an integer, got {type(value).__name__}")
+    return int(value)
+
+
+def _check_instance(name: str, value: Any, expected: type) -> None:
+    """Check that a value is an instance of the expected type.
+
+    Raises:
+        TypeError: If the value is not an instance of ``expected``.
+    """
+    if not isinstance(value, expected):
+        raise TypeError(
+            f"{name} must be {expected.__name__}, got {type(value).__name__}"
+        )
+
 
 BACKGROUND_LABEL = 255
 
@@ -43,12 +84,12 @@ class BoxDetection:
             TypeError: If a field has the wrong type.
             ValueError: If ``confidence`` is not finite.
         """
-        object.__setattr__(self, "track_id", check_int("track_id", self.track_id))
-        check_instance("bounding_box", self.bounding_box, dai.RotatedRect)
+        object.__setattr__(self, "track_id", _check_int("track_id", self.track_id))
+        _check_instance("bounding_box", self.bounding_box, dai.RotatedRect)
         object.__setattr__(
-            self, "confidence", check_float("confidence", self.confidence)
+            self, "confidence", _check_float("confidence", self.confidence)
         )
-        check_instance("track_status", self.track_status, dai.Tracklet.TrackingStatus)
+        _check_instance("track_status", self.track_status, dai.Tracklet.TrackingStatus)
 
 
 class BoxDetections(Collection[BoxDetection]):

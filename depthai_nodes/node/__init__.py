@@ -164,6 +164,7 @@ Box measurement
   ``build``.
 * `SupportPlaneCalibrator`: fits the support plane from a point cloud, IMU
   data, and control messages, and emits calibration and verification results.
+  `PlaneCalibrationConfig` holds its plane-fitting settings, fixed at ``build``.
 
 Boxes are measured against a support plane. It comes from the calibration
 candidates of a `depthai_nodes.message.SupportPlaneCalibrationResult` or from
@@ -250,7 +251,7 @@ from .parsers.yolo import YOLOExtendedParser
 from .parsers.yunet import YuNetParser
 from .parsing_neural_network import ParsingNeuralNetwork
 from .snaps_uploader import SnapsUploader
-from .support_plane_calibrator import SupportPlaneCalibrator
+from .support_plane_calibrator import PlaneCalibrationConfig, SupportPlaneCalibrator
 from .tiling import Tiling
 
 __all__ = [
@@ -300,4 +301,5 @@ __all__ = [
     "BoxDetector",
     "BoxMeasurer",
     "SupportPlaneCalibrator",
+    "PlaneCalibrationConfig",
 ]

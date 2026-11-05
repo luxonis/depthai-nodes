@@ -9,13 +9,15 @@ pytest.importorskip("open3d")
 
 from depthai_nodes.message import (  # noqa: E402
     CalibrationOutcome,
-    PlaneCalibrationConfig,
     SupportPlane,
     SupportPlaneCalibrationControl,
     SupportPlaneCalibrationResult,
     SupportPlaneVerificationResult,
 )
-from depthai_nodes.node import SupportPlaneCalibrator  # noqa: E402
+from depthai_nodes.node import (  # noqa: E402
+    PlaneCalibrationConfig,
+    SupportPlaneCalibrator,
+)
 from tests.utils import (  # noqa: E402
     InputMock,
     OutputMock,

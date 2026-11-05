@@ -1,7 +1,9 @@
+import numbers
 from collections import deque
+from collections.abc import Sequence
 from statistics import median
 from threading import Lock
-from typing import cast
+from typing import Any, cast
 
 import cv2
 import depthai as dai
@@ -15,11 +17,47 @@ from depthai_nodes.message.box_measurements import (
     MeasurementStatus,
 )
 from depthai_nodes.message.support_plane import SupportPlane
-from depthai_nodes.message.utils.value_checks import check_instance, check_size
 from depthai_nodes.node.base_host_node import BaseHostNode
-from depthai_nodes.node.utils.open3d_dependency import require_open3d
 
 from .box_geometry import BoxGeometry
+
+
+def _check_size(name: str, value: Any) -> tuple[int, int]:
+    """Return a ``(width, height)`` sequence of positive integers as a tuple.
+
+    Raises:
+        TypeError: If the value is not a sequence, is a ``str`` or ``bytes``, or
+            holds elements that are ``bool`` or not integers.
+        ValueError: If the value does not have exactly two positive elements.
+    """
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        raise TypeError(
+            f"{name} must be a (width, height) sequence, got {type(value).__name__}"
+        )
+    if len(value) != 2:
+        raise ValueError(f"{name} must be (width, height), got {len(value)} values")
+    for label, element in zip(("width", "height"), value):
+        if isinstance(element, bool) or not isinstance(element, numbers.Integral):
+            raise TypeError(
+                f"{name} {label} must be an integer, got {type(element).__name__}"
+            )
+    width, height = int(value[0]), int(value[1])
+    if width <= 0 or height <= 0:
+        raise ValueError(f"{name} must be positive, got ({width}, {height})")
+    return width, height
+
+
+def _check_instance(name: str, value: Any, expected: type) -> None:
+    """Check that a value is an instance of the expected type.
+
+    Raises:
+        TypeError: If the value is not an instance of ``expected``.
+    """
+    if not isinstance(value, expected):
+        raise TypeError(
+            f"{name} must be {expected.__name__}, got {type(value).__name__}"
+        )
+
 
 # Fraction of the frame; larger detections are false positives on the whole scene.
 MAX_BBOX_AREA = 0.5
@@ -98,10 +136,16 @@ class BoxDimensioner(BaseHostNode):
                 ``supportPlane`` is not a ``SupportPlane``.
             ValueError: If ``pointCloudSize`` does not have two positive values.
         """
-        require_open3d(type(self).__name__)
+        try:
+            import open3d  # noqa: F401
+        except ImportError as e:
+            raise ImportError(
+                f"{type(self).__name__} requires open3d. Install it with "
+                "`pip install depthai-nodes[box-measurement]`."
+            ) from e
         if self._size is not None:
             raise RuntimeError("BoxDimensioner is already built")
-        width, height = check_size("pointCloudSize", pointCloudSize)
+        width, height = _check_size("pointCloudSize", pointCloudSize)
         if supportPlane is not None:
             self.setSupportPlane(supportPlane)
         self._size = (width, height)
@@ -119,7 +163,7 @@ class BoxDimensioner(BaseHostNode):
         Raises:
             TypeError: If ``supportPlane`` is not a ``SupportPlane``.
         """
-        check_instance("supportPlane", supportPlane, SupportPlane)
+        _check_instance("supportPlane", supportPlane, SupportPlane)
         with self._plane_lock:
             self._plane = supportPlane
             self._plane_revision += 1
@@ -161,8 +205,8 @@ class BoxDimensioner(BaseHostNode):
             return
 
     def _process(self, detections: dai.Buffer, point_cloud: dai.Buffer) -> None:
-        check_instance("detections", detections, BoxDetections)
-        check_instance("pointCloud", point_cloud, dai.PointCloudData)
+        _check_instance("detections", detections, BoxDetections)
+        _check_instance("pointCloud", point_cloud, dai.PointCloudData)
         detections = cast(BoxDetections, detections)
         point_cloud = cast(dai.PointCloudData, point_cloud)
         with self._plane_lock:

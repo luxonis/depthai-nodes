@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from depthai_nodes.message.support_plane import SupportPlane
-from depthai_nodes.message.support_plane_calibration import PlaneCalibrationConfig
 
+from .plane_calibration_config import PlaneCalibrationConfig
 from .plane_validation import is_valid_horizontal_plane
 
 if TYPE_CHECKING:

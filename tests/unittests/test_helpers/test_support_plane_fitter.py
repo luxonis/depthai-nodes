@@ -5,7 +5,7 @@ import pytest
 
 pytest.importorskip("open3d")
 
-from depthai_nodes.message import PlaneCalibrationConfig  # noqa: E402
+from depthai_nodes.node import PlaneCalibrationConfig  # noqa: E402
 from depthai_nodes.node.support_plane_calibrator.support_plane_fitter import (  # noqa: E402
     SupportPlaneFitter,
 )

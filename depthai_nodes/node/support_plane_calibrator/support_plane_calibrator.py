@@ -1,6 +1,9 @@
+import numbers
 import time
 from collections import deque
+from collections.abc import Sequence
 from enum import Enum
+from typing import Any
 
 import depthai as dai
 import numpy as np
@@ -8,17 +11,53 @@ import numpy as np
 from depthai_nodes.message.support_plane import SupportPlane
 from depthai_nodes.message.support_plane_calibration import (
     CalibrationOutcome,
-    PlaneCalibrationConfig,
     SupportPlaneCalibrationControl,
     SupportPlaneCalibrationResult,
     SupportPlaneVerificationResult,
 )
-from depthai_nodes.message.utils.value_checks import check_instance, check_size
 from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
-from depthai_nodes.node.utils.open3d_dependency import require_open3d
 
+from .plane_calibration_config import PlaneCalibrationConfig
 from .plane_validation import gravity_angle_deg, is_valid_horizontal_plane
 from .support_plane_fitter import SupportPlaneFitter
+
+
+def _check_size(name: str, value: Any) -> tuple[int, int]:
+    """Return a ``(width, height)`` sequence of positive integers as a tuple.
+
+    Raises:
+        TypeError: If the value is not a sequence, is a ``str`` or ``bytes``, or
+            holds elements that are ``bool`` or not integers.
+        ValueError: If the value does not have exactly two positive elements.
+    """
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        raise TypeError(
+            f"{name} must be a (width, height) sequence, got {type(value).__name__}"
+        )
+    if len(value) != 2:
+        raise ValueError(f"{name} must be (width, height), got {len(value)} values")
+    for label, element in zip(("width", "height"), value):
+        if isinstance(element, bool) or not isinstance(element, numbers.Integral):
+            raise TypeError(
+                f"{name} {label} must be an integer, got {type(element).__name__}"
+            )
+    width, height = int(value[0]), int(value[1])
+    if width <= 0 or height <= 0:
+        raise ValueError(f"{name} must be positive, got ({width}, {height})")
+    return width, height
+
+
+def _check_instance(name: str, value: Any, expected: type) -> None:
+    """Check that a value is an instance of the expected type.
+
+    Raises:
+        TypeError: If the value is not an instance of ``expected``.
+    """
+    if not isinstance(value, expected):
+        raise TypeError(
+            f"{name} must be {expected.__name__}, got {type(value).__name__}"
+        )
+
 
 # Pause between run-loop passes, as DepthAI's DynamicCalibration does.
 PASS_SLEEP_SECONDS = 0.005
@@ -138,16 +177,22 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                 ``config`` is not a ``PlaneCalibrationConfig``.
             ValueError: If ``pointCloudSize`` does not have two positive values.
         """
-        require_open3d(type(self).__name__)
+        try:
+            import open3d  # noqa: F401
+        except ImportError as e:
+            raise ImportError(
+                f"{type(self).__name__} requires open3d. Install it with "
+                "`pip install depthai-nodes[box-measurement]`."
+            ) from e
         if self._fitter is not None:
             raise RuntimeError(
                 "SupportPlaneCalibrator is already built; create a new node to "
                 "change its configuration"
             )
-        width, height = check_size("pointCloudSize", pointCloudSize)
+        width, height = _check_size("pointCloudSize", pointCloudSize)
         if config is None:
             config = PlaneCalibrationConfig()
-        check_instance("config", config, PlaneCalibrationConfig)
+        _check_instance("config", config, PlaneCalibrationConfig)
         self._config = config
         self._fitter = SupportPlaneFitter((width, height), config)
         pointCloud.link(self._point_cloud_input)

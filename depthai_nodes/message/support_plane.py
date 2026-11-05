@@ -4,11 +4,25 @@ from __future__ import annotations
 
 import json
 import math
+import numbers
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .utils.value_checks import check_float
+
+def _check_float(name: str, value: Any) -> float:
+    """Return a finite real number, ``bool`` excluded, as a built-in ``float``.
+
+    Raises:
+        TypeError: If the value is a ``bool`` or not a ``numbers.Real``.
+        ValueError: If the value is not finite.
+    """
+    if isinstance(value, bool) or not isinstance(value, numbers.Real):
+        raise TypeError(f"{name} must be a real number, got {type(value).__name__}")
+    result = float(value)
+    if not math.isfinite(result):
+        raise ValueError(f"{name} must be finite, got {result}")
+    return result
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -44,8 +58,8 @@ class SupportPlane:
             raise TypeError("Support plane normal must be a list or tuple")
         if len(self.normal) != 3:
             raise ValueError("Support plane normal must have three components")
-        normal = tuple(check_float("normal", value) for value in self.normal)
-        offset = check_float("offset_mm", self.offset_mm)
+        normal = tuple(_check_float("normal", value) for value in self.normal)
+        offset = _check_float("offset_mm", self.offset_mm)
         # Scaling first keeps normalization safe for very large finite normals.
         scale = max(abs(value) for value in normal)
         if scale == 0:

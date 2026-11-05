@@ -1,10 +1,11 @@
 """Tracked box detections from a color stream, with an internally owned model."""
 
+import math
+import numbers
 from typing import Any
 
 import depthai as dai
 
-from depthai_nodes.message.utils.value_checks import check_float
 from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
 from depthai_nodes.node.parsing_neural_network import ParsingNeuralNetwork
 
@@ -13,7 +14,22 @@ from .box_detection_assembler import BoxDetectionAssembler
 MODEL = "luxonis/box-instance-segmentation:512x320"
 
 
-def check_threshold(value: Any) -> float:
+def _check_float(name: str, value: Any) -> float:
+    """Return a finite real number, ``bool`` excluded, as a built-in ``float``.
+
+    Raises:
+        TypeError: If the value is a ``bool`` or not a ``numbers.Real``.
+        ValueError: If the value is not finite.
+    """
+    if isinstance(value, bool) or not isinstance(value, numbers.Real):
+        raise TypeError(f"{name} must be a real number, got {type(value).__name__}")
+    result = float(value)
+    if not math.isfinite(result):
+        raise ValueError(f"{name} must be finite, got {result}")
+    return result
+
+
+def _check_threshold(value: Any) -> float:
     """Return a confidence threshold as a ``float``.
 
     Args:
@@ -26,7 +42,7 @@ def check_threshold(value: Any) -> float:
         TypeError: If the threshold is a ``bool`` or not a real number.
         ValueError: If the threshold is not finite or not between zero and one.
     """
-    threshold = check_float("confidenceThreshold", value)
+    threshold = _check_float("confidenceThreshold", value)
     if not 0 <= threshold <= 1:
         raise ValueError(f"confidenceThreshold must be in [0, 1], got {threshold}")
     return threshold
@@ -85,7 +101,7 @@ class BoxDetector(BaseThreadedHostNode):
         """
         if self._parser is not None:
             raise RuntimeError("BoxDetector is already built")
-        threshold = check_threshold(confidenceThreshold)
+        threshold = _check_threshold(confidenceThreshold)
         if self._platform != dai.Platform.RVC4:
             raise ValueError("BoxDetector currently requires an RVC4 device")
         description = dai.NNModelDescription(MODEL, platform=self._platform.name)
@@ -141,7 +157,7 @@ class BoxDetector(BaseThreadedHostNode):
         """
         if self._parser is None:
             raise RuntimeError("BoxDetector is not built")
-        threshold = check_threshold(confidenceThreshold)
+        threshold = _check_threshold(confidenceThreshold)
         if self._config_queue is None:
             raise RuntimeError(
                 "Changing the confidence threshold while the pipeline runs needs "
