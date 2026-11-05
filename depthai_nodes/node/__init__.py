@@ -153,6 +153,47 @@ Message handling and uploads
 * `SnapsUploader`: accepts `depthai_nodes.message.SnapData` and delegates uploads
   and optional offline caching to the native EventsManager.
 
+Box measurement
+===============
+
+* `BoxDetector`: detects, segments, and tracks boxes in a color stream and
+  emits `depthai_nodes.message.BoxDetections`.
+* `BoxDimensioner`: measures box detections in an organized point cloud and
+  emits `depthai_nodes.message.BoxMeasurements`.
+* `BoxMeasurer`: wires ``BoxDetector`` into ``BoxDimensioner`` behind one
+  ``build``.
+* `SupportPlaneCalibrator`: fits the support plane from a point cloud, IMU
+  data, and control messages, and emits calibration and verification results.
+
+Boxes are measured against a support plane. It comes from the calibration
+candidates of a `depthai_nodes.message.SupportPlaneCalibrationResult` or from
+a saved file through ``SupportPlane.fromJsonFile``, and is passed to ``build``
+or through ``setSupportPlane``. The confidence threshold can change while the
+pipeline runs on depthai 3.11 or later; the support plane can change on any
+version.
+
+``BoxDetector`` and ``BoxMeasurer`` run on RVC4 only and download the
+``luxonis/box-instance-segmentation`` model from the Model Zoo at build.
+``BoxDimensioner``, ``BoxMeasurer``, and ``SupportPlaneCalibrator`` need
+open3d, installed with ``pip install depthai-nodes[box-measurement]``; without
+it their ``build`` raises ``ImportError``.
+
+Example:
+    With existing ``color`` and ``pointCloud`` outputs and a point cloud of
+    ``width`` by ``height`` points::
+
+        from depthai_nodes.message import SupportPlane
+        from depthai_nodes.node import BoxMeasurer
+
+        plane = SupportPlane.fromJsonFile("support_plane.json")
+        measurer = pipeline.create(BoxMeasurer).build(
+            color, pointCloud, (width, height), supportPlane=plane
+        )
+        measurements = measurer.out.createOutputQueue()
+
+    Each ``BoxMeasurements`` message read from ``measurements`` holds one
+    result per box detection, with its box dimensions once measured.
+
 Extending the package
 =====================
 
@@ -172,6 +213,7 @@ from .base_host_node import BaseHostNode
 from .base_threaded_host_node import BaseThreadedHostNode
 from .box_detector import BoxDetector
 from .box_dimensioner import BoxDimensioner
+from .box_measurer import BoxMeasurer
 from .coordinates_mapper import CoordinatesMapper
 from .depth_merger import DepthMerger
 from .extended_neural_network import ExtendedNeuralNetwork
@@ -256,5 +298,6 @@ __all__ = [
     "BaseThreadedHostNode",
     "BoxDimensioner",
     "BoxDetector",
+    "BoxMeasurer",
     "SupportPlaneCalibrator",
 ]
