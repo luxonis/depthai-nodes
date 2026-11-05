@@ -86,6 +86,7 @@ class BoxGeometry:
 
     @staticmethod
     def _point_cloud(points: np.ndarray) -> o3d.geometry.PointCloud:
+        """Wrap an ``(N, 3)`` array in an open3d point cloud."""
         # open3d is an optional extra, so import it only when measuring.
         import open3d as o3d
 
@@ -113,6 +114,7 @@ class BoxGeometry:
     # --- height --------------------------------------------------------------
 
     def _height(self, points: np.ndarray, plane_eq: np.ndarray) -> float | None:
+        """Estimate the box height above the plane from its top band of points."""
         idx = self._mad_inliers(points)
         pts = points[idx] if idx.size else points
 
@@ -189,6 +191,7 @@ class BoxGeometry:
 
     @staticmethod
     def _normalized_plane(plane_eq: np.ndarray) -> np.ndarray:
+        """Scale a plane equation to a unit normal; reject a zero normal."""
         plane_eq = np.asarray(plane_eq, dtype=np.float64).reshape(-1)
         norm = np.linalg.norm(plane_eq[:3])
         if norm < 1e-9:

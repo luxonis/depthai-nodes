@@ -4,7 +4,7 @@ import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes.node import BoxDetector
+from depthai_nodes.node import BoxDetector, ParsingNeuralNetwork
 from tests.utils import (
     ImageManipMock,
     NeuralNetworkMock,
@@ -58,6 +58,20 @@ def sent_configs(pipeline: PipelineMock) -> list[dai.DetectionParserConfig]:
     while (config := config_input.tryGet()) is not None:
         configs.append(config)
     return configs
+
+
+def test_build_links_color_through_the_model_into_the_tracker(
+    pipeline: PipelineMock,
+):
+    color = OutputMock()
+    pipeline.create(BoxDetector).build(color)
+
+    resize = find_node(pipeline, ImageManipMock)
+    tracker = find_node(pipeline, ObjectTrackerMock)
+    nn = find_node(pipeline, ParsingNeuralNetwork)
+    assert any(link is resize.inputImage for link in color.links)
+    assert any(link is tracker.inputTrackerFrame for link in color.links)
+    assert any(link is tracker.inputDetections for link in nn.out.links)
 
 
 def test_build_sets_the_parser_threshold(pipeline: PipelineMock):

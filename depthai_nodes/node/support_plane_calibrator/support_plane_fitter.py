@@ -77,6 +77,7 @@ class SupportPlaneFitter:
         return self._rank(self._drop_duplicates(fits))
 
     def _preprocess(self, points: np.ndarray) -> o3d.geometry.PointCloud | None:
+        """Drop empty points, downsample and denoise; ``None`` if too few remain."""
         # open3d is an optional extra, so import it only when fitting.
         import open3d as o3d
 

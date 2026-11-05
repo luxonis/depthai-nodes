@@ -72,6 +72,7 @@ class BoxDetectionAssembler(dai.node.HostNode):
     def _assemble(
         self, tracklets: dai.Tracklets, detections: dai.ImgDetections
     ) -> BoxDetections:
+        """Pair tracklets with detections and relabel the mask by item index."""
         source_mask = detections.getCvSegmentationMask()
         if source_mask is None or source_mask.ndim != 2:
             width, height = self._mask_size

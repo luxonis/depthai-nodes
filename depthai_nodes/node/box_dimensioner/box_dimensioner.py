@@ -218,6 +218,7 @@ class BoxDimensioner(BaseHostNode):
             return
 
     def _process(self, detections: dai.Buffer, point_cloud: dai.Buffer) -> None:
+        """Measure each detection against the active plane and send the results."""
         _check_instance("detections", detections, BoxDetections)
         _check_instance("pointCloud", point_cloud, dai.PointCloudData)
         detections = cast(BoxDetections, detections)
@@ -324,11 +325,13 @@ class BoxDimensioner(BaseHostNode):
 
     @staticmethod
     def _stamp(message: dai.Buffer, source: dai.Buffer) -> None:
+        """Copy the source's timestamps and sequence number onto a message."""
         message.setTimestamp(source.getTimestamp())
         message.setTimestampDevice(source.getTimestampDevice())
         message.setSequenceNum(source.getSequenceNum())
 
     def _aggregate(self, track_id: int) -> BoxDimensions | None:
+        """Return the per-dimension median of a track's samples, if any."""
         samples = self._samples.get(track_id)
         if not samples:
             return None

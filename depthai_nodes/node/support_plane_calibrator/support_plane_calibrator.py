@@ -269,6 +269,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
     def _finish(
         self, outcome: CalibrationOutcome, candidates: list[SupportPlane], info: str
     ) -> None:
+        """End the attempt and send its result."""
         # Like DepthAI MultiDeviceCalibration, a stopped attempt needs no reset.
         self._state = (
             CalibratorState.IDLE
@@ -278,6 +279,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         self._out.send(SupportPlaneCalibrationResult(outcome, candidates, info))
 
     def _answer_verifications(self, imu: dai.IMUData) -> None:
+        """Answer all pending verifications, if the IMU sample has gravity."""
         if not self._verifications:
             return
         gravity = imu_gravity(imu)
@@ -297,6 +299,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             )
 
     def _process_cloud(self, cloud: dai.ADatatype, imu: dai.IMUData) -> None:
+        """Fit one cloud and finish the attempt on candidates or failure."""
         gravity = imu_gravity(imu)
         if gravity is None:
             return
