@@ -42,6 +42,12 @@ To use the box measurement nodes, install the `box-measurement` extra, which add
 pip install "depthai-nodes[box-measurement]"
 ```
 
+On Debian or Ubuntu, open3d also needs system libraries that minimal images such as Docker containers and CI runners often lack:
+
+```bash
+sudo apt-get install libegl1 libgl1 libgomp1
+```
+
 Or install from source:
 
 ```bash
