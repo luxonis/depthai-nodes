@@ -10,7 +10,9 @@ on:
       - 'docs/**'
       - '**/*.md'
       - pyproject.toml
+      - requirements.txt
       - requirements-dev.txt
+      - requirements-box-measurement.txt
       - .pre-commit-config.yaml
       - .github/workflows/ci.yaml
 
