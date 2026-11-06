@@ -109,7 +109,9 @@ class BoxMeasurementResult:
         track_id: Tracker ID of the box.
         bounding_box: Normalized bounding box in the source frame.
         confidence: Detection confidence.
-        track_status: Tracking status of the box in this frame.
+        track_status: Tracking status of the box in this frame, ``NEW`` or
+            ``TRACKED``. Lost tracks keep only their last-seen box, so they are
+            not emitted.
         measurement_status: Outcome of measuring the box in this frame.
         dimensions: The box's aggregated dimensions, when it has any.
 

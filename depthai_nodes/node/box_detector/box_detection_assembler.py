@@ -8,9 +8,15 @@ from depthai_nodes.message.box_detections import BACKGROUND_LABEL
 
 from .segmentation_matching import match_tracklets_to_detections
 
+# Tracker statuses whose box comes from the current frame's detections.
+CURRENT_STATUSES = (
+    dai.Tracklet.TrackingStatus.NEW,
+    dai.Tracklet.TrackingStatus.TRACKED,
+)
+
 
 class BoxDetectionAssembler(dai.node.HostNode):
-    """Emit one box detection per tracked box with a non-empty segmentation.
+    """Emit one box detection per new or tracked box with a non-empty segmentation.
 
     Attributes:
         out: Output stream of ``BoxDetections`` carrying the timestamps and sequence
@@ -81,11 +87,9 @@ class BoxDetectionAssembler(dai.node.HostNode):
 
         mask = np.full(source_mask.shape, BACKGROUND_LABEL, dtype=np.uint8)
         items: list[BoxDetection] = []
-        active = [
-            t
-            for t in tracklets.tracklets
-            if t.status != dai.Tracklet.TrackingStatus.REMOVED
-        ]
+        # A lost track keeps its last-seen box, so pairing it could hand a
+        # current detection, and its measurements, to the wrong track.
+        active = [t for t in tracklets.tracklets if t.status in CURRENT_STATUSES]
         matches = match_tracklets_to_detections(active, detections.detections)
         # Emit in the parser's order, so mask IDs keep it too.
         for track_index, det_index in sorted(matches.items(), key=lambda m: m[1]):

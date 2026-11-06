@@ -12,12 +12,13 @@ from tests.utils import OutputMock
 
 TRACKED = dai.Tracklet.TrackingStatus.TRACKED
 REMOVED = dai.Tracklet.TrackingStatus.REMOVED
+LOST = dai.Tracklet.TrackingStatus.LOST
 NEW = dai.Tracklet.TrackingStatus.NEW
 BOX_A = (0.1, 0.1, 0.3, 0.3)
 BOX_B = (0.6, 0.6, 0.9, 0.9)
 BOX_EMPTY = (0.4, 0.0, 0.5, 0.1)
-# Overlaps BOX_A less than an exact box does, so a removed track on BOX_A would
-# win the pairing if it were not dropped first.
+# Overlaps BOX_A less than an exact box does, so a removed or lost track on
+# BOX_A would win the pairing if it were not dropped first.
 NEAR_A = (0.1, 0.1, 0.3, 0.32)
 NOWHERE = (0.0, 0.8, 0.1, 0.9)
 MASK_SIZE = (32, 24)
@@ -106,6 +107,7 @@ def test_only_current_tracks_with_a_nonempty_segmentation_are_kept():
             [
                 (3, NEW, BOX_B),
                 (4, REMOVED, BOX_A),
+                (6, LOST, BOX_A),
                 (5, TRACKED, NEAR_A),
                 (9, TRACKED, NOWHERE),
                 (11, TRACKED, BOX_EMPTY),
