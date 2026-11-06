@@ -1,4 +1,3 @@
-from types import SimpleNamespace
 from typing import Any, cast
 
 import depthai as dai
@@ -9,8 +8,8 @@ pytest.importorskip("open3d")
 from depthai_nodes.message import SupportPlane  # noqa: E402
 from depthai_nodes.node import BoxDimensioner, BoxMeasurer  # noqa: E402
 from tests.utils import (  # noqa: E402
+    DetectionNetworkMock,
     ImageManipMock,
-    NeuralNetworkMock,
     ObjectTrackerMock,
     OutputMock,
     PipelineMock,
@@ -22,14 +21,10 @@ FLOOR = SupportPlane(normal=(0, 0, 1), offset_mm=-1000)
 
 
 class FakeArchive:
-    """Offline stand-in for the box model's archive: one YOLO head, 512x320."""
+    """Offline stand-in for the box model's archive: a 512x320 input."""
 
     def __init__(self, path):
-        head = SimpleNamespace(parser="YOLO", metadata=SimpleNamespace())
-        self._config = SimpleNamespace(model=SimpleNamespace(heads=[head], inputs=[]))
-
-    def getConfig(self):
-        return self._config
+        pass
 
     def getInputSize(self):
         return (512, 320)
@@ -37,7 +32,7 @@ class FakeArchive:
 
 @pytest.fixture
 def pipeline(monkeypatch: pytest.MonkeyPatch) -> PipelineMock:
-    monkeypatch.setattr(dai.node, "NeuralNetwork", NeuralNetworkMock)
+    monkeypatch.setattr(dai.node, "DetectionNetwork", DetectionNetworkMock)
     monkeypatch.setattr(dai.node, "ImageManip", ImageManipMock)
     monkeypatch.setattr(dai.node, "ObjectTracker", ObjectTrackerMock)
     monkeypatch.setattr(dai, "getModelFromZoo", lambda description: "box.tar.xz")
@@ -65,7 +60,7 @@ def find_node(pipeline: PipelineMock, node_type: type):
 
 
 def parser(pipeline: PipelineMock) -> DetectionParserMock:
-    return find_node(pipeline, DetectionParserMock)
+    return find_node(pipeline, DetectionNetworkMock).detectionParser
 
 
 def sent_thresholds(pipeline: PipelineMock) -> list[float]:

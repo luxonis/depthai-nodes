@@ -1,13 +1,11 @@
-from types import SimpleNamespace
-
 import depthai as dai
 import numpy as np
 import pytest
 
-from depthai_nodes.node import BoxDetector, ParsingNeuralNetwork
+from depthai_nodes.node import BoxDetector
 from tests.utils import (
+    DetectionNetworkMock,
     ImageManipMock,
-    NeuralNetworkMock,
     ObjectTrackerMock,
     OutputMock,
     PipelineMock,
@@ -19,14 +17,10 @@ INVALID_TYPES = ["0.5", None, True]
 
 
 class FakeArchive:
-    """Offline stand-in for the box model's archive: one YOLO head, 512x320."""
+    """Offline stand-in for the box model's archive: a 512x320 input."""
 
     def __init__(self, path):
-        head = SimpleNamespace(parser="YOLO", metadata=SimpleNamespace())
-        self._config = SimpleNamespace(model=SimpleNamespace(heads=[head], inputs=[]))
-
-    def getConfig(self):
-        return self._config
+        pass
 
     def getInputSize(self):
         return (512, 320)
@@ -34,7 +28,7 @@ class FakeArchive:
 
 @pytest.fixture
 def pipeline(monkeypatch: pytest.MonkeyPatch) -> PipelineMock:
-    monkeypatch.setattr(dai.node, "NeuralNetwork", NeuralNetworkMock)
+    monkeypatch.setattr(dai.node, "DetectionNetwork", DetectionNetworkMock)
     monkeypatch.setattr(dai.node, "ImageManip", ImageManipMock)
     monkeypatch.setattr(dai.node, "ObjectTracker", ObjectTrackerMock)
     monkeypatch.setattr(dai, "getModelFromZoo", lambda description: "box.tar.xz")
@@ -50,7 +44,7 @@ def find_node(pipeline: PipelineMock, node_type: type):
 
 
 def parser(pipeline: PipelineMock) -> DetectionParserMock:
-    return find_node(pipeline, DetectionParserMock)
+    return find_node(pipeline, DetectionNetworkMock).detectionParser
 
 
 def sent_configs(pipeline: PipelineMock) -> list[dai.DetectionParserConfig]:
@@ -68,8 +62,9 @@ def test_build_links_color_through_the_model_into_the_tracker(
 
     resize = find_node(pipeline, ImageManipMock)
     tracker = find_node(pipeline, ObjectTrackerMock)
-    nn = find_node(pipeline, ParsingNeuralNetwork)
+    nn = find_node(pipeline, DetectionNetworkMock)
     assert any(link is resize.inputImage for link in color.links)
+    assert any(link is nn.input for link in resize.out.links)
     assert any(link is tracker.inputTrackerFrame for link in color.links)
     assert any(link is tracker.inputDetections for link in nn.out.links)
 

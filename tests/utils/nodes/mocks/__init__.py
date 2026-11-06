@@ -1,3 +1,4 @@
+from .detection_network import DetectionNetworkMock
 from .device import DeviceMock
 from .host_node import HostNodeMock
 from .image_manip import ImageManipMock
@@ -20,6 +21,7 @@ __all__ = [
     "InfiniteInputMock",
     "ThreadedHostNodeMock",
     "NeuralNetworkMock",
+    "DetectionNetworkMock",
     "ImageManipMock",
     "ObjectTrackerMock",
     "SyncMock",

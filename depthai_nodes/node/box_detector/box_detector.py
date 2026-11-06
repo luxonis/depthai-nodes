@@ -7,7 +7,6 @@ from typing import Any
 import depthai as dai
 
 from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
-from depthai_nodes.node.parsing_neural_network import ParsingNeuralNetwork
 
 from .box_detection_assembler import BoxDetectionAssembler
 
@@ -106,11 +105,11 @@ class BoxDetector(BaseThreadedHostNode):
         )
         resize.initialConfig.setFrameType(dai.ImgFrame.Type.BGR888i)
         color.link(resize.inputImage)
-        nn = self.createSubnode(ParsingNeuralNetwork).build(resize.out, archive)
-
         # The parser owns the threshold: decoding low-confidence candidates is slow.
-        parser = nn.getParser(dai.node.DetectionParser)
-        parser.setConfidenceThreshold(threshold)
+        nn = self.createSubnode(dai.node.DetectionNetwork).build(
+            resize.out, archive, confidenceThreshold=threshold
+        )
+        parser = nn.detectionParser
         # Live parser config needs depthai 3.11; 3.9 only sets it at build.
         if hasattr(parser, "inputConfig") and hasattr(dai, "DetectionParserConfig"):
             self._config_queue = parser.inputConfig.createInputQueue()
