@@ -1,9 +1,8 @@
 """Native parser messages and custom messages for DepthAI v3.
 
 Parser creators return native DepthAI messages. The package requires DepthAI
-3.9 or newer, which provides the beta message types used by the host parsers.
-Use `depthai_nodes.message.creators` to construct messages from arrays and
-`depthai_nodes.message.utils` for copying and detection geometry.
+3.11 or newer. Use `depthai_nodes.message.creators` to construct messages from
+arrays and `depthai_nodes.message.utils` for copying and detection geometry.
 
 .. contents:: Contents
    :depth: 2
@@ -62,14 +61,68 @@ Note:
     pipeline must also set the appropriate timestamps, sequence number, and
     image transformation. Native message copies may share pixel storage; see
     `depthai_nodes.message.utils.copy_message` before modifying copied buffers.
+
+Box measurement
+---------------
+
+`BoxDetections` is a `Collection` of `BoxDetection` items, one box detection
+per tracked box: its track ID, normalized bounding box, confidence, and tracking
+status. A shared ``uint8`` segmentation mask covers the whole frame; a pixel
+holds the index of the item it belongs to, and 255 marks background.
+``getMask()`` returns one item's boolean mask.
+
+`BoxMeasurements` is a `Collection` of `BoxMeasurementResult` items. Each result
+repeats the box detection fields and adds a `MeasurementStatus` and, when the
+box has any, its `BoxDimensions`: length, width, and height in millimeters. A
+measured result always has dimensions. Both messages draw labelled box outlines
+through ``getVisualizationMessage()``.
+
+`SupportPlane` is the support plane equation ``normal · point + offset_mm = 0``
+in millimeters, normalized on construction. ``toJson()``, ``fromJson()``,
+``toJsonFile()``, and ``fromJsonFile()`` save and load exactly its ``normal`` and
+``offset_mm``.
+
+`SupportPlaneCalibrationControl` starts, stops, or resets calibration, or asks
+to verify a plane. `SupportPlaneCalibrationResult` ends an attempt with a
+`CalibrationOutcome` and, only when it succeeded, its calibration candidates,
+best first. `SupportPlaneVerificationResult` reports a verified plane's angle to
+gravity and whether it was accepted. The fields of these messages are read-only.
+
+The value types are frozen dataclasses that take keyword arguments and raise
+``TypeError`` for a wrong type or ``ValueError`` for an invalid value.
 """
 
+from .box_detections import BoxDetection, BoxDetections
+from .box_measurements import (
+    BoxDimensions,
+    BoxMeasurementResult,
+    BoxMeasurements,
+    MeasurementStatus,
+)
 from .collection import Collection
 from .gathered_data import GatheredData
 from .snap_data import SnapData
+from .support_plane import SupportPlane
+from .support_plane_calibration import (
+    CalibrationOutcome,
+    SupportPlaneCalibrationControl,
+    SupportPlaneCalibrationResult,
+    SupportPlaneVerificationResult,
+)
 
 __all__ = [
     "GatheredData",
     "SnapData",
     "Collection",
+    "BoxDetections",
+    "BoxDetection",
+    "BoxMeasurements",
+    "BoxMeasurementResult",
+    "BoxDimensions",
+    "MeasurementStatus",
+    "SupportPlane",
+    "SupportPlaneCalibrationControl",
+    "SupportPlaneCalibrationResult",
+    "SupportPlaneVerificationResult",
+    "CalibrationOutcome",
 ]

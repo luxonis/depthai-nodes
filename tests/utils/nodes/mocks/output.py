@@ -9,6 +9,7 @@ class OutputMock:
     def __init__(self):
         self._datatypes: list[tuple[dai.DatatypeEnum, bool]] = []
         self._queues: list[OutputQueueMock] = []
+        self.links: list = []
 
     def setPossibleDatatypes(self, datatypes: list[tuple[dai.DatatypeEnum, bool]]):
         self._datatypes = datatypes
@@ -32,7 +33,7 @@ class OutputMock:
         return queue
 
     def link(self, node):
-        pass
+        self.links.append(node)
 
     def getParentPipeline(self):
         return None
