@@ -94,21 +94,6 @@ def test_live_threshold_sends_a_parser_config(pipeline: PipelineMock):
     assert [round(c.getIouThreshold(), 2) for c in configs] == [0.4, 0.4]
 
 
-@pytest.mark.parametrize("missing", ["inputConfig", "DetectionParserConfig"])
-def test_live_threshold_needs_depthai_3_11(
-    pipeline: PipelineMock, monkeypatch: pytest.MonkeyPatch, missing: str
-):
-    owner = DetectionParserMock if missing == "inputConfig" else dai
-    monkeypatch.delattr(owner, missing)
-    detector = pipeline.create(BoxDetector).build(
-        OutputMock(), confidenceThreshold=0.65
-    )
-
-    assert parser(pipeline).getConfidenceThreshold() == pytest.approx(0.65)
-    with pytest.raises(RuntimeError, match="3.11"):
-        detector.setConfidenceThreshold(0.7)
-
-
 def test_threshold_accepts_bounds_and_numpy_scalars(pipeline: PipelineMock):
     detector = pipeline.create(BoxDetector).build(
         OutputMock(), confidenceThreshold=np.float32(0.25)

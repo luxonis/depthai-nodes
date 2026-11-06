@@ -1,9 +1,8 @@
 """Native parser messages and custom messages for DepthAI v3.
 
 Parser creators return native DepthAI messages. The package requires DepthAI
-3.9 or newer, which provides the beta message types used by the host parsers.
-Use `depthai_nodes.message.creators` to construct messages from arrays and
-`depthai_nodes.message.utils` for copying and detection geometry.
+3.11 or newer. Use `depthai_nodes.message.creators` to construct messages from
+arrays and `depthai_nodes.message.utils` for copying and detection geometry.
 
 .. contents:: Contents
    :depth: 2

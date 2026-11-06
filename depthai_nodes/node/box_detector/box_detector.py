@@ -51,9 +51,8 @@ class BoxDetector(BaseThreadedHostNode):
     """Detect, segment and track boxes in a color stream on RVC4.
 
     The node runs the ``luxonis/box-instance-segmentation`` model from the Model
-    Zoo and tracks its detections. The confidence threshold is set at build and,
-    with depthai 3.11 or newer, can change while the pipeline runs through
-    `setConfidenceThreshold`.
+    Zoo and tracks its detections. The confidence threshold is set at build and
+    can change while the pipeline runs through `setConfidenceThreshold`.
 
     Attributes:
         out: Output stream of `depthai_nodes.message.BoxDetections`: one per
@@ -110,9 +109,7 @@ class BoxDetector(BaseThreadedHostNode):
             resize.out, archive, confidenceThreshold=threshold
         )
         parser = nn.detectionParser
-        # Live parser config needs depthai 3.11; 3.9 only sets it at build.
-        if hasattr(parser, "inputConfig") and hasattr(dai, "DetectionParserConfig"):
-            self._config_queue = parser.inputConfig.createInputQueue()
+        self._config_queue = parser.inputConfig.createInputQueue()
         self._parser = parser
 
         tracker = self.createSubnode(dai.node.ObjectTracker)
@@ -137,21 +134,14 @@ class BoxDetector(BaseThreadedHostNode):
             confidenceThreshold: Minimum detection confidence, between zero and one.
 
         Raises:
-            RuntimeError: If the node is not built yet, or if the installed depthai
-                is older than 3.11, which cannot change the parser's threshold
-                while the pipeline runs; pass it to `build` instead.
+            RuntimeError: If the node is not built yet.
             TypeError: If ``confidenceThreshold`` is not a real number.
             ValueError: If ``confidenceThreshold`` is not finite or not between
                 zero and one.
         """
-        if self._parser is None:
+        if self._parser is None or self._config_queue is None:
             raise RuntimeError("BoxDetector is not built")
         threshold = _check_threshold(confidenceThreshold)
-        if self._config_queue is None:
-            raise RuntimeError(
-                "Changing the confidence threshold while the pipeline runs needs "
-                "depthai>=3.11; set it with build(confidenceThreshold=...) instead"
-            )
         config = dai.DetectionParserConfig()
         config.setConfidenceThreshold(threshold)
         config.setIouThreshold(self._parser.getIouThreshold())

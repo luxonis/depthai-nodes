@@ -90,17 +90,6 @@ def test_live_threshold_reaches_the_parser(pipeline: PipelineMock):
     assert sent_thresholds(pipeline) == [0.7]
 
 
-def test_live_threshold_needs_depthai_3_11(
-    pipeline: PipelineMock, monkeypatch: pytest.MonkeyPatch
-):
-    monkeypatch.delattr(dai, "DetectionParserConfig")
-    measurer = build(pipeline, confidenceThreshold=0.65)
-
-    assert parser(pipeline).getConfidenceThreshold() == pytest.approx(0.65)
-    with pytest.raises(RuntimeError, match="3.11"):
-        measurer.setConfidenceThreshold(0.7)
-
-
 def test_threshold_cannot_be_set_before_build(pipeline: PipelineMock):
     measurer = create(pipeline)
     with pytest.raises(RuntimeError):

@@ -121,9 +121,7 @@ class BoxMeasurer(BaseThreadedHostNode):
             confidenceThreshold: Minimum detection confidence, between zero and one.
 
         Raises:
-            RuntimeError: If the node is not built yet, or if the installed depthai
-                is older than 3.11, which cannot change the threshold while the
-                pipeline runs; pass it to `build` instead.
+            RuntimeError: If the node is not built yet.
             TypeError: If ``confidenceThreshold`` is not a real number.
             ValueError: If ``confidenceThreshold`` is not finite or not between
                 zero and one.

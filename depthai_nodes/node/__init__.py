@@ -169,9 +169,8 @@ Box measurement
 Boxes are measured against a support plane. It comes from the calibration
 candidates of a `depthai_nodes.message.SupportPlaneCalibrationResult` or from
 a saved file through ``SupportPlane.fromJsonFile``, and is passed to ``build``
-or through ``setSupportPlane``. The confidence threshold can change while the
-pipeline runs on depthai 3.11 or later; the support plane can change on any
-version.
+or through ``setSupportPlane``. The confidence threshold and the support plane
+can both change while the pipeline runs.
 
 ``BoxDetector`` and ``BoxMeasurer`` run on RVC4 only and download the
 ``luxonis/box-instance-segmentation`` model from the Model Zoo at build.
