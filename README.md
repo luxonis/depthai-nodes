@@ -48,6 +48,8 @@ On Debian or Ubuntu, open3d also needs system libraries that minimal images such
 sudo apt-get install libegl1 libgl1 libgomp1
 ```
 
+open3d 0.20 publishes Linux wheels only for glibc 2.35 or newer, such as Debian 12+ or Ubuntu 22.04+. On older systems, including Debian 11, Ubuntu 20.04 and JetPack 5, pip cannot find a matching open3d and the install fails.
+
 Or install from source:
 
 ```bash
