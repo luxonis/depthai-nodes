@@ -17,7 +17,7 @@ def test_support_plane_calibrator_build_names_the_extra_without_open3d(monkeypat
     )
 
     with pytest.raises(
-        ImportError, match=r"pip install depthai-nodes\[box-measurement\]"
+        ImportError, match=r'pip install "depthai-nodes\[box-measurement\]"'
     ):
         calibrator.build(output, output, (64, 48))
 
@@ -30,6 +30,6 @@ def test_box_measurer_build_names_the_extra_without_open3d(monkeypatch):
     measurer = cast(BoxMeasurer, pipeline.create(cast(Any, BoxMeasurer)))
 
     with pytest.raises(
-        ImportError, match=r"pip install depthai-nodes\[box-measurement\]"
+        ImportError, match=r'pip install "depthai-nodes\[box-measurement\]"'
     ):
         measurer.build(output, output, (64, 48))

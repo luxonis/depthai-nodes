@@ -176,7 +176,7 @@ version.
 ``BoxDetector`` and ``BoxMeasurer`` run on RVC4 only and download the
 ``luxonis/box-instance-segmentation`` model from the Model Zoo at build.
 ``BoxDimensioner``, ``BoxMeasurer``, and ``SupportPlaneCalibrator`` need
-open3d, installed with ``pip install depthai-nodes[box-measurement]``; without
+open3d, installed with ``pip install "depthai-nodes[box-measurement]"``; without
 it their ``build`` raises ``ImportError``.
 
 Example:

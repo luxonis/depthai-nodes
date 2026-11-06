@@ -86,7 +86,7 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libgomp1
 
     - name: Install package
-      run: pip install -e .[dev,box-measurement]
+      run: pip install -e ".[dev,box-measurement]"
 
     - name: Run tests
       run: pytest -m "not e2e" --cov=depthai_nodes --cov-report=xml --junitxml=junit.xml -o junit_family=legacy

@@ -15,7 +15,7 @@ class BoxMeasurer(BaseThreadedHostNode):
     Wires a `BoxDetector` into a `BoxDimensioner`. Color and cloud must cover the
     same field of view; their resolutions may differ. Boxes are measured against
     the active support plane, which can come from any source. Requires open3d,
-    installed with ``pip install depthai-nodes[box-measurement]``.
+    installed with ``pip install "depthai-nodes[box-measurement]"``.
 
     Attributes:
         out: Output stream of `depthai_nodes.message.BoxMeasurements`, one result

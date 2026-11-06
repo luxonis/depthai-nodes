@@ -84,7 +84,7 @@ class BoxDimensioner(BaseHostNode):
     Boxes are measured against the active support plane, set through ``build`` or
     `setSupportPlane`. Without one, every box is ineligible. Detections covering
     more than half of the frame are omitted. Requires open3d, installed with
-    ``pip install depthai-nodes[box-measurement]``.
+    ``pip install "depthai-nodes[box-measurement]"``.
     """
 
     def __init__(self) -> None:
@@ -156,7 +156,7 @@ class BoxDimensioner(BaseHostNode):
         except ImportError as e:
             raise ImportError(
                 f"{type(self).__name__} requires open3d. Install it with "
-                "`pip install depthai-nodes[box-measurement]`."
+                '`pip install "depthai-nodes[box-measurement]"`.'
             ) from e
         if self._size is not None:
             raise RuntimeError("BoxDimensioner is already built")

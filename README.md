@@ -39,7 +39,7 @@ pip install depthai-nodes
 To use the box measurement nodes, install the `box-measurement` extra, which adds open3d:
 
 ```bash
-pip install depthai-nodes[box-measurement]
+pip install "depthai-nodes[box-measurement]"
 ```
 
 Or install from source:

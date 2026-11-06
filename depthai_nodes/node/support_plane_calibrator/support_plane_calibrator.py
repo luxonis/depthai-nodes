@@ -92,7 +92,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
     verify command produces one
     `depthai_nodes.message.SupportPlaneVerificationResult` on
     ``verificationOutput``. Requires open3d, installed with
-    ``pip install depthai-nodes[box-measurement]``.
+    ``pip install "depthai-nodes[box-measurement]"``.
 
     States:
         - Idle: Start begins an attempt; Stop and Reset do nothing.
@@ -200,7 +200,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         except ImportError as e:
             raise ImportError(
                 f"{type(self).__name__} requires open3d. Install it with "
-                "`pip install depthai-nodes[box-measurement]`."
+                '`pip install "depthai-nodes[box-measurement]"`.'
             ) from e
         if self._fitter is not None:
             raise RuntimeError(

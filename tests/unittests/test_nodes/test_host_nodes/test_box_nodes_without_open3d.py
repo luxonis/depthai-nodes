@@ -16,7 +16,7 @@ def test_box_dimensioner_build_names_the_extra_without_open3d(monkeypatch):
     monkeypatch.setitem(sys.modules, "open3d", None)
 
     with pytest.raises(
-        ImportError, match=r"pip install depthai-nodes\[box-measurement\]"
+        ImportError, match=r'pip install "depthai-nodes\[box-measurement\]"'
     ):
         output = cast(dai.Node.Output, OutputMock())
         BoxDimensioner().build(output, output, (64, 48))
