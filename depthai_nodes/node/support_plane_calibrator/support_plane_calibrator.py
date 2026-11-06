@@ -70,6 +70,10 @@ PASS_SLEEP_SECONDS = 0.005
 # tens to hundreds of hertz, so an older sample means the stream has stalled.
 IMU_MAX_AGE_SECONDS = 0.5
 
+# Shortest accelerometer vector, in m/s², read as gravity rather than as a
+# packet without an accelerometer report.
+MIN_GRAVITY_NORM = 1e-6
+
 
 class CalibratorState(Enum):
     """Where the calibrator is in an attempt; see `SupportPlaneCalibrator`."""
@@ -109,8 +113,9 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
     order once an IMU sample is available.
 
     An IMU sample counts as available for ``IMU_MAX_AGE_SECONDS`` after it
-    arrives; if the IMU stream stalls, fitting and verification wait for a new
-    sample rather than use stale gravity.
+    arrives, and only if it has a nonzero accelerometer vector. If the IMU
+    stream stalls or carries no accelerometer, fitting and verification wait
+    for a new sample rather than use stale or missing gravity.
 
     Errors: a non-``PointCloudData`` cloud, or a fit that raises
     ``ValueError`` or ``RuntimeError``, fails the attempt. Any other error is a
@@ -134,8 +139,8 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         self._config: PlaneCalibrationConfig | None = None
         self._fitter: SupportPlaneFitter | None = None
         self._verifications: deque[SupportPlane] = deque()
-        self._latest_imu: dai.IMUData | None = None
-        self._latest_imu_arrival = 0.0
+        self._latest_gravity: np.ndarray | None = None
+        self._latest_gravity_arrival = 0.0
 
     @property
     def inputControl(self) -> dai.Node.Input:
@@ -217,14 +222,14 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         try:
             while self.isRunning():
                 self._apply_controls()
-                self._take_latest_imu()
-                imu = self._latest_imu
-                if imu is not None:
-                    self._answer_verifications(imu)
-                if self._state is CalibratorState.RUNNING and imu is not None:
+                self._take_latest_gravity()
+                gravity = self._latest_gravity
+                if gravity is not None:
+                    self._answer_verifications(gravity)
+                if self._state is CalibratorState.RUNNING and gravity is not None:
                     cloud = self._point_cloud_input.tryGet()
                     if cloud is not None:
-                        self._process_cloud(cloud, imu)
+                        self._process_cloud(cloud, gravity)
                 time.sleep(PASS_SLEEP_SECONDS)
         # DepthAI's stub declares QueueException through an undeclared nested
         # class, so pyright cannot tell it is an exception; at runtime it is one.
@@ -254,21 +259,24 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             elif self._state is not CalibratorState.RUNNING:
                 self._state = CalibratorState.IDLE
 
-    def _take_latest_imu(self) -> None:
-        """Keep the newest IMU sample and drop it once it is too old."""
+    def _take_latest_gravity(self) -> None:
+        """Keep the newest IMU gravity and drop it once it is too old."""
         now = time.monotonic()
         while True:
             imu = self._imu_input.tryGet()
             if imu is None:
                 break
-            if isinstance(imu, dai.IMUData):
-                self._latest_imu = imu
-                self._latest_imu_arrival = now
+            if not isinstance(imu, dai.IMUData):
+                continue
+            gravity = imu_gravity(imu)
+            if gravity is not None:
+                self._latest_gravity = gravity
+                self._latest_gravity_arrival = now
         if (
-            self._latest_imu is not None
-            and now - self._latest_imu_arrival > IMU_MAX_AGE_SECONDS
+            self._latest_gravity is not None
+            and now - self._latest_gravity_arrival > IMU_MAX_AGE_SECONDS
         ):
-            self._latest_imu = None
+            self._latest_gravity = None
 
     def _finish(
         self, outcome: CalibrationOutcome, candidates: list[SupportPlane], info: str
@@ -282,12 +290,9 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         )
         self._out.send(SupportPlaneCalibrationResult(outcome, candidates, info))
 
-    def _answer_verifications(self, imu: dai.IMUData) -> None:
-        """Answer all pending verifications, if the IMU sample has gravity."""
+    def _answer_verifications(self, gravity: np.ndarray) -> None:
+        """Answer all pending verifications."""
         if not self._verifications:
-            return
-        gravity = imu_gravity(imu)
-        if gravity is None:
             return
         assert self._config is not None
         max_angle = self._config.max_gravity_angle_deg
@@ -304,11 +309,8 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                 )
             )
 
-    def _process_cloud(self, cloud: dai.ADatatype, imu: dai.IMUData) -> None:
+    def _process_cloud(self, cloud: dai.ADatatype, gravity: np.ndarray) -> None:
         """Fit one cloud and finish the attempt on candidates or failure."""
-        gravity = imu_gravity(imu)
-        if gravity is None:
-            return
         if not isinstance(cloud, dai.PointCloudData):
             self._finish(
                 CalibrationOutcome.FAILED,
@@ -333,16 +335,22 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
 def imu_gravity(imu: dai.IMUData) -> np.ndarray | None:
     """Return the raw accelerometer gravity from the first packet carrying it.
 
+    A packet without an accelerometer report, for example from an IMU set up
+    for the gyroscope only, has a zero accelerometer vector, so such vectors
+    count as missing.
+
     Args:
         imu: IMU message to read.
 
     Returns:
-        The accelerometer ``(x, y, z)`` vector, or ``None`` if no packet has one.
+        The accelerometer ``(x, y, z)`` vector, or ``None`` if no packet has a
+        nonzero one.
     """
     for packet in imu.packets:
         acceleration = packet.acceleroMeter
-        if acceleration is not None:
-            return np.array(
-                [acceleration.x, acceleration.y, acceleration.z], dtype=np.float32
-            )
+        gravity = np.array(
+            [acceleration.x, acceleration.y, acceleration.z], dtype=np.float32
+        )
+        if np.linalg.norm(gravity) >= MIN_GRAVITY_NORM:
+            return gravity
     return None

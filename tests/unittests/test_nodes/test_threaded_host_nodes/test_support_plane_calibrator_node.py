@@ -101,12 +101,12 @@ class Harness:
     def reset(self):
         self.control(SupportPlaneCalibrationControl.reset())
 
-    def gravity(self):
+    def gravity(self, z=-9.8):
         message = dai.IMUData()
         packet = dai.IMUPacket()
         packet.acceleroMeter.x = 0
         packet.acceleroMeter.y = 0
-        packet.acceleroMeter.z = -9.8
+        packet.acceleroMeter.z = z
         message.packets = [packet]
         self.imus.send(message)
 
@@ -432,6 +432,29 @@ def test_verifications_wait_for_imu_and_are_answered_once_in_order(calibrator):
 
     assert [calibrator.verification().plane for _ in planes] == planes
     assert calibrator.verifications.is_empty()
+
+
+def test_zero_accelerometer_is_not_used_for_verification(calibrator):
+    calibrator.verify(tilted_plane(0))
+    calibrator.gravity(z=0)
+    calibrator.run()
+    assert calibrator.verifications.is_empty()
+
+    calibrator.gravity()
+    calibrator.run()
+    assert calibrator.verification().accepted
+
+
+def test_zero_accelerometer_is_not_used_for_fitting(calibrator):
+    calibrator.start()
+    calibrator.gravity(z=0)
+    calibrator.plane_cloud()
+    calibrator.run()
+    assert calibrator.no_result()
+
+    calibrator.gravity()
+    calibrator.run()
+    assert calibrator.result().outcome is CalibrationOutcome.SUCCEEDED
 
 
 class Clock:
