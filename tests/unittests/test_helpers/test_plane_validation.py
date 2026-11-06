@@ -4,6 +4,7 @@ import pytest
 from depthai_nodes.node.support_plane_calibrator.plane_validation import (
     gravity_angle_deg,
     is_valid_horizontal_plane,
+    orient_along_gravity,
 )
 
 GRAVITY = np.array([0.0, 0.0, -9.8])
@@ -39,3 +40,15 @@ def test_rejects_the_opposite_sign_equation_of_an_accepted_plane():
 
 def test_rejects_any_plane_when_gravity_is_zero():
     assert not is_valid_horizontal_plane(tilted(0), np.zeros(3), 90)
+
+
+def test_orienting_flips_a_normal_that_points_up():
+    oriented = orient_along_gravity(np.array([0, 0, -1, 1000.0]), GRAVITY)
+
+    np.testing.assert_array_equal(oriented, [0, 0, 1, -1000.0])
+
+
+def test_orienting_keeps_a_normal_that_points_down():
+    plane = tilted(30)
+
+    np.testing.assert_array_equal(orient_along_gravity(plane, GRAVITY), plane)

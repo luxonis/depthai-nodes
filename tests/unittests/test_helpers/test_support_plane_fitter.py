@@ -68,11 +68,24 @@ def test_equal_inlier_counts_rank_the_nearer_plane_first():
     assert offsets(scene) == [-1000, -1500]
 
 
-def test_planes_against_gravity_or_behind_the_camera_are_dropped():
+def test_floor_fitted_with_the_opposite_sign_is_oriented_along_gravity():
+    scene = ScriptedScene([([0.0, 0.0, -1.0, 1000.0], 100)])
+
+    with patch("open3d.geometry.PointCloud", scene.cloud):
+        candidates = fitter().find_candidates(flat_cloud(), GRAVITY)
+
+    assert [(plane.normal, plane.offset_mm) for plane in candidates] == [
+        ((0.0, 0.0, 1.0), -1000.0)
+    ]
+
+
+def test_tilted_planes_or_planes_above_the_camera_are_dropped():
     scene = ScriptedScene(
         [
+            # Above the camera, in both signs.
             ([0.0, 0.0, -1.0, -1000.0], 100),
             ([0.0, 0.0, 1.0, 1000.0], 100),
+            # Vertical.
             ([1.0, 0.0, 0.0, -1000.0], 100),
             ([0.0, 0.0, 1.0, -1200.0], 100),
         ]

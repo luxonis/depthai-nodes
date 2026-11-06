@@ -199,7 +199,7 @@ def test_clouds_without_a_plane_keep_the_attempt_searching(calibrator):
     assert calibrator.result().outcome is CalibrationOutcome.SUCCEEDED
 
 
-def test_planes_against_gravity_or_behind_the_camera_are_not_candidates(calibrator):
+def test_tilted_planes_or_planes_above_the_camera_are_not_candidates(calibrator):
     scene = ScriptedScene(
         [
             ([0.0, 0.0, -1.0, -1000.0], 100),
@@ -218,6 +218,18 @@ def test_planes_against_gravity_or_behind_the_camera_are_not_candidates(calibrat
     calibrator.run()
 
     assert calibrator.result().outcome is CalibrationOutcome.CANCELLED
+
+
+def test_floor_fitted_with_the_opposite_sign_is_a_candidate(calibrator):
+    with scripted(ScriptedScene([([0.0, 0.0, -1.0, 1000.0], 100)])):
+        calibrator.start()
+        calibrator.gravity()
+        calibrator.plane_cloud()
+        calibrator.run()
+
+    result = calibrator.result()
+    assert result.outcome is CalibrationOutcome.SUCCEEDED
+    assert result.candidates[0] == SupportPlane(normal=(0, 0, 1), offset_mm=-1000)
 
 
 def test_fit_error_fails_the_attempt_until_reset(calibrator):
@@ -394,14 +406,16 @@ def test_verification_rejects_a_plane_behind_the_camera(calibrator):
     assert result.gravity_angle_deg == pytest.approx(0, abs=1e-4)
 
 
-def test_verification_rejects_the_opposite_sign_equation(calibrator):
+def test_verification_accepts_the_opposite_sign_equation_and_echoes_it(calibrator):
+    plane = SupportPlane(normal=(0, 0, -1), offset_mm=1000)
     calibrator.gravity()
-    calibrator.verify(SupportPlane(normal=(0, 0, -1), offset_mm=1000))
+    calibrator.verify(plane)
     calibrator.run()
 
     result = calibrator.verification()
-    assert not result.accepted
-    assert result.gravity_angle_deg == pytest.approx(180, abs=1e-4)
+    assert result.plane == plane
+    assert result.accepted
+    assert result.gravity_angle_deg == pytest.approx(0, abs=1e-4)
 
 
 def test_verifications_wait_for_imu_and_are_answered_once_in_order(calibrator):

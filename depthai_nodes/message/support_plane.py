@@ -33,6 +33,11 @@ class SupportPlane:
     length and the offset with it, so equations that differ only by a positive
     factor give equal planes.
 
+    Calibration emits planes whose normal points along gravity, away from the
+    camera, so ``offset_mm`` is at most zero.
+    `depthai_nodes.node.BoxDimensioner` and plane verification accept either
+    sign.
+
     Attributes:
         normal: Unit normal ``(x, y, z)``.
         offset_mm: Offset in millimeters.

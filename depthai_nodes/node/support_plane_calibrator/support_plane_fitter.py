@@ -11,7 +11,7 @@ import numpy as np
 from depthai_nodes.message.support_plane import SupportPlane
 
 from .plane_calibration_config import PlaneCalibrationConfig
-from .plane_validation import is_valid_horizontal_plane
+from .plane_validation import is_valid_horizontal_plane, orient_along_gravity
 
 if TYPE_CHECKING:
     import open3d as o3d
@@ -45,7 +45,7 @@ class SupportPlaneFitter:
     def find_candidates(
         self, points: np.ndarray, gravity: np.ndarray
     ) -> list[SupportPlane]:
-        """Find planes facing against gravity, best first.
+        """Find horizontal planes below the camera, best first.
 
         Planes are ranked by inlier count, then by distance to the camera.
         Near-parallel planes through the same surface count once.
@@ -131,7 +131,7 @@ class SupportPlaneFitter:
             norm = float(np.linalg.norm(plane_eq[:3]))
             if norm < 1e-6:
                 break
-            plane_eq /= norm
+            plane_eq = orient_along_gravity(plane_eq / norm, gravity)
             if is_valid_horizontal_plane(
                 plane_eq, gravity, config.max_gravity_angle_deg
             ):

@@ -18,7 +18,11 @@ from depthai_nodes.message.support_plane_calibration import (
 from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
 
 from .plane_calibration_config import PlaneCalibrationConfig
-from .plane_validation import gravity_angle_deg, is_valid_horizontal_plane
+from .plane_validation import (
+    gravity_angle_deg,
+    is_valid_horizontal_plane,
+    orient_along_gravity,
+)
 from .support_plane_fitter import SupportPlaneFitter
 
 
@@ -289,7 +293,9 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         max_angle = self._config.max_gravity_angle_deg
         while self._verifications:
             plane = self._verifications.popleft()
-            plane_eq = np.array([*plane.normal, plane.offset_mm])
+            plane_eq = orient_along_gravity(
+                np.array([*plane.normal, plane.offset_mm]), gravity
+            )
             self._verification_output.send(
                 SupportPlaneVerificationResult(
                     plane,

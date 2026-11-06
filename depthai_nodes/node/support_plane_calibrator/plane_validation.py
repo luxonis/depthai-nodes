@@ -1,15 +1,37 @@
-"""Gravity check shared by the candidate search and plane verification."""
+"""Gravity checks shared by the candidate search and plane verification."""
 
 import numpy as np
+
+
+def orient_along_gravity(plane_eq: np.ndarray, gravity: np.ndarray) -> np.ndarray:
+    """Return the plane equation with its normal pointing away from ``gravity``.
+
+    The accelerometer vector points up, so the oriented normal points down,
+    away from a camera above the plane. RANSAC and saved planes may give
+    either sign; orienting them first makes `is_valid_horizontal_plane` depend
+    only on the plane.
+
+    Args:
+        plane_eq: Plane ``(a, b, c, d)``.
+        gravity: Raw accelerometer vector.
+
+    Returns:
+        ``plane_eq`` if its normal already points away from ``gravity``,
+        otherwise the negated equation.
+    """
+    if np.dot(plane_eq[:3], gravity) > 0:
+        return -plane_eq
+    return plane_eq
 
 
 def is_valid_horizontal_plane(
     plane_eq: np.ndarray, gravity: np.ndarray, max_gravity_angle_deg: float
 ) -> bool:
-    """Check that a plane faces against gravity and lies in front of the camera.
+    """Check that a plane is horizontal and lies below the camera.
 
     Args:
-        plane_eq: Plane ``(a, b, c, d)`` with a unit normal ``(a, b, c)``.
+        plane_eq: Plane ``(a, b, c, d)`` with a unit normal ``(a, b, c)``,
+            oriented with `orient_along_gravity`.
         gravity: Raw accelerometer vector; only its direction is used.
         max_gravity_angle_deg: Largest accepted angle between the normal and
             the direction opposing gravity.

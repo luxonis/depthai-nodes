@@ -251,9 +251,9 @@ class SupportPlaneVerificationResult(dai.Buffer):
     """Whether a supplied plane passes calibration's gravity check.
 
     Args:
-        plane: The checked support plane.
-        gravity_angle_deg: Angle between the plane normal and the direction
-            opposing gravity, in degrees.
+        plane: The checked support plane, as supplied.
+        gravity_angle_deg: Tilt of the plane from horizontal, in degrees, from
+            0 to 90. Either sign of the plane equation gives the same angle.
         accepted: Whether the plane passed the check.
 
     Raises:
@@ -270,9 +270,8 @@ class SupportPlaneVerificationResult(dai.Buffer):
         """Create a verification result.
 
         Args:
-            plane: The checked support plane.
-            gravity_angle_deg: Angle between the plane normal and the direction
-                opposing gravity, in degrees.
+            plane: The checked support plane, as supplied.
+            gravity_angle_deg: Tilt of the plane from horizontal, in degrees.
             accepted: Whether the plane passed the check. A numpy ``bool_`` is
                 stored as ``bool``.
 
@@ -290,12 +289,12 @@ class SupportPlaneVerificationResult(dai.Buffer):
 
     @property
     def plane(self) -> SupportPlane:
-        """The checked support plane."""
+        """The checked support plane, as supplied."""
         return self._plane
 
     @property
     def gravity_angle_deg(self) -> float:
-        """Angle between the plane normal and the direction opposing gravity."""
+        """Tilt of the plane from horizontal, in degrees, from 0 to 90."""
         return self._gravity_angle_deg
 
     @property
