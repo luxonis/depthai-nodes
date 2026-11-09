@@ -30,7 +30,7 @@ where = ["."]
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
-optional-dependencies = { dev = { file = ["requirements-dev.txt"] } }
+optional-dependencies = { dev = { file = ["requirements-dev.txt"] }, box-measurement = { file = ["requirements-box-measurement.txt"] } }
 version = {attr = "depthai_nodes.__version__"}
 
 [tool.ruff]

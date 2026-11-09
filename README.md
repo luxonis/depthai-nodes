@@ -36,6 +36,20 @@ Install from PyPI:
 pip install depthai-nodes
 ```
 
+To use the box measurement nodes, install the `box-measurement` extra, which adds open3d:
+
+```bash
+pip install "depthai-nodes[box-measurement]"
+```
+
+On Debian or Ubuntu, open3d also needs system libraries that minimal images such as Docker containers and CI runners often lack:
+
+```bash
+sudo apt-get install libegl1 libgl1 libgomp1
+```
+
+open3d 0.20 publishes Linux wheels only for glibc 2.35 or newer, such as Debian 12+ or Ubuntu 22.04+. On older systems, including Debian 11, Ubuntu 20.04 and JetPack 5, pip cannot find a matching open3d and the install fails.
+
 Or install from source:
 
 ```bash
@@ -49,7 +63,8 @@ pip install .
 ### 📨 Message
 
 The `message` module provides `Collection`, `GatheredData`, and `SnapData`
-messages, plus creator functions for native DepthAI parser messages. Creators
+messages, box measurement messages such as `BoxDetections`, `BoxMeasurements`,
+and `SupportPlane`, plus creator functions for native DepthAI parser messages. Creators
 cover detections, segmentation, classification, keypoints, maps, and other model
 outputs. See the [message package documentation](./depthai_nodes/message/__init__.py) for the available
 types and their roles.
@@ -61,6 +76,7 @@ The `node` module provides parsers and pipeline helpers:
 - **Parser nodes** handle model post-processing for architectures such as YOLO, MediaPipe, and YuNet.
 - **Inference helpers**, including `ParsingNeuralNetwork` and `ParserGenerator`, create and connect inference and parser nodes.
 - **Utility nodes** handle detection filtering, image overlays, colormaps, and message collection.
+- **Box measurement nodes** detect, track, and measure boxes from color and a point cloud. `BoxDetector` and `BoxMeasurer` run on RVC4 only. `BoxDimensioner` requires open3d and has no RVC4-only check.
 
 `ParsingNeuralNetwork` and `ParserGenerator` use native DepthAI parsers by default. Use `HostParsingNeuralNetwork` or pass `hostOnly=True` to `ParserGenerator.build()` to select this package's host parsers.
 

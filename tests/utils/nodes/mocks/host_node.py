@@ -38,8 +38,13 @@ class HostNodeMock(NodeMock):
     def output(self, output):
         self._output = output
 
-    def createOutput(self, possibleDatatypes: list[tuple[dai.DatatypeEnum, bool]]):
-        return self._output
+    def createOutput(
+        self,
+        name: str = "",
+        group: str = "",
+        possibleDatatypes: list[tuple[dai.DatatypeEnum, bool]] | None = None,
+    ):
+        return OutputMock()
 
     def sendProcessingToPipeline(self, send: bool):
         self._sendProcessingToPipeline = send

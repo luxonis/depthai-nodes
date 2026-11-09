@@ -25,6 +25,9 @@ class PipelineMock:
     def getDefaultDevice(self):
         return self._defaultDevice
 
+    def getAllNodes(self):
+        return list(self._nodes)
+
     def remove(self, node):
         self._nodes.remove(node)
 
@@ -132,7 +135,7 @@ class PipelineMock:
                     else:
                         self._nn_archive = nn_archive
 
-                def createInput(self):
+                def createInput(self, *args, **kwargs):
                     if (
                         self.__class__.__bases__[0].__bases__[0].__name__
                         == "ThreadedHostNodeMock"
@@ -149,7 +152,9 @@ class PipelineMock:
                     self._is_running = is_running
 
                 def createOutput(
-                    self, possibleDatatypes: list[tuple[dai.DatatypeEnum, bool]] = None
+                    self,
+                    possibleDatatypes: list[tuple[dai.DatatypeEnum, bool]] = None,
+                    **kwargs,
                 ):
                     self._out = OutputMock()
                     return self._out
@@ -167,6 +172,9 @@ class DetectionParserMock:
         self._out = OutputMock()
         self._nn_archive = None
         self._run_on_host = False
+        self._confidence_threshold = None
+        self._iou_threshold = 0.5
+        self._input_config = InputMock()
 
     @property
     def input(self):
@@ -192,6 +200,22 @@ class DetectionParserMock:
 
     def setNNArchiveHead(self, head) -> None:
         self._nn_archive_head = head
+
+    def setConfidenceThreshold(self, threshold: float):
+        self._confidence_threshold = threshold
+
+    def getConfidenceThreshold(self):
+        return self._confidence_threshold
+
+    def setIouThreshold(self, threshold: float):
+        self._iou_threshold = threshold
+
+    def getIouThreshold(self):
+        return self._iou_threshold
+
+    @property
+    def inputConfig(self):
+        return self._input_config
 
     def setRunOnHost(self, run_on_host: bool):
         self._run_on_host = run_on_host
