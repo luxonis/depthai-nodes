@@ -8,7 +8,7 @@ from typing import Any
 import depthai as dai
 import numpy as np
 
-from depthai_nodes.message.support_plane import SupportPlane
+from depthai_nodes.message.support_plane import SupportPlane, SupportPlaneCandidate
 from depthai_nodes.message.support_plane_calibration import (
     CalibrationOutcome,
     SupportPlaneCalibrationControl,
@@ -289,7 +289,9 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             self._latest_gravity = None
 
     def _finish(
-        self, outcome: CalibrationOutcome, candidates: list[SupportPlane]
+        self,
+        outcome: CalibrationOutcome,
+        candidates: list[SupportPlaneCandidate],
     ) -> None:
         """End the attempt and send its result."""
         # Like DepthAI MultiDeviceCalibration, a stopped attempt needs no reset.

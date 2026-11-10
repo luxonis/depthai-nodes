@@ -12,6 +12,7 @@ BOX_NAMES = [
     "BoxDimensions",
     "MeasurementStatus",
     "SupportPlane",
+    "SupportPlaneCandidate",
     "SupportPlaneCalibrationControl",
     "SupportPlaneCalibrationResult",
     "SupportPlaneVerificationResult",

@@ -11,7 +11,7 @@ from typing import Any, TypeAlias
 import depthai as dai
 import numpy as np
 
-from .support_plane import SupportPlane
+from .support_plane import SupportPlane, SupportPlaneCandidate
 
 
 def _check_float(name: str, value: Any) -> float:
@@ -185,7 +185,11 @@ class SupportPlaneCalibrationControl(dai.Buffer):
 class SupportPlaneCalibrationResult(dai.Buffer):
     """The end of a calibration attempt.
 
-    A result has candidates exactly when calibration succeeded.
+    A result has candidates exactly when calibration succeeded. Candidates are
+    ordered best first: most inliers first, ties going to the smallest absolute
+    ``plane.offset_mm`` (nearest the camera). Each candidate's inlier count and
+    ratio are measured on the preprocessed point cloud; see
+    `SupportPlaneCandidate`.
 
     ``SupportPlaneCalibrator`` stamps each result with the timestamp, device
     timestamp and sequence number of the last point cloud its attempt fitted:
@@ -195,7 +199,7 @@ class SupportPlaneCalibrationResult(dai.Buffer):
 
     Args:
         outcome: How the attempt ended.
-        candidates: Accepted calibration candidates, best first.
+        candidates: Support plane candidates, best first.
 
     Raises:
         TypeError: If an argument has the wrong type.
@@ -206,26 +210,29 @@ class SupportPlaneCalibrationResult(dai.Buffer):
     def __init__(
         self,
         outcome: CalibrationOutcome,
-        candidates: list[SupportPlane] | tuple[SupportPlane, ...],
+        candidates: list[SupportPlaneCandidate] | tuple[SupportPlaneCandidate, ...],
     ) -> None:
         """Create a result and check that its fields are consistent.
 
         Args:
             outcome: How the attempt ended.
-            candidates: Accepted calibration candidates, best first.
+            candidates: Support plane candidates, best first.
 
         Raises:
-            TypeError: If ``outcome`` is not a `CalibrationOutcome`,
-                or ``candidates`` is not a list or tuple of `SupportPlane`.
+            TypeError: If ``outcome`` is not a `CalibrationOutcome`, or
+                ``candidates`` is not a list or tuple of
+                `SupportPlaneCandidate`.
             ValueError: If the result has candidates and did not succeed, or
                 succeeded without candidates.
         """
         super().__init__()
         _check_instance("outcome", outcome, CalibrationOutcome)
         if not isinstance(candidates, (list, tuple)):
-            raise TypeError("Candidates must be a list or tuple of support planes")
-        for plane in candidates:
-            _check_instance("candidate", plane, SupportPlane)
+            raise TypeError(
+                "Candidates must be a list or tuple of support plane candidates"
+            )
+        for candidate in candidates:
+            _check_instance("candidate", candidate, SupportPlaneCandidate)
         if bool(candidates) != (outcome is CalibrationOutcome.SUCCEEDED):
             raise ValueError("A result has candidates exactly when it succeeded")
         self._outcome = outcome
@@ -237,8 +244,11 @@ class SupportPlaneCalibrationResult(dai.Buffer):
         return self._outcome
 
     @property
-    def candidates(self) -> tuple[SupportPlane, ...]:
-        """Accepted planes, best first; empty unless calibration succeeded."""
+    def candidates(self) -> tuple[SupportPlaneCandidate, ...]:
+        """Support plane candidates, best first; empty unless calibration succeeded.
+
+        Ordered by most inliers, then by smallest absolute ``plane.offset_mm``.
+        """
         return self._candidates
 
 
