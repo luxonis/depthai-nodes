@@ -97,8 +97,9 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
     States:
         - Idle: Start begins an attempt; Stop and Reset do nothing.
         - Running: each loop pass fits the latest point cloud once an IMU
-          sample is available, until a cloud yields candidates (succeeded), a
-          fit fails (failed), or Stop arrives (cancelled). Start is ignored.
+          sample is available, until a cloud yields candidates (succeeded) or
+          Stop arrives (cancelled). A cloud without a plane keeps the attempt
+          searching. Start is ignored.
         - Complete: after success or failure; Reset returns to idle, and Start
           and Stop are ignored until then. A cancelled attempt returns straight
           to idle without Reset.
@@ -121,10 +122,13 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
     stream stalls or carries no accelerometer, fitting and verification wait
     for a new sample rather than use stale or missing gravity.
 
-    Errors: a non-``PointCloudData`` cloud, or a fit that raises
-    ``ValueError`` or ``RuntimeError``, fails the attempt. Any other error is a
-    bug and is not caught: DepthAI prints it with the raising line and aborts
-    the process. Outputs use standard DepthAI buffering and backpressure.
+    Errors: wiring errors raise from the run loop instead of ending the
+    attempt. A message on the point cloud input that is not
+    ``dai.PointCloudData`` raises ``TypeError``, and a cloud that is not the
+    organized size given to `build` raises ``ValueError``. Nothing catches or
+    logs these or any other error, and an exception escaping ``run()`` aborts
+    the process on depthai 3.12. Outputs use standard DepthAI buffering and
+    backpressure.
     """
 
     def __init__(self) -> None:
@@ -261,9 +265,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                     self._last_fitted_cloud = None
             elif isinstance(command, commands.Stop):
                 if self._state is CalibratorState.RUNNING:
-                    self._finish(
-                        CalibrationOutcome.CANCELLED, [], "Calibration cancelled"
-                    )
+                    self._finish(CalibrationOutcome.CANCELLED, [])
             elif self._state is not CalibratorState.RUNNING:
                 self._state = CalibratorState.IDLE
 
@@ -290,7 +292,6 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         self,
         outcome: CalibrationOutcome,
         candidates: list[SupportPlaneCandidate],
-        info: str,
     ) -> None:
         """End the attempt and send its result."""
         # Like DepthAI MultiDeviceCalibration, a stopped attempt needs no reset.
@@ -299,7 +300,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             if outcome is CalibrationOutcome.CANCELLED
             else CalibratorState.COMPLETE
         )
-        result = SupportPlaneCalibrationResult(outcome, candidates, info)
+        result = SupportPlaneCalibrationResult(outcome, candidates)
         cloud = self._last_fitted_cloud
         if cloud is not None:
             result.setTimestamp(cloud.getTimestamp())
@@ -327,27 +328,24 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             )
 
     def _process_cloud(self, cloud: dai.ADatatype, gravity: np.ndarray) -> None:
-        """Fit one cloud and finish the attempt on candidates or failure."""
+        """Fit one cloud and finish the attempt on candidates.
+
+        Raises:
+            TypeError: If ``cloud`` is not ``dai.PointCloudData``.
+            ValueError: If the cloud is not the organized size from `build`.
+        """
         if not isinstance(cloud, dai.PointCloudData):
-            self._finish(
-                CalibrationOutcome.FAILED,
-                [],
-                "Calibration failed: expected organized PointCloudData",
+            raise TypeError(
+                "SupportPlaneCalibrator expects organized PointCloudData on its "
+                f"point cloud input, got {type(cloud).__name__}"
             )
-            return
         assert self._fitter is not None
+        candidates = self._fitter.find_candidates(
+            np.asarray(cloud.getPoints()), gravity
+        )
         self._last_fitted_cloud = cloud
-        try:
-            candidates = self._fitter.find_candidates(
-                np.asarray(cloud.getPoints()), gravity
-            )
-        except (ValueError, RuntimeError) as exc:
-            self._finish(CalibrationOutcome.FAILED, [], f"Calibration failed: {exc}")
-            return
         if candidates:
-            self._finish(
-                CalibrationOutcome.SUCCEEDED, candidates, "Support planes found"
-            )
+            self._finish(CalibrationOutcome.SUCCEEDED, candidates)
 
 
 def imu_gravity(imu: dai.IMUData) -> np.ndarray | None:

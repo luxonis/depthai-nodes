@@ -54,26 +54,25 @@ def test_outcomes_are_their_string_values():
     assert CalibrationOutcome.CANCELLED == "cancelled"
 
 
-def test_result_carries_outcome_candidates_and_info():
-    result = SupportPlaneCalibrationResult(
-        CalibrationOutcome.SUCCEEDED, [CANDIDATE], "found"
-    )
+def test_result_carries_outcome_and_candidates():
+    result = SupportPlaneCalibrationResult(CalibrationOutcome.SUCCEEDED, [CANDIDATE])
 
     assert isinstance(result, dai.Buffer)
     assert result.outcome is CalibrationOutcome.SUCCEEDED
     assert result.candidates == (CANDIDATE,)
-    assert result.info == "found"
 
 
-def test_result_info_defaults_to_empty():
-    assert SupportPlaneCalibrationResult(CalibrationOutcome.FAILED, []).info == ""
+def test_result_has_no_info():
+    result = SupportPlaneCalibrationResult(CalibrationOutcome.FAILED, [])
+
+    assert not hasattr(result, "info")
+    with pytest.raises(TypeError):
+        SupportPlaneCalibrationResult(CalibrationOutcome.FAILED, [], "detail")  # type: ignore[call-arg]
 
 
 def test_result_candidates_are_a_tuple_copied_at_construction():
     candidates = [CANDIDATE]
-    result = SupportPlaneCalibrationResult(
-        CalibrationOutcome.SUCCEEDED, candidates, "found"
-    )
+    result = SupportPlaneCalibrationResult(CalibrationOutcome.SUCCEEDED, candidates)
     candidates.append(CANDIDATE)
 
     assert result.candidates == (CANDIDATE,)
@@ -93,19 +92,18 @@ def test_result_has_candidates_exactly_when_calibration_succeeded(outcome, candi
 
 
 @pytest.mark.parametrize(
-    "outcome,candidates,info",
+    "outcome,candidates",
     [
-        ("cancelled", [], ""),
-        (CalibrationOutcome.SUCCEEDED, [(0, 0, 1)], ""),
-        (CalibrationOutcome.SUCCEEDED, PLANE, ""),
-        (CalibrationOutcome.SUCCEEDED, [PLANE], ""),
-        (CalibrationOutcome.SUCCEEDED, CANDIDATE, ""),
-        (CalibrationOutcome.FAILED, [], None),
+        ("cancelled", []),
+        (CalibrationOutcome.SUCCEEDED, [(0, 0, 1)]),
+        (CalibrationOutcome.SUCCEEDED, PLANE),
+        (CalibrationOutcome.SUCCEEDED, [PLANE]),
+        (CalibrationOutcome.SUCCEEDED, CANDIDATE),
     ],
 )
-def test_result_rejects_wrong_types(outcome, candidates, info):
+def test_result_rejects_wrong_types(outcome, candidates):
     with pytest.raises(TypeError):
-        SupportPlaneCalibrationResult(outcome, candidates, info)
+        SupportPlaneCalibrationResult(outcome, candidates)
 
 
 def test_verification_result_carries_its_fields():
@@ -143,10 +141,8 @@ def test_verification_result_rejects_non_finite_angle():
     [
         (SupportPlaneCalibrationControl.start(), ("command",)),
         (
-            SupportPlaneCalibrationResult(
-                CalibrationOutcome.SUCCEEDED, [CANDIDATE], "found"
-            ),
-            ("outcome", "candidates", "info"),
+            SupportPlaneCalibrationResult(CalibrationOutcome.SUCCEEDED, [CANDIDATE]),
+            ("outcome", "candidates"),
         ),
         (
             SupportPlaneVerificationResult(PLANE, 3.0, True),
