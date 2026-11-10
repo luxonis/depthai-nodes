@@ -50,6 +50,10 @@ class PlaneCalibrationConfig:
         merge_distance_threshold_mm: Largest offset difference, in millimeters,
             at which two parallel candidates count as one plane. Must be
             positive.
+        check_distance_mm: Largest distance, in millimeters, of a point from a
+            verified plane for it to count as on the plane in a plane
+            verification's on-plane ratio. Separate from RANSAC's
+            ``distance_threshold_mm``. Must be positive.
 
     Raises:
         TypeError: If a field has the wrong type.
@@ -64,6 +68,7 @@ class PlaneCalibrationConfig:
     voxel_size_mm: float = 30.0
     max_gravity_angle_deg: float = 6.5
     merge_distance_threshold_mm: float = 25.0
+    check_distance_mm: float = 30.0
 
     def __post_init__(self) -> None:
         """Validate the fields and store numbers as built-in types.
@@ -86,6 +91,7 @@ class PlaneCalibrationConfig:
             "distance_threshold_mm",
             "voxel_size_mm",
             "merge_distance_threshold_mm",
+            "check_distance_mm",
         ):
             value = _check_float(name, getattr(self, name))
             if value <= 0:

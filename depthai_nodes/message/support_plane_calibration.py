@@ -253,17 +253,27 @@ class SupportPlaneCalibrationResult(dai.Buffer):
 
 
 class SupportPlaneVerificationResult(dai.Buffer):
-    """Whether a supplied plane passes calibration's gravity check.
+    """How a supplied plane fares against gravity and the current point cloud.
+
+    The level test (``gravity_angle_deg`` and ``accepted``) is calibration's
+    gravity check. The on-plane ratio is the share of the checked point
+    cloud's sampled valid points within ``check_distance_mm`` of the plane,
+    whichever sign its equation has. It is not a candidate's inlier ratio: it
+    is measured on a sparse sample of the raw organized cloud, not on the
+    preprocessed cloud RANSAC fits.
 
     Args:
         plane: The checked support plane, as supplied.
         gravity_angle_deg: Tilt of the plane from horizontal, in degrees, from
             0 to 90. Either sign of the plane equation gives the same angle.
-        accepted: Whether the plane passed the check.
+        accepted: Whether the plane passed the gravity check.
+        on_plane_ratio: The on-plane ratio from 0 to 1, or ``None`` when it
+            was not measured because too few valid points were sampled.
 
     Raises:
         TypeError: If an argument has the wrong type.
-        ValueError: If ``gravity_angle_deg`` is not finite.
+        ValueError: If ``gravity_angle_deg`` is not finite, or
+            ``on_plane_ratio`` is not finite or outside 0 to 1.
     """
 
     def __init__(
@@ -271,25 +281,37 @@ class SupportPlaneVerificationResult(dai.Buffer):
         plane: SupportPlane,
         gravity_angle_deg: float,
         accepted: bool | np.bool_,
+        on_plane_ratio: float | None,
     ) -> None:
         """Create a verification result.
 
         Args:
             plane: The checked support plane, as supplied.
             gravity_angle_deg: Tilt of the plane from horizontal, in degrees.
-            accepted: Whether the plane passed the check. A numpy ``bool_`` is
-                stored as ``bool``.
+            accepted: Whether the plane passed the gravity check. A numpy
+                ``bool_`` is stored as ``bool``.
+            on_plane_ratio: The on-plane ratio from 0 to 1, or ``None`` when
+                not measured.
 
         Raises:
             TypeError: If ``plane`` is not a `SupportPlane`,
-                ``gravity_angle_deg`` is not a real number, or ``accepted`` is
-                not a boolean.
-            ValueError: If ``gravity_angle_deg`` is not finite.
+                ``gravity_angle_deg`` is not a real number, ``accepted`` is
+                not a boolean, or ``on_plane_ratio`` is neither ``None`` nor a
+                real number.
+            ValueError: If ``gravity_angle_deg`` is not finite, or
+                ``on_plane_ratio`` is not finite or outside 0 to 1.
         """
         super().__init__()
         _check_instance("plane", plane, SupportPlane)
         self._gravity_angle_deg = _check_float("gravity_angle_deg", gravity_angle_deg)
         self._accepted = _check_bool("accepted", accepted)
+        if on_plane_ratio is not None:
+            on_plane_ratio = _check_float("on_plane_ratio", on_plane_ratio)
+            if not 0 <= on_plane_ratio <= 1:
+                raise ValueError(
+                    f"on_plane_ratio must be from 0 to 1, got {on_plane_ratio}"
+                )
+        self._on_plane_ratio = on_plane_ratio
         self._plane = plane
 
     @property
@@ -306,3 +328,13 @@ class SupportPlaneVerificationResult(dai.Buffer):
     def accepted(self) -> bool:
         """Whether the plane passed the gravity check."""
         return self._accepted
+
+    @property
+    def on_plane_ratio(self) -> float | None:
+        """Share of sampled valid points on the plane, or ``None`` if not measured.
+
+        A point is on the plane within the calibrator's ``check_distance_mm``.
+        ``None`` means too few valid points were sampled to measure. This is
+        not a candidate's inlier ratio.
+        """
+        return self._on_plane_ratio

@@ -74,6 +74,11 @@ IMU_MAX_AGE_SECONDS = 0.5
 # packet without an accelerometer report.
 MIN_GRAVITY_NORM = 1e-6
 
+# The on-plane ratio samples every this-many rows and columns of the organized
+# cloud, and is not measured under this many valid sampled points.
+ON_PLANE_STRIDE = 4
+MIN_ON_PLANE_POINTS = 500
+
 
 class CalibratorState(Enum):
     """Where the calibrator is in an attempt; see `SupportPlaneCalibrator`."""
@@ -123,6 +128,13 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
     result copies that cloud's timestamp, device timestamp and sequence
     number. A verify command never starts, ends or delays an attempt, but a
     cloud it takes is not left queued for a later Start.
+
+    Besides the gravity check, each verification result carries the on-plane
+    ratio: of the cloud's points in every 4th row and column with ``z > 0``,
+    the share within the config's ``check_distance_mm`` of the plane, whichever
+    sign its equation has. With fewer than 500 such points it is ``None``,
+    meaning not measured. It is not a candidate's inlier ratio, which counts
+    RANSAC inliers on the preprocessed cloud.
 
     An IMU sample counts as available for ``IMU_MAX_AGE_SECONDS`` after it
     arrives, and only if it has a nonzero accelerometer vector. If the IMU
@@ -265,7 +277,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         if message is None:
             return
         cloud, points = self._check_cloud(message)
-        self._answer_verifications(cloud, gravity)
+        self._answer_verifications(cloud, points, gravity)
         if self._state is CalibratorState.RUNNING:
             self._fit(cloud, points, gravity)
 
@@ -354,11 +366,14 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         return message, points
 
     def _answer_verifications(
-        self, cloud: dai.PointCloudData, gravity: np.ndarray
+        self, cloud: dai.PointCloudData, points: np.ndarray, gravity: np.ndarray
     ) -> None:
         """Answer all pending verifications from one cloud, in arrival order."""
-        assert self._config is not None
+        assert self._config is not None and self._cloud_size is not None
+        if not self._verifications:
+            return
         max_angle = self._config.max_gravity_angle_deg
+        sample = _sample_valid_points(points, self._cloud_size)
         while self._verifications:
             plane = self._verifications.popleft()
             plane_eq = orient_along_gravity(
@@ -368,6 +383,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                 plane,
                 gravity_angle_deg(plane_eq, gravity),
                 is_valid_horizontal_plane(plane_eq, gravity, max_angle),
+                _on_plane_ratio(plane, sample, self._config.check_distance_mm),
             )
             _copy_stamps(cloud, result)
             self._verification_output.send(result)
@@ -381,6 +397,28 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         self._last_fitted_cloud = cloud
         if candidates:
             self._finish(CalibrationOutcome.SUCCEEDED, candidates)
+
+
+def _sample_valid_points(points: np.ndarray, size: tuple[int, int]) -> np.ndarray:
+    """Return every ``ON_PLANE_STRIDE``-th row and column's points with ``z > 0``."""
+    width, height = size
+    grid = points.reshape(height, width, 3)[::ON_PLANE_STRIDE, ::ON_PLANE_STRIDE]
+    sample = grid.reshape(-1, 3).astype(np.float64)
+    return sample[sample[:, 2] > 0]
+
+
+def _on_plane_ratio(
+    plane: SupportPlane, sample: np.ndarray, check_distance_mm: float
+) -> float | None:
+    """Return the share of sampled points within the distance of the plane.
+
+    Returns ``None`` under ``MIN_ON_PLANE_POINTS`` sampled points. The sign of
+    the plane equation does not matter.
+    """
+    if len(sample) < MIN_ON_PLANE_POINTS:
+        return None
+    distances = np.abs(sample @ np.asarray(plane.normal) + plane.offset_mm)
+    return float(np.count_nonzero(distances <= check_distance_mm) / len(sample))
 
 
 def _copy_stamps(source: dai.Buffer, target: dai.Buffer) -> None:

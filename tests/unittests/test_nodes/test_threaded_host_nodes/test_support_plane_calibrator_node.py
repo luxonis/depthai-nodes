@@ -102,14 +102,15 @@ class MockedCalibrator(SupportPlaneCalibrator):
 
 
 class Harness:
-    def __init__(self, config=None):
+    def __init__(self, config=None, size=CLOUD_SIZE):
+        self.size = size
         self.clouds = Source()
         self.imus = Source()
         self.node = MockedCalibrator()
         self.node.build(
             cast(dai.Node.Output, self.clouds),
             cast(dai.Node.Output, self.imus),
-            CLOUD_SIZE,
+            size,
             config,
         )
         self.results = cast(OutputQueueMock, self.node.out.createOutputQueue())
@@ -140,8 +141,17 @@ class Harness:
 
     def plane_cloud(self, depth=1000.0, stamps: Stamps | None = None):
         """A flat organized cloud ``depth`` mm in front of the camera."""
-        x, y = np.meshgrid(np.arange(20) * 40.0, np.arange(20) * 40.0)
-        points = np.column_stack([x.ravel(), y.ravel(), np.full(400, depth)])
+        width, height = self.size
+        self.depth_cloud(np.full((height, width), depth), stamps)
+
+    def depth_cloud(self, depths, stamps: Stamps | None = None):
+        """An organized cloud with one ``z`` per point, rows by columns, in mm.
+
+        Points sit on a 40 mm grid in ``x`` and ``y``; ``z = 0`` is no depth.
+        """
+        height, width = depths.shape
+        x, y = np.meshgrid(np.arange(width) * 40.0, np.arange(height) * 40.0)
+        points = np.column_stack([x.ravel(), y.ravel(), depths.ravel()])
         message = dai.PointCloudData()
         message.setPoints(points.astype(np.float32))  # pyright: ignore[reportArgumentType]
         if stamps is not None:
@@ -847,3 +857,80 @@ def test_verification_while_idle_waits_for_a_cloud_and_carries_its_stamps(
     assert result.accepted
     assert stamps_of(result) == stamps(7)
     assert calibrator.verifications.is_empty()
+
+
+# 100 x 100 points, so every 4th row and column samples 25 x 25 = 625 points.
+LARGE_CLOUD_SIZE = (100, 100)
+
+
+def verify_on(calibrator, plane, depths):
+    calibrator.gravity()
+    calibrator.verify(plane)
+    calibrator.depth_cloud(depths)
+    calibrator.run()
+    return calibrator.verification()
+
+
+@pytest.mark.parametrize(
+    "offset_mm,ratio",
+    [(-1000, 1.0), (-1025, 1.0), (-975, 1.0), (-1035, 0.0), (-965, 0.0)],
+)
+def test_on_plane_ratio_counts_points_within_the_check_distance(offset_mm, ratio):
+    calibrator = Harness(size=LARGE_CLOUD_SIZE)
+    floor_at_1000 = np.full((100, 100), 1000.0)
+
+    result = verify_on(calibrator, floor(offset_mm), floor_at_1000)
+
+    assert result.on_plane_ratio == ratio
+
+
+def test_on_plane_ratio_uses_the_built_check_distance():
+    calibrator = Harness(PlaneCalibrationConfig(check_distance_mm=50), LARGE_CLOUD_SIZE)
+
+    result = verify_on(calibrator, floor(-1040), np.full((100, 100), 1000.0))
+
+    assert result.on_plane_ratio == 1.0
+
+
+def test_on_plane_ratio_is_the_sampled_share_on_the_plane_for_either_sign():
+    calibrator = Harness(size=LARGE_CLOUD_SIZE)
+    # Rows 0-49 are floor at 1000 mm, rows 50-99 a step at 1100 mm. Sampling
+    # rows 0, 4, ..., 96 takes 13 floor rows and 12 step rows.
+    depths = np.full((100, 100), 1000.0)
+    depths[50:] = 1100.0
+
+    assert verify_on(calibrator, floor(-1000), depths).on_plane_ratio == 13 / 25
+    assert verify_on(
+        calibrator, SupportPlane(normal=(0, 0, -1), offset_mm=1000), depths
+    ).on_plane_ratio == pytest.approx(13 / 25)
+    assert verify_on(calibrator, floor(-1100), depths).on_plane_ratio == 12 / 25
+
+
+def test_on_plane_ratio_ignores_points_without_depth():
+    calibrator = Harness(size=LARGE_CLOUD_SIZE)
+    # Sampled rows 0-76 are floor: 20 rows of 25, the 500 points needed.
+    depths = np.zeros((100, 100))
+    depths[:80] = 1000.0
+
+    assert verify_on(calibrator, floor(-1000), depths).on_plane_ratio == 1.0
+
+
+def test_on_plane_ratio_is_not_measured_for_a_mostly_empty_cloud():
+    calibrator = Harness(size=LARGE_CLOUD_SIZE)
+    # Sampled rows 0-72 are floor: 19 rows of 25 is 475 points, under 500.
+    depths = np.zeros((100, 100))
+    depths[:76] = 1000.0
+
+    result = verify_on(calibrator, floor(-1000), depths)
+
+    assert result.on_plane_ratio is None
+    assert result.accepted
+
+
+def test_on_plane_ratio_is_not_measured_on_a_small_cloud(calibrator):
+    calibrator.gravity()
+    calibrator.verify(floor(-1000))
+    calibrator.plane_cloud()
+    calibrator.run()
+
+    assert calibrator.verification().on_plane_ratio is None

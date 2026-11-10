@@ -162,7 +162,9 @@ which ends with one `depthai_nodes.message.SupportPlaneCalibrationResult` on
 ``out``; a succeeded result holds support plane candidates, best first. A verify
 control asks for a plane verification of a given support plane, answered with a
 `depthai_nodes.message.SupportPlaneVerificationResult` on
-``verificationOutput``. `PlaneCalibrationConfig` holds the plane-fitting
+``verificationOutput``, which carries the plane's level test and its on-plane
+ratio, the share of the next point cloud on the plane within
+``check_distance_mm``. `PlaneCalibrationConfig` holds the plane-fitting
 settings, fixed at ``build``.
 
 ``SupportPlaneCalibrator`` needs open3d, installed with
