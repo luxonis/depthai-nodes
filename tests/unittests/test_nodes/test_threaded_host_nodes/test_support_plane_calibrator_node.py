@@ -514,6 +514,7 @@ def test_verification_accepts_a_plane_opposing_gravity_with_its_angle(calibrator
     plane = tilted_plane(3)
     calibrator.gravity()
     calibrator.verify(plane)
+    calibrator.plane_cloud()
     calibrator.run()
 
     result = calibrator.verification()
@@ -526,6 +527,7 @@ def test_verification_rejects_planes_beyond_the_tolerance(calibrator):
     calibrator.gravity()
     calibrator.verify(tilted_plane(6))
     calibrator.verify(tilted_plane(7))
+    calibrator.plane_cloud()
     calibrator.run()
 
     assert calibrator.verification().accepted
@@ -537,6 +539,7 @@ def test_verification_rejects_planes_beyond_the_tolerance(calibrator):
 def test_verification_rejects_a_plane_behind_the_camera(calibrator):
     calibrator.gravity()
     calibrator.verify(tilted_plane(0, offset_mm=1000))
+    calibrator.plane_cloud()
     calibrator.run()
 
     result = calibrator.verification()
@@ -548,6 +551,7 @@ def test_verification_accepts_the_opposite_sign_equation_and_echoes_it(calibrato
     plane = SupportPlane(normal=(0, 0, -1), offset_mm=1000)
     calibrator.gravity()
     calibrator.verify(plane)
+    calibrator.plane_cloud()
     calibrator.run()
 
     result = calibrator.verification()
@@ -556,25 +560,32 @@ def test_verification_accepts_the_opposite_sign_equation_and_echoes_it(calibrato
     assert result.gravity_angle_deg == pytest.approx(0, abs=1e-4)
 
 
-def test_verifications_wait_for_imu_and_are_answered_once_in_order(calibrator):
+def test_verifications_wait_for_imu_and_are_answered_once_in_order_from_one_cloud(
+    calibrator,
+):
     planes = [tilted_plane(0), tilted_plane(7), tilted_plane(3)]
     for plane in planes:
         calibrator.verify(plane)
+    calibrator.plane_cloud(stamps=stamps(1))
     calibrator.run()
     assert calibrator.verifications.is_empty()
 
     calibrator.gravity()
     calibrator.run()
     calibrator.gravity()
+    calibrator.plane_cloud(stamps=stamps(2))
     calibrator.run()
 
-    assert [calibrator.verification().plane for _ in planes] == planes
+    results = [calibrator.verification() for _ in planes]
+    assert [result.plane for result in results] == planes
+    assert [stamps_of(result) for result in results] == [stamps(1)] * 3
     assert calibrator.verifications.is_empty()
 
 
 def test_zero_accelerometer_is_not_used_for_verification(calibrator):
     calibrator.verify(tilted_plane(0))
     calibrator.gravity(z=0)
+    calibrator.plane_cloud()
     calibrator.run()
     assert calibrator.verifications.is_empty()
 
@@ -622,6 +633,7 @@ def test_stale_imu_is_not_used_for_verification(calibrator, clock):
     clock.now += IMU_MAX_AGE_SECONDS + 0.01
 
     calibrator.verify(tilted_plane(0))
+    calibrator.plane_cloud()
     calibrator.run()
     assert calibrator.verifications.is_empty()
 
@@ -651,18 +663,73 @@ def test_imu_within_the_age_limit_is_reused(calibrator, clock):
     clock.now += IMU_MAX_AGE_SECONDS
 
     calibrator.verify(tilted_plane(0))
+    calibrator.plane_cloud()
     calibrator.run()
     assert calibrator.verification().accepted
 
 
-def test_verification_does_not_affect_attempts(calibrator):
-    calibrator.start()
+def test_verification_while_idle_neither_starts_an_attempt_nor_keeps_the_cloud(
+    calibrator,
+):
     calibrator.gravity()
     calibrator.verify(tilted_plane(0))
+    calibrator.plane_cloud()
     calibrator.run()
     assert calibrator.verification().accepted
     assert calibrator.no_result()
 
+    # The verification took the queued cloud, so the attempt waits for the next.
+    calibrator.start()
+    calibrator.run()
+    assert calibrator.no_result()
+
+    calibrator.plane_cloud()
+    calibrator.run()
+    assert calibrator.result().outcome is CalibrationOutcome.SUCCEEDED
+
+
+def test_verification_while_running_is_answered_and_the_attempt_keeps_searching(
+    calibrator,
+):
+    calibrator.start()
+    calibrator.gravity()
+    calibrator.verify(tilted_plane(0))
+    calibrator.run()
+    assert calibrator.verifications.is_empty()
+    assert calibrator.no_result()
+
+    calibrator.plane_cloud(depth=0, stamps=stamps(4))
+    calibrator.run()
+    assert stamps_of(calibrator.verification()) == stamps(4)
+    assert calibrator.no_result()
+
+    calibrator.plane_cloud(stamps=stamps(5))
+    calibrator.run()
+    result = calibrator.result()
+    assert result.outcome is CalibrationOutcome.SUCCEEDED
+    assert stamps_of(result) == stamps(5)
+    assert calibrator.verifications.is_empty()
+
+
+def test_one_cloud_answers_verifications_and_then_ends_the_attempt(calibrator):
+    calibrator.start()
+    calibrator.gravity()
+    calibrator.verify(tilted_plane(0))
+    calibrator.verify(tilted_plane(7))
+    calibrator.plane_cloud(stamps=stamps(3))
+    calibrator.run()
+
+    first, second = calibrator.verification(), calibrator.verification()
+    assert (first.accepted, second.accepted) == (True, False)
+    assert stamps_of(first) == stamps_of(second) == stamps(3)
+    result = calibrator.result()
+    assert result.outcome is CalibrationOutcome.SUCCEEDED
+    assert stamps_of(result) == stamps(3)
+
+
+def test_verification_while_complete_is_answered_without_a_new_result(calibrator):
+    calibrator.start()
+    calibrator.gravity()
     calibrator.plane_cloud()
     calibrator.run()
     assert calibrator.result().outcome is CalibrationOutcome.SUCCEEDED
@@ -671,8 +738,34 @@ def test_verification_does_not_affect_attempts(calibrator):
     calibrator.start()
     calibrator.stop()
     calibrator.run()
-    assert calibrator.verification().accepted
+    assert calibrator.verifications.is_empty()
+
+    calibrator.plane_cloud(stamps=stamps(6))
+    calibrator.run()
+    assert stamps_of(calibrator.verification()) == stamps(6)
     assert calibrator.no_result()
+
+
+def test_message_that_is_not_a_point_cloud_raises_when_taken_for_a_verification(
+    calibrator,
+):
+    calibrator.gravity()
+    calibrator.verify(tilted_plane(0))
+    calibrator.clouds.send(dai.Buffer())
+    with pytest.raises(TypeError, match="PointCloudData"):
+        calibrator.run()
+    assert calibrator.verifications.is_empty()
+
+
+def test_cloud_of_the_wrong_size_raises_when_taken_for_a_verification(calibrator):
+    calibrator.gravity()
+    calibrator.verify(tilted_plane(0))
+    cloud = dai.PointCloudData()
+    cloud.setPoints(np.ones((10, 3), dtype=np.float32))  # pyright: ignore[reportArgumentType]
+    calibrator.clouds.send(cloud)
+    with pytest.raises(ValueError, match="organized"):
+        calibrator.run()
+    assert calibrator.verifications.is_empty()
 
 
 def test_verification_uses_the_built_tolerance():
@@ -680,6 +773,7 @@ def test_verification_uses_the_built_tolerance():
     calibrator.gravity()
     calibrator.verify(tilted_plane(3))
     calibrator.verify(tilted_plane(0.5))
+    calibrator.plane_cloud()
     calibrator.run()
 
     assert not calibrator.verification().accepted
@@ -691,6 +785,7 @@ def test_build_uses_the_default_config():
     calibrator.gravity()
     calibrator.verify(tilted_plane(6))
     calibrator.verify(tilted_plane(7))
+    calibrator.plane_cloud()
     calibrator.run()
 
     assert calibrator.verification().accepted
@@ -735,3 +830,20 @@ def test_build_cannot_run_twice():
 
     with pytest.raises(RuntimeError):
         node.build(output, output, CLOUD_SIZE)
+
+
+def test_verification_while_idle_waits_for_a_cloud_and_carries_its_stamps(
+    calibrator,
+):
+    calibrator.gravity()
+    calibrator.verify(tilted_plane(0))
+    calibrator.run()
+    assert calibrator.verifications.is_empty()
+
+    calibrator.plane_cloud(stamps=stamps(7))
+    calibrator.run()
+
+    result = calibrator.verification()
+    assert result.accepted
+    assert stamps_of(result) == stamps(7)
+    assert calibrator.verifications.is_empty()
