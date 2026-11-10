@@ -166,7 +166,6 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         self._state = CalibratorState.IDLE
         self._config: PlaneCalibrationConfig | None = None
         self._fitter: SupportPlaneFitter | None = None
-        self._cloud_size: tuple[int, int] | None = None
         self._verifications: deque[SupportPlane] = deque()
         self._latest_gravity: np.ndarray | None = None
         self._latest_gravity_arrival = 0.0
@@ -174,7 +173,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         # copies; None until the attempt fits one.
         self._last_fitted_cloud: dai.PointCloudData | None = None
         # Clouds the running attempt has fitted, checked against the cap.
-        self._fitted_clouds = 0
+        self._fitted_cloud_count = 0
 
     @property
     def inputControl(self) -> dai.Node.Input:
@@ -247,7 +246,6 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             config = PlaneCalibrationConfig()
         _check_instance("config", config, PlaneCalibrationConfig)
         self._config = config
-        self._cloud_size = (width, height)
         self._fitter = SupportPlaneFitter((width, height), config)
         pointCloud.link(self._point_cloud_input)
         imu.link(self._imu_input)
@@ -267,8 +265,8 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
     def _run_pass(self) -> None:
         """Apply controls, then check one cloud for verifications and the fit.
 
-        A cloud is taken only with fresh gravity and only when a verification is pending
-        or an attempt is running; otherwise it stays queued.
+        A cloud is taken only with fresh gravity, and only while a verification is
+        pending or an attempt is running. Otherwise it stays queued.
         """
         self._apply_controls()
         self._take_latest_gravity()
@@ -301,7 +299,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                 if self._state is CalibratorState.IDLE:
                     self._state = CalibratorState.RUNNING
                     self._last_fitted_cloud = None
-                    self._fitted_clouds = 0
+                    self._fitted_cloud_count = 0
             elif isinstance(command, commands.Stop):
                 if self._state is CalibratorState.RUNNING:
                     self._finish(CalibrationOutcome.CANCELLED, [])
@@ -359,8 +357,8 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                 "SupportPlaneCalibrator expects organized PointCloudData on its "
                 f"point cloud input, got {type(message).__name__}"
             )
-        assert self._cloud_size is not None
-        width, height = self._cloud_size
+        assert self._fitter is not None
+        width, height = self._fitter.cloud_size
         points = np.asarray(message.getPoints())
         expected = (width * height, 3)
         if points.shape != expected:
@@ -374,11 +372,11 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         self, cloud: dai.PointCloudData, points: np.ndarray, gravity: np.ndarray
     ) -> None:
         """Answer all pending verifications from one cloud, in arrival order."""
-        assert self._config is not None and self._cloud_size is not None
+        assert self._config is not None and self._fitter is not None
         if not self._verifications:
             return
         max_angle = self._config.max_gravity_angle_deg
-        sample = _sample_valid_points(points, self._cloud_size)
+        sample = _sample_valid_points(points, self._fitter.cloud_size)
         while self._verifications:
             plane = self._verifications.popleft()
             plane_eq = orient_along_gravity(
@@ -400,11 +398,11 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         assert self._fitter is not None and self._config is not None
         candidates = self._fitter.find_candidates(points, gravity)
         self._last_fitted_cloud = cloud
-        self._fitted_clouds += 1
+        self._fitted_cloud_count += 1
         cap = self._config.max_calibration_attempts
         if candidates:
             self._finish(CalibrationOutcome.SUCCEEDED, candidates)
-        elif cap is not None and self._fitted_clouds >= cap:
+        elif cap is not None and self._fitted_cloud_count >= cap:
             self._finish(CalibrationOutcome.FAILED, [])
 
 

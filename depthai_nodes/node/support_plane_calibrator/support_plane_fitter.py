@@ -1,10 +1,10 @@
-"""Horizontal plane candidates in an organized millimeter point cloud."""
+"""Horizontal support plane candidates in an organized millimeter point cloud."""
 
 from __future__ import annotations
 
 import logging
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 import numpy as np
 
@@ -18,12 +18,23 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Inlier count, unit plane equation and inlier centroid of one RANSAC plane.
-PlaneFit = tuple[int, np.ndarray, np.ndarray]
+
+class PlaneFit(NamedTuple):
+    """One horizontal RANSAC plane.
+
+    Attributes:
+        inlier_count: RANSAC inliers on the preprocessed cloud.
+        plane_eq: Unit plane equation ``(a, b, c, d)`` oriented along gravity.
+        centroid: Mean of the inlier points, in millimeters.
+    """
+
+    inlier_count: int
+    plane_eq: np.ndarray
+    centroid: np.ndarray
 
 
 class SupportPlaneFitter:
-    """Find horizontal plane candidates in an organized point cloud.
+    """Find horizontal support plane candidates in an organized point cloud.
 
     Args:
         cloud_size: Organized cloud ``(width, height)`` in points.
@@ -41,6 +52,11 @@ class SupportPlaneFitter:
         """
         self._width, self._height = cloud_size
         self._config = config
+
+    @property
+    def cloud_size(self) -> tuple[int, int]:
+        """Organized cloud ``(width, height)`` in points."""
+        return self._width, self._height
 
     def find_candidates(
         self, points: np.ndarray, gravity: np.ndarray
@@ -75,7 +91,7 @@ class SupportPlaneFitter:
             return []
         fits = self._fit_planes(cloud, gravity)
         if not fits:
-            logger.debug("RANSAC rejected: no horizontal plane candidates")
+            logger.debug("RANSAC rejected: no horizontal support plane candidates")
             return []
         return self._rank(self._drop_duplicates(fits), len(cloud.points))
 
@@ -139,7 +155,7 @@ class SupportPlaneFitter:
                 plane_eq, gravity, config.max_gravity_angle_deg
             ):
                 centroid = np.asarray(cloud.points)[inliers].mean(axis=0)
-                fits.append((len(inliers), plane_eq, centroid))
+                fits.append(PlaneFit(len(inliers), plane_eq, centroid))
             cloud = cloud.select_by_index(inliers, invert=True)
         return fits
 
@@ -149,14 +165,16 @@ class SupportPlaneFitter:
         Noisy depth can make RANSAC split one surface into near-parallel planes.
         """
         unique: list[PlaneFit] = []
-        for fit in sorted(fits, key=lambda f: -f[0]):
-            _, plane_eq, centroid = fit
+        for fit in sorted(fits, key=lambda f: -f.inlier_count):
             if any(
-                self._same_surface(plane_eq, centroid, kept_eq, kept_centroid)
-                for _, kept_eq, kept_centroid in unique
+                self._same_surface(
+                    fit.plane_eq, fit.centroid, kept.plane_eq, kept.centroid
+                )
+                for kept in unique
             ):
                 logger.debug(
-                    "Plane candidate dropped as duplicate (offset=%.2f)", plane_eq[3]
+                    "Support plane candidate dropped as duplicate (offset=%.2f)",
+                    fit.plane_eq[3],
                 )
                 continue
             unique.append(fit)
@@ -177,15 +195,19 @@ class SupportPlaneFitter:
     @staticmethod
     def _rank(fits: list[PlaneFit], cloud_size: int) -> list[SupportPlaneCandidate]:
         """Order by inlier count, then by distance to the camera."""
-        ranked = sorted(fits, key=lambda f: (-f[0], abs(f[1][3])))
+        ranked = sorted(fits, key=lambda f: (-f.inlier_count, abs(f.plane_eq[3])))
         return [
             SupportPlaneCandidate(
                 plane=SupportPlane(
-                    normal=(float(eq[0]), float(eq[1]), float(eq[2])),
-                    offset_mm=float(eq[3]),
+                    normal=(
+                        float(fit.plane_eq[0]),
+                        float(fit.plane_eq[1]),
+                        float(fit.plane_eq[2]),
+                    ),
+                    offset_mm=float(fit.plane_eq[3]),
                 ),
-                inlier_count=count,
-                inlier_ratio=count / cloud_size,
+                inlier_count=fit.inlier_count,
+                inlier_ratio=fit.inlier_count / cloud_size,
             )
-            for count, eq, _ in ranked
+            for fit in ranked
         ]
