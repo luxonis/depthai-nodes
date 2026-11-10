@@ -12,6 +12,7 @@ from depthai_nodes.message import (  # noqa: E402
     SupportPlane,
     SupportPlaneCalibrationControl,
     SupportPlaneCalibrationResult,
+    SupportPlaneCandidate,
     SupportPlaneVerificationResult,
 )
 from depthai_nodes.node import (  # noqa: E402
@@ -155,8 +156,8 @@ def test_flat_cloud_succeeds_once_gravity_arrives(calibrator):
 
     result = calibrator.result()
     assert result.outcome is CalibrationOutcome.SUCCEEDED
-    assert result.candidates[0].offset_mm == pytest.approx(-1000, abs=1)
-    assert result.candidates[0].normal[2] == pytest.approx(1, abs=0.001)
+    assert result.candidates[0].plane.offset_mm == pytest.approx(-1000, abs=1)
+    assert result.candidates[0].plane.normal[2] == pytest.approx(1, abs=0.001)
     calibrator.plane_cloud(depth=1500)
     calibrator.run()
     assert calibrator.no_result()
@@ -229,7 +230,70 @@ def test_floor_fitted_with_the_opposite_sign_is_a_candidate(calibrator):
 
     result = calibrator.result()
     assert result.outcome is CalibrationOutcome.SUCCEEDED
-    assert result.candidates[0] == SupportPlane(normal=(0, 0, 1), offset_mm=-1000)
+    assert result.candidates[0].plane == SupportPlane(normal=(0, 0, 1), offset_mm=-1000)
+
+
+def calibrate(calibrator, scene):
+    """Run one attempt on a scripted scene and return its result."""
+    with scripted(scene):
+        calibrator.start()
+        calibrator.gravity()
+        calibrator.plane_cloud()
+        calibrator.run()
+    return calibrator.result()
+
+
+def floor(offset_mm):
+    return SupportPlane(normal=(0, 0, 1), offset_mm=offset_mm)
+
+
+def test_candidates_carry_their_plane_inlier_count_and_ratio(calibrator):
+    # The scripted preprocessed cloud has 400 points.
+    result = calibrate(calibrator, ScriptedScene([([0.0, 0.0, 1.0, -1000.0], 120)]))
+
+    assert result.outcome is CalibrationOutcome.SUCCEEDED
+    assert result.candidates == (
+        SupportPlaneCandidate(plane=floor(-1000), inlier_count=120, inlier_ratio=0.3),
+    )
+
+
+def test_candidates_are_ordered_by_inliers_then_by_nearest_offset(calibrator):
+    scene = ScriptedScene(
+        [
+            ([0.0, 0.0, 1.0, -1500.0], 100),
+            ([0.0, 0.0, 1.0, -2000.0], 150),
+            ([0.0, 0.0, 1.0, -1000.0], 100),
+        ]
+    )
+
+    result = calibrate(calibrator, scene)
+
+    assert [
+        (c.plane.offset_mm, c.inlier_count, c.inlier_ratio) for c in result.candidates
+    ] == [(-2000, 150, 0.375), (-1000, 100, 0.25), (-1500, 100, 0.25)]
+
+
+def test_inlier_ratios_divide_by_the_cloud_before_planes_are_removed():
+    calibrator = Harness(
+        PlaneCalibrationConfig(max_plane_passes=3, min_inlier_ratio=0.2)
+    )
+    scene = ScriptedScene(
+        [
+            ([0.0, 0.0, 1.0, -1000.0], 200),
+            ([0.0, 0.0, 1.0, -1500.0], 80),
+            ([0.0, 0.0, 1.0, -2000.0], 79),
+        ]
+    )
+
+    result = calibrate(calibrator, scene)
+
+    # 80 of the 200 points left after the first plane is 0.4, but the ratio is
+    # taken against the full preprocessed cloud.
+    assert [(c.inlier_count, c.inlier_ratio) for c in result.candidates] == [
+        (200, 0.5),
+        (80, 0.2),
+    ]
+    assert all(c.inlier_ratio >= 0.2 for c in result.candidates)
 
 
 def test_fit_error_fails_the_attempt_until_reset(calibrator):
@@ -314,7 +378,7 @@ def test_fit_that_finds_a_plane_completes_before_stop_takes_effect(calibrator):
 
     result = calibrator.result()
     assert result.outcome is CalibrationOutcome.SUCCEEDED
-    assert [p.offset_mm for p in result.candidates] == [-1000]
+    assert [c.plane.offset_mm for c in result.candidates] == [-1000]
     calibrator.run()
     assert calibrator.no_result()
 

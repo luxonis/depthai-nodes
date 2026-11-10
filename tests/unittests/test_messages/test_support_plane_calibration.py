@@ -9,10 +9,12 @@ from depthai_nodes.message import (
     SupportPlane,
     SupportPlaneCalibrationControl,
     SupportPlaneCalibrationResult,
+    SupportPlaneCandidate,
     SupportPlaneVerificationResult,
 )
 
 PLANE = SupportPlane(normal=(0, 0, 1), offset_mm=-1000)
+CANDIDATE = SupportPlaneCandidate(plane=PLANE, inlier_count=200, inlier_ratio=0.5)
 Commands = SupportPlaneCalibrationControl.Commands
 
 
@@ -54,12 +56,12 @@ def test_outcomes_are_their_string_values():
 
 def test_result_carries_outcome_candidates_and_info():
     result = SupportPlaneCalibrationResult(
-        CalibrationOutcome.SUCCEEDED, [PLANE], "found"
+        CalibrationOutcome.SUCCEEDED, [CANDIDATE], "found"
     )
 
     assert isinstance(result, dai.Buffer)
     assert result.outcome is CalibrationOutcome.SUCCEEDED
-    assert result.candidates == (PLANE,)
+    assert result.candidates == (CANDIDATE,)
     assert result.info == "found"
 
 
@@ -68,21 +70,21 @@ def test_result_info_defaults_to_empty():
 
 
 def test_result_candidates_are_a_tuple_copied_at_construction():
-    candidates = [PLANE]
+    candidates = [CANDIDATE]
     result = SupportPlaneCalibrationResult(
         CalibrationOutcome.SUCCEEDED, candidates, "found"
     )
-    candidates.append(PLANE)
+    candidates.append(CANDIDATE)
 
-    assert result.candidates == (PLANE,)
+    assert result.candidates == (CANDIDATE,)
 
 
 @pytest.mark.parametrize(
     "outcome,candidates",
     [
         (CalibrationOutcome.SUCCEEDED, []),
-        (CalibrationOutcome.FAILED, [PLANE]),
-        (CalibrationOutcome.CANCELLED, [PLANE]),
+        (CalibrationOutcome.FAILED, [CANDIDATE]),
+        (CalibrationOutcome.CANCELLED, [CANDIDATE]),
     ],
 )
 def test_result_has_candidates_exactly_when_calibration_succeeded(outcome, candidates):
@@ -96,6 +98,8 @@ def test_result_has_candidates_exactly_when_calibration_succeeded(outcome, candi
         ("cancelled", [], ""),
         (CalibrationOutcome.SUCCEEDED, [(0, 0, 1)], ""),
         (CalibrationOutcome.SUCCEEDED, PLANE, ""),
+        (CalibrationOutcome.SUCCEEDED, [PLANE], ""),
+        (CalibrationOutcome.SUCCEEDED, CANDIDATE, ""),
         (CalibrationOutcome.FAILED, [], None),
     ],
 )
@@ -140,7 +144,7 @@ def test_verification_result_rejects_non_finite_angle():
         (SupportPlaneCalibrationControl.start(), ("command",)),
         (
             SupportPlaneCalibrationResult(
-                CalibrationOutcome.SUCCEEDED, [PLANE], "found"
+                CalibrationOutcome.SUCCEEDED, [CANDIDATE], "found"
             ),
             ("outcome", "candidates", "info"),
         ),

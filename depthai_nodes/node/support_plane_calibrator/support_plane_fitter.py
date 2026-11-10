@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from depthai_nodes.message.support_plane import SupportPlane
+from depthai_nodes.message.support_plane import SupportPlane, SupportPlaneCandidate
 
 from .plane_calibration_config import PlaneCalibrationConfig
 from .plane_validation import is_valid_horizontal_plane, orient_along_gravity
@@ -44,11 +44,14 @@ class SupportPlaneFitter:
 
     def find_candidates(
         self, points: np.ndarray, gravity: np.ndarray
-    ) -> list[SupportPlane]:
+    ) -> list[SupportPlaneCandidate]:
         """Find horizontal planes below the camera, best first.
 
-        Planes are ranked by inlier count, then by distance to the camera.
-        Near-parallel planes through the same surface count once.
+        Planes are ranked by inlier count, then by smallest absolute offset
+        (nearest the camera). Near-parallel planes through the same surface
+        count once, and the kept plane reports only its own inliers. Counts are
+        taken on the preprocessed cloud, and ratios divide by its size before
+        any plane is removed.
 
         Args:
             points: ``(width * height, 3)`` cloud points in millimeters; points
@@ -74,7 +77,7 @@ class SupportPlaneFitter:
         if not fits:
             logger.debug("RANSAC rejected: no horizontal plane candidates")
             return []
-        return self._rank(self._drop_duplicates(fits))
+        return self._rank(self._drop_duplicates(fits), len(cloud.points))
 
     def _preprocess(self, points: np.ndarray) -> o3d.geometry.PointCloud | None:
         """Drop empty points, downsample and denoise; ``None`` if too few remain."""
@@ -172,13 +175,17 @@ class SupportPlaneFitter:
         return max(dist_ab, dist_ba) < self._config.merge_distance_threshold_mm
 
     @staticmethod
-    def _rank(fits: list[PlaneFit]) -> list[SupportPlane]:
+    def _rank(fits: list[PlaneFit], cloud_size: int) -> list[SupportPlaneCandidate]:
         """Order by inlier count, then by distance to the camera."""
         ranked = sorted(fits, key=lambda f: (-f[0], abs(f[1][3])))
         return [
-            SupportPlane(
-                normal=(float(eq[0]), float(eq[1]), float(eq[2])),
-                offset_mm=float(eq[3]),
+            SupportPlaneCandidate(
+                plane=SupportPlane(
+                    normal=(float(eq[0]), float(eq[1]), float(eq[2])),
+                    offset_mm=float(eq[3]),
+                ),
+                inlier_count=count,
+                inlier_ratio=count / cloud_size,
             )
-            for _, eq, _ in ranked
+            for count, eq, _ in ranked
         ]
