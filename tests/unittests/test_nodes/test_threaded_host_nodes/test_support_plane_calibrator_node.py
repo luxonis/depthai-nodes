@@ -1,4 +1,5 @@
-from typing import cast
+from datetime import timedelta
+from typing import NamedTuple, cast
 from unittest.mock import patch
 
 import depthai as dai
@@ -31,6 +32,32 @@ from tests.utils.nodes.mocks.queue import OutputQueueMock  # noqa: E402
 from tests.utils.scripted_open3d import ScriptedScene  # noqa: E402
 
 CLOUD_SIZE = (20, 20)
+
+
+class Stamps(NamedTuple):
+    """The DepthAI stamps a message carries."""
+
+    timestamp: timedelta
+    timestamp_device: timedelta
+    sequence_num: int
+
+
+UNSET_STAMPS = Stamps(timedelta(0), timedelta(0), 0)
+
+
+def stamps(sequence_num):
+    """Distinct, nonzero stamps keyed by a sequence number."""
+    return Stamps(
+        timedelta(seconds=100 + sequence_num),
+        timedelta(seconds=50 + sequence_num),
+        sequence_num,
+    )
+
+
+def stamps_of(message):
+    return Stamps(
+        message.getTimestamp(), message.getTimestampDevice(), message.getSequenceNum()
+    )
 
 
 class Source(OutputMock):
@@ -111,12 +138,16 @@ class Harness:
         message.packets = [packet]
         self.imus.send(message)
 
-    def plane_cloud(self, depth=1000.0):
+    def plane_cloud(self, depth=1000.0, stamps: Stamps | None = None):
         """A flat organized cloud ``depth`` mm in front of the camera."""
         x, y = np.meshgrid(np.arange(20) * 40.0, np.arange(20) * 40.0)
         points = np.column_stack([x.ravel(), y.ravel(), np.full(400, depth)])
         message = dai.PointCloudData()
         message.setPoints(points.astype(np.float32))  # pyright: ignore[reportArgumentType]
+        if stamps is not None:
+            message.setTimestamp(stamps.timestamp)
+            message.setTimestampDevice(stamps.timestamp_device)
+            message.setSequenceNum(stamps.sequence_num)
         self.clouds.send(message)
 
     def verify(self, plane):
@@ -161,6 +192,55 @@ def test_flat_cloud_succeeds_once_gravity_arrives(calibrator):
     calibrator.plane_cloud(depth=1500)
     calibrator.run()
     assert calibrator.no_result()
+
+
+def test_succeeded_result_carries_the_stamps_of_the_cloud_that_yielded_candidates(
+    calibrator,
+):
+    calibrator.start()
+    calibrator.gravity()
+    calibrator.plane_cloud(depth=0, stamps=stamps(1))
+    calibrator.run()
+    calibrator.plane_cloud(stamps=stamps(2))
+    calibrator.run()
+
+    result = calibrator.result()
+    assert result.outcome is CalibrationOutcome.SUCCEEDED
+    assert stamps_of(result) == stamps(2)
+
+
+def test_cancelled_result_carries_the_stamps_of_the_last_fitted_cloud(calibrator):
+    calibrator.start()
+    calibrator.gravity()
+    calibrator.plane_cloud(depth=0, stamps=stamps(1))
+    calibrator.run()
+    calibrator.plane_cloud(depth=0, stamps=stamps(2))
+    calibrator.run()
+
+    calibrator.stop()
+    calibrator.run()
+
+    result = calibrator.result()
+    assert result.outcome is CalibrationOutcome.CANCELLED
+    assert stamps_of(result) == stamps(2)
+
+
+def test_cancelled_result_before_any_fit_keeps_unset_stamps(calibrator):
+    calibrator.start()
+    calibrator.gravity()
+    calibrator.plane_cloud(depth=0, stamps=stamps(1))
+    calibrator.run()
+    calibrator.stop()
+    calibrator.run()
+    assert stamps_of(calibrator.result()) == stamps(1)
+
+    calibrator.start()
+    calibrator.stop()
+    calibrator.run()
+
+    result = calibrator.result()
+    assert result.outcome is CalibrationOutcome.CANCELLED
+    assert stamps_of(result) == UNSET_STAMPS
 
 
 def scripted(scene):
