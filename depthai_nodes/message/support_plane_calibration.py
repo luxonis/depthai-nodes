@@ -190,7 +190,6 @@ class SupportPlaneCalibrationResult(dai.Buffer):
     Args:
         outcome: How the attempt ended.
         candidates: Accepted calibration candidates, best first.
-        info: Human-readable detail about the outcome.
 
     Raises:
         TypeError: If an argument has the wrong type.
@@ -202,19 +201,16 @@ class SupportPlaneCalibrationResult(dai.Buffer):
         self,
         outcome: CalibrationOutcome,
         candidates: list[SupportPlane] | tuple[SupportPlane, ...],
-        info: str = "",
     ) -> None:
         """Create a result and check that its fields are consistent.
 
         Args:
             outcome: How the attempt ended.
             candidates: Accepted calibration candidates, best first.
-            info: Human-readable detail about the outcome.
 
         Raises:
             TypeError: If ``outcome`` is not a `CalibrationOutcome`,
-                ``candidates`` is not a list or tuple of `SupportPlane`, or
-                ``info`` is not a string.
+                or ``candidates`` is not a list or tuple of `SupportPlane`.
             ValueError: If the result has candidates and did not succeed, or
                 succeeded without candidates.
         """
@@ -224,12 +220,10 @@ class SupportPlaneCalibrationResult(dai.Buffer):
             raise TypeError("Candidates must be a list or tuple of support planes")
         for plane in candidates:
             _check_instance("candidate", plane, SupportPlane)
-        _check_instance("info", info, str)
         if bool(candidates) != (outcome is CalibrationOutcome.SUCCEEDED):
             raise ValueError("A result has candidates exactly when it succeeded")
         self._outcome = outcome
         self._candidates = tuple(candidates)
-        self._info = info
 
     @property
     def outcome(self) -> CalibrationOutcome:
@@ -240,11 +234,6 @@ class SupportPlaneCalibrationResult(dai.Buffer):
     def candidates(self) -> tuple[SupportPlane, ...]:
         """Accepted planes, best first; empty unless calibration succeeded."""
         return self._candidates
-
-    @property
-    def info(self) -> str:
-        """Human-readable detail about the outcome."""
-        return self._info
 
 
 class SupportPlaneVerificationResult(dai.Buffer):

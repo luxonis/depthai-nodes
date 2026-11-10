@@ -232,50 +232,44 @@ def test_floor_fitted_with_the_opposite_sign_is_a_candidate(calibrator):
     assert result.candidates[0] == SupportPlane(normal=(0, 0, 1), offset_mm=-1000)
 
 
-def test_fit_error_fails_the_attempt_until_reset(calibrator):
+def test_fit_error_propagates_out_of_the_run_pass(calibrator):
     with scripted(ScriptedScene([], error=ValueError("broken geometry"))):
         calibrator.start()
         calibrator.gravity()
         calibrator.plane_cloud()
-        calibrator.run()
-    result = calibrator.result()
-    assert result.outcome is CalibrationOutcome.FAILED
-    assert result.candidates == ()
-    assert "broken geometry" in result.info
-
-    calibrator.start()
-    calibrator.plane_cloud()
-    calibrator.run()
+        with pytest.raises(ValueError, match="broken geometry"):
+            calibrator.run()
     assert calibrator.no_result()
 
-    calibrator.reset()
+
+def test_message_that_is_not_a_point_cloud_raises_and_keeps_the_attempt(
+    calibrator,
+):
     calibrator.start()
+    calibrator.gravity()
+    calibrator.clouds.send(dai.Buffer())
+    with pytest.raises(TypeError, match="PointCloudData"):
+        calibrator.run()
+    assert calibrator.no_result()
+
+    calibrator.plane_cloud()
     calibrator.run()
     assert calibrator.result().outcome is CalibrationOutcome.SUCCEEDED
 
 
-def test_message_that_is_not_a_point_cloud_fails_the_attempt(calibrator):
-    calibrator.start()
-    calibrator.gravity()
-    calibrator.clouds.send(dai.Buffer())
-    calibrator.run()
-
-    result = calibrator.result()
-    assert result.outcome is CalibrationOutcome.FAILED
-    assert "PointCloudData" in result.info
-
-
-def test_cloud_of_the_wrong_size_fails_the_attempt(calibrator):
+def test_cloud_of_the_wrong_size_raises_and_keeps_the_attempt(calibrator):
     calibrator.start()
     calibrator.gravity()
     cloud = dai.PointCloudData()
     cloud.setPoints(np.ones((10, 3), dtype=np.float32))  # pyright: ignore[reportArgumentType]
     calibrator.clouds.send(cloud)
-    calibrator.run()
+    with pytest.raises(ValueError, match="organized"):
+        calibrator.run()
+    assert calibrator.no_result()
 
-    result = calibrator.result()
-    assert result.outcome is CalibrationOutcome.FAILED
-    assert "organized" in result.info
+    calibrator.plane_cloud()
+    calibrator.run()
+    assert calibrator.result().outcome is CalibrationOutcome.SUCCEEDED
 
 
 def test_stop_during_a_fit_cancels_after_the_fit_and_returns_to_idle(calibrator):
