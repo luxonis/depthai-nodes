@@ -62,6 +62,30 @@ Note:
     image transformation. Native message copies may share pixel storage; see
     `depthai_nodes.message.utils.copy_message` before modifying copied buffers.
 
+Support plane
+-------------
+
+`SupportPlane` is the support plane equation ``normal · point + offset_mm = 0``
+in millimeters, normalized on construction. ``toJson()``, ``fromJson()``,
+``toJsonFile()``, and ``fromJsonFile()`` save and load exactly its ``normal`` and
+``offset_mm``.
+
+`depthai_nodes.node.SupportPlaneCalibrator` exchanges these messages:
+
+* `SupportPlaneCalibrationControl` starts, stops, or resets calibration, or
+  asks for a plane verification of a given support plane.
+* `SupportPlaneCalibrationResult` ends a calibration attempt with a
+  `CalibrationOutcome` and, only when it succeeded, its support plane
+  candidates, best first.
+* `SupportPlaneCandidate` holds a ``plane`` with its ``inlier_count`` and
+  ``inlier_ratio``.
+* `SupportPlaneVerificationResult` reports the result of a plane verification:
+  the plane's angle to gravity and whether it was accepted.
+
+The fields of these messages are read-only. `SupportPlane` and
+`SupportPlaneCandidate` are frozen dataclasses that take keyword arguments and
+raise ``TypeError`` for a wrong type or ``ValueError`` for an invalid value.
+
 Box measurement
 ---------------
 
@@ -75,23 +99,11 @@ holds the index of the item it belongs to, and 255 marks background.
 repeats the box detection fields and adds a `MeasurementStatus` and, when the
 box has any, its `BoxDimensions`: length, width, and height in millimeters. A
 measured result always has dimensions. Both messages draw labelled box outlines
-through ``getVisualizationMessage()``.
+through ``getVisualizationMessage()``. `BoxDetection`, `BoxMeasurementResult`,
+and `BoxDimensions` are frozen dataclasses that take keyword arguments and
+raise the same errors as the support plane value types.
 
-`SupportPlane` is the support plane equation ``normal · point + offset_mm = 0``
-in millimeters, normalized on construction. ``toJson()``, ``fromJson()``,
-``toJsonFile()``, and ``fromJsonFile()`` save and load exactly its ``normal`` and
-``offset_mm``.
-
-`SupportPlaneCalibrationControl` starts, stops, or resets calibration, or asks
-to verify a plane. `SupportPlaneCalibrationResult` ends an attempt with a
-`CalibrationOutcome` and, only when it succeeded, its support plane candidates,
-best first. Each `SupportPlaneCandidate` holds a ``plane`` with its
-``inlier_count`` and ``inlier_ratio``. `SupportPlaneVerificationResult` reports
-a verified plane's angle to gravity and whether it was accepted. The fields of
-these messages are read-only.
-
-The value types are frozen dataclasses that take keyword arguments and raise
-``TypeError`` for a wrong type or ``ValueError`` for an invalid value.
+Boxes are measured against a support plane; see "Support plane" above.
 """
 
 from .box_detections import BoxDetection, BoxDetections
