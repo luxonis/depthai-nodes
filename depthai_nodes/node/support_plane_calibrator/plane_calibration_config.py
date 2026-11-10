@@ -55,6 +55,10 @@ class PlaneCalibrationConfig:
         max_calibration_attempts: Point clouds fitted in one calibration
             attempt, not Starts, before an attempt without candidates ends
             ``FAILED``. At least 1, or ``None`` to search until stopped.
+        check_distance_mm: Largest distance, in millimeters, of a point from a
+            verified plane for it to count as on the plane in a plane
+            verification's on-plane ratio. Separate from RANSAC's
+            ``distance_threshold_mm``. Must be positive.
 
     Raises:
         TypeError: If a field has the wrong type.
@@ -70,6 +74,7 @@ class PlaneCalibrationConfig:
     max_gravity_angle_deg: float = 6.5
     merge_distance_threshold_mm: float = 25.0
     max_calibration_attempts: int | None = None
+    check_distance_mm: float = 30.0
 
     def __post_init__(self) -> None:
         """Validate the fields and store numbers as built-in types.
@@ -101,6 +106,7 @@ class PlaneCalibrationConfig:
             "distance_threshold_mm",
             "voxel_size_mm",
             "merge_distance_threshold_mm",
+            "check_distance_mm",
         ):
             value = _check_float(name, getattr(self, name))
             if value <= 0:

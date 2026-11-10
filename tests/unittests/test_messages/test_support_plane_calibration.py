@@ -107,13 +107,43 @@ def test_result_rejects_wrong_types(outcome, candidates):
 
 
 def test_verification_result_carries_its_fields():
-    result = SupportPlaneVerificationResult(PLANE, np.float32(3.0), np.bool_(True))  # pyright: ignore[reportArgumentType]
+    result = SupportPlaneVerificationResult(
+        PLANE,
+        np.float32(3.0),  # pyright: ignore[reportArgumentType]
+        np.bool_(True),
+        np.float64(0.75),  # pyright: ignore[reportArgumentType]
+    )
 
     assert isinstance(result, dai.Buffer)
     assert result.plane == PLANE
     assert result.gravity_angle_deg.__class__ is float
     assert result.gravity_angle_deg == 3.0
     assert result.accepted is True
+    assert result.on_plane_ratio.__class__ is float
+    assert result.on_plane_ratio == 0.75
+
+
+@pytest.mark.parametrize("ratio", [0, 1, 0.5])
+def test_verification_result_accepts_on_plane_ratios_from_0_to_1(ratio):
+    result = SupportPlaneVerificationResult(PLANE, 3.0, True, ratio)
+
+    assert result.on_plane_ratio == ratio
+
+
+def test_verification_result_on_plane_ratio_none_means_not_measured():
+    assert SupportPlaneVerificationResult(PLANE, 3.0, True, None).on_plane_ratio is None
+
+
+@pytest.mark.parametrize("ratio", [-0.1, 1.01, float("nan"), float("inf")])
+def test_verification_result_rejects_out_of_range_on_plane_ratios(ratio):
+    with pytest.raises(ValueError):
+        SupportPlaneVerificationResult(PLANE, 3.0, True, ratio)
+
+
+@pytest.mark.parametrize("ratio", [True, "0.5", 1j])
+def test_verification_result_rejects_non_real_on_plane_ratios(ratio):
+    with pytest.raises(TypeError):
+        SupportPlaneVerificationResult(PLANE, 3.0, True, ratio)
 
 
 @pytest.mark.parametrize(
@@ -128,12 +158,12 @@ def test_verification_result_carries_its_fields():
 )
 def test_verification_result_rejects_wrong_types(plane, angle, accepted):
     with pytest.raises(TypeError):
-        SupportPlaneVerificationResult(plane, angle, accepted)
+        SupportPlaneVerificationResult(plane, angle, accepted, 0.5)
 
 
 def test_verification_result_rejects_non_finite_angle():
     with pytest.raises(ValueError):
-        SupportPlaneVerificationResult(PLANE, float("nan"), False)
+        SupportPlaneVerificationResult(PLANE, float("nan"), False, 0.5)
 
 
 @pytest.mark.parametrize(
@@ -145,8 +175,8 @@ def test_verification_result_rejects_non_finite_angle():
             ("outcome", "candidates"),
         ),
         (
-            SupportPlaneVerificationResult(PLANE, 3.0, True),
-            ("plane", "gravity_angle_deg", "accepted"),
+            SupportPlaneVerificationResult(PLANE, 3.0, True, 0.5),
+            ("plane", "gravity_angle_deg", "accepted", "on_plane_ratio"),
         ),
     ],
 )

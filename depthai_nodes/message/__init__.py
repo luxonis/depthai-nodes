@@ -80,7 +80,10 @@ in millimeters, normalized on construction. ``toJson()``, ``fromJson()``,
 * `SupportPlaneCandidate` holds a ``plane`` with its ``inlier_count`` and
   ``inlier_ratio``.
 * `SupportPlaneVerificationResult` reports the result of a plane verification:
-  the plane's angle to gravity and whether it was accepted.
+  the plane's angle to gravity, whether it was accepted, and its on-plane
+  ratio, the share of the checked point cloud's sampled points that lie on the
+  plane (``None`` when not measured). The on-plane ratio is not a candidate's
+  inlier ratio.
 
 The fields of these messages are read-only. `SupportPlane` and
 `SupportPlaneCandidate` are frozen dataclasses that take keyword arguments and

@@ -116,3 +116,23 @@ def test_attempt_cap_rejects_bools_and_non_integers(value):
 def test_attempt_cap_rejects_values_below_one(value):
     with pytest.raises(ValueError):
         PlaneCalibrationConfig(max_calibration_attempts=value)
+
+
+def test_check_distance_defaults_to_30_mm():
+    config = PlaneCalibrationConfig(check_distance_mm=np.int64(12))  # pyright: ignore[reportArgumentType]
+
+    assert PlaneCalibrationConfig().check_distance_mm == 30.0
+    assert config.check_distance_mm.__class__ is float
+    assert config.check_distance_mm == 12.0
+
+
+@pytest.mark.parametrize("value", [0, -1.0, float("nan"), float("inf")])
+def test_check_distance_must_be_positive_and_finite(value):
+    with pytest.raises(ValueError):
+        PlaneCalibrationConfig(check_distance_mm=value)
+
+
+@pytest.mark.parametrize("value", [True, "30", None])
+def test_check_distance_rejects_wrong_types(value):
+    with pytest.raises(TypeError):
+        PlaneCalibrationConfig(check_distance_mm=value)
