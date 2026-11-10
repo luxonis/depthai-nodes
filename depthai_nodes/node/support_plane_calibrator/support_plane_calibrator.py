@@ -110,6 +110,10 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
     fit: a fit that completes the attempt reports its outcome, otherwise the
     attempt ends cancelled.
 
+    Each calibration result copies the timestamp, device timestamp and
+    sequence number of the last cloud its attempt fitted, or keeps DepthAI's
+    unset stamps if the attempt fitted none.
+
     Verification is independent of attempts: verify commands are answered in
     order once an IMU sample is available.
 
@@ -145,6 +149,9 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         self._verifications: deque[SupportPlane] = deque()
         self._latest_gravity: np.ndarray | None = None
         self._latest_gravity_arrival = 0.0
+        # The last cloud the running attempt fitted, whose stamps its result
+        # copies; None until the attempt fits one.
+        self._last_fitted_cloud: dai.PointCloudData | None = None
 
     @property
     def inputControl(self) -> dai.Node.Input:
@@ -255,6 +262,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             elif isinstance(command, commands.Start):
                 if self._state is CalibratorState.IDLE:
                     self._state = CalibratorState.RUNNING
+                    self._last_fitted_cloud = None
             elif isinstance(command, commands.Stop):
                 if self._state is CalibratorState.RUNNING:
                     self._finish(CalibrationOutcome.CANCELLED, [])
@@ -290,7 +298,13 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             if outcome is CalibrationOutcome.CANCELLED
             else CalibratorState.COMPLETE
         )
-        self._out.send(SupportPlaneCalibrationResult(outcome, candidates))
+        result = SupportPlaneCalibrationResult(outcome, candidates)
+        cloud = self._last_fitted_cloud
+        if cloud is not None:
+            result.setTimestamp(cloud.getTimestamp())
+            result.setTimestampDevice(cloud.getTimestampDevice())
+            result.setSequenceNum(cloud.getSequenceNum())
+        self._out.send(result)
 
     def _answer_verifications(self, gravity: np.ndarray) -> None:
         """Answer all pending verifications."""
@@ -327,6 +341,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         candidates = self._fitter.find_candidates(
             np.asarray(cloud.getPoints()), gravity
         )
+        self._last_fitted_cloud = cloud
         if candidates:
             self._finish(CalibrationOutcome.SUCCEEDED, candidates)
 

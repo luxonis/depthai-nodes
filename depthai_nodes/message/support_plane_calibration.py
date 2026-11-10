@@ -187,6 +187,12 @@ class SupportPlaneCalibrationResult(dai.Buffer):
 
     A result has candidates exactly when calibration succeeded.
 
+    ``SupportPlaneCalibrator`` stamps each result with the timestamp, device
+    timestamp and sequence number of the last point cloud its attempt fitted:
+    for ``SUCCEEDED``, the cloud that yielded the candidates; for
+    ``CANCELLED``, the last cloud fitted before Stop. A result whose attempt
+    fitted no cloud keeps DepthAI's unset default stamps.
+
     Args:
         outcome: How the attempt ended.
         candidates: Accepted calibration candidates, best first.
