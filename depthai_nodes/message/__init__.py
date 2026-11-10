@@ -87,7 +87,8 @@ to verify a plane. `SupportPlaneCalibrationResult` ends an attempt with a
 `CalibrationOutcome` and, only when it succeeded, its support plane candidates,
 best first. Each `SupportPlaneCandidate` holds a ``plane`` with its
 ``inlier_count`` and ``inlier_ratio``. `SupportPlaneVerificationResult` reports
-a verified plane's angle to gravity and whether it was accepted. The fields of these messages are read-only.
+a verified plane's angle to gravity and whether it was accepted. The fields of
+these messages are read-only.
 
 The value types are frozen dataclasses that take keyword arguments and raise
 ``TypeError`` for a wrong type or ``ValueError`` for an invalid value.
