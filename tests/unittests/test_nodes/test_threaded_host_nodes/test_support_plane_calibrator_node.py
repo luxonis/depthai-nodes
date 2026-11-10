@@ -75,6 +75,19 @@ class Source(OutputMock):
         self._target.send(message)
 
 
+class LatestInputMock(InputMock):
+    """A non-blocking input that keeps only its newest ``queueSize`` messages."""
+
+    def __init__(self, queue_size):
+        super().__init__()
+        self._queue_size = queue_size
+
+    def send(self, message):
+        super().send(message)
+        while len(self._queue) > self._queue_size:
+            self._queue.tryGet()
+
+
 class MockedCalibrator(SupportPlaneCalibrator):
     """The calibrator on mock DepthAI queues, running a set number of loop passes."""
 
@@ -86,7 +99,9 @@ class MockedCalibrator(SupportPlaneCalibrator):
     def getParentPipeline(self):
         return self._pipeline
 
-    def createInput(self, *args, **kwargs):
+    def createInput(self, *args, blocking=True, queueSize=None, **kwargs):
+        if not blocking and queueSize is not None:
+            return LatestInputMock(queueSize)
         return InputMock()
 
     def createOutput(self, *args, **kwargs):
@@ -847,3 +862,184 @@ def test_verification_while_idle_waits_for_a_cloud_and_carries_its_stamps(
     assert result.accepted
     assert stamps_of(result) == stamps(7)
     assert calibrator.verifications.is_empty()
+
+
+def capped(attempts):
+    return Harness(
+        PlaneCalibrationConfig(max_plane_passes=3, max_calibration_attempts=attempts)
+    )
+
+
+def fit_empty_cloud(calibrator, sequence_num=0):
+    """Send a cloud without a plane and run one pass, fitting it."""
+    calibrator.plane_cloud(depth=0, stamps=stamps(sequence_num))
+    calibrator.run()
+
+
+def test_attempt_cap_ends_the_attempt_failed_with_the_capping_cloud_stamps():
+    calibrator = capped(2)
+    calibrator.start()
+    calibrator.gravity()
+    fit_empty_cloud(calibrator, 1)
+    assert calibrator.no_result()
+
+    fit_empty_cloud(calibrator, 2)
+
+    result = calibrator.result()
+    assert result.outcome is CalibrationOutcome.FAILED
+    assert result.candidates == ()
+    assert stamps_of(result) == stamps(2)
+    calibrator.plane_cloud()
+    calibrator.run()
+    assert calibrator.no_result()
+
+
+def test_capping_cloud_with_candidates_still_succeeds():
+    calibrator = capped(2)
+    calibrator.start()
+    calibrator.gravity()
+    fit_empty_cloud(calibrator, 1)
+
+    calibrator.plane_cloud(stamps=stamps(2))
+    calibrator.run()
+
+    result = calibrator.result()
+    assert result.outcome is CalibrationOutcome.SUCCEEDED
+    assert stamps_of(result) == stamps(2)
+
+
+def test_attempt_cap_of_one_fails_on_the_first_empty_cloud():
+    calibrator = capped(1)
+    calibrator.start()
+    calibrator.gravity()
+    fit_empty_cloud(calibrator, 1)
+
+    assert calibrator.result().outcome is CalibrationOutcome.FAILED
+
+
+def test_clouds_overwritten_in_the_queue_do_not_count():
+    calibrator = capped(2)
+    calibrator.start()
+    calibrator.gravity()
+    calibrator.plane_cloud(depth=0, stamps=stamps(1))
+    calibrator.plane_cloud(depth=0, stamps=stamps(2))
+    calibrator.plane_cloud(depth=0, stamps=stamps(3))
+    calibrator.run()
+    assert calibrator.no_result()
+
+    fit_empty_cloud(calibrator, 4)
+
+    result = calibrator.result()
+    assert result.outcome is CalibrationOutcome.FAILED
+    assert stamps_of(result) == stamps(4)
+
+
+def test_clouds_arriving_while_imu_is_stale_do_not_count(clock):
+    calibrator = capped(2)
+    calibrator.start()
+    calibrator.gravity()
+    fit_empty_cloud(calibrator, 1)
+    clock.now += IMU_MAX_AGE_SECONDS + 0.01
+    fit_empty_cloud(calibrator, 2)
+    fit_empty_cloud(calibrator, 3)
+    assert calibrator.no_result()
+
+    calibrator.gravity()
+    calibrator.run()
+
+    result = calibrator.result()
+    assert result.outcome is CalibrationOutcome.FAILED
+    assert stamps_of(result) == stamps(3)
+
+
+def test_clouds_taken_only_for_a_verification_do_not_count():
+    calibrator = capped(1)
+    calibrator.gravity()
+    calibrator.verify(tilted_plane(0))
+    fit_empty_cloud(calibrator, 1)
+    assert calibrator.verification()
+
+    calibrator.start()
+    calibrator.run()
+    assert calibrator.no_result()
+    fit_empty_cloud(calibrator, 2)
+
+    result = calibrator.result()
+    assert result.outcome is CalibrationOutcome.FAILED
+    assert stamps_of(result) == stamps(2)
+
+
+def test_attempt_cap_counter_restarts_at_start_after_stop():
+    calibrator = capped(2)
+    calibrator.start()
+    calibrator.gravity()
+    fit_empty_cloud(calibrator, 1)
+    calibrator.stop()
+    calibrator.run()
+    assert calibrator.result().outcome is CalibrationOutcome.CANCELLED
+
+    calibrator.start()
+    fit_empty_cloud(calibrator, 2)
+    assert calibrator.no_result()
+    fit_empty_cloud(calibrator, 3)
+
+    assert calibrator.result().outcome is CalibrationOutcome.FAILED
+
+
+def test_attempt_cap_counter_restarts_at_start_after_reset():
+    calibrator = capped(2)
+    calibrator.start()
+    calibrator.gravity()
+    fit_empty_cloud(calibrator, 1)
+    fit_empty_cloud(calibrator, 2)
+    assert calibrator.result().outcome is CalibrationOutcome.FAILED
+
+    calibrator.reset()
+    calibrator.start()
+    fit_empty_cloud(calibrator, 3)
+    assert calibrator.no_result()
+    fit_empty_cloud(calibrator, 4)
+
+    assert calibrator.result().outcome is CalibrationOutcome.FAILED
+
+
+def test_stop_during_the_capping_fit_reports_failed():
+    calibrator = capped(1)
+    # The only plane faces away from gravity, so the fit finds no candidates.
+    scene = ScriptedScene(
+        [([0.0, 0.0, -1.0, -1000.0], 400)], during_fit=calibrator.stop
+    )
+    with scripted(scene):
+        calibrator.start()
+        calibrator.gravity()
+        calibrator.plane_cloud()
+        calibrator.run()
+
+    assert calibrator.result().outcome is CalibrationOutcome.FAILED
+    calibrator.run()
+    assert calibrator.no_result()
+
+
+def test_stop_before_the_cap_reports_cancelled():
+    calibrator = capped(3)
+    calibrator.start()
+    calibrator.gravity()
+    fit_empty_cloud(calibrator, 1)
+    calibrator.stop()
+    calibrator.run()
+
+    result = calibrator.result()
+    assert result.outcome is CalibrationOutcome.CANCELLED
+    assert stamps_of(result) == stamps(1)
+
+
+def test_attempts_without_a_cap_keep_searching(calibrator):
+    calibrator.start()
+    calibrator.gravity()
+    for sequence_num in range(1, 21):
+        fit_empty_cloud(calibrator, sequence_num)
+    assert calibrator.no_result()
+
+    calibrator.plane_cloud()
+    calibrator.run()
+    assert calibrator.result().outcome is CalibrationOutcome.SUCCEEDED

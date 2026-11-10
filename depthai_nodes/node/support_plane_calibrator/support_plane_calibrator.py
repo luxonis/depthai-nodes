@@ -97,9 +97,10 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
     States:
         - Idle: Start begins an attempt; Stop and Reset do nothing.
         - Running: each loop pass fits the latest point cloud once an IMU
-          sample is available, until a cloud yields candidates (succeeded) or
-          Stop arrives (cancelled). A cloud without a plane keeps the attempt
-          searching. Start is ignored.
+          sample is available, until a cloud yields candidates (succeeded),
+          Stop arrives (cancelled), or the attempt cap is reached (failed). A
+          cloud without a plane keeps the attempt searching until the cap.
+          Start is ignored.
         - Complete: after success or failure; Reset returns to idle, and Start
           and Stop are ignored until then. A cancelled attempt returns straight
           to idle without Reset.
@@ -160,6 +161,8 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         # The last cloud the running attempt fitted, whose stamps its result
         # copies; None until the attempt fits one.
         self._last_fitted_cloud: dai.PointCloudData | None = None
+        # Clouds the running attempt has fitted, checked against the cap.
+        self._fitted_clouds = 0
 
     @property
     def inputControl(self) -> dai.Node.Input:
@@ -202,7 +205,8 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                 millimeters.
             imu: Output emitting ``dai.IMUData`` with accelerometer packets.
             pointCloudSize: Cloud ``(width, height)`` in points.
-            config: Plane-fitting settings; ``None`` uses the defaults.
+            config: Plane-fitting and attempt settings; ``None`` uses the
+                defaults.
 
         Returns:
             The configured node instance.
@@ -285,6 +289,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                 if self._state is CalibratorState.IDLE:
                     self._state = CalibratorState.RUNNING
                     self._last_fitted_cloud = None
+                    self._fitted_clouds = 0
             elif isinstance(command, commands.Stop):
                 if self._state is CalibratorState.RUNNING:
                     self._finish(CalibrationOutcome.CANCELLED, [])
@@ -375,12 +380,16 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
     def _fit(
         self, cloud: dai.PointCloudData, points: np.ndarray, gravity: np.ndarray
     ) -> None:
-        """Fit one cloud and finish the attempt on candidates."""
-        assert self._fitter is not None
+        """Fit one cloud and finish the attempt on candidates or at the cap."""
+        assert self._fitter is not None and self._config is not None
         candidates = self._fitter.find_candidates(points, gravity)
         self._last_fitted_cloud = cloud
+        self._fitted_clouds += 1
+        cap = self._config.max_calibration_attempts
         if candidates:
             self._finish(CalibrationOutcome.SUCCEEDED, candidates)
+        elif cap is not None and self._fitted_clouds >= cap:
+            self._finish(CalibrationOutcome.FAILED, [])
 
 
 def _copy_stamps(source: dai.Buffer, target: dai.Buffer) -> None:

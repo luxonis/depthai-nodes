@@ -92,3 +92,27 @@ def test_configuration_accepts_range_boundaries():
 
     assert config.min_inlier_ratio == 1.0
     assert config.max_gravity_angle_deg == 0.0
+
+
+def test_attempt_cap_defaults_to_unbounded():
+    assert PlaneCalibrationConfig().max_calibration_attempts is None
+
+
+@pytest.mark.parametrize("value", [1, 5, np.int64(2)])
+def test_attempt_cap_accepts_integers_from_one(value):
+    config = PlaneCalibrationConfig(max_calibration_attempts=value)
+
+    assert config.max_calibration_attempts == value
+    assert config.max_calibration_attempts.__class__ is int
+
+
+@pytest.mark.parametrize("value", [True, False, 2.0, 2.5, "two"])
+def test_attempt_cap_rejects_bools_and_non_integers(value):
+    with pytest.raises(TypeError):
+        PlaneCalibrationConfig(max_calibration_attempts=value)
+
+
+@pytest.mark.parametrize("value", [0, -1])
+def test_attempt_cap_rejects_values_below_one(value):
+    with pytest.raises(ValueError):
+        PlaneCalibrationConfig(max_calibration_attempts=value)

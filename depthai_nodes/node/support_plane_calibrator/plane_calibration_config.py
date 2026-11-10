@@ -1,4 +1,4 @@
-"""Plane-fitting settings for ``SupportPlaneCalibrator``."""
+"""Plane-fitting and attempt settings for ``SupportPlaneCalibrator``."""
 
 import math
 import numbers
@@ -34,7 +34,9 @@ def _check_int(name: str, value: Any) -> int:
 
 @dataclass(frozen=True, kw_only=True)
 class PlaneCalibrationConfig:
-    """Plane-fitting settings for ``SupportPlaneCalibrator``, fixed at build.
+    """Plane-fitting and attempt settings for ``SupportPlaneCalibrator``.
+
+    The settings are fixed at build.
 
     Attributes:
         distance_threshold_mm: Largest distance of a RANSAC inlier from the
@@ -50,6 +52,9 @@ class PlaneCalibrationConfig:
         merge_distance_threshold_mm: Largest offset difference, in millimeters,
             at which two parallel candidates count as one plane. Must be
             positive.
+        max_calibration_attempts: Point clouds fitted in one calibration
+            attempt, not Starts, before an attempt without candidates ends
+            ``FAILED``. At least 1, or ``None`` to search until stopped.
 
     Raises:
         TypeError: If a field has the wrong type.
@@ -64,6 +69,7 @@ class PlaneCalibrationConfig:
     voxel_size_mm: float = 30.0
     max_gravity_angle_deg: float = 6.5
     merge_distance_threshold_mm: float = 25.0
+    max_calibration_attempts: int | None = None
 
     def __post_init__(self) -> None:
         """Validate the fields and store numbers as built-in types.
@@ -82,6 +88,15 @@ class PlaneCalibrationConfig:
             if value < minimum:
                 raise ValueError(f"{name} must be at least {minimum}, got {value}")
             object.__setattr__(self, name, value)
+        if self.max_calibration_attempts is not None:
+            attempts = _check_int(
+                "max_calibration_attempts", self.max_calibration_attempts
+            )
+            if attempts < 1:
+                raise ValueError(
+                    f"max_calibration_attempts must be at least 1, got {attempts}"
+                )
+            object.__setattr__(self, "max_calibration_attempts", attempts)
         for name in (
             "distance_threshold_mm",
             "voxel_size_mm",

@@ -162,8 +162,8 @@ which ends with one `depthai_nodes.message.SupportPlaneCalibrationResult` on
 ``out``; a succeeded result holds support plane candidates, best first. A verify
 control asks for a plane verification of a given support plane, answered with a
 `depthai_nodes.message.SupportPlaneVerificationResult` on
-``verificationOutput``. `PlaneCalibrationConfig` holds the plane-fitting
-settings, fixed at ``build``.
+``verificationOutput``. `PlaneCalibrationConfig` holds the plane-fitting and
+attempt settings, fixed at ``build``.
 
 ``SupportPlaneCalibrator`` needs open3d, installed with
 ``pip install "depthai-nodes[box-measurement]"``; without it ``build`` raises
@@ -190,8 +190,8 @@ Example:
             plane = result.candidates[0].plane
             plane.toJsonFile("support_plane.json")
 
-    ``result.outcome`` tells whether the attempt succeeded, failed, or was
-    cancelled; only a succeeded result has candidates.
+    ``result.outcome`` tells whether the attempt succeeded, failed at the
+    attempt cap, or was cancelled; only a succeeded result has candidates.
 
 Box measurement
 ===============

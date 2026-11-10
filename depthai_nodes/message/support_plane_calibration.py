@@ -56,7 +56,8 @@ class CalibrationOutcome(str, Enum):
     """How a calibration attempt ended.
 
     ``SUCCEEDED`` attempts found at least one candidate plane, ``FAILED``
-    attempts found none, and ``CANCELLED`` attempts were stopped.
+    attempts hit the attempt cap (``max_calibration_attempts`` in the
+    calibrator's config) without one, and ``CANCELLED`` attempts were stopped.
     """
 
     SUCCEEDED = "succeeded"
