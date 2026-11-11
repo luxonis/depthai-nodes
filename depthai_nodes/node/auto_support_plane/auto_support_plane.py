@@ -89,7 +89,8 @@ class AutoSupportPlane(BaseThreadedHostNode):
     node's thread, so keep it fast; anything it raises is not caught.
 
     Drive `SupportPlaneCalibrator` directly instead for a person picking among
-    candidates or any custom flow. Requires open3d, installed with
+    candidates or any custom flow. The node logs nothing; read its outcomes
+    from ``out``. Requires open3d, installed with
     ``pip install "depthai-nodes[box-measurement]"``.
     """
 
