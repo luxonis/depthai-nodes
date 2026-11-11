@@ -419,6 +419,30 @@ def test_build_cannot_run_twice():
         node.build(*build_args())
 
 
+def test_build_gives_the_calibrator_the_calibration_config():
+    config = AutoSupportPlaneConfig(
+        calibration=PlaneCalibrationConfig(max_calibration_attempts=4)
+    )
+    original_build = SupportPlaneCalibrator.build
+    with patch.object(
+        SupportPlaneCalibrator, "build", autospec=True, side_effect=original_build
+    ) as build:
+        HarnessPipeline().create(AutoSupportPlane).build(*build_args(), config)
+
+    ((_, _, _, _, calibration), _) = build.call_args
+    assert calibration is config.calibration
+
+
+def test_a_cloud_source_message_that_is_not_a_point_cloud_raises_out_of_a_run_pass():
+    node = Harness(on_start())
+    node.run()
+    node.gravity()
+    node.clouds.send(dai.Buffer())
+
+    with pytest.raises(TypeError, match="PointCloudData"):
+        node.run()
+
+
 class Selector:
     """A ``selectCandidate`` that records each call and answers with ``choose``."""
 
