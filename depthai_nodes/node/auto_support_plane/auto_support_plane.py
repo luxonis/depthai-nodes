@@ -9,6 +9,7 @@ from depthai_nodes.message.support_plane_calibration import (
     CalibrationOutcome,
     SupportPlaneCalibrationControl,
     SupportPlaneCalibrationResult,
+    SupportPlaneVerificationResult,
 )
 from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
 from depthai_nodes.node.support_plane_calibrator.support_plane_calibrator import (
@@ -33,13 +34,28 @@ class AutoSupportPlane(BaseThreadedHostNode):
     """Find and hold the support plane, driving an inner ``SupportPlaneCalibrator``.
 
     Link a point cloud and an IMU at `build` and read
-    `depthai_nodes.message.AutoSupportPlaneResult` messages from ``out``. In
-    ``ON_START`` mode the node runs one calibration attempt and holds the plane
-    it selects, sending ``(True, plane)``. If the attempt ends at
-    ``calibration.max_calibration_attempts`` without a plane, it sends
-    ``(False, None)`` and does nothing more until the pipeline is rebuilt.
-    Nothing is sent while the attempt runs, so without an attempt cap the node
-    searches until a plane comes into view.
+    `depthai_nodes.message.AutoSupportPlaneResult` messages from ``out``. The
+    node searches until a calibration attempt finds a plane, then holds the
+    plane it selects, sending ``(True, plane)``. An attempt that ends at
+    ``calibration.max_calibration_attempts`` without a plane sends
+    ``(False, None)``.
+
+    In ``ON_START`` mode that failure is final until the pipeline is rebuilt,
+    and a held plane is never checked again. In ``CONTINUOUS`` mode a failed
+    search starts a new attempt at once, and the held plane gets a plane check
+    about every ``check_interval_sec``: the calibrator verifies it on the next
+    point cloud with fresh IMU, judging the level test and
+    ``calibration.min_on_plane_ratio``. A passing check sends
+    ``(True, plane)``; a failed one sends nothing. After
+    ``failed_checks_before_refit`` failed checks in a row the node refits,
+    keeping the old plane meanwhile: a refit that finds a plane sends
+    ``(True, new plane)``, and one that ends at the attempt cap sends
+    ``(False, old plane)`` and goes back to checking.
+
+    No result is sent while a search or refit runs, so without an attempt cap
+    a search waits until a plane comes into view and a refit never gives up.
+    In ``CONTINUOUS`` mode set ``calibration.max_calibration_attempts`` so a
+    refit that finds nothing reports and resumes checking.
 
     Of a successful attempt's support plane candidates, the node selects by
     default the one with the most ``inlier_count`` (counted after voxel
@@ -70,6 +86,13 @@ class AutoSupportPlane(BaseThreadedHostNode):
         self._config: AutoSupportPlaneConfig | None = None
         self._select_candidate: CandidateSelector = _select_largest_plane
         self._started = False
+        # The current plane, kept through a refit.
+        self._plane: SupportPlane | None = None
+        # Whether a calibration attempt runs (a search or a refit).
+        self._searching = False
+        self._verify_in_flight = False
+        self._next_check_at = 0.0
+        self._failed_checks = 0
 
     @property
     def out(self) -> dai.Node.Output:
@@ -146,16 +169,22 @@ class AutoSupportPlane(BaseThreadedHostNode):
             return
 
     def _run_pass(self) -> None:
-        """Start the search on the first pass, then handle calibration results."""
+        """Start the search once, handle the calibrator's answers, then check."""
         if not self._started:
             self._started = True
-            self._control_output.send(SupportPlaneCalibrationControl.start())
-        while True:
-            result = self._calibration_input.tryGet()
-            if result is None:
-                return
+            self._start_search()
+        while (result := self._calibration_input.tryGet()) is not None:
             assert isinstance(result, SupportPlaneCalibrationResult)
             self._handle_calibration(result)
+        while (verification := self._verification_input.tryGet()) is not None:
+            assert isinstance(verification, SupportPlaneVerificationResult)
+            self._handle_verification(verification)
+        self._check_plane_if_due()
+
+    def _start_search(self) -> None:
+        """Start a calibration attempt, keeping any current plane."""
+        self._searching = True
+        self._control_output.send(SupportPlaneCalibrationControl.start())
 
     def _handle_calibration(self, result: SupportPlaneCalibrationResult) -> None:
         """Reset the calibrator and report the attempt's plane, or its failure.
@@ -163,19 +192,70 @@ class AutoSupportPlane(BaseThreadedHostNode):
         A selector that returns ``None`` starts a new attempt and sends nothing.
         """
         self._control_output.send(SupportPlaneCalibrationControl.reset())
-        plane: SupportPlane | None = None
+        self._searching = False
         if result.outcome is CalibrationOutcome.SUCCEEDED:
             selected = self._select_candidate(result.candidates)
             if selected is None:
-                self._control_output.send(SupportPlaneCalibrationControl.start())
+                self._start_search()
                 return
             if selected not in result.candidates:
                 raise ValueError(
                     "selectCandidate must return one of the candidates or None, "
                     f"got {selected!r}"
                 )
-            plane = selected.plane
-        self._send(AutoSupportPlaneResult(plane is not None, plane), result)
+            self._hold(selected.plane)
+            self._send(AutoSupportPlaneResult(True, selected.plane), result)
+        elif self._plane is not None:
+            self._hold(self._plane)
+            self._send(AutoSupportPlaneResult(False, self._plane), result)
+        else:
+            self._send(AutoSupportPlaneResult(False, None), result)
+            if self._continuous:
+                self._start_search()
+
+    def _hold(self, plane: SupportPlane) -> None:
+        """Make ``plane`` current, with its first plane check one interval away."""
+        assert self._config is not None
+        self._plane = plane
+        self._failed_checks = 0
+        self._next_check_at = time.monotonic() + self._config.check_interval_sec
+
+    def _handle_verification(self, result: SupportPlaneVerificationResult) -> None:
+        """Judge a plane check, refitting after enough failures in a row.
+
+        Answers outside ``VALID`` or for another plane are stale and ignored.
+        """
+        assert self._config is not None
+        self._verify_in_flight = False
+        if self._searching or result.plane != self._plane:
+            return
+        self._next_check_at = time.monotonic() + self._config.check_interval_sec
+        if result.accepted:
+            self._failed_checks = 0
+            self._send(AutoSupportPlaneResult(True, result.plane), result)
+            return
+        self._failed_checks += 1
+        if self._failed_checks >= self._config.failed_checks_before_refit:
+            self._failed_checks = 0
+            self._start_search()
+
+    def _check_plane_if_due(self) -> None:
+        """Send ``Verify(current plane)`` in ``CONTINUOUS`` once the interval passed."""
+        if (
+            not self._continuous
+            or self._plane is None
+            or self._searching
+            or self._verify_in_flight
+            or time.monotonic() < self._next_check_at
+        ):
+            return
+        self._verify_in_flight = True
+        self._control_output.send(SupportPlaneCalibrationControl.verify(self._plane))
+
+    @property
+    def _continuous(self) -> bool:
+        assert self._config is not None
+        return self._config.mode is AutoSupportPlaneConfig.Mode.CONTINUOUS
 
     def _send(self, message: AutoSupportPlaneResult, trigger: dai.Buffer) -> None:
         """Send a result stamped from the calibrator result that triggered it."""

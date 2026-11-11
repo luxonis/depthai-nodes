@@ -180,11 +180,11 @@ class Harness:
         self.results = cast(OutputQueueMock, self.node.out.createOutputQueue())
         self._sequence_num = 0
 
-    def gravity(self, z=-9.8):
+    def gravity(self, x=0.0, y=0.0, z=-9.8):
         message = dai.IMUData()
         packet = dai.IMUPacket()
-        packet.acceleroMeter.x = 0
-        packet.acceleroMeter.y = 0
+        packet.acceleroMeter.x = x
+        packet.acceleroMeter.y = y
         packet.acceleroMeter.z = z
         message.packets = [packet]
         self.imus.send(message)
@@ -503,3 +503,220 @@ def test_build_rejects_a_selector_that_is_not_callable():
 
     with pytest.raises(TypeError):
         node.build(*build_args(), selectCandidate=floor(-1000))
+
+
+# Big enough for the calibrator to measure an on-plane ratio (625 sampled points).
+LARGE_CLOUD_SIZE = (100, 100)
+# Enough inliers to fit a plane in a large cloud.
+LARGE_INLIER_COUNT = 9000
+INTERVAL = 2.0
+
+
+def continuous(failed_checks_before_refit=2, **calibration):
+    calibration = {"max_plane_passes": 3, "min_on_plane_ratio": 0.5, **calibration}
+    return AutoSupportPlaneConfig(
+        mode=AutoSupportPlaneConfig.Mode.CONTINUOUS,
+        check_interval_sec=INTERVAL,
+        failed_checks_before_refit=failed_checks_before_refit,
+        calibration=PlaneCalibrationConfig(**calibration),
+    )
+
+
+def holding(config, **build_kwargs):
+    """A harness on large clouds whose first fit holds the floor 1000 mm away."""
+    node = Harness(config, LARGE_CLOUD_SIZE, **build_kwargs)
+    node.gravity()
+    with scripted(scripted_floors((-1000.0, LARGE_INLIER_COUNT))):
+        node.plane_cloud()
+        node.run(2)
+    assert node.result().plane == floor(-1000)
+    return node
+
+
+def check(node, clock, depth=1000.0, wait=INTERVAL, **gravity):
+    """Let ``wait`` seconds pass, then send fresh IMU and a cloud, and run a check.
+
+    ``depth`` is one depth for the whole cloud in mm, or an array of depths.
+
+    Returns:
+        The sent cloud.
+    """
+    clock.now += wait
+    node.gravity(**gravity)
+    width, height = node.size
+    cloud = node.depth_cloud(np.broadcast_to(depth, (height, width)))
+    node.run(2)
+    return cloud
+
+
+def test_passing_check_sends_the_plane_every_interval(clock):
+    node = holding(continuous())
+
+    for _ in range(2):
+        check(node, clock, wait=INTERVAL - 0.01)
+        assert node.no_result()
+        cloud = check(node, clock, wait=0.01)
+
+        result = node.result()
+        assert result.passed is True
+        assert result.plane == floor(-1000)
+        assert_stamped_from(result, cloud)
+
+
+# A cloud hiding the held floor 1000 mm away behind something 600 mm away.
+OCCLUDED = 600.0
+
+
+def refit_cloud(node, depth=1000.0, **gravity):
+    """Send fresh IMU and a cloud and run one pass, fitting it in a running refit.
+
+    Returns:
+        The sent cloud.
+    """
+    node.gravity(**gravity)
+    cloud = node.plane_cloud(depth)
+    node.run()
+    return cloud
+
+
+def test_bumped_camera_refits_to_the_new_plane_and_checks_it(clock):
+    node = holding(continuous(failed_checks_before_refit=2))
+    check(node, clock, depth=1300)
+    check(node, clock, depth=1300)
+    assert node.no_result()
+
+    with scripted(scripted_floors((-1300.0, LARGE_INLIER_COUNT))):
+        cloud = refit_cloud(node, depth=1300)
+
+    result = node.result()
+    assert result.passed is True
+    assert result.plane == floor(-1300)
+    assert_stamped_from(result, cloud)
+    check(node, clock, depth=1300, wait=INTERVAL - 0.01)
+    assert node.no_result()
+    check(node, clock, depth=1300, wait=0.01)
+    assert node.result().plane == floor(-1300)
+
+
+def test_failed_refit_keeps_the_old_plane_and_checks_it_again(clock):
+    node = holding(continuous(failed_checks_before_refit=2, max_calibration_attempts=1))
+    check(node, clock, depth=OCCLUDED)
+    check(node, clock, depth=OCCLUDED)
+
+    clock.now += INTERVAL
+    cloud = refit_cloud(node, depth=0)
+
+    result = node.result()
+    assert result.passed is False
+    assert result.plane == floor(-1000)
+    assert_stamped_from(result, cloud)
+    check(node, clock, wait=INTERVAL - 0.01)
+    assert node.no_result()
+    check(node, clock, wait=0.01)
+    assert node.result().passed is True
+
+
+def test_occlusion_keeps_the_plane_through_a_refit_that_finds_nothing(clock):
+    node = holding(continuous(failed_checks_before_refit=2))
+    with scripted(ScriptedScene([])):
+        for _ in range(2):
+            check(node, clock, depth=OCCLUDED)
+            check(node, clock)
+            assert node.result().plane == floor(-1000)
+        check(node, clock, depth=OCCLUDED)
+        check(node, clock, depth=OCCLUDED)
+
+        for _ in range(5):
+            check(node, clock)
+        assert node.no_result()
+
+
+def test_one_check_is_in_flight_through_an_imu_stall(clock):
+    node = holding(continuous())
+    for _ in range(10):
+        clock.now += INTERVAL
+        node.plane_cloud()
+        node.run(2)
+    assert node.no_result()
+
+    check(node, clock, wait=0)
+
+    assert node.result().plane == floor(-1000)
+    assert node.no_result()
+
+
+def sparse_depths():
+    """Depths on the held floor, with too few points to measure an on-plane ratio."""
+    width, height = LARGE_CLOUD_SIZE
+    depths = np.full((height, width), 1000.0)
+    depths[:40] = 0
+    return depths
+
+
+@pytest.mark.parametrize(
+    ("min_on_plane_ratio", "depth", "passes"),
+    [(0.5, OCCLUDED, False), (0.0, OCCLUDED, True), (0.0, sparse_depths(), False)],
+    ids=["off-plane", "off-plane-any-ratio", "sparse"],
+)
+def test_check_passes_on_a_measured_on_plane_ratio(
+    clock, min_on_plane_ratio, depth, passes
+):
+    node = holding(continuous(min_on_plane_ratio=min_on_plane_ratio))
+
+    check(node, clock, depth=depth)
+
+    assert node.no_result() is not passes
+
+
+def test_camera_tipped_past_the_level_limit_fails_checks_and_refits(clock):
+    config = continuous(
+        failed_checks_before_refit=2,
+        max_calibration_attempts=1,
+        max_gravity_angle_deg=5,
+    )
+    node = holding(config)
+    tipped = np.deg2rad(8)
+    gravity = {"y": -9.8 * np.sin(tipped), "z": -9.8 * np.cos(tipped)}
+    check(node, clock, **gravity)
+    check(node, clock, **gravity)
+    assert node.no_result()
+
+    refit_cloud(node, **gravity)
+
+    result = node.result()
+    assert result.passed is False
+    assert result.plane == floor(-1000)
+
+
+def test_selector_chooses_on_every_refit(clock):
+    selector = Selector(farthest)
+    node = holding(continuous(failed_checks_before_refit=1), selectCandidate=selector)
+    check(node, clock, depth=1300)
+
+    scene = scripted_floors((-1300.0, LARGE_INLIER_COUNT), (-1600.0, 500))
+    with scripted(scene):
+        refit_cloud(node, depth=1300)
+
+    assert node.result().plane == floor(-1600)
+    assert len(selector.calls) == 2
+
+
+def test_continuous_failed_attempt_without_a_plane_is_retried():
+    node = Harness(continuous(max_calibration_attempts=1), LARGE_CLOUD_SIZE)
+    node.run()
+    fit_empty_cloud(node)
+    assert node.result().plane is None
+
+    with scripted(scripted_floors((-1000.0, LARGE_INLIER_COUNT))):
+        refit_cloud(node)
+
+    assert node.result().plane == floor(-1000)
+
+
+def test_no_plane_checks_in_on_start(clock):
+    node = holding(on_start())
+
+    for _ in range(3):
+        check(node, clock)
+
+    assert node.no_result()
