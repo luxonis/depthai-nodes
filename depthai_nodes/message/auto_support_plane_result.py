@@ -5,7 +5,6 @@ from __future__ import annotations
 import depthai as dai
 
 from .support_plane import SupportPlane
-from .support_plane_calibration import _check_instance
 
 
 class AutoSupportPlaneResult(dai.Buffer):
@@ -36,9 +35,10 @@ class AutoSupportPlaneResult(dai.Buffer):
             ValueError: If ``passed`` is ``True`` with no plane.
         """
         super().__init__()
-        _check_instance("passed", passed, bool)
-        if plane is not None:
-            _check_instance("plane", plane, SupportPlane)
+        if not isinstance(passed, bool):
+            raise TypeError(f"passed must be bool, got {type(passed).__name__}")
+        if plane is not None and not isinstance(plane, SupportPlane):
+            raise TypeError(f"plane must be SupportPlane, got {type(plane).__name__}")
         if passed and plane is None:
             raise ValueError("A passed result must have a plane")
         self._passed = passed

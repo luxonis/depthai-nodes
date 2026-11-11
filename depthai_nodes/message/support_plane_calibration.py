@@ -40,18 +40,6 @@ def _check_bool(name: str, value: Any) -> bool:
     return bool(value)
 
 
-def _check_instance(name: str, value: Any, expected: type) -> None:
-    """Check that a value is an instance of the expected type.
-
-    Raises:
-        TypeError: If the value is not an instance of ``expected``.
-    """
-    if not isinstance(value, expected):
-        raise TypeError(
-            f"{name} must be {expected.__name__}, got {type(value).__name__}"
-        )
-
-
 class CalibrationOutcome(str, Enum):
     """How a calibration attempt ended.
 
@@ -112,7 +100,10 @@ class SupportPlaneCalibrationControl(dai.Buffer):
                 Raises:
                     TypeError: If ``plane`` is not a `SupportPlane`.
                 """
-                _check_instance("plane", self.plane, SupportPlane)
+                if not isinstance(self.plane, SupportPlane):
+                    raise TypeError(
+                        f"plane must be SupportPlane, got {type(self.plane).__name__}"
+                    )
 
     Command: TypeAlias = (
         Commands.Start | Commands.Stop | Commands.Reset | Commands.Verify
@@ -217,13 +208,20 @@ class SupportPlaneCalibrationResult(dai.Buffer):
                 succeeded without candidates.
         """
         super().__init__()
-        _check_instance("outcome", outcome, CalibrationOutcome)
+        if not isinstance(outcome, CalibrationOutcome):
+            raise TypeError(
+                "outcome must be CalibrationOutcome, got " f"{type(outcome).__name__}"
+            )
         if not isinstance(candidates, (list, tuple)):
             raise TypeError(
                 "Candidates must be a list or tuple of support plane candidates"
             )
         for candidate in candidates:
-            _check_instance("candidate", candidate, SupportPlaneCandidate)
+            if not isinstance(candidate, SupportPlaneCandidate):
+                raise TypeError(
+                    "candidate must be SupportPlaneCandidate, got "
+                    f"{type(candidate).__name__}"
+                )
         if bool(candidates) != (outcome is CalibrationOutcome.SUCCEEDED):
             raise ValueError("A result has candidates exactly when it succeeded")
         self._outcome = outcome
@@ -288,7 +286,8 @@ class SupportPlaneVerificationResult(dai.Buffer):
                 ``accepted`` is ``True`` with no ``on_plane_ratio``.
         """
         super().__init__()
-        _check_instance("plane", plane, SupportPlane)
+        if not isinstance(plane, SupportPlane):
+            raise TypeError(f"plane must be SupportPlane, got {type(plane).__name__}")
         self._gravity_angle_deg = _check_float("gravity_angle_deg", gravity_angle_deg)
         self._accepted = _check_bool("accepted", accepted)
         if on_plane_ratio is not None:
