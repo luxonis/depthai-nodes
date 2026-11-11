@@ -100,55 +100,22 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
     ``pip install "depthai-nodes[box-measurement]"``.
 
     States:
-        - Idle: Start begins an attempt; Stop and Reset do nothing.
-        - Running: each loop pass fits the latest point cloud once an IMU
-          sample is available, until a cloud yields candidates (succeeded),
-          Stop arrives (cancelled), or the attempt cap is reached (failed). A
-          cloud without a plane keeps the attempt searching until the cap.
-          Start is ignored.
-        - Complete: after success or failure; Reset returns to idle, and Start
-          and Stop are ignored until then. A cancelled attempt returns straight
-          to idle without Reset.
+        - Idle: Start begins an attempt.
+        - Running: fits point clouds until one yields candidates (succeeded),
+          Stop arrives (cancelled), or the attempt cap is reached (failed).
+          Stop takes effect after the current fit.
+        - Complete: after success or failure; Reset returns to idle. A
+          cancelled attempt returns straight to idle.
 
-    Each loop pass applies pending controls in arrival order and takes the
-    latest IMU sample. If one is available and a verification is pending or
-    an attempt is running, the pass takes the latest point cloud, answers the
-    pending verifications from it and, while running, then fits it. Otherwise
-    the cloud stays queued, so a cloud sent before Start is still there for
-    the attempt. Controls wait during a fit, so Stop takes effect after the
-    current fit: a fit that completes the attempt reports its outcome,
-    otherwise the attempt ends cancelled.
+    Verify commands are answered in any state, on the next point cloud taken
+    with fresh IMU, before that cloud is fitted. Fitting and verification wait
+    for an IMU sample younger than ``IMU_MAX_AGE_SECONDS`` with a nonzero
+    accelerometer vector.
 
-    Each calibration result copies the timestamp, device timestamp and
-    sequence number of the last cloud its attempt fitted, or keeps DepthAI's
-    unset stamps if the attempt fitted none.
-
-    Verification is independent of attempts: in any state, pending verify
-    commands are answered in arrival order on the next point cloud taken with
-    an IMU sample available, before that cloud is fitted. Each verification
-    result copies that cloud's timestamp, device timestamp and sequence
-    number. A verify command never starts, ends or delays an attempt, but a
-    cloud it takes is not left queued for a later Start.
-
-    Besides the gravity check, each verification result carries the on-plane
-    ratio: of the cloud's points in every 4th row and column with ``z > 0``,
-    the share within the config's ``check_distance_mm`` of the plane, whichever
-    sign its equation has. With fewer than 500 such points it is ``None``,
-    meaning not measured. It is not a candidate's inlier ratio, which counts
-    RANSAC inliers on the preprocessed cloud.
-
-    An IMU sample counts as available for ``IMU_MAX_AGE_SECONDS`` after it
-    arrives, and only if it has a nonzero accelerometer vector. If the IMU
-    stream stalls or carries no accelerometer, fitting and verification wait
-    for a new sample rather than use stale or missing gravity.
-
-    Errors: wiring errors raise from the run loop instead of ending the
-    attempt. A message on the point cloud input that is not
+    Errors: a message on the point cloud input that is not
     ``dai.PointCloudData`` raises ``TypeError``, and a cloud that is not the
-    organized size given to `build` raises ``ValueError``. Nothing catches or
-    logs these or any other error, and an exception escaping ``run()`` aborts
-    the process on depthai 3.12. Outputs use standard DepthAI buffering and
-    backpressure.
+    organized size from `build` raises ``ValueError``. An exception escaping
+    ``run()`` aborts the process on depthai 3.12.
     """
 
     def __init__(self) -> None:
