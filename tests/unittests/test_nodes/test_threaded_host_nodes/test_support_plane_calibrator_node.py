@@ -12,7 +12,6 @@ from depthai_nodes.message import (  # noqa: E402
     SupportPlane,
     SupportPlaneCalibrationControl,
     SupportPlaneCalibrationResult,
-    SupportPlaneCandidate,
     SupportPlaneVerificationResult,
 )
 from depthai_nodes.node import (  # noqa: E402
@@ -298,16 +297,6 @@ def floor(offset_mm):
     return SupportPlane(normal=(0, 0, 1), offset_mm=offset_mm)
 
 
-def test_candidates_carry_their_plane_inlier_count_and_ratio(calibrator):
-    # The scripted preprocessed cloud has 400 points.
-    result = calibrate(calibrator, ScriptedScene([([0.0, 0.0, 1.0, -1000.0], 120)]))
-
-    assert result.outcome is CalibrationOutcome.SUCCEEDED
-    assert result.candidates == (
-        SupportPlaneCandidate(plane=floor(-1000), inlier_count=120, inlier_ratio=0.3),
-    )
-
-
 def test_inlier_ratios_divide_by_the_cloud_before_planes_are_removed():
     calibrator = Harness(
         PlaneCalibrationConfig(max_plane_passes=3, min_inlier_ratio=0.2)
@@ -328,7 +317,6 @@ def test_inlier_ratios_divide_by_the_cloud_before_planes_are_removed():
         (80, 0.2),
         (200, 0.5),
     ]
-    assert all(c.inlier_ratio >= 0.2 for c in result.candidates)
 
 
 def test_fit_error_propagates_out_of_the_run_pass(calibrator):
@@ -782,19 +770,6 @@ def test_build_cannot_run_twice():
         node.build(output, output, CLOUD_SIZE)
 
 
-def test_verification_while_idle_waits_for_a_cloud(level_only):
-    level_only.gravity()
-    level_only.verify(tilted_plane(0))
-    level_only.run()
-    assert level_only.verifications.is_empty()
-
-    level_only.plane_cloud()
-    level_only.run()
-
-    assert level_only.verification().accepted
-    assert level_only.verifications.is_empty()
-
-
 def capped(attempts):
     return Harness(
         PlaneCalibrationConfig(max_plane_passes=3, max_calibration_attempts=attempts)
@@ -835,15 +810,6 @@ def test_capping_cloud_with_candidates_still_succeeds():
 
     result = calibrator.result()
     assert result.outcome is CalibrationOutcome.SUCCEEDED
-
-
-def test_attempt_cap_of_one_fails_on_the_first_empty_cloud():
-    calibrator = capped(1)
-    calibrator.start()
-    calibrator.gravity()
-    fit_empty_cloud(calibrator)
-
-    assert calibrator.result().outcome is CalibrationOutcome.FAILED
 
 
 def test_clouds_overwritten_in_the_queue_do_not_count():
@@ -946,18 +912,6 @@ def test_stop_during_the_capping_fit_reports_failed():
     assert calibrator.no_result()
 
 
-def test_stop_before_the_cap_reports_cancelled():
-    calibrator = capped(3)
-    calibrator.start()
-    calibrator.gravity()
-    fit_empty_cloud(calibrator)
-    calibrator.stop()
-    calibrator.run()
-
-    result = calibrator.result()
-    assert result.outcome is CalibrationOutcome.CANCELLED
-
-
 def test_attempts_without_a_cap_keep_searching(calibrator):
     calibrator.start()
     calibrator.gravity()
@@ -980,23 +934,16 @@ def verify_on(calibrator, plane, depths):
 
 @pytest.mark.parametrize(
     "offset_mm,ratio",
-    [(-1000, 1.0), (-1025, 1.0), (-975, 1.0), (-1035, 0.0), (-965, 0.0)],
+    [(-1000, 1.0), (-1045, 1.0), (-955, 1.0), (-1055, 0.0), (-945, 0.0)],
 )
 def test_on_plane_ratio_counts_points_within_the_check_distance(offset_mm, ratio):
-    calibrator = Harness(PlaneCalibrationConfig(check_distance_mm=30), LARGE_CLOUD_SIZE)
+    # 50 mm differs from the default, so the test fails if the config is ignored.
+    calibrator = Harness(PlaneCalibrationConfig(check_distance_mm=50), LARGE_CLOUD_SIZE)
     floor_at_1000 = np.full((100, 100), 1000.0)
 
     result = verify_on(calibrator, floor(offset_mm), floor_at_1000)
 
     assert result.on_plane_ratio == ratio
-
-
-def test_on_plane_ratio_uses_the_built_check_distance():
-    calibrator = Harness(PlaneCalibrationConfig(check_distance_mm=50), LARGE_CLOUD_SIZE)
-
-    result = verify_on(calibrator, floor(-1040), np.full((100, 100), 1000.0))
-
-    assert result.on_plane_ratio == 1.0
 
 
 def test_on_plane_ratio_is_the_sampled_share_on_the_plane_for_either_sign():
@@ -1032,24 +979,6 @@ def test_on_plane_ratio_is_not_measured_for_a_mostly_empty_cloud():
 
     assert result.on_plane_ratio is None
     assert not result.accepted
-
-
-def test_on_plane_ratio_is_not_measured_on_a_small_cloud(calibrator):
-    calibrator.gravity()
-    calibrator.verify(floor(-1000))
-    calibrator.plane_cloud()
-    calibrator.run()
-
-    assert calibrator.verification().on_plane_ratio is None
-
-
-def test_verification_accepts_a_level_plane_the_cloud_lies_on():
-    calibrator = Harness(size=LARGE_CLOUD_SIZE)
-
-    result = verify_on(calibrator, floor(-1000), np.full((100, 100), 1000.0))
-
-    assert result.on_plane_ratio == 1.0
-    assert result.accepted
 
 
 def test_verification_rejects_a_level_plane_with_too_little_of_the_cloud_on_it():

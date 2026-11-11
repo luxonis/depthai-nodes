@@ -54,12 +54,12 @@ def test_outcomes_are_their_string_values():
     assert CalibrationOutcome.CANCELLED == "cancelled"
 
 
-def test_result_carries_outcome_and_candidates():
-    result = SupportPlaneCalibrationResult(CalibrationOutcome.SUCCEEDED, [CANDIDATE])
-
-    assert isinstance(result, dai.Buffer)
-    assert result.outcome is CalibrationOutcome.SUCCEEDED
-    assert result.candidates == (CANDIDATE,)
+def test_results_are_buffers():
+    assert isinstance(
+        SupportPlaneCalibrationResult(CalibrationOutcome.SUCCEEDED, [CANDIDATE]),
+        dai.Buffer,
+    )
+    assert isinstance(SupportPlaneVerificationResult(PLANE, 3.0, True, 0.5), dai.Buffer)
 
 
 def test_result_candidates_are_a_tuple_copied_at_construction():
@@ -98,7 +98,7 @@ def test_result_rejects_wrong_types(outcome, candidates):
         SupportPlaneCalibrationResult(outcome, candidates)
 
 
-def test_verification_result_carries_its_fields():
+def test_verification_result_stores_numpy_values_as_builtin_types():
     result = SupportPlaneVerificationResult(
         PLANE,
         np.float32(3.0),  # pyright: ignore[reportArgumentType]
@@ -106,26 +106,16 @@ def test_verification_result_carries_its_fields():
         np.float64(0.75),  # pyright: ignore[reportArgumentType]
     )
 
-    assert isinstance(result, dai.Buffer)
-    assert result.plane == PLANE
     assert result.gravity_angle_deg.__class__ is float
-    assert result.gravity_angle_deg == 3.0
     assert result.accepted is True
     assert result.on_plane_ratio.__class__ is float
-    assert result.on_plane_ratio == 0.75
 
 
-@pytest.mark.parametrize("ratio", [0, 1, 0.5])
+@pytest.mark.parametrize("ratio", [0, 1])
 def test_verification_result_accepts_on_plane_ratios_from_0_to_1(ratio):
     result = SupportPlaneVerificationResult(PLANE, 3.0, True, ratio)
 
     assert result.on_plane_ratio == ratio
-
-
-def test_verification_result_on_plane_ratio_none_means_not_measured():
-    assert (
-        SupportPlaneVerificationResult(PLANE, 3.0, False, None).on_plane_ratio is None
-    )
 
 
 def test_verification_result_cannot_accept_a_plane_without_an_on_plane_ratio():

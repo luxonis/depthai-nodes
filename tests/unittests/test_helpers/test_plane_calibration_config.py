@@ -59,6 +59,8 @@ FLOAT_FIELDS = (
     "voxel_size_mm",
     "max_gravity_angle_deg",
     "merge_distance_threshold_mm",
+    "check_distance_mm",
+    "min_on_plane_ratio",
 )
 
 
@@ -85,7 +87,9 @@ def test_configuration_rejects_wrong_float_types(name, value):
         ("distance_threshold_mm", 0),
         ("voxel_size_mm", 0),
         ("merge_distance_threshold_mm", 0),
+        ("check_distance_mm", 0),
         ("min_inlier_ratio", 1.5),
+        ("min_on_plane_ratio", 1.5),
         ("max_gravity_angle_deg", 90),
     ],
 )
@@ -96,14 +100,18 @@ def test_configuration_rejects_out_of_range_values(name, value):
 
 def test_configuration_accepts_range_boundaries():
     config = PlaneCalibrationConfig(
-        min_inlier_ratio=1, max_gravity_angle_deg=0, ransac_max_iterations=1
+        min_inlier_ratio=1,
+        max_gravity_angle_deg=0,
+        ransac_max_iterations=1,
+        min_on_plane_ratio=1,
     )
 
     assert config.min_inlier_ratio == 1.0
     assert config.max_gravity_angle_deg == 0.0
+    assert config.min_on_plane_ratio == 1.0
 
 
-@pytest.mark.parametrize("value", [1, 5, np.int64(2)])
+@pytest.mark.parametrize("value", [1, np.int64(2)])
 def test_attempt_cap_accepts_integers_from_one(value):
     config = PlaneCalibrationConfig(max_calibration_attempts=value)
 
@@ -121,32 +129,3 @@ def test_attempt_cap_rejects_bools_and_non_integers(value):
 def test_attempt_cap_rejects_values_below_one(value):
     with pytest.raises(ValueError):
         PlaneCalibrationConfig(max_calibration_attempts=value)
-
-
-@pytest.mark.parametrize("value", [0, -1.0, float("nan"), float("inf")])
-def test_check_distance_must_be_positive_and_finite(value):
-    with pytest.raises(ValueError):
-        PlaneCalibrationConfig(check_distance_mm=value)
-
-
-@pytest.mark.parametrize("value", [True, "30", None])
-def test_check_distance_rejects_wrong_types(value):
-    with pytest.raises(TypeError):
-        PlaneCalibrationConfig(check_distance_mm=value)
-
-
-@pytest.mark.parametrize("value", [0, 1])
-def test_min_on_plane_ratio_accepts_its_bounds(value):
-    assert PlaneCalibrationConfig(min_on_plane_ratio=value).min_on_plane_ratio == value
-
-
-@pytest.mark.parametrize("value", [-0.1, 1.01, float("nan"), float("inf")])
-def test_min_on_plane_ratio_must_be_finite_and_from_0_to_1(value):
-    with pytest.raises(ValueError):
-        PlaneCalibrationConfig(min_on_plane_ratio=value)
-
-
-@pytest.mark.parametrize("value", [True, "0.1", None])
-def test_min_on_plane_ratio_rejects_wrong_types(value):
-    with pytest.raises(TypeError):
-        PlaneCalibrationConfig(min_on_plane_ratio=value)

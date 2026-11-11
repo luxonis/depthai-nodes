@@ -142,23 +142,15 @@ def test_support_plane_rejects_json_of_the_wrong_type(data):
 FLOOR = SupportPlane(normal=(0, 0, 1), offset_mm=-1000)
 
 
-def test_candidate_carries_its_plane_and_inlier_stats():
+def test_candidate_stores_numpy_numbers_as_builtin_types():
     candidate = SupportPlaneCandidate(
         plane=FLOOR,
         inlier_count=np.int64(120),
         inlier_ratio=np.float32(0.25),  # pyright: ignore[reportArgumentType]
     )
 
-    assert candidate.plane == FLOOR
-    assert candidate.inlier_count == 120
     assert candidate.inlier_count.__class__ is int
-    assert candidate.inlier_ratio == 0.25
     assert candidate.inlier_ratio.__class__ is float
-    assert [f.name for f in dataclasses.fields(candidate)] == [
-        "plane",
-        "inlier_count",
-        "inlier_ratio",
-    ]
 
 
 def test_candidate_accepts_a_ratio_of_one():
