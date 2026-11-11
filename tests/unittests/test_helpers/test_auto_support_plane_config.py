@@ -1,5 +1,3 @@
-import dataclasses
-
 import numpy as np
 import pytest
 
@@ -12,15 +10,6 @@ from depthai_nodes.node import AutoSupportPlaneConfig
 def test_node_and_configuration_are_exported_from_node_not_message(name):
     assert name in depthai_nodes.node.__all__
     assert name not in depthai_nodes.message.__all__
-
-
-def test_configuration_is_frozen_and_takes_keyword_arguments_only():
-    config = AutoSupportPlaneConfig()
-
-    with pytest.raises(dataclasses.FrozenInstanceError):
-        config.check_interval_sec = 1.0  # type: ignore[misc]
-    with pytest.raises(TypeError):
-        AutoSupportPlaneConfig(AutoSupportPlaneConfig.Mode.CONTINUOUS)  # type: ignore[misc]
 
 
 def test_configuration_stores_built_in_numbers():

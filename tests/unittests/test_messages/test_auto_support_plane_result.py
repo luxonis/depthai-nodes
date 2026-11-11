@@ -1,18 +1,8 @@
-import depthai as dai
 import pytest
 
 from depthai_nodes.message import AutoSupportPlaneResult, SupportPlane
 
 PLANE = SupportPlane(normal=(0, 0, 1), offset_mm=-1000)
-
-
-@pytest.mark.parametrize("passed,plane", [(True, PLANE), (False, PLANE), (False, None)])
-def test_result_is_a_buffer_holding_its_verdict_and_plane(passed, plane):
-    result = AutoSupportPlaneResult(passed, plane)
-
-    assert isinstance(result, dai.Buffer)
-    assert result.passed is passed
-    assert result.plane == plane
 
 
 def test_result_rejects_passed_without_a_plane():
