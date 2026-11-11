@@ -4,7 +4,7 @@ from typing import Any, cast
 import depthai as dai
 import pytest
 
-from depthai_nodes.node import BoxMeasurer, SupportPlaneCalibrator
+from depthai_nodes.node import AutoSupportPlane, BoxMeasurer, SupportPlaneCalibrator
 from tests.utils import OutputMock, PipelineMock
 
 
@@ -33,3 +33,14 @@ def test_box_measurer_build_names_the_extra_without_open3d(monkeypatch):
         ImportError, match=r'pip install "depthai-nodes\[box-measurement\]"'
     ):
         measurer.build(output, output, (64, 48))
+
+
+def test_auto_support_plane_build_names_the_extra_without_open3d(monkeypatch):
+    monkeypatch.setitem(sys.modules, "open3d", None)
+    output = cast(dai.Node.Output, OutputMock())
+    node = cast(AutoSupportPlane, PipelineMock().create(cast(Any, AutoSupportPlane)))
+
+    with pytest.raises(
+        ImportError, match=r'pip install "depthai-nodes\[box-measurement\]"'
+    ):
+        node.build(output, output, (64, 48))

@@ -8,9 +8,10 @@ import depthai_nodes.node
 from depthai_nodes.node import AutoSupportPlaneConfig
 
 
-def test_configuration_is_exported_from_node_not_message():
-    assert "AutoSupportPlaneConfig" in depthai_nodes.node.__all__
-    assert "AutoSupportPlaneConfig" not in depthai_nodes.message.__all__
+@pytest.mark.parametrize("name", ["AutoSupportPlane", "AutoSupportPlaneConfig"])
+def test_node_and_configuration_are_exported_from_node_not_message(name):
+    assert name in depthai_nodes.node.__all__
+    assert name not in depthai_nodes.message.__all__
 
 
 def test_configuration_is_frozen_and_takes_keyword_arguments_only():
