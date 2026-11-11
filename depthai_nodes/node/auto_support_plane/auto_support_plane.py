@@ -25,8 +25,9 @@ CandidateSelector = Callable[
     [tuple[SupportPlaneCandidate, ...]], SupportPlaneCandidate | None
 ]
 
-# Room on the calibrator's control input for a Reset, a Start and a Verify
-# pending together, so the wrapper's sends never block.
+# The calibrator's control input size. The wrapper has at most a Reset, a Start
+# and one Verify pending there at once, so 8 leaves headroom over those 3 and
+# its sends never block.
 CONTROL_QUEUE_SIZE = 8
 
 
@@ -72,25 +73,24 @@ class AutoSupportPlane(BaseThreadedHostNode):
 
     These send nothing: a failed plane check below
     ``failed_checks_before_refit``, the start of a refit, a selector returning
-    ``None``, a stale plane verification answer, and the node starting. No
-    result is sent while a search or refit runs, so without an attempt cap a
-    search waits until a plane comes into view and a refit never gives up. In
+    ``None``, and the node starting. No result is sent while a search or refit
+    runs, so without an attempt cap a search waits until a plane comes into
+    view and a refit never gives up. In
     ``CONTINUOUS`` mode set ``calibration.max_calibration_attempts`` so a refit
     that finds nothing reports ``(False, old plane)`` and resumes checking.
 
     Of a successful attempt's support plane candidates, the node selects by
-    default the one with the most ``inlier_count`` (counted after voxel
-    downsampling, so roughly the largest visible plane), ties going to the
-    smallest ``|offset_mm|`` (the plane nearest the camera). A
-    ``selectCandidate`` function passed to `build` chooses instead: it gets the
-    candidates tuple, in no promised order, and returns one of them or
-    ``None`` to keep searching with a new attempt. A selector that always
-    returns ``None`` searches forever. It runs on the node's thread, so keep
-    it fast; anything it raises is not caught.
+    default the one with the most ``inlier_count`` (roughly the largest
+    visible plane), ties going to the smallest ``|offset_mm|`` (the plane
+    nearest the camera). A ``selectCandidate`` function passed to `build`
+    chooses instead: it gets the candidates tuple, in no promised order, and
+    returns one of them or ``None`` to keep searching with a new attempt. A
+    selector that always returns ``None`` searches forever. It runs on the
+    node's thread, so keep it fast; anything it raises is not caught.
 
     Drive `SupportPlaneCalibrator` directly instead for a person picking among
     candidates or any custom flow. Requires open3d, installed with
-    ``pip install "depthai-nodes[box-measurement]"``. Nothing logs.
+    ``pip install "depthai-nodes[box-measurement]"``.
     """
 
     def __init__(self) -> None:
@@ -249,9 +249,13 @@ class AutoSupportPlane(BaseThreadedHostNode):
 
     def _hold(self, plane: SupportPlane) -> None:
         """Make ``plane`` current, with its first plane check one interval away."""
-        assert self._config is not None
         self._plane = plane
         self._failed_checks = 0
+        self._schedule_check()
+
+    def _schedule_check(self) -> None:
+        """Make the next plane check due one interval from now."""
+        assert self._config is not None
         self._next_check_at = time.monotonic() + self._config.check_interval_sec
 
     def _handle_verification(self, result: SupportPlaneVerificationResult) -> None:
@@ -267,7 +271,7 @@ class AutoSupportPlane(BaseThreadedHostNode):
         gate, self._gate_pending = self._gate_pending, False
         if self._searching or result.plane != self._plane:
             return
-        self._next_check_at = time.monotonic() + self._config.check_interval_sec
+        self._schedule_check()
         if result.accepted:
             self._failed_checks = 0
             self._send(AutoSupportPlaneResult(True, result.plane), result)
