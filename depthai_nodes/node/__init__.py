@@ -159,8 +159,8 @@ Support plane
 `SupportPlaneCalibrator` finds the support plane in a point cloud, checked
 against gravity from IMU data. Each Start control begins a calibration attempt,
 which ends with one `depthai_nodes.message.SupportPlaneCalibrationResult` on
-``out``; a succeeded result holds support plane candidates, best first. A verify
-control asks for a plane verification of a given support plane, answered with a
+``out``; a succeeded result holds support plane candidates. A verify control
+asks for a plane verification of a given support plane, answered with a
 `depthai_nodes.message.SupportPlaneVerificationResult` on
 ``verificationOutput``, which carries the plane's level test and its on-plane
 ratio, the share of the next point cloud on the plane within

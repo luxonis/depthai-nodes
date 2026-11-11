@@ -76,7 +76,7 @@ in millimeters, normalized on construction. ``toJson()``, ``fromJson()``,
   asks for a plane verification of a given support plane.
 * `SupportPlaneCalibrationResult` ends a calibration attempt with a
   `CalibrationOutcome` and, only when it succeeded, its support plane
-  candidates, best first.
+  candidates.
 * `SupportPlaneCandidate` holds a ``plane`` with its ``inlier_count`` and
   ``inlier_ratio``.
 * `SupportPlaneVerificationResult` reports the result of a plane verification:
