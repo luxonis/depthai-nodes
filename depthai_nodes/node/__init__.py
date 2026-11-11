@@ -209,7 +209,9 @@ plane meanwhile. Its ``calibration`` field is the inner
 ``PlaneCalibrationConfig``; a plane check passes on the level test and an
 on-plane ratio of at least ``calibration.min_on_plane_ratio``. Pass the plane
 held before a pipeline rebuild as ``initialPlane`` to hold it at once; it is
-dropped, and a search starts, if the first point cloud no longer shows it.
+verified on the first point cloud with fresh IMU and dropped, and a search
+starts, if it fails the level test or its on-plane ratio is below
+``calibration.min_on_plane_ratio``.
 Nothing is sent while a search or refit runs, so in ``CONTINUOUS`` set
 ``calibration.max_calibration_attempts`` for a refit that finds nothing to
 report and resume checking. ``AutoSupportPlane`` needs open3d, like the
