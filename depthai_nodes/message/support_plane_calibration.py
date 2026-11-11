@@ -243,30 +243,21 @@ class SupportPlaneCalibrationResult(dai.Buffer):
 class SupportPlaneVerificationResult(dai.Buffer):
     """How a supplied plane fares against gravity and the current point cloud.
 
-    ``accepted`` is the plane verification's verdict. The plane must pass the
-    level test: within the calibrator's ``max_gravity_angle_deg`` of level and
-    below the camera, as a support plane candidate must be. Its on-plane ratio
-    must also have been measured and be at least the calibrator's
-    ``min_on_plane_ratio``. The on-plane ratio is the share of the checked point
-    cloud's sampled valid points within ``check_distance_mm`` of the plane,
-    whichever sign its equation has. It is not a candidate's inlier ratio: it
-    is measured on a sparse sample of the raw organized cloud, not on the
-    preprocessed cloud RANSAC fits.
+    The plane is accepted when it passes the level test and enough of the
+    sampled point cloud lies on it.
 
     Args:
         plane: The checked support plane, as supplied.
         gravity_angle_deg: Tilt of the plane from horizontal, in degrees, from
-            0 to 90. Either sign of the plane equation gives the same angle.
-        accepted: Whether the plane passed the level test and had enough of
-            the point cloud on it.
-        on_plane_ratio: The on-plane ratio from 0 to 1, or ``None`` when it
-            was not measured because too few valid points were sampled.
+            0 to 90.
+        accepted: Whether the plane was accepted.
+        on_plane_ratio: Share of sampled valid points on the plane, from 0 to
+            1, or ``None`` when too few were sampled to measure.
 
     Raises:
         TypeError: If an argument has the wrong type.
-        ValueError: If ``gravity_angle_deg`` is not finite,
-            ``on_plane_ratio`` is not finite or outside 0 to 1, or
-            ``accepted`` is ``True`` with no ``on_plane_ratio``.
+        ValueError: If an argument is out of range, or ``accepted`` is
+            ``True`` with no ``on_plane_ratio``.
     """
 
     def __init__(
