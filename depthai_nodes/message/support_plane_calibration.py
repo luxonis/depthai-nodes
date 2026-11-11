@@ -192,11 +192,8 @@ class SupportPlaneCalibrationResult(dai.Buffer):
     ratio are measured on the preprocessed point cloud; see
     `SupportPlaneCandidate`.
 
-    ``SupportPlaneCalibrator`` stamps each result with the timestamp, device
-    timestamp and sequence number of the last point cloud its attempt fitted:
-    for ``SUCCEEDED``, the cloud that yielded the candidates; for
-    ``CANCELLED``, the last cloud fitted before Stop. A result whose attempt
-    fitted no cloud keeps DepthAI's unset default stamps.
+    The calibrator stamps it with the timestamp, device timestamp and sequence
+    number of the last point cloud the attempt fitted.
 
     Args:
         outcome: How the attempt ended.
@@ -261,7 +258,8 @@ class SupportPlaneVerificationResult(dai.Buffer):
     cloud's sampled valid points within ``check_distance_mm`` of the plane,
     whichever sign its equation has. It is not a candidate's inlier ratio: it
     is measured on a sparse sample of the raw organized cloud, not on the
-    preprocessed cloud RANSAC fits.
+    preprocessed cloud RANSAC fits. The calibrator stamps it with the
+    timestamp, device timestamp and sequence number of the checked point cloud.
 
     Args:
         plane: The checked support plane, as supplied.
