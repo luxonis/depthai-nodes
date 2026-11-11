@@ -32,66 +32,16 @@ CONTROL_QUEUE_SIZE = 8
 
 
 class AutoSupportPlane(BaseThreadedHostNode):
-    """Find and hold the support plane, driving an inner ``SupportPlaneCalibrator``.
+    """Find and hold the support plane from a point cloud and IMU.
 
-    Link a point cloud and an IMU at `build` and read
-    `depthai_nodes.message.AutoSupportPlaneResult` messages from ``out``. The
-    node searches until a calibration attempt finds a plane, then holds the
-    plane it selects, sending ``(True, plane)``. An attempt that ends at
-    ``calibration.max_calibration_attempts`` without a plane sends
-    ``(False, None)``.
+    Wraps a `SupportPlaneCalibrator`. ``ON_START`` finds a plane once and holds
+    it; ``CONTINUOUS`` also checks it about every ``check_interval_sec`` and
+    refits after repeated failed checks, keeping the old plane meanwhile. Pass
+    the plane held before a pipeline rebuild as ``initialPlane``.
 
-    In ``ON_START`` mode that failure is final until the pipeline is rebuilt,
-    and a held plane is never checked again. In ``CONTINUOUS`` mode a failed
-    search starts a new attempt at once, and the held plane gets a plane check
-    about every ``check_interval_sec``: the calibrator verifies it on the next
-    point cloud with fresh IMU, judging the level test and
-    ``calibration.min_on_plane_ratio``. A passing check sends
-    ``(True, plane)``; a failed one sends nothing. After
-    ``failed_checks_before_refit`` failed checks in a row the node refits,
-    keeping the old plane meanwhile: a refit that finds a plane sends
-    ``(True, new plane)``, and one that ends at the attempt cap sends
-    ``(False, old plane)`` and goes back to checking.
-
-    An ``initialPlane`` passed to `build`, such as the plane held before a
-    pipeline rebuild, is held at once and no search starts. Its gate verifies
-    it on the first point cloud with fresh IMU, in both modes: an accepted
-    plane sends ``(True, initialPlane)`` and is held as if fitted. A plane that
-    isn't level or that the cloud no longer shows (below
-    ``calibration.min_on_plane_ratio``) is dropped: the node sends
-    ``(False, None)`` and searches. The selector never judges ``initialPlane``.
-
-    The node sends exactly these ``(passed, plane)`` results:
-
-    * a plane check passes (``CONTINUOUS``): ``(True, current plane)``;
-    * a search or refit finds a plane the selector picks:
-      ``(True, new plane)``;
-    * a refit ends at the attempt cap: ``(False, old plane)``;
-    * a search ends at the attempt cap (either mode): ``(False, None)``;
-    * the ``initialPlane`` gate accepts: ``(True, initialPlane)``;
-    * the ``initialPlane`` gate rejects: ``(False, None)``.
-
-    These send nothing: a failed plane check below
-    ``failed_checks_before_refit``, the start of a refit, a selector returning
-    ``None``, and the node starting. No result is sent while a search or refit
-    runs, so without an attempt cap a search waits until a plane comes into
-    view and a refit never gives up. In
-    ``CONTINUOUS`` mode set ``calibration.max_calibration_attempts`` so a refit
-    that finds nothing reports ``(False, old plane)`` and resumes checking.
-
-    Of a successful attempt's support plane candidates, the node selects by
-    default the one with the most ``inlier_count`` (roughly the largest
-    visible plane), ties going to the smallest ``|offset_mm|`` (the plane
-    nearest the camera). A ``selectCandidate`` function passed to `build`
-    chooses instead: it gets the candidates tuple, in no promised order, and
-    returns one of them or ``None`` to keep searching with a new attempt. A
-    selector that always returns ``None`` searches forever. It runs on the
-    node's thread, so keep it fast; anything it raises is not caught.
-
-    Drive `SupportPlaneCalibrator` directly instead for a person picking among
-    candidates or any custom flow. The node logs nothing; read its outcomes
-    from ``out``. Requires open3d, installed with
-    ``pip install "depthai-nodes[box-measurement]"``.
+    Attributes:
+        out: Output stream of `depthai_nodes.message.AutoSupportPlaneResult`,
+            one per found, checked or rejected plane.
     """
 
     def __init__(self) -> None:
@@ -144,11 +94,11 @@ class AutoSupportPlane(BaseThreadedHostNode):
             imu: Output emitting ``dai.IMUData`` with accelerometer packets.
             pointCloudSize: Cloud ``(width, height)`` in points.
             config: Mode and calibrator settings; ``None`` uses the defaults.
-            initialPlane: A plane to hold at once, such as the one held before
-                a pipeline rebuild; it is verified on the pipeline, not here.
-            selectCandidate: Chooses the plane among a successful attempt's
-                candidates, or returns ``None`` to keep searching; ``None``
-                uses the default selection.
+            initialPlane: Held at once, then verified on the first cloud with
+                fresh IMU; dropped for a search if rejected.
+            selectCandidate: Picks the plane from a successful attempt's
+                candidates, or returns ``None`` to keep searching; runs on the
+                node's thread. ``None`` picks the most inliers.
 
         Returns:
             The configured node instance.
