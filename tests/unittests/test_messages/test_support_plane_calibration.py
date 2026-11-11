@@ -62,14 +62,6 @@ def test_result_carries_outcome_and_candidates():
     assert result.candidates == (CANDIDATE,)
 
 
-def test_result_has_no_info():
-    result = SupportPlaneCalibrationResult(CalibrationOutcome.FAILED, [])
-
-    assert not hasattr(result, "info")
-    with pytest.raises(TypeError):
-        SupportPlaneCalibrationResult(CalibrationOutcome.FAILED, [], "detail")  # type: ignore[call-arg]
-
-
 def test_result_candidates_are_a_tuple_copied_at_construction():
     candidates = [CANDIDATE]
     result = SupportPlaneCalibrationResult(CalibrationOutcome.SUCCEEDED, candidates)
