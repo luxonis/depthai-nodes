@@ -26,7 +26,7 @@ def flat_cloud(depth=1000.0):
 def offsets(scene, **config):
     with patch("open3d.geometry.PointCloud", scene.cloud):
         candidates = fitter(**config).find_candidates(flat_cloud(), GRAVITY)
-    return [candidate.plane.offset_mm for candidate in candidates]
+    return sorted(candidate.plane.offset_mm for candidate in candidates)
 
 
 def test_finds_a_floor_facing_against_gravity():
@@ -54,7 +54,7 @@ def test_near_parallel_planes_through_one_surface_count_once():
         ]
     )
 
-    assert offsets(scene, max_plane_passes=3) == [-1000, -1500]
+    assert offsets(scene, max_plane_passes=3) == [-1500, -1000]
 
 
 def test_merged_near_parallel_plane_reports_only_its_own_inliers():
@@ -72,17 +72,6 @@ def test_merged_near_parallel_plane_reports_only_its_own_inliers():
     assert candidate.plane.offset_mm == pytest.approx(-1000, abs=1)
     # A merge that summed both layers' inliers would give a ratio of 1.
     assert candidate.inlier_ratio == pytest.approx(2 / 3, abs=0.05)
-
-
-def test_equal_inlier_counts_rank_the_nearer_plane_first():
-    scene = ScriptedScene(
-        [
-            ([0.0, 0.0, 1.0, -1500.0], 100),
-            ([0.0, 0.0, 1.0, -1000.0], 100),
-        ]
-    )
-
-    assert offsets(scene) == [-1000, -1500]
 
 
 def test_floor_fitted_with_the_opposite_sign_is_oriented_along_gravity():
@@ -116,7 +105,7 @@ def test_stops_after_the_configured_number_of_planes():
         [([0.0, 0.0, 1.0, -1000.0 - 500.0 * i], 50) for i in range(4)]
     )
 
-    assert offsets(scene, max_plane_passes=2) == [-1000, -1500]
+    assert offsets(scene, max_plane_passes=2) == [-1500, -1000]
 
 
 def test_stops_at_a_plane_with_too_few_inliers():

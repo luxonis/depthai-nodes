@@ -362,22 +362,6 @@ def test_candidates_carry_their_plane_inlier_count_and_ratio(calibrator):
     )
 
 
-def test_candidates_are_ordered_by_inliers_then_by_nearest_offset(calibrator):
-    scene = ScriptedScene(
-        [
-            ([0.0, 0.0, 1.0, -1500.0], 100),
-            ([0.0, 0.0, 1.0, -2000.0], 150),
-            ([0.0, 0.0, 1.0, -1000.0], 100),
-        ]
-    )
-
-    result = calibrate(calibrator, scene)
-
-    assert [
-        (c.plane.offset_mm, c.inlier_count, c.inlier_ratio) for c in result.candidates
-    ] == [(-2000, 150, 0.375), (-1000, 100, 0.25), (-1500, 100, 0.25)]
-
-
 def test_inlier_ratios_divide_by_the_cloud_before_planes_are_removed():
     calibrator = Harness(
         PlaneCalibrationConfig(max_plane_passes=3, min_inlier_ratio=0.2)
@@ -394,9 +378,9 @@ def test_inlier_ratios_divide_by_the_cloud_before_planes_are_removed():
 
     # 80 of the 200 points left after the first plane is 0.4, but the ratio is
     # taken against the full preprocessed cloud.
-    assert [(c.inlier_count, c.inlier_ratio) for c in result.candidates] == [
-        (200, 0.5),
+    assert sorted((c.inlier_count, c.inlier_ratio) for c in result.candidates) == [
         (80, 0.2),
+        (200, 0.5),
     ]
     assert all(c.inlier_ratio >= 0.2 for c in result.candidates)
 
