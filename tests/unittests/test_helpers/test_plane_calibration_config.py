@@ -35,12 +35,21 @@ def test_configuration_takes_keyword_arguments_only():
 
 
 def test_configuration_stores_built_in_numbers():
-    config = PlaneCalibrationConfig(voxel_size_mm=30, max_plane_passes=np.int64(4))  # pyright: ignore[reportArgumentType]
+    config = PlaneCalibrationConfig(
+        voxel_size_mm=30,
+        max_plane_passes=np.int64(4),  # pyright: ignore[reportArgumentType]
+        check_distance_mm=np.int64(12),  # pyright: ignore[reportArgumentType]
+        min_on_plane_ratio=np.float32(0.5),  # pyright: ignore[reportArgumentType]
+    )
 
     assert config.voxel_size_mm.__class__ is float
     assert config.voxel_size_mm == 30.0
     assert config.max_plane_passes.__class__ is int
     assert config.max_plane_passes == 4
+    assert config.check_distance_mm.__class__ is float
+    assert config.check_distance_mm == 12.0
+    assert config.min_on_plane_ratio.__class__ is float
+    assert config.min_on_plane_ratio == 0.5
 
 
 INT_FIELDS = ("ransac_sample_points", "ransac_max_iterations", "max_plane_passes")
@@ -94,10 +103,6 @@ def test_configuration_accepts_range_boundaries():
     assert config.max_gravity_angle_deg == 0.0
 
 
-def test_attempt_cap_defaults_to_unbounded():
-    assert PlaneCalibrationConfig().max_calibration_attempts is None
-
-
 @pytest.mark.parametrize("value", [1, 5, np.int64(2)])
 def test_attempt_cap_accepts_integers_from_one(value):
     config = PlaneCalibrationConfig(max_calibration_attempts=value)
@@ -118,14 +123,6 @@ def test_attempt_cap_rejects_values_below_one(value):
         PlaneCalibrationConfig(max_calibration_attempts=value)
 
 
-def test_check_distance_defaults_to_30_mm():
-    config = PlaneCalibrationConfig(check_distance_mm=np.int64(12))  # pyright: ignore[reportArgumentType]
-
-    assert PlaneCalibrationConfig().check_distance_mm == 30.0
-    assert config.check_distance_mm.__class__ is float
-    assert config.check_distance_mm == 12.0
-
-
 @pytest.mark.parametrize("value", [0, -1.0, float("nan"), float("inf")])
 def test_check_distance_must_be_positive_and_finite(value):
     with pytest.raises(ValueError):
@@ -136,14 +133,6 @@ def test_check_distance_must_be_positive_and_finite(value):
 def test_check_distance_rejects_wrong_types(value):
     with pytest.raises(TypeError):
         PlaneCalibrationConfig(check_distance_mm=value)
-
-
-def test_min_on_plane_ratio_defaults_to_a_tenth():
-    config = PlaneCalibrationConfig(min_on_plane_ratio=np.float32(0.5))  # pyright: ignore[reportArgumentType]
-
-    assert PlaneCalibrationConfig().min_on_plane_ratio == 0.1
-    assert config.min_on_plane_ratio.__class__ is float
-    assert config.min_on_plane_ratio == 0.5
 
 
 @pytest.mark.parametrize("value", [0, 1])

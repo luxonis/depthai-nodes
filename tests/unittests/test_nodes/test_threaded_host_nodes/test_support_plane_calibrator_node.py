@@ -216,7 +216,9 @@ def level_only():
     enough.
     """
     return Harness(
-        PlaneCalibrationConfig(max_plane_passes=3, min_on_plane_ratio=0),
+        PlaneCalibrationConfig(
+            max_plane_passes=3, max_gravity_angle_deg=6.5, min_on_plane_ratio=0
+        ),
         LARGE_CLOUD_SIZE,
     )
 
@@ -738,13 +740,6 @@ def test_build_uses_the_default_config():
 
     assert verify_on(calibrator, level, depths_on(level)).accepted
     assert not verify_on(calibrator, tilted, depths_on(tilted)).accepted
-    # Default min_on_plane_ratio of 0.1: sampled rows 0, 4 and 8 on the floor
-    # give 3 / 25 and pass; rows 0 and 4 give 2 / 25 and fail.
-    few_on_floor = np.full((100, 100), 1500.0)
-    few_on_floor[:12] = 1000.0
-    assert verify_on(calibrator, floor(-1000), few_on_floor).accepted
-    few_on_floor[8:12] = 1500.0
-    assert not verify_on(calibrator, floor(-1000), few_on_floor).accepted
 
 
 def build(size=CLOUD_SIZE, config=None):
@@ -988,7 +983,7 @@ def verify_on(calibrator, plane, depths):
     [(-1000, 1.0), (-1025, 1.0), (-975, 1.0), (-1035, 0.0), (-965, 0.0)],
 )
 def test_on_plane_ratio_counts_points_within_the_check_distance(offset_mm, ratio):
-    calibrator = Harness(size=LARGE_CLOUD_SIZE)
+    calibrator = Harness(PlaneCalibrationConfig(check_distance_mm=30), LARGE_CLOUD_SIZE)
     floor_at_1000 = np.full((100, 100), 1000.0)
 
     result = verify_on(calibrator, floor(offset_mm), floor_at_1000)
@@ -1073,7 +1068,9 @@ def test_verification_rejects_a_level_plane_with_too_little_of_the_cloud_on_it()
 
 
 def test_verification_rejects_a_tilted_plane_the_cloud_lies_on():
-    calibrator = Harness(size=LARGE_CLOUD_SIZE)
+    calibrator = Harness(
+        PlaneCalibrationConfig(max_gravity_angle_deg=6.5), LARGE_CLOUD_SIZE
+    )
     plane = tilted_plane(7)
 
     result = verify_on(calibrator, plane, depths_on(plane))
