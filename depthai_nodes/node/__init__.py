@@ -251,6 +251,7 @@ processing helper and preserve input metadata when emitting results.
 
 from .apply_colormap import ApplyColormap
 from .apply_depth_colormap import ApplyDepthColormap
+from .auto_support_plane import AutoSupportPlaneConfig
 from .base_host_node import BaseHostNode
 from .base_threaded_host_node import BaseThreadedHostNode
 from .box_detector import BoxDetector
@@ -343,4 +344,5 @@ __all__ = [
     "BoxMeasurer",
     "SupportPlaneCalibrator",
     "PlaneCalibrationConfig",
+    "AutoSupportPlaneConfig",
 ]
