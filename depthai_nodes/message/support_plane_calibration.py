@@ -186,9 +186,7 @@ class SupportPlaneCalibrationControl(dai.Buffer):
 class SupportPlaneCalibrationResult(dai.Buffer):
     """The end of a calibration attempt.
 
-    A result has candidates exactly when calibration succeeded. Each
-    candidate's inlier count and ratio are measured on the preprocessed point
-    cloud; see `SupportPlaneCandidate`.
+    A result has candidates exactly when calibration succeeded.
 
     The calibrator stamps it with the timestamp, device timestamp and sequence
     number of the last point cloud the attempt fitted.
