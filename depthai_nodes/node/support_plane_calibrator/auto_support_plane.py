@@ -12,14 +12,14 @@ from depthai_nodes.message.support_plane_calibration import (
     SupportPlaneVerificationResult,
 )
 from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
-from depthai_nodes.node.support_plane_calibrator.support_plane_calibrator import (
+
+from .auto_support_plane_config import AutoSupportPlaneConfig
+from .support_plane_calibrator import (
     PASS_SLEEP_SECONDS,
     SupportPlaneCalibrator,
     _check_instance,
     _copy_stamps,
 )
-
-from .auto_support_plane_config import AutoSupportPlaneConfig
 
 CandidateSelector = Callable[
     [tuple[SupportPlaneCandidate, ...]], SupportPlaneCandidate | None

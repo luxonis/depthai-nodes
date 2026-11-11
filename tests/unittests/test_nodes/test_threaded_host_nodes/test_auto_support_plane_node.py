@@ -256,7 +256,7 @@ def clock():
             clock,
         ),
         patch(
-            "depthai_nodes.node.auto_support_plane.auto_support_plane.time.monotonic",
+            "depthai_nodes.node.support_plane_calibrator.auto_support_plane.time.monotonic",
             clock,
         ),
     ):
@@ -1016,7 +1016,9 @@ def random_walk(clock, seed, steps=40):
 
 @pytest.fixture
 def no_pass_sleep():
-    with patch("depthai_nodes.node.auto_support_plane.auto_support_plane.time.sleep"):
+    with patch(
+        "depthai_nodes.node.support_plane_calibrator.auto_support_plane.time.sleep"
+    ):
         yield
 
 

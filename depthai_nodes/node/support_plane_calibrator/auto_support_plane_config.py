@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 
-from depthai_nodes.node.support_plane_calibrator.plane_calibration_config import (
+from .plane_calibration_config import (
     PlaneCalibrationConfig,
     _check_float,
     _check_int,

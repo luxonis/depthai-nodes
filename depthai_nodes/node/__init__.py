@@ -290,7 +290,6 @@ processing helper and preserve input metadata when emitting results.
 
 from .apply_colormap import ApplyColormap
 from .apply_depth_colormap import ApplyDepthColormap
-from .auto_support_plane import AutoSupportPlane, AutoSupportPlaneConfig
 from .base_host_node import BaseHostNode
 from .base_threaded_host_node import BaseThreadedHostNode
 from .box_detector import BoxDetector
@@ -332,7 +331,12 @@ from .parsers.yolo import YOLOExtendedParser
 from .parsers.yunet import YuNetParser
 from .parsing_neural_network import ParsingNeuralNetwork
 from .snaps_uploader import SnapsUploader
-from .support_plane_calibrator import PlaneCalibrationConfig, SupportPlaneCalibrator
+from .support_plane_calibrator import (
+    AutoSupportPlane,
+    AutoSupportPlaneConfig,
+    PlaneCalibrationConfig,
+    SupportPlaneCalibrator,
+)
 from .tiling import Tiling
 
 __all__ = [
