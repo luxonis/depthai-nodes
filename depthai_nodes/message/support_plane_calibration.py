@@ -186,11 +186,9 @@ class SupportPlaneCalibrationControl(dai.Buffer):
 class SupportPlaneCalibrationResult(dai.Buffer):
     """The end of a calibration attempt.
 
-    A result has candidates exactly when calibration succeeded. Candidates are
-    ordered best first: most inliers first, ties going to the smallest absolute
-    ``plane.offset_mm`` (nearest the camera). Each candidate's inlier count and
-    ratio are measured on the preprocessed point cloud; see
-    `SupportPlaneCandidate`.
+    A result has candidates exactly when calibration succeeded. Each
+    candidate's inlier count and ratio are measured on the preprocessed point
+    cloud; see `SupportPlaneCandidate`.
 
     ``SupportPlaneCalibrator`` stamps each result with the timestamp, device
     timestamp and sequence number of the last point cloud its attempt fitted:
@@ -200,7 +198,7 @@ class SupportPlaneCalibrationResult(dai.Buffer):
 
     Args:
         outcome: How the attempt ended.
-        candidates: Support plane candidates, best first.
+        candidates: Support plane candidates.
 
     Raises:
         TypeError: If an argument has the wrong type.
@@ -217,7 +215,7 @@ class SupportPlaneCalibrationResult(dai.Buffer):
 
         Args:
             outcome: How the attempt ended.
-            candidates: Support plane candidates, best first.
+            candidates: Support plane candidates.
 
         Raises:
             TypeError: If ``outcome`` is not a `CalibrationOutcome`, or
@@ -246,10 +244,7 @@ class SupportPlaneCalibrationResult(dai.Buffer):
 
     @property
     def candidates(self) -> tuple[SupportPlaneCandidate, ...]:
-        """Support plane candidates, best first; empty unless calibration succeeded.
-
-        Ordered by most inliers, then by smallest absolute ``plane.offset_mm``.
-        """
+        """Support plane candidates; empty unless calibration succeeded."""
         return self._candidates
 
 
