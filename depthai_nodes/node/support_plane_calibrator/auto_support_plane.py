@@ -14,12 +14,7 @@ from depthai_nodes.message.support_plane_calibration import (
 from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
 
 from .auto_support_plane_config import AutoSupportPlaneConfig
-from .support_plane_calibrator import (
-    PASS_SLEEP_SECONDS,
-    SupportPlaneCalibrator,
-    _check_instance,
-    _copy_stamps,
-)
+from .support_plane_calibrator import PASS_SLEEP_SECONDS, SupportPlaneCalibrator
 
 CandidateSelector = Callable[
     [tuple[SupportPlaneCandidate, ...]], SupportPlaneCandidate | None
@@ -119,14 +114,20 @@ class AutoSupportPlane(BaseThreadedHostNode):
             )
         if config is None:
             config = AutoSupportPlaneConfig()
-        _check_instance("config", config, AutoSupportPlaneConfig)
+        if not isinstance(config, AutoSupportPlaneConfig):
+            raise TypeError(
+                "config must be AutoSupportPlaneConfig, got " f"{type(config).__name__}"
+            )
         if selectCandidate is not None and not callable(selectCandidate):
             raise TypeError(
                 "selectCandidate must be callable or None, got "
                 f"{type(selectCandidate).__name__}"
             )
-        if initialPlane is not None:
-            _check_instance("initialPlane", initialPlane, SupportPlane)
+        if initialPlane is not None and not isinstance(initialPlane, SupportPlane):
+            raise TypeError(
+                "initialPlane must be SupportPlane, got "
+                f"{type(initialPlane).__name__}"
+            )
         self._calibrator.build(pointCloud, imu, pointCloudSize, config.calibration)
         self._control_output.link(self._calibrator.inputControl)
         self._calibrator.inputControl.setMaxSize(CONTROL_QUEUE_SIZE)
@@ -260,7 +261,9 @@ class AutoSupportPlane(BaseThreadedHostNode):
 
     def _send(self, message: AutoSupportPlaneResult, trigger: dai.Buffer) -> None:
         """Send a result stamped from the calibrator result that triggered it."""
-        _copy_stamps(trigger, message)
+        message.setTimestamp(trigger.getTimestamp())
+        message.setTimestampDevice(trigger.getTimestampDevice())
+        message.setSequenceNum(trigger.getSequenceNum())
         self._out.send(message)
 
 

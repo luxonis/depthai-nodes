@@ -51,18 +51,6 @@ def _check_size(name: str, value: Any) -> tuple[int, int]:
     return width, height
 
 
-def _check_instance(name: str, value: Any, expected: type) -> None:
-    """Check that a value is an instance of the expected type.
-
-    Raises:
-        TypeError: If the value is not an instance of ``expected``.
-    """
-    if not isinstance(value, expected):
-        raise TypeError(
-            f"{name} must be {expected.__name__}, got {type(value).__name__}"
-        )
-
-
 # Pause between run-loop passes, as DepthAI's DynamicCalibration does.
 PASS_SLEEP_SECONDS = 0.005
 
@@ -209,7 +197,10 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         width, height = _check_size("pointCloudSize", pointCloudSize)
         if config is None:
             config = PlaneCalibrationConfig()
-        _check_instance("config", config, PlaneCalibrationConfig)
+        if not isinstance(config, PlaneCalibrationConfig):
+            raise TypeError(
+                "config must be PlaneCalibrationConfig, got " f"{type(config).__name__}"
+            )
         self._config = config
         self._fitter = SupportPlaneFitter((width, height), config)
         pointCloud.link(self._point_cloud_input)
@@ -305,7 +296,9 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         result = SupportPlaneCalibrationResult(outcome, candidates)
         cloud = self._last_fitted_cloud
         if cloud is not None:
-            _copy_stamps(cloud, result)
+            result.setTimestamp(cloud.getTimestamp())
+            result.setTimestampDevice(cloud.getTimestampDevice())
+            result.setSequenceNum(cloud.getSequenceNum())
         self._out.send(result)
 
     def _check_cloud(
@@ -361,7 +354,9 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                 accepted,
                 on_plane_ratio,
             )
-            _copy_stamps(cloud, result)
+            result.setTimestamp(cloud.getTimestamp())
+            result.setTimestampDevice(cloud.getTimestampDevice())
+            result.setSequenceNum(cloud.getSequenceNum())
             self._verification_output.send(result)
 
     def _fit(
@@ -399,13 +394,6 @@ def _on_plane_ratio(
         return None
     distances = np.abs(sample @ np.asarray(plane.normal) + plane.offset_mm)
     return float(np.count_nonzero(distances <= check_distance_mm) / len(sample))
-
-
-def _copy_stamps(source: dai.Buffer, target: dai.Buffer) -> None:
-    """Copy the timestamp, device timestamp and sequence number."""
-    target.setTimestamp(source.getTimestamp())
-    target.setTimestampDevice(source.getTimestampDevice())
-    target.setSequenceNum(source.getSequenceNum())
 
 
 def imu_gravity(imu: dai.IMUData) -> np.ndarray | None:
