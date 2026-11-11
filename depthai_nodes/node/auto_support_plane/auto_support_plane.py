@@ -1,5 +1,5 @@
 import time
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 import depthai as dai
 
@@ -20,6 +20,10 @@ from depthai_nodes.node.support_plane_calibrator.support_plane_calibrator import
 
 from .auto_support_plane_config import AutoSupportPlaneConfig
 
+CandidateSelector = Callable[
+    [tuple[SupportPlaneCandidate, ...]], SupportPlaneCandidate | None
+]
+
 # Room on the calibrator's control input for a Reset, a Start and a Verify
 # pending together, so the wrapper's sends never block.
 CONTROL_QUEUE_SIZE = 8
@@ -37,9 +41,15 @@ class AutoSupportPlane(BaseThreadedHostNode):
     Nothing is sent while the attempt runs, so without an attempt cap the node
     searches until a plane comes into view.
 
-    Of a successful attempt's support plane candidates, the node selects the
-    one with the most ``inlier_count`` (roughly the largest visible plane),
-    ties going to the smallest ``|offset_mm|`` (the plane nearest the camera).
+    Of a successful attempt's support plane candidates, the node selects by
+    default the one with the most ``inlier_count`` (counted after voxel
+    downsampling, so roughly the largest visible plane), ties going to the
+    smallest ``|offset_mm|`` (the plane nearest the camera). A
+    ``selectCandidate`` function passed to `build` chooses instead: it gets the
+    candidates tuple, in no promised order, and returns one of them or
+    ``None`` to keep searching with a new attempt. A selector that always
+    returns ``None`` searches forever. It runs on the node's thread, so keep
+    it fast; anything it raises is not caught.
 
     Drive `SupportPlaneCalibrator` directly instead for a person picking among
     candidates or any custom flow. Requires open3d, installed with
@@ -58,6 +68,7 @@ class AutoSupportPlane(BaseThreadedHostNode):
         self._verification_input = self.createInput(name="verificationResult")
         self._out = self.createOutput()
         self._config: AutoSupportPlaneConfig | None = None
+        self._select_candidate: CandidateSelector = _select_largest_plane
         self._started = False
 
     @property
@@ -75,6 +86,7 @@ class AutoSupportPlane(BaseThreadedHostNode):
         imu: dai.Node.Output,
         pointCloudSize: tuple[int, int],
         config: AutoSupportPlaneConfig | None = None,
+        selectCandidate: CandidateSelector | None = None,
     ) -> "AutoSupportPlane":
         """Build the inner calibrator on the point cloud and IMU.
 
@@ -84,6 +96,9 @@ class AutoSupportPlane(BaseThreadedHostNode):
             imu: Output emitting ``dai.IMUData`` with accelerometer packets.
             pointCloudSize: Cloud ``(width, height)`` in points.
             config: Mode and calibrator settings; ``None`` uses the defaults.
+            selectCandidate: Chooses the plane among a successful attempt's
+                candidates, or returns ``None`` to keep searching; ``None``
+                uses the default selection.
 
         Returns:
             The configured node instance.
@@ -91,7 +106,8 @@ class AutoSupportPlane(BaseThreadedHostNode):
         Raises:
             ImportError: If open3d is not installed.
             RuntimeError: If the node is already built.
-            TypeError: If ``config`` is not an ``AutoSupportPlaneConfig``, or
+            TypeError: If ``config`` is not an ``AutoSupportPlaneConfig``,
+                ``selectCandidate`` is neither ``None`` nor callable, or
                 ``pointCloudSize`` is not a pair of integers.
             ValueError: If ``pointCloudSize`` does not have two positive values.
         """
@@ -103,11 +119,18 @@ class AutoSupportPlane(BaseThreadedHostNode):
         if config is None:
             config = AutoSupportPlaneConfig()
         _check_instance("config", config, AutoSupportPlaneConfig)
+        if selectCandidate is not None and not callable(selectCandidate):
+            raise TypeError(
+                "selectCandidate must be callable or None, got "
+                f"{type(selectCandidate).__name__}"
+            )
         self._calibrator.build(pointCloud, imu, pointCloudSize, config.calibration)
         self._control_output.link(self._calibrator.inputControl)
         self._calibrator.inputControl.setMaxSize(CONTROL_QUEUE_SIZE)
         self._calibrator.out.link(self._calibration_input)
         self._calibrator.verificationOutput.link(self._verification_input)
+        if selectCandidate is not None:
+            self._select_candidate = selectCandidate
         self._config = config
         return self
 
@@ -135,11 +158,23 @@ class AutoSupportPlane(BaseThreadedHostNode):
             self._handle_calibration(result)
 
     def _handle_calibration(self, result: SupportPlaneCalibrationResult) -> None:
-        """Reset the calibrator and report the attempt's plane, or its failure."""
+        """Reset the calibrator and report the attempt's plane, or its failure.
+
+        A selector that returns ``None`` starts a new attempt and sends nothing.
+        """
         self._control_output.send(SupportPlaneCalibrationControl.reset())
         plane: SupportPlane | None = None
         if result.outcome is CalibrationOutcome.SUCCEEDED:
-            plane = _select_largest_plane(result.candidates).plane
+            selected = self._select_candidate(result.candidates)
+            if selected is None:
+                self._control_output.send(SupportPlaneCalibrationControl.start())
+                return
+            if selected not in result.candidates:
+                raise ValueError(
+                    "selectCandidate must return one of the candidates or None, "
+                    f"got {selected!r}"
+                )
+            plane = selected.plane
         self._send(AutoSupportPlaneResult(plane is not None, plane), result)
 
     def _send(self, message: AutoSupportPlaneResult, trigger: dai.Buffer) -> None:

@@ -17,7 +17,11 @@ import pytest
 
 pytest.importorskip("open3d")
 
-from depthai_nodes.message import AutoSupportPlaneResult, SupportPlane  # noqa: E402
+from depthai_nodes.message import (  # noqa: E402
+    AutoSupportPlaneResult,
+    SupportPlane,
+    SupportPlaneCandidate,
+)
 from depthai_nodes.node import (  # noqa: E402
     AutoSupportPlane,
     AutoSupportPlaneConfig,
@@ -159,7 +163,7 @@ class Source(OutputMock):
 
 
 class Harness:
-    def __init__(self, config=None, size=CLOUD_SIZE):
+    def __init__(self, config=None, size=CLOUD_SIZE, **build_kwargs):
         self.size = size
         self.clouds = Source()
         self.imus = Source()
@@ -170,6 +174,7 @@ class Harness:
             cast(dai.Node.Output, self.imus),
             size,
             config,
+            **build_kwargs,
         )
         self.calibrator = self.pipeline.node(HarnessCalibrator)
         self.results = cast(OutputQueueMock, self.node.out.createOutputQueue())
@@ -408,3 +413,93 @@ def test_build_cannot_run_twice():
 
     with pytest.raises(RuntimeError):
         node.build(*build_args())
+
+
+class Selector:
+    """A ``selectCandidate`` that records each call and answers with ``choose``."""
+
+    def __init__(self, choose):
+        self.choose = choose
+        self.calls = []
+
+    def __call__(self, *args, **kwargs):
+        self.calls.append((args, kwargs))
+        return self.choose(*args, **kwargs)
+
+
+def farthest(candidates):
+    return max(candidates, key=lambda c: abs(c.plane.offset_mm))
+
+
+def selecting(selector):
+    """An ``ON_START`` harness whose node is built with ``selectCandidate``."""
+    return Harness(on_start(), selectCandidate=selector)
+
+
+def test_custom_selector_gets_the_whole_tuple_and_its_pick_is_sent():
+    selector = Selector(farthest)
+    node = selecting(selector)
+
+    result = first_fit(node, scripted_floors((-1000.0, 200), (-1500.0, 100)))
+
+    assert result.passed is True
+    assert result.plane == floor(-1500)
+    ((args, kwargs),) = selector.calls
+    assert kwargs == {}
+    (candidates,) = args
+    assert isinstance(candidates, tuple)
+    assert {c.plane for c in candidates} == {floor(-1000), floor(-1500)}
+
+
+def test_selector_none_keeps_searching_and_the_next_fit_asks_again():
+    selector = Selector(
+        lambda candidates: None if len(selector.calls) < 3 else farthest(candidates)
+    )
+    node = selecting(selector)
+    scene = scripted_floors((-1000.0, 200), (-1500.0, 100))
+    node.gravity()
+    with scripted(scene):
+        node.plane_cloud()
+        node.run(2)
+        for _ in range(2):
+            assert node.no_result()
+            node.gravity()
+            node.plane_cloud()
+            node.run()
+
+    assert node.result().plane == floor(-1500)
+    assert len(selector.calls) == 3
+
+
+class SelectorError(Exception):
+    pass
+
+
+def raising(candidates):
+    raise SelectorError
+
+
+def stranger(candidates):
+    """Return a candidate equal to none of ``candidates``."""
+    return SupportPlaneCandidate(plane=floor(-1234), inlier_count=1, inlier_ratio=1.0)
+
+
+@pytest.mark.parametrize(
+    ("selector", "error"), [(raising, SelectorError), (stranger, ValueError)]
+)
+def test_a_failing_selector_raises_out_of_a_run_pass(selector, error):
+    node = selecting(selector)
+    node.gravity()
+    with scripted(scripted_floors((-1000.0, 200))):
+        node.plane_cloud()
+        node.run()
+
+        with pytest.raises(error):
+            node.run()
+
+
+def test_build_rejects_a_selector_that_is_not_callable():
+    node = HarnessPipeline().create(AutoSupportPlane)
+
+    with pytest.raises(TypeError):
+        node.build(*build_args(), selectCandidate=floor(-1000))
