@@ -6,6 +6,7 @@ block in DepthAI fails the test. One harness pass runs one calibrator pass, then
 wrapper pass.
 """
 
+import random
 from collections import deque
 from datetime import timedelta
 from typing import Any, Callable, cast
@@ -19,7 +20,10 @@ pytest.importorskip("open3d")
 
 from depthai_nodes.message import (  # noqa: E402
     AutoSupportPlaneResult,
+    CalibrationOutcome,
     SupportPlane,
+    SupportPlaneCalibrationControl,
+    SupportPlaneCalibrationResult,
     SupportPlaneCandidate,
 )
 from depthai_nodes.node import (  # noqa: E402
@@ -833,3 +837,179 @@ def test_initial_plane_gate_waits_out_a_stalled_imu(clock):
 
     assert node.result().plane == floor(-1000)
     assert node.no_result()
+
+
+class ProtocolLog:
+    """Records clouds, internal controls, calibrator answers and results in order."""
+
+    def __init__(self, node: Harness):
+        self.events: list[tuple[str, Any]] = []
+        self._record(node.clouds, "cloud")
+        self._record(node.calibrator.inputControl, "control")
+        self._record(node.calibrator.out, "calibration")
+        self._record(node.calibrator.verificationOutput, "verification")
+        self._record(node.node.out, "result")
+
+    def _record(self, port, kind):
+        send = port.send
+
+        def recording(message):
+            self.events.append((kind, message))
+            send(message)
+
+        port.send = recording
+
+
+def stamps(message):
+    return (
+        message.getSequenceNum(),
+        message.getTimestamp(),
+        message.getTimestampDevice(),
+    )
+
+
+def assert_protocol(log, config, initial_plane):
+    """Assert the protocol rules over a walk's log.
+
+    Returns:
+        The kinds of outcome the node reported.
+    """
+    commands = SupportPlaneCalibrationControl.Commands
+    on_start = config.mode is AutoSupportPlaneConfig.Mode.ON_START
+    clouds = set()
+    # The calibrator answer each result may be stamped from, by its cloud's
+    # stamps: the outcome it reports, its `passed`, and the planes it may carry.
+    outcomes = {}
+    attempt_running = False
+    reset_due = False
+    verify_in_flight = False
+    gate_pending = initial_plane is not None
+    held = initial_plane
+    given_up = False
+    reported = set()
+    for kind, message in log.events:
+        if kind == "cloud":
+            clouds.add(stamps(message))
+        elif kind == "control":
+            command = message.command
+            assert not isinstance(command, commands.Stop), "Stop was sent"
+            if reset_due:
+                assert isinstance(command, commands.Reset), "no Reset after a result"
+                reset_due = False
+            if isinstance(command, (commands.Start, commands.Verify)):
+                assert not given_up, f"{command} after ON_START gave up"
+            if isinstance(command, commands.Start):
+                assert not attempt_running, "Start before the last one's result"
+                attempt_running = True
+            if isinstance(command, commands.Verify):
+                assert not attempt_running, "Verify while an attempt runs"
+                assert not verify_in_flight, "a second Verify in flight"
+                verify_in_flight = True
+        elif kind == "calibration":
+            assert attempt_running, "calibration result without a Start"
+            attempt_running = False
+            reset_due = True
+            assert isinstance(message, SupportPlaneCalibrationResult)
+            if message.outcome is CalibrationOutcome.SUCCEEDED:
+                fitted = {c.plane for c in message.candidates}
+                outcomes[stamps(message)] = ("fit", True, fitted)
+            elif held is None:
+                outcomes[stamps(message)] = ("failed attempt", False, {None})
+            else:
+                outcomes[stamps(message)] = ("failed refit", False, {held})
+        elif kind == "verification":
+            verify_in_flight = False
+            if gate_pending:
+                if message.accepted:
+                    outcomes[stamps(message)] = ("gate accepted", True, {initial_plane})
+                else:
+                    outcomes[stamps(message)] = ("gate rejected", False, {None})
+            else:
+                outcomes[stamps(message)] = ("check", True, {held})
+            gate_pending = False
+        else:
+            assert not given_up, "result after ON_START gave up"
+            assert not message.passed or message.plane is not None
+            assert stamps(message) in clouds, "result not stamped from a sent cloud"
+            outcome, passed, planes = outcomes[stamps(message)]
+            assert message.passed is passed, f"{outcome} sent passed={message.passed}"
+            assert message.plane in planes, f"{outcome} sent {message.plane}"
+            given_up = on_start and outcome == "failed attempt"
+            held = message.plane
+            reported.add(outcome)
+    return reported
+
+
+WALK_DEPTHS = [1000.0, 1300.0, OCCLUDED, 0.0]
+# Inlier counts that fit in the sparse cloud's 6000 points too.
+WALK_SCENES = [
+    ScriptedScene([]),
+    scripted_floors((-1000.0, 5000)),
+    scripted_floors((-1300.0, 5000)),
+    scripted_floors((-1000.0, 3000), (-1600.0, 2000)),
+]
+WALK_CLOCK_STEPS = [0.0, 0.1, INTERVAL / 2, INTERVAL, IMU_MAX_AGE_SECONDS + 0.01]
+TIPPED_GRAVITY = {"y": -9.8 * np.sin(np.deg2rad(8)), "z": -9.8 * np.cos(np.deg2rad(8))}
+
+
+def random_walk(clock, seed, steps=40):
+    """Drive a randomly built node with random inputs and check its protocol.
+
+    Returns:
+        The kinds of outcome the node reported.
+    """
+    rng = random.Random(seed)
+    config = AutoSupportPlaneConfig(
+        mode=rng.choice(list(AutoSupportPlaneConfig.Mode)),
+        check_interval_sec=INTERVAL,
+        failed_checks_before_refit=rng.choice([1, 2, 3]),
+        calibration=PlaneCalibrationConfig(
+            max_plane_passes=3,
+            max_calibration_attempts=rng.choice([None, 1, 2]),
+            min_on_plane_ratio=rng.choice([0.0, 0.5]),
+            max_gravity_angle_deg=5,
+        ),
+    )
+    initial_plane = rng.choice([None, floor(-1000), tilted_floor(8)])
+    node = Harness(config, LARGE_CLOUD_SIZE, initialPlane=initial_plane)
+    log = ProtocolLog(node)
+    for _ in range(steps):
+        clock.now += rng.choice(WALK_CLOCK_STEPS)
+        imu = rng.random()
+        if imu < 0.6:
+            node.gravity()
+        elif imu < 0.7:
+            node.gravity(**TIPPED_GRAVITY)
+        cloud = rng.random()
+        if cloud < 0.6:
+            node.plane_cloud(rng.choice(WALK_DEPTHS))
+        elif cloud < 0.7:
+            node.depth_cloud(sparse_depths())
+        with scripted(rng.choice(WALK_SCENES)):
+            node.run()
+    return assert_protocol(log, config, initial_plane)
+
+
+@pytest.fixture
+def no_pass_sleep():
+    with patch("depthai_nodes.node.auto_support_plane.auto_support_plane.time.sleep"):
+        yield
+
+
+def test_protocol_random_walk(clock, no_pass_sleep):
+    reported = set()
+    for seed in range(300):
+        try:
+            reported |= random_walk(clock, seed)
+        except (AssertionError, pytest.fail.Exception) as error:
+            error.add_note(f"random walk seed {seed}")
+            raise
+
+    assert reported == {
+        "fit",
+        "check",
+        "failed refit",
+        "failed attempt",
+        "gate accepted",
+        "gate rejected",
+    }
