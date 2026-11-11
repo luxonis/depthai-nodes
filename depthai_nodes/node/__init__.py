@@ -189,8 +189,8 @@ Example:
         control.send(SupportPlaneCalibrationControl.start())
         result = results.get()
         if result.candidates:
-            plane = result.candidates[0].plane
-            plane.toJsonFile("support_plane.json")
+            best = max(result.candidates, key=lambda c: c.inlier_count)
+            best.plane.toJsonFile("support_plane.json")
 
     ``result.outcome`` tells whether the attempt succeeded, failed at the
     attempt cap, or was cancelled; only a succeeded result has candidates.
