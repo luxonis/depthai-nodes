@@ -143,31 +143,16 @@ class SupportPlane:
 class SupportPlaneCandidate:
     """A support plane found by calibration, with how much of the scene supports it.
 
-    The counts are taken on the preprocessed point cloud: the calibration
-    cloud after voxel downsampling and statistical outlier removal.
-    ``inlier_count`` is the number of those points within RANSAC's distance
-    threshold of this plane, and only this plane's own: when near-parallel
-    planes through one surface merge, the kept candidate does not add the
-    dropped planes' inliers. ``inlier_ratio`` divides that count by the size of
-    the preprocessed cloud before any plane was removed from it, the same
-    share ``min_inlier_ratio`` limits, so it is at least ``min_inlier_ratio``.
-    It is not the on-plane ratio of plane verification.
-
-    Calibration orders candidates by most inliers first, then by smallest
-    absolute ``plane.offset_mm`` (nearest the camera).
-
     Attributes:
         plane: The support plane.
-        inlier_count: Inlier points of the preprocessed cloud, at least 1.
-        inlier_ratio: ``inlier_count`` over the preprocessed cloud's size, in
-            (0, 1].
+        inlier_count: Points of the calibration cloud on the plane, at least 1.
+        inlier_ratio: Share of the calibration cloud on the plane, in (0, 1]; at
+            least the config's ``min_inlier_ratio``. Not the on-plane ratio of a
+            plane verification.
 
     Raises:
-        TypeError: If ``plane`` is not a `SupportPlane`, ``inlier_count`` is a
-            ``bool`` or not an integer, or ``inlier_ratio`` is a ``bool`` or not
-            a real number.
-        ValueError: If ``inlier_count`` is below 1, or ``inlier_ratio`` is not
-            finite or not in (0, 1].
+        TypeError: If a field has the wrong type.
+        ValueError: If a field is out of range or not finite.
     """
 
     plane: SupportPlane
