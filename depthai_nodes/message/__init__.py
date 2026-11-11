@@ -110,6 +110,7 @@ raise the same errors as the support plane value types.
 Boxes are measured against a support plane; see "Support plane" above.
 """
 
+from .auto_support_plane_result import AutoSupportPlaneResult
 from .box_detections import BoxDetection, BoxDetections
 from .box_measurements import (
     BoxDimensions,
@@ -143,5 +144,6 @@ __all__ = [
     "SupportPlaneCalibrationControl",
     "SupportPlaneCalibrationResult",
     "SupportPlaneVerificationResult",
+    "AutoSupportPlaneResult",
     "CalibrationOutcome",
 ]
