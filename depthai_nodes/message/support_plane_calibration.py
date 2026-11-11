@@ -188,9 +188,6 @@ class SupportPlaneCalibrationResult(dai.Buffer):
 
     A result has candidates exactly when calibration succeeded.
 
-    The calibrator stamps it with the timestamp, device timestamp and sequence
-    number of the last point cloud the attempt fitted.
-
     Args:
         outcome: How the attempt ended.
         candidates: Support plane candidates.
@@ -254,8 +251,7 @@ class SupportPlaneVerificationResult(dai.Buffer):
     cloud's sampled valid points within ``check_distance_mm`` of the plane,
     whichever sign its equation has. It is not a candidate's inlier ratio: it
     is measured on a sparse sample of the raw organized cloud, not on the
-    preprocessed cloud RANSAC fits. The calibrator stamps it with the
-    timestamp, device timestamp and sequence number of the checked point cloud.
+    preprocessed cloud RANSAC fits.
 
     Args:
         plane: The checked support plane, as supplied.

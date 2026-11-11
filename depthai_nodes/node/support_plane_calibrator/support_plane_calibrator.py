@@ -136,8 +136,6 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         self._verifications: deque[SupportPlane] = deque()
         self._latest_gravity: np.ndarray | None = None
         self._latest_gravity_arrival = 0.0
-        # The last cloud the running attempt fitted, whose stamps its result
-        # copies; None until the attempt fits one.
         self._last_fitted_cloud: dai.PointCloudData | None = None
         # Clouds the running attempt has fitted, checked against the cap.
         self._fitted_cloud_count = 0
