@@ -60,10 +60,23 @@ class AutoSupportPlane(BaseThreadedHostNode):
     ``calibration.min_on_plane_ratio``) is dropped: the node sends
     ``(False, None)`` and searches. The selector never judges ``initialPlane``.
 
-    No result is sent while a search or refit runs, so without an attempt cap
-    a search waits until a plane comes into view and a refit never gives up.
-    In ``CONTINUOUS`` mode set ``calibration.max_calibration_attempts`` so a
-    refit that finds nothing reports and resumes checking.
+    The node sends exactly these ``(passed, plane)`` results:
+
+    * a plane check passes (``CONTINUOUS``): ``(True, current plane)``;
+    * a search or refit finds a plane the selector picks:
+      ``(True, new plane)``;
+    * a refit ends at the attempt cap: ``(False, old plane)``;
+    * a search ends at the attempt cap (either mode): ``(False, None)``;
+    * the ``initialPlane`` gate accepts: ``(True, initialPlane)``;
+    * the ``initialPlane`` gate rejects: ``(False, None)``.
+
+    These send nothing: a failed plane check below
+    ``failed_checks_before_refit``, the start of a refit, a selector returning
+    ``None``, a stale plane verification answer, and the node starting. No
+    result is sent while a search or refit runs, so without an attempt cap a
+    search waits until a plane comes into view and a refit never gives up. In
+    ``CONTINUOUS`` mode set ``calibration.max_calibration_attempts`` so a refit
+    that finds nothing reports ``(False, old plane)`` and resumes checking.
 
     Of a successful attempt's support plane candidates, the node selects by
     default the one with the most ``inlier_count`` (counted after voxel

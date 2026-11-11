@@ -86,6 +86,12 @@ in millimeters, normalized on construction. ``toJson()``, ``fromJson()``,
   enough of the point cloud on it. The on-plane ratio is not a candidate's
   inlier ratio.
 
+`depthai_nodes.node.AutoSupportPlane` sends an `AutoSupportPlaneResult` for each
+finished cycle: ``passed`` tells whether it found or confirmed a support plane,
+and ``plane`` is the support plane in use, or ``None`` when there is none. It
+is a Python ``Buffer`` subclass, so it travels between host nodes only; over
+XLink or a ``RemoteConnection`` it arrives as a bare ``Buffer``.
+
 The fields of these messages are read-only. `SupportPlane` and
 `SupportPlaneCandidate` are frozen dataclasses that take keyword arguments and
 raise ``TypeError`` for a wrong type or ``ValueError`` for an invalid value.

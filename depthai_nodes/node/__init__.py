@@ -197,6 +197,56 @@ Example:
     ``result.outcome`` tells whether the attempt succeeded, failed at the
     attempt cap, or was cancelled; only a succeeded result has candidates.
 
+`AutoSupportPlane` drives an inner ``SupportPlaneCalibrator`` to find and hold
+the support plane, sending a `depthai_nodes.message.AutoSupportPlaneResult` on
+``out`` for each finished cycle: whether it found or confirmed a support plane,
+and the support plane in use. `AutoSupportPlaneConfig` sets the mode, fixed at
+``build``: ``ON_START`` finds a support plane once and holds it, and a failed
+search is final until the pipeline is rebuilt; ``CONTINUOUS`` also runs a
+plane check about every ``check_interval_sec`` and refits after
+``failed_checks_before_refit`` failed plane checks in a row, keeping the old
+plane meanwhile. Its ``calibration`` field is the inner
+``PlaneCalibrationConfig``; a plane check passes on the level test and an
+on-plane ratio of at least ``calibration.min_on_plane_ratio``. Pass the plane
+held before a pipeline rebuild as ``initialPlane`` to hold it at once; it is
+dropped, and a search starts, if the first point cloud no longer shows it.
+Nothing is sent while a search or refit runs, so in ``CONTINUOUS`` set
+``calibration.max_calibration_attempts`` for a refit that finds nothing to
+report and resume checking. ``AutoSupportPlane`` needs open3d, like the
+calibrator.
+
+Drive ``SupportPlaneCalibrator`` directly instead when a person picks among
+the support plane candidates, or for any custom flow.
+
+Example:
+    With existing ``pointCloud`` and ``imu`` outputs and a point cloud of
+    ``width`` by ``height`` points, keep the support plane up to date::
+
+        from depthai_nodes.node import (
+            AutoSupportPlane,
+            AutoSupportPlaneConfig,
+            PlaneCalibrationConfig,
+        )
+
+        config = AutoSupportPlaneConfig(
+            mode=AutoSupportPlaneConfig.Mode.CONTINUOUS,
+            calibration=PlaneCalibrationConfig(max_calibration_attempts=10),
+        )
+        node = pipeline.create(AutoSupportPlane).build(
+            pointCloud, imu, (width, height), config
+        )
+        results = node.out.createOutputQueue()
+        pipeline.start()
+
+        while pipeline.isRunning():
+            result = results.get()
+            if result.plane is not None:
+                result.plane.toJsonFile("support_plane.json")
+
+    ``result.passed`` is ``False`` when a calibration attempt ended at the
+    attempt cap; the plane is then the old one kept after a failed refit, or
+    ``None`` when there is none yet.
+
 Box measurement
 ===============
 
