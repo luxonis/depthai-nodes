@@ -52,6 +52,14 @@ class AutoSupportPlane(BaseThreadedHostNode):
     ``(True, new plane)``, and one that ends at the attempt cap sends
     ``(False, old plane)`` and goes back to checking.
 
+    An ``initialPlane`` passed to `build`, such as the plane held before a
+    pipeline rebuild, is held at once and no search starts. Its gate verifies
+    it on the first point cloud with fresh IMU, in both modes: an accepted
+    plane sends ``(True, initialPlane)`` and is held as if fitted. A plane that
+    isn't level or that the cloud no longer shows (below
+    ``calibration.min_on_plane_ratio``) is dropped: the node sends
+    ``(False, None)`` and searches. The selector never judges ``initialPlane``.
+
     No result is sent while a search or refit runs, so without an attempt cap
     a search waits until a plane comes into view and a refit never gives up.
     In ``CONTINUOUS`` mode set ``calibration.max_calibration_attempts`` so a
@@ -91,6 +99,8 @@ class AutoSupportPlane(BaseThreadedHostNode):
         # Whether a calibration attempt runs (a search or a refit).
         self._searching = False
         self._verify_in_flight = False
+        # Whether the in-flight Verify is the initialPlane gate.
+        self._gate_pending = False
         self._next_check_at = 0.0
         self._failed_checks = 0
 
@@ -109,6 +119,7 @@ class AutoSupportPlane(BaseThreadedHostNode):
         imu: dai.Node.Output,
         pointCloudSize: tuple[int, int],
         config: AutoSupportPlaneConfig | None = None,
+        initialPlane: SupportPlane | None = None,
         selectCandidate: CandidateSelector | None = None,
     ) -> "AutoSupportPlane":
         """Build the inner calibrator on the point cloud and IMU.
@@ -119,6 +130,8 @@ class AutoSupportPlane(BaseThreadedHostNode):
             imu: Output emitting ``dai.IMUData`` with accelerometer packets.
             pointCloudSize: Cloud ``(width, height)`` in points.
             config: Mode and calibrator settings; ``None`` uses the defaults.
+            initialPlane: A plane to hold at once, such as the one held before
+                a pipeline rebuild; it is verified on the pipeline, not here.
             selectCandidate: Chooses the plane among a successful attempt's
                 candidates, or returns ``None`` to keep searching; ``None``
                 uses the default selection.
@@ -130,6 +143,7 @@ class AutoSupportPlane(BaseThreadedHostNode):
             ImportError: If open3d is not installed.
             RuntimeError: If the node is already built.
             TypeError: If ``config`` is not an ``AutoSupportPlaneConfig``,
+                ``initialPlane`` is neither ``None`` nor a ``SupportPlane``,
                 ``selectCandidate`` is neither ``None`` nor callable, or
                 ``pointCloudSize`` is not a pair of integers.
             ValueError: If ``pointCloudSize`` does not have two positive values.
@@ -147,6 +161,8 @@ class AutoSupportPlane(BaseThreadedHostNode):
                 "selectCandidate must be callable or None, got "
                 f"{type(selectCandidate).__name__}"
             )
+        if initialPlane is not None:
+            _check_instance("initialPlane", initialPlane, SupportPlane)
         self._calibrator.build(pointCloud, imu, pointCloudSize, config.calibration)
         self._control_output.link(self._calibrator.inputControl)
         self._calibrator.inputControl.setMaxSize(CONTROL_QUEUE_SIZE)
@@ -154,6 +170,7 @@ class AutoSupportPlane(BaseThreadedHostNode):
         self._calibrator.verificationOutput.link(self._verification_input)
         if selectCandidate is not None:
             self._select_candidate = selectCandidate
+        self._plane = initialPlane
         self._config = config
         return self
 
@@ -169,10 +186,14 @@ class AutoSupportPlane(BaseThreadedHostNode):
             return
 
     def _run_pass(self) -> None:
-        """Start the search once, handle the calibrator's answers, then check."""
+        """Start once, handle the calibrator's answers, then check."""
         if not self._started:
             self._started = True
-            self._start_search()
+            if self._plane is None:
+                self._start_search()
+            else:
+                self._gate_pending = True
+                self._send_verify(self._plane)
         while (result := self._calibration_input.tryGet()) is not None:
             assert isinstance(result, SupportPlaneCalibrationResult)
             self._handle_calibration(result)
@@ -221,18 +242,27 @@ class AutoSupportPlane(BaseThreadedHostNode):
         self._next_check_at = time.monotonic() + self._config.check_interval_sec
 
     def _handle_verification(self, result: SupportPlaneVerificationResult) -> None:
-        """Judge a plane check, refitting after enough failures in a row.
+        """Judge the ``initialPlane`` gate or a plane check.
+
+        A rejected gate drops the plane and searches; failed checks refit
+        after enough failures in a row.
 
         Answers outside ``VALID`` or for another plane are stale and ignored.
         """
         assert self._config is not None
         self._verify_in_flight = False
+        gate, self._gate_pending = self._gate_pending, False
         if self._searching or result.plane != self._plane:
             return
         self._next_check_at = time.monotonic() + self._config.check_interval_sec
         if result.accepted:
             self._failed_checks = 0
             self._send(AutoSupportPlaneResult(True, result.plane), result)
+            return
+        if gate:
+            self._plane = None
+            self._send(AutoSupportPlaneResult(False, None), result)
+            self._start_search()
             return
         self._failed_checks += 1
         if self._failed_checks >= self._config.failed_checks_before_refit:
@@ -249,8 +279,11 @@ class AutoSupportPlane(BaseThreadedHostNode):
             or time.monotonic() < self._next_check_at
         ):
             return
+        self._send_verify(self._plane)
+
+    def _send_verify(self, plane: SupportPlane) -> None:
         self._verify_in_flight = True
-        self._control_output.send(SupportPlaneCalibrationControl.verify(self._plane))
+        self._control_output.send(SupportPlaneCalibrationControl.verify(plane))
 
     @property
     def _continuous(self) -> bool:

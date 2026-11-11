@@ -498,11 +498,23 @@ def test_a_failing_selector_raises_out_of_a_run_pass(selector, error):
             node.run()
 
 
-def test_build_rejects_a_selector_that_is_not_callable():
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"selectCandidate": floor(-1000)},
+        {
+            "initialPlane": SupportPlaneCandidate(
+                plane=floor(-1000), inlier_count=1, inlier_ratio=1.0
+            )
+        },
+    ],
+    ids=["selector-not-callable", "initial-plane-not-a-plane"],
+)
+def test_build_rejects_a_wrong_type(kwargs):
     node = HarnessPipeline().create(AutoSupportPlane)
 
     with pytest.raises(TypeError):
-        node.build(*build_args(), selectCandidate=floor(-1000))
+        node.build(*build_args(), **kwargs)
 
 
 # Big enough for the calibrator to measure an on-plane ratio (625 sampled points).
@@ -719,4 +731,105 @@ def test_no_plane_checks_in_on_start(clock):
     for _ in range(3):
         check(node, clock)
 
+    assert node.no_result()
+
+
+def no_fit():
+    """Fail the test if a plane fit runs."""
+    return scripted(ScriptedScene([], during_fit=lambda: pytest.fail("a fit ran")))
+
+
+def restored(config, plane=None, **build_kwargs):
+    """A harness on large clouds built with ``initialPlane``, the floor by default."""
+    plane = floor(-1000) if plane is None else plane
+    return Harness(config, LARGE_CLOUD_SIZE, initialPlane=plane, **build_kwargs)
+
+
+BOTH_MODES = pytest.mark.parametrize(
+    "config",
+    [on_start(min_on_plane_ratio=0.5), continuous()],
+    ids=["on-start", "continuous"],
+)
+
+
+@BOTH_MODES
+def test_accepted_initial_plane_is_sent_without_a_fit_or_the_selector(clock, config):
+    selector = Selector(farthest)
+    node = restored(config, selectCandidate=selector)
+
+    with no_fit():
+        cloud = check(node, clock, wait=0)
+
+    result = node.result()
+    assert result.passed is True
+    assert result.plane == floor(-1000)
+    assert_stamped_from(result, cloud)
+    assert selector.calls == []
+    check(node, clock)
+    is_continuous = config.mode is AutoSupportPlaneConfig.Mode.CONTINUOUS
+    assert node.no_result() is not is_continuous
+
+
+def test_first_check_after_an_accepted_gate_is_due_an_interval_after_its_answer(
+    clock,
+):
+    node = restored(continuous())
+    node.run()
+    clock.now += 1.0
+    check(node, clock, wait=0)
+    assert node.result().passed is True
+
+    check(node, clock, wait=INTERVAL - 0.01)
+    assert node.no_result()
+    check(node, clock, wait=0.01)
+    assert node.result().plane == floor(-1000)
+
+
+def tilted_floor(angle_deg):
+    tilt = np.deg2rad(angle_deg)
+    return SupportPlane(normal=(0, np.sin(tilt), np.cos(tilt)), offset_mm=-1000)
+
+
+@pytest.mark.parametrize("mode", [on_start, continuous])
+@pytest.mark.parametrize(
+    ("plane", "min_on_plane_ratio", "depth"),
+    [
+        (tilted_floor(8), 0.0, 1000.0),
+        (floor(-1000), 0.5, OCCLUDED),
+        (floor(-1000), 0.0, sparse_depths()),
+    ],
+    ids=["not-level", "off-plane", "sparse"],
+)
+def test_rejected_initial_plane_is_dropped_for_a_search(
+    clock, mode, plane, min_on_plane_ratio, depth
+):
+    config = mode(max_gravity_angle_deg=5, min_on_plane_ratio=min_on_plane_ratio)
+    node = restored(config, plane)
+
+    with no_fit():
+        cloud = check(node, clock, depth=depth, wait=0)
+
+    result = node.result()
+    assert result.passed is False
+    assert result.plane is None
+    assert_stamped_from(result, cloud)
+    with scripted(scripted_floors((-1300.0, LARGE_INLIER_COUNT))):
+        refit_cloud(node, depth=1300)
+    assert node.result().plane == floor(-1300)
+
+
+def test_initial_plane_gate_waits_out_a_stalled_imu(clock):
+    node = restored(continuous())
+    node.gravity()
+    node.run()
+    with no_fit():
+        for _ in range(5):
+            clock.now += IMU_MAX_AGE_SECONDS + 0.01
+            node.plane_cloud()
+            node.run(2)
+        assert node.no_result()
+
+        check(node, clock, wait=0)
+
+    assert node.result().plane == floor(-1000)
     assert node.no_result()
