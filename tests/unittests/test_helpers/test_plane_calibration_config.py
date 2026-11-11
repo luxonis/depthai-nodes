@@ -136,3 +136,28 @@ def test_check_distance_must_be_positive_and_finite(value):
 def test_check_distance_rejects_wrong_types(value):
     with pytest.raises(TypeError):
         PlaneCalibrationConfig(check_distance_mm=value)
+
+
+def test_min_on_plane_ratio_defaults_to_a_tenth():
+    config = PlaneCalibrationConfig(min_on_plane_ratio=np.float32(0.5))  # pyright: ignore[reportArgumentType]
+
+    assert PlaneCalibrationConfig().min_on_plane_ratio == 0.1
+    assert config.min_on_plane_ratio.__class__ is float
+    assert config.min_on_plane_ratio == 0.5
+
+
+@pytest.mark.parametrize("value", [0, 1])
+def test_min_on_plane_ratio_accepts_its_bounds(value):
+    assert PlaneCalibrationConfig(min_on_plane_ratio=value).min_on_plane_ratio == value
+
+
+@pytest.mark.parametrize("value", [-0.1, 1.01, float("nan"), float("inf")])
+def test_min_on_plane_ratio_must_be_finite_and_from_0_to_1(value):
+    with pytest.raises(ValueError):
+        PlaneCalibrationConfig(min_on_plane_ratio=value)
+
+
+@pytest.mark.parametrize("value", [True, "0.1", None])
+def test_min_on_plane_ratio_rejects_wrong_types(value):
+    with pytest.raises(TypeError):
+        PlaneCalibrationConfig(min_on_plane_ratio=value)

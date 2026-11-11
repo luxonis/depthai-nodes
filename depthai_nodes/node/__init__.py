@@ -162,10 +162,12 @@ which ends with one `depthai_nodes.message.SupportPlaneCalibrationResult` on
 ``out``; a succeeded result holds support plane candidates. A verify control
 asks for a plane verification of a given support plane, answered with a
 `depthai_nodes.message.SupportPlaneVerificationResult` on
-``verificationOutput``, which carries the plane's level test and its on-plane
-ratio, the share of the next point cloud on the plane within
-``check_distance_mm``. `PlaneCalibrationConfig` holds the plane-fitting and
-attempt settings, fixed at ``build``.
+``verificationOutput``. It carries the plane's angle to gravity, its on-plane
+ratio (the share of the next point cloud on the plane within
+``check_distance_mm``), and whether it was accepted: within
+``max_gravity_angle_deg`` of level, below the camera, and with an on-plane
+ratio of at least ``min_on_plane_ratio``. `PlaneCalibrationConfig` holds the
+plane-fitting and attempt settings, fixed at ``build``.
 
 ``SupportPlaneCalibrator`` needs open3d, installed with
 ``pip install "depthai-nodes[box-measurement]"``; without it ``build`` raises

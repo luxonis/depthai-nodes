@@ -349,11 +349,19 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             plane_eq = orient_along_gravity(
                 np.array([*plane.normal, plane.offset_mm]), gravity
             )
+            on_plane_ratio = _on_plane_ratio(
+                plane, sample, self._config.check_distance_mm
+            )
+            accepted = (
+                is_valid_horizontal_plane(plane_eq, gravity, max_angle)
+                and on_plane_ratio is not None
+                and on_plane_ratio >= self._config.min_on_plane_ratio
+            )
             result = SupportPlaneVerificationResult(
                 plane,
                 gravity_angle_deg(plane_eq, gravity),
-                is_valid_horizontal_plane(plane_eq, gravity, max_angle),
-                _on_plane_ratio(plane, sample, self._config.check_distance_mm),
+                accepted,
+                on_plane_ratio,
             )
             _copy_stamps(cloud, result)
             self._verification_output.send(result)

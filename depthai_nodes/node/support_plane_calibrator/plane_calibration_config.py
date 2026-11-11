@@ -59,6 +59,9 @@ class PlaneCalibrationConfig:
             verified plane for it to count as on the plane in a plane
             verification's on-plane ratio. Separate from RANSAC's
             ``distance_threshold_mm``. Must be positive.
+        min_on_plane_ratio: Smallest on-plane ratio, from 0 to 1, at which a
+            plane verification accepts a plane that passes the level test.
+            Separate from ``min_inlier_ratio``, which applies to fitting.
 
     Raises:
         TypeError: If a field has the wrong type.
@@ -75,6 +78,7 @@ class PlaneCalibrationConfig:
     merge_distance_threshold_mm: float = 25.0
     max_calibration_attempts: int | None = None
     check_distance_mm: float = 30.0
+    min_on_plane_ratio: float = 0.1
 
     def __post_init__(self) -> None:
         """Validate the fields and store numbers as built-in types.
@@ -112,10 +116,11 @@ class PlaneCalibrationConfig:
             if value <= 0:
                 raise ValueError(f"{name} must be positive, got {value}")
             object.__setattr__(self, name, value)
-        ratio = _check_float("min_inlier_ratio", self.min_inlier_ratio)
-        if not 0 <= ratio <= 1:
-            raise ValueError(f"min_inlier_ratio must be from 0 to 1, got {ratio}")
-        object.__setattr__(self, "min_inlier_ratio", ratio)
+        for name in ("min_inlier_ratio", "min_on_plane_ratio"):
+            ratio = _check_float(name, getattr(self, name))
+            if not 0 <= ratio <= 1:
+                raise ValueError(f"{name} must be from 0 to 1, got {ratio}")
+            object.__setattr__(self, name, ratio)
         angle = _check_float("max_gravity_angle_deg", self.max_gravity_angle_deg)
         if not 0 <= angle < 90:
             raise ValueError(

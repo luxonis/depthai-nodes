@@ -131,7 +131,14 @@ def test_verification_result_accepts_on_plane_ratios_from_0_to_1(ratio):
 
 
 def test_verification_result_on_plane_ratio_none_means_not_measured():
-    assert SupportPlaneVerificationResult(PLANE, 3.0, True, None).on_plane_ratio is None
+    assert (
+        SupportPlaneVerificationResult(PLANE, 3.0, False, None).on_plane_ratio is None
+    )
+
+
+def test_verification_result_cannot_accept_a_plane_without_an_on_plane_ratio():
+    with pytest.raises(ValueError, match="on_plane_ratio"):
+        SupportPlaneVerificationResult(PLANE, 3.0, True, None)
 
 
 @pytest.mark.parametrize("ratio", [-0.1, 1.01, float("nan"), float("inf")])

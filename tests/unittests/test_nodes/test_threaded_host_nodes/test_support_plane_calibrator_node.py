@@ -31,6 +31,9 @@ from tests.utils.nodes.mocks.queue import OutputQueueMock  # noqa: E402
 from tests.utils.scripted_open3d import ScriptedScene  # noqa: E402
 
 CLOUD_SIZE = (20, 20)
+# 100 x 100 points, so every 4th row and column samples 25 x 25 = 625 points,
+# enough to measure an on-plane ratio.
+LARGE_CLOUD_SIZE = (100, 100)
 
 
 class Source(OutputMock):
@@ -195,6 +198,27 @@ def scripted(scene):
 def tilted_plane(angle_deg, offset_mm=-1000.0):
     angle = np.deg2rad(angle_deg)
     return SupportPlane(normal=(0.0, np.sin(angle), np.cos(angle)), offset_mm=offset_mm)
+
+
+def depths_on(plane, size=LARGE_CLOUD_SIZE):
+    """Depths that put every point of a `Harness.depth_cloud` grid on ``plane``."""
+    width, height = size
+    x, y = np.meshgrid(np.arange(width) * 40.0, np.arange(height) * 40.0)
+    a, b, c = plane.normal
+    return -(a * x + b * y + plane.offset_mm) / c
+
+
+@pytest.fixture
+def level_only():
+    """A calibrator whose verifications judge only the level test.
+
+    The cloud is large enough to measure an on-plane ratio, and any measured ratio is
+    enough.
+    """
+    return Harness(
+        PlaneCalibrationConfig(max_plane_passes=3, min_on_plane_ratio=0),
+        LARGE_CLOUD_SIZE,
+    )
 
 
 def test_cloud_sent_before_start_is_used_for_the_attempt(calibrator):
@@ -439,51 +463,51 @@ def test_unknown_messages_on_the_control_input_are_ignored(calibrator):
     assert calibrator.result().outcome is CalibrationOutcome.CANCELLED
 
 
-def test_verification_accepts_a_plane_opposing_gravity_with_its_angle(calibrator):
+def test_verification_accepts_a_plane_opposing_gravity_with_its_angle(level_only):
     plane = tilted_plane(3)
-    calibrator.gravity()
-    calibrator.verify(plane)
-    calibrator.plane_cloud()
-    calibrator.run()
+    level_only.gravity()
+    level_only.verify(plane)
+    level_only.plane_cloud()
+    level_only.run()
 
-    result = calibrator.verification()
+    result = level_only.verification()
     assert result.plane == plane
     assert result.accepted
     assert result.gravity_angle_deg == pytest.approx(3, abs=1e-4)
 
 
-def test_verification_rejects_planes_beyond_the_tolerance(calibrator):
-    calibrator.gravity()
-    calibrator.verify(tilted_plane(6))
-    calibrator.verify(tilted_plane(7))
-    calibrator.plane_cloud()
-    calibrator.run()
+def test_verification_rejects_planes_beyond_the_tolerance(level_only):
+    level_only.gravity()
+    level_only.verify(tilted_plane(6))
+    level_only.verify(tilted_plane(7))
+    level_only.plane_cloud()
+    level_only.run()
 
-    assert calibrator.verification().accepted
-    result = calibrator.verification()
+    assert level_only.verification().accepted
+    result = level_only.verification()
     assert not result.accepted
     assert result.gravity_angle_deg == pytest.approx(7, abs=1e-4)
 
 
-def test_verification_rejects_a_plane_behind_the_camera(calibrator):
-    calibrator.gravity()
-    calibrator.verify(tilted_plane(0, offset_mm=1000))
-    calibrator.plane_cloud()
-    calibrator.run()
+def test_verification_rejects_a_plane_behind_the_camera(level_only):
+    level_only.gravity()
+    level_only.verify(tilted_plane(0, offset_mm=1000))
+    level_only.plane_cloud()
+    level_only.run()
 
-    result = calibrator.verification()
+    result = level_only.verification()
     assert not result.accepted
     assert result.gravity_angle_deg == pytest.approx(0, abs=1e-4)
 
 
-def test_verification_accepts_the_opposite_sign_equation_and_echoes_it(calibrator):
+def test_verification_accepts_the_opposite_sign_equation_and_echoes_it(level_only):
     plane = SupportPlane(normal=(0, 0, -1), offset_mm=1000)
-    calibrator.gravity()
-    calibrator.verify(plane)
-    calibrator.plane_cloud()
-    calibrator.run()
+    level_only.gravity()
+    level_only.verify(plane)
+    level_only.plane_cloud()
+    level_only.run()
 
-    result = calibrator.verification()
+    result = level_only.verification()
     assert result.plane == plane
     assert result.accepted
     assert result.gravity_angle_deg == pytest.approx(0, abs=1e-4)
@@ -510,16 +534,16 @@ def test_verifications_wait_for_imu_and_are_answered_once_in_order_from_one_clou
     assert calibrator.verifications.is_empty()
 
 
-def test_zero_accelerometer_is_not_used_for_verification(calibrator):
-    calibrator.verify(tilted_plane(0))
-    calibrator.gravity(z=0)
-    calibrator.plane_cloud()
-    calibrator.run()
-    assert calibrator.verifications.is_empty()
+def test_zero_accelerometer_is_not_used_for_verification(level_only):
+    level_only.verify(tilted_plane(0))
+    level_only.gravity(z=0)
+    level_only.plane_cloud()
+    level_only.run()
+    assert level_only.verifications.is_empty()
 
-    calibrator.gravity()
-    calibrator.run()
-    assert calibrator.verification().accepted
+    level_only.gravity()
+    level_only.run()
+    assert level_only.verification().accepted
 
 
 def test_zero_accelerometer_is_not_used_for_fitting(calibrator):
@@ -555,19 +579,19 @@ def clock():
         yield clock
 
 
-def test_stale_imu_is_not_used_for_verification(calibrator, clock):
-    calibrator.gravity()
-    calibrator.run()
+def test_stale_imu_is_not_used_for_verification(level_only, clock):
+    level_only.gravity()
+    level_only.run()
     clock.now += IMU_MAX_AGE_SECONDS + 0.01
 
-    calibrator.verify(tilted_plane(0))
-    calibrator.plane_cloud()
-    calibrator.run()
-    assert calibrator.verifications.is_empty()
+    level_only.verify(tilted_plane(0))
+    level_only.plane_cloud()
+    level_only.run()
+    assert level_only.verifications.is_empty()
 
-    calibrator.gravity()
-    calibrator.run()
-    assert calibrator.verification().accepted
+    level_only.gravity()
+    level_only.run()
+    assert level_only.verification().accepted
 
 
 def test_stale_imu_is_not_used_for_fitting(calibrator, clock):
@@ -585,35 +609,35 @@ def test_stale_imu_is_not_used_for_fitting(calibrator, clock):
     assert calibrator.result().outcome is CalibrationOutcome.SUCCEEDED
 
 
-def test_imu_within_the_age_limit_is_reused(calibrator, clock):
-    calibrator.gravity()
-    calibrator.run()
+def test_imu_within_the_age_limit_is_reused(level_only, clock):
+    level_only.gravity()
+    level_only.run()
     clock.now += IMU_MAX_AGE_SECONDS
 
-    calibrator.verify(tilted_plane(0))
-    calibrator.plane_cloud()
-    calibrator.run()
-    assert calibrator.verification().accepted
+    level_only.verify(tilted_plane(0))
+    level_only.plane_cloud()
+    level_only.run()
+    assert level_only.verification().accepted
 
 
 def test_verification_while_idle_neither_starts_an_attempt_nor_keeps_the_cloud(
-    calibrator,
+    level_only,
 ):
-    calibrator.gravity()
-    calibrator.verify(tilted_plane(0))
-    calibrator.plane_cloud()
-    calibrator.run()
-    assert calibrator.verification().accepted
-    assert calibrator.no_result()
+    level_only.gravity()
+    level_only.verify(tilted_plane(0))
+    level_only.plane_cloud()
+    level_only.run()
+    assert level_only.verification().accepted
+    assert level_only.no_result()
 
     # The verification took the queued cloud, so the attempt waits for the next.
-    calibrator.start()
-    calibrator.run()
-    assert calibrator.no_result()
+    level_only.start()
+    level_only.run()
+    assert level_only.no_result()
 
-    calibrator.plane_cloud()
-    calibrator.run()
-    assert calibrator.result().outcome is CalibrationOutcome.SUCCEEDED
+    level_only.plane_cloud()
+    level_only.run()
+    assert level_only.result().outcome is CalibrationOutcome.SUCCEEDED
 
 
 def test_verification_while_running_is_answered_and_the_attempt_keeps_searching(
@@ -628,7 +652,7 @@ def test_verification_while_running_is_answered_and_the_attempt_keeps_searching(
 
     calibrator.plane_cloud(depth=0)
     calibrator.run()
-    assert calibrator.verification().accepted
+    calibrator.verification()  # answered; an empty cloud can't be accepted
     assert calibrator.no_result()
 
     calibrator.plane_cloud()
@@ -638,37 +662,37 @@ def test_verification_while_running_is_answered_and_the_attempt_keeps_searching(
     assert calibrator.verifications.is_empty()
 
 
-def test_one_cloud_answers_verifications_and_then_ends_the_attempt(calibrator):
-    calibrator.start()
-    calibrator.gravity()
-    calibrator.verify(tilted_plane(0))
-    calibrator.verify(tilted_plane(7))
-    calibrator.plane_cloud()
-    calibrator.run()
+def test_one_cloud_answers_verifications_and_then_ends_the_attempt(level_only):
+    level_only.start()
+    level_only.gravity()
+    level_only.verify(tilted_plane(0))
+    level_only.verify(tilted_plane(7))
+    level_only.plane_cloud()
+    level_only.run()
 
-    first, second = calibrator.verification(), calibrator.verification()
+    first, second = level_only.verification(), level_only.verification()
     assert (first.accepted, second.accepted) == (True, False)
-    result = calibrator.result()
+    result = level_only.result()
     assert result.outcome is CalibrationOutcome.SUCCEEDED
 
 
-def test_verification_while_complete_is_answered_without_a_new_result(calibrator):
-    calibrator.start()
-    calibrator.gravity()
-    calibrator.plane_cloud()
-    calibrator.run()
-    assert calibrator.result().outcome is CalibrationOutcome.SUCCEEDED
+def test_verification_while_complete_is_answered_without_a_new_result(level_only):
+    level_only.start()
+    level_only.gravity()
+    level_only.plane_cloud()
+    level_only.run()
+    assert level_only.result().outcome is CalibrationOutcome.SUCCEEDED
 
-    calibrator.verify(tilted_plane(0))
-    calibrator.start()
-    calibrator.stop()
-    calibrator.run()
-    assert calibrator.verifications.is_empty()
+    level_only.verify(tilted_plane(0))
+    level_only.start()
+    level_only.stop()
+    level_only.run()
+    assert level_only.verifications.is_empty()
 
-    calibrator.plane_cloud()
-    calibrator.run()
-    assert calibrator.verification().accepted
-    assert calibrator.no_result()
+    level_only.plane_cloud()
+    level_only.run()
+    assert level_only.verification().accepted
+    assert level_only.no_result()
 
 
 def test_message_that_is_not_a_point_cloud_raises_when_taken_for_a_verification(
@@ -694,7 +718,10 @@ def test_cloud_of_the_wrong_size_raises_when_taken_for_a_verification(calibrator
 
 
 def test_verification_uses_the_built_tolerance():
-    calibrator = Harness(PlaneCalibrationConfig(max_gravity_angle_deg=1))
+    calibrator = Harness(
+        PlaneCalibrationConfig(max_gravity_angle_deg=1, min_on_plane_ratio=0),
+        LARGE_CLOUD_SIZE,
+    )
     calibrator.gravity()
     calibrator.verify(tilted_plane(3))
     calibrator.verify(tilted_plane(0.5))
@@ -706,15 +733,18 @@ def test_verification_uses_the_built_tolerance():
 
 
 def test_build_uses_the_default_config():
-    calibrator = Harness()
-    calibrator.gravity()
-    calibrator.verify(tilted_plane(6))
-    calibrator.verify(tilted_plane(7))
-    calibrator.plane_cloud()
-    calibrator.run()
+    calibrator = Harness(size=LARGE_CLOUD_SIZE)
+    level, tilted = tilted_plane(6), tilted_plane(7)
 
-    assert calibrator.verification().accepted
-    assert not calibrator.verification().accepted
+    assert verify_on(calibrator, level, depths_on(level)).accepted
+    assert not verify_on(calibrator, tilted, depths_on(tilted)).accepted
+    # Default min_on_plane_ratio of 0.1: sampled rows 0, 4 and 8 on the floor
+    # give 3 / 25 and pass; rows 0 and 4 give 2 / 25 and fail.
+    few_on_floor = np.full((100, 100), 1500.0)
+    few_on_floor[:12] = 1000.0
+    assert verify_on(calibrator, floor(-1000), few_on_floor).accepted
+    few_on_floor[8:12] = 1500.0
+    assert not verify_on(calibrator, floor(-1000), few_on_floor).accepted
 
 
 def build(size=CLOUD_SIZE, config=None):
@@ -757,18 +787,17 @@ def test_build_cannot_run_twice():
         node.build(output, output, CLOUD_SIZE)
 
 
-def test_verification_while_idle_waits_for_a_cloud(calibrator):
-    calibrator.gravity()
-    calibrator.verify(tilted_plane(0))
-    calibrator.run()
-    assert calibrator.verifications.is_empty()
+def test_verification_while_idle_waits_for_a_cloud(level_only):
+    level_only.gravity()
+    level_only.verify(tilted_plane(0))
+    level_only.run()
+    assert level_only.verifications.is_empty()
 
-    calibrator.plane_cloud()
-    calibrator.run()
+    level_only.plane_cloud()
+    level_only.run()
 
-    result = calibrator.verification()
-    assert result.accepted
-    assert calibrator.verifications.is_empty()
+    assert level_only.verification().accepted
+    assert level_only.verifications.is_empty()
 
 
 def capped(attempts):
@@ -946,10 +975,6 @@ def test_attempts_without_a_cap_keep_searching(calibrator):
     assert calibrator.result().outcome is CalibrationOutcome.SUCCEEDED
 
 
-# 100 x 100 points, so every 4th row and column samples 25 x 25 = 625 points.
-LARGE_CLOUD_SIZE = (100, 100)
-
-
 def verify_on(calibrator, plane, depths):
     calibrator.gravity()
     calibrator.verify(plane)
@@ -1011,7 +1036,7 @@ def test_on_plane_ratio_is_not_measured_for_a_mostly_empty_cloud():
     result = verify_on(calibrator, floor(-1000), depths)
 
     assert result.on_plane_ratio is None
-    assert result.accepted
+    assert not result.accepted
 
 
 def test_on_plane_ratio_is_not_measured_on_a_small_cloud(calibrator):
@@ -1021,3 +1046,49 @@ def test_on_plane_ratio_is_not_measured_on_a_small_cloud(calibrator):
     calibrator.run()
 
     assert calibrator.verification().on_plane_ratio is None
+
+
+def test_verification_accepts_a_level_plane_the_cloud_lies_on():
+    calibrator = Harness(size=LARGE_CLOUD_SIZE)
+
+    result = verify_on(calibrator, floor(-1000), np.full((100, 100), 1000.0))
+
+    assert result.on_plane_ratio == 1.0
+    assert result.accepted
+
+
+def test_verification_rejects_a_level_plane_with_too_little_of_the_cloud_on_it():
+    calibrator = Harness(
+        PlaneCalibrationConfig(min_on_plane_ratio=13 / 25), LARGE_CLOUD_SIZE
+    )
+    # As above: 13 of 25 sampled rows are floor at 1000 mm, 12 a step at 1100 mm.
+    depths = np.full((100, 100), 1000.0)
+    depths[50:] = 1100.0
+
+    at_threshold = verify_on(calibrator, floor(-1000), depths)
+    below = verify_on(calibrator, floor(-1100), depths)
+
+    assert (at_threshold.on_plane_ratio, at_threshold.accepted) == (13 / 25, True)
+    assert (below.on_plane_ratio, below.accepted) == (12 / 25, False)
+
+
+def test_verification_rejects_a_tilted_plane_the_cloud_lies_on():
+    calibrator = Harness(size=LARGE_CLOUD_SIZE)
+    plane = tilted_plane(7)
+
+    result = verify_on(calibrator, plane, depths_on(plane))
+
+    assert result.on_plane_ratio == 1.0
+    assert not result.accepted
+
+
+def test_without_a_minimum_ratio_any_measured_level_plane_is_accepted():
+    calibrator = Harness(PlaneCalibrationConfig(min_on_plane_ratio=0), LARGE_CLOUD_SIZE)
+    sparse = np.zeros((100, 100))
+    sparse[:76] = 1000.0
+
+    off_the_cloud = verify_on(calibrator, floor(-1500), np.full((100, 100), 1000.0))
+    unmeasured = verify_on(calibrator, floor(-1000), sparse)
+
+    assert (off_the_cloud.on_plane_ratio, off_the_cloud.accepted) == (0.0, True)
+    assert (unmeasured.on_plane_ratio, unmeasured.accepted) == (None, False)

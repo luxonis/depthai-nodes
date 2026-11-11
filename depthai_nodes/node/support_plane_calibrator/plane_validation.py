@@ -1,4 +1,4 @@
-"""Gravity checks shared by the candidate search and plane verification."""
+"""The level test shared by the candidate search and plane verification."""
 
 import numpy as np
 
