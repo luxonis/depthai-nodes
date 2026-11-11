@@ -14,7 +14,7 @@ from depthai_nodes.message.support_plane_calibration import (
 from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
 
 from .auto_support_plane_config import AutoSupportPlaneConfig
-from .support_plane_calibrator import PASS_SLEEP_SECONDS, SupportPlaneCalibrator
+from .support_plane_calibrator import SupportPlaneCalibrator
 
 CandidateSelector = Callable[
     [tuple[SupportPlaneCandidate, ...]], SupportPlaneCandidate | None
@@ -144,7 +144,8 @@ class AutoSupportPlane(BaseThreadedHostNode):
         try:
             while self.isRunning():
                 self._run_pass()
-                time.sleep(PASS_SLEEP_SECONDS)
+                # Pause between passes, as DepthAI's DynamicCalibration does.
+                time.sleep(0.005)
         # DepthAI's stub declares QueueException through an undeclared nested
         # class, so pyright cannot tell it is an exception; at runtime it is one.
         except dai.MessageQueue.QueueException:  # pyright: ignore[reportGeneralTypeIssues]

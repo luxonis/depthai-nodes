@@ -51,9 +51,6 @@ def _check_size(name: str, value: Any) -> tuple[int, int]:
     return width, height
 
 
-# Pause between run-loop passes, as DepthAI's DynamicCalibration does.
-PASS_SLEEP_SECONDS = 0.005
-
 # Oldest IMU sample, by host arrival time, used for gravity. The IMU streams at
 # tens to hundreds of hertz, so an older sample means the stream has stalled.
 IMU_MAX_AGE_SECONDS = 0.5
@@ -212,7 +209,8 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         try:
             while self.isRunning():
                 self._run_pass()
-                time.sleep(PASS_SLEEP_SECONDS)
+                # Pause between passes, as DepthAI's DynamicCalibration does.
+                time.sleep(0.005)
         # DepthAI's stub declares QueueException through an undeclared nested
         # class, so pyright cannot tell it is an exception; at runtime it is one.
         except dai.MessageQueue.QueueException:  # pyright: ignore[reportGeneralTypeIssues]
