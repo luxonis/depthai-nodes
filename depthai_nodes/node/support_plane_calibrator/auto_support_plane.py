@@ -214,10 +214,11 @@ class AutoSupportPlane(BaseThreadedHostNode):
     def _handle_verification(self, result: SupportPlaneVerificationResult) -> None:
         """Judge the ``initialPlane`` gate or a plane check.
 
-        A rejected gate drops the plane and searches; failed checks refit
-        after enough failures in a row.
+        A rejected gate drops the plane and searches; failed checks refit after enough
+        failures in a row.
 
-        Answers outside ``VALID`` or for another plane are stale and ignored.
+        Answers that arrive during a calibration attempt, or for a plane other than the
+        held one, are stale and ignored.
         """
         assert self._config is not None
         self._verify_in_flight = False
