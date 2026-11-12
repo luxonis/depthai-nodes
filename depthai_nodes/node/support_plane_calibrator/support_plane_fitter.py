@@ -61,13 +61,11 @@ class SupportPlaneFitter:
     def find_candidates(
         self, points: np.ndarray, gravity: np.ndarray
     ) -> list[SupportPlaneCandidate]:
-        """Find horizontal planes below the camera, best first.
+        """Find the horizontal planes below the camera.
 
-        Planes are ranked by inlier count, then by smallest absolute offset
-        (nearest the camera). Near-parallel planes through the same surface
-        count once, and the kept plane reports only its own inliers. Counts are
-        taken on the preprocessed cloud, and ratios divide by its size before
-        any plane is removed.
+        Near-parallel planes through the same surface count once, and the kept
+        plane reports only its own inliers. Counts are taken on the preprocessed
+        cloud, and ratios divide by its size before any plane is removed.
 
         Args:
             points: ``(width * height, 3)`` cloud points in millimeters; points
