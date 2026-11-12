@@ -404,13 +404,6 @@ def build_args():
     return output, output, CLOUD_SIZE
 
 
-def test_build_rejects_a_config_of_the_wrong_type():
-    node = HarnessPipeline().create(AutoSupportPlane)
-
-    with pytest.raises(TypeError):
-        node.build(*build_args(), PlaneCalibrationConfig())
-
-
 def test_build_cannot_run_twice():
     node = HarnessPipeline().create(AutoSupportPlane)
     node.build(*build_args())
@@ -529,6 +522,7 @@ def test_a_failing_selector_raises_out_of_a_run_pass(selector, error):
 @pytest.mark.parametrize(
     "kwargs",
     [
+        {"config": PlaneCalibrationConfig()},
         {"selectCandidate": floor(-1000)},
         {
             "initialPlane": SupportPlaneCandidate(
@@ -536,7 +530,11 @@ def test_a_failing_selector_raises_out_of_a_run_pass(selector, error):
             )
         },
     ],
-    ids=["selector-not-callable", "initial-plane-not-a-plane"],
+    ids=[
+        "config-not-auto-support-plane-config",
+        "selector-not-callable",
+        "initial-plane-not-a-plane",
+    ],
 )
 def test_build_rejects_a_wrong_type(kwargs):
     node = HarnessPipeline().create(AutoSupportPlane)

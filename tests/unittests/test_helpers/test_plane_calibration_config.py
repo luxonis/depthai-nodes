@@ -40,6 +40,7 @@ def test_configuration_stores_built_in_numbers():
         max_plane_passes=np.int64(4),  # pyright: ignore[reportArgumentType]
         check_distance_mm=np.int64(12),  # pyright: ignore[reportArgumentType]
         min_on_plane_ratio=np.float32(0.5),  # pyright: ignore[reportArgumentType]
+        max_calibration_attempts=np.int64(2),  # pyright: ignore[reportArgumentType]
     )
 
     assert config.voxel_size_mm.__class__ is float
@@ -50,6 +51,8 @@ def test_configuration_stores_built_in_numbers():
     assert config.check_distance_mm == 12.0
     assert config.min_on_plane_ratio.__class__ is float
     assert config.min_on_plane_ratio == 0.5
+    assert config.max_calibration_attempts.__class__ is int
+    assert config.max_calibration_attempts == 2
 
 
 INT_FIELDS = ("ransac_sample_points", "ransac_max_iterations", "max_plane_passes")
@@ -64,8 +67,18 @@ FLOAT_FIELDS = (
 )
 
 
-@pytest.mark.parametrize("name", INT_FIELDS)
-@pytest.mark.parametrize("value", [3.5, 3.0, "three", None, True])
+@pytest.mark.parametrize(
+    "name,value",
+    [
+        *(
+            (name, value)
+            for name in INT_FIELDS
+            for value in (3.5, 3.0, "three", None, True)
+        ),
+        # The attempt cap takes None for no cap.
+        *(("max_calibration_attempts", value) for value in (3.5, 3.0, "three", True)),
+    ],
+)
 def test_configuration_rejects_wrong_int_types(name, value):
     with pytest.raises(TypeError):
         PlaneCalibrationConfig(**{name: value})
@@ -81,7 +94,11 @@ def test_configuration_rejects_wrong_float_types(name, value):
 @pytest.mark.parametrize(
     "name,value",
     [
-        *((name, value) for name in INT_FIELDS for value in (0, -1)),
+        *(
+            (name, value)
+            for name in (*INT_FIELDS, "max_calibration_attempts")
+            for value in (0, -1)
+        ),
         *((name, value) for name in FLOAT_FIELDS for value in (float("nan"), -1.0)),
         ("ransac_sample_points", 2),
         ("distance_threshold_mm", 0),
@@ -104,28 +121,10 @@ def test_configuration_accepts_range_boundaries():
         max_gravity_angle_deg=0,
         ransac_max_iterations=1,
         min_on_plane_ratio=1,
+        max_calibration_attempts=1,
     )
 
     assert config.min_inlier_ratio == 1.0
     assert config.max_gravity_angle_deg == 0.0
     assert config.min_on_plane_ratio == 1.0
-
-
-@pytest.mark.parametrize("value", [1, np.int64(2)])
-def test_attempt_cap_accepts_integers_from_one(value):
-    config = PlaneCalibrationConfig(max_calibration_attempts=value)
-
-    assert config.max_calibration_attempts == value
-    assert config.max_calibration_attempts.__class__ is int
-
-
-@pytest.mark.parametrize("value", [True, False, 2.0, 2.5, "two"])
-def test_attempt_cap_rejects_bools_and_non_integers(value):
-    with pytest.raises(TypeError):
-        PlaneCalibrationConfig(max_calibration_attempts=value)
-
-
-@pytest.mark.parametrize("value", [0, -1])
-def test_attempt_cap_rejects_values_below_one(value):
-    with pytest.raises(ValueError):
-        PlaneCalibrationConfig(max_calibration_attempts=value)
+    assert config.max_calibration_attempts == 1
