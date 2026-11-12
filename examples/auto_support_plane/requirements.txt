@@ -1,0 +1,3 @@
+# Pin PR #340's reviewed library revision for standalone and host installs.
+depthai==3.12.0
+depthai-nodes[box-measurement] @ https://github.com/luxonis/depthai-nodes/archive/299bd64e9790bd985583c91c2d0846b02124281e.zip

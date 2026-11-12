@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#091119">
+  <title>Support Plane · OAK4</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="brand"><span class="mark">◈</span><div><h1>Support plane</h1><p>OAK4 / AUTO CALIBRATION</p></div></div>
+    <div class="connection"><span id="connection-dot" class="dot"></span><span id="connection">Connecting…</span></div>
+  </header>
+  <main>
+    <section class="viewport" aria-label="Interactive point cloud">
+      <canvas id="cloud" aria-label="Point cloud: drag to orbit, scroll to zoom, shift-drag to pan"></canvas>
+      <div class="view-top"><span id="frame-kind" class="badge">WAITING FOR CLOUD</span><span id="frame-number">Optical frame · millimeters</span></div>
+      <div id="empty"><span class="empty-icon">◌</span><h2>Waiting for your scene</h2><p>Point the OAK4 toward a table or floor.<br>Keep it still while the support planes are found.</p></div>
+      <div class="view-tools"><button id="reset-view">Fit view</button><label><input id="plane-only" type="checkbox"> Plane only</label><label>Point size <input id="point-size" type="range" min="1" max="7" value="3"></label></div>
+      <div class="view-bottom"><div><span class="legend plane"></span><span id="legend-label">Selected plane</span><span class="legend scene"></span>Scene</div><span>Drag to orbit · Scroll to zoom · Shift-drag to pan</span></div>
+      <div id="cloud-caption">The cloud appears here when the device is connected.</div>
+    </section>
+    <aside>
+      <div class="section-heading"><span class="eyebrow">01 / CALIBRATION</span><span id="phase" class="phase">Starting</span></div>
+      <h2 id="selection-title">Find your support surface</h2>
+      <p id="selection-help" class="muted">Candidates appear once a horizontal surface is found.</p>
+      <div id="sensor-warning" role="status" hidden></div>
+      <div id="error" role="alert" hidden></div>
+      <div id="candidates" role="group" aria-label="Candidate planes"></div>
+      <button id="confirm" class="primary" disabled>Confirm plane <span>↗</span></button>
+      <div class="button-row"><button id="reject" disabled>None of these · retry</button><button id="search">Search again</button></div>
+
+      <section class="checks">
+        <span class="eyebrow">02 / PLANE CHECK</span>
+        <div class="metric-grid"><div><span>Coverage</span><strong id="coverage">—</strong></div><div><span>Tilt from horizontal</span><strong id="tilt">—</strong></div></div>
+        <div class="check-line"><span id="check-status">No verification yet</span><span id="result-status">No result yet</span></div>
+        <p id="fit-outcome" class="hint">No calibration attempt finished</p>
+        <p class="hint">Coverage uses sampled valid depth points. Candidate inlier ratios use the filtered calibration cloud.</p>
+      </section>
+
+      <details id="settings-panel">
+        <summary><span>Run settings</span><span class="muted">Mode, verification & fitting</span></summary>
+        <form id="settings">
+          <label>Mode<select name="mode"><option value="continuous">Continuous · verify and refit</option><option value="on_start">On start · find once</option></select></label>
+          <label>Candidate selection<select name="selection"><option value="manual">Manual · confirm in browser</option><option value="automatic">Automatic · most inliers, nearest tie</option></select></label>
+          <div class="form-grid"><label>Check interval (s)<input name="check_interval_sec" type="number" min="0.01" step="any"></label><label>Failures before refit<input name="failed_checks_before_refit" type="number" min="1" step="1"></label></div>
+          <div class="form-grid"><label>Attempt limit (clouds)<input name="max_calibration_attempts" type="number" min="1" step="1" placeholder="Blank = unlimited"></label><label>Check distance (mm)<input name="check_distance_mm" type="number" min="0.1" step="any"></label></div>
+          <label>Minimum plane coverage (0–1)<input name="min_on_plane_ratio" type="number" min="0" max="1" step="0.01"></label>
+          <details><summary>Advanced fitting parameters</summary><div class="form-grid" id="fitting-fields"></div></details>
+          <p class="hint">Settings are fixed at build. Apply restarts the pipeline and starts a new search. Restore a JSON plane to demonstrate the initial-plane verification gate.</p>
+          <button type="submit">Apply & restart search</button>
+        </form>
+      </details>
+
+      <details>
+        <summary><span>Saved plane</span><span class="muted" id="saved-status">No saved plane</span></summary>
+        <p class="hint">Confirmed planes persist on the OAK. A restored plane must pass a fresh depth + gravity check before it is accepted.</p>
+        <div class="button-row"><button id="export" disabled>Export JSON</button><button id="import">Restore JSON</button><button id="forget">Forget</button></div>
+        <input id="plane-file" type="file" accept=".json,application/json" hidden>
+        <pre id="plane-equation">No confirmed plane</pre>
+      </details>
+
+      <details><summary><span>Activity</span><span class="muted">Latest 30 events</span></summary><ol id="events"></ol></details>
+      <details id="simulation" hidden open><summary>Synthetic scene controls</summary><p class="hint">No camera is connected. Real AutoSupportPlane + Open3D run on synthetic clouds in a native host-only pipeline.</p><div class="button-row"><button data-demo="move">Move camera</button><button data-demo="occlude">Toggle occlusion</button><button data-demo="imu">Toggle IMU</button></div></details>
+      <p class="footnote">Move the camera after confirming. When the plane no longer passes the checks, a refit opens new candidates. An unchanged plane can stay valid after motion.</p>
+    </aside>
+  </main>
+  <footer><span>DEPTHAI REMOTE CONNECTION</span><span id="point-count">0 displayed points</span><a href="https://github.com/luxonis/depthai-nodes/pull/340" target="_blank" rel="noreferrer">PR #340 ↗</a></footer>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
