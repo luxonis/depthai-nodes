@@ -30,13 +30,13 @@ oakctl run-script python examples/camera_movement/record_imu.py \
 
 Follow the printed cues. Each tilt and turn is followed by a hold at the new
 pose, a return to the marked pose, and another still period. The full sequence
-takes 2 minutes 37 seconds.
+takes 2 minutes 30 seconds.
 
 | Cue | Action |
 | --- | --- |
 | Baseline | Leave the camera still for 15 seconds. This is the only calibration marker in the take. |
 | Slow and quick tilt | Tilt down about 10° over the slow window or in one brisk motion during the quick window. Keep the changed pose until the return cue. |
-| Slow and quick yaw | Turn the camera about 20° while keeping its base flat. Keep the changed heading until the return cue. |
+| Slow and quick yaw | Turn about 20° with the base flat. Use 4–5 seconds for slow yaw and one brisk turn for quick yaw. Hold until the return cue. |
 | Bump | Tap the desk near the camera a few times. Leave the camera in the marked pose. |
 | Magnetic disturbance | Move the steel tool near the stationary camera and back away. |
 
@@ -99,6 +99,8 @@ carries the angle, reason, and the IMU report timestamps.
 
 To detect short horizontal turns, pass
 `CameraMovementConfig(turn_threshold_deg=15)` to `build`. This emits
-`turn_detected` for a completed turn around gravity. The estimate is limited
-to the current turn and an IMU gap can interrupt it. A return turn can
-produce its own event. Long-term heading needs a reliable heading reference.
+`turn_detected` for a completed turn around gravity. The projected rate
+must reach 3°/s to start. The turn must end with 0.5 seconds below 3°/s
+within 15 seconds of starting. An IMU gap can interrupt the estimate, and
+a return turn can produce its own event. Long-term heading needs a reliable
+heading reference.

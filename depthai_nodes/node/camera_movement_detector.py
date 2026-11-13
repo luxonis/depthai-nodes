@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import time
+from collections import deque
 from dataclasses import dataclass
 from datetime import timedelta
 
@@ -22,7 +23,6 @@ _GRAVITY = 9.80665
 _GRAVITY_TOLERANCE = 0.6  # m/s²
 _STATIONARY_RATE = math.radians(3)
 _MAX_TILT_RATE = math.radians(8)
-_CALIBRATION_RATE = math.radians(5)
 _CALIBRATION_SPREAD_DEG = 1.0
 _GRAVITY_FILTER_SECONDS = 0.2
 _TURN_SETTLE_SECONDS = 0.5
@@ -35,10 +35,12 @@ class CameraMovementConfig:
     """Thresholds and timing for fixed-camera monitoring.
 
     The tilt alert rearms below `tilt_rearm_deg`. Set
-    `turn_threshold_deg` to detect net rotation around gravity over a short
-    episode, or leave it at None for tilt monitoring alone. Setting
-    `status_interval_s` to None disables the heartbeat. IMU gaps longer
-    than `max_sample_gap_s` interrupt calibration, confirmation and turns.
+    `turn_threshold_deg` to detect net rotation around gravity, or leave it
+    at None for tilt monitoring alone. A turn starts at a projected rate of
+    at least 3°/s and must finish with 0.5 seconds below that rate within 15
+    seconds of starting. Setting `status_interval_s` to None disables the
+    heartbeat. A gap longer than `max_sample_gap_s` in either IMU stream
+    interrupts calibration, confirmation and turns.
     """
 
     tilt_threshold_deg: float = 3.0
@@ -104,7 +106,6 @@ class CameraMovementDetector(dai.node.ThreadedHostNode):
         self.status = self.createOutput(name="status")
         self._config = CameraMovementConfig()
         self._baseline: np.ndarray | None = None
-        self._gravity: np.ndarray | None = None
         self._filtered_accel: np.ndarray | None = None
         self._gyro_bias = np.zeros(3)
         self._tilt_deg: float | None = None
@@ -124,6 +125,10 @@ class CameraMovementDetector(dai.node.ThreadedHostNode):
         self._accel_time = 0.0
         self._gyro_arrival: float | None = None
         self._accel_arrival: float | None = None
+        self._pending_accel: deque[
+            tuple[dai.IMUReportAccelerometer, np.ndarray, float, float]
+        ] = deque()
+        self._turn_gravity: np.ndarray | None = None
         self._turn_start: float | None = None
         self._turn_quiet_since: float | None = None
         self._turn_angle = 0.0
@@ -161,8 +166,7 @@ class CameraMovementDetector(dai.node.ThreadedHostNode):
                 message = self._imu.tryGet()
                 if isinstance(message, dai.IMUData):
                     for packet in message.packets:
-                        self._process_gyro(packet.gyroscope, now)
-                        self._process_accel(packet.acceleroMeter, now)
+                        self._process_packet(packet, now)
                 interval = self._config.status_interval_s
                 if interval is not None and now >= next_status:
                     self._send_status(now)
@@ -171,6 +175,11 @@ class CameraMovementDetector(dai.node.ThreadedHostNode):
                     time.sleep(0.005)
         except dai.MessageQueue.QueueException:  # pyright: ignore[reportGeneralTypeIssues]
             return
+
+    def _process_packet(self, packet: dai.IMUPacket, now: float) -> None:
+        self._queue_accel(packet.acceleroMeter, now)
+        self._process_gyro(packet.gyroscope, now)
+        self._process_ready_accel()
 
     def _process_gyro(self, report: dai.IMUReportGyroscope, now: float) -> None:
         sample = _vector(report)
@@ -182,18 +191,34 @@ class CameraMovementDetector(dai.node.ThreadedHostNode):
         self._gyro_time = stamp
         self._gyro_host_time = report.getTimestamp()
         self._gyro_arrival = now
-        threshold = self._config.turn_threshold_deg
-        if threshold is None or self._gravity is None:
+        if dt > self._config.max_sample_gap_s:
+            self._reset_imu_windows()
+            while self._pending_accel and self._pending_accel[0][2] < stamp:
+                self._pending_accel.popleft()
             return
-        if (
-            dt > self._config.max_sample_gap_s
-            or self._accel_arrival is None
-            or now - self._accel_arrival > self._config.imu_stale_after_s
-            or abs(stamp - self._accel_time) > self._config.max_sample_gap_s
-        ):
+
+        threshold = self._config.turn_threshold_deg
+        gravity = self._turn_gravity
+        if threshold is None or gravity is None:
+            return
+        if abs(stamp - self._accel_time) > self._config.max_sample_gap_s:
+            self._turn_gravity = None
             self._turn_start = None
             return
-        rate = float(np.dot(sample - self._gyro_bias, self._gravity))
+
+        # Gravity rotates opposite to the camera in IMU coordinates. Propagate
+        # it with the gyro while the tilt filter is paused during fast motion.
+        omega = sample - self._gyro_bias
+        speed = float(np.linalg.norm(omega))
+        rate = float(np.dot(omega, gravity))
+        if speed > 0:
+            axis = omega / speed
+            cosine = math.cos(speed * dt)
+            self._turn_gravity = (
+                cosine * gravity
+                - math.sin(speed * dt) * np.cross(axis, gravity)
+                + (1 - cosine) * (rate / speed) * axis
+            )
         if self._turn_start is None:
             if abs(rate) >= _STATIONARY_RATE:
                 self._turn_start = stamp
@@ -213,7 +238,13 @@ class CameraMovementDetector(dai.node.ThreadedHostNode):
                 self._send_event(CameraMovementReason.TURN_DETECTED, angle, report)
             self._turn_start = None
 
-    def _process_accel(self, report: dai.IMUReportAccelerometer, now: float) -> None:
+    def _reset_imu_windows(self) -> None:
+        self._calibration_start = None
+        self._tilt_candidate = None
+        self._turn_start = None
+        self._turn_gravity = None
+
+    def _queue_accel(self, report: dai.IMUReportAccelerometer, now: float) -> None:
         sample = _vector(report)
         stamp = report.getTimestampDevice().total_seconds()
         if sample is None or stamp <= self._accel_time:
@@ -221,9 +252,28 @@ class CameraMovementDetector(dai.node.ThreadedHostNode):
         dt = stamp - self._accel_time
         self._accel_time = stamp
         self._accel_arrival = now
-        if dt > self._config.max_sample_gap_s:
-            self._calibration_start = None
-            self._tilt_candidate = None
+        gap = self._config.max_sample_gap_s
+        if dt > gap:
+            self._reset_imu_windows()
+            self._pending_accel.clear()
+        while self._pending_accel and stamp - self._pending_accel[0][2] > gap:
+            self._pending_accel.popleft()
+        self._pending_accel.append((report, sample, stamp, dt))
+
+    def _process_ready_accel(self) -> None:
+        # Wait for gyro coverage before using an accelerometer report to
+        # confirm a tilt or complete calibration. The next gyro report can
+        # reveal a gap even when the cached report is still close in time.
+        while self._pending_accel and self._pending_accel[0][2] <= self._gyro_time:
+            self._process_accel(*self._pending_accel.popleft())
+
+    def _process_accel(
+        self,
+        report: dai.IMUReportAccelerometer,
+        sample: np.ndarray,
+        stamp: float,
+        dt: float,
+    ) -> None:
         magnitude = float(np.linalg.norm(sample))
         gyro = self._gyro
         if (
@@ -240,7 +290,8 @@ class CameraMovementDetector(dai.node.ThreadedHostNode):
             self._collect_calibration(report, stamp, direction, gyro)
         if self._baseline is None or self._filtered_accel is None:
             return
-        if np.linalg.norm(gyro - self._gyro_bias) > _MAX_TILT_RATE:
+        speed = float(np.linalg.norm(gyro - self._gyro_bias))
+        if speed > _MAX_TILT_RATE:
             self._tilt_candidate = None
             return
 
@@ -248,12 +299,19 @@ class CameraMovementDetector(dai.node.ThreadedHostNode):
         self._filtered_accel += weight * (direction - self._filtered_accel)
         magnitude = np.linalg.norm(self._filtered_accel)
         if magnitude < 0.5:
-            self._gravity = None
-            self._turn_start = None
             self._tilt_candidate = None
             return
-        self._gravity = self._filtered_accel / magnitude
-        self._tilt_deg = _angle_deg(self._baseline, self._gravity)
+        if (
+            self._config.turn_threshold_deg is not None
+            and self._turn_start is None
+            and speed < _STATIONARY_RATE
+        ):
+            if self._turn_gravity is None:
+                self._turn_gravity = direction
+            else:
+                gravity = self._turn_gravity + weight * (direction - self._turn_gravity)
+                self._turn_gravity = gravity / np.linalg.norm(gravity)
+        self._tilt_deg = _angle_deg(self._baseline, self._filtered_accel / magnitude)
         if self._tilt_changed:
             beyond = self._tilt_deg <= self._config.tilt_rearm_deg
         else:
@@ -279,7 +337,7 @@ class CameraMovementDetector(dai.node.ThreadedHostNode):
     ) -> None:
         if (
             min(report.getTimestamp(), self._gyro_host_time) < self._calibration_after
-            or np.linalg.norm(gyro) > _CALIBRATION_RATE
+            or np.linalg.norm(gyro) >= _STATIONARY_RATE
         ):
             self._calibration_start = None
             return
@@ -300,7 +358,7 @@ class CameraMovementDetector(dai.node.ThreadedHostNode):
         if stamp - self._calibration_start >= self._config.calibration_window_s:
             baseline = self._calibration_gravity_sum
             self._baseline = baseline / np.linalg.norm(baseline)
-            self._gravity = self._baseline
+            self._turn_gravity = self._baseline
             self._filtered_accel = self._baseline.copy()
             self._gyro_bias = self._calibration_gyro_sum / self._calibration_count
             self._calibration = CameraMovementCalibrationState.SUCCEEDED

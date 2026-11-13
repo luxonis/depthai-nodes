@@ -26,7 +26,7 @@ DESK_TEST = (
     ("hold_quick_tilt", 8, "Keep the camera at the new tilt."),
     ("return_from_quick_tilt", 6, "Return to the original pose, then let go."),
     ("settle_after_quick_tilt", 6, "Leave the camera still."),
-    ("slow_yaw", 12, "Keep it flat and slowly turn it about 20 degrees."),
+    ("slow_yaw", 5, "Keep it flat and turn about 20 degrees over 4–5 seconds."),
     ("hold_yaw", 8, "Keep it at the new heading."),
     ("return_from_yaw", 6, "Turn back to the original heading, then let go."),
     ("settle_after_yaw", 6, "Leave the camera still."),
