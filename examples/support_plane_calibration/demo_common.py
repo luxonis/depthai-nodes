@@ -52,11 +52,15 @@ def cloud_preview(cloud):
 
 def serve(app, address, port, frontend, shared_frontend):
     class Handler(SimpleHTTPRequestHandler):
+        def end_headers(self):
+            # OAK App frontend ports can be reused by another app.
+            self.send_header("Cache-Control", "no-store")
+            super().end_headers()
+
         def json_response(self, data, status=HTTPStatus.OK):
             content = json.dumps(data, allow_nan=False).encode()
             self.send_response(status)
             self.send_header("Content-Type", "application/json")
-            self.send_header("Cache-Control", "no-store")
             self.send_header("Content-Length", str(len(content)))
             self.end_headers()
             self.wfile.write(content)
