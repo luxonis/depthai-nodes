@@ -927,7 +927,8 @@ def test_stop_during_the_capping_fit_reports_failed():
     assert calibrator.no_result()
 
 
-def test_attempts_without_a_cap_keep_searching(calibrator):
+def test_attempts_without_a_cap_keep_searching(calibrator, clock):
+    # Freeze IMU age so slow runners still exercise all 20 fits.
     calibrator.start()
     calibrator.gravity()
     for _ in range(20):
