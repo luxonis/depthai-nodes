@@ -52,6 +52,12 @@ class PlaneCalibrationConfig:
         voxel_size_mm: Downsampling voxel size in millimeters. Must be positive.
         max_gravity_angle_deg: Largest angle between a plane normal and the
             direction opposing gravity, from 0 up to but excluding 90.
+        min_camera_height_mm: Smallest distance, in millimeters, from the
+            camera down to a plane that passes the level test, for a camera
+            mounted at a known height. Positive, or ``None`` for no bound.
+        max_camera_height_mm: Largest distance, in millimeters, from the camera
+            down to a plane that passes the level test. Positive and at least
+            ``min_camera_height_mm``, or ``None`` for no bound.
         merge_distance_threshold_mm: Largest offset difference, in millimeters,
             at which two parallel candidates count as one plane. Must be
             positive.
@@ -79,6 +85,8 @@ class PlaneCalibrationConfig:
     min_inlier_count: int = 3
     voxel_size_mm: float = 30.0
     max_gravity_angle_deg: float = 6.5
+    min_camera_height_mm: float | None = None
+    max_camera_height_mm: float | None = None
     merge_distance_threshold_mm: float = 25.0
     max_calibration_attempts: int | None = None
     check_distance_mm: float = 30.0
@@ -132,3 +140,19 @@ class PlaneCalibrationConfig:
                 f"max_gravity_angle_deg must be from 0 up to 90, got {angle}"
             )
         object.__setattr__(self, "max_gravity_angle_deg", angle)
+        for name in ("min_camera_height_mm", "max_camera_height_mm"):
+            if getattr(self, name) is None:
+                continue
+            height = _check_float(name, getattr(self, name))
+            if height <= 0:
+                raise ValueError(f"{name} must be positive, got {height}")
+            object.__setattr__(self, name, height)
+        if (
+            self.min_camera_height_mm is not None
+            and self.max_camera_height_mm is not None
+            and self.min_camera_height_mm > self.max_camera_height_mm
+        ):
+            raise ValueError(
+                "min_camera_height_mm must be at most max_camera_height_mm, got "
+                f"{self.min_camera_height_mm} > {self.max_camera_height_mm}"
+            )

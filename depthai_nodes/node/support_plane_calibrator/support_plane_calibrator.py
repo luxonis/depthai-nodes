@@ -331,7 +331,6 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         assert self._config is not None and self._fitter is not None
         if not self._verifications:
             return
-        max_angle = self._config.max_gravity_angle_deg
         sample = _sample_valid_points(points, self._fitter.cloud_size)
         while self._verifications:
             plane = self._verifications.popleft()
@@ -342,7 +341,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                 plane, sample, self._config.check_distance_mm
             )
             accepted = (
-                is_valid_horizontal_plane(plane_eq, gravity, max_angle)
+                is_valid_horizontal_plane(plane_eq, gravity, self._config)
                 and on_plane_ratio is not None
                 and on_plane_ratio >= self._config.min_on_plane_ratio
             )

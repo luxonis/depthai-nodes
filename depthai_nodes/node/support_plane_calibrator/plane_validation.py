@@ -2,6 +2,8 @@
 
 import numpy as np
 
+from .plane_calibration_config import PlaneCalibrationConfig
+
 
 def orient_along_gravity(plane_eq: np.ndarray, gravity: np.ndarray) -> np.ndarray:
     """Return the plane equation with its normal pointing away from ``gravity``.
@@ -25,29 +27,33 @@ def orient_along_gravity(plane_eq: np.ndarray, gravity: np.ndarray) -> np.ndarra
 
 
 def is_valid_horizontal_plane(
-    plane_eq: np.ndarray, gravity: np.ndarray, max_gravity_angle_deg: float
+    plane_eq: np.ndarray, gravity: np.ndarray, config: PlaneCalibrationConfig
 ) -> bool:
-    """Check that a plane is horizontal and lies below the camera.
+    """Check that a plane is horizontal and lies below the camera (the level test).
 
     Args:
         plane_eq: Plane ``(a, b, c, d)`` with a unit normal ``(a, b, c)``,
             oriented with `orient_along_gravity`.
         gravity: Raw accelerometer vector; only its direction is used.
-        max_gravity_angle_deg: Largest accepted angle between the normal and
-            the direction opposing gravity.
+        config: Supplies the largest angle between the normal and the direction
+            opposing gravity, and the camera height range.
 
     Returns:
-        ``True`` if the normal is within the angle and the offset ``d`` is not
-        positive. ``False`` if ``gravity`` is the zero vector.
+        ``True`` if the normal is within the angle and the camera height ``-d``
+        is not negative and within the configured range. ``False`` if
+        ``gravity`` is the zero vector.
     """
     gravity_norm = np.linalg.norm(gravity)
     if gravity_norm == 0:
         return False
     normalized_gravity = gravity / gravity_norm
+    camera_height_mm = -float(plane_eq[3])
+    low, high = config.min_camera_height_mm, config.max_camera_height_mm
     return bool(
         np.dot(plane_eq[:3], normalized_gravity)
-        <= -np.cos(np.deg2rad(max_gravity_angle_deg))
-        and plane_eq[3] <= 0
+        <= -np.cos(np.deg2rad(config.max_gravity_angle_deg))
+        and camera_height_mm >= (0.0 if low is None else low)
+        and (high is None or camera_height_mm <= high)
     )
 
 

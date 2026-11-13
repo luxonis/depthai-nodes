@@ -150,9 +150,7 @@ class SupportPlaneFitter:
             if norm < 1e-6:
                 break
             plane_eq = orient_along_gravity(plane_eq / norm, gravity)
-            if is_valid_horizontal_plane(
-                plane_eq, gravity, config.max_gravity_angle_deg
-            ):
+            if is_valid_horizontal_plane(plane_eq, gravity, config):
                 centroid = np.asarray(cloud.points)[inliers].mean(axis=0)
                 fits.append(PlaneFit(len(inliers), plane_eq, centroid))
             cloud = cloud.select_by_index(inliers, invert=True)

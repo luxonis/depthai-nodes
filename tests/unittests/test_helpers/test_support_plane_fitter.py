@@ -126,6 +126,17 @@ def test_stops_at_a_plane_with_too_few_inliers(floor_config):
     assert offsets(scene, **floor_config) == [-1000]
 
 
+def test_planes_outside_the_camera_height_range_are_dropped():
+    scene = ScriptedScene([([0.0, 0.0, 1.0, -800.0 - 300.0 * i], 50) for i in range(3)])
+
+    assert offsets(
+        scene,
+        max_plane_passes=3,
+        min_camera_height_mm=900,
+        max_camera_height_mm=1200,
+    ) == [-1100]
+
+
 def test_fit_errors_propagate():
     scene = ScriptedScene([], error=ValueError("broken geometry"))
 

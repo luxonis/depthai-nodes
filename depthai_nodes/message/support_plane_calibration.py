@@ -316,8 +316,8 @@ class SupportPlaneVerificationResult(dai.Buffer):
         """Whether the plane passed the level test with enough of the cloud on it.
 
         The plane is within ``max_gravity_angle_deg`` of level, below the
-        camera, and has a measured on-plane ratio of at least
-        ``min_on_plane_ratio``.
+        camera within any configured camera height range, and has a measured
+        on-plane ratio of at least ``min_on_plane_ratio``.
         """
         return self._accepted
 

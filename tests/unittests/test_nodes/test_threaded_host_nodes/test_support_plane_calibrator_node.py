@@ -722,6 +722,21 @@ def test_verification_uses_the_built_tolerance():
     assert calibrator.verification().accepted
 
 
+def test_verification_uses_the_built_camera_height_range():
+    calibrator = Harness(
+        PlaneCalibrationConfig(min_on_plane_ratio=0, max_camera_height_mm=1200),
+        LARGE_CLOUD_SIZE,
+    )
+    calibrator.gravity()
+    calibrator.verify(tilted_plane(0, offset_mm=-1300))
+    calibrator.verify(tilted_plane(0, offset_mm=-1000))
+    calibrator.plane_cloud()
+    calibrator.run()
+
+    assert not calibrator.verification().accepted
+    assert calibrator.verification().accepted
+
+
 def test_build_uses_the_default_config():
     calibrator = Harness(size=LARGE_CLOUD_SIZE)
     level, tilted = tilted_plane(6), tilted_plane(7)
