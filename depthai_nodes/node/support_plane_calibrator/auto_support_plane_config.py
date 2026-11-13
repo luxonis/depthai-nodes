@@ -8,6 +8,7 @@ from .plane_calibration_config import (
     _check_float,
     _check_int,
 )
+from .support_plane_calibration import SupportPlaneCalibrationConfig
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -22,10 +23,8 @@ class AutoSupportPlaneConfig:
             plane check, in ``CONTINUOUS`` mode. Must be finite and positive.
         failed_checks_before_refit: Failed plane checks in a row that start a
             refit, in ``CONTINUOUS`` mode. At least 1.
-        calibration: Settings of the inner ``SupportPlaneCalibrator``,
-            including the ``check_distance_mm`` and ``min_on_plane_ratio`` that
-            judge a plane check. The on-plane ratio is not a candidate's
-            ``inlier_ratio``.
+        calibration: Settings of the inner ``SupportPlaneCalibration``.
+            Pass a ``PlaneCalibrationConfig`` to use the legacy calibrator.
 
     Raises:
         TypeError: If a field has the wrong type.
@@ -41,7 +40,9 @@ class AutoSupportPlaneConfig:
     mode: Mode = Mode.ON_START
     check_interval_sec: float = 0.5
     failed_checks_before_refit: int = 3
-    calibration: PlaneCalibrationConfig = field(default_factory=PlaneCalibrationConfig)
+    calibration: SupportPlaneCalibrationConfig | PlaneCalibrationConfig = field(
+        default_factory=SupportPlaneCalibrationConfig
+    )
 
     def __post_init__(self) -> None:
         """Validate the fields and store numbers as built-in types.
@@ -67,8 +68,10 @@ class AutoSupportPlaneConfig:
                 f"failed_checks_before_refit must be at least 1, got {checks}"
             )
         object.__setattr__(self, "failed_checks_before_refit", checks)
-        if not isinstance(self.calibration, PlaneCalibrationConfig):
+        if not isinstance(
+            self.calibration, (SupportPlaneCalibrationConfig, PlaneCalibrationConfig)
+        ):
             raise TypeError(
-                "calibration must be PlaneCalibrationConfig, got "
+                "calibration must be SupportPlaneCalibrationConfig or PlaneCalibrationConfig, got "
                 f"{type(self.calibration).__name__}"
             )

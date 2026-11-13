@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Auto support plane</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="viewer.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <p class="context">OAK4 · Automatic selection</p>
+        <h1>Auto support plane</h1>
+      </div>
+      <output id="activity" aria-live="polite">Connecting</output>
+    </header>
+    <p id="error" role="alert" hidden></p>
+    <div class="workspace">
+      <section class="preview" aria-labelledby="preview-title">
+        <div class="heading">
+          <h2 id="preview-title">Live depth</h2>
+          <span id="frame">Waiting for point cloud</span>
+        </div>
+        <canvas id="depth" aria-label="Depth map highlighting points near the held plane"></canvas>
+        <div class="legend"><span><i></i> Near held plane</span><span>Near <b></b> Far</span></div>
+        <div id="scene" hidden>
+          <p id="overlay">Change the synthetic surface to exercise a refit.</p>
+          <div class="actions">
+            <button data-depth="800">Set scene to 800 mm</button>
+            <button data-depth="1100">Set scene to 1100 mm</button>
+          </div>
+        </div>
+      </section>
+      <section aria-labelledby="held-title">
+        <div class="heading">
+          <h2 id="held-title">Held plane</h2>
+          <span id="mode"></span>
+        </div>
+        <p id="active">Waiting for a plane.</p>
+        <h2>Latest verification</h2>
+        <div id="verification" aria-live="polite">Waiting for a check.</div>
+      </section>
+    </div>
+    <section class="approval" aria-labelledby="fit-title">
+      <div>
+        <div class="heading"><h2 id="fit-title">Latest fit</h2><span id="fit"></span></div>
+        <div id="candidates">Waiting for a fitting attempt.</div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

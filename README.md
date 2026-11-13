@@ -153,6 +153,9 @@ processing that depends on the plane.
 
 The [standalone OAK4 example](examples/support_plane_calibration/README.md)
 provides a browser workflow for search, review, verification, and approval.
+The [automatic OAK4 example](examples/auto_support_plane_calibration/README.md)
+shows automatic selection, periodic verification, and refitting with
+`AutoSupportPlane`.
 
 ### Runtime
 
