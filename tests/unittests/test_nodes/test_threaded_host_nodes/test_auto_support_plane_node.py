@@ -990,6 +990,7 @@ def random_walk(clock, seed, steps=40):
             max_calibration_attempts=rng.choice([None, 1, 2]),
             min_on_plane_ratio=rng.choice([0.0, 0.5]),
             max_gravity_angle_deg=5,
+            min_inlier_count=rng.choice([1, 4000]),
         ),
     )
     initial_plane = rng.choice([None, floor(-1000), tilted_floor(8)])

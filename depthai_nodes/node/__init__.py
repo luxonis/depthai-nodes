@@ -166,8 +166,10 @@ asks for a plane verification of a given support plane, answered with a
 ratio (the share of the next point cloud on the plane within
 ``check_distance_mm``), and whether it was accepted: within
 ``max_gravity_angle_deg`` of level, below the camera, and with an on-plane
-ratio of at least ``min_on_plane_ratio``. `PlaneCalibrationConfig` holds the
-plane-fitting and attempt settings, fixed at ``build``.
+ratio of at least ``min_on_plane_ratio``. Candidates hold at least
+``min_inlier_count`` points and ``min_inlier_ratio`` of the cloud.
+`PlaneCalibrationConfig` holds the plane-fitting and attempt settings, fixed at
+``build``.
 
 ``SupportPlaneCalibrator`` needs open3d, installed with
 ``pip install "depthai-nodes[box-measurement]"``; without it ``build`` raises

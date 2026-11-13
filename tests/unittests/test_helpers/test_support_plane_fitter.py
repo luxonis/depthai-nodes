@@ -108,12 +108,22 @@ def test_stops_after_the_configured_number_of_planes():
     assert offsets(scene, max_plane_passes=2) == [-1500, -1000]
 
 
-def test_stops_at_a_plane_with_too_few_inliers():
+@pytest.mark.parametrize(
+    "floor_config",
+    [
+        # 10% of the 400-point cloud is 40 points.
+        {"min_inlier_ratio": 0.1},
+        # An absolute floor applies however small the cloud.
+        {"min_inlier_ratio": 0, "min_inlier_count": 11},
+    ],
+    ids=["ratio", "count"],
+)
+def test_stops_at_a_plane_with_too_few_inliers(floor_config):
     scene = ScriptedScene(
         [([0.0, 0.0, 1.0, -1000.0], 100), ([0.0, 0.0, 1.0, -1500.0], 10)]
     )
 
-    assert offsets(scene, min_inlier_ratio=0.1) == [-1000]
+    assert offsets(scene, **floor_config) == [-1000]
 
 
 def test_fit_errors_propagate():

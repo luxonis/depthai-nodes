@@ -120,6 +120,7 @@ class SupportPlaneFitter:
         config = self._config
         min_inliers = max(
             config.ransac_sample_points,
+            config.min_inlier_count,
             # Round first so float noise (0.07 * 100 = 7.000000000000001) does
             # not push an exact count up by one.
             math.ceil(round(config.min_inlier_ratio * len(cloud.points), 9)),

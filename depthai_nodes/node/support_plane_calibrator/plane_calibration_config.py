@@ -46,6 +46,9 @@ class PlaneCalibrationConfig:
         max_plane_passes: Planes extracted from one point cloud. At least 1.
         min_inlier_ratio: Smallest share of the cloud a plane must hold, from 0
             to 1.
+        min_inlier_count: Smallest number of points a plane must hold, however
+            small the cloud. Counted after downsampling, so one point stands
+            for about one ``voxel_size_mm`` square of a surface. At least 1.
         voxel_size_mm: Downsampling voxel size in millimeters. Must be positive.
         max_gravity_angle_deg: Largest angle between a plane normal and the
             direction opposing gravity, from 0 up to but excluding 90.
@@ -73,6 +76,7 @@ class PlaneCalibrationConfig:
     ransac_max_iterations: int = 300
     max_plane_passes: int = 10
     min_inlier_ratio: float = 0.05
+    min_inlier_count: int = 3
     voxel_size_mm: float = 30.0
     max_gravity_angle_deg: float = 6.5
     merge_distance_threshold_mm: float = 25.0
@@ -91,6 +95,7 @@ class PlaneCalibrationConfig:
             "ransac_sample_points": 3,
             "ransac_max_iterations": 1,
             "max_plane_passes": 1,
+            "min_inlier_count": 1,
         }
         for name, minimum in minimum_ints.items():
             value = _check_int(name, getattr(self, name))

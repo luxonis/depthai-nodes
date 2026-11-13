@@ -41,6 +41,7 @@ def test_configuration_stores_built_in_numbers():
         check_distance_mm=np.int64(12),  # pyright: ignore[reportArgumentType]
         min_on_plane_ratio=np.float32(0.5),  # pyright: ignore[reportArgumentType]
         max_calibration_attempts=np.int64(2),  # pyright: ignore[reportArgumentType]
+        min_inlier_count=np.int64(50),  # pyright: ignore[reportArgumentType]
     )
 
     assert config.voxel_size_mm.__class__ is float
@@ -53,9 +54,16 @@ def test_configuration_stores_built_in_numbers():
     assert config.min_on_plane_ratio == 0.5
     assert config.max_calibration_attempts.__class__ is int
     assert config.max_calibration_attempts == 2
+    assert config.min_inlier_count.__class__ is int
+    assert config.min_inlier_count == 50
 
 
-INT_FIELDS = ("ransac_sample_points", "ransac_max_iterations", "max_plane_passes")
+INT_FIELDS = (
+    "ransac_sample_points",
+    "ransac_max_iterations",
+    "max_plane_passes",
+    "min_inlier_count",
+)
 FLOAT_FIELDS = (
     "distance_threshold_mm",
     "min_inlier_ratio",
@@ -122,9 +130,11 @@ def test_configuration_accepts_range_boundaries():
         ransac_max_iterations=1,
         min_on_plane_ratio=1,
         max_calibration_attempts=1,
+        min_inlier_count=1,
     )
 
     assert config.min_inlier_ratio == 1.0
     assert config.max_gravity_angle_deg == 0.0
     assert config.min_on_plane_ratio == 1.0
     assert config.max_calibration_attempts == 1
+    assert config.min_inlier_count == 1
