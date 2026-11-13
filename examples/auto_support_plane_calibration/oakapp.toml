@@ -10,8 +10,8 @@ prepare_container = [
 ]
 
 build_steps = [
-    { type = "RUN", command = "python3 -m pip install --break-system-packages 'depthai==3.12.0' '/app/library[box-measurement]'" },
-    { type = "RUN", command = "python3 -c 'import open3d; from depthai_nodes.node import AutoSupportPlane'" },
+    "python3 -m pip install --break-system-packages 'depthai==3.12.0' '/app/library[box-measurement]'",
+    "python3 -c 'import open3d; from depthai_nodes.node import AutoSupportPlane'",
 ]
 
 [env]
