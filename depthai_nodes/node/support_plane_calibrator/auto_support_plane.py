@@ -1,5 +1,5 @@
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 
 import depthai as dai
 
@@ -17,7 +17,7 @@ from .auto_support_plane_config import AutoSupportPlaneConfig
 from .support_plane_calibrator import SupportPlaneCalibrator
 
 CandidateSelector = Callable[
-    [tuple[SupportPlaneCandidate, ...]], SupportPlaneCandidate | None
+    [SupportPlaneCalibrationResult], SupportPlaneCandidate | None
 ]
 
 # The calibrator's control input size. The wrapper has at most a Reset, a Start
@@ -107,8 +107,9 @@ class AutoSupportPlane(BaseThreadedHostNode):
             initialPlane: Held at once, then verified on the first cloud with
                 fresh IMU; dropped for a search if rejected.
             selectCandidate: Picks the plane from a successful attempt's
-                candidates, or returns ``None`` to keep searching; runs on the
-                node's thread. ``None`` picks the most inliers.
+                result, which carries the candidates and the stamps of the
+                cloud they came from, or returns ``None`` to keep searching;
+                runs on the node's thread. ``None`` picks the most inliers.
 
         Returns:
             The configured node instance.
@@ -196,7 +197,7 @@ class AutoSupportPlane(BaseThreadedHostNode):
         self._control_output.send(SupportPlaneCalibrationControl.reset())
         self._searching = False
         if result.outcome is CalibrationOutcome.SUCCEEDED:
-            selected = self._select_candidate(result.candidates)
+            selected = self._select_candidate(result)
             if selected is None:
                 self._start_search()
                 return
@@ -285,7 +286,10 @@ class AutoSupportPlane(BaseThreadedHostNode):
 
 
 def _select_largest_plane(
-    candidates: Sequence[SupportPlaneCandidate],
+    result: SupportPlaneCalibrationResult,
 ) -> SupportPlaneCandidate:
     """Return the candidate with the most inliers, ties to the nearest plane."""
-    return max(candidates, key=lambda c: (c.inlier_count, -abs(c.plane.offset_mm)))
+    return max(
+        result.candidates,
+        key=lambda c: (c.inlier_count, -abs(c.plane.offset_mm)),
+    )

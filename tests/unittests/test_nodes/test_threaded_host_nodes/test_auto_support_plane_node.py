@@ -449,8 +449,8 @@ class Selector:
         return self.choose(*args, **kwargs)
 
 
-def farthest(candidates):
-    return max(candidates, key=lambda c: abs(c.plane.offset_mm))
+def farthest(result):
+    return max(result.candidates, key=lambda c: abs(c.plane.offset_mm))
 
 
 def selecting(selector):
@@ -458,24 +458,28 @@ def selecting(selector):
     return Harness(on_start(), selectCandidate=selector)
 
 
-def test_custom_selector_gets_the_whole_tuple_and_its_pick_is_sent():
+def test_custom_selector_gets_the_attempt_result_from_its_cloud_and_its_pick_is_sent():
     selector = Selector(farthest)
     node = selecting(selector)
+    node.gravity()
+    with scripted(scripted_floors((-1000.0, 200), (-1500.0, 100))):
+        cloud = node.plane_cloud()
+        node.run(2)
 
-    result = first_fit(node, scripted_floors((-1000.0, 200), (-1500.0, 100)))
-
+    result = node.result()
     assert result.passed is True
     assert result.plane == floor(-1500)
     ((args, kwargs),) = selector.calls
     assert kwargs == {}
-    (candidates,) = args
-    assert isinstance(candidates, tuple)
-    assert {c.plane for c in candidates} == {floor(-1000), floor(-1500)}
+    (attempt,) = args
+    assert isinstance(attempt, SupportPlaneCalibrationResult)
+    assert {c.plane for c in attempt.candidates} == {floor(-1000), floor(-1500)}
+    assert_stamped_from(attempt, cloud)
 
 
 def test_selector_none_keeps_searching_and_the_next_fit_asks_again():
     selector = Selector(
-        lambda candidates: None if len(selector.calls) < 3 else farthest(candidates)
+        lambda result: None if len(selector.calls) < 3 else farthest(result)
     )
     node = selecting(selector)
     scene = scripted_floors((-1000.0, 200), (-1500.0, 100))
@@ -497,12 +501,12 @@ class SelectorError(Exception):
     pass
 
 
-def raising(candidates):
+def raising(result):
     raise SelectorError
 
 
-def stranger(candidates):
-    """Return a candidate equal to none of ``candidates``."""
+def stranger(result):
+    """Return a candidate equal to none of the result's candidates."""
     return SupportPlaneCandidate(plane=floor(-1234), inlier_count=1, inlier_ratio=1.0)
 
 
