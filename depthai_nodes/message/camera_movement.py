@@ -48,8 +48,8 @@ class CameraMovementEvent(dai.Buffer):
 class CameraMovementStatus(dai.Buffer):
     """A heartbeat with the last estimate, calibration state and IMU freshness.
 
-    Sample ages measure host time since the last usable report arrived. A
-    stale stream can retain a baseline and a latched tilt alarm.
+    Sample ages measure host time since the last usable report arrived. A stale stream
+    can retain a baseline and a latched tilt alarm.
     """
 
     calibration: CameraMovementCalibrationState

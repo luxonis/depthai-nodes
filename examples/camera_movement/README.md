@@ -32,13 +32,13 @@ Follow the printed cues. Each tilt and turn is followed by a hold at the new
 pose, a return to the marked pose, and another still period. The full sequence
 takes 2 minutes 30 seconds.
 
-| Cue | Action |
-| --- | --- |
-| Baseline | Leave the camera still for 15 seconds. This is the only calibration marker in the take. |
-| Slow and quick tilt | Tilt down about 10° over the slow window or in one brisk motion during the quick window. Keep the changed pose until the return cue. |
-| Slow and quick yaw | Turn about 20° with the base flat. Use 4–5 seconds for slow yaw and one brisk turn for quick yaw. Hold until the return cue. |
-| Bump | Tap the desk near the camera a few times. Leave the camera in the marked pose. |
-| Magnetic disturbance | Move the steel tool near the stationary camera and back away. |
+| Cue                  | Action                                                                                                                               |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Baseline             | Leave the camera still for 15 seconds. This is the only calibration marker in the take.                                              |
+| Slow and quick tilt  | Tilt down about 10° over the slow window or in one brisk motion during the quick window. Keep the changed pose until the return cue. |
+| Slow and quick yaw   | Turn about 20° with the base flat. Use 4–5 seconds for slow yaw and one brisk turn for quick yaw. Hold until the return cue.         |
+| Bump                 | Tap the desk near the camera a few times. Leave the camera in the marked pose.                                                       |
+| Magnetic disturbance | Move the steel tool near the stationary camera and back away.                                                                        |
 
 A take produces `recording_*.tar` with native DepthAI IMU messages and
 `imu.jsonl` with unique per-sensor samples, timestamps, and labeled phase

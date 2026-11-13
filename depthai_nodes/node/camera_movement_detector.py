@@ -88,7 +88,7 @@ def _vector(
 class CameraMovementDetector(dai.node.ThreadedHostNode):
     """Report sustained camera tilt from a fixed, app-calibrated baseline.
 
-    Feed `dai.IMUData` containing accelerometer and gyro reports in the same
+    Feed ``dai.IMUData`` containing accelerometer and gyro reports in the same
     coordinate frame. Send `CameraMovementControl.calibrate()` to
     `inputControl` at the intended pose. Successful calibration replaces the
     reference and rearms the alert. A timeout leaves any prior reference intact.
