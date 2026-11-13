@@ -37,6 +37,9 @@ class AutoSupportPlane(BaseThreadedHostNode):
     Attributes:
         out: Output stream of `depthai_nodes.message.AutoSupportPlaneResult`,
             one per found, checked or rejected plane.
+        verificationOutput: Output stream of
+            `depthai_nodes.message.SupportPlaneVerificationResult`, one per
+            ``initialPlane`` gate or plane check, passed or failed.
     """
 
     def __init__(self) -> None:
@@ -71,6 +74,18 @@ class AutoSupportPlane(BaseThreadedHostNode):
             ``dai.Node.Output``: The result output.
         """
         return self._out
+
+    @property
+    def verificationOutput(self) -> dai.Node.Output:
+        """The inner calibrator's plane verifications, one per gate or plane check.
+
+        Use it to watch the angle and on-plane ratio of the held plane, including
+        failed plane checks, which send nothing on ``out``.
+
+        Returns:
+            ``dai.Node.Output``: The verification result output.
+        """
+        return self._calibrator.verificationOutput
 
     def build(
         self,

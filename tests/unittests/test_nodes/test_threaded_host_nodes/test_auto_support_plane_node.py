@@ -25,6 +25,7 @@ from depthai_nodes.message import (  # noqa: E402
     SupportPlaneCalibrationControl,
     SupportPlaneCalibrationResult,
     SupportPlaneCandidate,
+    SupportPlaneVerificationResult,
 )
 from depthai_nodes.node import (  # noqa: E402
     AutoSupportPlane,
@@ -667,6 +668,28 @@ def test_occlusion_keeps_the_plane_through_a_refit_that_finds_nothing(clock):
         for _ in range(5):
             check(node, clock)
         assert node.no_result()
+
+
+def test_verification_output_reports_every_plane_check_with_its_measurements(clock):
+    node = holding(continuous(failed_checks_before_refit=3))
+    verifications = cast(
+        OutputQueueMock, node.node.verificationOutput.createOutputQueue()
+    )
+
+    passing = check(node, clock)
+    check(node, clock, depth=OCCLUDED)
+
+    assert node.result().passed is True
+    assert node.no_result()
+    accepted, rejected = verifications.tryGet(), verifications.tryGet()
+    assert verifications.is_empty()
+    assert isinstance(accepted, SupportPlaneVerificationResult)
+    assert isinstance(rejected, SupportPlaneVerificationResult)
+    assert (accepted.plane, accepted.accepted) == (floor(-1000), True)
+    assert accepted.on_plane_ratio == pytest.approx(1.0)
+    assert_stamped_from(accepted, passing)
+    assert (rejected.plane, rejected.accepted) == (floor(-1000), False)
+    assert rejected.on_plane_ratio == pytest.approx(0.0)
 
 
 def test_one_check_is_in_flight_through_an_imu_stall(clock):

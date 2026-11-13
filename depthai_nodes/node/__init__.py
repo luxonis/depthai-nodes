@@ -203,8 +203,10 @@ Example:
 support plane, sending a `depthai_nodes.message.AutoSupportPlaneResult` on
 ``out``. `AutoSupportPlaneConfig` sets the mode: ``ON_START`` finds a plane once
 and holds it; ``CONTINUOUS`` also checks it about every ``check_interval_sec``
-and refits after repeated failed checks, keeping the old plane meanwhile. It
-needs open3d, like the calibrator.
+and refits after repeated failed checks, keeping the old plane meanwhile. Its
+``verificationOutput`` passes on the inner calibrator's plane verifications, one
+per ``initialPlane`` gate or plane check, to watch the plane's angle and on-plane
+ratio. It needs open3d, like the calibrator.
 
 Drive ``SupportPlaneCalibrator`` directly instead when a person picks among
 the support plane candidates, or for any custom flow.
