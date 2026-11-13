@@ -247,7 +247,8 @@ class SupportPlaneCalibration(dai.node.ThreadedHostNode):
             import open3d  # noqa: F401
         except ImportError as exc:
             raise ImportError(
-                'Install "depthai-nodes[box-measurement]" to fit support planes.'
+                'SupportPlaneCalibration requires Open3D. Install it with '
+                '`pip install "depthai-nodes[box-measurement]"`.'
             ) from exc
         if config is not None and not isinstance(config, SupportPlaneCalibrationConfig):
             raise TypeError("config must be a SupportPlaneCalibrationConfig")
