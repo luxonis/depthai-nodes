@@ -35,33 +35,78 @@ def test_configuration_takes_keyword_arguments_only():
 
 
 def test_configuration_stores_built_in_numbers():
-    config = PlaneCalibrationConfig(voxel_size_mm=30, max_plane_passes=np.int64(4))  # pyright: ignore[reportArgumentType]
+    config = PlaneCalibrationConfig(
+        voxel_size_mm=30,
+        max_plane_passes=np.int64(4),  # pyright: ignore[reportArgumentType]
+        check_distance_mm=np.int64(12),  # pyright: ignore[reportArgumentType]
+        min_on_plane_ratio=np.float32(0.5),  # pyright: ignore[reportArgumentType]
+        max_calibration_attempts=np.int64(2),  # pyright: ignore[reportArgumentType]
+        min_inlier_count=np.int64(50),  # pyright: ignore[reportArgumentType]
+        min_camera_height_mm=np.int64(900),  # pyright: ignore[reportArgumentType]
+        max_camera_height_mm=np.float32(1100),  # pyright: ignore[reportArgumentType]
+    )
 
     assert config.voxel_size_mm.__class__ is float
     assert config.voxel_size_mm == 30.0
     assert config.max_plane_passes.__class__ is int
     assert config.max_plane_passes == 4
+    assert config.check_distance_mm.__class__ is float
+    assert config.check_distance_mm == 12.0
+    assert config.min_on_plane_ratio.__class__ is float
+    assert config.min_on_plane_ratio == 0.5
+    assert config.max_calibration_attempts.__class__ is int
+    assert config.max_calibration_attempts == 2
+    assert config.min_inlier_count.__class__ is int
+    assert config.min_inlier_count == 50
+    assert config.min_camera_height_mm.__class__ is float
+    assert config.min_camera_height_mm == 900.0
+    assert config.max_camera_height_mm.__class__ is float
+    assert config.max_camera_height_mm == 1100.0
 
 
-INT_FIELDS = ("ransac_sample_points", "ransac_max_iterations", "max_plane_passes")
+INT_FIELDS = (
+    "ransac_sample_points",
+    "ransac_max_iterations",
+    "max_plane_passes",
+    "min_inlier_count",
+)
 FLOAT_FIELDS = (
     "distance_threshold_mm",
     "min_inlier_ratio",
     "voxel_size_mm",
     "max_gravity_angle_deg",
     "merge_distance_threshold_mm",
+    "check_distance_mm",
+    "min_on_plane_ratio",
 )
+# Floats that take None for no bound.
+OPTIONAL_FLOAT_FIELDS = ("min_camera_height_mm", "max_camera_height_mm")
 
 
-@pytest.mark.parametrize("name", INT_FIELDS)
-@pytest.mark.parametrize("value", [3.5, 3.0, "three", None, True])
+@pytest.mark.parametrize(
+    "name,value",
+    [
+        *(
+            (name, value)
+            for name in INT_FIELDS
+            for value in (3.5, 3.0, "three", None, True)
+        ),
+        # The attempt cap takes None for no cap.
+        *(("max_calibration_attempts", value) for value in (3.5, 3.0, "three", True)),
+    ],
+)
 def test_configuration_rejects_wrong_int_types(name, value):
     with pytest.raises(TypeError):
         PlaneCalibrationConfig(**{name: value})
 
 
-@pytest.mark.parametrize("name", FLOAT_FIELDS)
-@pytest.mark.parametrize("value", ["one", None, False])
+@pytest.mark.parametrize(
+    "name,value",
+    [
+        *((name, value) for name in FLOAT_FIELDS for value in ("one", None, False)),
+        *((name, value) for name in OPTIONAL_FLOAT_FIELDS for value in ("one", False)),
+    ],
+)
 def test_configuration_rejects_wrong_float_types(name, value):
     with pytest.raises(TypeError):
         PlaneCalibrationConfig(**{name: value})
@@ -70,13 +115,25 @@ def test_configuration_rejects_wrong_float_types(name, value):
 @pytest.mark.parametrize(
     "name,value",
     [
-        *((name, value) for name in INT_FIELDS for value in (0, -1)),
-        *((name, value) for name in FLOAT_FIELDS for value in (float("nan"), -1.0)),
+        *(
+            (name, value)
+            for name in (*INT_FIELDS, "max_calibration_attempts")
+            for value in (0, -1)
+        ),
+        *(
+            (name, value)
+            for name in (*FLOAT_FIELDS, *OPTIONAL_FLOAT_FIELDS)
+            for value in (float("nan"), -1.0)
+        ),
         ("ransac_sample_points", 2),
         ("distance_threshold_mm", 0),
         ("voxel_size_mm", 0),
         ("merge_distance_threshold_mm", 0),
+        ("check_distance_mm", 0),
+        ("min_camera_height_mm", 0),
+        ("max_camera_height_mm", 0),
         ("min_inlier_ratio", 1.5),
+        ("min_on_plane_ratio", 1.5),
         ("max_gravity_angle_deg", 90),
     ],
 )
@@ -85,10 +142,26 @@ def test_configuration_rejects_out_of_range_values(name, value):
         PlaneCalibrationConfig(**{name: value})
 
 
+def test_configuration_rejects_a_camera_height_range_that_is_empty():
+    with pytest.raises(ValueError, match="at most"):
+        PlaneCalibrationConfig(min_camera_height_mm=1100, max_camera_height_mm=1000)
+
+
 def test_configuration_accepts_range_boundaries():
     config = PlaneCalibrationConfig(
-        min_inlier_ratio=1, max_gravity_angle_deg=0, ransac_max_iterations=1
+        min_inlier_ratio=1,
+        max_gravity_angle_deg=0,
+        ransac_max_iterations=1,
+        min_on_plane_ratio=1,
+        max_calibration_attempts=1,
+        min_inlier_count=1,
+        min_camera_height_mm=1000,
+        max_camera_height_mm=1000,
     )
 
     assert config.min_inlier_ratio == 1.0
     assert config.max_gravity_angle_deg == 0.0
+    assert config.min_on_plane_ratio == 1.0
+    assert config.max_calibration_attempts == 1
+    assert config.min_inlier_count == 1
+    assert config.min_camera_height_mm == config.max_camera_height_mm == 1000.0

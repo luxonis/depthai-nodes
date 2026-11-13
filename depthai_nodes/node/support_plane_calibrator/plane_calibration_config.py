@@ -1,4 +1,4 @@
-"""Plane-fitting settings for ``SupportPlaneCalibrator``."""
+"""Plane-fitting and attempt settings for ``SupportPlaneCalibrator``."""
 
 import math
 import numbers
@@ -34,7 +34,9 @@ def _check_int(name: str, value: Any) -> int:
 
 @dataclass(frozen=True, kw_only=True)
 class PlaneCalibrationConfig:
-    """Plane-fitting settings for ``SupportPlaneCalibrator``, fixed at build.
+    """Plane-fitting and attempt settings for ``SupportPlaneCalibrator``.
+
+    The settings are fixed at build.
 
     Attributes:
         distance_threshold_mm: Largest distance of a RANSAC inlier from the
@@ -44,12 +46,31 @@ class PlaneCalibrationConfig:
         max_plane_passes: Planes extracted from one point cloud. At least 1.
         min_inlier_ratio: Smallest share of the cloud a plane must hold, from 0
             to 1.
+        min_inlier_count: Smallest number of points a plane must hold, however
+            small the cloud. Counted after downsampling, so one point stands
+            for about one ``voxel_size_mm`` square of a surface. At least 1.
         voxel_size_mm: Downsampling voxel size in millimeters. Must be positive.
         max_gravity_angle_deg: Largest angle between a plane normal and the
             direction opposing gravity, from 0 up to but excluding 90.
+        min_camera_height_mm: Smallest distance, in millimeters, from the
+            camera down to a plane that passes the level test, for a camera
+            mounted at a known height. Positive, or ``None`` for no bound.
+        max_camera_height_mm: Largest distance, in millimeters, from the camera
+            down to a plane that passes the level test. Positive and at least
+            ``min_camera_height_mm``, or ``None`` for no bound.
         merge_distance_threshold_mm: Largest offset difference, in millimeters,
             at which two parallel candidates count as one plane. Must be
             positive.
+        max_calibration_attempts: Point clouds fitted in one calibration
+            attempt, not Starts, before an attempt without candidates ends
+            ``FAILED``. At least 1, or ``None`` to search until stopped.
+        check_distance_mm: Largest distance, in millimeters, of a point from a
+            verified plane for it to count as on the plane in a plane
+            verification's on-plane ratio. Separate from RANSAC's
+            ``distance_threshold_mm``. Must be positive.
+        min_on_plane_ratio: Smallest on-plane ratio, from 0 to 1, at which a
+            plane verification accepts a plane that passes the level test.
+            Separate from ``min_inlier_ratio``, which applies to fitting.
 
     Raises:
         TypeError: If a field has the wrong type.
@@ -61,9 +82,15 @@ class PlaneCalibrationConfig:
     ransac_max_iterations: int = 300
     max_plane_passes: int = 10
     min_inlier_ratio: float = 0.05
+    min_inlier_count: int = 3
     voxel_size_mm: float = 30.0
     max_gravity_angle_deg: float = 6.5
+    min_camera_height_mm: float | None = None
+    max_camera_height_mm: float | None = None
     merge_distance_threshold_mm: float = 25.0
+    max_calibration_attempts: int | None = None
+    check_distance_mm: float = 30.0
+    min_on_plane_ratio: float = 0.1
 
     def __post_init__(self) -> None:
         """Validate the fields and store numbers as built-in types.
@@ -76,28 +103,56 @@ class PlaneCalibrationConfig:
             "ransac_sample_points": 3,
             "ransac_max_iterations": 1,
             "max_plane_passes": 1,
+            "min_inlier_count": 1,
         }
         for name, minimum in minimum_ints.items():
             value = _check_int(name, getattr(self, name))
             if value < minimum:
                 raise ValueError(f"{name} must be at least {minimum}, got {value}")
             object.__setattr__(self, name, value)
+        if self.max_calibration_attempts is not None:
+            attempts = _check_int(
+                "max_calibration_attempts", self.max_calibration_attempts
+            )
+            if attempts < 1:
+                raise ValueError(
+                    f"max_calibration_attempts must be at least 1, got {attempts}"
+                )
+            object.__setattr__(self, "max_calibration_attempts", attempts)
         for name in (
             "distance_threshold_mm",
             "voxel_size_mm",
             "merge_distance_threshold_mm",
+            "check_distance_mm",
         ):
             value = _check_float(name, getattr(self, name))
             if value <= 0:
                 raise ValueError(f"{name} must be positive, got {value}")
             object.__setattr__(self, name, value)
-        ratio = _check_float("min_inlier_ratio", self.min_inlier_ratio)
-        if not 0 <= ratio <= 1:
-            raise ValueError(f"min_inlier_ratio must be from 0 to 1, got {ratio}")
-        object.__setattr__(self, "min_inlier_ratio", ratio)
+        for name in ("min_inlier_ratio", "min_on_plane_ratio"):
+            ratio = _check_float(name, getattr(self, name))
+            if not 0 <= ratio <= 1:
+                raise ValueError(f"{name} must be from 0 to 1, got {ratio}")
+            object.__setattr__(self, name, ratio)
         angle = _check_float("max_gravity_angle_deg", self.max_gravity_angle_deg)
         if not 0 <= angle < 90:
             raise ValueError(
                 f"max_gravity_angle_deg must be from 0 up to 90, got {angle}"
             )
         object.__setattr__(self, "max_gravity_angle_deg", angle)
+        for name in ("min_camera_height_mm", "max_camera_height_mm"):
+            if getattr(self, name) is None:
+                continue
+            height = _check_float(name, getattr(self, name))
+            if height <= 0:
+                raise ValueError(f"{name} must be positive, got {height}")
+            object.__setattr__(self, name, height)
+        if (
+            self.min_camera_height_mm is not None
+            and self.max_camera_height_mm is not None
+            and self.min_camera_height_mm > self.max_camera_height_mm
+        ):
+            raise ValueError(
+                "min_camera_height_mm must be at most max_camera_height_mm, got "
+                f"{self.min_camera_height_mm} > {self.max_camera_height_mm}"
+            )

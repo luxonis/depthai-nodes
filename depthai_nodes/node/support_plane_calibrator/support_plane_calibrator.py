@@ -8,7 +8,7 @@ from typing import Any
 import depthai as dai
 import numpy as np
 
-from depthai_nodes.message.support_plane import SupportPlane
+from depthai_nodes.message.support_plane import SupportPlane, SupportPlaneCandidate
 from depthai_nodes.message.support_plane_calibration import (
     CalibrationOutcome,
     SupportPlaneCalibrationControl,
@@ -51,21 +51,6 @@ def _check_size(name: str, value: Any) -> tuple[int, int]:
     return width, height
 
 
-def _check_instance(name: str, value: Any, expected: type) -> None:
-    """Check that a value is an instance of the expected type.
-
-    Raises:
-        TypeError: If the value is not an instance of ``expected``.
-    """
-    if not isinstance(value, expected):
-        raise TypeError(
-            f"{name} must be {expected.__name__}, got {type(value).__name__}"
-        )
-
-
-# Pause between run-loop passes, as DepthAI's DynamicCalibration does.
-PASS_SLEEP_SECONDS = 0.005
-
 # Oldest IMU sample, by host arrival time, used for gravity. The IMU streams at
 # tens to hundreds of hertz, so an older sample means the stream has stalled.
 IMU_MAX_AGE_SECONDS = 0.5
@@ -73,6 +58,11 @@ IMU_MAX_AGE_SECONDS = 0.5
 # Shortest accelerometer vector, in m/s², read as gravity rather than as a
 # packet without an accelerometer report.
 MIN_GRAVITY_NORM = 1e-6
+
+# The on-plane ratio samples every this-many rows and columns of the organized
+# cloud, and is not measured under this many valid sampled points.
+ON_PLANE_STRIDE = 4
+MIN_ON_PLANE_POINTS = 500
 
 
 class CalibratorState(Enum):
@@ -95,32 +85,22 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
     ``pip install "depthai-nodes[box-measurement]"``.
 
     States:
-        - Idle: Start begins an attempt; Stop and Reset do nothing.
-        - Running: each loop pass fits the latest point cloud once an IMU
-          sample is available, until a cloud yields candidates (succeeded), a
-          fit fails (failed), or Stop arrives (cancelled). Start is ignored.
-        - Complete: after success or failure; Reset returns to idle, and Start
-          and Stop are ignored until then. A cancelled attempt returns straight
-          to idle without Reset.
+        - Idle: Start begins an attempt.
+        - Running: fits point clouds until one yields candidates (succeeded),
+          Stop arrives (cancelled), or the attempt cap is reached (failed).
+          Stop takes effect after the current fit.
+        - Complete: after success or failure; Reset returns to idle. A
+          cancelled attempt returns straight to idle.
 
-    Each loop pass applies pending controls in arrival order, takes the latest
-    IMU sample, answers verifications and, while running, fits the latest
-    cloud. Controls wait during a fit, so Stop takes effect after the current
-    fit: a fit that completes the attempt reports its outcome, otherwise the
-    attempt ends cancelled.
+    Verify commands are answered in any state, on the next point cloud taken
+    with fresh IMU, before that cloud is fitted. Fitting and verification wait
+    for an IMU sample younger than ``IMU_MAX_AGE_SECONDS`` with a nonzero
+    accelerometer vector.
 
-    Verification is independent of attempts: verify commands are answered in
-    order once an IMU sample is available.
-
-    An IMU sample counts as available for ``IMU_MAX_AGE_SECONDS`` after it
-    arrives, and only if it has a nonzero accelerometer vector. If the IMU
-    stream stalls or carries no accelerometer, fitting and verification wait
-    for a new sample rather than use stale or missing gravity.
-
-    Errors: a non-``PointCloudData`` cloud, or a fit that raises
-    ``ValueError`` or ``RuntimeError``, fails the attempt. Any other error is a
-    bug and is not caught: DepthAI prints it with the raising line and aborts
-    the process. Outputs use standard DepthAI buffering and backpressure.
+    Errors: a message on the point cloud input that is not
+    ``dai.PointCloudData`` raises ``TypeError``, and a cloud that is not the
+    organized size from `build` raises ``ValueError``. An exception escaping
+    ``run()`` aborts the process on depthai 3.12.
     """
 
     def __init__(self) -> None:
@@ -141,6 +121,9 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         self._verifications: deque[SupportPlane] = deque()
         self._latest_gravity: np.ndarray | None = None
         self._latest_gravity_arrival = 0.0
+        self._last_fitted_cloud: dai.PointCloudData | None = None
+        # Clouds the running attempt has fitted, checked against the cap.
+        self._fitted_cloud_count = 0
 
     @property
     def inputControl(self) -> dai.Node.Input:
@@ -183,7 +166,8 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                 millimeters.
             imu: Output emitting ``dai.IMUData`` with accelerometer packets.
             pointCloudSize: Cloud ``(width, height)`` in points.
-            config: Plane-fitting settings; ``None`` uses the defaults.
+            config: Plane-fitting and attempt settings; ``None`` uses the
+                defaults.
 
         Returns:
             The configured node instance.
@@ -210,7 +194,10 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         width, height = _check_size("pointCloudSize", pointCloudSize)
         if config is None:
             config = PlaneCalibrationConfig()
-        _check_instance("config", config, PlaneCalibrationConfig)
+        if not isinstance(config, PlaneCalibrationConfig):
+            raise TypeError(
+                "config must be PlaneCalibrationConfig, got " f"{type(config).__name__}"
+            )
         self._config = config
         self._fitter = SupportPlaneFitter((width, height), config)
         pointCloud.link(self._point_cloud_input)
@@ -221,20 +208,34 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         """Apply controls, answer verifications and fit clouds until stopped."""
         try:
             while self.isRunning():
-                self._apply_controls()
-                self._take_latest_gravity()
-                gravity = self._latest_gravity
-                if gravity is not None:
-                    self._answer_verifications(gravity)
-                if self._state is CalibratorState.RUNNING and gravity is not None:
-                    cloud = self._point_cloud_input.tryGet()
-                    if cloud is not None:
-                        self._process_cloud(cloud, gravity)
-                time.sleep(PASS_SLEEP_SECONDS)
+                self._run_pass()
+                # Pause between passes, as DepthAI's DynamicCalibration does.
+                time.sleep(0.005)
         # DepthAI's stub declares QueueException through an undeclared nested
         # class, so pyright cannot tell it is an exception; at runtime it is one.
         except dai.MessageQueue.QueueException:  # pyright: ignore[reportGeneralTypeIssues]
             return
+
+    def _run_pass(self) -> None:
+        """Apply controls, then check one cloud for verifications and the fit.
+
+        A cloud is taken only with fresh gravity, and only while a verification is
+        pending or an attempt is running. Otherwise it stays queued.
+        """
+        self._apply_controls()
+        self._take_latest_gravity()
+        gravity = self._latest_gravity
+        if gravity is None:
+            return
+        if not self._verifications and self._state is not CalibratorState.RUNNING:
+            return
+        message = self._point_cloud_input.tryGet()
+        if message is None:
+            return
+        cloud, points = self._check_cloud(message)
+        self._answer_verifications(cloud, points, gravity)
+        if self._state is CalibratorState.RUNNING:
+            self._fit(cloud, points, gravity)
 
     def _apply_controls(self) -> None:
         """Apply every pending control in arrival order."""
@@ -251,11 +252,11 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             elif isinstance(command, commands.Start):
                 if self._state is CalibratorState.IDLE:
                     self._state = CalibratorState.RUNNING
+                    self._last_fitted_cloud = None
+                    self._fitted_cloud_count = 0
             elif isinstance(command, commands.Stop):
                 if self._state is CalibratorState.RUNNING:
-                    self._finish(
-                        CalibrationOutcome.CANCELLED, [], "Calibration cancelled"
-                    )
+                    self._finish(CalibrationOutcome.CANCELLED, [])
             elif self._state is not CalibratorState.RUNNING:
                 self._state = CalibratorState.IDLE
 
@@ -279,7 +280,9 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             self._latest_gravity = None
 
     def _finish(
-        self, outcome: CalibrationOutcome, candidates: list[SupportPlane], info: str
+        self,
+        outcome: CalibrationOutcome,
+        candidates: list[SupportPlaneCandidate],
     ) -> None:
         """End the attempt and send its result."""
         # Like DepthAI MultiDeviceCalibration, a stopped attempt needs no reset.
@@ -288,48 +291,106 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             if outcome is CalibrationOutcome.CANCELLED
             else CalibratorState.COMPLETE
         )
-        self._out.send(SupportPlaneCalibrationResult(outcome, candidates, info))
+        result = SupportPlaneCalibrationResult(outcome, candidates)
+        cloud = self._last_fitted_cloud
+        if cloud is not None:
+            result.setTimestamp(cloud.getTimestamp())
+            result.setTimestampDevice(cloud.getTimestampDevice())
+            result.setSequenceNum(cloud.getSequenceNum())
+        self._out.send(result)
 
-    def _answer_verifications(self, gravity: np.ndarray) -> None:
-        """Answer all pending verifications."""
+    def _check_cloud(
+        self, message: dai.ADatatype
+    ) -> tuple[dai.PointCloudData, np.ndarray]:
+        """Return a point cloud message and its points, checking both.
+
+        Raises:
+            TypeError: If ``message`` is not ``dai.PointCloudData``.
+            ValueError: If the cloud is not the organized size from `build`.
+        """
+        if not isinstance(message, dai.PointCloudData):
+            raise TypeError(
+                "SupportPlaneCalibrator expects organized PointCloudData on its "
+                f"point cloud input, got {type(message).__name__}"
+            )
+        assert self._fitter is not None
+        width, height = self._fitter.cloud_size
+        points = np.asarray(message.getPoints())
+        expected = (width * height, 3)
+        if points.shape != expected:
+            raise ValueError(
+                f"Point cloud is not organized to {(width, height)}: "
+                f"got shape {points.shape}, expected {expected}"
+            )
+        return message, points
+
+    def _answer_verifications(
+        self, cloud: dai.PointCloudData, points: np.ndarray, gravity: np.ndarray
+    ) -> None:
+        """Answer all pending verifications from one cloud, in arrival order."""
+        assert self._config is not None and self._fitter is not None
         if not self._verifications:
             return
-        assert self._config is not None
-        max_angle = self._config.max_gravity_angle_deg
+        sample = _sample_valid_points(points, self._fitter.cloud_size)
         while self._verifications:
             plane = self._verifications.popleft()
             plane_eq = orient_along_gravity(
                 np.array([*plane.normal, plane.offset_mm]), gravity
             )
-            self._verification_output.send(
-                SupportPlaneVerificationResult(
-                    plane,
-                    gravity_angle_deg(plane_eq, gravity),
-                    is_valid_horizontal_plane(plane_eq, gravity, max_angle),
-                )
+            on_plane_ratio = _on_plane_ratio(
+                plane, sample, self._config.check_distance_mm
             )
+            accepted = (
+                is_valid_horizontal_plane(plane_eq, gravity, self._config)
+                and on_plane_ratio is not None
+                and on_plane_ratio >= self._config.min_on_plane_ratio
+            )
+            result = SupportPlaneVerificationResult(
+                plane,
+                gravity_angle_deg(plane_eq, gravity),
+                accepted,
+                on_plane_ratio,
+            )
+            result.setTimestamp(cloud.getTimestamp())
+            result.setTimestampDevice(cloud.getTimestampDevice())
+            result.setSequenceNum(cloud.getSequenceNum())
+            self._verification_output.send(result)
 
-    def _process_cloud(self, cloud: dai.ADatatype, gravity: np.ndarray) -> None:
-        """Fit one cloud and finish the attempt on candidates or failure."""
-        if not isinstance(cloud, dai.PointCloudData):
-            self._finish(
-                CalibrationOutcome.FAILED,
-                [],
-                "Calibration failed: expected organized PointCloudData",
-            )
-            return
-        assert self._fitter is not None
-        try:
-            candidates = self._fitter.find_candidates(
-                np.asarray(cloud.getPoints()), gravity
-            )
-        except (ValueError, RuntimeError) as exc:
-            self._finish(CalibrationOutcome.FAILED, [], f"Calibration failed: {exc}")
-            return
+    def _fit(
+        self, cloud: dai.PointCloudData, points: np.ndarray, gravity: np.ndarray
+    ) -> None:
+        """Fit one cloud and finish the attempt on candidates or at the cap."""
+        assert self._fitter is not None and self._config is not None
+        candidates = self._fitter.find_candidates(points, gravity)
+        self._last_fitted_cloud = cloud
+        self._fitted_cloud_count += 1
+        cap = self._config.max_calibration_attempts
         if candidates:
-            self._finish(
-                CalibrationOutcome.SUCCEEDED, candidates, "Support planes found"
-            )
+            self._finish(CalibrationOutcome.SUCCEEDED, candidates)
+        elif cap is not None and self._fitted_cloud_count >= cap:
+            self._finish(CalibrationOutcome.FAILED, [])
+
+
+def _sample_valid_points(points: np.ndarray, size: tuple[int, int]) -> np.ndarray:
+    """Return every ``ON_PLANE_STRIDE``-th row and column's points with ``z > 0``."""
+    width, height = size
+    grid = points.reshape(height, width, 3)[::ON_PLANE_STRIDE, ::ON_PLANE_STRIDE]
+    sample = grid.reshape(-1, 3).astype(np.float64)
+    return sample[sample[:, 2] > 0]
+
+
+def _on_plane_ratio(
+    plane: SupportPlane, sample: np.ndarray, check_distance_mm: float
+) -> float | None:
+    """Return the share of sampled points within the distance of the plane.
+
+    Returns ``None`` under ``MIN_ON_PLANE_POINTS`` sampled points. The sign of
+    the plane equation does not matter.
+    """
+    if len(sample) < MIN_ON_PLANE_POINTS:
+        return None
+    distances = np.abs(sample @ np.asarray(plane.normal) + plane.offset_mm)
+    return float(np.count_nonzero(distances <= check_distance_mm) / len(sample))
 
 
 def imu_gravity(imu: dai.IMUData) -> np.ndarray | None:

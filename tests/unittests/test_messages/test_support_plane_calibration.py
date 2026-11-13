@@ -9,10 +9,12 @@ from depthai_nodes.message import (
     SupportPlane,
     SupportPlaneCalibrationControl,
     SupportPlaneCalibrationResult,
+    SupportPlaneCandidate,
     SupportPlaneVerificationResult,
 )
 
 PLANE = SupportPlane(normal=(0, 0, 1), offset_mm=-1000)
+CANDIDATE = SupportPlaneCandidate(plane=PLANE, inlier_count=200, inlier_ratio=0.5)
 Commands = SupportPlaneCalibrationControl.Commands
 
 
@@ -52,37 +54,28 @@ def test_outcomes_are_their_string_values():
     assert CalibrationOutcome.CANCELLED == "cancelled"
 
 
-def test_result_carries_outcome_candidates_and_info():
-    result = SupportPlaneCalibrationResult(
-        CalibrationOutcome.SUCCEEDED, [PLANE], "found"
+def test_results_are_buffers():
+    assert isinstance(
+        SupportPlaneCalibrationResult(CalibrationOutcome.SUCCEEDED, [CANDIDATE]),
+        dai.Buffer,
     )
-
-    assert isinstance(result, dai.Buffer)
-    assert result.outcome is CalibrationOutcome.SUCCEEDED
-    assert result.candidates == (PLANE,)
-    assert result.info == "found"
-
-
-def test_result_info_defaults_to_empty():
-    assert SupportPlaneCalibrationResult(CalibrationOutcome.FAILED, []).info == ""
+    assert isinstance(SupportPlaneVerificationResult(PLANE, 3.0, True, 0.5), dai.Buffer)
 
 
 def test_result_candidates_are_a_tuple_copied_at_construction():
-    candidates = [PLANE]
-    result = SupportPlaneCalibrationResult(
-        CalibrationOutcome.SUCCEEDED, candidates, "found"
-    )
-    candidates.append(PLANE)
+    candidates = [CANDIDATE]
+    result = SupportPlaneCalibrationResult(CalibrationOutcome.SUCCEEDED, candidates)
+    candidates.append(CANDIDATE)
 
-    assert result.candidates == (PLANE,)
+    assert result.candidates == (CANDIDATE,)
 
 
 @pytest.mark.parametrize(
     "outcome,candidates",
     [
         (CalibrationOutcome.SUCCEEDED, []),
-        (CalibrationOutcome.FAILED, [PLANE]),
-        (CalibrationOutcome.CANCELLED, [PLANE]),
+        (CalibrationOutcome.FAILED, [CANDIDATE]),
+        (CalibrationOutcome.CANCELLED, [CANDIDATE]),
     ],
 )
 def test_result_has_candidates_exactly_when_calibration_succeeded(outcome, candidates):
@@ -91,27 +84,55 @@ def test_result_has_candidates_exactly_when_calibration_succeeded(outcome, candi
 
 
 @pytest.mark.parametrize(
-    "outcome,candidates,info",
+    "outcome,candidates",
     [
-        ("cancelled", [], ""),
-        (CalibrationOutcome.SUCCEEDED, [(0, 0, 1)], ""),
-        (CalibrationOutcome.SUCCEEDED, PLANE, ""),
-        (CalibrationOutcome.FAILED, [], None),
+        ("cancelled", []),
+        (CalibrationOutcome.SUCCEEDED, [(0, 0, 1)]),
+        (CalibrationOutcome.SUCCEEDED, PLANE),
+        (CalibrationOutcome.SUCCEEDED, [PLANE]),
+        (CalibrationOutcome.SUCCEEDED, CANDIDATE),
     ],
 )
-def test_result_rejects_wrong_types(outcome, candidates, info):
+def test_result_rejects_wrong_types(outcome, candidates):
     with pytest.raises(TypeError):
-        SupportPlaneCalibrationResult(outcome, candidates, info)
+        SupportPlaneCalibrationResult(outcome, candidates)
 
 
-def test_verification_result_carries_its_fields():
-    result = SupportPlaneVerificationResult(PLANE, np.float32(3.0), np.bool_(True))  # pyright: ignore[reportArgumentType]
+def test_verification_result_stores_numpy_values_as_builtin_types():
+    result = SupportPlaneVerificationResult(
+        PLANE,
+        np.float32(3.0),  # pyright: ignore[reportArgumentType]
+        np.bool_(True),
+        np.float64(0.75),  # pyright: ignore[reportArgumentType]
+    )
 
-    assert isinstance(result, dai.Buffer)
-    assert result.plane == PLANE
     assert result.gravity_angle_deg.__class__ is float
-    assert result.gravity_angle_deg == 3.0
     assert result.accepted is True
+    assert result.on_plane_ratio.__class__ is float
+
+
+@pytest.mark.parametrize("ratio", [0, 1])
+def test_verification_result_accepts_on_plane_ratios_from_0_to_1(ratio):
+    result = SupportPlaneVerificationResult(PLANE, 3.0, True, ratio)
+
+    assert result.on_plane_ratio == ratio
+
+
+def test_verification_result_cannot_accept_a_plane_without_an_on_plane_ratio():
+    with pytest.raises(ValueError, match="on_plane_ratio"):
+        SupportPlaneVerificationResult(PLANE, 3.0, True, None)
+
+
+@pytest.mark.parametrize("ratio", [-0.1, 1.01, float("nan"), float("inf")])
+def test_verification_result_rejects_out_of_range_on_plane_ratios(ratio):
+    with pytest.raises(ValueError):
+        SupportPlaneVerificationResult(PLANE, 3.0, True, ratio)
+
+
+@pytest.mark.parametrize("ratio", [True, "0.5", 1j])
+def test_verification_result_rejects_non_real_on_plane_ratios(ratio):
+    with pytest.raises(TypeError):
+        SupportPlaneVerificationResult(PLANE, 3.0, True, ratio)
 
 
 @pytest.mark.parametrize(
@@ -126,12 +147,12 @@ def test_verification_result_carries_its_fields():
 )
 def test_verification_result_rejects_wrong_types(plane, angle, accepted):
     with pytest.raises(TypeError):
-        SupportPlaneVerificationResult(plane, angle, accepted)
+        SupportPlaneVerificationResult(plane, angle, accepted, 0.5)
 
 
 def test_verification_result_rejects_non_finite_angle():
     with pytest.raises(ValueError):
-        SupportPlaneVerificationResult(PLANE, float("nan"), False)
+        SupportPlaneVerificationResult(PLANE, float("nan"), False, 0.5)
 
 
 @pytest.mark.parametrize(
@@ -139,14 +160,12 @@ def test_verification_result_rejects_non_finite_angle():
     [
         (SupportPlaneCalibrationControl.start(), ("command",)),
         (
-            SupportPlaneCalibrationResult(
-                CalibrationOutcome.SUCCEEDED, [PLANE], "found"
-            ),
-            ("outcome", "candidates", "info"),
+            SupportPlaneCalibrationResult(CalibrationOutcome.SUCCEEDED, [CANDIDATE]),
+            ("outcome", "candidates"),
         ),
         (
-            SupportPlaneVerificationResult(PLANE, 3.0, True),
-            ("plane", "gravity_angle_deg", "accepted"),
+            SupportPlaneVerificationResult(PLANE, 3.0, True, 0.5),
+            ("plane", "gravity_angle_deg", "accepted", "on_plane_ratio"),
         ),
     ],
 )

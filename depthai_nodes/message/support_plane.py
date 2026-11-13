@@ -137,3 +137,48 @@ class SupportPlane:
             ValueError: If the JSON has the wrong keys or invalid geometry.
         """
         return cls.fromJson(json.loads(Path(path).read_text(encoding="utf-8")))
+
+
+@dataclass(frozen=True, kw_only=True)
+class SupportPlaneCandidate:
+    """A support plane found by calibration, with how much of the scene supports it.
+
+    Attributes:
+        plane: The support plane.
+        inlier_count: Points of the calibration cloud on the plane, at least 1.
+        inlier_ratio: Share of the calibration cloud on the plane, in (0, 1]; at
+            least the config's ``min_inlier_ratio``. Not the on-plane ratio of a
+            plane verification.
+
+    Raises:
+        TypeError: If a field has the wrong type.
+        ValueError: If a field is out of range or not finite.
+    """
+
+    plane: SupportPlane
+    inlier_count: int
+    inlier_ratio: float
+
+    def __post_init__(self) -> None:
+        """Validate the fields and store the numbers as built-in types.
+
+        Raises:
+            TypeError: If a field has the wrong type.
+            ValueError: If a field has an invalid value.
+        """
+        if not isinstance(self.plane, SupportPlane):
+            raise TypeError(
+                f"plane must be SupportPlane, got {type(self.plane).__name__}"
+            )
+        count = self.inlier_count
+        if isinstance(count, bool) or not isinstance(count, numbers.Integral):
+            raise TypeError(
+                f"inlier_count must be an integer, got {type(count).__name__}"
+            )
+        if count < 1:
+            raise ValueError(f"inlier_count must be at least 1, got {count}")
+        ratio = _check_float("inlier_ratio", self.inlier_ratio)
+        if not 0 < ratio <= 1:
+            raise ValueError(f"inlier_ratio must be in (0, 1], got {ratio}")
+        object.__setattr__(self, "inlier_count", int(count))
+        object.__setattr__(self, "inlier_ratio", ratio)

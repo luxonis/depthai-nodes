@@ -26,14 +26,14 @@ def flat_cloud(depth=1000.0):
 def offsets(scene, **config):
     with patch("open3d.geometry.PointCloud", scene.cloud):
         candidates = fitter(**config).find_candidates(flat_cloud(), GRAVITY)
-    return [plane.offset_mm for plane in candidates]
+    return sorted(candidate.plane.offset_mm for candidate in candidates)
 
 
 def test_finds_a_floor_facing_against_gravity():
     candidates = fitter().find_candidates(flat_cloud(), GRAVITY)
 
-    assert candidates[0].offset_mm == pytest.approx(-1000, abs=1)
-    assert candidates[0].normal[2] == pytest.approx(1, abs=0.001)
+    assert candidates[0].plane.offset_mm == pytest.approx(-1000, abs=1)
+    assert candidates[0].plane.normal[2] == pytest.approx(1, abs=0.001)
 
 
 def test_cloud_without_depth_has_no_candidates():
@@ -54,18 +54,24 @@ def test_near_parallel_planes_through_one_surface_count_once():
         ]
     )
 
-    assert offsets(scene, max_plane_passes=3) == [-1000, -1500]
+    assert offsets(scene, max_plane_passes=3) == [-1500, -1000]
 
 
-def test_equal_inlier_counts_rank_the_nearer_plane_first():
-    scene = ScriptedScene(
-        [
-            ([0.0, 0.0, 1.0, -1500.0], 100),
-            ([0.0, 0.0, 1.0, -1000.0], 100),
-        ]
+def test_merged_near_parallel_plane_reports_only_its_own_inliers():
+    # Two thirds of the points lie at 1000 mm and one third at 1012 mm. With a
+    # 4 mm RANSAC threshold each layer is its own plane, and the two merge.
+    cloud = flat_cloud()
+    cloud[np.arange(400) % 3 == 2, 2] = 1012.0
+
+    candidates = fitter(distance_threshold_mm=4, max_plane_passes=3).find_candidates(
+        cloud, GRAVITY
     )
 
-    assert offsets(scene) == [-1000, -1500]
+    assert len(candidates) == 1
+    candidate = candidates[0]
+    assert candidate.plane.offset_mm == pytest.approx(-1000, abs=1)
+    # A merge that summed both layers' inliers would give a ratio of 1.
+    assert candidate.inlier_ratio == pytest.approx(2 / 3, abs=0.05)
 
 
 def test_floor_fitted_with_the_opposite_sign_is_oriented_along_gravity():
@@ -74,7 +80,7 @@ def test_floor_fitted_with_the_opposite_sign_is_oriented_along_gravity():
     with patch("open3d.geometry.PointCloud", scene.cloud):
         candidates = fitter().find_candidates(flat_cloud(), GRAVITY)
 
-    assert [(plane.normal, plane.offset_mm) for plane in candidates] == [
+    assert [(c.plane.normal, c.plane.offset_mm) for c in candidates] == [
         ((0.0, 0.0, 1.0), -1000.0)
     ]
 
@@ -99,15 +105,36 @@ def test_stops_after_the_configured_number_of_planes():
         [([0.0, 0.0, 1.0, -1000.0 - 500.0 * i], 50) for i in range(4)]
     )
 
-    assert offsets(scene, max_plane_passes=2) == [-1000, -1500]
+    assert offsets(scene, max_plane_passes=2) == [-1500, -1000]
 
 
-def test_stops_at_a_plane_with_too_few_inliers():
+@pytest.mark.parametrize(
+    "floor_config",
+    [
+        # 10% of the 400-point cloud is 40 points.
+        {"min_inlier_ratio": 0.1},
+        # An absolute floor applies however small the cloud.
+        {"min_inlier_ratio": 0, "min_inlier_count": 11},
+    ],
+    ids=["ratio", "count"],
+)
+def test_stops_at_a_plane_with_too_few_inliers(floor_config):
     scene = ScriptedScene(
         [([0.0, 0.0, 1.0, -1000.0], 100), ([0.0, 0.0, 1.0, -1500.0], 10)]
     )
 
-    assert offsets(scene, min_inlier_ratio=0.1) == [-1000]
+    assert offsets(scene, **floor_config) == [-1000]
+
+
+def test_planes_outside_the_camera_height_range_are_dropped():
+    scene = ScriptedScene([([0.0, 0.0, 1.0, -800.0 - 300.0 * i], 50) for i in range(3)])
+
+    assert offsets(
+        scene,
+        max_plane_passes=3,
+        min_camera_height_mm=900,
+        max_camera_height_mm=1200,
+    ) == [-1100]
 
 
 def test_fit_errors_propagate():

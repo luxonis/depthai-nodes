@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from depthai_nodes.message import SupportPlane
+from depthai_nodes.message import SupportPlane, SupportPlaneCandidate
 
 
 def test_support_plane_normalizes_normal_and_offset_together():
@@ -137,3 +137,69 @@ def test_support_plane_rejects_incompatible_json(data):
 def test_support_plane_rejects_json_of_the_wrong_type(data):
     with pytest.raises(TypeError):
         SupportPlane.fromJson(data)
+
+
+FLOOR = SupportPlane(normal=(0, 0, 1), offset_mm=-1000)
+
+
+def test_candidate_stores_numpy_numbers_as_builtin_types():
+    candidate = SupportPlaneCandidate(
+        plane=FLOOR,
+        inlier_count=np.int64(120),
+        inlier_ratio=np.float32(0.25),  # pyright: ignore[reportArgumentType]
+    )
+
+    assert candidate.inlier_count.__class__ is int
+    assert candidate.inlier_ratio.__class__ is float
+
+
+def test_candidate_accepts_a_ratio_of_one():
+    assert (
+        SupportPlaneCandidate(plane=FLOOR, inlier_count=1, inlier_ratio=1).inlier_ratio
+        == 1.0
+    )
+
+
+def test_candidate_is_immutable_and_keyword_only():
+    candidate = SupportPlaneCandidate(plane=FLOOR, inlier_count=1, inlier_ratio=0.5)
+
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        candidate.inlier_count = 2  # type: ignore[misc]
+    with pytest.raises(TypeError):
+        SupportPlaneCandidate(FLOOR, 1, 0.5)  # type: ignore[misc]
+
+
+@pytest.mark.parametrize(
+    "plane,count,ratio",
+    [
+        ((0, 0, 1), 1, 0.5),
+        (None, 1, 0.5),
+        (FLOOR, True, 0.5),
+        (FLOOR, 1.0, 0.5),
+        (FLOOR, "1", 0.5),
+        (FLOOR, 1, True),
+        (FLOOR, 1, "0.5"),
+        (FLOOR, 1, None),
+    ],
+)
+def test_candidate_rejects_wrong_types(plane, count, ratio):
+    with pytest.raises(TypeError):
+        SupportPlaneCandidate(plane=plane, inlier_count=count, inlier_ratio=ratio)
+
+
+@pytest.mark.parametrize(
+    "count,ratio",
+    [
+        (0, 0.5),
+        (-1, 0.5),
+        (1, 0),
+        (1, 0.0),
+        (1, -0.1),
+        (1, 1.01),
+        (1, float("nan")),
+        (1, float("inf")),
+    ],
+)
+def test_candidate_rejects_out_of_range_values(count, ratio):
+    with pytest.raises(ValueError):
+        SupportPlaneCandidate(plane=FLOOR, inlier_count=count, inlier_ratio=ratio)

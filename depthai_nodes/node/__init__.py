@@ -153,6 +153,96 @@ Message handling and uploads
 * `SnapsUploader`: accepts `depthai_nodes.message.SnapData` and delegates uploads
   and optional offline caching to the native EventsManager.
 
+Support plane
+=============
+
+`SupportPlaneCalibrator` finds the support plane in a point cloud, checked
+against gravity from IMU data. Each Start control begins a calibration attempt,
+which ends with one `depthai_nodes.message.SupportPlaneCalibrationResult` on
+``out``; a succeeded result holds support plane candidates. A verify control
+asks for a plane verification of a given support plane, answered with a
+`depthai_nodes.message.SupportPlaneVerificationResult` on
+``verificationOutput``. It carries the plane's angle to gravity, its on-plane
+ratio (the share of the next point cloud on the plane within
+``check_distance_mm``), and whether it was accepted: within
+``max_gravity_angle_deg`` of level, below the camera within any range set by
+``min_camera_height_mm`` and ``max_camera_height_mm``, and with an on-plane
+ratio of at least ``min_on_plane_ratio``. Candidates pass the same level test
+and hold at least ``min_inlier_count`` points and ``min_inlier_ratio`` of the
+cloud. `PlaneCalibrationConfig` holds the plane-fitting and attempt settings,
+fixed at ``build``.
+
+``SupportPlaneCalibrator`` needs open3d, installed with
+``pip install "depthai-nodes[box-measurement]"``; without it ``build`` raises
+``ImportError``.
+
+Example:
+    With existing ``pointCloud`` and ``imu`` outputs and a point cloud of
+    ``width`` by ``height`` points, calibrate once and save the best support
+    plane::
+
+        from depthai_nodes.message import SupportPlaneCalibrationControl
+        from depthai_nodes.node import SupportPlaneCalibrator
+
+        calibrator = pipeline.create(SupportPlaneCalibrator).build(
+            pointCloud, imu, (width, height)
+        )
+        control = calibrator.inputControl.createInputQueue()
+        results = calibrator.out.createOutputQueue()
+        pipeline.start()
+
+        control.send(SupportPlaneCalibrationControl.start())
+        result = results.get()
+        if result.candidates:
+            best = max(result.candidates, key=lambda c: c.inlier_count)
+            best.plane.toJsonFile("support_plane.json")
+
+    ``result.outcome`` tells whether the attempt succeeded, failed at the
+    attempt cap, or was cancelled; only a succeeded result has candidates.
+
+`AutoSupportPlane` wraps a ``SupportPlaneCalibrator`` to find and hold the
+support plane, sending a `depthai_nodes.message.AutoSupportPlaneResult` on
+``out``. `AutoSupportPlaneConfig` sets the mode: ``ON_START`` finds a plane once
+and holds it; ``CONTINUOUS`` also checks it about every ``check_interval_sec``
+and refits after repeated failed checks, keeping the old plane meanwhile. Its
+``verificationOutput`` passes on the inner calibrator's plane verifications, one
+per ``initialPlane`` gate or plane check, to watch the plane's angle and on-plane
+ratio. A ``selectCandidate`` given to ``build`` picks the plane from a
+successful attempt's ``SupportPlaneCalibrationResult``. It needs open3d, like
+the calibrator.
+
+Drive ``SupportPlaneCalibrator`` directly instead when a person picks among
+the support plane candidates, or for any custom flow.
+
+Example:
+    With existing ``pointCloud`` and ``imu`` outputs and a point cloud of
+    ``width`` by ``height`` points, keep the support plane up to date::
+
+        from depthai_nodes.node import (
+            AutoSupportPlane,
+            AutoSupportPlaneConfig,
+            PlaneCalibrationConfig,
+        )
+
+        config = AutoSupportPlaneConfig(
+            mode=AutoSupportPlaneConfig.Mode.CONTINUOUS,
+            calibration=PlaneCalibrationConfig(max_calibration_attempts=10),
+        )
+        node = pipeline.create(AutoSupportPlane).build(
+            pointCloud, imu, (width, height), config
+        )
+        results = node.out.createOutputQueue()
+        pipeline.start()
+
+        while pipeline.isRunning():
+            result = results.get()
+            if result.plane is not None:
+                result.plane.toJsonFile("support_plane.json")
+
+    ``result.passed`` is ``False`` when a calibration attempt ended at the
+    attempt cap; the plane is then the old one kept after a failed refit, or
+    ``None`` when there is none yet.
+
 Box measurement
 ===============
 
@@ -162,21 +252,19 @@ Box measurement
   emits `depthai_nodes.message.BoxMeasurements`.
 * `BoxMeasurer`: wires ``BoxDetector`` into ``BoxDimensioner`` behind one
   ``build``.
-* `SupportPlaneCalibrator`: fits the support plane from a point cloud, IMU
-  data, and control messages, and emits calibration and verification results.
-  `PlaneCalibrationConfig` holds its plane-fitting settings, fixed at ``build``.
 
-Boxes are measured against a support plane. It comes from the calibration
-candidates of a `depthai_nodes.message.SupportPlaneCalibrationResult` or from
-a saved file through ``SupportPlane.fromJsonFile``, and is passed to ``build``
-or through ``setSupportPlane``. The confidence threshold and the support plane
-can both change while the pipeline runs.
+Boxes are measured against a support plane; see "Support plane" above. It
+comes from the ``plane`` of a support plane candidate in a
+`depthai_nodes.message.SupportPlaneCalibrationResult` or from a saved file
+through ``SupportPlane.fromJsonFile``, and is passed to ``build`` or through
+``setSupportPlane``. The confidence threshold and the support plane can both
+change while the pipeline runs.
 
 ``BoxDetector`` and ``BoxMeasurer`` run on RVC4 only and download the
 ``luxonis/box-instance-segmentation`` model from the Model Zoo at build.
-``BoxDimensioner``, ``BoxMeasurer``, and ``SupportPlaneCalibrator`` need
-open3d, installed with ``pip install "depthai-nodes[box-measurement]"``; without
-it their ``build`` raises ``ImportError``.
+``BoxDimensioner`` and ``BoxMeasurer`` need open3d, installed with
+``pip install "depthai-nodes[box-measurement]"``; without it their ``build``
+raises ``ImportError``.
 
 Example:
     With existing ``color`` and ``pointCloud`` outputs and a point cloud of
@@ -250,7 +338,12 @@ from .parsers.yolo import YOLOExtendedParser
 from .parsers.yunet import YuNetParser
 from .parsing_neural_network import ParsingNeuralNetwork
 from .snaps_uploader import SnapsUploader
-from .support_plane_calibrator import PlaneCalibrationConfig, SupportPlaneCalibrator
+from .support_plane_calibrator import (
+    AutoSupportPlane,
+    AutoSupportPlaneConfig,
+    PlaneCalibrationConfig,
+    SupportPlaneCalibrator,
+)
 from .tiling import Tiling
 
 __all__ = [
@@ -301,4 +394,6 @@ __all__ = [
     "BoxMeasurer",
     "SupportPlaneCalibrator",
     "PlaneCalibrationConfig",
+    "AutoSupportPlane",
+    "AutoSupportPlaneConfig",
 ]

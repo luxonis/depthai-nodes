@@ -11,7 +11,7 @@ from typing import Any, TypeAlias
 import depthai as dai
 import numpy as np
 
-from .support_plane import SupportPlane
+from .support_plane import SupportPlane, SupportPlaneCandidate
 
 
 def _check_float(name: str, value: Any) -> float:
@@ -40,23 +40,12 @@ def _check_bool(name: str, value: Any) -> bool:
     return bool(value)
 
 
-def _check_instance(name: str, value: Any, expected: type) -> None:
-    """Check that a value is an instance of the expected type.
-
-    Raises:
-        TypeError: If the value is not an instance of ``expected``.
-    """
-    if not isinstance(value, expected):
-        raise TypeError(
-            f"{name} must be {expected.__name__}, got {type(value).__name__}"
-        )
-
-
 class CalibrationOutcome(str, Enum):
     """How a calibration attempt ended.
 
     ``SUCCEEDED`` attempts found at least one candidate plane, ``FAILED``
-    attempts found none, and ``CANCELLED`` attempts were stopped.
+    attempts hit the attempt cap (``max_calibration_attempts`` in the
+    calibrator's config) without one, and ``CANCELLED`` attempts were stopped.
     """
 
     SUCCEEDED = "succeeded"
@@ -94,7 +83,7 @@ class SupportPlaneCalibrationControl(dai.Buffer):
 
         @dataclass(frozen=True, kw_only=True)
         class Verify:
-            """Check a plane against gravity without affecting any attempt.
+            """Verify a plane on the next point cloud without affecting any attempt.
 
             Attributes:
                 plane: The support plane to check.
@@ -111,7 +100,10 @@ class SupportPlaneCalibrationControl(dai.Buffer):
                 Raises:
                     TypeError: If ``plane`` is not a `SupportPlane`.
                 """
-                _check_instance("plane", self.plane, SupportPlane)
+                if not isinstance(self.plane, SupportPlane):
+                    raise TypeError(
+                        f"plane must be SupportPlane, got {type(self.plane).__name__}"
+                    )
 
     Command: TypeAlias = (
         Commands.Start | Commands.Stop | Commands.Reset | Commands.Verify
@@ -168,7 +160,7 @@ class SupportPlaneCalibrationControl(dai.Buffer):
 
     @classmethod
     def verify(cls, plane: SupportPlane) -> SupportPlaneCalibrationControl:
-        """Create a control that checks a plane against gravity.
+        """Create a control that asks for a plane verification.
 
         Args:
             plane: The support plane to check.
@@ -189,8 +181,7 @@ class SupportPlaneCalibrationResult(dai.Buffer):
 
     Args:
         outcome: How the attempt ended.
-        candidates: Accepted calibration candidates, best first.
-        info: Human-readable detail about the outcome.
+        candidates: Support plane candidates.
 
     Raises:
         TypeError: If an argument has the wrong type.
@@ -201,35 +192,40 @@ class SupportPlaneCalibrationResult(dai.Buffer):
     def __init__(
         self,
         outcome: CalibrationOutcome,
-        candidates: list[SupportPlane] | tuple[SupportPlane, ...],
-        info: str = "",
+        candidates: list[SupportPlaneCandidate] | tuple[SupportPlaneCandidate, ...],
     ) -> None:
         """Create a result and check that its fields are consistent.
 
         Args:
             outcome: How the attempt ended.
-            candidates: Accepted calibration candidates, best first.
-            info: Human-readable detail about the outcome.
+            candidates: Support plane candidates.
 
         Raises:
-            TypeError: If ``outcome`` is not a `CalibrationOutcome`,
-                ``candidates`` is not a list or tuple of `SupportPlane`, or
-                ``info`` is not a string.
+            TypeError: If ``outcome`` is not a `CalibrationOutcome`, or
+                ``candidates`` is not a list or tuple of
+                `SupportPlaneCandidate`.
             ValueError: If the result has candidates and did not succeed, or
                 succeeded without candidates.
         """
         super().__init__()
-        _check_instance("outcome", outcome, CalibrationOutcome)
+        if not isinstance(outcome, CalibrationOutcome):
+            raise TypeError(
+                "outcome must be CalibrationOutcome, got " f"{type(outcome).__name__}"
+            )
         if not isinstance(candidates, (list, tuple)):
-            raise TypeError("Candidates must be a list or tuple of support planes")
-        for plane in candidates:
-            _check_instance("candidate", plane, SupportPlane)
-        _check_instance("info", info, str)
+            raise TypeError(
+                "Candidates must be a list or tuple of support plane candidates"
+            )
+        for candidate in candidates:
+            if not isinstance(candidate, SupportPlaneCandidate):
+                raise TypeError(
+                    "candidate must be SupportPlaneCandidate, got "
+                    f"{type(candidate).__name__}"
+                )
         if bool(candidates) != (outcome is CalibrationOutcome.SUCCEEDED):
             raise ValueError("A result has candidates exactly when it succeeded")
         self._outcome = outcome
         self._candidates = tuple(candidates)
-        self._info = info
 
     @property
     def outcome(self) -> CalibrationOutcome:
@@ -237,28 +233,29 @@ class SupportPlaneCalibrationResult(dai.Buffer):
         return self._outcome
 
     @property
-    def candidates(self) -> tuple[SupportPlane, ...]:
-        """Accepted planes, best first; empty unless calibration succeeded."""
+    def candidates(self) -> tuple[SupportPlaneCandidate, ...]:
+        """Support plane candidates; empty unless calibration succeeded."""
         return self._candidates
-
-    @property
-    def info(self) -> str:
-        """Human-readable detail about the outcome."""
-        return self._info
 
 
 class SupportPlaneVerificationResult(dai.Buffer):
-    """Whether a supplied plane passes calibration's gravity check.
+    """How a supplied plane fares against gravity and the current point cloud.
+
+    The plane is accepted when it passes the level test and enough of the
+    sampled point cloud lies on it.
 
     Args:
         plane: The checked support plane, as supplied.
         gravity_angle_deg: Tilt of the plane from horizontal, in degrees, from
-            0 to 90. Either sign of the plane equation gives the same angle.
-        accepted: Whether the plane passed the check.
+            0 to 90.
+        accepted: Whether the plane was accepted.
+        on_plane_ratio: Share of sampled valid points on the plane, from 0 to
+            1, or ``None`` when too few were sampled to measure.
 
     Raises:
         TypeError: If an argument has the wrong type.
-        ValueError: If ``gravity_angle_deg`` is not finite.
+        ValueError: If an argument is out of range, or ``accepted`` is
+            ``True`` with no ``on_plane_ratio``.
     """
 
     def __init__(
@@ -266,25 +263,42 @@ class SupportPlaneVerificationResult(dai.Buffer):
         plane: SupportPlane,
         gravity_angle_deg: float,
         accepted: bool | np.bool_,
+        on_plane_ratio: float | None,
     ) -> None:
         """Create a verification result.
 
         Args:
             plane: The checked support plane, as supplied.
             gravity_angle_deg: Tilt of the plane from horizontal, in degrees.
-            accepted: Whether the plane passed the check. A numpy ``bool_`` is
-                stored as ``bool``.
+            accepted: Whether the plane passed the level test and had
+                enough of the point cloud on it. A numpy ``bool_`` is stored
+                as ``bool``.
+            on_plane_ratio: The on-plane ratio from 0 to 1, or ``None`` when
+                not measured.
 
         Raises:
             TypeError: If ``plane`` is not a `SupportPlane`,
-                ``gravity_angle_deg`` is not a real number, or ``accepted`` is
-                not a boolean.
-            ValueError: If ``gravity_angle_deg`` is not finite.
+                ``gravity_angle_deg`` is not a real number, ``accepted`` is
+                not a boolean, or ``on_plane_ratio`` is neither ``None`` nor a
+                real number.
+            ValueError: If ``gravity_angle_deg`` is not finite,
+                ``on_plane_ratio`` is not finite or outside 0 to 1, or
+                ``accepted`` is ``True`` with no ``on_plane_ratio``.
         """
         super().__init__()
-        _check_instance("plane", plane, SupportPlane)
+        if not isinstance(plane, SupportPlane):
+            raise TypeError(f"plane must be SupportPlane, got {type(plane).__name__}")
         self._gravity_angle_deg = _check_float("gravity_angle_deg", gravity_angle_deg)
         self._accepted = _check_bool("accepted", accepted)
+        if on_plane_ratio is not None:
+            on_plane_ratio = _check_float("on_plane_ratio", on_plane_ratio)
+            if not 0 <= on_plane_ratio <= 1:
+                raise ValueError(
+                    f"on_plane_ratio must be from 0 to 1, got {on_plane_ratio}"
+                )
+        if self._accepted and on_plane_ratio is None:
+            raise ValueError("A plane can't be accepted without an on_plane_ratio")
+        self._on_plane_ratio = on_plane_ratio
         self._plane = plane
 
     @property
@@ -299,5 +313,20 @@ class SupportPlaneVerificationResult(dai.Buffer):
 
     @property
     def accepted(self) -> bool:
-        """Whether the plane passed the gravity check."""
+        """Whether the plane passed the level test with enough of the cloud on it.
+
+        The plane is within ``max_gravity_angle_deg`` of level, below the
+        camera within any configured camera height range, and has a measured
+        on-plane ratio of at least ``min_on_plane_ratio``.
+        """
         return self._accepted
+
+    @property
+    def on_plane_ratio(self) -> float | None:
+        """Share of sampled valid points on the plane, or ``None`` if not measured.
+
+        A point is on the plane within the calibrator's ``check_distance_mm``.
+        ``None`` means too few valid points were sampled to measure. This is
+        not a candidate's inlier ratio.
+        """
+        return self._on_plane_ratio

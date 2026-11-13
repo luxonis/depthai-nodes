@@ -62,6 +62,40 @@ Note:
     image transformation. Native message copies may share pixel storage; see
     `depthai_nodes.message.utils.copy_message` before modifying copied buffers.
 
+Support plane
+-------------
+
+`SupportPlane` is the support plane equation ``normal · point + offset_mm = 0``
+in millimeters, normalized on construction. ``toJson()``, ``fromJson()``,
+``toJsonFile()``, and ``fromJsonFile()`` save and load exactly its ``normal`` and
+``offset_mm``.
+
+`depthai_nodes.node.SupportPlaneCalibrator` exchanges these messages:
+
+* `SupportPlaneCalibrationControl` starts, stops, or resets calibration, or
+  asks for a plane verification of a given support plane.
+* `SupportPlaneCalibrationResult` ends a calibration attempt with a
+  `CalibrationOutcome` and, only when it succeeded, its support plane
+  candidates.
+* `SupportPlaneCandidate` holds a ``plane`` with its ``inlier_count`` and
+  ``inlier_ratio``.
+* `SupportPlaneVerificationResult` reports the result of a plane verification:
+  the plane's angle to gravity, its on-plane ratio, the share of the checked
+  point cloud's sampled points that lie on the plane (``None`` when not
+  measured), and whether it was accepted: level, below the camera, and with
+  enough of the point cloud on it. The on-plane ratio is not a candidate's
+  inlier ratio.
+
+`depthai_nodes.node.AutoSupportPlane` sends an `AutoSupportPlaneResult` for each
+finished cycle: ``passed`` tells whether it found or confirmed a support plane,
+and ``plane`` is the support plane in use, or ``None`` when there is none. It
+is a Python ``Buffer`` subclass, so it travels between host nodes only; over
+XLink or a ``RemoteConnection`` it arrives as a bare ``Buffer``.
+
+The fields of these messages are read-only. `SupportPlane` and
+`SupportPlaneCandidate` are frozen dataclasses that take keyword arguments and
+raise ``TypeError`` for a wrong type or ``ValueError`` for an invalid value.
+
 Box measurement
 ---------------
 
@@ -75,23 +109,14 @@ holds the index of the item it belongs to, and 255 marks background.
 repeats the box detection fields and adds a `MeasurementStatus` and, when the
 box has any, its `BoxDimensions`: length, width, and height in millimeters. A
 measured result always has dimensions. Both messages draw labelled box outlines
-through ``getVisualizationMessage()``.
+through ``getVisualizationMessage()``. `BoxDetection`, `BoxMeasurementResult`,
+and `BoxDimensions` are frozen dataclasses that take keyword arguments and
+raise the same errors as the support plane value types.
 
-`SupportPlane` is the support plane equation ``normal · point + offset_mm = 0``
-in millimeters, normalized on construction. ``toJson()``, ``fromJson()``,
-``toJsonFile()``, and ``fromJsonFile()`` save and load exactly its ``normal`` and
-``offset_mm``.
-
-`SupportPlaneCalibrationControl` starts, stops, or resets calibration, or asks
-to verify a plane. `SupportPlaneCalibrationResult` ends an attempt with a
-`CalibrationOutcome` and, only when it succeeded, its calibration candidates,
-best first. `SupportPlaneVerificationResult` reports a verified plane's angle to
-gravity and whether it was accepted. The fields of these messages are read-only.
-
-The value types are frozen dataclasses that take keyword arguments and raise
-``TypeError`` for a wrong type or ``ValueError`` for an invalid value.
+Boxes are measured against a support plane; see "Support plane" above.
 """
 
+from .auto_support_plane_result import AutoSupportPlaneResult
 from .box_detections import BoxDetection, BoxDetections
 from .box_measurements import (
     BoxDimensions,
@@ -102,7 +127,7 @@ from .box_measurements import (
 from .collection import Collection
 from .gathered_data import GatheredData
 from .snap_data import SnapData
-from .support_plane import SupportPlane
+from .support_plane import SupportPlane, SupportPlaneCandidate
 from .support_plane_calibration import (
     CalibrationOutcome,
     SupportPlaneCalibrationControl,
@@ -121,8 +146,10 @@ __all__ = [
     "BoxDimensions",
     "MeasurementStatus",
     "SupportPlane",
+    "SupportPlaneCandidate",
     "SupportPlaneCalibrationControl",
     "SupportPlaneCalibrationResult",
     "SupportPlaneVerificationResult",
+    "AutoSupportPlaneResult",
     "CalibrationOutcome",
 ]
