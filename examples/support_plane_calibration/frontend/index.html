@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Support plane calibration</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="viewer.js" defer></script>
+  <script src="manual.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <p class="context">OAK4 · Fixed installation</p>
+        <h1>Support plane calibration</h1>
+      </div>
+      <output id="activity" aria-live="polite">Connecting</output>
+    </header>
+    <p id="error" role="alert" hidden></p>
+    <div class="workspace">
+      <section class="preview" aria-labelledby="preview-title">
+        <div class="heading">
+          <h2 id="preview-title">Live depth</h2>
+          <span id="frame">Waiting for point cloud</span>
+        </div>
+        <canvas id="depth" aria-label="Depth map highlighting points near the selected plane"></canvas>
+        <div class="legend"><span><i></i> Within plane tolerance</span><span>Near <b></b> Far</span></div>
+        <p id="overlay"></p>
+      </section>
+      <section class="review" aria-labelledby="review-title">
+        <div class="heading">
+          <h2 id="review-title">Review planes</h2>
+          <span id="fit"></span>
+        </div>
+        <div class="actions">
+          <button id="start" class="primary">Start search</button>
+          <button id="stop" disabled>Stop</button>
+        </div>
+        <p id="batch-info">Start a search to fit candidate planes.</p>
+        <div id="candidates"></div>
+        <div class="actions">
+          <button id="verify" disabled>Verify selected</button>
+          <button id="approve" class="primary" disabled>Approve and save</button>
+        </div>
+        <div id="verification" aria-live="polite"></div>
+      </section>
+    </div>
+    <section class="approval" aria-labelledby="approval-title">
+      <div>
+        <h2 id="approval-title">Active approval</h2>
+        <p id="active">No active plane.</p>
+      </div>
+      <div class="actions">
+        <button id="restore" disabled>Verify and restore</button>
+        <button id="invalidate" disabled>Invalidate</button>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

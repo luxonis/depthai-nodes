@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import math
 import numbers
+from collections.abc import Iterable
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, TypeAlias
 
@@ -238,7 +240,160 @@ class SupportPlaneCalibrationResult(dai.Buffer):
         return self._candidates
 
 
-class SupportPlaneVerificationResult(dai.Buffer):
+@dataclass(frozen=True, kw_only=True)
+class PlaneAssessmentReason:
+    """A failed check or insufficient evidence, with its measurement and limit.
+
+    Attributes:
+        code: Machine-readable identifier for the check.
+        measured: Observed value, if available.
+        limit: Required threshold or inclusive range, if applicable.
+    """
+
+    code: str
+    measured: int | float | None = None
+    limit: int | float | tuple[float, float] | None = None
+
+
+@dataclass(frozen=True, kw_only=True)
+class PlaneAssessment:
+    """Measurements and verdict for one plane equation on one cloud.
+
+    Attributes:
+        plane: Equation as evaluated.
+        sampled_point_count: Count of positive-depth points on the sampling grid.
+        on_plane_point_count: Grid samples within the perpendicular tolerance.
+        tilt_deg: Tilt from horizontal in degrees.
+        perpendicular_distance_mm: Shortest distance from the camera to the plane.
+        vertical_distance_mm: Distance along gravity, if that ray intersects the plane.
+        reasons: Failed checks or insufficient evidence.
+    """
+
+    plane: SupportPlane
+    sampled_point_count: int
+    on_plane_point_count: int
+    tilt_deg: float
+    perpendicular_distance_mm: float
+    vertical_distance_mm: float | None
+    reasons: tuple[PlaneAssessmentReason, ...]
+
+    @property
+    def on_plane_ratio(self) -> float | None:
+        """Fraction of sampled points on the plane, if any points were sampled."""
+        if self.sampled_point_count == 0:
+            return None
+        return self.on_plane_point_count / self.sampled_point_count
+
+    @property
+    def accepted(self) -> bool:
+        """Whether every configured check passed."""
+        return not self.reasons
+
+
+class SupportPlaneVerificationRequest(dai.Buffer):
+    """Request an assessment and optionally attach an ID for correlation."""
+
+    def __init__(self, plane: SupportPlane, request_id: object = None) -> None:
+        super().__init__()
+        if not isinstance(plane, SupportPlane):
+            raise TypeError(f"plane must be SupportPlane, got {type(plane).__name__}")
+        self._plane = plane
+        self._request_id = request_id
+
+    @property
+    def plane(self) -> SupportPlane:
+        """Plane equation to assess."""
+        return self._plane
+
+    @property
+    def request_id(self) -> object:
+        """Application-provided correlation ID, or None."""
+        return self._request_id
+
+
+class _CloudAssessmentMessage(dai.Buffer):
+    """Provenance shared by messages with assessments from one cloud."""
+
+    _gravity_direction: tuple[float, float, float] | None = None
+    _imu_timestamp_device: timedelta | None = None
+    _imu_timestamp_host: timedelta | None = None
+    _imu_timestamp_system: datetime | None = None
+    _source_stream_id: str | None = None
+
+    def _set_snapshot(
+        self,
+        cloud: dai.PointCloudData,
+        gravity_direction: tuple[float, float, float],
+        imu_timestamp_device: timedelta | None,
+        source_stream_id: str,
+        imu_timestamp_host: timedelta | None,
+        imu_timestamp_system: datetime | None,
+    ) -> None:
+        self.setBufferMetadataFrom(cloud)
+        self._gravity_direction = gravity_direction
+        self._imu_timestamp_device = imu_timestamp_device
+        self._imu_timestamp_host = imu_timestamp_host
+        self._imu_timestamp_system = imu_timestamp_system
+        self._source_stream_id = source_stream_id
+
+    @property
+    def gravity_direction(self) -> tuple[float, float, float] | None:
+        """Unit vector pointing down, expressed in the point cloud frame."""
+        return self._gravity_direction
+
+    @property
+    def imu_timestamp_device(self) -> timedelta | None:
+        """Accelerometer report timestamp in the device monotonic clock domain."""
+        return self._imu_timestamp_device
+
+    @property
+    def imu_timestamp_host(self) -> timedelta | None:
+        """Accelerometer report timestamp synchronized to the host clock."""
+        return self._imu_timestamp_host
+
+    @property
+    def imu_timestamp_system(self) -> datetime | None:
+        """Accelerometer report timestamp in the optional device system clock."""
+        return self._imu_timestamp_system
+
+    @property
+    def source_stream_id(self) -> str | None:
+        """Source output as node ID, group, and port name joined by slashes."""
+        return self._source_stream_id
+
+
+class SupportPlaneCandidateBatch(_CloudAssessmentMessage):
+    """All assessments from one fit, including rejected equations."""
+
+    def __init__(
+        self,
+        assessments: Iterable[PlaneAssessment],
+        *,
+        cloud: dai.PointCloudData,
+        gravity_direction: tuple[float, float, float],
+        imu_timestamp_device: timedelta | None,
+        source_stream_id: str,
+        imu_timestamp_host: timedelta | None = None,
+        imu_timestamp_system: datetime | None = None,
+    ) -> None:
+        super().__init__()
+        self._assessments = tuple(assessments)
+        self._set_snapshot(
+            cloud,
+            gravity_direction,
+            imu_timestamp_device,
+            source_stream_id,
+            imu_timestamp_host,
+            imu_timestamp_system,
+        )
+
+    @property
+    def assessments(self) -> tuple[PlaneAssessment, ...]:
+        """Assessed equations from this fit, empty if it produced none."""
+        return self._assessments
+
+
+class SupportPlaneVerificationResult(_CloudAssessmentMessage):
     """How a supplied plane fares against gravity and the current point cloud.
 
     The plane is accepted when it passes the level test and enough of the
@@ -257,6 +412,9 @@ class SupportPlaneVerificationResult(dai.Buffer):
         ValueError: If an argument is out of range, or ``accepted`` is
             ``True`` with no ``on_plane_ratio``.
     """
+
+    _assessment: PlaneAssessment | None = None
+    _request_id: object = None
 
     def __init__(
         self,
@@ -300,6 +458,48 @@ class SupportPlaneVerificationResult(dai.Buffer):
             raise ValueError("A plane can't be accepted without an on_plane_ratio")
         self._on_plane_ratio = on_plane_ratio
         self._plane = plane
+
+    @classmethod
+    def from_assessment(
+        cls,
+        assessment: PlaneAssessment,
+        request_id: object,
+        *,
+        cloud: dai.PointCloudData,
+        gravity_direction: tuple[float, float, float],
+        imu_timestamp_device: timedelta | None,
+        source_stream_id: str,
+        imu_timestamp_host: timedelta | None = None,
+        imu_timestamp_system: datetime | None = None,
+    ) -> SupportPlaneVerificationResult:
+        """Build a correlated reply and copy its source cloud metadata."""
+        result = cls(
+            assessment.plane,
+            assessment.tilt_deg,
+            assessment.accepted,
+            assessment.on_plane_ratio,
+        )
+        result._assessment = assessment
+        result._request_id = request_id
+        result._set_snapshot(
+            cloud,
+            gravity_direction,
+            imu_timestamp_device,
+            source_stream_id,
+            imu_timestamp_host,
+            imu_timestamp_system,
+        )
+        return result
+
+    @property
+    def assessment(self) -> PlaneAssessment | None:
+        """Shared assessment from SupportPlaneCalibration, if available."""
+        return self._assessment
+
+    @property
+    def request_id(self) -> object:
+        """ID echoed from the verification request, or None."""
+        return self._request_id
 
     @property
     def plane(self) -> SupportPlane:

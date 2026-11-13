@@ -1,0 +1,18 @@
+identifier = "com.example.support-plane-calibration"
+app_version = "0.1.1"
+entrypoint = ["/entrypoint.sh", "python3", "-u", "/app/main.py"]
+base_image = "luxonis/oakapp-base:1.3.0-py311"
+assign_frontend_port = true
+storage_dir_name = "storage"
+
+prepare_container = [
+    { type = "RUN", command = "apt-get update && apt-get install -y --no-install-recommends libgfortran5 libgomp1 libegl1 libgl1 && rm -rf /var/lib/apt/lists/*" },
+]
+
+build_steps = [
+    "python3 -m pip install --break-system-packages 'depthai==3.12.0' '/app/library[box-measurement]'",
+    "python3 -c 'import open3d; from depthai_nodes.node import SupportPlaneCalibration'",
+]
+
+[env]
+DEPTHAI_TELEMETRY = "0"

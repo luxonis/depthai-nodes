@@ -96,6 +96,13 @@ The fields of these messages are read-only. `SupportPlane` and
 `SupportPlaneCandidate` are frozen dataclasses that take keyword arguments and
 raise ``TypeError`` for a wrong type or ``ValueError`` for an invalid value.
 
+`depthai_nodes.node.SupportPlaneCalibration` publishes a
+`SupportPlaneCandidateBatch` with zero or more `PlaneAssessment` values per
+fit. A `SupportPlaneVerificationRequest` produces a
+`SupportPlaneVerificationResult` with one assessment and the echoed request
+ID. Both outputs preserve the cloud metadata and record the gravity direction
+and IMU timestamps separately.
+
 Box measurement
 ---------------
 
@@ -130,8 +137,12 @@ from .snap_data import SnapData
 from .support_plane import SupportPlane, SupportPlaneCandidate
 from .support_plane_calibration import (
     CalibrationOutcome,
+    PlaneAssessment,
+    PlaneAssessmentReason,
     SupportPlaneCalibrationControl,
     SupportPlaneCalibrationResult,
+    SupportPlaneCandidateBatch,
+    SupportPlaneVerificationRequest,
     SupportPlaneVerificationResult,
 )
 
@@ -152,4 +163,8 @@ __all__ = [
     "SupportPlaneVerificationResult",
     "AutoSupportPlaneResult",
     "CalibrationOutcome",
+    "PlaneAssessment",
+    "PlaneAssessmentReason",
+    "SupportPlaneCandidateBatch",
+    "SupportPlaneVerificationRequest",
 ]

@@ -407,10 +407,11 @@ def build_args():
 
 def test_build_cannot_run_twice():
     node = HarnessPipeline().create(AutoSupportPlane)
-    node.build(*build_args())
+    config = on_start()
+    node.build(*build_args(), config)
 
     with pytest.raises(RuntimeError):
-        node.build(*build_args())
+        node.build(*build_args(), config)
 
 
 def test_build_gives_the_calibrator_the_calibration_config():

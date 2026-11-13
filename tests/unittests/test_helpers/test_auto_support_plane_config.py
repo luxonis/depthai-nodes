@@ -3,7 +3,7 @@ import pytest
 
 import depthai_nodes.message
 import depthai_nodes.node
-from depthai_nodes.node import AutoSupportPlaneConfig
+from depthai_nodes.node import AutoSupportPlaneConfig, SupportPlaneCalibrationConfig
 
 
 @pytest.mark.parametrize("name", ["AutoSupportPlane", "AutoSupportPlaneConfig"])
@@ -22,6 +22,10 @@ def test_configuration_stores_built_in_numbers():
     assert config.check_interval_sec == 0.25
     assert config.failed_checks_before_refit.__class__ is int
     assert config.failed_checks_before_refit == 5
+
+
+def test_default_configuration_uses_shared_assessment():
+    assert AutoSupportPlaneConfig().calibration == SupportPlaneCalibrationConfig()
 
 
 @pytest.mark.parametrize(
