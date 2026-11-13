@@ -1,6 +1,6 @@
 # 0001 Support plane acceptance and selection
 
-Recorded 2026-11-13. Implementation pending.
+Recorded 2026-11-13.
 
 ## Scope
 
@@ -27,33 +27,33 @@ The support plane workflow uses typed messages through DepthAI node inputs and o
 
 The names below define the proposed interface. `SupportPlaneCalibration.build(pointCloud, imu, pointCloudSize, config=None)` links the organized millimeter cloud and IMU outputs. `pointCloudSize` is `(width, height)`. IMU input must provide an acceleration direction in the point cloud's coordinate frame.
 
-| Port | Direction | Contract |
-| --- | --- | --- |
-| `pointCloud` | Input | Organized `dai.PointCloudData` in millimeters. |
-| `imu` | Input | `dai.IMUData` with an accelerometer report. |
-| `inputControl` | Input | `SupportPlaneCalibrationControl.start()` and `.stop()` construct typed `START` and `STOP` messages. |
-| `inputVerification` | Input | `SupportPlaneVerificationRequest(plane, request_id=None)` requests one assessment. |
-| `candidatesOutput` | Output | `SupportPlaneCandidateBatch.assessments` carries zero or more `PlaneAssessment` values from one fitting attempt. |
-| `verificationOutput` | Output | `SupportPlaneVerificationResult.assessment` carries one `PlaneAssessment`. `request_id` echoes the optional request ID. |
+| Port                 | Direction | Contract                                                                                                                |
+| -------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `pointCloud`         | Input     | Organized `dai.PointCloudData` in millimeters.                                                                          |
+| `imu`                | Input     | `dai.IMUData` with an accelerometer report.                                                                             |
+| `inputControl`       | Input     | `SupportPlaneCalibrationControl.start()` and `.stop()` construct typed `START` and `STOP` messages.                     |
+| `inputVerification`  | Input     | `SupportPlaneVerificationRequest(plane, request_id=None)` requests one assessment.                                      |
+| `candidatesOutput`   | Output    | `SupportPlaneCandidateBatch.assessments` carries zero or more `PlaneAssessment` values from one fitting attempt.        |
+| `verificationOutput` | Output    | `SupportPlaneVerificationResult.assessment` carries one `PlaneAssessment`. `request_id` echoes the optional request ID. |
 
 `SupportPlaneCalibrationConfig` exposes these settings. The first controls search scheduling. The remaining settings apply to the shared evaluator in both paths.
 
-| Setting | Default | Meaning |
-| --- | --- | --- |
-| `attempt_interval_sec` | `0.5` | Minimum time between fit starts. Must be positive and finite. |
-| `max_gravity_angle_deg` | `6.5` | Maximum tilt from horizontal. |
-| `check_distance_mm` | `30.0` | Maximum perpendicular distance for a sampled point to count as on-plane. |
-| `min_sampled_point_count` | `500` | Minimum number of valid grid samples needed to judge coverage. |
-| `min_on_plane_ratio` | `0.10` | Minimum fraction of valid grid samples on the plane. |
-| `vertical_distance_range_mm` | `None` | Optional inclusive `(min, max)` installation requirement for distance along gravity. |
+| Setting                      | Default | Meaning                                                                              |
+| ---------------------------- | ------- | ------------------------------------------------------------------------------------ |
+| `attempt_interval_sec`       | `0.5`   | Minimum time between fit starts. Must be positive and finite.                        |
+| `max_gravity_angle_deg`      | `6.5`   | Maximum tilt from horizontal.                                                        |
+| `check_distance_mm`          | `30.0`  | Maximum perpendicular distance for a sampled point to count as on-plane.             |
+| `min_sampled_point_count`    | `500`   | Minimum number of valid grid samples needed to judge coverage.                       |
+| `min_on_plane_ratio`         | `0.10`  | Minimum fraction of valid grid samples on the plane.                                 |
+| `vertical_distance_range_mm` | `None`  | Optional inclusive `(min, max)` installation requirement for distance along gravity. |
 
 ### Search lifecycle
 
 1. Start idle and keep consuming both sensor inputs. Retain the latest cloud and latest usable gravity reading instead of buffering a backlog. Use one cloud and one gravity reading per attempt. Preserve the existing host-arrival freshness limit of 0.5 seconds for gravity independently of the fitting interval.
-2. On `START` while idle, begin searching. The first fit is eligible immediately when inputs are usable. Subsequent fit starts are separated by at least `attempt_interval_sec`. Within a search, fit each cloud at most once. Wait for a new cloud and usable gravity when needed. `START` while searching leaves the current search in progress.
-3. For every completed fit, publish exactly one batch. An empty batch means the fit produced no distinct equations to assess. If equations were assessed and all failed, publish them with their reasons and continue. Waiting for input does not produce an attempt batch.
-4. Publish the complete batch before returning to idle if any assessment has `accepted=True`. With no passing assessment, search indefinitely until a `STOP` command is processed. `STOP` prevents new fits and returns the search to idle. A fit already running can finish and publish. `STOP` while idle has no effect.
-5. A fresh `START` can follow success or cancellation directly. Fitting uses each cloud independently, so the interface has no `RESET` command. If a reviewer declines every plane in a completed search, the application can send another `START`.
+1. On `START` while idle, begin searching. The first fit is eligible immediately when inputs are usable. Subsequent fit starts are separated by at least `attempt_interval_sec`. Within a search, fit each cloud at most once. Wait for a new cloud and usable gravity when needed. `START` while searching leaves the current search in progress.
+1. For every completed fit, publish exactly one batch. An empty batch means the fit produced no distinct equations to assess. If equations were assessed and all failed, publish them with their reasons and continue. Waiting for input does not produce an attempt batch.
+1. Publish the complete batch before returning to idle if any assessment has `accepted=True`. With no passing assessment, search indefinitely until a `STOP` command is processed. `STOP` prevents new fits and returns the search to idle. A fit already running can finish and publish. `STOP` while idle has no effect.
+1. A fresh `START` can follow success or cancellation directly. Fitting uses each cloud independently, so the interface has no `RESET` command. If a reviewer declines every plane in a completed search, the application can send another `START`.
 
 Verification is independent of search state and fit timing. Assess one supplied equation per request using the latest usable cloud and gravity. A request can wait for usable inputs. Answer pending requests in arrival order and echo each request ID. Verification never starts, stops, or completes a search and never activates a plane.
 
@@ -65,17 +65,17 @@ Search reports an assessment for each distinct fitted equation it evaluates, inc
 
 For both paths, take rows `0, 4, 8, …` and columns `0, 4, 8, …` from the **original organized point cloud**, then keep the sampled points with `z > 0`. Voxel downsampling and denoising are part of equation fitting. The assessment counts and ratio use the grid sample.
 
-| Field | Meaning |
-| --- | --- |
-| `plane` | Plane equation evaluated. |
-| `sampled_point_count` | Number of positive-depth points on the sampling grid. |
-| `on_plane_point_count` | Number of those points whose perpendicular distance to the plane is at or below the configured tolerance. |
-| `on_plane_ratio` | `on_plane_point_count / sampled_point_count`. Unavailable when the sample count is zero. |
-| `tilt_deg` | Tilt from horizontal relative to the gravity direction used. |
-| `perpendicular_distance_mm` | Shortest distance from the camera origin to the plane. |
-| `vertical_distance_mm` | Distance from the camera origin along gravity to the plane. Unavailable when there is no well-defined intersection in that direction. |
-| `accepted` | Whether the assessment passes all configured checks. |
-| `reasons` | Structured failure reasons, with measured values and configured limits where applicable. Empty on acceptance. |
+| Field                       | Meaning                                                                                                                               |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `plane`                     | Plane equation evaluated.                                                                                                             |
+| `sampled_point_count`       | Number of positive-depth points on the sampling grid.                                                                                 |
+| `on_plane_point_count`      | Number of those points whose perpendicular distance to the plane is at or below the configured tolerance.                             |
+| `on_plane_ratio`            | `on_plane_point_count / sampled_point_count`. Unavailable when the sample count is zero.                                              |
+| `tilt_deg`                  | Tilt from horizontal relative to the gravity direction used.                                                                          |
+| `perpendicular_distance_mm` | Shortest distance from the camera origin to the plane.                                                                                |
+| `vertical_distance_mm`      | Distance from the camera origin along gravity to the plane. Unavailable when there is no well-defined intersection in that direction. |
+| `accepted`                  | Whether the assessment passes all configured checks.                                                                                  |
+| `reasons`                   | Structured failure reasons, with measured values and configured limits where applicable. Empty on acceptance.                         |
 
 Report both counts even if too few points were sampled to judge coverage. Distinguish insufficient evidence from a failed check. For example, use `insufficient_sample` when the sample is too small and `coverage_below_minimum` when a sufficient sample has too little support. Report independently evaluable failures together.
 

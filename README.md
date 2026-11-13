@@ -151,6 +151,9 @@ saved = store.load(device_id=device_id, frame_id=frame_id)
 When the application withdraws approval, call `store.invalidate()` and pause
 processing that depends on the plane.
 
+The [standalone OAK4 example](examples/support_plane_calibration/README.md)
+provides a browser workflow for search, review, verification, and approval.
+
 ### Runtime
 
 The `runtime` module contains runtime integrations. Its OAK4 QNN helper
