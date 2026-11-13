@@ -156,6 +156,11 @@ Message handling and uploads
 Support plane
 =============
 
+`SupportPlaneCalibration` searches for planes and verifies equations for fixed
+installations. `SupportPlaneCalibrationConfig` sets fit timing and shared
+acceptance criteria. Use `depthai_nodes.SupportPlaneStore` to save and restore
+application approvals.
+
 `SupportPlaneCalibrator` finds the support plane in a point cloud, checked
 against gravity from IMU data. Each Start control begins a calibration attempt,
 which ends with one `depthai_nodes.message.SupportPlaneCalibrationResult` on
@@ -342,6 +347,8 @@ from .support_plane_calibrator import (
     AutoSupportPlane,
     AutoSupportPlaneConfig,
     PlaneCalibrationConfig,
+    SupportPlaneCalibration,
+    SupportPlaneCalibrationConfig,
     SupportPlaneCalibrator,
 )
 from .tiling import Tiling
@@ -392,6 +399,8 @@ __all__ = [
     "BoxDimensioner",
     "BoxDetector",
     "BoxMeasurer",
+    "SupportPlaneCalibration",
+    "SupportPlaneCalibrationConfig",
     "SupportPlaneCalibrator",
     "PlaneCalibrationConfig",
     "AutoSupportPlane",

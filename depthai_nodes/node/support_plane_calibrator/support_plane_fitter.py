@@ -78,6 +78,24 @@ class SupportPlaneFitter:
         Raises:
             ValueError: If ``points`` does not have the organized shape.
         """
+        fits, cloud_size = self._find_fits(points, gravity, check_geometry=True)
+        return self._rank(self._drop_duplicates(fits), cloud_size)
+
+    def propose(self, points: np.ndarray, gravity: np.ndarray) -> list[SupportPlane]:
+        """Fit distinct equations for a caller that assesses geometry separately."""
+        fits, cloud_size = self._find_fits(points, gravity, check_geometry=False)
+        unique: dict[tuple[float, ...], SupportPlane] = {}
+        for candidate in self._rank(fits, cloud_size):
+            plane = candidate.plane
+            equation = (*plane.normal, plane.offset_mm)
+            first = next(coefficient for coefficient in plane.normal if coefficient)
+            key = equation if first > 0 else tuple(-value for value in equation)
+            unique.setdefault(key, plane)
+        return list(unique.values())
+
+    def _find_fits(
+        self, points: np.ndarray, gravity: np.ndarray, *, check_geometry: bool
+    ) -> tuple[list[PlaneFit], int]:
         expected = (self._width * self._height, 3)
         if points.shape != expected:
             raise ValueError(
@@ -86,12 +104,11 @@ class SupportPlaneFitter:
             )
         cloud = self._preprocess(points)
         if cloud is None:
-            return []
-        fits = self._fit_planes(cloud, gravity)
-        if not fits:
+            return [], 0
+        fits = self._fit_planes(cloud, gravity, check_geometry=check_geometry)
+        if not fits and check_geometry:
             logger.debug("RANSAC rejected: no horizontal support plane candidates")
-            return []
-        return self._rank(self._drop_duplicates(fits), len(cloud.points))
+        return fits, len(cloud.points)
 
     def _preprocess(self, points: np.ndarray) -> o3d.geometry.PointCloud | None:
         """Drop empty points, downsample and denoise; ``None`` if too few remain."""
@@ -114,9 +131,13 @@ class SupportPlaneFitter:
         return cloud
 
     def _fit_planes(
-        self, cloud: o3d.geometry.PointCloud, gravity: np.ndarray
+        self,
+        cloud: o3d.geometry.PointCloud,
+        gravity: np.ndarray,
+        *,
+        check_geometry: bool,
     ) -> list[PlaneFit]:
-        """Extract planes with repeated RANSAC, keeping the horizontal ones."""
+        """Extract planes with repeated RANSAC."""
         config = self._config
         min_inliers = max(
             config.ransac_sample_points,
@@ -150,7 +171,9 @@ class SupportPlaneFitter:
             if norm < 1e-6:
                 break
             plane_eq = orient_along_gravity(plane_eq / norm, gravity)
-            if is_valid_horizontal_plane(plane_eq, gravity, config):
+            if not check_geometry or is_valid_horizontal_plane(
+                plane_eq, gravity, config
+            ):
                 centroid = np.asarray(cloud.points)[inliers].mean(axis=0)
                 fits.append(PlaneFit(len(inliers), plane_eq, centroid))
             cloud = cloud.select_by_index(inliers, invert=True)

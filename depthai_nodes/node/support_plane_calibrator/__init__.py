@@ -3,11 +3,17 @@
 from .auto_support_plane import AutoSupportPlane
 from .auto_support_plane_config import AutoSupportPlaneConfig
 from .plane_calibration_config import PlaneCalibrationConfig
+from .support_plane_calibration import (
+    SupportPlaneCalibration,
+    SupportPlaneCalibrationConfig,
+)
 from .support_plane_calibrator import SupportPlaneCalibrator
 
 __all__ = [
     "AutoSupportPlane",
     "AutoSupportPlaneConfig",
     "PlaneCalibrationConfig",
+    "SupportPlaneCalibration",
+    "SupportPlaneCalibrationConfig",
     "SupportPlaneCalibrator",
 ]
