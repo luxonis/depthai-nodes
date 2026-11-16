@@ -1,6 +1,6 @@
 # Automatic support plane on OAK4
 
-Watch `AutoSupportPlane` pick a passing assessment, hold the plane, and check it
+Watch `AutoSupportPlaneCalibration` pick a passing assessment, hold the plane, and check it
 in continuous mode. The browser shows the live depth, held equation, latest
 verification, and every assessment from the latest fit. During a refit, the
 overlay continues to use the held plane until a replacement passes.
@@ -38,3 +38,8 @@ the synthetic cloud. After three failed checks, the node fits and holds the
 Run with `--mode on_start` to keep the first passing plane without periodic
 checks. Use `--initial-plane PATH` to verify a supplied `SupportPlane` JSON
 equation at startup. A rejected initial plane triggers a search.
+
+Pipeline applications can send an `AutoSupportPlaneConfig` message to
+`node.inputConfig` to replace the settings at runtime. The node withdraws its
+held plane while verifying it against changed acceptance limits. If the plane
+fails verification, the node searches for a replacement.

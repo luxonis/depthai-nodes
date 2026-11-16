@@ -3,6 +3,11 @@ from collections.abc import Callable
 
 import depthai as dai
 
+from depthai_nodes.logging import get_logger
+from depthai_nodes.message.auto_support_plane_config import (
+    AutoSupportPlaneConfig,
+    _AutoConfigUpdate,
+)
 from depthai_nodes.message.auto_support_plane_result import AutoSupportPlaneResult
 from depthai_nodes.message.support_plane import SupportPlane, SupportPlaneCandidate
 from depthai_nodes.message.support_plane_calibration import (
@@ -14,10 +19,11 @@ from depthai_nodes.message.support_plane_calibration import (
     SupportPlaneVerificationResult,
 )
 
-from .auto_support_plane_config import AutoSupportPlaneConfig
 from .plane_calibration_config import PlaneCalibrationConfig
 from .support_plane_calibration import SupportPlaneCalibration
 from .support_plane_calibrator import SupportPlaneCalibrator
+
+logger = get_logger(__name__)
 
 CandidateSelector = Callable[
     [SupportPlaneCalibrationResult], SupportPlaneCandidate | None
@@ -27,7 +33,7 @@ CandidateSelector = Callable[
 CONTROL_QUEUE_SIZE = 8
 
 
-class AutoSupportPlane(dai.node.ThreadedHostNode):
+class AutoSupportPlaneCalibration(dai.node.ThreadedHostNode):
     """Find and hold the support plane from a point cloud and IMU.
 
     Wraps a `SupportPlaneCalibration`. ``ON_START`` finds a plane once and holds
@@ -35,7 +41,12 @@ class AutoSupportPlane(dai.node.ThreadedHostNode):
     refits after repeated failed checks, keeping the old plane meanwhile. Pass
     the plane held before a pipeline rebuild as ``initialPlane``.
 
+    Send an ``AutoSupportPlaneConfig`` to ``inputConfig`` to replace the
+    settings while running. When the acceptance limits change, an active plane
+    is withdrawn until it passes verification under the new limits.
+
     Attributes:
+        inputConfig: Input for replacement ``AutoSupportPlaneConfig`` messages.
         out: Output stream of `depthai_nodes.message.AutoSupportPlaneResult`,
             one per found, checked or rejected plane.
         verificationOutput: Output stream of
@@ -51,21 +62,22 @@ class AutoSupportPlane(dai.node.ThreadedHostNode):
         super().__init__()
         self._calibrator: SupportPlaneCalibration | SupportPlaneCalibrator | None = None
         self._control_output = self.createOutput(name="calibratorControl")
-        self._request_output = self.createOutput(name="calibratorVerificationRequest")
         # Blocking and lossless: the wrapper counts on every result arriving.
         self._calibration_input = self.createInput(name="calibrationResult")
         self._verification_input = self.createInput(name="verificationResult")
+        self.inputConfig = self.createInput(name="inputConfig")
         self._out = self.createOutput()
         self._config: AutoSupportPlaneConfig | None = None
         self._select_candidate: CandidateSelector = _select_largest_plane
         self._started = False
+        self._config_revision = 0
         # The current plane, kept through a refit.
         self._plane: SupportPlane | None = None
         # Whether a calibration attempt runs (a search or a refit).
         self._searching = False
         self._verify_in_flight = False
         self._request_id = 0
-        # Whether the in-flight Verify is the initialPlane gate.
+        # Whether verification is required before the plane can be published.
         self._gate_pending = False
         self._next_check_at = 0.0
         self._failed_checks = 0
@@ -91,7 +103,7 @@ class AutoSupportPlane(dai.node.ThreadedHostNode):
         """
         if self._calibrator is None:
             raise RuntimeError(
-                "Build AutoSupportPlane before linking verificationOutput"
+                "Build AutoSupportPlaneCalibration before linking verificationOutput"
             )
         return self._calibrator.verificationOutput
 
@@ -112,7 +124,7 @@ class AutoSupportPlane(dai.node.ThreadedHostNode):
         config: AutoSupportPlaneConfig | None = None,
         initialPlane: SupportPlane | None = None,
         selectCandidate: CandidateSelector | None = None,
-    ) -> "AutoSupportPlane":
+    ) -> "AutoSupportPlaneCalibration":
         """Build the inner calibrator on the point cloud and IMU.
 
         Args:
@@ -141,10 +153,7 @@ class AutoSupportPlane(dai.node.ThreadedHostNode):
             ValueError: If ``pointCloudSize`` does not have two positive values.
         """
         if self._config is not None:
-            raise RuntimeError(
-                "AutoSupportPlane is already built; create a new node to change "
-                "its configuration"
-            )
+            raise RuntimeError("AutoSupportPlaneCalibration is already built")
         if config is None:
             config = (
                 AutoSupportPlaneConfig(calibration=PlaneCalibrationConfig())
@@ -168,7 +177,13 @@ class AutoSupportPlane(dai.node.ThreadedHostNode):
         calibration = config.calibration
         if isinstance(calibration, PlaneCalibrationConfig):
             calibrator = self.createSubnode(SupportPlaneCalibrator)
-            calibrator.build(pointCloud, imu, pointCloudSize, calibration)
+            calibrator.build(
+                pointCloud,
+                imu,
+                pointCloudSize,
+                calibration,
+                _assessment_config=config._assessment,
+            )
             calibrator.out.link(self._calibration_input)
         else:
             if selectCandidate is not None:
@@ -176,9 +191,8 @@ class AutoSupportPlane(dai.node.ThreadedHostNode):
                     "selectCandidate requires a legacy PlaneCalibrationConfig"
                 )
             calibrator = self.createSubnode(SupportPlaneCalibration)
-            calibrator.build(pointCloud, imu, pointCloudSize, calibration)
+            calibrator.build(pointCloud, imu, pointCloudSize, config._assessment)
             calibrator.candidatesOutput.link(self._calibration_input)
-            self._request_output.link(calibrator.inputVerification)
         self._control_output.link(calibrator.inputControl)
         calibrator.inputControl.setMaxSize(CONTROL_QUEUE_SIZE)
         calibrator.verificationOutput.link(self._verification_input)
@@ -202,7 +216,8 @@ class AutoSupportPlane(dai.node.ThreadedHostNode):
             return
 
     def _run_pass(self) -> None:
-        """Start once, handle the calibrator's answers, then check."""
+        """Apply configuration, handle the calibrator's replies, then check."""
+        self._read_config_updates()
         if not self._started:
             self._started = True
             if self._plane is None:
@@ -212,13 +227,60 @@ class AutoSupportPlane(dai.node.ThreadedHostNode):
                 self._send_verify(self._plane)
         while (result := self._calibration_input.tryGet()) is not None:
             if isinstance(result, SupportPlaneCandidateBatch):
-                self._handle_batch(result)
+                if result._auto_config_revision == self._config_revision:
+                    self._handle_batch(result)
             elif isinstance(result, SupportPlaneCalibrationResult):
-                self._handle_calibration(result)
+                if result._auto_config_revision == self._config_revision:
+                    self._handle_calibration(result)
         while (verification := self._verification_input.tryGet()) is not None:
             assert isinstance(verification, SupportPlaneVerificationResult)
-            self._handle_verification(verification)
+            if verification._auto_config_revision == self._config_revision:
+                self._handle_verification(verification)
         self._check_plane_if_due()
+
+    def _read_config_updates(self) -> None:
+        assert self._config is not None
+        latest = self._config
+        legacy = isinstance(self._calibrator, SupportPlaneCalibrator)
+        while (message := self.inputConfig.tryGet()) is not None:
+            if not isinstance(message, AutoSupportPlaneConfig):
+                continue
+            if isinstance(message.calibration, PlaneCalibrationConfig) != legacy:
+                logger.warning("inputConfig cannot change the calibration backend")
+                continue
+            latest = message
+        if latest != self._config:
+            self._apply_config(latest)
+
+    def _apply_config(self, config: AutoSupportPlaneConfig) -> None:
+        assert self._config is not None
+        previous = self._config
+        self._config = config
+        self._config_revision += 1
+        self._verify_in_flight = False
+        self._failed_checks = 0
+        plane = self._plane
+        recheck = False
+        if self._started:
+            if plane is None:
+                self._searching = True
+            else:
+                recheck = self._gate_pending or (
+                    config._acceptance_limits() != previous._acceptance_limits()
+                )
+                if recheck and not self._gate_pending:
+                    self._send(AutoSupportPlaneResult(False, None), config)
+                self._gate_pending = recheck
+                if recheck or not self._continuous:
+                    self._searching = False
+
+        self._control_output.send(
+            _AutoConfigUpdate(config, self._config_revision, self._searching)
+        )
+        if recheck and plane is not None:
+            self._send_verify(plane)
+        else:
+            self._schedule_check()
 
     def _start_search(self) -> None:
         """Start a calibration attempt, keeping any current plane."""
@@ -281,7 +343,7 @@ class AutoSupportPlane(dai.node.ThreadedHostNode):
         self._next_check_at = time.monotonic() + self._config.check_interval_sec
 
     def _handle_verification(self, result: SupportPlaneVerificationResult) -> None:
-        """Judge the ``initialPlane`` gate or a plane check.
+        """Judge a required verification or a periodic plane check.
 
         A rejected gate drops the plane and searches; failed checks refit after enough
         failures in a row.
@@ -329,7 +391,7 @@ class AutoSupportPlane(dai.node.ThreadedHostNode):
         self._verify_in_flight = True
         if isinstance(self._calibrator, SupportPlaneCalibration):
             self._request_id += 1
-            self._request_output.send(
+            self._control_output.send(
                 SupportPlaneVerificationRequest(plane, self._request_id)
             )
         else:

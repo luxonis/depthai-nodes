@@ -191,6 +191,8 @@ class SupportPlaneCalibrationResult(dai.Buffer):
             succeeded without candidates.
     """
 
+    _auto_config_revision: int = 0
+
     def __init__(
         self,
         outcome: CalibrationOutcome,
@@ -313,6 +315,8 @@ class SupportPlaneVerificationRequest(dai.Buffer):
 
 class _CloudAssessmentMessage(dai.Buffer):
     """Provenance shared by messages with assessments from one cloud."""
+
+    _auto_config_revision: int = 0
 
     _gravity_direction: tuple[float, float, float] | None = None
     _imu_timestamp_device: timedelta | None = None

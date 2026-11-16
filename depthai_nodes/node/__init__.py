@@ -205,7 +205,7 @@ Example:
     ``result.outcome`` tells whether the attempt succeeded, failed at the
     attempt cap, or was cancelled; only a succeeded result has candidates.
 
-`AutoSupportPlane` uses `SupportPlaneCalibration` to find and hold a support
+`AutoSupportPlaneCalibration` uses `SupportPlaneCalibration` to find and hold a support
 plane. It ranks passing assessments by sampled on-plane point count and breaks
 ties by perpendicular distance. It emits an
 `depthai_nodes.message.AutoSupportPlaneResult` on ``out`` when it finds or
@@ -219,6 +219,13 @@ The held plane stays in use while the refit searches for a passing replacement.
 A supplied ``initialPlane`` is assessed before use. Use
 `SupportPlaneCalibration` directly for human approval.
 
+Set ``vertical_distance_range_mm``, ``min_on_plane_ratio``,
+``min_sampled_point_count``, ``check_distance_mm``, or ``max_gravity_angle_deg``
+directly on `depthai_nodes.message.AutoSupportPlaneConfig` to override the
+corresponding acceptance limits. Send a complete config to ``inputConfig`` to
+replace the settings at runtime. If the limits change, ``out`` emits a failed
+result with no plane while the node verifies the old plane under the new limits.
+
 Existing callers can pass a `PlaneCalibrationConfig` to select the legacy
 calibrator, which supports the ``selectCandidate`` callback and attempt cap.
 A callback supplied without a config also uses the legacy calibrator.
@@ -227,24 +234,23 @@ Example:
     With existing ``pointCloud`` and ``imu`` outputs and a point cloud of
     ``width`` by ``height`` points::
 
-        from depthai_nodes.node import (
-            AutoSupportPlane,
-            AutoSupportPlaneConfig,
-            SupportPlaneCalibrationConfig,
-        )
+        from dataclasses import replace
+
+        from depthai_nodes.message import AutoSupportPlaneConfig
+        from depthai_nodes.node import AutoSupportPlaneCalibration
 
         config = AutoSupportPlaneConfig(
             mode=AutoSupportPlaneConfig.Mode.CONTINUOUS,
-            calibration=SupportPlaneCalibrationConfig(
-                vertical_distance_range_mm=(700, 900)
-            ),
+            vertical_distance_range_mm=(700, 900),
         )
-        node = pipeline.create(AutoSupportPlane).build(
+        node = pipeline.create(AutoSupportPlaneCalibration).build(
             pointCloud, imu, (width, height), config
         )
         results = node.out.createOutputQueue()
         checks = node.verificationOutput.createOutputQueue()
+        configs = node.inputConfig.createInputQueue()
         pipeline.start()
+        configs.send(replace(config, min_on_plane_ratio=0.25))
 
 
 Box measurement
@@ -343,7 +349,7 @@ from .parsers.yunet import YuNetParser
 from .parsing_neural_network import ParsingNeuralNetwork
 from .snaps_uploader import SnapsUploader
 from .support_plane_calibrator import (
-    AutoSupportPlane,
+    AutoSupportPlaneCalibration,
     AutoSupportPlaneConfig,
     PlaneCalibrationConfig,
     SupportPlaneCalibration,
@@ -402,6 +408,6 @@ __all__ = [
     "SupportPlaneCalibrationConfig",
     "SupportPlaneCalibrator",
     "PlaneCalibrationConfig",
-    "AutoSupportPlane",
+    "AutoSupportPlaneCalibration",
     "AutoSupportPlaneConfig",
 ]

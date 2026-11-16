@@ -9,7 +9,7 @@ from threading import Event, Lock
 
 from depthai_nodes.message import SupportPlane
 from depthai_nodes.node import (
-    AutoSupportPlane,
+    AutoSupportPlaneCalibration,
     AutoSupportPlaneConfig,
     SupportPlaneCalibrationConfig,
 )
@@ -126,7 +126,7 @@ def main():
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     with sources(args.simulate, 8) as (pipeline, cloud, imu, _, _):
-        node = pipeline.create(AutoSupportPlane).build(
+        node = pipeline.create(AutoSupportPlaneCalibration).build(
             cloud, imu, CLOUD_SIZE, config, initialPlane=initial
         )
         demo = cloud.getParent() if args.simulate else None

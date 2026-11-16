@@ -10,7 +10,7 @@ Camera movement detection belongs to a separate component. When that component r
 
 ## Context
 
-The support plane workflow in PR #340 discovers planes using RANSAC inliers on a filtered cloud. `Verify` checks a supplied equation using coverage measured on a grid sample of the original cloud. The two paths can disagree on the same input. `AutoSupportPlane` can therefore accept a newly fitted plane that it would reject when restored as `initialPlane`.
+The support plane workflow in PR #340 discovers planes using RANSAC inliers on a filtered cloud. `Verify` checks a supplied equation using coverage measured on a grid sample of the original cloud. The two paths can disagree on the same input. `AutoSupportPlaneCalibration` can therefore accept a newly fitted plane that it would reject when restored as `initialPlane`.
 
 ## Decision
 

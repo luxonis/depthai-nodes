@@ -13,77 +13,27 @@ import depthai as dai
 import numpy as np
 
 from depthai_nodes.logging import get_logger
-from depthai_nodes.message.support_plane import SupportPlane
+from depthai_nodes.message.auto_support_plane_config import _AutoConfigUpdate
+from depthai_nodes.message.plane_calibration_config import (
+    PlaneCalibrationConfig,
+)
+from depthai_nodes.message.plane_calibration_config import (
+    SupportPlaneCalibrationConfig as SupportPlaneCalibrationConfig,
+)
 from depthai_nodes.message.support_plane_calibration import (
-    PlaneAssessment,
-    PlaneAssessmentReason,
     SupportPlaneCalibrationControl,
     SupportPlaneCandidateBatch,
     SupportPlaneVerificationRequest,
     SupportPlaneVerificationResult,
 )
 
-from .plane_calibration_config import PlaneCalibrationConfig, _check_float, _check_int
+from ._plane_assessment import assess_plane
 from .support_plane_calibrator import (
     IMU_MAX_AGE_SECONDS,
     MIN_GRAVITY_NORM,
     _check_size,
 )
 from .support_plane_fitter import SupportPlaneFitter
-
-
-@dataclass(frozen=True, kw_only=True)
-class SupportPlaneCalibrationConfig:
-    """Fit scheduling and acceptance settings for a fixed installation.
-
-    Attributes:
-        attempt_interval_sec: Positive minimum time between fit starts.
-        max_gravity_angle_deg: Maximum tilt from horizontal, from 0 to 90.
-        check_distance_mm: Nonnegative perpendicular tolerance for coverage.
-        min_sampled_point_count: Positive sample count needed to judge coverage.
-        min_on_plane_ratio: Minimum covered fraction, from 0 to 1.
-        vertical_distance_range_mm: Optional inclusive nonnegative distance range.
-    """
-
-    attempt_interval_sec: float = 0.5
-    max_gravity_angle_deg: float = 6.5
-    check_distance_mm: float = 30.0
-    min_sampled_point_count: int = 500
-    min_on_plane_ratio: float = 0.10
-    vertical_distance_range_mm: tuple[float, float] | None = None
-
-    def __post_init__(self) -> None:
-        for name in (
-            "attempt_interval_sec",
-            "max_gravity_angle_deg",
-            "check_distance_mm",
-            "min_on_plane_ratio",
-        ):
-            object.__setattr__(self, name, _check_float(name, getattr(self, name)))
-        count = _check_int("min_sampled_point_count", self.min_sampled_point_count)
-        object.__setattr__(self, "min_sampled_point_count", count)
-        if self.attempt_interval_sec <= 0:
-            raise ValueError("attempt_interval_sec must be positive")
-        if not 0 <= self.max_gravity_angle_deg <= 90:
-            raise ValueError("max_gravity_angle_deg must be between 0 and 90")
-        if self.check_distance_mm < 0:
-            raise ValueError("check_distance_mm must be nonnegative")
-        if count < 1:
-            raise ValueError("min_sampled_point_count must be positive")
-        if not 0 <= self.min_on_plane_ratio <= 1:
-            raise ValueError("min_on_plane_ratio must be between 0 and 1")
-        bounds = self.vertical_distance_range_mm
-        if bounds is not None:
-            if not isinstance(bounds, (tuple, list)):
-                raise TypeError("vertical_distance_range_mm must be a pair of numbers")
-            if len(bounds) != 2:
-                raise ValueError("vertical_distance_range_mm must have two bounds")
-            lower, upper = (_check_float("vertical distance bound", v) for v in bounds)
-            if not 0 <= lower <= upper:
-                raise ValueError(
-                    "vertical distance bounds must be nonnegative and ordered"
-                )
-            object.__setattr__(self, "vertical_distance_range_mm", (lower, upper))
 
 
 @dataclass(frozen=True)
@@ -117,89 +67,6 @@ def _latest_gravity(imu: dai.IMUData, arrival: float) -> _GravitySample | None:
     return None
 
 
-def _exceeds(value: float, limit: float) -> bool:
-    # Normalizing the equation and gravity can round an inclusive limit by a few ulps.
-    return value > limit and not math.isclose(value, limit, rel_tol=1e-15)
-
-
-def _assess(
-    plane: SupportPlane,
-    sample: np.ndarray,
-    gravity_direction: tuple[float, float, float],
-    config: SupportPlaneCalibrationConfig,
-) -> PlaneAssessment:
-    dot = float(np.dot(plane.normal, gravity_direction))
-    tilt = math.degrees(
-        math.atan2(np.linalg.norm(np.cross(plane.normal, gravity_direction)), abs(dot))
-    )
-    intersection = -plane.offset_mm / dot if abs(dot) > 1e-12 else None
-    vertical = (
-        intersection
-        if intersection is not None and 0 <= intersection < math.inf
-        else None
-    )
-    distances = np.abs(sample @ plane.normal + plane.offset_mm)
-    count = len(sample)
-    on_plane = int(np.count_nonzero(distances <= config.check_distance_mm))
-
-    reasons = []
-    if count < config.min_sampled_point_count:
-        reasons.append(
-            PlaneAssessmentReason(
-                code="insufficient_sample",
-                measured=count,
-                limit=config.min_sampled_point_count,
-            )
-        )
-    elif on_plane / count < config.min_on_plane_ratio:
-        reasons.append(
-            PlaneAssessmentReason(
-                code="coverage_below_minimum",
-                measured=on_plane / count,
-                limit=config.min_on_plane_ratio,
-            )
-        )
-    if _exceeds(tilt, config.max_gravity_angle_deg):
-        reasons.append(
-            PlaneAssessmentReason(
-                code="tilt_above_maximum",
-                measured=tilt,
-                limit=config.max_gravity_angle_deg,
-            )
-        )
-    bounds = config.vertical_distance_range_mm
-    if intersection is None or not math.isfinite(intersection):
-        reasons.append(
-            PlaneAssessmentReason(code="vertical_distance_unavailable", limit=bounds)
-        )
-    elif intersection <= 0:
-        reasons.append(
-            PlaneAssessmentReason(
-                code="plane_not_below_camera", measured=intersection, limit=0.0
-            )
-        )
-    if (
-        vertical is not None
-        and bounds is not None
-        and (_exceeds(bounds[0], vertical) or _exceeds(vertical, bounds[1]))
-    ):
-        reasons.append(
-            PlaneAssessmentReason(
-                code="vertical_distance_out_of_range", measured=vertical, limit=bounds
-            )
-        )
-
-    return PlaneAssessment(
-        plane=plane,
-        sampled_point_count=count,
-        on_plane_point_count=on_plane,
-        tilt_deg=tilt,
-        perpendicular_distance_mm=abs(plane.offset_mm),
-        vertical_distance_mm=vertical,
-        reasons=tuple(reasons),
-    )
-
-
 class SupportPlaneCalibration(dai.node.ThreadedHostNode):
     """Fit candidate planes and assess supplied equations on an organized cloud.
 
@@ -222,6 +89,7 @@ class SupportPlaneCalibration(dai.node.ThreadedHostNode):
         self._latest_cloud: dai.PointCloudData | None = None
         self._gravity: _GravitySample | None = None
         self._search: _Search | None = None
+        self._auto_config_revision = 0
         self._requests: deque[SupportPlaneVerificationRequest] = deque()
         self._fitter: SupportPlaneFitter | None = None
         self._logger = get_logger(type(self).__name__)
@@ -290,7 +158,15 @@ class SupportPlaneCalibration(dai.node.ThreadedHostNode):
     def _step(self) -> None:
         commands = SupportPlaneCalibrationControl.Commands
         for control in self.inputControl.tryGetAll():
-            if isinstance(control, SupportPlaneCalibrationControl):
+            if isinstance(control, _AutoConfigUpdate):
+                assert control.config._assessment is not None
+                self._config = control.config._assessment
+                self._auto_config_revision = control.revision
+                self._search = _Search() if control.searching else None
+                self._requests.clear()
+            elif isinstance(control, SupportPlaneVerificationRequest):
+                self._requests.append(control)
+            elif isinstance(control, SupportPlaneCalibrationControl):
                 if isinstance(control.command, commands.Start) and self._search is None:
                     self._search = _Search()
                 elif isinstance(control.command, commands.Stop):
@@ -343,18 +219,18 @@ class SupportPlaneCalibration(dai.node.ThreadedHostNode):
         sample = sample[sample[..., 2] > 0]
         while self._requests:
             request = self._requests.popleft()
-            self.verificationOutput.send(
-                SupportPlaneVerificationResult.from_assessment(
-                    _assess(request.plane, sample, gravity.direction, self._config),
-                    request.request_id,
-                    cloud=cloud,
-                    gravity_direction=gravity.direction,
-                    imu_timestamp_device=gravity.timestamp_device,
-                    source_stream_id=self._source_stream_id,
-                    imu_timestamp_host=gravity.timestamp_host,
-                    imu_timestamp_system=gravity.timestamp_system,
-                )
+            result = SupportPlaneVerificationResult.from_assessment(
+                assess_plane(request.plane, sample, gravity.direction, self._config),
+                request.request_id,
+                cloud=cloud,
+                gravity_direction=gravity.direction,
+                imu_timestamp_device=gravity.timestamp_device,
+                source_stream_id=self._source_stream_id,
+                imu_timestamp_host=gravity.timestamp_host,
+                imu_timestamp_system=gravity.timestamp_system,
             )
+            result._auto_config_revision = self._auto_config_revision
+            self.verificationOutput.send(result)
         if fit_due and search is not None:
             started = time.monotonic()
             if started - gravity.arrival <= IMU_MAX_AGE_SECONDS:
@@ -377,7 +253,7 @@ class SupportPlaneCalibration(dai.node.ThreadedHostNode):
             planes = []
         batch = SupportPlaneCandidateBatch(
             (
-                _assess(plane, sample, gravity.direction, self._config)
+                assess_plane(plane, sample, gravity.direction, self._config)
                 for plane in planes
             ),
             cloud=cloud,
@@ -387,6 +263,7 @@ class SupportPlaneCalibration(dai.node.ThreadedHostNode):
             imu_timestamp_host=gravity.timestamp_host,
             imu_timestamp_system=gravity.timestamp_system,
         )
+        batch._auto_config_revision = self._auto_config_revision
         self.candidatesOutput.send(batch)
         if any(assessment.accepted for assessment in batch.assessments):
             self._search = None

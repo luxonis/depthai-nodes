@@ -86,7 +86,7 @@ in millimeters, normalized on construction. ``toJson()``, ``fromJson()``,
   enough of the point cloud on it. The on-plane ratio is not a candidate's
   inlier ratio.
 
-`depthai_nodes.node.AutoSupportPlane` sends an `AutoSupportPlaneResult` for each
+`depthai_nodes.node.AutoSupportPlaneCalibration` sends an `AutoSupportPlaneResult` for each
 finished cycle: ``passed`` tells whether it found or confirmed a support plane,
 and ``plane`` is the support plane in use, or ``None`` when there is none. It
 is a Python ``Buffer`` subclass, so it travels between host nodes only; over
@@ -123,6 +123,7 @@ raise the same errors as the support plane value types.
 Boxes are measured against a support plane; see "Support plane" above.
 """
 
+from .auto_support_plane_config import AutoSupportPlaneConfig
 from .auto_support_plane_result import AutoSupportPlaneResult
 from .box_detections import BoxDetection, BoxDetections
 from .box_measurements import (
@@ -161,6 +162,7 @@ __all__ = [
     "SupportPlaneCalibrationControl",
     "SupportPlaneCalibrationResult",
     "SupportPlaneVerificationResult",
+    "AutoSupportPlaneConfig",
     "AutoSupportPlaneResult",
     "CalibrationOutcome",
     "PlaneAssessment",
