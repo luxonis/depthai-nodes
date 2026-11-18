@@ -11,6 +11,7 @@ repo_dir=$(CDPATH='' cd -- "$example_dir/../.." && pwd)
 mkdir "$1"
 mkdir "$1/library"
 cp "$example_dir/main.py" "$example_dir/oakapp.toml" "$1/"
+cp -R "$example_dir/frontend" "$1/"
 cp -R "$repo_dir/depthai_nodes" "$1/library/"
 cp "$repo_dir/pyproject.toml" "$repo_dir/LICENSE" "$repo_dir/README.md" \
     "$repo_dir/requirements.txt" "$repo_dir/requirements-dev.txt" \

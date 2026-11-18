@@ -3,19 +3,22 @@
 import math
 import signal
 import time
+from collections import deque
+from dataclasses import asdict, replace
 from datetime import timedelta
-from threading import Event
+from threading import Event, Lock
 
 import cv2
 import depthai as dai
 
-from depthai_nodes.message import CameraMovementControl, CameraMovementEvent
+from depthai_nodes.message import CameraMovementControl
 from depthai_nodes.node import CameraMovementConfig, CameraMovementDetector
 
 SIZE = (1280, 720)
 FPS = 30
 ROTATION_RATE = math.radians(3)
 GYRO_MAX_AGE = 0.1
+DEMO_CONFIG = CameraMovementConfig(turn_threshold_deg=15)
 
 
 def draw_moving(frame: dai.ImgFrame) -> None:
@@ -38,12 +41,11 @@ def draw_moving(frame: dai.ImgFrame) -> None:
 
 
 class MovementOverlay(dai.node.ThreadedHostNode):
-    """Mark live rotation on video and log confirmed camera movement events."""
+    """Mark live rotation on video."""
 
     def __init__(self) -> None:
         super().__init__()
         self.video = self.createInput(name="video", queueSize=2, blocking=False)
-        self.movement = self.createInput(name="movement", queueSize=8, blocking=False)
         self.imu = self.createInput(name="imu", queueSize=8, blocking=False)
         self.out = self.createOutput(name="out")
 
@@ -55,9 +57,6 @@ class MovementOverlay(dai.node.ThreadedHostNode):
             while self.isRunning():
                 frame = self.video.get()
                 now = time.monotonic()
-                for event in self.movement.tryGetAll():
-                    if isinstance(event, CameraMovementEvent):
-                        print(f"{event.reason.value}: {event.angle_deg:.1f}°")
                 for message in self.imu.tryGetAll():
                     for packet in message.packets:
                         gyro = packet.gyroscope
@@ -75,6 +74,85 @@ class MovementOverlay(dai.node.ThreadedHostNode):
             return
 
 
+class DetectorControls:
+    """Publish detector settings, heartbeat messages, and recent alerts."""
+
+    def __init__(self, detector: CameraMovementDetector) -> None:
+        self.detector = detector
+        self.control = detector.inputControl.createInputQueue()
+        self.status_queue = detector.status.createOutputQueue(maxSize=4, blocking=False)
+        self.event_queue = detector.out.createOutputQueue(maxSize=16, blocking=False)
+        self.lock = Lock()
+        self.ready = Event()
+        self.pending = None
+        self.status = None
+        self.events = deque(maxlen=12)
+
+    def request(self, request):
+        """Handle a dashboard command and return the current state."""
+        with self.lock:
+            try:
+                action = request.get("action")
+                config = self.detector.getConfig()
+                if self.pending == config:
+                    self.pending = None
+                if action == "apply":
+                    if not self.ready.is_set() or self.pending is not None:
+                        raise ValueError(
+                            "Wait for the detector to finish applying settings."
+                        )
+                    settings = request.get("config")
+                    if not isinstance(settings, dict):
+                        raise ValueError("Expected detector settings.")
+                    requested = replace(config, **settings)
+                    if requested != config:
+                        self.pending = requested
+                        self.detector.setConfig(requested)
+                        if requested.status_interval_s != config.status_interval_s:
+                            self.status = None
+                elif action == "calibrate":
+                    if not self.ready.is_set() or self.pending is not None:
+                        raise ValueError("Wait for the detector to be ready.")
+                    if not self.control.trySend(CameraMovementControl.calibrate()):
+                        raise ValueError("The calibration queue is busy. Try again.")
+                    print("Calibration requested. Keep the camera still.")
+                elif action != "state":
+                    raise ValueError("Unknown detector command.")
+            except (AttributeError, OverflowError, TypeError, ValueError) as exc:
+                return {"error": str(exc)}
+            return {
+                "ready": self.ready.is_set(),
+                "applying": self.pending is not None,
+                "config": asdict(config),
+                "defaults": asdict(DEMO_CONFIG),
+                "status": self.status if config.status_interval_s is not None else None,
+                "events": list(self.events),
+            }
+
+    def poll(self) -> None:
+        """Collect status and movement messages from the running detector."""
+        statuses = self.status_queue.tryGetAll()
+        events = self.event_queue.tryGetAll()
+        with self.lock:
+            if statuses:
+                status = asdict(statuses[-1])
+                if (
+                    self.status is None
+                    or status["calibration"] != self.status["calibration"]
+                ):
+                    print(f"Calibration: {status['calibration'].value}")
+                self.status = status
+            for event in events:
+                self.events.appendleft(
+                    {
+                        "reason": event.reason.value,
+                        "angle_deg": event.angle_deg,
+                        "time": time.time(),
+                    }
+                )
+                print(f"{event.reason.value}: {event.angle_deg:.1f}°")
+
+
 def main() -> None:
     stopping = Event()
 
@@ -84,7 +162,7 @@ def main() -> None:
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
 
-    visualizer = dai.RemoteConnection(address="127.0.0.1", httpPort=8082)
+    visualizer = dai.RemoteConnection(address="127.0.0.1", serveFrontend=False)
     with dai.Pipeline() as pipeline:
         camera = pipeline.create(dai.node.Camera).build(dai.CameraBoardSocket.CAM_A)
         video = camera.requestOutput(SIZE, type=dai.ImgFrame.Type.NV12, fps=FPS)
@@ -96,15 +174,12 @@ def main() -> None:
         imu.setBatchReportThreshold(4)
         imu.setMaxBatchReports(20)
 
-        detector = pipeline.create(CameraMovementDetector).build(
-            imu.out, CameraMovementConfig(turn_threshold_deg=15)
-        )
-        control = detector.inputControl.createInputQueue()
-        status = detector.status.createOutputQueue(maxSize=4, blocking=False)
+        detector = pipeline.create(CameraMovementDetector).build(imu.out, DEMO_CONFIG)
+        controller = DetectorControls(detector)
+        visualizer.registerService("detector", controller.request)
 
         overlay = pipeline.create(MovementOverlay)
         video.link(overlay.video)
-        detector.out.link(overlay.movement)
         imu.out.link(overlay.imu)
         encoder = pipeline.create(dai.node.VideoEncoder).build(
             overlay.out,
@@ -114,19 +189,10 @@ def main() -> None:
         visualizer.addTopic("RGB", encoder.out)
 
         pipeline.start()
-        visualizer.registerPipeline(pipeline)
-        print(
-            "Open the OAK Visualizer and press c with the camera at rest to calibrate."
-        )
-        last_calibration = None
-        while pipeline.isRunning() and not stopping.is_set():
-            if visualizer.waitKey(50) in (ord("c"), ord("C")):
-                control.send(CameraMovementControl.calibrate())
-                print("Calibration requested. Keep the camera still.")
-            for message in status.tryGetAll():
-                if message.calibration != last_calibration:
-                    last_calibration = message.calibration
-                    print(f"Calibration: {last_calibration.value}")
+        controller.ready.set()
+        print("Camera movement detector ready. Calibrate from the dashboard.")
+        while pipeline.isRunning() and not stopping.wait(0.025):
+            controller.poll()
 
 
 if __name__ == "__main__":

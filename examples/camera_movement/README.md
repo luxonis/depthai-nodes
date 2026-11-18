@@ -13,9 +13,9 @@ oakctl app run . -d OAK_IP
 
 Find the app's **Frontend URL** with `oakctl app list -d OAK_IP`. Open it in
 Chrome using `https://`, even if oakctl prints `http://`. Accept the device's
-self-signed certificate if prompted, then open the **RGB** topic. With the
-camera at rest in its intended pose, focus the Visualizer and press **c**.
-Keep the camera still until the app logs `Calibration: succeeded`.
+self-signed certificate if prompted. With the camera at rest in its intended
+pose, click **Calibrate** and keep it still until **Detector status** reports
+**Succeeded** and **Baseline ready**.
 
 Rotate the camera to see **Moving** in the 720p H.264 video. The label follows
 the latest gyro reading and clears when the rate drops below 3°/s or the
@@ -25,7 +25,15 @@ After calibration, tilt the camera by more than 3° and hold it there to see
 the detector's `tilt_changed` event in the app log. The example also logs
 `turn_detected` after a qualifying horizontal turn of at least 15° settles.
 Return the camera to its original tilt to rearm the tilt alert. For a different
-reference pose, press **c** again while the camera is still.
+reference pose, click **Calibrate** again while the camera is still.
+
+**Detector settings** shows every field in `CameraMovementConfig` with an
+explanation. **Apply settings** changes the running detector through
+`setConfig()`. The stream, calibration baseline, and latched tilt state are
+preserved. Changing a detection or calibration limit restarts the affected
+confirmation window. **Load defaults** fills in the demo's defaults for review.
+Clear the turn threshold to disable turn alerts or clear the status interval
+to disable heartbeats. Disabling heartbeats hides the live detector status.
 
 The app draws into the RGB camera's NV12 frames before the hardware encoder.
 All processing runs on the OAK4. The camera-movement recorder below can

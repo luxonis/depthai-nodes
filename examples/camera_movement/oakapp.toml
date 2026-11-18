@@ -9,11 +9,14 @@ build_steps = [
     if [ -f /app/library/pyproject.toml ]; then
         library=/app/library
     else
-        library=https://github.com/luxonis/depthai-nodes/archive/7efb22e8e0f261da838af3620a8f5b8eab6b1a1e.tar.gz
+        library=https://github.com/luxonis/depthai-nodes/archive/7dddc498debdca15ece2afa451a6dc74b2733e4b.tar.gz
     fi
     python3 -m pip install --break-system-packages 'depthai==3.12.0' "$library"
     """,
 ]
+
+[static_frontend]
+dist_path = "./frontend"
 
 [env]
 DEPTHAI_TELEMETRY = "0"
