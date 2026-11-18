@@ -1,11 +1,39 @@
-# OAK4 IMU desk recording
+# Camera movement on OAK4
+
+## Run the standalone app
+
+From the repository root, stage the app in a new directory and run it on an
+OAK4 with `oakctl`. Replace `OAK_IP` with the device address.
+
+```sh
+sh examples/camera_movement/stage.sh /tmp/oak-camera-movement-app
+oakctl app run /tmp/oak-camera-movement-app -d OAK_IP
+```
+
+Find the app's **Frontend URL** with `oakctl app list -d OAK_IP` and open
+that HTTPS URL in Chrome. Accept the device's self-signed certificate if
+prompted, then open the **RGB** topic. With the
+camera at rest in its intended pose, focus the Visualizer and press **c**.
+Keep the camera still until the app logs `Calibration: succeeded`.
+
+Tilt the camera by more than 3° and hold it there. The word **Moving**
+appears in the 720p H.264 video for two seconds after the detector emits an
+event. Return the camera to its original tilt to rearm the tilt alert.
+The example also enables the 15° gyro-only turn threshold. For a different
+reference pose, press **c** again while the camera is still.
+
+The app draws into the RGB camera's NV12 frames before the hardware encoder.
+All processing runs on the OAK4. The camera-movement recorder below can
+capture IMU traces for testing the detector separately.
+
+## Record a desk test
 
 This capture gives the detector repeatable examples of a loose mount, a sudden
 reorientation, vibration, and a magnetic disturbance. It uses only IMU reports.
 The script marks where the app would request calibration. Put the camera in
 its intended pose before starting the capture.
 
-## Setup
+### Setup
 
 - Put the OAK4 on a stable surface with slack in the cable. Mark its position
   and heading on paper or with tape. Mark a second heading about 20° away.
@@ -17,7 +45,7 @@ its intended pose before starting the capture.
 - Stop the application currently using the OAK4 before running the recorder.
   Use the terminal that launched it or the device's app manager.
 
-## Guided capture
+### Guided capture
 
 Run from the repository root in a Python environment with DepthAI 3.12.
 Replace `OAK_IP` with the camera's IP address or omit `--device` for default
@@ -59,7 +87,7 @@ warm-up. Use the same command with
 `oak4-stationary-01`. A second guided take in a fresh directory can be held back
 to verify thresholds tuned on the first.
 
-## Replay on the host
+### Replay on the host
 
 ```sh
 python examples/camera_movement/record_imu.py \
