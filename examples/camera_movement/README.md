@@ -17,12 +17,14 @@ self-signed certificate if prompted, then open the **RGB** topic. With the
 camera at rest in its intended pose, focus the Visualizer and press **c**.
 Keep the camera still until the app logs `Calibration: succeeded`.
 
-Tilt the camera by more than 3° and hold it there. The word **Moving**
-appears in the 720p H.264 video for at least two seconds after the detector
-emits an event. After that, the overlay clears once the gyro reports no
-rotation above 3°/s for 0.2 seconds. It clears even if the camera stays at
-the new angle. Return the camera to its original tilt to rearm the tilt alert.
-The example also enables the 15° gyro-only turn threshold. For a different
+Rotate the camera to see **Moving** in the 720p H.264 video. The label follows
+the latest gyro reading and clears when the rate drops below 3°/s or the
+IMU stream stalls. This live indicator is available before calibration.
+
+After calibration, tilt the camera by more than 3° and hold it there to see
+the detector's `tilt_changed` event in the app log. The example also logs
+`turn_detected` after a qualifying horizontal turn of at least 15° settles.
+Return the camera to its original tilt to rearm the tilt alert. For a different
 reference pose, press **c** again while the camera is still.
 
 The app draws into the RGB camera's NV12 frames before the hardware encoder.
