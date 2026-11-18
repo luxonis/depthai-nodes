@@ -91,7 +91,7 @@ def main() -> None:
     signal.signal(signal.SIGINT, stop)
 
     visualizer = dai.RemoteConnection(address="127.0.0.1", httpPort=8082)
-    with dai.Pipeline(dai.Device(dai.DeviceInfo.local())) as pipeline:
+    with dai.Pipeline() as pipeline:
         camera = pipeline.create(dai.node.Camera).build(dai.CameraBoardSocket.CAM_A)
         video = camera.requestOutput(SIZE, type=dai.ImgFrame.Type.NV12, fps=FPS)
 

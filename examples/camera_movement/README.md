@@ -2,17 +2,18 @@
 
 ## Run the standalone app
 
-From the repository root, stage the app in a new directory and run it on an
-OAK4 with `oakctl`. Replace `OAK_IP` with the device address.
+From the repository root, open the example directory and launch it on an OAK4.
+The direct build downloads a pinned detector revision from GitHub. Replace
+`OAK_IP` with the device address, or omit `-d OAK_IP` if the device is selected.
 
 ```sh
-sh examples/camera_movement/stage.sh /tmp/oak-camera-movement-app
-oakctl app run /tmp/oak-camera-movement-app -d OAK_IP
+cd examples/camera_movement
+oakctl app run . -d OAK_IP
 ```
 
-Find the app's **Frontend URL** with `oakctl app list -d OAK_IP` and open
-that HTTPS URL in Chrome. Accept the device's self-signed certificate if
-prompted, then open the **RGB** topic. With the
+Find the app's **Frontend URL** with `oakctl app list -d OAK_IP`. Open it in
+Chrome using `https://`, even if oakctl prints `http://`. Accept the device's
+self-signed certificate if prompted, then open the **RGB** topic. With the
 camera at rest in its intended pose, focus the Visualizer and press **c**.
 Keep the camera still until the app logs `Calibration: succeeded`.
 
@@ -27,6 +28,14 @@ reference pose, press **c** again while the camera is still.
 The app draws into the RGB camera's NV12 frames before the hardware encoder.
 All processing runs on the OAK4. The camera-movement recorder below can
 capture IMU traces for testing the detector separately.
+
+To use local changes to the detector, stage the current checkout from the
+repository root and run the staged app.
+
+```sh
+sh examples/camera_movement/stage.sh /tmp/oak-camera-movement-app
+oakctl app run /tmp/oak-camera-movement-app -d OAK_IP
+```
 
 ## Record a desk test
 

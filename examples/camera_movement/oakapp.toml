@@ -5,7 +5,14 @@ base_image = "luxonis/oakapp-base:1.3.0"
 assign_frontend_port = true
 
 build_steps = [
-    "python3 -m pip install --break-system-packages 'depthai==3.12.0' /app/library",
+    """
+    if [ -f /app/library/pyproject.toml ]; then
+        library=/app/library
+    else
+        library=https://github.com/luxonis/depthai-nodes/archive/7efb22e8e0f261da838af3620a8f5b8eab6b1a1e.tar.gz
+    fi
+    python3 -m pip install --break-system-packages 'depthai==3.12.0' "$library"
+    """,
 ]
 
 [env]
