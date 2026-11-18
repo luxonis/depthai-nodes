@@ -1,4 +1,5 @@
 import math
+from dataclasses import replace
 from datetime import timedelta
 
 import depthai as dai
@@ -167,3 +168,28 @@ def test_turn_must_meet_rate_and_duration_limits(
     for ms in range(end, end + 600, 10):
         detector.sample(ms)
     assert detector.events == []
+
+
+def test_runtime_config_applies_to_existing_baseline(detector):
+    detector.calibrate()
+    original = detector.getConfig()
+    high_threshold = replace(original, tilt_threshold_deg=15)
+    detector.setConfig(high_threshold)
+    assert detector.getConfig() == original
+    assert detector._apply_pending_config()
+    assert detector.getConfig() == high_threshold
+
+    angle = math.radians(10)
+    tilted = (GRAVITY * math.sin(angle), 0, GRAVITY * math.cos(angle))
+    for ms in range(1610, 2610, 10):
+        detector.sample(ms, tilted)
+    assert detector.events == []
+
+    detector.setConfig(original)
+    assert detector._apply_pending_config()
+    for ms in range(2610, 3210, 10):
+        detector.sample(ms, tilted)
+    assert [reason for reason, _, _ in detector.events] == [
+        CameraMovementReason.TILT_CHANGED
+    ]
+    assert detector._calibration is CameraMovementCalibrationState.SUCCEEDED

@@ -7,6 +7,7 @@ import time
 from collections import deque
 from dataclasses import dataclass
 from datetime import timedelta
+from threading import Lock
 
 import depthai as dai
 import numpy as np
@@ -92,6 +93,8 @@ class CameraMovementDetector(dai.node.ThreadedHostNode):
     coordinate frame. Send `CameraMovementControl.calibrate()` to
     `inputControl` at the intended pose. Successful calibration replaces the
     reference and rearms the alert. A timeout leaves any prior reference intact.
+    Call `setConfig` to change settings between IMU batches while preserving
+    the existing baseline.
 
     `out` emits `CameraMovementEvent`. `status` sends
     `CameraMovementStatus` even while IMU input is stalled. Optional gyro
@@ -105,6 +108,8 @@ class CameraMovementDetector(dai.node.ThreadedHostNode):
         self.out = self.createOutput(name="out")
         self.status = self.createOutput(name="status")
         self._config = CameraMovementConfig()
+        self._config_lock = Lock()
+        self._pending_config: CameraMovementConfig | None = None
         self._baseline: np.ndarray | None = None
         self._filtered_accel: np.ndarray | None = None
         self._gyro_bias = np.zeros(3)
@@ -142,12 +147,61 @@ class CameraMovementDetector(dai.node.ThreadedHostNode):
         imu.link(self._imu)
         return self
 
+    def setConfig(self, config: CameraMovementConfig) -> None:
+        """Queue settings for the detector's next loop pass.
+
+        The latest request wins. The baseline and latched tilt state are preserved.
+        Changes to detection or calibration limits restart the affected evidence
+        windows.
+        """
+        if not isinstance(config, CameraMovementConfig):
+            raise TypeError("config must be a CameraMovementConfig")
+        with self._config_lock:
+            self._pending_config = config
+
+    def getConfig(self) -> CameraMovementConfig:
+        """Return the settings currently applied by the detector."""
+        with self._config_lock:
+            return self._config
+
+    def _apply_pending_config(self) -> bool:
+        with self._config_lock:
+            previous = self._config
+            config = self._pending_config
+            self._pending_config = None
+            if config is None or config == previous:
+                return False
+
+            if config.max_sample_gap_s != previous.max_sample_gap_s:
+                self._reset_imu_windows()
+                self._pending_accel.clear()
+            if (
+                config.tilt_threshold_deg != previous.tilt_threshold_deg
+                or config.tilt_rearm_deg != previous.tilt_rearm_deg
+                or config.tilt_confirmation_s != previous.tilt_confirmation_s
+            ):
+                self._tilt_candidate = None
+            if config.turn_threshold_deg != previous.turn_threshold_deg:
+                self._turn_start = None
+                if config.turn_threshold_deg is None:
+                    self._turn_gravity = None
+            if self._calibration is CameraMovementCalibrationState.COLLECTING:
+                if config.calibration_window_s != previous.calibration_window_s:
+                    self._calibration_start = None
+                self._calibration_deadline += (
+                    config.calibration_timeout_s - previous.calibration_timeout_s
+                )
+            self._config = config
+            return True
+
     def run(self) -> None:
         """Service controls and IMU batches and publish independent heartbeats."""
         next_status = time.monotonic()
         try:
             while self.isRunning():
                 now = time.monotonic()
+                if self._apply_pending_config():
+                    next_status = now
                 while (command := self.inputControl.tryGet()) is not None:
                     if isinstance(command, CameraMovementControl):
                         self._calibration = CameraMovementCalibrationState.COLLECTING
