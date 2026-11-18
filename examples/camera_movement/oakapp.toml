@@ -1,7 +1,7 @@
 identifier = "com.example.camera-movement"
 app_version = "0.1.0"
 entrypoint = ["/entrypoint.sh", "python3", "-u", "/app/main.py"]
-base_image = "luxonis/oakapp-base:1.3.0"
+base_image = "luxonis/oakapp-base:1.5.0"
 assign_frontend_port = true
 
 build_steps = [
