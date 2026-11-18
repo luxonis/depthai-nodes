@@ -17,13 +17,12 @@ self-signed certificate if prompted. With the camera at rest in its intended
 pose, click **Calibrate** and keep it still until **Detector status** reports
 **Succeeded** and **Baseline ready**.
 
-Rotate the camera to see **Moving** in the 720p H.264 video. The label follows
-the latest gyro reading and clears when the rate drops below 3°/s or the
-IMU stream stalls. This live indicator is available before calibration.
-
 After calibration, tilt the camera by more than 3° and hold it there to see
-the detector's `tilt_changed` event in the app log. The example also logs
-`turn_detected` after a qualifying horizontal turn of at least 15° settles.
+the detector's `tilt_changed` event. The detector also emits `turn_detected`
+after a qualifying horizontal turn of at least 15° settles. Each alert shows
+**Moved** for two seconds in the 720p H.264 video and appears in **Recent
+events**. The label confirms a detected change and can appear after the
+camera has settled.
 Return the camera to its original tilt to rearm the tilt alert. For a different
 reference pose, click **Calibrate** again while the camera is still.
 

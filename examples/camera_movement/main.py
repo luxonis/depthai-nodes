@@ -1,27 +1,24 @@
 """Show camera movement on an H.264 stream from a standalone OAK4."""
 
-import math
 import signal
 import time
 from collections import deque
 from dataclasses import asdict, replace
-from datetime import timedelta
 from threading import Event, Lock
 
 import cv2
 import depthai as dai
 
-from depthai_nodes.message import CameraMovementControl
+from depthai_nodes.message import CameraMovementControl, CameraMovementEvent
 from depthai_nodes.node import CameraMovementConfig, CameraMovementDetector
 
 SIZE = (1280, 720)
 FPS = 30
-ROTATION_RATE = math.radians(3)
-GYRO_MAX_AGE = 0.1
+LABEL_SECONDS = 2.0
 DEMO_CONFIG = CameraMovementConfig(turn_threshold_deg=15)
 
 
-def draw_moving(frame: dai.ImgFrame) -> None:
+def draw_moved(frame: dai.ImgFrame) -> None:
     """Draw on the NV12 luma plane and preserve the frame metadata."""
     data = frame.getData().copy()
     width, height, stride = frame.getWidth(), frame.getHeight(), frame.getStride()
@@ -29,7 +26,7 @@ def draw_moving(frame: dai.ImgFrame) -> None:
     for color, thickness in ((16, 8), (235, 3)):
         cv2.putText(
             luma,
-            "Moving",
+            "Moved",
             (24, 56),
             cv2.FONT_HERSHEY_SIMPLEX,
             1.4,
@@ -41,34 +38,27 @@ def draw_moving(frame: dai.ImgFrame) -> None:
 
 
 class MovementOverlay(dai.node.ThreadedHostNode):
-    """Mark live rotation on video."""
+    """Show a short confirmation on video after each detector alert."""
 
     def __init__(self) -> None:
         super().__init__()
         self.video = self.createInput(name="video", queueSize=2, blocking=False)
-        self.imu = self.createInput(name="imu", queueSize=8, blocking=False)
+        self.events = self.createInput(name="events", queueSize=8, blocking=False)
         self.out = self.createOutput(name="out")
 
     def run(self) -> None:
-        last_gyro_stamp = timedelta()
-        last_gyro_at = -math.inf
-        rotating = False
+        visible_until = 0.0
         try:
             while self.isRunning():
                 frame = self.video.get()
                 now = time.monotonic()
-                for message in self.imu.tryGetAll():
-                    for packet in message.packets:
-                        gyro = packet.gyroscope
-                        stamp = gyro.getTimestampDevice()
-                        if stamp > last_gyro_stamp:
-                            last_gyro_stamp = stamp
-                            last_gyro_at = now
-                            rotating = (
-                                math.hypot(gyro.x, gyro.y, gyro.z) >= ROTATION_RATE
-                            )
-                if rotating and now - last_gyro_at < GYRO_MAX_AGE:
-                    draw_moving(frame)
+                if any(
+                    isinstance(event, CameraMovementEvent)
+                    for event in self.events.tryGetAll()
+                ):
+                    visible_until = now + LABEL_SECONDS
+                if now < visible_until:
+                    draw_moved(frame)
                 self.out.send(frame)
         except dai.MessageQueue.QueueException:
             return
@@ -180,7 +170,7 @@ def main() -> None:
 
         overlay = pipeline.create(MovementOverlay)
         video.link(overlay.video)
-        imu.out.link(overlay.imu)
+        detector.out.link(overlay.events)
         encoder = pipeline.create(dai.node.VideoEncoder).build(
             overlay.out,
             frameRate=FPS,
