@@ -33,8 +33,10 @@ The names below define the proposed interface. `SupportPlaneCalibration.build(po
 | `imu`                | Input     | `dai.IMUData` with an accelerometer report.                                                                             |
 | `inputControl`       | Input     | `SupportPlaneCalibrationControl.start()` and `.stop()` construct typed `START` and `STOP` messages.                     |
 | `inputVerification`  | Input     | `SupportPlaneVerificationRequest(plane, request_id=None)` requests one assessment.                                      |
+| `inputConfig`        | Input     | `SupportPlaneCalibrationConfigMessage(config)` replaces the running node's settings.                                    |
 | `candidatesOutput`   | Output    | `SupportPlaneCandidateBatch.assessments` carries zero or more `PlaneAssessment` values from one fitting attempt.        |
 | `verificationOutput` | Output    | `SupportPlaneVerificationResult.assessment` carries one `PlaneAssessment`. `request_id` echoes the optional request ID. |
+| `configOutput`       | Output    | Echoes each applied `SupportPlaneCalibrationConfigMessage`.                                                             |
 
 `SupportPlaneCalibrationConfig` exposes these settings. The first controls search scheduling. The remaining settings apply to the shared evaluator in both paths.
 
@@ -58,6 +60,10 @@ The names below define the proposed interface. `SupportPlaneCalibration.build(po
 Verification is independent of search state and fit timing. Assess one supplied equation per request using the latest usable cloud and gravity. A request can wait for usable inputs. Answer pending requests in arrival order and echo each request ID. Verification never starts, stops, or completes a search and never activates a plane.
 
 The dedicated state output and its message schema are a separate design decision. Candidate batches are evidence about completed fits. In particular, consumers should not use the absence of a batch to distinguish an idle node from one waiting for input.
+
+### Runtime settings
+
+Send a complete `SupportPlaneCalibrationConfig` in a `SupportPlaneCalibrationConfigMessage` to `inputConfig`. The node applies queued updates between loop passes and echoes each applied message on `configOutput`. A fit already running uses its original settings. Updates leave the search lifecycle and fitted-cloud history in place. The new interval is measured from the last fit start. Candidate batches and verification replies carry the configuration used to assess them.
 
 ## Shared plane assessment
 

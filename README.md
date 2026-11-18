@@ -130,6 +130,12 @@ The gravity direction and the accelerometer report's timestamps are available
 separately as `gravity_direction`, `imu_timestamp_device`, `imu_timestamp_host`,
 and `imu_timestamp_system`.
 
+To change settings after `pipeline.start()`, send a complete
+`SupportPlaneCalibrationConfig` in a `SupportPlaneCalibrationConfigMessage`
+to an input queue created from `calibration.inputConfig`. The node echoes
+applied updates on `configOutput`. Future fits and verification requests use
+the new settings. A fit already running completes under its original settings.
+
 After explicit approval, save the plane against the device and installation
 frame. Apply the application's resume policy to a compatible record on startup.
 

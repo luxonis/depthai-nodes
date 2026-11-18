@@ -4,9 +4,32 @@ let shownAttempt = -1;
 let busy = false;
 let online = false;
 let commandError = "";
+let displayedConfig;
+const settingsForm = get("settings-form");
+const settingsFields = settingsForm.elements;
+const numericSettings = [
+  "attempt_interval_sec", "max_gravity_angle_deg", "check_distance_mm", "min_sampled_point_count",
+];
+
+function renderSettings(disabled) {
+  get("settings-fields").disabled = disabled;
+  get("height-fields").disabled = disabled;
+  get("apply-settings").disabled = disabled;
+  if (!state) return;
+  get("settings-status").textContent = state.applying_settings ? "Applying settings…" : "";
+  const configKey = JSON.stringify(state.config);
+  if (displayedConfig === configKey) return;
+  displayedConfig = configKey;
+  const config = state.config;
+  for (const name of numericSettings) settingsFields[name].value = config[name];
+  settingsFields.min_on_plane_percent.value = Number((config.min_on_plane_ratio * 100).toPrecision(15));
+  settingsFields.height_min.value = config.vertical_distance_range_mm?.[0] ?? "";
+  settingsFields.height_max.value = config.vertical_distance_range_mm?.[1] ?? "";
+}
 
 function render() {
-  const disabled = busy || !online;
+  const disabled = busy || !online || !!state?.applying_settings;
+  renderSettings(disabled);
   if (!state) {
     get("start").disabled = true;
     get("activity").textContent = online ? "Connecting" : "Disconnected";
@@ -113,6 +136,21 @@ for (const name of ["start", "stop", "restore", "invalidate"]) {
 }
 get("verify").addEventListener("click", () => action("verify", {index: selected, attempt: state.attempt}));
 get("approve").addEventListener("click", () => action("approve", {index: selected, request_id: state.verification.request_id}));
+
+settingsForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const lower = settingsFields.height_min;
+  const upper = settingsFields.height_max;
+  if ((lower.value === "") !== (upper.value === "")) {
+    commandError = "Enter both vertical-distance bounds or leave both blank.";
+    render();
+    return;
+  }
+  const config = Object.fromEntries(numericSettings.map(name => [name, settingsFields[name].valueAsNumber]));
+  config.min_on_plane_ratio = settingsFields.min_on_plane_percent.valueAsNumber / 100;
+  config.vertical_distance_range_mm = lower.value === "" ? null : [lower.valueAsNumber, upper.valueAsNumber];
+  action("settings", {config});
+});
 
 async function poll() {
   if (!busy) await refresh();

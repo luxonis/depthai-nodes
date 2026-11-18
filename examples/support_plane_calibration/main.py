@@ -5,6 +5,7 @@ import logging
 import os
 import signal
 import time
+from dataclasses import asdict, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from threading import Event, Lock
@@ -24,6 +25,7 @@ from depthai_nodes import (
     resolve_support_plane_path,
 )
 from depthai_nodes.message import (
+    SupportPlaneCalibrationConfigMessage,
     SupportPlaneCalibrationControl,
     SupportPlaneVerificationRequest,
 )
@@ -40,12 +42,15 @@ class Commissioning:
     def __init__(self, node, cloud, store, device_id, frame_id, config):
         self.controls = node.inputControl.createInputQueue()
         self.requests = node.inputVerification.createInputQueue()
+        self.configs = node.inputConfig.createInputQueue()
+        self.applied_configs = node.configOutput.createOutputQueue(blocking=True)
         self.batches = node.candidatesOutput.createOutputQueue(blocking=True)
         self.replies = node.verificationOutput.createOutputQueue(blocking=True)
         self.clouds = cloud.createOutputQueue(maxSize=1, blocking=False)
         self.store = store
         self.identity = {"device_id": device_id, "frame_id": frame_id}
-        self.distance = config.check_distance_mm
+        self.config = config
+        self.pending_config = None
         self.lock = Lock()
         self.searching = False
         self.attempt = 0
@@ -79,7 +84,23 @@ class Commissioning:
     def command(self, command):
         with self.lock:
             action = command.get("action")
-            if action in ("start", "stop"):
+            if self.pending_config is not None:
+                raise ValueError("Wait for the calibration settings to apply.")
+            if action == "settings":
+                settings = command.get("config")
+                if not isinstance(settings, dict):
+                    raise ValueError("Expected calibration settings.")
+                try:
+                    config = replace(self.config, **settings)
+                except (TypeError, ValueError, OverflowError) as exc:
+                    raise ValueError(str(exc)) from exc
+                if config != self.config:
+                    if not self.configs.trySend(
+                        SupportPlaneCalibrationConfigMessage(config)
+                    ):
+                        raise ValueError("The configuration queue is busy. Try again.")
+                    self.pending_config = config
+            elif action in ("start", "stop"):
                 start = action == "start"
                 if start == self.searching:
                     return
@@ -141,16 +162,26 @@ class Commissioning:
 
     def update(self):
         with self.lock:
+            for update in self.applied_configs.tryGetAll():
+                if update.config == self.pending_config:
+                    self.config = update.config
+                    self.pending_config = None
+                    self.batch = self.verification = self.pending = self.active = None
             cloud = self.clouds.tryGet()
             if cloud is not None:
                 self.preview = cloud_preview(cloud)
             for batch in self.batches.tryGetAll():
                 self.attempt += 1
-                self.batch = batch
+                if batch.config == self.config:
+                    self.batch = batch
                 if any(item.accepted for item in batch.assessments):
                     self.searching = False
             for reply in self.replies.tryGetAll():
-                if self.pending is None or reply.request_id != self.pending[0]:
+                if (
+                    self.pending is None
+                    or reply.request_id != self.pending[0]
+                    or reply.config != self.config
+                ):
                     continue
                 _, candidate = self.pending
                 self.pending = None
@@ -184,9 +215,11 @@ class Commissioning:
                     else None
                 ),
                 "pending": self.pending is not None,
+                "config": asdict(self.config),
+                "applying_settings": self.pending_config is not None,
                 "active": self.active.plane.toJson() if self.active else None,
                 "saved_at": self.saved.approved_at.isoformat() if self.saved else None,
-                "distance": self.distance,
+                "distance": self.config.check_distance_mm,
                 "preview": self.preview,
                 "error": self.error,
             }

@@ -13,6 +13,7 @@ from typing import Any, TypeAlias
 import depthai as dai
 import numpy as np
 
+from .plane_calibration_config import SupportPlaneCalibrationConfig
 from .support_plane import SupportPlane, SupportPlaneCandidate
 
 
@@ -292,6 +293,21 @@ class PlaneAssessment:
         return not self.reasons
 
 
+class SupportPlaneCalibrationConfigMessage(dai.Buffer):
+    """Replace the active settings of a running SupportPlaneCalibration node."""
+
+    def __init__(self, config: SupportPlaneCalibrationConfig) -> None:
+        super().__init__()
+        if not isinstance(config, SupportPlaneCalibrationConfig):
+            raise TypeError("config must be a SupportPlaneCalibrationConfig")
+        self._config = config
+
+    @property
+    def config(self) -> SupportPlaneCalibrationConfig:
+        """The complete settings to apply."""
+        return self._config
+
+
 class SupportPlaneVerificationRequest(dai.Buffer):
     """Request an assessment and optionally attach an ID for correlation."""
 
@@ -323,6 +339,7 @@ class _CloudAssessmentMessage(dai.Buffer):
     _imu_timestamp_host: timedelta | None = None
     _imu_timestamp_system: datetime | None = None
     _source_stream_id: str | None = None
+    _config: SupportPlaneCalibrationConfig | None = None
 
     def _set_snapshot(
         self,
@@ -332,6 +349,7 @@ class _CloudAssessmentMessage(dai.Buffer):
         source_stream_id: str,
         imu_timestamp_host: timedelta | None,
         imu_timestamp_system: datetime | None,
+        config: SupportPlaneCalibrationConfig | None,
     ) -> None:
         self.setBufferMetadataFrom(cloud)
         self._gravity_direction = gravity_direction
@@ -339,6 +357,12 @@ class _CloudAssessmentMessage(dai.Buffer):
         self._imu_timestamp_host = imu_timestamp_host
         self._imu_timestamp_system = imu_timestamp_system
         self._source_stream_id = source_stream_id
+        self._config = config
+
+    @property
+    def config(self) -> SupportPlaneCalibrationConfig | None:
+        """The settings used to assess the cloud, when provided."""
+        return self._config
 
     @property
     def gravity_direction(self) -> tuple[float, float, float] | None:
@@ -379,6 +403,7 @@ class SupportPlaneCandidateBatch(_CloudAssessmentMessage):
         source_stream_id: str,
         imu_timestamp_host: timedelta | None = None,
         imu_timestamp_system: datetime | None = None,
+        config: SupportPlaneCalibrationConfig | None = None,
     ) -> None:
         super().__init__()
         self._assessments = tuple(assessments)
@@ -389,6 +414,7 @@ class SupportPlaneCandidateBatch(_CloudAssessmentMessage):
             source_stream_id,
             imu_timestamp_host,
             imu_timestamp_system,
+            config,
         )
 
     @property
@@ -475,6 +501,7 @@ class SupportPlaneVerificationResult(_CloudAssessmentMessage):
         source_stream_id: str,
         imu_timestamp_host: timedelta | None = None,
         imu_timestamp_system: datetime | None = None,
+        config: SupportPlaneCalibrationConfig | None = None,
     ) -> SupportPlaneVerificationResult:
         """Build a correlated reply and copy its source cloud metadata."""
         result = cls(
@@ -492,6 +519,7 @@ class SupportPlaneVerificationResult(_CloudAssessmentMessage):
             source_stream_id,
             imu_timestamp_host,
             imu_timestamp_system,
+            config,
         )
         return result
 

@@ -11,6 +11,7 @@ import pytest
 
 from depthai_nodes.message import (
     SupportPlane,
+    SupportPlaneCalibrationConfigMessage,
     SupportPlaneCalibrationControl,
     SupportPlaneCandidateBatch,
     SupportPlaneVerificationRequest,
@@ -464,6 +465,44 @@ def vertical_distance_range_is_inclusive_and_along_gravity(manual):
     assert "plane_not_below_camera" in {reason.code for reason in above.reasons}
 
 
+def runtime_config_changes_both_paths_without_resetting_search(manual):
+    h = manual.build()
+    old_config = SupportPlaneCalibrationConfig()
+    new_config = SupportPlaneCalibrationConfig(
+        attempt_interval_sec=0.25, min_sampled_point_count=1
+    )
+    update = SupportPlaneCalibrationConfigMessage(new_config)
+    h.fit(
+        [((0, 0, 1, -800), 80)],
+        during_fit=lambda: h.node.inputConfig.send(update),
+    )
+    h.cloud.send(cloud_message(1))
+    h.imu.send(imu_message(-9.8))
+    h.start()
+    h.step()
+    first = h.batch()
+    assert first.config == old_config
+    assert not first.assessments[0].accepted
+    assert h.node.configOutput.tryGet() is None
+
+    h.fit([((0, 0, 1, -800), 80)])
+    h.step(0.125)
+    assert h.node.configOutput.tryGet().config == new_config
+    assert h.batch() is None  # The config change does not make the old cloud eligible.
+    h.cloud.send(cloud_message(2))
+    h.step()
+    assert h.batch() is None
+
+    h.verify(BELOW, "updated")
+    h.step(0.125)
+    reply = h.reply()
+    batch = h.batch()
+    assert reply.request_id == "updated"
+    assert reply.config == batch.config == new_config
+    assert reply.assessment == batch.assessments[0]
+    assert reply.assessment.accepted
+
+
 @pytest.mark.parametrize(
     "case",
     [
@@ -474,6 +513,7 @@ def vertical_distance_range_is_inclusive_and_along_gravity(manual):
         verification_waits_replies_in_order_and_does_not_control_search,
         insufficient_sample_still_reports_counts_and_geometry_failures,
         vertical_distance_range_is_inclusive_and_along_gravity,
+        runtime_config_changes_both_paths_without_resetting_search,
     ],
     ids=lambda case: case.__name__,
 )
@@ -520,6 +560,8 @@ def native_pipeline_check():
         )
         control = node.inputControl.createInputQueue()
         requests = node.inputVerification.createInputQueue()
+        configs = node.inputConfig.createInputQueue()
+        applied = node.configOutput.createOutputQueue()
         batches = node.candidatesOutput.createOutputQueue()
         checks = node.verificationOutput.createOutputQueue()
         pipeline.start()
@@ -546,6 +588,19 @@ def native_pipeline_check():
         assert reply.imu_timestamp_device == IMU_STAMP
         assert reply.imu_timestamp_host == IMU_HOST_STAMP
         assert reply.imu_timestamp_system == batch.imu_timestamp_system
+
+        config = SupportPlaneCalibrationConfig(vertical_distance_range_mm=(900, 1000))
+        configs.send(SupportPlaneCalibrationConfigMessage(config))
+        acknowledgement = applied.get(timedelta(seconds=5))
+        assert isinstance(acknowledgement, SupportPlaneCalibrationConfigMessage)
+        assert acknowledgement.config == config
+        source.imu.send(imu_message(-9.8, -9.8))
+        requests.send(SupportPlaneVerificationRequest(accepted.plane, "new range"))
+        rejected = checks.get(timedelta(seconds=5))
+        assert rejected.request_id == "new range"
+        assert rejected.config == config
+        assert rejected.assessment.reasons[0].code == "vertical_distance_out_of_range"
+        assert batches.tryGet() is None
 
 
 if __name__ == "__main__":

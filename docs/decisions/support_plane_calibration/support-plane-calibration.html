@@ -100,8 +100,10 @@
           <tr><td><code>imu</code> · in</td><td><code>dai.IMUData</code> with acceleration in the point cloud’s coordinate frame.</td></tr>
           <tr><td><code>inputControl</code> · in</td><td><code>SupportPlaneCalibrationControl.start()</code> or <code>.stop()</code>. Another START can follow success or cancellation directly.</td></tr>
           <tr><td><code>inputVerification</code> · in</td><td><code>SupportPlaneVerificationRequest(plane, request_id=None)</code>. Assess once, independently of search state.</td></tr>
+          <tr><td><code>inputConfig</code> · in</td><td><code>SupportPlaneCalibrationConfigMessage(config)</code>. Replace the running node’s settings between fitting attempts.</td></tr>
           <tr><td><code>candidatesOutput</code> · out</td><td><code>SupportPlaneCandidateBatch.assessments</code>. One batch per completed fit. The search waits for fresh input between fits and keeps going if every fit is rejected.</td></tr>
           <tr><td><code>verificationOutput</code> · out</td><td><code>SupportPlaneVerificationResult.assessment</code> and the echoed <code>request_id</code>.</td></tr>
+          <tr><td><code>configOutput</code> · out</td><td>Echoes each applied configuration message. Candidate batches and verification replies carry the settings used in <code>.config</code>.</td></tr>
         </tbody>
       </table></div>
       <div class="table-wrap"><table aria-label="Calibration configuration defaults">
@@ -130,6 +132,7 @@
         <h3>Wire the node and start a search</h3>
         <p>The application can show every batch while waiting for the first passing assessment.</p>
         <pre><code>from depthai_nodes.message import (
+    SupportPlaneCalibrationConfigMessage,
     SupportPlaneCalibrationControl,
     SupportPlaneVerificationRequest,
 )
@@ -142,6 +145,7 @@ cal = pipeline.create(SupportPlaneCalibration).build(
     config=SupportPlaneCalibrationConfig(attempt_interval_sec=0.5),
 )
 control = cal.inputControl.createInputQueue()
+settings = cal.inputConfig.createInputQueue()
 batches = cal.candidatesOutput.createOutputQueue(blocking=True)
 verify = cal.inputVerification.createInputQueue()
 checks = cal.verificationOutput.createOutputQueue(blocking=True)
@@ -153,6 +157,14 @@ while True:
     show_assessments(batch.assessments)
     if any(result.accepted for result in batch.assessments):
         break  # Search ended. Human review is handled by the application.</code></pre>
+      </div>
+      <div>
+        <h3>Apply settings while the pipeline runs</h3>
+        <p>The message carries every setting. Use <code>replace</code> to keep the current values for fields you are leaving as they are. Any fit in progress finishes with the settings it started with.</p>
+        <pre><code>from dataclasses import replace
+
+updated = replace(batch.config, max_gravity_angle_deg=4.0)
+settings.send(SupportPlaneCalibrationConfigMessage(updated))</code></pre>
       </div>
       <div>
         <h3>Check a selected equation on demand</h3>

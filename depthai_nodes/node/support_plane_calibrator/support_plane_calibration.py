@@ -21,6 +21,7 @@ from depthai_nodes.message.plane_calibration_config import (
     SupportPlaneCalibrationConfig as SupportPlaneCalibrationConfig,
 )
 from depthai_nodes.message.support_plane_calibration import (
+    SupportPlaneCalibrationConfigMessage,
     SupportPlaneCalibrationControl,
     SupportPlaneCandidateBatch,
     SupportPlaneVerificationRequest,
@@ -74,6 +75,9 @@ class SupportPlaneCalibration(dai.node.ThreadedHostNode):
     ``candidatesOutput``. A batch with an accepted assessment ends the search.
     Send requests to ``inputVerification`` to receive independent, correlated
     replies on ``verificationOutput``.
+    Send a `SupportPlaneCalibrationConfigMessage` to ``inputConfig`` to
+    replace the settings between loop passes. ``configOutput`` echoes each
+    applied update. An in-progress fit completes with its original settings.
     """
 
     def __init__(self) -> None:
@@ -84,8 +88,10 @@ class SupportPlaneCalibration(dai.node.ThreadedHostNode):
         self.imu = self.createInput(name="imu", blocking=False, queueSize=1)
         self.inputControl = self.createInput(name="inputControl")
         self.inputVerification = self.createInput(name="inputVerification")
+        self.inputConfig = self.createInput(name="inputConfig")
         self.candidatesOutput = self.createOutput(name="candidatesOutput")
         self.verificationOutput = self.createOutput(name="verificationOutput")
+        self.configOutput = self.createOutput(name="configOutput")
         self._latest_cloud: dai.PointCloudData | None = None
         self._gravity: _GravitySample | None = None
         self._search: _Search | None = None
@@ -156,6 +162,10 @@ class SupportPlaneCalibration(dai.node.ThreadedHostNode):
             return
 
     def _step(self) -> None:
+        for update in self.inputConfig.tryGetAll():
+            if isinstance(update, SupportPlaneCalibrationConfigMessage):
+                self._config = update.config
+                self.configOutput.send(update)
         commands = SupportPlaneCalibrationControl.Commands
         for control in self.inputControl.tryGetAll():
             if isinstance(control, _AutoConfigUpdate):
@@ -228,6 +238,7 @@ class SupportPlaneCalibration(dai.node.ThreadedHostNode):
                 source_stream_id=self._source_stream_id,
                 imu_timestamp_host=gravity.timestamp_host,
                 imu_timestamp_system=gravity.timestamp_system,
+                config=self._config,
             )
             result._auto_config_revision = self._auto_config_revision
             self.verificationOutput.send(result)
@@ -262,6 +273,7 @@ class SupportPlaneCalibration(dai.node.ThreadedHostNode):
             source_stream_id=self._source_stream_id,
             imu_timestamp_host=gravity.timestamp_host,
             imu_timestamp_system=gravity.timestamp_system,
+            config=self._config,
         )
         batch._auto_config_revision = self._auto_config_revision
         self.candidatesOutput.send(batch)

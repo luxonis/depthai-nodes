@@ -18,6 +18,49 @@
       <output id="activity" aria-live="polite">Connecting</output>
     </header>
     <p id="error" role="alert" hidden></p>
+    <section class="settings">
+      <details>
+        <summary>Calibration settings</summary>
+        <form id="settings-form">
+          <fieldset id="settings-fields" disabled>
+            <legend>Search and acceptance</legend>
+            <div class="settings-grid">
+              <label>Fit interval (s)
+                <input name="attempt_interval_sec" type="number" min="0" step="any" required>
+              </label>
+              <label>Maximum tilt (°)
+                <input name="max_gravity_angle_deg" type="number" min="0" max="90" step="any" required>
+              </label>
+              <label>On-plane distance (mm)
+                <input name="check_distance_mm" type="number" min="0" step="any" required>
+              </label>
+              <label>Minimum valid samples
+                <input name="min_sampled_point_count" type="number" min="1" step="1" required>
+              </label>
+              <label>Minimum coverage (%)
+                <input name="min_on_plane_percent" type="number" min="0" max="100" step="any" required>
+              </label>
+            </div>
+          </fieldset>
+          <fieldset id="height-fields" disabled>
+            <legend>Vertical distance along gravity (mm)</legend>
+            <div class="settings-grid">
+              <label>Minimum
+                <input name="height_min" type="number" min="0" step="any" placeholder="No minimum">
+              </label>
+              <label>Maximum
+                <input name="height_max" type="number" min="0" step="any" placeholder="No maximum">
+              </label>
+            </div>
+            <p class="settings-note">Leave both blank to disable the range.</p>
+          </fieldset>
+          <div class="actions">
+            <button id="apply-settings" class="primary" type="submit" disabled>Apply settings</button>
+            <span id="settings-status" role="status"></span>
+          </div>
+        </form>
+      </details>
+    </section>
     <div class="workspace">
       <section class="preview" aria-labelledby="preview-title">
         <div class="heading">

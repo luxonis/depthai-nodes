@@ -30,6 +30,12 @@ before it is released on PyPI.
 
 ## Commission a plane
 
+Open **Calibration settings** to change the fit interval, tilt limit,
+perpendicular distance tolerance, minimum sample count, minimum coverage, or
+vertical distance range. **Apply settings** updates the running node and
+keeps live depth streaming. A saved approval stays on disk and needs a fresh
+check before reactivation. Settings apply for the current app session.
+
 1. Click **Start search**. The app updates the fit panel with empty, rejected,
    or mixed batches until a plane passes or you click **Stop**.
 1. Select a plane to highlight it on the live depth view. Click **Verify
