@@ -154,19 +154,19 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
 
 .DS_Store
 
 .depthai_cached_models/
 
-#VS Code
+# VS Code
 .vscode/
+*.code-workspace
 
 /tests/stability_tests/nn_datas
 
