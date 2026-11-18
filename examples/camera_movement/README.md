@@ -17,8 +17,10 @@ camera at rest in its intended pose, focus the Visualizer and press **c**.
 Keep the camera still until the app logs `Calibration: succeeded`.
 
 Tilt the camera by more than 3° and hold it there. The word **Moving**
-appears in the 720p H.264 video for two seconds after the detector emits an
-event. Return the camera to its original tilt to rearm the tilt alert.
+appears in the 720p H.264 video for at least two seconds after the detector
+emits an event. After that, the overlay clears once the gyro reports no
+rotation above 3°/s for 0.2 seconds. It clears even if the camera stays at
+the new angle. Return the camera to its original tilt to rearm the tilt alert.
 The example also enables the 15° gyro-only turn threshold. For a different
 reference pose, press **c** again while the camera is still.
 

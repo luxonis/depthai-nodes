@@ -1,7 +1,9 @@
 """Show camera movement on an H.264 stream from a standalone OAK4."""
 
+import math
 import signal
 import time
+from datetime import timedelta
 from threading import Event
 
 import cv2
@@ -13,6 +15,8 @@ from depthai_nodes.node import CameraMovementConfig, CameraMovementDetector
 SIZE = (1280, 720)
 FPS = 30
 LABEL_SECONDS = 2.0
+ROTATION_RATE = math.radians(3)
+ROTATION_QUIET_SECONDS = 0.2
 
 
 def draw_moving(frame: dai.ImgFrame) -> None:
@@ -35,16 +39,19 @@ def draw_moving(frame: dai.ImgFrame) -> None:
 
 
 class MovementOverlay(dai.node.ThreadedHostNode):
-    """Stamp the next two seconds of video after each movement event."""
+    """Show each movement event for at least two seconds, then until rotation stops."""
 
     def __init__(self) -> None:
         super().__init__()
         self.video = self.createInput(name="video", queueSize=2, blocking=False)
         self.movement = self.createInput(name="movement", queueSize=8, blocking=False)
+        self.imu = self.createInput(name="imu", queueSize=8, blocking=False)
         self.out = self.createOutput(name="out")
 
     def run(self) -> None:
-        visible_until = 0.0
+        visible_until = None
+        last_gyro_stamp = timedelta()
+        last_rotation_at = -math.inf
         try:
             while self.isRunning():
                 frame = self.video.get()
@@ -53,8 +60,22 @@ class MovementOverlay(dai.node.ThreadedHostNode):
                     if isinstance(event, CameraMovementEvent):
                         visible_until = now + LABEL_SECONDS
                         print(f"{event.reason.value}: {event.angle_deg:.1f}°")
-                if now < visible_until:
-                    draw_moving(frame)
+                for message in self.imu.tryGetAll():
+                    for packet in message.packets:
+                        gyro = packet.gyroscope
+                        stamp = gyro.getTimestampDevice()
+                        if stamp > last_gyro_stamp:
+                            last_gyro_stamp = stamp
+                            if math.hypot(gyro.x, gyro.y, gyro.z) >= ROTATION_RATE:
+                                last_rotation_at = now
+                if visible_until is not None:
+                    if (
+                        now < visible_until
+                        or now - last_rotation_at < ROTATION_QUIET_SECONDS
+                    ):
+                        draw_moving(frame)
+                    else:
+                        visible_until = None
                 self.out.send(frame)
         except dai.MessageQueue.QueueException:
             return
@@ -90,6 +111,7 @@ def main() -> None:
         overlay = pipeline.create(MovementOverlay)
         video.link(overlay.video)
         detector.out.link(overlay.movement)
+        imu.out.link(overlay.imu)
         encoder = pipeline.create(dai.node.VideoEncoder).build(
             overlay.out,
             frameRate=FPS,
