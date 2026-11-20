@@ -1,5 +1,6 @@
 import time
 from collections.abc import Callable
+from datetime import timedelta
 from queue import PriorityQueue
 from typing import (
     Generic,
@@ -49,6 +50,11 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     out-of-the-box for messages that expose a ``detections`` attribute (e.g.
     ``dai.ImgDetections``).
 
+    ``preserveOrder`` holds later groups behind earlier references. Optional
+    ``timeout`` and ``maxPendingFrames`` limits discard whole incomplete groups.
+    These options require references to arrive in source timestamp order.
+    Defaults retain ready-first, unbounded behavior.
+
     Attributes:
         FPS_TOLERANCE_DIVISOR (``float``): Divides the per-frame time interval to
             compute timestamp matching tolerance. Higher values make matching stricter.
@@ -58,8 +64,8 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     Note:
         - Timestamp matching uses ``Buffer.getTimestamp().total_seconds()`` and a
           tolerance of ``1 / (camera_fps * FPS_TOLERANCE_DIVISOR)``.
-        - If ``wait_count_fn(reference) == 0``, the node emits immediately for that
-          reference (with an empty items list).
+        - If ``wait_count_fn(reference) == 0``, an empty group is ready immediately,
+          but ordered output waits for earlier references.
         - The node periodically polls inputs using ``tryGet()`` at a rate derived
           from ``camera_fps`` and ``INPUT_CHECKS_PER_FPS``.
 
@@ -88,6 +94,12 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         self._data_by_reference_ts: dict[float, list[TGathered]] = {}
         self._reference_data: dict[float, TReference] = {}
         self._ready_timestamps = PriorityQueue()
+        self._arrived_at: dict[float, float] = {}
+        self._finished_timestamp = float("-inf")
+        self._timeout_seconds: float | None = None
+        self._max_pending_frames: int | None = None
+        self._preserve_order = False
+        self._manage_pending = False
         self._wait_count_fn = self._default_wait_count_fn
 
         self._data_input = self.createInput()
@@ -121,7 +133,7 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
 
         Args:
             fn: Callback accepting the reference message and returning the number of
-                items to wait for. A count of zero emits an empty group immediately.
+                items to wait for. A count of zero makes an empty group ready.
         """
         self._wait_count_fn = fn
 
@@ -131,6 +143,10 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         inputData: dai.Node.Output,
         inputReference: dai.Node.Output,
         waitCountFn: Callable[[TReference], int] | None = None,
+        *,
+        timeout: timedelta | None = None,
+        maxPendingFrames: int | None = None,
+        preserveOrder: bool = False,
     ) -> "GatherData[TReference, TGathered]":
         """Connect the data and reference streams used for gathering.
 
@@ -142,11 +158,32 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
             waitCountFn: Optional callback returning the number of data messages
                 expected for a given reference. If omitted, defaults to
                 len(reference.detections).
+            timeout: Positive wait from reference arrival before dropping an incomplete
+                group, including when inputs are idle. None disables expiry.
+            maxPendingFrames: Positive limit on pending references and unmatched data
+                messages. Oldest incomplete references and orphan messages are dropped
+                when their respective limit is exceeded. None disables the limits.
+            preserveOrder: Emit groups in source timestamp order, holding later groups
+                until earlier references complete or are dropped. References must
+                arrive in order. Complete groups are emitted even after timeout.
 
         Returns:
             The configured node instance.
+
+        Raises:
+            ValueError: If FPS, timeout or the pending-frame limit is not positive.
         """
+        if timeout is not None and timeout <= timedelta(0):
+            raise ValueError("Timeout must be positive")
+        if maxPendingFrames is not None and maxPendingFrames <= 0:
+            raise ValueError("Maximum pending frame count must be positive")
         self.setCameraFps(cameraFps)
+        self._timeout_seconds = timeout.total_seconds() if timeout is not None else None
+        self._max_pending_frames = maxPendingFrames
+        self._preserve_order = preserveOrder
+        self._manage_pending = (
+            preserveOrder or timeout is not None or maxPendingFrames is not None
+        )
         if waitCountFn is None:
             waitCountFn = self._default_wait_count_fn
         self.setWaitCountFn(waitCountFn)
@@ -178,10 +215,12 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
             if data:
                 self._logger.debug("Data input received")
                 self._add_data(data)
-                self._send_ready_data()
+                if not self._manage_pending:
+                    self._send_ready_data()
             if reference:
                 self._logger.debug("Reference input received")
                 self._add_reference(reference)
+            if reference or self._manage_pending:
                 self._send_ready_data()
 
             time.sleep(1 / self.INPUT_CHECKS_PER_FPS / self._camera_fps)
@@ -193,6 +232,8 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
 
     def _add_data(self, data: TGathered) -> None:
         data_ts = self._get_total_seconds_ts(data)
+        if self._manage_pending and data_ts <= self._finished_timestamp:
+            return
         best_matching_reference_ts = self._get_matching_reference_ts(data_ts)
 
         if best_matching_reference_ts is not None:
@@ -200,17 +241,56 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
             self._update_ready_timestamps(best_matching_reference_ts)
         else:
             self._unmatched_data.append(data)
+            if self._max_pending_frames is not None:
+                del self._unmatched_data[: -self._max_pending_frames]
 
     def _add_reference(
         self,
         reference: TReference,
     ) -> None:
         reference_ts = self._get_total_seconds_ts(reference)
+        if self._manage_pending:
+            if reference_ts <= self._finished_timestamp:
+                return
+            self._arrived_at.setdefault(reference_ts, time.monotonic())
         self._reference_data[reference_ts] = reference
         self._try_match_data(reference_ts)
         self._update_ready_timestamps(reference_ts)
 
     def _send_ready_data(self) -> None:
+        if self._manage_pending:
+            now = time.monotonic()
+            for timestamp in sorted(self._reference_data):
+                if timestamp not in self._reference_data:
+                    continue
+                ready = self._timestamp_ready(timestamp)
+                expired = (
+                    self._timeout_seconds is not None
+                    and now - self._arrived_at[timestamp] >= self._timeout_seconds
+                )
+                overflow = (
+                    self._max_pending_frames is not None
+                    and len(self._reference_data) > self._max_pending_frames
+                )
+                if not ready and not expired and not overflow:
+                    if self._preserve_order:
+                        break
+                    continue
+                reference = self._reference_data.pop(timestamp)
+                items = self._data_by_reference_ts.pop(timestamp, [])
+                self._arrived_at.pop(timestamp)
+                self._finished_timestamp = timestamp
+                self._clear_unmatched_data(timestamp)
+                if ready:
+                    if not self._preserve_order:
+                        self._clear_old_references(timestamp)
+                    self.out.send(GatheredData(reference_data=reference, items=items))
+                else:
+                    self._logger.warning(
+                        "Dropping incomplete group for sequence %s",
+                        reference.getSequenceNum(),
+                    )
+            return
         ready_data = self._pop_ready_data()
         if ready_data:
             self._clear_old_data(ready_data)
@@ -233,7 +313,7 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
             self._data_by_reference_ts[reference_ts] = [data]
 
     def _update_ready_timestamps(self, timestamp: float) -> None:
-        if not self._timestamp_ready(timestamp):
+        if self._manage_pending or not self._timestamp_ready(timestamp):
             return
         self._ready_timestamps.put(timestamp)
 
@@ -303,3 +383,4 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         for reference_ts in reference_keys_to_pop:
             self._reference_data.pop(reference_ts)
             self._data_by_reference_ts.pop(reference_ts, None)
+            self._arrived_at.pop(reference_ts, None)
