@@ -52,7 +52,7 @@ The retained Linux aarch64 binary is never presented as portable.
 ## Public API and frame contract
 
 ```python
-ParcelDetector.build(pointCloud, color, left, right, supportPlane, calibration)
+ParcelDetector.build(pointCloud, color, left, right, supportPlane)
 ParcelDimensioner.build(parcels)
 ```
 
@@ -67,18 +67,31 @@ Color accepts NV12 and native 8-bit RGB/BGR layouts and becomes RGB. Left and ri
 The detector performs no resize. Intrinsics and distortion describe each delivered pixel grid.
 Transforms map scene coordinates into each camera's optical frame, with translations in millimeters.
 
-The keyword-only calibration constructors are:
+Camera calibration is read from each `ImgFrame.getTransformation()`:
 
 ```python
-ParcelCameraCalibration(
-    role=..., size=..., intrinsics=..., distortion_model=...,
-    distortion_coefficients=..., scene_to_camera_mm=...,
-)
-ParcelRigCalibration(frame=..., down=..., cameras=...)
-ParcelPlane(frame=..., plane=...)
+metadata.getIntrinsicMatrix()
+metadata.getDistortionModel()
+metadata.getDistortionCoefficients()
+metadata.getExtrinsics().getTransformationMatrix(False, dai.LengthUnit.MILLIMETER)
 ```
 
-`cameras` contains exactly one color, left, and right calibration. `down` is unit gravity in the scene frame.
+`getIntrinsicMatrix()` includes delivered crop/scale transforms. The original sensor's `getSourceIntrinsicMatrix()` is not a substitute.
+Camera poses are inverted with NumPy in float64 to map common-reference XYZ into each camera.
+All three images and the cloud must declare a compatible target device and camera socket.
+Missing or invalid metadata, inconsistent grids, incompatible reference frames, and unsupported distortion models produce failed frames.
+The adapter creates no placeholder image or replacement calibration.
+
+Native DEFAULT point clouds with an identity custom transform already contain XYZ in the shared calibration reference frame.
+Their image metadata can retain the depth camera's source pose. Applying that pose to the cloud again would be incorrect.
+The adapter uses each image's reference-to-camera transform directly, without applying the cloud's source pose twice.
+This follows the [tagged native coordinate transformation](https://github.com/luxonis/depthai-core/blob/v3.11.0/src/pipeline/node/PointCloud.cpp#L626) and [metadata copying](https://github.com/luxonis/depthai-core/blob/v3.11.0/src/pipeline/node/PointCloud.cpp#L843).
+Custom transforms, housing coordinates, and camera-target cloud modes are outside this adapter's contract because the message lacks a reliable frame-mode discriminator.
+The builder rejects incompatible initial native PointCloud configurations. Coordinate mode, units, and custom transforms must remain fixed while the pipeline runs.
+Other producers must already provide millimeter XYZ in the declared common reference frame with consistent metadata.
+
+`ParcelPlane(frame=..., plane=..., down=...)` carries the plane's application frame label and unit downward gravity in those same coordinates.
+Camera calibration does not determine gravity or XYZ units. Those remain runtime input requirements.
 `ParcelPlane` is a same-host input message holding the existing `SupportPlane` value, or `None` for an unavailable plane.
 Stamp it with the cloud's host timestamp, device timestamp, and sequence number for every scene.
 An upstream fixed or updated plane becomes applicable only through that explicitly stamped message.
@@ -90,11 +103,13 @@ DepthAI synchronizes the inputs before invoking `process`. The callback checks m
 An incomplete group does not invoke the callback or produce an empty success. The next complete scene can be processed.
 To report an unavailable plane for a synchronized frame, send `ParcelPlane(plane=None, ...)` with that frame's timing. It produces a failed frame.
 This replaces the initial adapter's manual queues and 250 ms timeout. Dropped streams no longer generate timeout failure batches.
-The callback computation, calibration conversion, and plane snapshot are unchanged.
+The frozen callback computation and plane snapshot semantics are unchanged.
 
 `ParcelDetections` contains eligible `Parcel` items with a zero-based frame-local `candidate_id` and owned read-only `xyz_mm`.
 Rejected proposals can leave gaps in IDs. `decisions` retains proposal outcomes without source-point indices or the whole cloud.
 Each parcel is extracted once with `numpy.take` in selected-point order. The dimensioner retains that array without another extraction or copy.
+Parcel value objects use ordinary constructors and read-only properties, without explicit `object.__setattr__` calls.
+The public parcel constructor retains an owning read-only float32 array and snapshots writable or non-owning inputs.
 `sources` contains timing records with `stream`, `timestamp`, `timestamp_device`, and `sequence_num` fields for every available input.
 The source-timing and diagnostic-decision record classes are internal. Native output timestamps and sequence repeat the source cloud.
 
@@ -109,7 +124,7 @@ The dimensioner reads only the batch's plane. No tracking, temporal medians, or 
 These Python messages connect nodes on one host. Nested arrays have no implemented XLink or remote serialization.
 The [synthetic example](../../examples/parcel_measurement/synthetic.py) runs both nodes in a native host-only DepthAI pipeline without an OAK device.
 
-The message package exports eight parcel types. `ParcelCameraCalibration`, `ParcelRigCalibration`, and `ParcelPlane` construct the detector's runtime inputs.
+The message package exports six parcel types. `ParcelPlane` constructs the supplied-plane input.
 `Parcel`, `ParcelDetections`, `ParcelCuboid`, `ParcelMeasurement`, and `ParcelMeasurements` describe public payloads consumed downstream.
 Status enums live under their owning types. Internal timing and diagnostic records add no flat public constructors.
 
@@ -172,8 +187,10 @@ These unrelated failures are retained as limitations rather than hidden as skips
 
 Final parcel, Python 3.10, wheel, lint, and documentation results are recorded in the manifest and comparison summaries.
 The focused command `pytest tests/unittests/test_parcel_algorithm tests/unittests/test_parcel_nodes tests/parcel_reference` passes 42 tests and 58 subtests on both Python 3.12.13 and 3.10.18.
-The node wrapper runs 26 native checks in a fresh process to avoid the existing parser mock substitutions.
+The node wrapper runs 34 native checks in a fresh process to avoid the existing parser mock substitutions.
 The native synchronization cases verify that incomplete input groups are skipped, the next complete frame recovers, and an explicit unavailable plane remains a failed frame.
+Native metadata checks cover crop/scale intrinsics, distortion and tilted sensors, pose units and reference compatibility, missing metadata, default cloud coordinates, normal value construction, and zero-copy owned parcel transfer.
+These metadata checks use synthetic native messages. They do not establish generated-cloud or live camera behavior on OAK hardware.
 The final full unit command reports 581 passing tests with the same 181 failures and 124 errors as the unchanged base.
 Pre-commit and `pydoctor depthai_nodes` pass. The API build treats warnings as errors.
 

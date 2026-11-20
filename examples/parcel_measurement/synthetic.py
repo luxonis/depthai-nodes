@@ -11,24 +11,22 @@ import depthai as dai
 import numpy as np
 
 from depthai_nodes.message import (
-    ParcelCameraCalibration,
     ParcelMeasurement,
     ParcelMeasurements,
     ParcelPlane,
-    ParcelRigCalibration,
     SupportPlane,
 )
 from depthai_nodes.node import ParcelDetector, ParcelDimensioner
 
 
 def make_scene():
-    """Return a top-down cloud, three image messages, a plane, and calibration."""
+    """Return a cloud, three images with native calibration, and a supplied plane."""
     size, focal, center = 260, 500.0, 129.5
     v, u = np.indices((size, size))
     rays = np.stack(
         ((u - center) / focal, (v - center) / focal, np.ones_like(u)), axis=-1
     )
-    images, cameras = [], []
+    images = []
     cloud = dai.PointCloudData()
     for role, camera_x in (("color", 0), ("left", -15), ("right", 15)):
         top = rays[:, :, :2] * 890 + np.array([camera_x, 0])
@@ -46,33 +44,35 @@ def make_scene():
         image.setWidth(size)
         image.setHeight(size)
         images.append(image)
-        cameras.append(
-            ParcelCameraCalibration(
-                role=role,
-                size=(size, size),
-                intrinsics=((focal, 0, center), (0, focal, center), (0, 0, 1)),
-                distortion_model="none",
-                distortion_coefficients=(),
-                scene_to_camera_mm=(
-                    (1, 0, 0, -camera_x),
-                    (0, 1, 0, 0),
-                    (0, 0, 1, 0),
-                    (0, 0, 0, 1),
-                ),
-            )
+        extrinsics = dai.Extrinsics(
+            np.eye(3).tolist(),
+            dai.Point3f(camera_x, 0, 0),
+            dai.CameraBoardSocket.CAM_A,
+            dai.LengthUnit.MILLIMETER,
         )
+        extrinsics.toDeviceId = "synthetic"
+        transformation = dai.ImgTransformation(
+            size,
+            size,
+            ((focal, 0, center), (0, focal, center), (0, 0, 1)),
+            dai.CameraModel.Perspective,
+            [],
+            extrinsics,
+        )
+        image.setTransformation(transformation)
+        if role == "color":
+            cloud.setTransformation(transformation)
     plane = ParcelPlane(
-        frame="scene", plane=SupportPlane(normal=(0, 0, -1), offset_mm=1000)
+        frame="scene",
+        plane=SupportPlane(normal=(0, 0, -1), offset_mm=1000),
+        down=(0, 0, 1),
     )
     messages = (cloud, *images, plane)
     for message in messages:
         message.setSequenceNum(1)
         message.setTimestamp(timedelta(seconds=1))
         message.setTimestampDevice(timedelta(seconds=1))
-    calibration = ParcelRigCalibration(
-        frame="scene", down=(0, 0, 1), cameras=tuple(cameras)
-    )
-    return messages, calibration
+    return messages
 
 
 class SyntheticScene(dai.node.ThreadedHostNode):
@@ -81,7 +81,7 @@ class SyntheticScene(dai.node.ThreadedHostNode):
     def __init__(self):
         super().__init__()
         self.streams = tuple(self.createOutput(f"source_{i}") for i in range(5))
-        self.messages, self.calibration = make_scene()
+        self.messages = make_scene()
 
     def run(self):
         for output, message in zip(self.streams, self.messages):
@@ -92,9 +92,7 @@ def main():
     """Run and assert one measured parcel from the native same-host pipeline."""
     with dai.Pipeline(False) as pipeline:
         source = pipeline.create(SyntheticScene)
-        detector = pipeline.create(ParcelDetector).build(
-            *source.streams, source.calibration
-        )
+        detector = pipeline.create(ParcelDetector).build(*source.streams)
         dimensioner = pipeline.create(ParcelDimensioner).build(detector.out)
         results = dimensioner.out.createOutputQueue()
         pipeline.start()

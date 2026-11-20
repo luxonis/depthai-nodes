@@ -21,13 +21,11 @@ from .support_plane import SupportPlane
 
 __all__ = [
     "Parcel",
-    "ParcelCameraCalibration",
     "ParcelCuboid",
     "ParcelDetections",
     "ParcelMeasurement",
     "ParcelMeasurements",
     "ParcelPlane",
-    "ParcelRigCalibration",
 ]
 
 
@@ -52,111 +50,37 @@ def _numbers(value, shape: tuple[int, ...], field: str) -> np.ndarray:
     return result
 
 
-@dataclass(frozen=True, kw_only=True)
-class ParcelCameraCalibration:
-    """Calibration for the exact delivered image pixel grid.
-
-    Attributes:
-        role: ``color``, ``left``, or ``right``.
-        size: Delivered ``(width, height)`` in pixels.
-        intrinsics: Full 3 by 3 matrix for this grid, including crop or resize.
-        distortion_model: ``none``, ``perspective``, or ``fisheye``.
-        distortion_coefficients: OpenCV coefficients for the delivered pixels.
-        scene_to_camera_mm: Homogeneous 4 by 4 transform from the scene frame
-            into this camera's optical frame. Translation is in millimeters.
-    """
-
-    role: Literal["color", "left", "right"]
-    size: tuple[int, int]
-    intrinsics: tuple[tuple[float, ...], ...]
-    distortion_model: str
-    distortion_coefficients: tuple[float, ...]
-    scene_to_camera_mm: tuple[tuple[float, ...], ...]
-
-    def __post_init__(self) -> None:
-        if self.role not in ("color", "left", "right"):
-            raise ValueError("Unknown camera role")
-        if len(self.size) != 2 or any(
-            isinstance(v, bool) or not isinstance(v, (int, np.integer)) or v <= 0
-            for v in self.size
-        ):
-            raise ValueError("size must be a positive integer (width, height)")
-        intrinsics = _numbers(self.intrinsics, (3, 3), "intrinsics")
-        transform = _numbers(self.scene_to_camera_mm, (4, 4), "scene transform")
-        if not np.allclose(transform[3], (0, 0, 0, 1), atol=1e-9, rtol=0):
-            raise ValueError("Invalid homogeneous scene transform")
-        if np.linalg.det(transform[:3, :3]) == 0 or np.linalg.det(intrinsics) == 0:
-            raise ValueError("Singular calibration")
-        coefficients = _numbers(
-            self.distortion_coefficients,
-            (len(self.distortion_coefficients),),
-            "distortion coefficients",
-        )
-        model = self.distortion_model.casefold()
-        valid = (
-            (model == "none" and not coefficients.any())
-            or (model == "perspective" and coefficients.size in (0, 4, 5, 8, 12, 14))
-            or (model == "fisheye" and coefficients.size == 4)
-        )
-        if not valid:
-            raise ValueError("Unsupported distortion model or coefficient count")
-        object.__setattr__(self, "size", tuple(map(int, self.size)))
-        object.__setattr__(self, "intrinsics", tuple(map(tuple, intrinsics.tolist())))
-        object.__setattr__(
-            self, "scene_to_camera_mm", tuple(map(tuple, transform.tolist()))
-        )
-        object.__setattr__(
-            self, "distortion_coefficients", tuple(coefficients.tolist())
-        )
-        object.__setattr__(self, "distortion_model", model)
-
-
-@dataclass(frozen=True, kw_only=True)
-class ParcelRigCalibration:
-    """The scene frame, downward gravity, and all three delivered camera grids.
-
-    Attributes:
-        frame: Coordinate-frame ID of both XYZ points and the supplied plane.
-        down: Unit gravity vector in that frame. It determines upward plane sign.
-        cameras: Exactly one color, left, and right calibration. Stored in that order.
-    """
-
-    frame: str
-    down: tuple[float, float, float]
-    cameras: tuple[ParcelCameraCalibration, ...]
-
-    def __post_init__(self) -> None:
-        _frame(self.frame)
-        down = _numbers(self.down, (3,), "downward gravity")
-        if abs(float(np.linalg.norm(down)) - 1) > 1e-6:
-            raise ValueError("down must be a unit gravity vector")
-        cameras = tuple(self.cameras)
-        if any(not isinstance(c, ParcelCameraCalibration) for c in cameras):
-            raise TypeError("cameras must contain ParcelCameraCalibration values")
-        by_role = {c.role: c for c in cameras}
-        if len(cameras) != 3 or set(by_role) != {"color", "left", "right"}:
-            raise ValueError("Expected one color, left, and right camera")
-        object.__setattr__(self, "down", tuple(down.tolist()))
-        object.__setattr__(
-            self, "cameras", tuple(by_role[r] for r in ("color", "left", "right"))
-        )
-
-
 class ParcelPlane(dai.Buffer):
     """A supplied support plane for exactly one source sequence number.
 
     Stamp this message with the cloud's host/device timestamps and sequence.
     ``plane=None`` explicitly reports that this frame has no supplied plane.
     Reusing a previous plane requires emitting a newly stamped message for the
-    new frame. Plane estimation and plane selection remain upstream.
+    new frame. ``down`` supplies unit gravity in the cloud frame; image metadata
+    does not determine gravity. Plane estimation and selection remain upstream.
     """
 
-    def __init__(self, *, frame: str, plane: SupportPlane | None) -> None:
+    def __init__(
+        self,
+        *,
+        frame: str,
+        plane: SupportPlane | None,
+        down: tuple[float, float, float],
+    ) -> None:
         super().__init__()
         self._frame = _frame(frame)
         if plane is not None and not isinstance(plane, SupportPlane):
             raise TypeError("plane must be SupportPlane or None")
+        gravity = _numbers(down, (3,), "downward gravity")
+        if abs(float(np.linalg.norm(gravity)) - 1) > 1e-6:
+            raise ValueError("down must be a unit gravity vector")
         self._plane = plane
+        self._down = tuple(gravity.tolist())
+
+    @property
+    def down(self) -> tuple[float, float, float]:
+        """Unit downward gravity in the point cloud and support-plane frame."""
+        return self._down
 
     @property
     def frame(self) -> str:
@@ -195,26 +119,34 @@ class _ParcelSourceTiming:
             self.sequence_num, (int, np.integer)
         ):
             raise TypeError("Source sequence number must be an integer")
-        object.__setattr__(self, "sequence_num", int(self.sequence_num))
 
 
-@dataclass(frozen=True, kw_only=True, eq=False)
 class Parcel:
-    """One eligible parcel with independent read-only float32 XYZ in millimeters.
+    """One eligible parcel with read-only float32 XYZ in millimeters.
 
     ``candidate_id`` is the zero-based proposal index within this frame. Gaps
-    identify rejected proposals. Construction snapshots caller-owned points.
+    identify rejected proposals. Construction retains a read-only owning
+    float32 array and snapshots other inputs into independent point storage.
     """
 
-    candidate_id: int
-    xyz_mm: NDArray[np.float32]
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "candidate_id", _candidate(self.candidate_id))
-        array = np.array(self.xyz_mm, dtype=np.float32, copy=True)
+    def __init__(self, *, candidate_id: int, xyz_mm: NDArray[np.float32]) -> None:
+        self._candidate_id = _candidate(candidate_id)
+        array = np.asarray(xyz_mm, dtype=np.float32)
         self._check_points(array)
+        if not array.flags.owndata or array.flags.writeable:
+            array = array.copy()
         array.flags.writeable = False
-        object.__setattr__(self, "xyz_mm", array)
+        self._xyz_mm = array
+
+    @property
+    def candidate_id(self) -> int:
+        """Zero-based proposal index within this frame."""
+        return self._candidate_id
+
+    @property
+    def xyz_mm(self) -> NDArray[np.float32]:
+        """Retained read-only point array in selected-point order."""
+        return self._xyz_mm
 
     @staticmethod
     def _check_points(array: np.ndarray) -> None:
@@ -227,10 +159,7 @@ class Parcel:
         if xyz_mm.dtype != np.float32 or not xyz_mm.flags.owndata:
             raise ValueError("Extracted parcel must own float32 point storage")
         xyz_mm.flags.writeable = False
-        result = object.__new__(cls)
-        object.__setattr__(result, "candidate_id", _candidate(candidate_id))
-        object.__setattr__(result, "xyz_mm", xyz_mm)
-        return result
+        return cls(candidate_id=candidate_id, xyz_mm=xyz_mm)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -241,7 +170,7 @@ class _ParcelDecision:
     decision: Literal["eligible", "background", "partially_visible", "uncertain"]
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "candidate_id", _candidate(self.candidate_id))
+        _candidate(self.candidate_id)
         if not isinstance(self.decision, str) or self.decision not in (
             "eligible",
             "background",
@@ -251,38 +180,69 @@ class _ParcelDecision:
             raise ValueError("Unknown eligibility decision")
 
 
-@dataclass(frozen=True, kw_only=True)
 class ParcelCuboid:
     """A parcel footprint and optional height, without temporal aggregation.
 
     The base center is on the support plane. The unit length axis is tangent to it. The
     width axis is the upward plane normal crossed with the length axis. All dimensions
-    and the center use millimeters.
+    and the center use millimeters. Construction snapshots the vectors and validates the
+    finite geometry.
     """
 
-    base_center_mm: tuple[float, float, float]
-    length_axis: tuple[float, float, float]
-    length_mm: float
-    width_mm: float
-    height_mm: float | None
-
-    def __post_init__(self) -> None:
-        center = _numbers(self.base_center_mm, (3,), "base center")
-        axis = _numbers(self.length_axis, (3,), "length axis")
+    def __init__(
+        self,
+        *,
+        base_center_mm: tuple[float, float, float],
+        length_axis: tuple[float, float, float],
+        length_mm: float,
+        width_mm: float,
+        height_mm: float | None,
+    ) -> None:
+        center = _numbers(base_center_mm, (3,), "base center")
+        axis = _numbers(length_axis, (3,), "length axis")
         if abs(float(axis @ axis) - 1) > 1e-6:
             raise ValueError("length_axis must be a unit vector")
-        for name in ("length_mm", "width_mm", "height_mm"):
-            value = getattr(self, name)
-            if name == "height_mm" and value is None:
-                continue
-            number = float(_numbers(value, (), name))
-            if not 1e-6 <= number <= 100_000:
-                raise ValueError(f"Invalid {name}")
-            object.__setattr__(self, name, number)
         if (np.abs(center) > 10_000_000).any():
             raise ValueError("Base center exceeds coordinate bounds")
-        object.__setattr__(self, "base_center_mm", tuple(center.tolist()))
-        object.__setattr__(self, "length_axis", tuple(axis.tolist()))
+        self._base_center_mm = tuple(center.tolist())
+        self._length_axis = tuple(axis.tolist())
+        self._length_mm = self._dimension(length_mm, "length_mm")
+        self._width_mm = self._dimension(width_mm, "width_mm")
+        self._height_mm = (
+            None if height_mm is None else self._dimension(height_mm, "height_mm")
+        )
+
+    @staticmethod
+    def _dimension(value: float, name: str) -> float:
+        number = float(_numbers(value, (), name))
+        if not 1e-6 <= number <= 100_000:
+            raise ValueError(f"Invalid {name}")
+        return number
+
+    @property
+    def base_center_mm(self) -> tuple[float, float, float]:
+        """Cuboid base center on the support plane in millimeters."""
+        return self._base_center_mm
+
+    @property
+    def length_axis(self) -> tuple[float, float, float]:
+        """Unit length axis tangent to the support plane."""
+        return self._length_axis
+
+    @property
+    def length_mm(self) -> float:
+        """Cuboid length in millimeters."""
+        return self._length_mm
+
+    @property
+    def width_mm(self) -> float:
+        """Cuboid width in millimeters."""
+        return self._width_mm
+
+    @property
+    def height_mm(self) -> float | None:
+        """Cuboid height in millimeters, or None when unknown."""
+        return self._height_mm
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -304,7 +264,7 @@ class ParcelMeasurement:
     cuboid: ParcelCuboid | None
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "candidate_id", _candidate(self.candidate_id))
+        _candidate(self.candidate_id)
         if not isinstance(self.status, self.Status):
             raise TypeError("status must be ParcelMeasurement.Status")
         if self.status == self.Status.NO_FIT:

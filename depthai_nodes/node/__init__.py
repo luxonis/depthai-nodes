@@ -296,24 +296,28 @@ tracking or temporal medians. Existing box nodes retain their separate behavior.
 
 Example:
     With existing ``pointCloud``, ``color``, ``left``, ``right``, and per-frame
-    ``planes`` outputs, plus a ``ParcelRigCalibration`` named ``calibration``::
+    ``planes`` outputs carrying their native calibration metadata::
 
         from depthai_nodes.node import ParcelDetector, ParcelDimensioner
 
         detector = pipeline.create(ParcelDetector).build(
-            pointCloud, color, left, right, planes, calibration
+            pointCloud, color, left, right, planes
         )
         dimensioner = pipeline.create(ParcelDimensioner).build(detector.out)
         results = dimensioner.out.createOutputQueue()
 
-    Plane messages are ``ParcelPlane`` values in ``calibration.frame``. Each plane
-    and all three images must share the cloud sequence number and have device
+    Plane messages are ``ParcelPlane(frame=..., plane=..., down=...)`` values in
+    the cloud's common calibration reference frame. Each plane and all three
+    images must share the cloud sequence number and have device
     timestamps within 10 ms. ``ParcelDetector`` is a native ``HostNode`` and
     links the five streams through ``link_args``. DepthAI synchronizes complete
     groups before processing; incomplete groups do not invoke the callback.
     A synchronized ``ParcelPlane(plane=None, ...)`` reports a failed frame.
-    Image grids must match their supplied calibration. These Python messages
-    connect nodes within one host runtime.
+    Intrinsics, distortion, and camera poses come from each frame's native
+    ``ImgTransformation``. Use millimeter XYZ in the common reference frame,
+    as native DEFAULT point clouds with an identity custom transform provide.
+    Do not change the cloud's coordinate configuration while the pipeline runs.
+    These Python messages connect nodes within one host runtime.
 
 Extending the package
 =====================

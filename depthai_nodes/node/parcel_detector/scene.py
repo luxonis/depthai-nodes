@@ -10,7 +10,6 @@ from depthai_nodes.algorithms.parcel import CameraView, PointCloud, Scene
 from depthai_nodes.algorithms.parcel import SupportPlane as AlgorithmPlane
 from depthai_nodes.message.parcel import (
     ParcelPlane,
-    ParcelRigCalibration,
     _ParcelSourceTiming,
 )
 from depthai_nodes.message.support_plane import SupportPlane
@@ -24,6 +23,21 @@ class SceneInputError(ValueError):
         self.code = code
 
 
+def check_cloud_configuration(config: dai.PointCloudConfig) -> None:
+    """Check the native generator's reference-frame and millimeter contract."""
+    if (
+        config.getCoordinateSystemType()
+        != dai.PointCloudConfig.CoordinateSystemType.DEFAULT
+        or config.getLengthUnit() != dai.LengthUnit.MILLIMETER
+        or config.getUseSpecTranslation()
+        or not np.array_equal(config.getTransformationMatrix(), np.eye(4))
+    ):
+        raise ValueError(
+            "ParcelDetector requires DEFAULT point-cloud coordinates, millimeters, "
+            "calibrated extrinsics, and an identity custom transform"
+        )
+
+
 def source_timing(stream: str, message: dai.Buffer) -> _ParcelSourceTiming:
     """Snapshot one source message's native frame identity."""
     return _ParcelSourceTiming(
@@ -34,16 +48,12 @@ def source_timing(stream: str, message: dai.Buffer) -> _ParcelSourceTiming:
     )
 
 
-def upward_plane(
-    message: ParcelPlane | None, calibration: ParcelRigCalibration
-) -> SupportPlane:
+def upward_plane(message: ParcelPlane | None) -> SupportPlane:
     """Snapshot and orient the supplied plane against the declared scene gravity."""
     if not isinstance(message, ParcelPlane) or message.plane is None:
         raise SceneInputError("missing_support_plane")
-    if message.frame != calibration.frame:
-        raise SceneInputError("plane_frame_mismatch")
     plane = message.plane
-    direction = float(np.dot(plane.normal, calibration.down))
+    direction = float(np.dot(plane.normal, message.down))
     if direction == 0:
         raise SceneInputError("plane_not_upward")
     if direction > 0:
@@ -53,18 +63,46 @@ def upward_plane(
     return SupportPlane(normal=plane.normal, offset_mm=plane.offset_mm)
 
 
+def _pose_to_reference(transformation: dai.ImgTransformation):
+    try:
+        if transformation is None or not transformation.isValid():
+            raise SceneInputError("missing_camera_metadata")
+        extrinsics = transformation.getExtrinsics()
+        if not extrinsics.hasValidRotationMatrix():
+            raise SceneInputError("missing_camera_metadata")
+        pose = np.asarray(
+            extrinsics.getTransformationMatrix(False, dai.LengthUnit.MILLIMETER),
+            dtype=np.float64,
+        )
+        if (
+            pose.shape != (4, 4)
+            or not np.isfinite(pose).all()
+            or not np.allclose(pose[3], (0, 0, 0, 1), atol=1e-9, rtol=0)
+            or np.linalg.det(pose[:3, :3]) == 0
+        ):
+            raise SceneInputError("invalid_camera_metadata")
+        return (extrinsics.toDeviceId, extrinsics.toCameraSocket), pose
+    except RuntimeError as exc:
+        raise SceneInputError("invalid_camera_metadata") from exc
+
+
 def prepare_scene(
     cloud: dai.PointCloudData,
     images: tuple[dai.ImgFrame, dai.ImgFrame, dai.ImgFrame],
     plane: SupportPlane,
-    calibration: ParcelRigCalibration,
+    frame: str,
 ) -> Scene:
     """Decode finite millimeter XYZ and RGB/mono images on their calibrated grids.
 
     Color input accepts NV12 and native 8-bit RGB/BGR layouts. Stereo must be
     GRAY8. DepthAI's ``getCvFrame`` handles the delivered row layout and returns
     BGR for color, which is converted to RGB before algorithm invocation.
-    No geometric image resize or point filtering occurs here.
+    Calibration comes from each message's ``ImgTransformation``, including
+    crop/scale intrinsics, distortion, and pose in millimeters. XYZ must already
+    occupy the common calibration reference frame, as ordinary native DEFAULT
+    point clouds with an identity custom transform do. The supplied plane and
+    its frame label use those same coordinates. No image resize or point
+    filtering occurs here.
     """
     if not isinstance(cloud, dai.PointCloudData):
         raise SceneInputError("invalid_point_cloud")
@@ -75,13 +113,46 @@ def prepare_scene(
     if xyz.ndim != 2 or xyz.shape[1] != 3 or not np.isfinite(xyz).all():
         raise SceneInputError("invalid_point_cloud")
     xyz.flags.writeable = False
+    reference, _ = _pose_to_reference(cloud.getTransformation())
     views = []
-    for image, camera in zip(images, calibration.cameras):
+    for role, image in zip(("color", "left", "right"), images):
         if not isinstance(image, dai.ImgFrame):
             raise SceneInputError("missing_source_image")
-        if (image.getWidth(), image.getHeight()) != camera.size:
+        metadata = image.getTransformation()
+        camera_reference, pose = _pose_to_reference(metadata)
+        if camera_reference != reference:
+            raise SceneInputError("incompatible_camera_frames")
+        size = (image.getWidth(), image.getHeight())
+        if metadata.getSize() != size:
             raise SceneInputError("calibration_grid_mismatch")
-        if camera.role == "color":
+        intrinsics = np.asarray(metadata.getIntrinsicMatrix(), dtype=np.float64)
+        coefficients = np.asarray(
+            metadata.getDistortionCoefficients(), dtype=np.float64
+        )
+        if (
+            intrinsics.shape != (3, 3)
+            or not np.isfinite(intrinsics).all()
+            or np.linalg.det(intrinsics) == 0
+            or coefficients.ndim != 1
+            or not np.isfinite(coefficients).all()
+        ):
+            raise SceneInputError("invalid_camera_metadata")
+        model = metadata.getDistortionModel()
+        if model == dai.CameraModel.Perspective and len(coefficients) in (
+            0,
+            4,
+            5,
+            8,
+            12,
+            14,
+        ):
+            distortion = "perspective"
+        elif model == dai.CameraModel.Fisheye and len(coefficients) == 4:
+            distortion = "fisheye"
+        else:
+            raise SceneInputError("unsupported_distortion_model")
+        camera_from_scene = np.linalg.inv(pose)
+        if role == "color":
             if image.getType() not in (
                 dai.ImgFrame.Type.NV12,
                 dai.ImgFrame.Type.RGB888i,
@@ -91,27 +162,27 @@ def prepare_scene(
             ):
                 raise SceneInputError("invalid_color_format")
             pixels = cv2.cvtColor(image.getCvFrame(), cv2.COLOR_BGR2RGB)
-            expected = (*camera.size[::-1], 3)
+            expected = (*size[::-1], 3)
         else:
             if image.getType() != dai.ImgFrame.Type.GRAY8:
                 raise SceneInputError("invalid_stereo_format")
             pixels = image.getCvFrame()
-            expected = camera.size[::-1]
+            expected = size[::-1]
         if pixels.shape != expected or pixels.dtype != np.uint8:
             raise SceneInputError("invalid_image_pixels")
         pixels.flags.writeable = False
         views.append(
             CameraView(
-                camera.role,
+                role,
                 pixels,
-                camera.intrinsics,
-                camera.distortion_model,
-                camera.distortion_coefficients,
-                camera.scene_to_camera_mm,
+                tuple(map(tuple, intrinsics.tolist())),
+                distortion,
+                tuple(coefficients.tolist()),
+                tuple(map(tuple, camera_from_scene.tolist())),
             )
         )
     return Scene(
-        PointCloud(xyz, calibration.frame),
-        AlgorithmPlane(plane.normal, plane.offset_mm, calibration.frame),
+        PointCloud(xyz, frame),
+        AlgorithmPlane(plane.normal, plane.offset_mm, frame),
         tuple(views),
     )

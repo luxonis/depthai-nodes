@@ -118,13 +118,12 @@ Boxes are measured against a support plane; see "Support plane" above.
 Parcel measurement
 ------------------
 
-``ParcelPlane`` supplies one scene plane per stamped cloud sequence. Its ``frame``
-matches the ``ParcelRigCalibration.frame``. ``ParcelCameraCalibration`` describes
-intrinsics, distortion, transforms in millimeters, and the actual delivered image
-grid for each color/left/right view. ``ParcelRigCalibration.down`` determines the
-upward plane orientation.
+``ParcelPlane`` supplies one scene plane and unit downward gravity per stamped
+cloud sequence. Its ``frame`` labels the cloud and plane coordinate frame. Camera
+intrinsics, distortion, and relative poses come from the native image and point
+cloud transformation metadata rather than separate calibration objects.
 
-``ParcelDetections`` holds a tuple of eligible ``Parcel`` objects. Each owns its
+``ParcelDetections`` holds a tuple of eligible ``Parcel`` objects. Each retains a
 read-only float32 ``xyz_mm`` array in source-point order. ``candidate_id`` is a
 zero-based proposal index local to the frame. ``decisions`` preserves all proposal
 eligibility decisions without retaining the source cloud. Decision and source-timing
@@ -153,13 +152,11 @@ from .collection import Collection
 from .gathered_data import GatheredData
 from .parcel import (
     Parcel,
-    ParcelCameraCalibration,
     ParcelCuboid,
     ParcelDetections,
     ParcelMeasurement,
     ParcelMeasurements,
     ParcelPlane,
-    ParcelRigCalibration,
 )
 from .snap_data import SnapData
 from .support_plane import SupportPlane, SupportPlaneCandidate
@@ -172,13 +169,11 @@ from .support_plane_calibration import (
 
 __all__ = [
     "Parcel",
-    "ParcelCameraCalibration",
     "ParcelCuboid",
     "ParcelDetections",
     "ParcelMeasurement",
     "ParcelMeasurements",
     "ParcelPlane",
-    "ParcelRigCalibration",
     "GatheredData",
     "SnapData",
     "Collection",

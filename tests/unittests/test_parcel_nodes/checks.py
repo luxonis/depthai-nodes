@@ -1,5 +1,7 @@
 """Run native DepthAI parcel checks without repository node monkeypatches."""
 
+import ast
+import inspect
 import unittest
 from dataclasses import replace
 from datetime import timedelta
@@ -12,38 +14,44 @@ import numpy as np
 from depthai_nodes.algorithms import parcel as algorithm
 from depthai_nodes.message import (
     Parcel,
-    ParcelCameraCalibration,
     ParcelCuboid,
     ParcelDetections,
     ParcelMeasurement,
     ParcelMeasurements,
     ParcelPlane,
-    ParcelRigCalibration,
     SupportPlane,
 )
 from depthai_nodes.node import ParcelDetector, ParcelDimensioner
-from depthai_nodes.node.parcel_detector.scene import prepare_scene, upward_plane
+from depthai_nodes.node.parcel_detector.scene import (
+    check_cloud_configuration,
+    prepare_scene,
+    upward_plane,
+)
 
 IDENTITY = tuple(map(tuple, np.eye(4)))
 K = ((100, 0, 15.5), (0, 100, 11.5), (0, 0, 1))
 PLANE = SupportPlane(normal=(0, 0, -2), offset_mm=2000)
 
 
-def calibration(size=(32, 24)):
-    return ParcelRigCalibration(
-        frame="scene",
-        down=(0, 0, 1),
-        cameras=tuple(
-            ParcelCameraCalibration(
-                role=role,
-                size=size,
-                intrinsics=K,
-                distortion_model="none",
-                distortion_coefficients=(),
-                scene_to_camera_mm=IDENTITY,
-            )
-            for role in ("color", "left", "right")
-        ),
+def metadata(
+    size=(32, 24),
+    *,
+    pose=None,
+    unit=dai.LengthUnit.MILLIMETER,
+    coefficients=(),
+    model=dai.CameraModel.Perspective,
+    device="synthetic",
+    socket=dai.CameraBoardSocket.CAM_A,
+    intrinsics=K,
+):
+    extrinsics = dai.Extrinsics(
+        (np.eye(4) if pose is None else pose).tolist(),
+        socket,
+        unit,
+    )
+    extrinsics.toDeviceId = device
+    return dai.ImgTransformation(
+        *size, intrinsics, model, list(coefficients), extrinsics
     )
 
 
@@ -74,7 +82,10 @@ def messages(sequence=1, points=None, plane=PLANE):
         image.setWidth(32)
         image.setHeight(24)
         stereo.append(image)
-    supplied = ParcelPlane(frame="scene", plane=plane)
+    cloud.setTransformation(metadata())
+    for image in (color, *stereo):
+        image.setTransformation(metadata())
+    supplied = ParcelPlane(frame="scene", plane=plane, down=(0, 0, 1))
     return tuple(stamp(m, sequence) for m in (cloud, color, *stereo, supplied))
 
 
@@ -92,9 +103,7 @@ class App:
         self.pipeline = dai.Pipeline(False)
         self.pipeline.__enter__()
         self.source = self.pipeline.create(Source)
-        self.detector = self.pipeline.create(ParcelDetector).build(
-            *self.source.outputs, calibration()
-        )
+        self.detector = self.pipeline.create(ParcelDetector).build(*self.source.outputs)
         self.dimensioner = self.pipeline.create(ParcelDimensioner).build(
             self.detector.out
         )
@@ -129,7 +138,7 @@ def cuboid(height=100):
 class ConversionTests(unittest.TestCase):
     def test_bgr_is_rgb_and_images_cloud_are_read_only(self):
         inputs = messages()
-        scene = prepare_scene(inputs[0], inputs[1:4], PLANE, calibration())
+        scene = prepare_scene(inputs[0], inputs[1:4], PLANE, "scene")
         np.testing.assert_array_equal(scene.views[0].image[0, 0], [19, 7, 3])
         self.assertEqual([v.role for v in scene.views], ["color", "left", "right"])
         self.assertEqual(scene.cloud.xyz_mm.dtype, np.float32)
@@ -146,8 +155,9 @@ class ConversionTests(unittest.TestCase):
         frame.setWidth(32)
         frame.setHeight(24)
         frame.setData(np.concatenate((y.ravel(), uv.ravel())))
+        frame.setTransformation(metadata())
         inputs[1] = stamp(frame)
-        scene = prepare_scene(inputs[0], tuple(inputs[1:4]), PLANE, calibration())
+        scene = prepare_scene(inputs[0], tuple(inputs[1:4]), PLANE, "scene")
         expected = cv2.cvtColorTwoPlane(
             y, uv.reshape(12, 16, 2), cv2.COLOR_YUV2RGB_NV12
         )
@@ -157,7 +167,7 @@ class ConversionTests(unittest.TestCase):
         inputs = list(messages())
         pixels = np.arange(24 * 64 * 3, dtype=np.uint8).reshape(24, 64, 3)[:, ::2]
         inputs[1].setFrame(pixels)
-        scene = prepare_scene(inputs[0], tuple(inputs[1:4]), PLANE, calibration())
+        scene = prepare_scene(inputs[0], tuple(inputs[1:4]), PLANE, "scene")
         np.testing.assert_array_equal(scene.views[0].image, pixels[:, :, ::-1])
 
     def test_padded_native_image_rows_preserve_delivered_pixels(self):
@@ -168,7 +178,7 @@ class ConversionTests(unittest.TestCase):
             pixels[:, : 32 * channels] = np.arange(32 * channels, dtype=np.uint8)
             inputs[index].setStride(stride)
             inputs[index].setData(pixels.ravel())
-        scene = prepare_scene(inputs[0], tuple(inputs[1:4]), PLANE, calibration())
+        scene = prepare_scene(inputs[0], tuple(inputs[1:4]), PLANE, "scene")
         expected_color = np.tile(np.arange(96, dtype=np.uint8), (24, 1)).reshape(
             24, 32, 3
         )
@@ -183,7 +193,7 @@ class ConversionTests(unittest.TestCase):
         inputs[1].setType(dai.ImgFrame.Type.NV12)
         inputs[1].setStride(40)
         inputs[1].setData(np.concatenate((padded_y.ravel(), padded_uv.ravel())))
-        scene = prepare_scene(inputs[0], tuple(inputs[1:4]), PLANE, calibration())
+        scene = prepare_scene(inputs[0], tuple(inputs[1:4]), PLANE, "scene")
         expected = cv2.cvtColorTwoPlane(
             y, uv.reshape(12, 16, 2), cv2.COLOR_YUV2RGB_NV12
         )
@@ -191,55 +201,176 @@ class ConversionTests(unittest.TestCase):
 
     def test_plane_is_snapshotted_normalized_and_flipped_upward(self):
         supplied = ParcelPlane(
-            frame="scene", plane=SupportPlane(normal=(0, 0, 3), offset_mm=-3000)
+            frame="scene",
+            plane=SupportPlane(normal=(0, 0, 3), offset_mm=-3000),
+            down=(0, 0, 1),
         )
-        plane = upward_plane(supplied, calibration())
+        plane = upward_plane(supplied)
         self.assertEqual(plane, PLANE)
         self.assertIsNot(plane, supplied.plane)
 
-    def test_distortion_and_transform_reach_the_algorithm_unchanged(self):
-        transform = np.eye(4)
-        transform[0, 3] = -15
-        camera = replace(
-            calibration().cameras[0],
-            distortion_model="perspective",
-            distortion_coefficients=(0.1, 0.01, 0.001, 0.002, 0.003),
-            scene_to_camera_mm=transform,
-        )
-        rig = replace(calibration(), cameras=(camera, *calibration().cameras[1:]))
+    def test_delivered_intrinsics_follow_native_crop_and_scale(self):
         inputs = messages()
-        scene = prepare_scene(inputs[0], inputs[1:4], PLANE, rig)
+        transformation = metadata(size=(64, 48))
+        transformation.addCrop(8, 6, 32, 24)
+        transformation.addScale(0.5, 0.5)
+        inputs[1].setFrame(np.zeros((12, 16, 3), np.uint8))
+        inputs[1].setWidth(16)
+        inputs[1].setHeight(12)
+        inputs[1].setTransformation(transformation)
+        scene = prepare_scene(inputs[0], inputs[1:4], PLANE, "scene")
+        expected = np.asarray(transformation.getIntrinsicMatrix())
+        np.testing.assert_array_equal(scene.views[0].intrinsics, expected)
+        self.assertFalse(
+            np.array_equal(expected, transformation.getSourceIntrinsicMatrix())
+        )
+        self.assertEqual(scene.views[0].image.shape, (12, 16, 3))
+
+    def test_distortion_and_pose_use_native_metadata_in_millimeters(self):
+        inputs = messages()
+        angle = np.deg2rad(17)
+        pose = np.array(
+            [
+                [np.cos(angle), 0, np.sin(angle), 1.5],
+                [0, 1, 0, -0.25],
+                [-np.sin(angle), 0, np.cos(angle), 0.75],
+                [0, 0, 0, 1],
+            ]
+        )
+        transformation = metadata(
+            pose=pose,
+            unit=dai.LengthUnit.CENTIMETER,
+            coefficients=(0.1, 0.01, 0.001, 0.002, 0.003),
+        )
+        inputs[1].setTransformation(transformation)
+        scene = prepare_scene(inputs[0], inputs[1:4], PLANE, "scene")
+        expected = np.linalg.inv(
+            np.asarray(
+                transformation.getExtrinsics().getTransformationMatrix(
+                    False, dai.LengthUnit.MILLIMETER
+                ),
+                dtype=np.float64,
+            )
+        )
+        np.testing.assert_array_equal(scene.views[0].scene_to_camera_mm, expected)
         self.assertEqual(
-            scene.views[0].distortion_coefficients, camera.distortion_coefficients
+            scene.views[0].distortion_coefficients,
+            tuple(transformation.getDistortionCoefficients()),
         )
-        np.testing.assert_array_equal(scene.views[0].scene_to_camera_mm, transform)
-        np.testing.assert_array_equal(scene.views[0].intrinsics, camera.intrinsics)
-
-    def test_calibration_snapshots_mutable_inputs(self):
-        matrix = np.eye(4)
-        intrinsics = np.array(K)
-        camera = replace(
-            calibration().cameras[0], intrinsics=intrinsics, scene_to_camera_mm=matrix
+        np.testing.assert_array_equal(
+            scene.views[0].intrinsics, transformation.getIntrinsicMatrix()
         )
-        matrix[0, 3] = 42
-        intrinsics[0, 0] = 42
-        self.assertEqual(camera.scene_to_camera_mm[0][3], 0)
-        self.assertEqual(camera.intrinsics[0][0], 100)
 
-    def test_bad_calibration_is_rejected(self):
-        for field in ({"down": (0, 0, 2)}, {"frame": ""}, {"cameras": ()}):
-            with self.subTest(field=field), self.assertRaises((TypeError, ValueError)):
-                replace(calibration(), **field)
-        for field in (
-            {"size": (0, 24)},
-            {"distortion_model": "unknown"},
-            {"distortion_model": "fisheye", "distortion_coefficients": ()},
+    def test_cloud_source_pose_is_not_applied_twice(self):
+        inputs = messages()
+        pose = np.eye(4)
+        pose[0, 3] = 125
+        inputs[0].setTransformation(metadata(pose=pose))
+        scene = prepare_scene(inputs[0], inputs[1:4], PLANE, "reference")
+        np.testing.assert_array_equal(scene.cloud.xyz_mm, inputs[0].getPoints())
+        np.testing.assert_array_equal(scene.views[0].scene_to_camera_mm, np.eye(4))
+        self.assertEqual(scene.cloud.frame, "reference")
+        self.assertEqual(scene.plane.frame, "reference")
+
+    def test_native_projection_matches_frozen_projector_with_distortion(self):
+        for model, coefficients in (
+            (
+                dai.CameraModel.Perspective,
+                (0.01, -0.005, 0.001, 0.002, 0, 0, 0, 0, 0, 0, 0, 0, 0.01, -0.02),
+            ),
+            (dai.CameraModel.Fisheye, (0.01, -0.005, 0.001, 0.002)),
         ):
-            with self.subTest(field=field), self.assertRaises((TypeError, ValueError)):
-                replace(calibration().cameras[0], **field)
+            with self.subTest(model=model):
+                inputs = messages()
+                transformation = metadata(coefficients=coefficients, model=model)
+                inputs[1].setTransformation(transformation)
+                scene = prepare_scene(inputs[0], inputs[1:4], PLANE, "scene")
+                actual = algorithm.project_points(scene.cloud.xyz_mm, scene.views[0])
+                points = scene.cloud.xyz_mm.astype(np.float64)
+                distortion = np.asarray(
+                    transformation.getDistortionCoefficients(), np.float64
+                )
+                if model == dai.CameraModel.Perspective:
+                    expected, _ = cv2.projectPoints(
+                        points,
+                        np.zeros(3),
+                        np.zeros(3),
+                        np.asarray(transformation.getIntrinsicMatrix()),
+                        distortion,
+                    )
+                else:
+                    normalized = points[:, :2] / points[:, 2:]
+                    expected = cv2.fisheye.distortPoints(
+                        normalized.reshape(-1, 1, 2),
+                        np.asarray(transformation.getIntrinsicMatrix()),
+                        distortion,
+                    )
+                np.testing.assert_allclose(
+                    actual[:, :2], expected.reshape(-1, 2), atol=1e-9, rtol=0
+                )
+
+    def test_unavailable_and_invalid_metadata_fail_frames(self):
+        with App() as app:
+            for index in range(4):
+                with self.subTest(index=index):
+                    inputs = messages()
+                    inputs[index].setTransformation(dai.ImgTransformation())
+                    self.assertEqual(
+                        app.detect(inputs).failure_code, "missing_camera_metadata"
+                    )
+            inputs = messages()
+            inputs[1].setTransformation(dai.ImgTransformation(32, 24))
+            self.assertEqual(app.detect(inputs).failure_code, "missing_camera_metadata")
+            inputs = messages()
+            inputs[1].setTransformation(metadata(coefficients=(float("nan"), 0, 0, 0)))
+            self.assertEqual(app.detect(inputs).failure_code, "invalid_camera_metadata")
+            inputs = messages()
+            inputs[1].setTransformation(metadata(model=dai.CameraModel.Equirectangular))
+            self.assertEqual(
+                app.detect(inputs).failure_code, "unsupported_distortion_model"
+            )
+            for field in (
+                {"device": "another"},
+                {"socket": dai.CameraBoardSocket.CAM_B},
+            ):
+                inputs = messages()
+                inputs[2].setTransformation(metadata(**field))
+                self.assertEqual(
+                    app.detect(inputs).failure_code, "incompatible_camera_frames"
+                )
+
+    def test_plane_gravity_is_validated_and_snapshotted(self):
+        for gravity in ((0, 0, 2), (0, float("nan"), 1), (0, 1)):
+            with self.subTest(gravity=gravity), self.assertRaises(ValueError):
+                ParcelPlane(frame="scene", plane=PLANE, down=gravity)
+        gravity = np.array([0, 0, 1.0])
+        supplied = ParcelPlane(frame="scene", plane=PLANE, down=gravity)
+        gravity[:] = 0
+        self.assertEqual(supplied.down, (0, 0, 1))
+
+    def test_scene_snapshots_native_metadata_before_later_changes(self):
+        inputs = messages()
+        scene = prepare_scene(inputs[0], inputs[1:4], PLANE, "scene")
+        expected = scene.views[0]
+        inputs[1].setTransformation(metadata(pose=np.diag([-1.0, -1.0, 1.0, 1.0])))
+        np.testing.assert_array_equal(expected.scene_to_camera_mm, np.eye(4))
+        np.testing.assert_array_equal(expected.intrinsics, K)
 
 
 class NodeTests(unittest.TestCase):
+    def test_native_generator_configuration_uses_reference_coordinates(self):
+        check_cloud_configuration(dai.PointCloudConfig())
+        camera = dai.PointCloudConfig().setTargetCoordinateSystem(
+            dai.CameraBoardSocket.CAM_A
+        )
+        centimeters = dai.PointCloudConfig().setLengthUnit(dai.LengthUnit.CENTIMETER)
+        transform = np.eye(4)
+        transform[0, 3] = 15
+        shifted = dai.PointCloudConfig().setTransformationMatrix(transform.tolist())
+        for config in (camera, centimeters, shifted):
+            with self.subTest(config=config), self.assertRaises(ValueError):
+                check_cloud_configuration(config)
+
     def test_completed_candidate_call_then_read_only_measurement(self):
         events = []
         with App() as app:
@@ -336,10 +467,10 @@ class NodeTests(unittest.TestCase):
                     app.measure(detected).outcome, ParcelDetections.Outcome.FAILED
                 )
             inputs = list(messages())
-            inputs[4] = stamp(ParcelPlane(frame="scene", plane=None))
+            inputs[4] = stamp(ParcelPlane(frame="scene", plane=None, down=(0, 0, 1)))
             self.assertEqual(app.detect(inputs).failure_code, "missing_support_plane")
 
-    def test_mismatched_sequence_device_time_and_plane_frame_fail(self):
+    def test_mismatched_sequence_device_time_and_camera_reference_fail(self):
         with App() as app:
             inputs = list(messages())
             inputs[2].setSequenceNum(9)
@@ -348,8 +479,10 @@ class NodeTests(unittest.TestCase):
             stamp(inputs[3], device_offset=11)
             self.assertEqual(app.detect(inputs).failure_code, "unsynchronized_sources")
             inputs = list(messages())
-            inputs[4] = stamp(ParcelPlane(frame="another", plane=PLANE))
-            self.assertEqual(app.detect(inputs).failure_code, "plane_frame_mismatch")
+            inputs[2].setTransformation(metadata(device="another"))
+            self.assertEqual(
+                app.detect(inputs).failure_code, "incompatible_camera_frames"
+            )
 
     def test_grid_format_and_nonfinite_cloud_fail(self):
         with App() as app:
@@ -473,6 +606,33 @@ class NodeTests(unittest.TestCase):
         np.testing.assert_array_equal(parcel.xyz_mm, np.ones((3, 3)))
         self.assertFalse(parcel.xyz_mm.flags.writeable)
 
+    def test_owned_parcel_points_are_retained_without_a_second_copy(self):
+        points = np.ones((3, 3), np.float32)
+        parcel = Parcel._from_owned(0, points)
+        self.assertIs(parcel.xyz_mm, points)
+        self.assertFalse(points.flags.writeable)
+        with self.assertRaises(AttributeError):
+            parcel.candidate_id = 2
+        with self.assertRaises(AttributeError):
+            parcel.xyz_mm = np.zeros((3, 3), np.float32)
+
+    def test_cuboid_constructor_snapshots_vectors_with_read_only_properties(self):
+        center = np.array([0.0, 0.0, 1000.0])
+        axis = [1.0, 0.0, 0.0]
+        geometry = ParcelCuboid(
+            base_center_mm=center,
+            length_axis=axis,
+            length_mm=100,
+            width_mm=50,
+            height_mm=None,
+        )
+        center[:] = 0
+        axis[:] = [0, 0, 1]
+        self.assertEqual(geometry.base_center_mm, (0, 0, 1000))
+        self.assertEqual(geometry.length_axis, (1, 0, 0))
+        with self.assertRaises(AttributeError):
+            geometry.length_mm = 200
+
     def test_message_invariants(self):
         with self.assertRaises(ValueError):
             ParcelDetections(frame="scene", plane=None)
@@ -503,7 +663,7 @@ class NodeTests(unittest.TestCase):
         with App() as app:
             self.assertEqual(app.detector.algorithm_id, app.dimensioner.algorithm_id)
             with self.assertRaises(RuntimeError):
-                app.detector.build(*app.source.outputs, calibration())
+                app.detector.build(*app.source.outputs)
             with self.assertRaises(RuntimeError):
                 app.dimensioner.build(app.detector.out)
 
@@ -536,9 +696,7 @@ class StreamingTests(unittest.TestCase):
             source = pipeline.create(MissingSource)
             source.omit = None
             source.unavailable_plane = True
-            detector = pipeline.create(ParcelDetector).build(
-                *source.streams, calibration()
-            )
+            detector = pipeline.create(ParcelDetector).build(*source.streams)
             dimensioner = pipeline.create(ParcelDimensioner).build(detector.out)
             results = dimensioner.out.createOutputQueue()
             pipeline.start()
@@ -558,9 +716,7 @@ class StreamingTests(unittest.TestCase):
             with self.subTest(omitted=omitted), dai.Pipeline(False) as pipeline:
                 source = pipeline.create(MissingSource)
                 source.omit = omitted
-                detector = pipeline.create(ParcelDetector).build(
-                    *source.streams, calibration()
-                )
+                detector = pipeline.create(ParcelDetector).build(*source.streams)
                 dimensioner = pipeline.create(ParcelDimensioner).build(detector.out)
                 results = dimensioner.out.createOutputQueue()
                 pipeline.start()
@@ -574,23 +730,38 @@ class StreamingTests(unittest.TestCase):
 
 
 class PublicApiTests(unittest.TestCase):
+    def test_parcel_values_do_not_bypass_attribute_assignment(self):
+        from depthai_nodes.message import parcel
+
+        source = ast.parse(inspect.getsource(parcel))
+        forbidden = [
+            node
+            for node in ast.walk(source)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "object"
+            and node.func.attr == "__setattr__"
+        ]
+        self.assertEqual(forbidden, [])
+
     def test_public_types_and_scoped_statuses(self):
         import depthai_nodes.message as messages
         from depthai_nodes.message import parcel
 
         public = {
             "Parcel",
-            "ParcelCameraCalibration",
             "ParcelCuboid",
             "ParcelDetections",
             "ParcelMeasurement",
             "ParcelMeasurements",
             "ParcelPlane",
-            "ParcelRigCalibration",
         }
         self.assertEqual(set(parcel.__all__), public)
         self.assertTrue(public.issubset(messages.__all__))
         for name in (
+            "ParcelCameraCalibration",
+            "ParcelRigCalibration",
             "ParcelDecision",
             "ParcelSourceTiming",
             "ParcelFrameOutcome",

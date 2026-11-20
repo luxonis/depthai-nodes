@@ -9,11 +9,17 @@ from depthai_nodes.algorithms import parcel as algorithm
 from depthai_nodes.message.parcel import (
     Parcel,
     ParcelDetections,
-    ParcelRigCalibration,
+    ParcelPlane,
     _ParcelDecision,
 )
 
-from .scene import SceneInputError, prepare_scene, source_timing, upward_plane
+from .scene import (
+    SceneInputError,
+    check_cloud_configuration,
+    prepare_scene,
+    source_timing,
+    upward_plane,
+)
 
 
 class ParcelDetector(dai.node.HostNode):
@@ -36,7 +42,6 @@ class ParcelDetector(dai.node.HostNode):
 
     def __init__(self) -> None:
         super().__init__()
-        self._calibration: ParcelRigCalibration | None = None
         self._components = None
 
     def build(
@@ -46,35 +51,38 @@ class ParcelDetector(dai.node.HostNode):
         left: dai.Node.Output,
         right: dai.Node.Output,
         supportPlane: dai.Node.Output,
-        calibration: ParcelRigCalibration,
     ) -> "ParcelDetector":
         """Connect the complete scene and bind the frozen algorithm.
 
         Args:
             pointCloud: ``dai.PointCloudData`` with finite XYZ in millimeters,
-                expressed in ``calibration.frame``. Organized clouds are optional.
+                expressed in the common calibration reference frame. Use native
+                DEFAULT coordinates and an identity custom point-cloud transform.
+                Organized clouds are optional.
             color: NV12 or native 8-bit RGB/BGR image stream.
             left: GRAY8 left image stream.
             right: GRAY8 right image stream.
             supportPlane: Same-host ``ParcelPlane`` stream, stamped for each cloud.
-            calibration: Exact delivered camera grids, transforms, frame, and gravity.
+                Its frame label and gravity refer to the same XYZ coordinates.
+                Camera calibration is read from the synchronized image messages.
 
         Returns:
             This configured node.
 
         Raises:
             RuntimeError: If already built.
-            TypeError: If calibration has the wrong type.
+            ValueError: If a native PointCloud producer has incompatible coordinates
+                or units. Its coordinate configuration must remain fixed at runtime.
             ImportError: If the parcel extra dependencies are missing.
         """
         if self._components is not None:
             raise RuntimeError("ParcelDetector is already built")
-        if not isinstance(calibration, ParcelRigCalibration):
-            raise TypeError("calibration must be ParcelRigCalibration")
+        producer = pointCloud.getParent()
+        if isinstance(producer, dai.node.PointCloud):
+            check_cloud_configuration(producer.initialConfig)
         components = algorithm.create_components()
         self.link_args(pointCloud, color, left, right, supportPlane)
         self._components = components
-        self._calibration = calibration
         return self
 
     def process(
@@ -91,7 +99,7 @@ class ParcelDetector(dai.node.HostNode):
         produce failed batches. Only a completed callback can produce a successful empty
         batch. The cloud's native timing is always preserved.
         """
-        if self._components is None or self._calibration is None:
+        if self._components is None:
             raise RuntimeError("Build ParcelDetector before processing")
         if not isinstance(pointCloud, dai.Buffer):
             raise TypeError("pointCloud must be a DepthAI Buffer")
@@ -106,8 +114,11 @@ class ParcelDetector(dai.node.HostNode):
             if isinstance(message, dai.Buffer)
         )
         plane = None
+        frame = (
+            supportPlane.frame if isinstance(supportPlane, ParcelPlane) else "unknown"
+        )
         try:
-            plane = upward_plane(supportPlane, self._calibration)
+            plane = upward_plane(supportPlane)
             if any(not isinstance(message, dai.Buffer) for message in inputs):
                 raise SceneInputError("missing_source_image")
             if any(
@@ -117,9 +128,7 @@ class ParcelDetector(dai.node.HostNode):
                 for message in inputs
             ):
                 raise SceneInputError("unsynchronized_sources")
-            scene = prepare_scene(
-                pointCloud, (color, left, right), plane, self._calibration
-            )
+            scene = prepare_scene(pointCloud, (color, left, right), plane, frame)
             candidates = self._components.find_candidates(scene)
             if not isinstance(candidates, list):
                 raise ValueError("find_candidates must return a list")
@@ -153,14 +162,14 @@ class ParcelDetector(dai.node.HostNode):
             result = ParcelDetections(
                 items=tuple(parcels),
                 decisions=tuple(decisions),
-                frame=self._calibration.frame,
+                frame=frame,
                 plane=plane,
                 sources=sources,
                 algorithm_id=self.algorithm_id,
             )
         except Exception as exc:
             result = ParcelDetections(
-                frame=self._calibration.frame,
+                frame=frame,
                 plane=plane,
                 sources=sources,
                 algorithm_id=self.algorithm_id,
