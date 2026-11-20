@@ -64,6 +64,14 @@ Review `apidocs/index.html`. CI runs the same build with warnings treated as err
 
 ## Testing
 
+### Parcel algorithms
+
+`ParcelDetector` and `ParcelDimensioner` share one frozen bundled algorithm.
+Install `pip install -e ".[dev,box-measurement,parcel]"` for parcel computation and verification.
+Before changing that algorithm, read the [parcel update workflow](docs/parcel-promotions/update-workflow.md)
+and its linked promotion record. Changes to computation or frozen settings require a new evaluated candidate.
+The manifest checks raw installed package bytes and the binding used by both nodes.
+
 Add or update tests for changed behavior. The repository has three test suites:
 
 | Suite                                       | Coverage                                                          | Requirements                                            |

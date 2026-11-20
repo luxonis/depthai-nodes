@@ -13,6 +13,7 @@ on:
       - requirements.txt
       - requirements-dev.txt
       - requirements-box-measurement.txt
+      - requirements-parcel.txt
       - .pre-commit-config.yaml
       - .github/workflows/ci.yaml
 
@@ -88,7 +89,7 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libgomp1
 
     - name: Install package
-      run: pip install -e ".[dev,box-measurement]"
+      run: pip install -e ".[dev,box-measurement,parcel]"
 
     - name: Run tests
       run: pytest -m "not e2e" --cov=depthai_nodes --cov-report=xml --junitxml=junit.xml -o junit_family=legacy

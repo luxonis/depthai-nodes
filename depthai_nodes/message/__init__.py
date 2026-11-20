@@ -114,6 +114,30 @@ and `BoxDimensions` are frozen dataclasses that take keyword arguments and
 raise the same errors as the support plane value types.
 
 Boxes are measured against a support plane; see "Support plane" above.
+
+Parcel measurement
+------------------
+
+``ParcelPlane`` supplies one scene plane and unit downward gravity per stamped
+cloud sequence. Its ``frame`` labels the cloud and plane coordinate frame. Camera
+intrinsics, distortion, and relative poses come from the native image and point
+cloud transformation metadata rather than separate calibration objects.
+
+``ParcelDetections`` holds a tuple of eligible ``Parcel`` objects. Each retains a
+read-only float32 ``xyz_mm`` array in source-point order. ``candidate_id`` is a
+zero-based proposal index local to the frame. ``decisions`` preserves all proposal
+eligibility decisions without retaining the source cloud. Decision and source-timing
+records are internal output details rather than public constructors. ``ParcelMeasurements``
+holds one ``ParcelMeasurement`` per parcel. Its ``ParcelMeasurement.Status``
+distinguishes no fit, a footprint with unknown height, and a measured cuboid.
+``ParcelCuboid`` carries the base center, length axis, length, width, and optional
+height. These messages preserve the frame's upward plane, complete algorithm ID,
+all available source timing, and ``ParcelDetections.Outcome``. The same outcome
+enum is available through ``ParcelMeasurements.Outcome``. Successful empty frames
+and failed frames are distinct.
+
+Parcel messages retain nested Python values on one host. They have no XLink or
+RemoteConnection serialization.
 """
 
 from .auto_support_plane_result import AutoSupportPlaneResult
@@ -126,6 +150,14 @@ from .box_measurements import (
 )
 from .collection import Collection
 from .gathered_data import GatheredData
+from .parcel import (
+    Parcel,
+    ParcelCuboid,
+    ParcelDetections,
+    ParcelMeasurement,
+    ParcelMeasurements,
+    ParcelPlane,
+)
 from .snap_data import SnapData
 from .support_plane import SupportPlane, SupportPlaneCandidate
 from .support_plane_calibration import (
@@ -136,6 +168,12 @@ from .support_plane_calibration import (
 )
 
 __all__ = [
+    "Parcel",
+    "ParcelCuboid",
+    "ParcelDetections",
+    "ParcelMeasurement",
+    "ParcelMeasurements",
+    "ParcelPlane",
     "GatheredData",
     "SnapData",
     "Collection",

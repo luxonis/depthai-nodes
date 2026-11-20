@@ -1,0 +1,433 @@
+{
+  "schema_version": "boxlab-refactor-revalidation/1",
+  "algorithm": "fast_baseline",
+  "date": "2026-11-20",
+  "release_id": "release-f14a597a366c46c6bdba00fa25e45bcd",
+  "source_commit": "0a2f571843f81ac6cc2f8cebe3475540e314f83d",
+  "source_tree_status": "Algorithm, adapter, build files and original settings unmodified from source commit.",
+  "image": "sha256:240c1854f46100c382801e8e0f622d99807c4ef64a0b27875f539087a97d7176",
+  "dockerfile": "Dockerfile.fast",
+  "settings_path": "experiments/revalidation-2026-11-20/fast-baseline-settings.json",
+  "settings_sha256": "66f29d1a54ddb6fd8d3fa957a34aa81dcef53a4ca29a47b0b4e39331afcb8bd8",
+  "runner_volume": "boxlab-runner-work",
+  "runner_state": "/work/refactor-20261120-fast-baseline-scoped.json",
+  "historical_candidate_id": "algorithm-8bdaf89d28cf45f29712cb68e1b31357",
+  "historical_validation_evaluation_id": "evaluation-a2368f2756f84d18970ec41c18cc8623",
+  "lineage_note": "Original settings declare algorithm-f6ab98aa284d4420bfd3bc67761a969f. Registration returned HTTP 403 with this token. The frozen settings copy omits that inaccessible declaration only; computation configuration, policy, objective, modalities, source paths and dependency lock are unchanged. Historical predecessor is retained in this report; no historical scores are reassigned.",
+  "abandoned_registration_state": "/work/refactor-20261120-fast-baseline.json",
+  "provenance": {
+    "source_files_sha256": {
+      "Dockerfile.fast": "326d91f132f0327a796c950c3d646aef8347a7f85ef20aac55657e26855b5091",
+      "algorithms/fast_baseline/__init__.py": "7a26ed6551a8304b0212a51c317995fe74dcf222b084b2dfee187acd2919f194",
+      "algorithms/fast_baseline/build_native.py": "e055e330e7e2d66c4979df7ba5a68893559fbbc4f3e18f482737ede34470c232",
+      "algorithms/fast_baseline/geometry.py": "e26f37b4b86a501983a58e7bc4130a6224ecfb2d9585d847d42f144e9c2b0194",
+      "algorithms/fast_baseline/kernels.cpp": "bdff4769d043410c83677ad6a2d8863420642d27608ade672d52ea309e0c670a",
+      "algorithms/fast_baseline/native.py": "4507451694d3c5fd80e890521e8b9f70b38bd40f1a989320f82f6f784cac379e",
+      "algorithms/fast_baseline/visibility.py": "89c0cc7968c030352054f343570333ac7cd4442f65d5272631066967ea3e8bbb",
+      "runner/__init__.py": "34868df65684bae52a8e8ed576e1d90d1059ea36ed883b7f1d3cd7ec0980b7a3",
+      "runner/__main__.py": "b02197657defb0a080886e631d74e748e06909967aedd26e0c8e0e2ba1472072",
+      "runner/api.py": "9f0219be1374d1cbb57d79f498510be6602bc874236722a84c66db65b3864ba4",
+      "runner/components.py": "875633e6744e81e263d53045fe2cc8535ebe51fe4d3948d7d29e40dc7cf3db80",
+      "runner/demo.py": "636afdb0b1aa535ecf3bfa3e358b3970628b3c64889a6a085d0e4c1b255be86f",
+      "runner/identity.py": "54f235fc5d4f1df5b0d25e1d395e49b6e2e2d414969f564dc6d6aa64c23f3ed6",
+      "runner/journal.py": "de30346a5ed872ece1d94dc4cc9d4be26d56103191a044d104be13295affd45b",
+      "runner/scene.py": "7527d3f8aca5509179fec75c18ca8aa8396219774399885bd7add8dbd462f3e3",
+      "runner/workflow.py": "a238f453481780d35da0d392fe563b68fc505bf1d68014f29f03de1681b6eab6"
+    },
+    "native_binary_sha256": "d777d52c77a31a2fede1f977edf28378e14504dc78a8d4479dc31054f0df2b31",
+    "native_loaded": true,
+    "runtime": {
+      "python": "3.12.16",
+      "platform": "aarch64",
+      "numpy": "2.2.6",
+      "scipy": "1.15.3",
+      "opencv": "4.12.0"
+    }
+  },
+  "validation": {
+    "run": {
+      "schema_version": "boxlab-run/1",
+      "id": "run-6b9eae917aa6406c97b04a7ebb7d4870",
+      "created_at": "2026-11-20T15:02:25.102778+00:00",
+      "release_id": "release-f14a597a366c46c6bdba00fa25e45bcd",
+      "candidate": {
+        "weight_sha256s": [],
+        "candidate_id": "algorithm-2f65a6f6296d48e981f5fe3f77bfde89",
+        "code_sha256": "0eb1d9fc835e13176f653f29e295a00c19c15a78d24ad21dddd00d53b5b996ba",
+        "build_sha256": "240c1854f46100c382801e8e0f622d99807c4ef64a0b27875f539087a97d7176",
+        "dependencies_sha256": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
+        "configuration_sha256": "28f3ca43ff3665292cdbf8c8f087f1d9c3968ed2a4679bc238d147e84258d3dd"
+      },
+      "split": "validation",
+      "input_mode": "supplied_plane",
+      "manifest_sha256": "baec14e249caa505bf16a86abdf4ea31e888f631eda0e955d641406ac53c5535",
+      "policy": {
+        "version": "boxlab-evaluation/1",
+        "iou_gate": 0.5,
+        "matching": "maximum-cardinality-then-total-iou-stable/1",
+        "unmatched_predictions": "false_positive-no-ignored-regions",
+        "visibility": "all-retained-views-full-object/1",
+        "dimension_units": "mm",
+        "dimension_tolerance_mm": 5.0,
+        "plane_angle_tolerance_deg": 5.0,
+        "plane_offset_tolerance_mm": 15.0,
+        "plane_diagnostic_epsilon_mm": null,
+        "unconfigured_tolerances": "report-unconfigured-no-hidden-defaults",
+        "plane_normal_dot_epsilon": 1e-06
+      },
+      "policy_sha256": "26abc2f98d574665a33d5c7abca94ba48837dd7962c3ec0bbc30c58b5114ca06",
+      "execution": {
+        "synthetic": false,
+        "runtime_basis": "not_reported",
+        "modalities": [
+          "rig_calibration",
+          "scene_cloud",
+          "source_images"
+        ]
+      },
+      "metric_version": "boxlab-run-metrics/3",
+      "status": "sealed",
+      "expected_count": 18,
+      "accepted_count": 18,
+      "evaluation_id": "evaluation-32a3c7421e0140a38cf6bcdf02a77d8a",
+      "test_request_id": null,
+      "authorization_id": null
+    },
+    "evaluation": {
+      "schema_version": "boxlab-evaluation-view/1",
+      "id": "evaluation-32a3c7421e0140a38cf6bcdf02a77d8a",
+      "run_id": "run-6b9eae917aa6406c97b04a7ebb7d4870",
+      "status": "completed",
+      "policy": {
+        "version": "boxlab-evaluation/1",
+        "iou_gate": 0.5,
+        "matching": "maximum-cardinality-then-total-iou-stable/1",
+        "unmatched_predictions": "false_positive-no-ignored-regions",
+        "visibility": "all-retained-views-full-object/1",
+        "dimension_units": "mm",
+        "dimension_tolerance_mm": 5.0,
+        "plane_angle_tolerance_deg": 5.0,
+        "plane_offset_tolerance_mm": 15.0,
+        "plane_diagnostic_epsilon_mm": null,
+        "unconfigured_tolerances": "report-unconfigured-no-hidden-defaults",
+        "plane_normal_dot_epsilon": 1e-06
+      },
+      "metric_version": "boxlab-run-metrics/3",
+      "distribution_statement": "within-collected-distribution evaluation",
+      "feedback": "available",
+      "metrics": {
+        "snapshot_count": 18,
+        "reference_count": 19,
+        "complete_match_count": 19,
+        "failed_snapshot_count": 0,
+        "tp": 19,
+        "fp": 0,
+        "fn": 0,
+        "measurement_success_count": 6,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "footprint_iou_mean": 0.9017715562531117,
+        "matched_3d_iou_mean": 0.8810710155954674,
+        "all_reference_3d_iou_mean": 0.8810710155954674,
+        "dimension_output_coverage": 1.0,
+        "reference_dimension_coverage": 1.0,
+        "measurement_success_rate": 0.3157894736842105,
+        "dimension_errors_mm": {
+          "length": {
+            "count": 19,
+            "bias": 1.8071876970828407,
+            "mae": 3.544147406352052,
+            "median_absolute": 3.40625607378013,
+            "p95_absolute": 9.6089985804124,
+            "mean_relative_absolute": 0.011289030036685362
+          },
+          "width": {
+            "count": 19,
+            "bias": 4.354362289283119,
+            "mae": 6.042213462893736,
+            "median_absolute": 3.1565418726902,
+            "p95_absolute": 26.85306411524408,
+            "mean_relative_absolute": 0.04155642786784968
+          },
+          "height": {
+            "count": 19,
+            "bias": 1.5257683632975136,
+            "mae": 3.1795227648485254,
+            "median_absolute": 2.03558656528719,
+            "p95_absolute": 7.39590143786666,
+            "mean_relative_absolute": 0.025593079885946054
+          }
+        },
+        "plane": null,
+        "denominators": {
+          "all_reference_3d_iou_mean": 19,
+          "dimension_output_coverage": 19,
+          "f1": 38,
+          "footprint_iou_mean": 19,
+          "matched_3d_iou_mean": 19,
+          "measurement_success_rate": 19,
+          "precision": 19,
+          "recall": 19,
+          "reference_dimension_coverage": 19
+        },
+        "null_reasons": {}
+      },
+      "failure_code": null,
+      "suppressed_metrics": []
+    }
+  },
+  "test_request": {
+    "schema_version": "boxlab-test-request/1",
+    "id": "test-request-8bbaac21223541948afcfd16bb0c6c35",
+    "created_at": "2026-11-20T15:03:07.202613+00:00",
+    "status": "approved",
+    "release_id": "release-f14a597a366c46c6bdba00fa25e45bcd",
+    "input_mode": "supplied_plane",
+    "feedback_timing": "after_batch_complete",
+    "feedback_released": true,
+    "run_ids": [
+      "run-efd2b5483a4c452787a56f77e264e98e"
+    ],
+    "authorization_id": "test-grant-c4a80185c19f4f54b72364796855a30a"
+  },
+  "tests": {
+    "native_fast_baseline": {
+      "command": "python -m unittest discover -s tests -p test_fast_baseline.py -v",
+      "passed": 25,
+      "failed": 0,
+      "skipped": 0
+    },
+    "combined_callback_adapter": {
+      "command": "python -m unittest discover -s tests -p test_components.py -v",
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "historical_comparison": {
+    "basis": "Committed experiments/fast-baseline-benchmark.json workbench.validation.optimized. Historical run/evaluation are inaccessible to this token (HTTP 403); no new Workbench comparison receipt is claimed.",
+    "old": {
+      "tp": 19,
+      "fp": 0,
+      "fn": 0,
+      "failed_snapshot_count": 0,
+      "measurement_success_count": 6,
+      "mae_mm": {
+        "length": 3.544147406352052,
+        "width": 6.042213462893736,
+        "height": 3.1795227648485254
+      }
+    },
+    "new": {
+      "tp": 19,
+      "fp": 0,
+      "fn": 0,
+      "failed_snapshot_count": 0,
+      "measurement_success_count": 6,
+      "mae_mm": {
+        "length": 3.544147406352052,
+        "width": 6.042213462893736,
+        "height": 3.1795227648485254
+      }
+    },
+    "exactly_equal_for_reported_fields": true,
+    "mae_delta_mm": {
+      "length": 0.0,
+      "width": 0.0,
+      "height": 0.0
+    },
+    "compatibility": "Same recorded release, validation manifest digest, policy digest, input mode, execution declaration and metric version. Same computational settings/configuration digest.",
+    "scope": "Counts and full-precision per-axis MAEs match exactly. Historical IoU and other detailed metric values are not present at full precision in the committed optimized summary; no full-metric or per-prediction parity claim is made."
+  },
+  "held_out_status": "Completed approved held-out evaluation with available aggregate feedback. Exact dimensional medians and p95 errors remain suppressed.",
+  "timing_status": "No latency benchmark rerun; historical timing claims remain attributed to their original frozen image.",
+  "held_out_result": {
+    "run": {
+      "schema_version": "boxlab-run/1",
+      "id": "run-efd2b5483a4c452787a56f77e264e98e",
+      "created_at": "2026-11-20T15:08:12.779033+00:00",
+      "release_id": "release-f14a597a366c46c6bdba00fa25e45bcd",
+      "candidate": {
+        "weight_sha256s": [],
+        "candidate_id": "algorithm-2f65a6f6296d48e981f5fe3f77bfde89",
+        "code_sha256": "0eb1d9fc835e13176f653f29e295a00c19c15a78d24ad21dddd00d53b5b996ba",
+        "build_sha256": "240c1854f46100c382801e8e0f622d99807c4ef64a0b27875f539087a97d7176",
+        "dependencies_sha256": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
+        "configuration_sha256": "28f3ca43ff3665292cdbf8c8f087f1d9c3968ed2a4679bc238d147e84258d3dd"
+      },
+      "split": "test",
+      "input_mode": "supplied_plane",
+      "manifest_sha256": "5ba1bc50df7586e110f4da4225376691b41f0cf066c9add52ddd4c6bcfc46892",
+      "policy": {
+        "version": "boxlab-evaluation/1",
+        "iou_gate": 0.5,
+        "matching": "maximum-cardinality-then-total-iou-stable/1",
+        "unmatched_predictions": "false_positive-no-ignored-regions",
+        "visibility": "all-retained-views-full-object/1",
+        "dimension_units": "mm",
+        "dimension_tolerance_mm": 5.0,
+        "plane_angle_tolerance_deg": 5.0,
+        "plane_offset_tolerance_mm": 15.0,
+        "plane_diagnostic_epsilon_mm": null,
+        "unconfigured_tolerances": "report-unconfigured-no-hidden-defaults",
+        "plane_normal_dot_epsilon": 1e-06
+      },
+      "policy_sha256": "26abc2f98d574665a33d5c7abca94ba48837dd7962c3ec0bbc30c58b5114ca06",
+      "execution": {
+        "synthetic": false,
+        "runtime_basis": "not_reported",
+        "modalities": [
+          "rig_calibration",
+          "scene_cloud",
+          "source_images"
+        ]
+      },
+      "metric_version": "boxlab-run-metrics/3",
+      "status": "sealed",
+      "expected_count": 17,
+      "accepted_count": 17,
+      "evaluation_id": "evaluation-3dc46b10a7bf40a0ae0f357825e69770",
+      "test_request_id": "test-request-8bbaac21223541948afcfd16bb0c6c35",
+      "authorization_id": "test-grant-c4a80185c19f4f54b72364796855a30a"
+    },
+    "evaluation": {
+      "schema_version": "boxlab-evaluation-view/1",
+      "id": "evaluation-3dc46b10a7bf40a0ae0f357825e69770",
+      "run_id": "run-efd2b5483a4c452787a56f77e264e98e",
+      "status": "completed",
+      "policy": {
+        "version": "boxlab-evaluation/1",
+        "iou_gate": 0.5,
+        "matching": "maximum-cardinality-then-total-iou-stable/1",
+        "unmatched_predictions": "false_positive-no-ignored-regions",
+        "visibility": "all-retained-views-full-object/1",
+        "dimension_units": "mm",
+        "dimension_tolerance_mm": 5.0,
+        "plane_angle_tolerance_deg": 5.0,
+        "plane_offset_tolerance_mm": 15.0,
+        "plane_diagnostic_epsilon_mm": null,
+        "unconfigured_tolerances": "report-unconfigured-no-hidden-defaults",
+        "plane_normal_dot_epsilon": 1e-06
+      },
+      "metric_version": "boxlab-run-metrics/3",
+      "distribution_statement": "within-collected-distribution evaluation",
+      "feedback": "available",
+      "metrics": {
+        "snapshot_count": 17,
+        "reference_count": 17,
+        "complete_match_count": 17,
+        "failed_snapshot_count": 0,
+        "tp": 17,
+        "fp": 0,
+        "fn": 0,
+        "measurement_success_count": 5,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "footprint_iou_mean": 0.8895080939537824,
+        "matched_3d_iou_mean": 0.873339198380587,
+        "all_reference_3d_iou_mean": 0.873339198380587,
+        "dimension_output_coverage": 1.0,
+        "reference_dimension_coverage": 1.0,
+        "measurement_success_rate": 0.29411764705882354,
+        "dimension_errors_mm": {
+          "length": {
+            "count": 17,
+            "bias": 9.506210541668107,
+            "mae": 10.735414027351593,
+            "median_absolute": null,
+            "p95_absolute": null,
+            "mean_relative_absolute": 0.04002831684287694
+          },
+          "width": {
+            "count": 17,
+            "bias": 5.393830894498632,
+            "mae": 6.46945474521522,
+            "median_absolute": null,
+            "p95_absolute": null,
+            "mean_relative_absolute": 0.052396659171924105
+          },
+          "height": {
+            "count": 17,
+            "bias": 0.6157834262618913,
+            "mae": 2.295216625664263,
+            "median_absolute": null,
+            "p95_absolute": null,
+            "mean_relative_absolute": 0.022727893108374267
+          }
+        },
+        "plane": null,
+        "denominators": {
+          "all_reference_3d_iou_mean": 17,
+          "dimension_output_coverage": 17,
+          "f1": 34,
+          "footprint_iou_mean": 17,
+          "matched_3d_iou_mean": 17,
+          "measurement_success_rate": 17,
+          "precision": 17,
+          "recall": 17,
+          "reference_dimension_coverage": 17
+        },
+        "null_reasons": {
+          "dimension_errors_mm.height.median_absolute": "Held-out feedback keeps exact dimensional order statistics private",
+          "dimension_errors_mm.height.p95_absolute": "Held-out feedback keeps exact dimensional order statistics private",
+          "dimension_errors_mm.length.median_absolute": "Held-out feedback keeps exact dimensional order statistics private",
+          "dimension_errors_mm.length.p95_absolute": "Held-out feedback keeps exact dimensional order statistics private",
+          "dimension_errors_mm.width.median_absolute": "Held-out feedback keeps exact dimensional order statistics private",
+          "dimension_errors_mm.width.p95_absolute": "Held-out feedback keeps exact dimensional order statistics private"
+        }
+      },
+      "failure_code": null,
+      "suppressed_metrics": [
+        "dimension_errors_mm.height.median_absolute",
+        "dimension_errors_mm.height.p95_absolute",
+        "dimension_errors_mm.length.median_absolute",
+        "dimension_errors_mm.length.p95_absolute",
+        "dimension_errors_mm.width.median_absolute",
+        "dimension_errors_mm.width.p95_absolute"
+      ]
+    }
+  },
+  "checks": {
+    "training_labels_accessed": false,
+    "new_held_out_inputs_accessed": true,
+    "held_out_access_basis": "Operator approved the frozen candidate request before resume-test. Exact image, settings and journal reused; no algorithm/configuration changes followed held-out exposure."
+  },
+  "held_out_comparison": {
+    "basis": "Committed experiments/fast-baseline-benchmark.json workbench.test.optimized. Historical test evaluation retrieval returned HTTP 403 FORBIDDEN under this scoped token; no new Workbench comparison receipt is claimed.",
+    "historical_candidate_id": "algorithm-8bdaf89d28cf45f29712cb68e1b31357",
+    "historical_evaluation_id": "evaluation-28e229ce680545b08463d587fe267e1d",
+    "old": {
+      "tp": 17,
+      "fp": 0,
+      "fn": 0,
+      "failed_snapshot_count": 0,
+      "measurement_success_count": 5,
+      "mae_mm": {
+        "length": 10.735414027351593,
+        "width": 6.46945474521522,
+        "height": 2.295216625664263
+      }
+    },
+    "new": {
+      "tp": 17,
+      "fp": 0,
+      "fn": 0,
+      "failed_snapshot_count": 0,
+      "measurement_success_count": 5,
+      "mae_mm": {
+        "length": 10.735414027351593,
+        "width": 6.46945474521522,
+        "height": 2.295216625664263
+      }
+    },
+    "exactly_equal_for_reported_fields": true,
+    "mae_delta_mm": {
+      "length": 0.0,
+      "width": 0.0,
+      "height": 0.0
+    },
+    "scope": "Counts and full-precision per-axis MAEs match exactly. Historical detailed IoU/full metric dictionaries are not available in this committed summary; no full-metric or per-prediction parity claim is made. Suppressed held-out statistics remain null."
+  }
+}

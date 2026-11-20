@@ -1,0 +1,25 @@
+# Update the bundled parcel algorithm
+
+Use this procedure when changing the implementation shared by `ParcelDetector` and `ParcelDimensioner`.
+The existing box nodes have a separate contract and remain unchanged.
+
+1. Evaluate a new combined candidate in [BoxLabRunners](https://github.com/luxonis/BoxLabRunners). Freeze its source, dependency lock, computational settings, executed image, and evaluation evidence. A change to detection computation, measurement, decoding, thresholds, or precision requires a new evaluated identity. Changes to host scheduling or public message organization require separate adapter checks and refreshed port provenance; they do not assign new scores to the adapter.
+1. Read the accepted design and promotion runbook in that repository. Obtain the exact evaluated revision and committed evidence revision. Verify source-file hashes and scoped-settings bytes before copying code. Do not substitute the checkout's current `HEAD`.
+1. Add a new immutable directory under `depthai_nodes/algorithms/parcel/`, with the full normalized candidate ID in its name. Keep prior promoted directories and their records unchanged. Include the full computational dependency closure, configuration, attribution, native source, and platform build instructions. Exclude Workbench transport and credentials.
+1. Keep runtime inputs separate from frozen settings. Both nodes must use one explicit internal binding. Do not expose an algorithm selector, injected backend, settings dictionary, or threshold controls.
+1. Compare the original and port on identical synthetic scenes and already-authorized validation inputs. Declare numerical tolerances before comparisons. Check proposal order, indices, eligibility, point order, no-fit and unknown-height outcomes, and cuboid geometry. Verify native and fallback paths, repeated scenes, and completion of workers on exceptions. Fixture parity does not establish full dataset parity.
+1. Test the message boundary with real DepthAI messages. Check calibration grids, RGB order, distortion and transforms, millimeter units, gravity and plane sign, timing, failed versus empty frames, identity mismatch, multiple parcels, and queued ownership. The dimensioner must use the plane carried by the batch.
+   Read camera calibration from native `ImgTransformation` metadata rather than asking callers to construct duplicate camera or rig types. Use delivered-grid intrinsics and calibrated poses in millimeters. Native DEFAULT cloud XYZ are already in the shared reference frame; do not apply the original source-camera pose again. Recheck SDK metadata semantics before adding other cloud coordinate modes.
+   Construct parcel values normally with read-only properties, or validate frozen records without rewriting their fields. Do not use `object.__setattr__` to mutate frozen parcel dataclasses.
+1. Build and install a wheel in a clean environment outside both source trees. Check every declared asset hash, lazy optional imports, and a synthetic pipeline through both public nodes. Test the target dependencies separately from the frozen reference environment. Record platform and dependency differences without assuming equivalence.
+1. Fill `depthai_nodes/algorithms/parcel/manifest.json`. Preserve original candidate hashes separately from port hashes. Copy complete scoring policy, metric version, run and evaluation IDs, denominators, null reasons, and suppression. Record precisely which comparisons ran. Hash raw installed file bytes with repository-relative keys beginning with `depthai_nodes/`. Exclude the manifest itself and optional local binaries from the portable file map. Record native build hashes separately.
+1. Add a promotion record under `docs/parcel-promotions/`. Include source adaptations, exact verification commands, environments, observed results, and limitations. Historical scores and timings stay attributed to their evaluated artifacts. Do not assign historical performance to a newly built wheel.
+1. Run `pytest tests/unittests`, `pre-commit run --all-files`, and `pydoctor depthai_nodes`, plus the focused reference comparisons. Investigate failures against the unchanged base. Report unavailable checks and existing failures explicitly.
+1. Update the binding and manifest together only after the applicable checks pass. Validate the manifest from the installed wheel. Update public package docstrings and examples when the API changes. Link the target review and promotion record from the experiment workspace when that write is authorized.
+
+The first promotion record is [fast baseline](fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.md).
+The repeatable comparison tool is `tools/verify_parcel_port.py`.
+The regression fixtures are in `tests/parcel_reference/`.
+
+Publishing a package, merging a change, fetching new held-out inputs, and reading training labels require their own authorization.
+Rollback restores a previously verified binding and manifest pair. It does not edit the old implementation or reassign its scores.

@@ -1,0 +1,1054 @@
+{
+  "schema_version": "parcel-algorithm-manifest/1",
+  "implementation": {
+    "name": "fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89",
+    "package_path": "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89",
+    "configuration_path": "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/configuration.json",
+    "source_contract_version": "BoxLabRunners@0a2f571843f81ac6cc2f8cebe3475540e314f83d:docs/boxlab/contracts/RUNNER.md",
+    "configuration_sha256": "0e563613ccc6ab037d897e82d2f19b9b87b6a787f4f623c73ec33928bc102df3",
+    "files_sha256": {
+      "depthai_nodes/algorithms/__init__.py": "c5235d0aeaf840d21066d88f4529091e36ea97295c8a81f6dd881687ad93bbb6",
+      "depthai_nodes/algorithms/parcel/__init__.py": "457462fbe9171431e5a1edea9e63d2a90be4ee1eb43ee4576871640df59c9335",
+      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/ATTRIBUTION.md": "e936d83c9948e2f2aeb9ed5103f30152975eb3c01d07fcbb3fc70f30fb3cb749",
+      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/__init__.py": "2fd3633454ab73fccbe04e2574edafd7a00239a135b372e6f22409ee10548579",
+      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/build_native.py": "3121e6d1a04a8d773679f8362e1c10f05848e1cf110951f1a4bcc31e05490362",
+      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/components.py": "05db85213afa257e054ca4cd4f9975666ca8624c4149364e472c1f58e7e75d20",
+      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/configuration.json": "0e563613ccc6ab037d897e82d2f19b9b87b6a787f4f623c73ec33928bc102df3",
+      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/evaluation-evidence.json": "f0e1a88ca91cca57a990877a0ff30bdd70d2d68f0fd6152f6f178ce7d07dbc44",
+      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/factory.py": "07544d895e6ba9cade676f68a04d126f0ed9ec62f1b7e50ccbeea67c2305301b",
+      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/geometry.py": "abebef6c8cf6e3dac2085b603acf649bdb9f7af95567589101e08a19fde57829",
+      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/kernels.cpp": "bdff4769d043410c83677ad6a2d8863420642d27608ade672d52ea309e0c670a",
+      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/native.py": "278acc50e8ab9963b9682389773a0231b4832afb7377de4dc8c8d2d22dc44442",
+      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/reference-requirements.txt": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
+      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/scene.py": "7f8f888d0d242b5a73b5a61350d9be56d76f7a3509f002b225db2c43d2297b94",
+      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/scoped-settings.json": "66f29d1a54ddb6fd8d3fa957a34aa81dcef53a4ca29a47b0b4e39331afcb8bd8",
+      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/visibility.py": "9177b8d4c3888655038427602e869290922a5edbc6bf79d96561322cc4c75951",
+      "depthai_nodes/algorithms/parcel/manifest.py": "05aea97c272d1b854954d7cf126830ad5be65ba47d63c0ff4421eabbaf7041f4",
+      "depthai_nodes/message/parcel.py": "f5c88805c416587f65573f709c513f36fcd3e7e4163041b419552eebac8cf5b3",
+      "depthai_nodes/message/support_plane.py": "0eaeec70dda37d48b3160d1f1a14cffce766f23182289d1b569ffb444f1f44e3",
+      "depthai_nodes/node/parcel_detector/__init__.py": "4bd2d4aaf686835abe5da5203a47a67a2ebe125aee64c5ef8499cac3809b1482",
+      "depthai_nodes/node/parcel_detector/parcel_detector.py": "46f10bf3a19ccba2e006c2acdf0f8febb87bc65a4aaa977abe3fc070a0eda962",
+      "depthai_nodes/node/parcel_detector/scene.py": "cc251aeca27dd4ba6b156e5b02562a517cd4a15259bb679ccd564c33448fd34a",
+      "depthai_nodes/node/parcel_dimensioner/__init__.py": "506569fb746e3a1fb9fc525170615c20f027a35ec155fa0a8d5b283012a7b3fc",
+      "depthai_nodes/node/parcel_dimensioner/parcel_dimensioner.py": "bcb9530c2bd7f422574ef79ee11cd5975158511d4b5ae0437dabd6d0df910e90"
+    },
+    "binary_distribution": "No native binary in the universal wheel; original fallback is the default. Optional platform-local build uses bundled C++17 source.",
+    "native_build_flags": [
+      "-std=c++17",
+      "-O3",
+      "-ffp-contract=off",
+      "-fPIC",
+      "-shared"
+    ],
+    "tested_native_binaries": [
+      {
+        "platform": "macOS arm64",
+        "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
+        "sha256": "a37cfb453d5a037efcf49051eea6bd42d0c2a6c319c3a7752db8e6d1ac3bf0ec",
+        "scope": "Source checkout optional local build; native/fallback source-port comparison on 15 synthetic and 18 authorized validation scenes in both dependency environments",
+        "distributed": false
+      },
+      {
+        "platform": "macOS arm64",
+        "compiler": "Apple clang21.0.0 (clang-2100.4.1.1)",
+        "sha256": "6e43ea1fe0ce6ba6a2b8f45d0d36c6cc0b3ba18a3aaa1fc4187478f11789543d",
+        "scope": "Optional native build from clean installed wheel; synthetic two-node host pipeline passed",
+        "distributed": false
+      },
+      {
+        "platform": "macOS arm64",
+        "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
+        "sha256": "0a5b98ee16e74db6cfa451d7044019a14a3115ccba3e40d16e65e985e5525afc",
+        "scope": "Optional native build from installed wheel after native HostNode and public message API revision; synthetic two-node pipeline passed.",
+        "distributed": false
+      },
+      {
+        "platform": "macOS arm64",
+        "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
+        "sha256": "812cffc8d1f7a5bb5c655f7c7a5c8b34d24d55d06ec603bf6139e9520ec455a5",
+        "scope": "Installed-wheel metadata-based five-stream pipeline and normal parcel value constructors; native and fallback synthetic pipelines passed.",
+        "distributed": false
+      }
+    ]
+  },
+  "workbench_candidate": {
+    "id": "algorithm-2f65a6f6296d48e981f5fe3f77bfde89",
+    "code_sha256": "0eb1d9fc835e13176f653f29e295a00c19c15a78d24ad21dddd00d53b5b996ba",
+    "configuration_sha256": "28f3ca43ff3665292cdbf8c8f087f1d9c3968ed2a4679bc238d147e84258d3dd",
+    "dependencies_sha256": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
+    "weight_sha256s": [],
+    "image_digest": "sha256:240c1854f46100c382801e8e0f622d99807c4ef64a0b27875f539087a97d7176"
+  },
+  "source": {
+    "repository": "https://github.com/luxonis/BoxLabRunners",
+    "commit": "0a2f571843f81ac6cc2f8cebe3475540e314f83d",
+    "evidence_commit": "4b7634cc5806b7fb2e48bc7a830a3434b85cc0cb",
+    "paths": [
+      "Dockerfile.fast",
+      "algorithms/fast_baseline/__init__.py",
+      "algorithms/fast_baseline/build_native.py",
+      "algorithms/fast_baseline/geometry.py",
+      "algorithms/fast_baseline/kernels.cpp",
+      "algorithms/fast_baseline/native.py",
+      "algorithms/fast_baseline/visibility.py",
+      "runner/__init__.py",
+      "runner/__main__.py",
+      "runner/api.py",
+      "runner/components.py",
+      "runner/demo.py",
+      "runner/identity.py",
+      "runner/journal.py",
+      "runner/scene.py",
+      "runner/workflow.py"
+    ],
+    "original_files_sha256": {
+      "Dockerfile.fast": "326d91f132f0327a796c950c3d646aef8347a7f85ef20aac55657e26855b5091",
+      "algorithms/fast_baseline/__init__.py": "7a26ed6551a8304b0212a51c317995fe74dcf222b084b2dfee187acd2919f194",
+      "algorithms/fast_baseline/build_native.py": "e055e330e7e2d66c4979df7ba5a68893559fbbc4f3e18f482737ede34470c232",
+      "algorithms/fast_baseline/geometry.py": "e26f37b4b86a501983a58e7bc4130a6224ecfb2d9585d847d42f144e9c2b0194",
+      "algorithms/fast_baseline/kernels.cpp": "bdff4769d043410c83677ad6a2d8863420642d27608ade672d52ea309e0c670a",
+      "algorithms/fast_baseline/native.py": "4507451694d3c5fd80e890521e8b9f70b38bd40f1a989320f82f6f784cac379e",
+      "algorithms/fast_baseline/visibility.py": "89c0cc7968c030352054f343570333ac7cd4442f65d5272631066967ea3e8bbb",
+      "runner/__init__.py": "34868df65684bae52a8e8ed576e1d90d1059ea36ed883b7f1d3cd7ec0980b7a3",
+      "runner/__main__.py": "b02197657defb0a080886e631d74e748e06909967aedd26e0c8e0e2ba1472072",
+      "runner/api.py": "9f0219be1374d1cbb57d79f498510be6602bc874236722a84c66db65b3864ba4",
+      "runner/components.py": "875633e6744e81e263d53045fe2cc8535ebe51fe4d3948d7d29e40dc7cf3db80",
+      "runner/demo.py": "636afdb0b1aa535ecf3bfa3e358b3970628b3c64889a6a085d0e4c1b255be86f",
+      "runner/identity.py": "54f235fc5d4f1df5b0d25e1d395e49b6e2e2d414969f564dc6d6aa64c23f3ed6",
+      "runner/journal.py": "de30346a5ed872ece1d94dc4cc9d4be26d56103191a044d104be13295affd45b",
+      "runner/scene.py": "7527d3f8aca5509179fec75c18ca8aa8396219774399885bd7add8dbd462f3e3",
+      "runner/workflow.py": "a238f453481780d35da0d392fe563b68fc505bf1d68014f29f03de1681b6eab6"
+    },
+    "original_native_binary_sha256": "d777d52c77a31a2fede1f977edf28378e14504dc78a8d4479dc31054f0df2b31",
+    "scoped_settings_sha256": "66f29d1a54ddb6fd8d3fa957a34aa81dcef53a4ca29a47b0b4e39331afcb8bd8",
+    "evidence_urls": [
+      "https://github.com/luxonis/BoxLabRunners/tree/0a2f571843f81ac6cc2f8cebe3475540e314f83d",
+      "https://github.com/luxonis/BoxLabRunners/blob/4b7634cc5806b7fb2e48bc7a830a3434b85cc0cb/experiments/revalidation-2026-11-20/fast-baseline.json",
+      "https://github.com/luxonis/BoxLabRunners/blob/4b7634cc5806b7fb2e48bc7a830a3434b85cc0cb/experiments/revalidation-2026-11-20/fast-baseline-settings.json"
+    ],
+    "adaptations": [
+      "Replace runner imports with neutral bundled computation types and projector; exclude transport, registration, journals, and CLI.",
+      "Relocate the original factory to factory.py and add lazy imports so optional SciPy is required only when callbacks are created.",
+      "Retain only the two callback fields in Components; supplied-plane mode has no optional estimator.",
+      "Serialize the unchanged configuration object as a separately hashed configuration.json; retain original scoped settings and aggregate evidence bytes.",
+      "Apply repository formatting without changing computation, thresholds, precision, segment order, or fallback behavior.",
+      "Use explicit DepthAI image/calibration/plane conversion and frame-local owned parcel messages outside the immutable computation directory.",
+      "Use native DepthAI HostNode synchronization for complete groups instead of adapter queues and timeouts. Scope status enums under public message owners and keep diagnostic/timing record classes internal. Frozen computation and scene conversion are unchanged.",
+      "Read delivered image intrinsics, distortion, and camera-to-reference poses from native ImgTransformation metadata instead of custom calibration objects. Invert calibrated camera poses in float64 millimeters for XYZ already in the common reference frame; retain the explicit plane/gravity input. Replace parcel attribute-assignment bypasses with normal constructors and read-only properties."
+    ],
+    "lineage_note": "Original settings declare algorithm-f6ab98aa284d4420bfd3bc67761a969f. Registration returned HTTP 403 with this token. The frozen settings copy omits that inaccessible declaration only; computation configuration, policy, objective, modalities, source paths and dependency lock are unchanged. Historical predecessor is retained in this report; no historical scores are reassigned.",
+    "license_note": "Pinned BoxLabRunners tree has no LICENSE file. Luxonis attribution is retained. DepthAI Nodes keeps its Apache-2.0 distribution license."
+  },
+  "inputs": {
+    "modalities": [
+      "scene_cloud",
+      "source_images",
+      "rig_calibration"
+    ],
+    "input_mode": "supplied_plane",
+    "length_unit": "mm",
+    "plane_orientation": "upward",
+    "frame_convention": "Millimeter XYZ in the common calibration reference frame identified by native target device/socket metadata. The supplied plane frame labels those same coordinates and carries unit downward gravity. Native PointCloud uses DEFAULT coordinates, calibrated translation, and an identity custom transform. Other producers must normalize their XYZ and metadata to this reference frame.",
+    "scene_decoding_reference": "https://github.com/luxonis/BoxLabRunners/blob/0a2f571843f81ac6cc2f8cebe3475540e314f83d/runner/scene.py",
+    "frozen_runtime": {
+      "python": "3.12.16",
+      "platform": "aarch64",
+      "numpy": "2.2.6",
+      "scipy": "1.15.3",
+      "opencv": "4.12.0"
+    },
+    "frozen_opencv_distribution": "opencv-python-headless==4.12.0.88",
+    "target_dependency_constraints": {
+      "python": ">=3.10",
+      "numpy": "==2.2.6",
+      "scipy": "==1.15.3",
+      "opencv-python-headless": ">=4.10.0,<4.13.0; parcel extra ==4.12.0.88",
+      "depthai": ">=3.11.0"
+    },
+    "tested_runtime": {
+      "platform": "macOS arm64",
+      "python": "3.12.13",
+      "depthai": "3.11.0",
+      "algorithm_dependencies": {
+        "numpy": "2.2.6",
+        "scipy": "1.15.3",
+        "opencv-python-headless": "4.12.0.88"
+      }
+    },
+    "scene_metadata_reference": "https://docs.luxonis.com/software-v3/depthai/api/python/#depthai.ImgTransformation"
+  },
+  "evaluations": [
+    {
+      "split": "validation",
+      "release_id": "release-f14a597a366c46c6bdba00fa25e45bcd",
+      "run_id": "run-6b9eae917aa6406c97b04a7ebb7d4870",
+      "evaluation_id": "evaluation-32a3c7421e0140a38cf6bcdf02a77d8a",
+      "evaluation_date": "2026-11-20",
+      "evaluated_at": null,
+      "evaluated_at_status": "Exact evaluation timestamp not reported in retained aggregate evidence.",
+      "run_created_at": "2026-11-20T15:02:25.102778+00:00",
+      "run_status": "sealed",
+      "evaluation_status": "completed",
+      "expected_count": 18,
+      "accepted_count": 18,
+      "failed_snapshot_count": 0,
+      "objective": "Compare parcel measurement success within the dimension tolerance on the frozen validation split, with per-axis errors, precision, and recall.",
+      "metric_version": "boxlab-run-metrics/3",
+      "policy": {
+        "version": "boxlab-evaluation/1",
+        "iou_gate": 0.5,
+        "matching": "maximum-cardinality-then-total-iou-stable/1",
+        "unmatched_predictions": "false_positive-no-ignored-regions",
+        "visibility": "all-retained-views-full-object/1",
+        "dimension_units": "mm",
+        "dimension_tolerance_mm": 5.0,
+        "plane_angle_tolerance_deg": 5.0,
+        "plane_offset_tolerance_mm": 15.0,
+        "plane_diagnostic_epsilon_mm": null,
+        "unconfigured_tolerances": "report-unconfigured-no-hidden-defaults",
+        "plane_normal_dot_epsilon": 1e-06
+      },
+      "policy_sha256": "26abc2f98d574665a33d5c7abca94ba48837dd7962c3ec0bbc30c58b5114ca06",
+      "manifest_sha256": "baec14e249caa505bf16a86abdf4ea31e888f631eda0e955d641406ac53c5535",
+      "input_mode": "supplied_plane",
+      "execution": {
+        "synthetic": false,
+        "runtime_basis": "not_reported",
+        "modalities": [
+          "rig_calibration",
+          "scene_cloud",
+          "source_images"
+        ]
+      },
+      "feedback_status": "available",
+      "suppressed_metrics": [],
+      "metrics": {
+        "snapshot_count": {
+          "status": "available",
+          "value": 18,
+          "unit": "count",
+          "denominator": null,
+          "reason": null
+        },
+        "reference_count": {
+          "status": "available",
+          "value": 19,
+          "unit": "count",
+          "denominator": null,
+          "reason": null
+        },
+        "complete_match_count": {
+          "status": "available",
+          "value": 19,
+          "unit": "count",
+          "denominator": null,
+          "reason": null
+        },
+        "failed_snapshot_count": {
+          "status": "available",
+          "value": 0,
+          "unit": "count",
+          "denominator": null,
+          "reason": null
+        },
+        "tp": {
+          "status": "available",
+          "value": 19,
+          "unit": "count",
+          "denominator": null,
+          "reason": null
+        },
+        "fp": {
+          "status": "available",
+          "value": 0,
+          "unit": "count",
+          "denominator": null,
+          "reason": null
+        },
+        "fn": {
+          "status": "available",
+          "value": 0,
+          "unit": "count",
+          "denominator": null,
+          "reason": null
+        },
+        "measurement_success_count": {
+          "status": "available",
+          "value": 6,
+          "unit": "count",
+          "denominator": null,
+          "reason": null
+        },
+        "precision": {
+          "status": "available",
+          "value": 1.0,
+          "unit": "ratio",
+          "denominator": 19,
+          "reason": null
+        },
+        "recall": {
+          "status": "available",
+          "value": 1.0,
+          "unit": "ratio",
+          "denominator": 19,
+          "reason": null
+        },
+        "f1": {
+          "status": "available",
+          "value": 1.0,
+          "unit": "ratio",
+          "denominator": 38,
+          "reason": null
+        },
+        "footprint_iou_mean": {
+          "status": "available",
+          "value": 0.9017715562531117,
+          "unit": "ratio",
+          "denominator": 19,
+          "reason": null
+        },
+        "matched_3d_iou_mean": {
+          "status": "available",
+          "value": 0.8810710155954674,
+          "unit": "ratio",
+          "denominator": 19,
+          "reason": null
+        },
+        "all_reference_3d_iou_mean": {
+          "status": "available",
+          "value": 0.8810710155954674,
+          "unit": "ratio",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_output_coverage": {
+          "status": "available",
+          "value": 1.0,
+          "unit": "ratio",
+          "denominator": 19,
+          "reason": null
+        },
+        "reference_dimension_coverage": {
+          "status": "available",
+          "value": 1.0,
+          "unit": "ratio",
+          "denominator": 19,
+          "reason": null
+        },
+        "measurement_success_rate": {
+          "status": "available",
+          "value": 0.3157894736842105,
+          "unit": "ratio",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_errors_mm.length.count": {
+          "status": "available",
+          "value": 19,
+          "unit": "count",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_errors_mm.length.bias": {
+          "status": "available",
+          "value": 1.8071876970828407,
+          "unit": "mm",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_errors_mm.length.mae": {
+          "status": "available",
+          "value": 3.544147406352052,
+          "unit": "mm",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_errors_mm.length.median_absolute": {
+          "status": "available",
+          "value": 3.40625607378013,
+          "unit": "mm",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_errors_mm.length.p95_absolute": {
+          "status": "available",
+          "value": 9.6089985804124,
+          "unit": "mm",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_errors_mm.length.mean_relative_absolute": {
+          "status": "available",
+          "value": 0.011289030036685362,
+          "unit": "ratio",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_errors_mm.width.count": {
+          "status": "available",
+          "value": 19,
+          "unit": "count",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_errors_mm.width.bias": {
+          "status": "available",
+          "value": 4.354362289283119,
+          "unit": "mm",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_errors_mm.width.mae": {
+          "status": "available",
+          "value": 6.042213462893736,
+          "unit": "mm",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_errors_mm.width.median_absolute": {
+          "status": "available",
+          "value": 3.1565418726902,
+          "unit": "mm",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_errors_mm.width.p95_absolute": {
+          "status": "available",
+          "value": 26.85306411524408,
+          "unit": "mm",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_errors_mm.width.mean_relative_absolute": {
+          "status": "available",
+          "value": 0.04155642786784968,
+          "unit": "ratio",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_errors_mm.height.count": {
+          "status": "available",
+          "value": 19,
+          "unit": "count",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_errors_mm.height.bias": {
+          "status": "available",
+          "value": 1.5257683632975136,
+          "unit": "mm",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_errors_mm.height.mae": {
+          "status": "available",
+          "value": 3.1795227648485254,
+          "unit": "mm",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_errors_mm.height.median_absolute": {
+          "status": "available",
+          "value": 2.03558656528719,
+          "unit": "mm",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_errors_mm.height.p95_absolute": {
+          "status": "available",
+          "value": 7.39590143786666,
+          "unit": "mm",
+          "denominator": 19,
+          "reason": null
+        },
+        "dimension_errors_mm.height.mean_relative_absolute": {
+          "status": "available",
+          "value": 0.025593079885946054,
+          "unit": "ratio",
+          "denominator": 19,
+          "reason": null
+        },
+        "plane": {
+          "status": "not_reported",
+          "value": null,
+          "unit": "ratio",
+          "denominator": null,
+          "reason": "Not reported by the retained supplied-plane evaluation"
+        }
+      },
+      "raw_metrics": {
+        "snapshot_count": 18,
+        "reference_count": 19,
+        "complete_match_count": 19,
+        "failed_snapshot_count": 0,
+        "tp": 19,
+        "fp": 0,
+        "fn": 0,
+        "measurement_success_count": 6,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "footprint_iou_mean": 0.9017715562531117,
+        "matched_3d_iou_mean": 0.8810710155954674,
+        "all_reference_3d_iou_mean": 0.8810710155954674,
+        "dimension_output_coverage": 1.0,
+        "reference_dimension_coverage": 1.0,
+        "measurement_success_rate": 0.3157894736842105,
+        "dimension_errors_mm": {
+          "length": {
+            "count": 19,
+            "bias": 1.8071876970828407,
+            "mae": 3.544147406352052,
+            "median_absolute": 3.40625607378013,
+            "p95_absolute": 9.6089985804124,
+            "mean_relative_absolute": 0.011289030036685362
+          },
+          "width": {
+            "count": 19,
+            "bias": 4.354362289283119,
+            "mae": 6.042213462893736,
+            "median_absolute": 3.1565418726902,
+            "p95_absolute": 26.85306411524408,
+            "mean_relative_absolute": 0.04155642786784968
+          },
+          "height": {
+            "count": 19,
+            "bias": 1.5257683632975136,
+            "mae": 3.1795227648485254,
+            "median_absolute": 2.03558656528719,
+            "p95_absolute": 7.39590143786666,
+            "mean_relative_absolute": 0.025593079885946054
+          }
+        },
+        "plane": null,
+        "denominators": {
+          "all_reference_3d_iou_mean": 19,
+          "dimension_output_coverage": 19,
+          "f1": 38,
+          "footprint_iou_mean": 19,
+          "matched_3d_iou_mean": 19,
+          "measurement_success_rate": 19,
+          "precision": 19,
+          "recall": 19,
+          "reference_dimension_coverage": 19
+        },
+        "null_reasons": {}
+      },
+      "test_request_id": null,
+      "authorization_id": null
+    },
+    {
+      "split": "test",
+      "release_id": "release-f14a597a366c46c6bdba00fa25e45bcd",
+      "run_id": "run-efd2b5483a4c452787a56f77e264e98e",
+      "evaluation_id": "evaluation-3dc46b10a7bf40a0ae0f357825e69770",
+      "evaluation_date": "2026-11-20",
+      "evaluated_at": null,
+      "evaluated_at_status": "Exact evaluation timestamp not reported in retained aggregate evidence.",
+      "run_created_at": "2026-11-20T15:08:12.779033+00:00",
+      "run_status": "sealed",
+      "evaluation_status": "completed",
+      "expected_count": 17,
+      "accepted_count": 17,
+      "failed_snapshot_count": 0,
+      "objective": "Compare parcel measurement success within the dimension tolerance on the frozen validation split, with per-axis errors, precision, and recall.",
+      "metric_version": "boxlab-run-metrics/3",
+      "policy": {
+        "version": "boxlab-evaluation/1",
+        "iou_gate": 0.5,
+        "matching": "maximum-cardinality-then-total-iou-stable/1",
+        "unmatched_predictions": "false_positive-no-ignored-regions",
+        "visibility": "all-retained-views-full-object/1",
+        "dimension_units": "mm",
+        "dimension_tolerance_mm": 5.0,
+        "plane_angle_tolerance_deg": 5.0,
+        "plane_offset_tolerance_mm": 15.0,
+        "plane_diagnostic_epsilon_mm": null,
+        "unconfigured_tolerances": "report-unconfigured-no-hidden-defaults",
+        "plane_normal_dot_epsilon": 1e-06
+      },
+      "policy_sha256": "26abc2f98d574665a33d5c7abca94ba48837dd7962c3ec0bbc30c58b5114ca06",
+      "manifest_sha256": "5ba1bc50df7586e110f4da4225376691b41f0cf066c9add52ddd4c6bcfc46892",
+      "input_mode": "supplied_plane",
+      "execution": {
+        "synthetic": false,
+        "runtime_basis": "not_reported",
+        "modalities": [
+          "rig_calibration",
+          "scene_cloud",
+          "source_images"
+        ]
+      },
+      "feedback_status": "available",
+      "suppressed_metrics": [
+        "dimension_errors_mm.height.median_absolute",
+        "dimension_errors_mm.height.p95_absolute",
+        "dimension_errors_mm.length.median_absolute",
+        "dimension_errors_mm.length.p95_absolute",
+        "dimension_errors_mm.width.median_absolute",
+        "dimension_errors_mm.width.p95_absolute"
+      ],
+      "metrics": {
+        "snapshot_count": {
+          "status": "available",
+          "value": 17,
+          "unit": "count",
+          "denominator": null,
+          "reason": null
+        },
+        "reference_count": {
+          "status": "available",
+          "value": 17,
+          "unit": "count",
+          "denominator": null,
+          "reason": null
+        },
+        "complete_match_count": {
+          "status": "available",
+          "value": 17,
+          "unit": "count",
+          "denominator": null,
+          "reason": null
+        },
+        "failed_snapshot_count": {
+          "status": "available",
+          "value": 0,
+          "unit": "count",
+          "denominator": null,
+          "reason": null
+        },
+        "tp": {
+          "status": "available",
+          "value": 17,
+          "unit": "count",
+          "denominator": null,
+          "reason": null
+        },
+        "fp": {
+          "status": "available",
+          "value": 0,
+          "unit": "count",
+          "denominator": null,
+          "reason": null
+        },
+        "fn": {
+          "status": "available",
+          "value": 0,
+          "unit": "count",
+          "denominator": null,
+          "reason": null
+        },
+        "measurement_success_count": {
+          "status": "available",
+          "value": 5,
+          "unit": "count",
+          "denominator": null,
+          "reason": null
+        },
+        "precision": {
+          "status": "available",
+          "value": 1.0,
+          "unit": "ratio",
+          "denominator": 17,
+          "reason": null
+        },
+        "recall": {
+          "status": "available",
+          "value": 1.0,
+          "unit": "ratio",
+          "denominator": 17,
+          "reason": null
+        },
+        "f1": {
+          "status": "available",
+          "value": 1.0,
+          "unit": "ratio",
+          "denominator": 34,
+          "reason": null
+        },
+        "footprint_iou_mean": {
+          "status": "available",
+          "value": 0.8895080939537824,
+          "unit": "ratio",
+          "denominator": 17,
+          "reason": null
+        },
+        "matched_3d_iou_mean": {
+          "status": "available",
+          "value": 0.873339198380587,
+          "unit": "ratio",
+          "denominator": 17,
+          "reason": null
+        },
+        "all_reference_3d_iou_mean": {
+          "status": "available",
+          "value": 0.873339198380587,
+          "unit": "ratio",
+          "denominator": 17,
+          "reason": null
+        },
+        "dimension_output_coverage": {
+          "status": "available",
+          "value": 1.0,
+          "unit": "ratio",
+          "denominator": 17,
+          "reason": null
+        },
+        "reference_dimension_coverage": {
+          "status": "available",
+          "value": 1.0,
+          "unit": "ratio",
+          "denominator": 17,
+          "reason": null
+        },
+        "measurement_success_rate": {
+          "status": "available",
+          "value": 0.29411764705882354,
+          "unit": "ratio",
+          "denominator": 17,
+          "reason": null
+        },
+        "dimension_errors_mm.length.count": {
+          "status": "available",
+          "value": 17,
+          "unit": "count",
+          "denominator": 17,
+          "reason": null
+        },
+        "dimension_errors_mm.length.bias": {
+          "status": "available",
+          "value": 9.506210541668107,
+          "unit": "mm",
+          "denominator": 17,
+          "reason": null
+        },
+        "dimension_errors_mm.length.mae": {
+          "status": "available",
+          "value": 10.735414027351593,
+          "unit": "mm",
+          "denominator": 17,
+          "reason": null
+        },
+        "dimension_errors_mm.length.median_absolute": {
+          "status": "suppressed",
+          "value": null,
+          "unit": "mm",
+          "denominator": 17,
+          "reason": "Held-out feedback keeps exact dimensional order statistics private"
+        },
+        "dimension_errors_mm.length.p95_absolute": {
+          "status": "suppressed",
+          "value": null,
+          "unit": "mm",
+          "denominator": 17,
+          "reason": "Held-out feedback keeps exact dimensional order statistics private"
+        },
+        "dimension_errors_mm.length.mean_relative_absolute": {
+          "status": "available",
+          "value": 0.04002831684287694,
+          "unit": "ratio",
+          "denominator": 17,
+          "reason": null
+        },
+        "dimension_errors_mm.width.count": {
+          "status": "available",
+          "value": 17,
+          "unit": "count",
+          "denominator": 17,
+          "reason": null
+        },
+        "dimension_errors_mm.width.bias": {
+          "status": "available",
+          "value": 5.393830894498632,
+          "unit": "mm",
+          "denominator": 17,
+          "reason": null
+        },
+        "dimension_errors_mm.width.mae": {
+          "status": "available",
+          "value": 6.46945474521522,
+          "unit": "mm",
+          "denominator": 17,
+          "reason": null
+        },
+        "dimension_errors_mm.width.median_absolute": {
+          "status": "suppressed",
+          "value": null,
+          "unit": "mm",
+          "denominator": 17,
+          "reason": "Held-out feedback keeps exact dimensional order statistics private"
+        },
+        "dimension_errors_mm.width.p95_absolute": {
+          "status": "suppressed",
+          "value": null,
+          "unit": "mm",
+          "denominator": 17,
+          "reason": "Held-out feedback keeps exact dimensional order statistics private"
+        },
+        "dimension_errors_mm.width.mean_relative_absolute": {
+          "status": "available",
+          "value": 0.052396659171924105,
+          "unit": "ratio",
+          "denominator": 17,
+          "reason": null
+        },
+        "dimension_errors_mm.height.count": {
+          "status": "available",
+          "value": 17,
+          "unit": "count",
+          "denominator": 17,
+          "reason": null
+        },
+        "dimension_errors_mm.height.bias": {
+          "status": "available",
+          "value": 0.6157834262618913,
+          "unit": "mm",
+          "denominator": 17,
+          "reason": null
+        },
+        "dimension_errors_mm.height.mae": {
+          "status": "available",
+          "value": 2.295216625664263,
+          "unit": "mm",
+          "denominator": 17,
+          "reason": null
+        },
+        "dimension_errors_mm.height.median_absolute": {
+          "status": "suppressed",
+          "value": null,
+          "unit": "mm",
+          "denominator": 17,
+          "reason": "Held-out feedback keeps exact dimensional order statistics private"
+        },
+        "dimension_errors_mm.height.p95_absolute": {
+          "status": "suppressed",
+          "value": null,
+          "unit": "mm",
+          "denominator": 17,
+          "reason": "Held-out feedback keeps exact dimensional order statistics private"
+        },
+        "dimension_errors_mm.height.mean_relative_absolute": {
+          "status": "available",
+          "value": 0.022727893108374267,
+          "unit": "ratio",
+          "denominator": 17,
+          "reason": null
+        },
+        "plane": {
+          "status": "not_reported",
+          "value": null,
+          "unit": "ratio",
+          "denominator": null,
+          "reason": "Not reported by the retained supplied-plane evaluation"
+        }
+      },
+      "raw_metrics": {
+        "snapshot_count": 17,
+        "reference_count": 17,
+        "complete_match_count": 17,
+        "failed_snapshot_count": 0,
+        "tp": 17,
+        "fp": 0,
+        "fn": 0,
+        "measurement_success_count": 5,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "footprint_iou_mean": 0.8895080939537824,
+        "matched_3d_iou_mean": 0.873339198380587,
+        "all_reference_3d_iou_mean": 0.873339198380587,
+        "dimension_output_coverage": 1.0,
+        "reference_dimension_coverage": 1.0,
+        "measurement_success_rate": 0.29411764705882354,
+        "dimension_errors_mm": {
+          "length": {
+            "count": 17,
+            "bias": 9.506210541668107,
+            "mae": 10.735414027351593,
+            "median_absolute": null,
+            "p95_absolute": null,
+            "mean_relative_absolute": 0.04002831684287694
+          },
+          "width": {
+            "count": 17,
+            "bias": 5.393830894498632,
+            "mae": 6.46945474521522,
+            "median_absolute": null,
+            "p95_absolute": null,
+            "mean_relative_absolute": 0.052396659171924105
+          },
+          "height": {
+            "count": 17,
+            "bias": 0.6157834262618913,
+            "mae": 2.295216625664263,
+            "median_absolute": null,
+            "p95_absolute": null,
+            "mean_relative_absolute": 0.022727893108374267
+          }
+        },
+        "plane": null,
+        "denominators": {
+          "all_reference_3d_iou_mean": 17,
+          "dimension_output_coverage": 17,
+          "f1": 34,
+          "footprint_iou_mean": 17,
+          "matched_3d_iou_mean": 17,
+          "measurement_success_rate": 17,
+          "precision": 17,
+          "recall": 17,
+          "reference_dimension_coverage": 17
+        },
+        "null_reasons": {
+          "dimension_errors_mm.height.median_absolute": "Held-out feedback keeps exact dimensional order statistics private",
+          "dimension_errors_mm.height.p95_absolute": "Held-out feedback keeps exact dimensional order statistics private",
+          "dimension_errors_mm.length.median_absolute": "Held-out feedback keeps exact dimensional order statistics private",
+          "dimension_errors_mm.length.p95_absolute": "Held-out feedback keeps exact dimensional order statistics private",
+          "dimension_errors_mm.width.median_absolute": "Held-out feedback keeps exact dimensional order statistics private",
+          "dimension_errors_mm.width.p95_absolute": "Held-out feedback keeps exact dimensional order statistics private"
+        }
+      },
+      "test_request_id": "test-request-8bbaac21223541948afcfd16bb0c6c35",
+      "authorization_id": "test-grant-c4a80185c19f4f54b72364796855a30a"
+    }
+  ],
+  "test_request": {
+    "schema_version": "boxlab-test-request/1",
+    "id": "test-request-8bbaac21223541948afcfd16bb0c6c35",
+    "created_at": "2026-11-20T15:03:07.202613+00:00",
+    "status": "approved",
+    "release_id": "release-f14a597a366c46c6bdba00fa25e45bcd",
+    "input_mode": "supplied_plane",
+    "feedback_timing": "after_batch_complete",
+    "feedback_released": true,
+    "run_ids": [
+      "run-efd2b5483a4c452787a56f77e264e98e"
+    ],
+    "authorization_id": "test-grant-c4a80185c19f4f54b72364796855a30a"
+  },
+  "timings": [
+    {
+      "status": "historical_measurement",
+      "candidate_id": "algorithm-8bdaf89d28cf45f29712cb68e1b31357",
+      "image_digest": "sha256:d4ea5348c882a632f1204f79b92177feaf2140eb55c2e7eaed1cbc839937e994",
+      "environment": "Linux arm64 image on Apple M1 Pro, 1 GiB container, OPENBLAS_NUM_THREADS=1, networking disabled, shared host",
+      "platform": "Linux aarch64",
+      "split": "validation",
+      "scene_count": 18,
+      "warmups_per_scene": 1,
+      "repetitions_per_scene": 3,
+      "sample_count": 54,
+      "mean": 116.32,
+      "unit": "ms",
+      "scope": "Complete checked computation from an already decoded Scene to process_scene return, including workers. Excludes input retrieval, decoding, component construction, and warmup.",
+      "reference_url": "https://github.com/luxonis/BoxLabRunners/blob/4b7634cc5806b7fb2e48bc7a830a3434b85cc0cb/experiments/fast-baseline-performance.md",
+      "applicability": "Accepted historical performance reference; no new callback-refactor or port timing measurement, no OAK hardware or live-pipeline guarantee."
+    },
+    {
+      "status": "historical_measurement",
+      "candidate_id": "algorithm-8bdaf89d28cf45f29712cb68e1b31357",
+      "image_digest": "sha256:d4ea5348c882a632f1204f79b92177feaf2140eb55c2e7eaed1cbc839937e994",
+      "environment": "Linux arm64 image on Apple M1 Pro, 1 GiB container, OPENBLAS_NUM_THREADS=1, networking disabled, shared host",
+      "platform": "Linux aarch64",
+      "split": "test",
+      "scene_count": 17,
+      "warmups_per_scene": 1,
+      "repetitions_per_scene": 3,
+      "sample_count": 51,
+      "mean": 105.33,
+      "unit": "ms",
+      "scope": "Complete checked computation from an already decoded Scene to process_scene return, including workers. Excludes input retrieval, decoding, component construction, and warmup.",
+      "reference_url": "https://github.com/luxonis/BoxLabRunners/blob/4b7634cc5806b7fb2e48bc7a830a3434b85cc0cb/experiments/fast-baseline-performance.md",
+      "applicability": "Accepted historical performance reference; no new callback-refactor or port timing measurement, no OAK hardware or live-pipeline guarantee."
+    }
+  ],
+  "port_verification": {
+    "status": "verified_for_declared_parcel_dependencies",
+    "record_path": "docs/parcel-promotions/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.md",
+    "reference_artifact": "sha256:240c1854f46100c382801e8e0f622d99807c4ef64a0b27875f539087a97d7176",
+    "comparison_inputs": {
+      "synthetic_scenes": 15,
+      "authorized_historical_validation_scenes": 18,
+      "validation_manifest_sha256": "52fb068a961ffb9e7303d3bd8abab20df13ff78cc71e35997c7bad17886b8c84",
+      "modes": [
+        "native",
+        "fallback"
+      ],
+      "dependencies_compared": [
+        "opencv-python-headless==4.12.0.88",
+        "opencv-python-headless==4.10.0.84"
+      ],
+      "source_port_maximum_geometry_absolute_difference": 0.0,
+      "summary_path": "docs/parcel-promotions/comparison-summary.json",
+      "scope": "Decoded scenes, not raw artifact decoding or new held-out inputs"
+    },
+    "numerical_tolerance": {
+      "candidate_order_and_membership": "exact",
+      "candidate_decisions": "exact",
+      "parcel_point_order": "exact",
+      "cuboid_absolute_tolerance_mm": 1e-09,
+      "relative_tolerance": 0
+    },
+    "checks": [
+      {
+        "name": "Pinned source, settings, and native binary integrity",
+        "result": "All 16 source hashes, scoped settings bytes, and retained image native binary match their frozen identities."
+      },
+      {
+        "name": "Source versus port comparisons",
+        "result": "Passed in both native and fallback modes on 15 synthetic and 18 historical validation scenes, under both dependency environments. Indices, points, order, decisions, outcomes, and geometry agree exactly within each environment."
+      },
+      {
+        "name": "OpenCV 4.10 versus 4.12 equality at 1e-9",
+        "result": "Failed on two validation cuboids. Maximum dimensional drift is 8.922520180476567e-6 mm. The parcel extra therefore pins frozen OpenCV 4.12.0.88."
+      },
+      {
+        "name": "Focused port tests on Python 3.10.18 and 3.12.13",
+        "result": "42 tests and 58 subtests passed in each environment. The suite includes 34 native boundary checks in an isolated subprocess, including delivered native calibration metadata, point-cloud reference coordinates, synchronization, ownership, and normal value constructors."
+      },
+      {
+        "name": "Frozen image regressions",
+        "result": "25 fast-baseline and seven component tests passed without skips."
+      },
+      {
+        "name": "Clean installed wheel outside both source trees",
+        "result": "All 24 covered file hashes and assets pass. Imports work without SciPy. Synthetic pipelines pass with fallback and an optional locally built native library. No native binary is bundled."
+      },
+      {
+        "name": "Existing box compatibility",
+        "result": "116 host tests and 31 focused box threaded tests pass with OpenCV 4.10 and 4.12."
+      },
+      {
+        "name": "pytest tests/unittests",
+        "result": "581 passed, 181 failed, and 124 errors. The unchanged base reproduces the same 181 failures and 124 errors, with 571 passing tests."
+      },
+      {
+        "name": "pre-commit run --all-files",
+        "result": "Passed."
+      },
+      {
+        "name": "pydoctor depthai_nodes with warnings as errors",
+        "result": "Passed with pydoctor 25.10.1."
+      },
+      {
+        "name": "Native HostNode synchronization and public API revision",
+        "result": "34 native checks pass. Incomplete groups skip callbacks and later complete frames recover. The builder consumes five synchronized streams without a calibration object. Six public message types remain, with scoped status enums and no explicit object.__setattr__ calls in parcel values."
+      }
+    ],
+    "environment": {
+      "port": "macOS arm64, Python 3.12.13 and 3.10.18, DepthAI 3.11.0",
+      "frozen_image": "Linux aarch64, Python 3.12.16, NumPy 2.2.6, SciPy 1.15.3, OpenCV 4.12.0"
+    },
+    "limitations": [
+      "No OAK hardware, Windows execution, or installed Linux port execution was tested.",
+      "No XLink or remote serialization is implemented.",
+      "The authorized historical validation cache differs from the selected revalidation run manifest; exact hashes and comparison scope are in the promotion record.",
+      "Original raw recording decoding, training labels, and new held-out inputs are outside this comparison.",
+      "The full existing unit suite has baseline mock collection-order failures. Separate parser model tests also require unavailable model caches.",
+      "OpenCV 4.10 changes two validation cuboids above the declared parity tolerance. The parcel extra requires the frozen OpenCV 4.12.0.88.",
+      "No new latency benchmark ran. Historical scores and timings remain attached to the evaluated artifacts.",
+      "The native metadata adapter supports millimeter common-reference XYZ, as DEFAULT native PointCloud output with an identity custom transform provides. Incompatible initial native configurations are rejected. Coordinate mode, units, and custom transforms must not change at runtime; PointCloudData does not identify those modes reliably. Metadata conversion is tested with synthetic native messages, not live generated clouds."
+    ],
+    "verification_summary_path": "docs/parcel-promotions/verification-summary.json",
+    "dependency_resolution": "The base OpenCV constraint explicitly permits >=4.10,<4.13. The parcel extra pins opencv-python-headless==4.12.0.88, numpy==2.2.6, and scipy==1.15.3. No tolerance was relaxed and no historical score was reassigned."
+  }
+}

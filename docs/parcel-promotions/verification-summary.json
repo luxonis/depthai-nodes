@@ -1,0 +1,140 @@
+{
+  "schema_version": "parcel-promotion-verification/1",
+  "candidate_id": "algorithm-2f65a6f6296d48e981f5fe3f77bfde89",
+  "frozen_source_integrity": {
+    "files": 16,
+    "settings_sha256": "66f29d1a54ddb6fd8d3fa957a34aa81dcef53a4ca29a47b0b4e39331afcb8bd8",
+    "result": "passed",
+    "native_binary_sha256": "d777d52c77a31a2fede1f977edf28378e14504dc78a8d4479dc31054f0df2b31"
+  },
+  "frozen_image_tests": {
+    "fast_baseline": 25,
+    "components": 7,
+    "skips": 0,
+    "result": "passed"
+  },
+  "port_tests": {
+    "python_versions": [
+      "3.10.18",
+      "3.12.13"
+    ],
+    "command": "pytest tests/unittests/test_parcel_algorithm tests/unittests/test_parcel_nodes tests/parcel_reference",
+    "passed": 42,
+    "subtests_passed": 58,
+    "native_checks_inside_subprocess": 34,
+    "skips": 0,
+    "result": "passed"
+  },
+  "existing_unit_checks": {
+    "full_suite": {
+      "command": "pytest tests/unittests",
+      "passed": 581,
+      "failed": 181,
+      "errors": 124,
+      "result": "failed with existing baseline failures"
+    },
+    "unchanged_base": {
+      "passed": 571,
+      "failed": 181,
+      "errors": 124
+    },
+    "host_suite": {
+      "passed": 116,
+      "result": "passed with OpenCV4.10 and4.12"
+    },
+    "helpers_messages": {
+      "passed": 382,
+      "result": "passed with OpenCV4.10; combined host/helpers/messages498passed with4.12"
+    },
+    "box_threaded_regressions": {
+      "passed": 31,
+      "result": "passed with OpenCV4.10 and4.12"
+    },
+    "non_node_suite": {
+      "command": "pytest tests/unittests --ignore=tests/unittests/test_nodes",
+      "passed": 524,
+      "result": "passed"
+    },
+    "separate_threaded_suite": {
+      "passed": 195,
+      "failed": 16,
+      "result": "same unavailable model-cache failures on unchanged base"
+    }
+  },
+  "lint": {
+    "command": "pre-commit run --all-files",
+    "result": "passed"
+  },
+  "api_docs": {
+    "command": "pydoctor depthai_nodes",
+    "version": "25.10.1",
+    "warnings_as_errors": true,
+    "result": "passed",
+    "tooling_note": "Separate documentation environment avoids mdformat-toc attrs21/Twisted26 conflict."
+  },
+  "installed_wheel": {
+    "schema_version": "parcel-wheel-check/1",
+    "result": "passed",
+    "platform": "macOS-27.2.1-arm64-arm-64bit",
+    "python": "3.12.13",
+    "dependencies": {
+      "depthai": "3.11.0",
+      "numpy": "2.2.6",
+      "scipy": "1.15.3",
+      "opencv-python-headless": "4.12.0.88"
+    },
+    "hash_covered_files": 24,
+    "no_scipy_imports": "Passed before installing the parcel extra, including absent custom calibration types, six exports, builder signature, value-source setter scan, and manifest integrity.",
+    "wheel_assets_and_dependencies": "all required JSON/settings/evidence/C++ assets present, no binary/tests/tools/docs bundled; parcel extra pins verified in METADATA",
+    "installed_native_sha256": "812cffc8d1f7a5bb5c655f7c7a5c8b34d24d55d06ec603bf6139e9520ec455a5",
+    "fallback_pipeline": "Passed using image calibration metadata and the five-stream builder in a fresh environment outside both source trees.",
+    "native_build": "passed Apple clang21 C++17 -O3 -ffp-contract=off -fPIC -shared",
+    "native_pipeline": "Passed after optional local native build, with identical synthetic output to fallback.",
+    "final_manifest_status": "verified_for_declared_parcel_dependencies",
+    "final_wheel_reinstall": "Passed all 24 file hashes, six public types, and the portable fallback pipeline after rebuilding final metadata provenance.",
+    "wheel_sha256": "229972fa8dfafa5d76544777991520ef464a4677887434524e245f986d9b2eb6"
+  },
+  "limitations": [
+    "No OAK hardware or live sensor pipeline check.",
+    "No Windows or Linux installed-port execution check. Original frozen Linux image regressions pass.",
+    "No XLink/remote serialization support claimed.",
+    "Historical decoded validation cache coverage; no raw recording decode or new held-out/training data.",
+    "No timing rerun; historical performance remains attributed to original artifact.",
+    "Native camera-metadata conversion has synthetic coverage only. Runtime point-cloud coordinate changes and custom/housing/camera-target native modes lack a reliable per-frame metadata discriminator and are unsupported."
+  ],
+  "public_api": {
+    "flat_parcel_message_types": [
+      "Parcel",
+      "ParcelCuboid",
+      "ParcelDetections",
+      "ParcelMeasurement",
+      "ParcelMeasurements",
+      "ParcelPlane"
+    ],
+    "measurement_status": "ParcelMeasurement.Status",
+    "frame_outcome": "ParcelDetections.Outcome / ParcelMeasurements.Outcome",
+    "internal_records": [
+      "diagnostic decisions",
+      "source timing"
+    ],
+    "detector_build": "ParcelDetector.build(pointCloud, color, left, right, supportPlane)",
+    "plane_input": "ParcelPlane(frame=..., plane=..., down=...)",
+    "camera_calibration": "Read each synchronized ImgFrame.getTransformation(); no custom calibration types or build argument.",
+    "value_construction": "Ordinary constructors with read-only properties for parcels and cuboids; frozen metadata/result records validate without rewriting fields. No explicit object.__setattr__ calls in new parcel values."
+  },
+  "synchronization_revision": {
+    "implementation": "dai.node.HostNode.link_args for all five inputs",
+    "complete_groups": "One scene callback per synchronized group, with sequence and device timestamp validation.",
+    "incomplete_groups": "No callback or result; next complete frame can recover.",
+    "explicit_unavailable_plane": "Synchronized ParcelPlane with plane=None emits a failed frame.",
+    "removed": "Custom run loop, per-source queues, future-message cache, and 250 ms timeout."
+  },
+  "metadata_revision": {
+    "intrinsics": "getIntrinsicMatrix includes delivered crop/scale.",
+    "distortion": "Perspective and Fisheye metadata feed the frozen projector; unsupported models fail.",
+    "camera_pose": "Calibrated camera-to-reference pose requested in millimeters and inverted with float64 NumPy.",
+    "cloud_coordinates": "DEFAULT native common-reference millimeter XYZ with identity custom transform and calibrated translation. Cloud source pose is not applied twice.",
+    "native_configuration_guard": "Reject incompatible initial native PointCloud coordinates, units, custom transforms, or spec translation. Coordinate settings must remain fixed at runtime.",
+    "coverage": "34 synthetic native metadata/message/node checks; actual generated-cloud and hardware execution remain untested."
+  }
+}
