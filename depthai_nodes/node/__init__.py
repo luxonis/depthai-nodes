@@ -308,9 +308,12 @@ Example:
 
     Plane messages are ``ParcelPlane`` values in ``calibration.frame``. Each plane
     and all three images must share the cloud sequence number and have device
-    timestamps within 10 ms. Missing required data produces a failed frame after
-    a 250 ms source-arrival deadline. Image grids must match their supplied
-    calibration. These Python messages connect nodes within one host runtime.
+    timestamps within 10 ms. ``ParcelDetector`` is a native ``HostNode`` and
+    links the five streams through ``link_args``. DepthAI synchronizes complete
+    groups before processing; incomplete groups do not invoke the callback.
+    A synchronized ``ParcelPlane(plane=None, ...)`` reports a failed frame.
+    Image grids must match their supplied calibration. These Python messages
+    connect nodes within one host runtime.
 
 Extending the package
 =====================

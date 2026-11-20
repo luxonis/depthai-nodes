@@ -127,12 +127,14 @@ upward plane orientation.
 ``ParcelDetections`` holds a tuple of eligible ``Parcel`` objects. Each owns its
 read-only float32 ``xyz_mm`` array in source-point order. ``candidate_id`` is a
 zero-based proposal index local to the frame. ``decisions`` preserves all proposal
-eligibility decisions without retaining the source cloud. ``ParcelMeasurements``
-holds one ``ParcelMeasurement`` per parcel. Its ``ParcelMeasurementStatus``
+eligibility decisions without retaining the source cloud. Decision and source-timing
+records are internal output details rather than public constructors. ``ParcelMeasurements``
+holds one ``ParcelMeasurement`` per parcel. Its ``ParcelMeasurement.Status``
 distinguishes no fit, a footprint with unknown height, and a measured cuboid.
 ``ParcelCuboid`` carries the base center, length axis, length, width, and optional
 height. These messages preserve the frame's upward plane, complete algorithm ID,
-all available source timing, and ``ParcelFrameOutcome``. Successful empty frames
+all available source timing, and ``ParcelDetections.Outcome``. The same outcome
+enum is available through ``ParcelMeasurements.Outcome``. Successful empty frames
 and failed frames are distinct.
 
 Parcel messages retain nested Python values on one host. They have no XLink or
@@ -153,15 +155,11 @@ from .parcel import (
     Parcel,
     ParcelCameraCalibration,
     ParcelCuboid,
-    ParcelDecision,
     ParcelDetections,
-    ParcelFrameOutcome,
     ParcelMeasurement,
     ParcelMeasurements,
-    ParcelMeasurementStatus,
     ParcelPlane,
     ParcelRigCalibration,
-    ParcelSourceTiming,
 )
 from .snap_data import SnapData
 from .support_plane import SupportPlane, SupportPlaneCandidate
@@ -176,15 +174,11 @@ __all__ = [
     "Parcel",
     "ParcelCameraCalibration",
     "ParcelCuboid",
-    "ParcelDecision",
     "ParcelDetections",
-    "ParcelFrameOutcome",
     "ParcelMeasurement",
     "ParcelMeasurements",
-    "ParcelMeasurementStatus",
     "ParcelPlane",
     "ParcelRigCalibration",
-    "ParcelSourceTiming",
     "GatheredData",
     "SnapData",
     "Collection",

@@ -1,8 +1,5 @@
 """One frozen detection and visibility call per calibrated source scene."""
 
-from __future__ import annotations
-
-import time
 from datetime import timedelta
 
 import depthai as dai
@@ -11,23 +8,22 @@ import numpy as np
 from depthai_nodes.algorithms import parcel as algorithm
 from depthai_nodes.message.parcel import (
     Parcel,
-    ParcelDecision,
     ParcelDetections,
-    ParcelFrameOutcome,
     ParcelRigCalibration,
+    _ParcelDecision,
 )
 
 from .scene import SceneInputError, prepare_scene, source_timing, upward_plane
 
 
-class ParcelDetector(dai.node.ThreadedHostNode):
+class ParcelDetector(dai.node.HostNode):
     """Detect eligible parcels using the single bundled fast baseline.
 
-    Inputs are ordered streams with the same sequence number and device
-    timestamps within 10 ms. Each cloud triggers one result. Required images
-    and a per-frame ``ParcelPlane`` may arrive up to 250 ms after the cloud is
-    dequeued. A missing or mismatched source emits a failed frame. A supplied
-    plane applies only to its matching cloud sequence, never to a newer frame.
+    DepthAI synchronizes the five input streams before calling ``process``.
+    Each synchronized group must have matching sequence numbers and device
+    timestamps within 10 ms. Incomplete groups do not invoke the callback.
+    A supplied plane applies only to its matching cloud sequence, never to a
+    newer frame.
 
     ``out`` emits same-host ``ParcelDetections`` with independent read-only
     parcel arrays. Candidate IDs are frame-local proposal indices. There is no
@@ -37,23 +33,11 @@ class ParcelDetector(dai.node.ThreadedHostNode):
     algorithm_id = algorithm.ALGORITHM_ID
     _SOURCE_NAMES = ("color", "left", "right", "support_plane")
     _SYNC_TOLERANCE = timedelta(milliseconds=10)
-    _INPUT_TIMEOUT_SECONDS = 0.250
-    _MAX_PENDING = 8
 
     def __init__(self) -> None:
         super().__init__()
-        self._point_cloud_input = self.createInput("point_cloud", queueSize=8)
-        self._scene_inputs = {
-            name: self.createInput(name, queueSize=8) for name in self._SOURCE_NAMES
-        }
-        self._out = self.createOutput("out")
         self._calibration: ParcelRigCalibration | None = None
         self._components = None
-
-    @property
-    def out(self) -> dai.Node.Output:
-        """One eligible-parcel batch or failed-frame result per source cloud."""
-        return self._out
 
     def build(
         self,
@@ -63,7 +47,7 @@ class ParcelDetector(dai.node.ThreadedHostNode):
         right: dai.Node.Output,
         supportPlane: dai.Node.Output,
         calibration: ParcelRigCalibration,
-    ) -> ParcelDetector:
+    ) -> "ParcelDetector":
         """Connect the complete scene and bind the frozen algorithm.
 
         Args:
@@ -88,9 +72,7 @@ class ParcelDetector(dai.node.ThreadedHostNode):
         if not isinstance(calibration, ParcelRigCalibration):
             raise TypeError("calibration must be ParcelRigCalibration")
         components = algorithm.create_components()
-        pointCloud.link(self._point_cloud_input)
-        for name, output in zip(self._SOURCE_NAMES, (color, left, right, supportPlane)):
-            output.link(self._scene_inputs[name])
+        self.link_args(pointCloud, color, left, right, supportPlane)
         self._components = components
         self._calibration = calibration
         return self
@@ -98,12 +80,12 @@ class ParcelDetector(dai.node.ThreadedHostNode):
     def process(
         self,
         pointCloud: dai.Buffer,
-        color: dai.Buffer | None = None,
-        left: dai.Buffer | None = None,
-        right: dai.Buffer | None = None,
-        supportPlane: dai.Buffer | None = None,
+        color: dai.Buffer,
+        left: dai.Buffer,
+        right: dai.Buffer,
+        supportPlane: dai.Buffer,
     ) -> None:
-        """Process one explicitly matched source frame and emit its outcome.
+        """Process one group synchronized by DepthAI and emit its outcome.
 
         Missing inputs, source mismatch, invalid scene data, and callback exceptions
         produce failed batches. Only a completed callback can produce a successful empty
@@ -161,7 +143,7 @@ class ParcelDetector(dai.node.ThreadedHostNode):
                     )
                 ):
                     raise ValueError("Invalid candidate segment indices")
-                decision = ParcelDecision(
+                decision = _ParcelDecision(
                     candidate_id=number, decision=candidate.decision
                 )
                 decisions.append(decision)
@@ -182,42 +164,9 @@ class ParcelDetector(dai.node.ThreadedHostNode):
                 plane=plane,
                 sources=sources,
                 algorithm_id=self.algorithm_id,
-                outcome=ParcelFrameOutcome.FAILED,
+                outcome=ParcelDetections.Outcome.FAILED,
                 failure_code=exc.code
                 if isinstance(exc, SceneInputError)
                 else "detection_failed",
             )
         self.out.send(result)
-
-    def run(self) -> None:
-        """Match each cloud to its required sources, with bounded incomplete frames."""
-        pending: dict[str, dict[int, dai.Buffer]] = {
-            name: {} for name in self._SOURCE_NAMES
-        }
-        while self.isRunning():
-            cloud = self._point_cloud_input.get()
-            if cloud is None:
-                continue
-            sequence = cloud.getSequenceNum()
-            deadline = time.monotonic() + self._INPUT_TIMEOUT_SECONDS
-            while self.isRunning():
-                for name, input_queue in self._scene_inputs.items():
-                    entries = pending[name]
-                    for old in [s for s in entries if s < sequence]:
-                        del entries[old]
-                    while len(entries) < self._MAX_PENDING:
-                        message = input_queue.tryGet()
-                        if message is None:
-                            break
-                        if message.getSequenceNum() >= sequence:
-                            entries[message.getSequenceNum()] = message
-                if all(sequence in pending[name] for name in self._SOURCE_NAMES):
-                    break
-                if time.monotonic() >= deadline:
-                    break
-                time.sleep(0.001)
-            if self.isRunning():
-                self.process(
-                    cloud,
-                    *(pending[name].pop(sequence, None) for name in self._SOURCE_NAMES),
-                )

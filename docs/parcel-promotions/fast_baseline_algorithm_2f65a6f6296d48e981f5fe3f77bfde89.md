@@ -85,25 +85,33 @@ An upstream fixed or updated plane becomes applicable only through that explicit
 The detector normalizes and snapshots its equation, flipping its sign against `down` when necessary.
 The batch's `frame` identifies the shared cloud and plane frame.
 
-Streams are ordered. Each image and plane has the cloud's exact sequence number and a device timestamp within 10 ms.
-Each dequeued cloud waits at most 250 ms for missing sources. The detector retains at most eight future messages per source.
-An absent image or plane produces a failed frame. The next complete scene can recover.
-This timeout controls frame assembly. It does not modify algorithm settings.
+`ParcelDetector` is a native `dai.node.HostNode`. Its builder uses `link_args` for all five streams.
+DepthAI synchronizes the inputs before invoking `process`. The callback checks matching sequence numbers and device timestamps within 10 ms.
+An incomplete group does not invoke the callback or produce an empty success. The next complete scene can be processed.
+To report an unavailable plane for a synchronized frame, send `ParcelPlane(plane=None, ...)` with that frame's timing. It produces a failed frame.
+This replaces the initial adapter's manual queues and 250 ms timeout. Dropped streams no longer generate timeout failure batches.
+The callback computation, calibration conversion, and plane snapshot are unchanged.
 
 `ParcelDetections` contains eligible `Parcel` items with a zero-based frame-local `candidate_id` and owned read-only `xyz_mm`.
 Rejected proposals can leave gaps in IDs. `decisions` retains proposal outcomes without source-point indices or the whole cloud.
 Each parcel is extracted once with `numpy.take` in selected-point order. The dimensioner retains that array without another extraction or copy.
-`sources` contains `ParcelSourceTiming` for every available input. Native output timestamps and sequence repeat the source cloud.
+`sources` contains timing records with `stream`, `timestamp`, `timestamp_device`, and `sequence_num` fields for every available input.
+The source-timing and diagnostic-decision record classes are internal. Native output timestamps and sequence repeat the source cloud.
 
-`ParcelMeasurements` contains `ParcelMeasurement` items. `ParcelMeasurementStatus` distinguishes `NO_FIT`, `HEIGHT_UNKNOWN`, and `MEASURED`.
+`ParcelMeasurements` contains `ParcelMeasurement` items. `ParcelMeasurement.Status` distinguishes `NO_FIT`, `HEIGHT_UNKNOWN`, and `MEASURED`.
 A fitted `ParcelCuboid` has `base_center_mm`, `length_axis`, `length_mm`, `width_mm`, and optional `height_mm`.
 The center lies on the carried plane. The unit length axis is tangent to it. The width axis is the upward plane normal crossed with the length axis.
-`ParcelFrameOutcome` distinguishes `SUCCESS` and `FAILED`. A successful empty scene remains successful through both nodes.
+Both batch messages expose the same `Outcome` enum, such as `ParcelDetections.Outcome.SUCCESS` and `ParcelMeasurements.Outcome.FAILED`.
+A successful empty scene remains successful through both nodes.
 Input failure, identity mismatch, or callback failure produces a failed frame with no partial results.
 The dimensioner reads only the batch's plane. No tracking, temporal medians, or confidence is added.
 
 These Python messages connect nodes on one host. Nested arrays have no implemented XLink or remote serialization.
 The [synthetic example](../../examples/parcel_measurement/synthetic.py) runs both nodes in a native host-only DepthAI pipeline without an OAK device.
+
+The message package exports eight parcel types. `ParcelCameraCalibration`, `ParcelRigCalibration`, and `ParcelPlane` construct the detector's runtime inputs.
+`Parcel`, `ParcelDetections`, `ParcelCuboid`, `ParcelMeasurement`, and `ParcelMeasurements` describe public payloads consumed downstream.
+Status enums live under their owning types. Internal timing and diagnostic records add no flat public constructors.
 
 ## Dependency resolution
 
@@ -164,7 +172,8 @@ These unrelated failures are retained as limitations rather than hidden as skips
 
 Final parcel, Python 3.10, wheel, lint, and documentation results are recorded in the manifest and comparison summaries.
 The focused command `pytest tests/unittests/test_parcel_algorithm tests/unittests/test_parcel_nodes tests/parcel_reference` passes 42 tests and 58 subtests on both Python 3.12.13 and 3.10.18.
-The node wrapper runs 24 native checks in a fresh process to avoid the existing parser mock substitutions.
+The node wrapper runs 26 native checks in a fresh process to avoid the existing parser mock substitutions.
+The native synchronization cases verify that incomplete input groups are skipped, the next complete frame recovers, and an explicit unavailable plane remains a failed frame.
 The final full unit command reports 581 passing tests with the same 181 failures and 124 errors as the unchanged base.
 Pre-commit and `pydoctor depthai_nodes` pass. The API build treats warnings as errors.
 

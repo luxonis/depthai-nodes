@@ -12,8 +12,8 @@ import numpy as np
 
 from depthai_nodes.message import (
     ParcelCameraCalibration,
-    ParcelFrameOutcome,
-    ParcelMeasurementStatus,
+    ParcelMeasurement,
+    ParcelMeasurements,
     ParcelPlane,
     ParcelRigCalibration,
     SupportPlane,
@@ -101,11 +101,11 @@ def main():
         result = results.get(timedelta(seconds=15))
         if result is None:
             raise RuntimeError("Synthetic parcel pipeline did not return a frame")
-        assert result.outcome == ParcelFrameOutcome.SUCCESS, result.failure_code
+        assert result.outcome == ParcelMeasurements.Outcome.SUCCESS, result.failure_code
         assert result.getSequenceNum() == 1
         assert len(result.items) == 1
         item = result.items[0]
-        assert item.status == ParcelMeasurementStatus.MEASURED
+        assert item.status == ParcelMeasurement.Status.MEASURED
         geometry = item.cuboid
         np.testing.assert_allclose(
             [geometry.length_mm, geometry.width_mm, geometry.height_mm],

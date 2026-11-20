@@ -7,10 +7,8 @@ from depthai_nodes.algorithms import parcel as algorithm
 from depthai_nodes.message.parcel import (
     ParcelCuboid,
     ParcelDetections,
-    ParcelFrameOutcome,
     ParcelMeasurement,
     ParcelMeasurements,
-    ParcelMeasurementStatus,
 )
 
 
@@ -65,7 +63,7 @@ class ParcelDimensioner(dai.node.HostNode):
         results = []
         if parcels.algorithm_id != self.algorithm_id:
             failure = "algorithm_identity_mismatch"
-        elif parcels.outcome == ParcelFrameOutcome.FAILED:
+        elif parcels.outcome == ParcelDetections.Outcome.FAILED:
             failure = parcels.failure_code
         else:
             try:
@@ -78,7 +76,7 @@ class ParcelDimensioner(dai.node.HostNode):
                     )
                     geometry = None
                     if cuboid is None:
-                        status = ParcelMeasurementStatus.NO_FIT
+                        status = ParcelMeasurement.Status.NO_FIT
                     else:
                         if not isinstance(cuboid, algorithm.Cuboid):
                             raise ValueError("Invalid cuboid result")
@@ -99,9 +97,9 @@ class ParcelDimensioner(dai.node.HostNode):
                         ):
                             raise ValueError("Cuboid must lie on the supplied plane")
                         status = (
-                            ParcelMeasurementStatus.HEIGHT_UNKNOWN
+                            ParcelMeasurement.Status.HEIGHT_UNKNOWN
                             if geometry.height_mm is None
-                            else ParcelMeasurementStatus.MEASURED
+                            else ParcelMeasurement.Status.MEASURED
                         )
                     results.append(
                         ParcelMeasurement(
@@ -114,7 +112,9 @@ class ParcelDimensioner(dai.node.HostNode):
                 failure = "measurement_failed"
         result = (
             ParcelMeasurements(
-                **common, outcome=ParcelFrameOutcome.FAILED, failure_code=failure
+                **common,
+                outcome=ParcelMeasurements.Outcome.FAILED,
+                failure_code=failure,
             )
             if failure is not None
             else ParcelMeasurements(**common, items=tuple(results))

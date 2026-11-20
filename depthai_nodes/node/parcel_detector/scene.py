@@ -11,7 +11,7 @@ from depthai_nodes.algorithms.parcel import SupportPlane as AlgorithmPlane
 from depthai_nodes.message.parcel import (
     ParcelPlane,
     ParcelRigCalibration,
-    ParcelSourceTiming,
+    _ParcelSourceTiming,
 )
 from depthai_nodes.message.support_plane import SupportPlane
 
@@ -24,9 +24,9 @@ class SceneInputError(ValueError):
         self.code = code
 
 
-def source_timing(stream: str, message: dai.Buffer) -> ParcelSourceTiming:
+def source_timing(stream: str, message: dai.Buffer) -> _ParcelSourceTiming:
     """Snapshot one source message's native frame identity."""
-    return ParcelSourceTiming(
+    return _ParcelSourceTiming(
         stream=stream,
         timestamp=message.getTimestamp(),
         timestamp_device=message.getTimestampDevice(),

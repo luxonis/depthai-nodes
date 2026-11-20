@@ -15,10 +15,8 @@ from depthai_nodes.message import (
     ParcelCameraCalibration,
     ParcelCuboid,
     ParcelDetections,
-    ParcelFrameOutcome,
     ParcelMeasurement,
     ParcelMeasurements,
-    ParcelMeasurementStatus,
     ParcelPlane,
     ParcelRigCalibration,
     SupportPlane,
@@ -283,7 +281,7 @@ class NodeTests(unittest.TestCase):
             self.assertEqual([p.candidate_id for p in detected.items], [3, 4, 5])
             self.assertEqual([p.candidate_id for p in measured.items], [3, 4, 5])
             self.assertEqual(
-                [p.status for p in measured.items], list(ParcelMeasurementStatus)
+                [p.status for p in measured.items], list(ParcelMeasurement.Status)
             )
             self.assertEqual(len(detected.decisions), 6)
 
@@ -317,14 +315,14 @@ class NodeTests(unittest.TestCase):
                 detected = app.detect()
                 measured = app.measure(detected)
                 for result in (detected, measured):
-                    self.assertEqual(result.outcome, ParcelFrameOutcome.SUCCESS)
+                    self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
                     self.assertEqual(result.items, ())
                     self.assertIsNone(result.failure_code)
 
     def test_empty_scene_calls_real_algorithm(self):
         with App() as app:
             detected = app.detect(messages(points=np.empty((0, 3), np.float32)))
-            self.assertEqual(detected.outcome, ParcelFrameOutcome.SUCCESS)
+            self.assertEqual(detected.outcome, ParcelDetections.Outcome.SUCCESS)
             self.assertEqual(app.measure(detected).items, ())
 
     def test_missing_plane_and_each_missing_image_fail(self):
@@ -333,9 +331,9 @@ class NodeTests(unittest.TestCase):
                 inputs = list(messages())
                 inputs[index] = None
                 detected = app.detect(inputs)
-                self.assertEqual(detected.outcome, ParcelFrameOutcome.FAILED)
+                self.assertEqual(detected.outcome, ParcelDetections.Outcome.FAILED)
                 self.assertEqual(
-                    app.measure(detected).outcome, ParcelFrameOutcome.FAILED
+                    app.measure(detected).outcome, ParcelDetections.Outcome.FAILED
                 )
             inputs = list(messages())
             inputs[4] = stamp(ParcelPlane(frame="scene", plane=None))
@@ -399,7 +397,7 @@ class NodeTests(unittest.TestCase):
                 raise RuntimeError("test callback error")
 
             app.detector._components = SimpleNamespace(find_candidates=fail)
-            self.assertEqual(app.detect().outcome, ParcelFrameOutcome.FAILED)
+            self.assertEqual(app.detect().outcome, ParcelDetections.Outcome.FAILED)
             app.detector._components = SimpleNamespace(
                 find_candidates=lambda _: [candidate()]
             )
@@ -439,7 +437,7 @@ class NodeTests(unittest.TestCase):
             result = app.measure(batch)
             self.assertEqual(result.failure_code, "algorithm_identity_mismatch")
             self.assertEqual(result.algorithm_id, "algorithm-other")
-            self.assertEqual(result.outcome, ParcelFrameOutcome.FAILED)
+            self.assertEqual(result.outcome, ParcelDetections.Outcome.FAILED)
 
     def test_queued_parcels_and_planes_survive_subsequent_frames(self):
         with App() as app:
@@ -480,12 +478,12 @@ class NodeTests(unittest.TestCase):
             ParcelDetections(frame="scene", plane=None)
         with self.assertRaises(ValueError):
             ParcelMeasurements(
-                frame="scene", plane=PLANE, outcome=ParcelFrameOutcome.FAILED
+                frame="scene", plane=PLANE, outcome=ParcelDetections.Outcome.FAILED
             )
         with self.assertRaises(ValueError):
             ParcelMeasurement(
                 candidate_id=0,
-                status=ParcelMeasurementStatus.NO_FIT,
+                status=ParcelMeasurement.Status.NO_FIT,
                 cuboid=ParcelCuboid(
                     base_center_mm=(0, 0, 0),
                     length_axis=(1, 0, 0),
@@ -515,11 +513,17 @@ class MissingSource(dai.node.ThreadedHostNode):
         super().__init__()
         self.streams = tuple(self.createOutput(f"s{i}") for i in range(5))
         self.omit = 3
+        self.unavailable_plane = False
 
     def run(self):
         for sequence in (1, 2):
             for index, (output, message) in enumerate(
-                zip(self.streams, messages(sequence))
+                zip(
+                    self.streams,
+                    messages(sequence, plane=None)
+                    if sequence == 1 and self.unavailable_plane
+                    else messages(sequence),
+                )
             ):
                 if sequence == 1 and index == self.omit:
                     continue
@@ -527,7 +531,29 @@ class MissingSource(dai.node.ThreadedHostNode):
 
 
 class StreamingTests(unittest.TestCase):
-    def test_missing_image_and_plane_emit_failed_frame_then_recover(self):
+    def test_explicit_unavailable_plane_is_a_failed_frame_then_recovers(self):
+        with dai.Pipeline(False) as pipeline:
+            source = pipeline.create(MissingSource)
+            source.omit = None
+            source.unavailable_plane = True
+            detector = pipeline.create(ParcelDetector).build(
+                *source.streams, calibration()
+            )
+            dimensioner = pipeline.create(ParcelDimensioner).build(detector.out)
+            results = dimensioner.out.createOutputQueue()
+            pipeline.start()
+            failed = results.get(timedelta(seconds=5))
+            recovered = results.get(timedelta(seconds=5))
+            self.assertIsNotNone(failed)
+            self.assertIsNotNone(recovered)
+            self.assertEqual(failed.getSequenceNum(), 1)
+            self.assertEqual(failed.outcome, ParcelDetections.Outcome.FAILED)
+            self.assertEqual(failed.failure_code, "missing_support_plane")
+            self.assertEqual(recovered.getSequenceNum(), 2)
+            self.assertEqual(recovered.outcome, ParcelDetections.Outcome.SUCCESS)
+            pipeline.stop()
+
+    def test_native_sync_skips_incomplete_groups_and_recovers(self):
         for omitted in (1, 2, 3, 4):
             with self.subTest(omitted=omitted), dai.Pipeline(False) as pipeline:
                 source = pipeline.create(MissingSource)
@@ -538,16 +564,45 @@ class StreamingTests(unittest.TestCase):
                 dimensioner = pipeline.create(ParcelDimensioner).build(detector.out)
                 results = dimensioner.out.createOutputQueue()
                 pipeline.start()
-                first = results.get(timedelta(seconds=5))
-                second = results.get(timedelta(seconds=5))
-                self.assertIsNotNone(first)
-                self.assertIsNotNone(second)
-                self.assertEqual(first.getSequenceNum(), 1)
-                self.assertEqual(first.outcome, ParcelFrameOutcome.FAILED)
-                self.assertEqual(second.getSequenceNum(), 2)
-                self.assertEqual(second.outcome, ParcelFrameOutcome.SUCCESS)
-                self.assertEqual(second.items, ())
+                result = results.get(timedelta(seconds=5))
+                self.assertIsNotNone(result)
+                self.assertEqual(result.getSequenceNum(), 2)
+                self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+                self.assertEqual(result.items, ())
+                self.assertIsNone(results.get(timedelta(milliseconds=50)))
                 pipeline.stop()
+
+
+class PublicApiTests(unittest.TestCase):
+    def test_public_types_and_scoped_statuses(self):
+        import depthai_nodes.message as messages
+        from depthai_nodes.message import parcel
+
+        public = {
+            "Parcel",
+            "ParcelCameraCalibration",
+            "ParcelCuboid",
+            "ParcelDetections",
+            "ParcelMeasurement",
+            "ParcelMeasurements",
+            "ParcelPlane",
+            "ParcelRigCalibration",
+        }
+        self.assertEqual(set(parcel.__all__), public)
+        self.assertTrue(public.issubset(messages.__all__))
+        for name in (
+            "ParcelDecision",
+            "ParcelSourceTiming",
+            "ParcelFrameOutcome",
+            "ParcelMeasurementStatus",
+        ):
+            self.assertFalse(hasattr(messages, name))
+            self.assertFalse(hasattr(parcel, name))
+        self.assertIs(ParcelDetections.Outcome, ParcelMeasurements.Outcome)
+        self.assertEqual(ParcelDetections.Outcome.SUCCESS.value, "success")
+        self.assertEqual(
+            ParcelMeasurement.Status.HEIGHT_UNKNOWN.value, "height_unknown"
+        )
 
 
 if __name__ == "__main__":

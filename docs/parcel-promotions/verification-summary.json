@@ -21,7 +21,7 @@
     "command": "pytest tests/unittests/test_parcel_algorithm tests/unittests/test_parcel_nodes tests/parcel_reference",
     "passed": 42,
     "subtests_passed": 58,
-    "native_checks_inside_subprocess": 24,
+    "native_checks_inside_subprocess": 26,
     "skips": 0,
     "result": "passed"
   },
@@ -86,13 +86,13 @@
     "hash_covered_files": 24,
     "no_scipy_imports": "passed before installing parcel extra",
     "wheel_assets_and_dependencies": "all required JSON/settings/evidence/C++ assets present, no binary/tests/tools/docs bundled; parcel extra pins verified in METADATA",
-    "installed_native_sha256": "6e43ea1fe0ce6ba6a2b8f45d0d36c6cc0b3ba18a3aaa1fc4187478f11789543d",
-    "fallback_pipeline": "passed before optional local build",
+    "installed_native_sha256": "0a5b98ee16e74db6cfa451d7044019a14a3115ccba3e40d16e65e985e5525afc",
+    "fallback_pipeline": "Passed after the HostNode and scoped-enum revision in a fresh environment outside both source trees.",
     "native_build": "passed Apple clang21 C++17 -O3 -ffp-contract=off -fPIC -shared",
-    "native_pipeline": "passed, same candidate0 and218.940/158.420/110mm output as fallback",
-    "wheel_sha256": "6067041c22b822b84119b0d1580a5135eede98f95c586d304606207cb7475750",
+    "native_pipeline": "Passed after the HostNode and scoped-enum revision, with the same candidate and geometry as fallback.",
     "final_manifest_status": "verified_for_declared_parcel_dependencies",
-    "final_wheel_reinstall": "passed all24file hashes and portable fallback synthetic pipeline after rebuilding final manifest"
+    "final_wheel_reinstall": "passed all24file hashes and portable fallback synthetic pipeline after rebuilding final manifest",
+    "wheel_sha256": "19eed39f4907c5d53e0c94ae53a49dd3f2de748dfa5fd9c6c01ed258547b7aa6"
   },
   "limitations": [
     "No OAK hardware or live sensor pipeline check.",
@@ -100,5 +100,30 @@
     "No XLink/remote serialization support claimed.",
     "Historical decoded validation cache coverage; no raw recording decode or new held-out/training data.",
     "No timing rerun; historical performance remains attributed to original artifact."
-  ]
+  ],
+  "public_api": {
+    "flat_parcel_message_types": [
+      "Parcel",
+      "ParcelCameraCalibration",
+      "ParcelCuboid",
+      "ParcelDetections",
+      "ParcelMeasurement",
+      "ParcelMeasurements",
+      "ParcelPlane",
+      "ParcelRigCalibration"
+    ],
+    "measurement_status": "ParcelMeasurement.Status",
+    "frame_outcome": "ParcelDetections.Outcome / ParcelMeasurements.Outcome",
+    "internal_records": [
+      "diagnostic decisions",
+      "source timing"
+    ]
+  },
+  "synchronization_revision": {
+    "implementation": "dai.node.HostNode.link_args for all five inputs",
+    "complete_groups": "One scene callback per synchronized group, with sequence and device timestamp validation.",
+    "incomplete_groups": "No callback or result; next complete frame can recover.",
+    "explicit_unavailable_plane": "Synchronized ParcelPlane with plane=None emits a failed frame.",
+    "removed": "Custom run loop, per-source queues, future-message cache, and 250 ms timeout."
+  }
 }

@@ -24,13 +24,13 @@
       "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/scoped-settings.json": "66f29d1a54ddb6fd8d3fa957a34aa81dcef53a4ca29a47b0b4e39331afcb8bd8",
       "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/visibility.py": "9177b8d4c3888655038427602e869290922a5edbc6bf79d96561322cc4c75951",
       "depthai_nodes/algorithms/parcel/manifest.py": "05aea97c272d1b854954d7cf126830ad5be65ba47d63c0ff4421eabbaf7041f4",
-      "depthai_nodes/message/parcel.py": "7744a629476fb3932bc851ecae5346eb2761613fc18c15ceca27c0353cac44f6",
+      "depthai_nodes/message/parcel.py": "f5d137cb60d853c7e7277a54ba4ed70ac8235f23be72ba9e8ec6551a7b96d85a",
       "depthai_nodes/message/support_plane.py": "0eaeec70dda37d48b3160d1f1a14cffce766f23182289d1b569ffb444f1f44e3",
       "depthai_nodes/node/parcel_detector/__init__.py": "4bd2d4aaf686835abe5da5203a47a67a2ebe125aee64c5ef8499cac3809b1482",
-      "depthai_nodes/node/parcel_detector/parcel_detector.py": "ea40386f0014b868deb05096f1463664d9d8ba034eea781a2a35f83ddf9d5534",
-      "depthai_nodes/node/parcel_detector/scene.py": "aede56d72df0847a75072a647bd6b1020953f722ada29c93295458c9644ceadc",
+      "depthai_nodes/node/parcel_detector/parcel_detector.py": "b839fe14992130a419b66c9a04f3533bbdb22d2032942b4c56d1ded37b1670ca",
+      "depthai_nodes/node/parcel_detector/scene.py": "d5ed7fd7c5b4d14e7a325e69c017457733e4da1775080bad738a3220db3e08c3",
       "depthai_nodes/node/parcel_dimensioner/__init__.py": "506569fb746e3a1fb9fc525170615c20f027a35ec155fa0a8d5b283012a7b3fc",
-      "depthai_nodes/node/parcel_dimensioner/parcel_dimensioner.py": "fbb4b97530c24da896ab43caf2a830c97b90a311b17d3cea84bb336ce3838a5d"
+      "depthai_nodes/node/parcel_dimensioner/parcel_dimensioner.py": "bcb9530c2bd7f422574ef79ee11cd5975158511d4b5ae0437dabd6d0df910e90"
     },
     "binary_distribution": "No native binary in the universal wheel; original fallback is the default. Optional platform-local build uses bundled C++17 source.",
     "native_build_flags": [
@@ -53,6 +53,13 @@
         "compiler": "Apple clang21.0.0 (clang-2100.4.1.1)",
         "sha256": "6e43ea1fe0ce6ba6a2b8f45d0d36c6cc0b3ba18a3aaa1fc4187478f11789543d",
         "scope": "Optional native build from clean installed wheel; synthetic two-node host pipeline passed",
+        "distributed": false
+      },
+      {
+        "platform": "macOS arm64",
+        "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
+        "sha256": "0a5b98ee16e74db6cfa451d7044019a14a3115ccba3e40d16e65e985e5525afc",
+        "scope": "Optional native build from installed wheel after native HostNode and public message API revision; synthetic two-node pipeline passed.",
         "distributed": false
       }
     ]
@@ -118,7 +125,8 @@
       "Retain only the two callback fields in Components; supplied-plane mode has no optional estimator.",
       "Serialize the unchanged configuration object as a separately hashed configuration.json; retain original scoped settings and aggregate evidence bytes.",
       "Apply repository formatting without changing computation, thresholds, precision, segment order, or fallback behavior.",
-      "Use explicit DepthAI image/calibration/plane conversion and frame-local owned parcel messages outside the immutable computation directory."
+      "Use explicit DepthAI image/calibration/plane conversion and frame-local owned parcel messages outside the immutable computation directory.",
+      "Use native DepthAI HostNode synchronization for complete groups instead of adapter queues and timeouts. Scope status enums under public message owners and keep diagnostic/timing record classes internal. Frozen computation and scene conversion are unchanged."
     ],
     "lineage_note": "Original settings declare algorithm-f6ab98aa284d4420bfd3bc67761a969f. Registration returned HTTP 403 with this token. The frozen settings copy omits that inaccessible declaration only; computation configuration, policy, objective, modalities, source paths and dependency lock are unchanged. Historical predecessor is retained in this report; no historical scores are reassigned.",
     "license_note": "Pinned BoxLabRunners tree has no LICENSE file. Luxonis attribution is retained. DepthAI Nodes keeps its Apache-2.0 distribution license."
@@ -986,7 +994,7 @@
       },
       {
         "name": "Focused port tests on Python 3.10.18 and 3.12.13",
-        "result": "42 tests and 58 subtests passed in each environment. The suite includes 24 native boundary checks in an isolated subprocess."
+        "result": "42 tests and 58 subtests passed in each environment. The suite includes 26 native boundary checks in an isolated subprocess, including native synchronization recovery and the reduced public API."
       },
       {
         "name": "Frozen image regressions",
@@ -1011,6 +1019,10 @@
       {
         "name": "pydoctor depthai_nodes with warnings as errors",
         "result": "Passed with pydoctor 25.10.1."
+      },
+      {
+        "name": "Native HostNode synchronization and public API revision",
+        "result": "26 native checks pass. Incomplete groups skip callbacks, subsequent complete frames recover, and explicitly unavailable planes fail. Eight flat public message types remain. Candidate computation is unchanged."
       }
     ],
     "environment": {

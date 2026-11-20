@@ -19,20 +19,16 @@ from depthai_nodes.algorithms.parcel import ALGORITHM_ID
 
 from .support_plane import SupportPlane
 
-
-class ParcelFrameOutcome(str, Enum):
-    """Whether a whole source frame completed processing."""
-
-    SUCCESS = "success"
-    FAILED = "failed"
-
-
-class ParcelMeasurementStatus(str, Enum):
-    """A parcel's footprint and height outcome."""
-
-    NO_FIT = "no_fit"
-    HEIGHT_UNKNOWN = "height_unknown"
-    MEASURED = "measured"
+__all__ = [
+    "Parcel",
+    "ParcelCameraCalibration",
+    "ParcelCuboid",
+    "ParcelDetections",
+    "ParcelMeasurement",
+    "ParcelMeasurements",
+    "ParcelPlane",
+    "ParcelRigCalibration",
+]
 
 
 def _frame(value: str) -> str:
@@ -174,7 +170,7 @@ class ParcelPlane(dai.Buffer):
 
 
 @dataclass(frozen=True, kw_only=True)
-class ParcelSourceTiming:
+class _ParcelSourceTiming:
     """Host/device timestamps and sequence of one source stream."""
 
     stream: Literal["point_cloud", "color", "left", "right", "support_plane"]
@@ -238,7 +234,7 @@ class Parcel:
 
 
 @dataclass(frozen=True, kw_only=True)
-class ParcelDecision:
+class _ParcelDecision:
     """Optional proposal diagnostic, independent of measurement inputs."""
 
     candidate_id: int
@@ -291,49 +287,68 @@ class ParcelCuboid:
 
 @dataclass(frozen=True, kw_only=True)
 class ParcelMeasurement:
-    """One candidate's no-fit, unknown-height, or measured cuboid outcome."""
+    """One candidate's no-fit, unknown-height, or measured cuboid outcome.
+
+    ``Status`` identifies the footprint and height result.
+    """
+
+    class Status(str, Enum):
+        """A parcel's footprint and height outcome."""
+
+        NO_FIT = "no_fit"
+        HEIGHT_UNKNOWN = "height_unknown"
+        MEASURED = "measured"
 
     candidate_id: int
-    status: ParcelMeasurementStatus
+    status: ParcelMeasurement.Status
     cuboid: ParcelCuboid | None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "candidate_id", _candidate(self.candidate_id))
-        if not isinstance(self.status, ParcelMeasurementStatus):
-            raise TypeError("status must be ParcelMeasurementStatus")
-        if self.status == ParcelMeasurementStatus.NO_FIT:
+        if not isinstance(self.status, self.Status):
+            raise TypeError("status must be ParcelMeasurement.Status")
+        if self.status == self.Status.NO_FIT:
             if self.cuboid is not None:
                 raise ValueError("A no-fit outcome cannot contain a cuboid")
         elif not isinstance(self.cuboid, ParcelCuboid):
             raise TypeError("A fitted outcome requires a ParcelCuboid")
         elif (self.cuboid.height_mm is None) != (
-            self.status == ParcelMeasurementStatus.HEIGHT_UNKNOWN
+            self.status == self.Status.HEIGHT_UNKNOWN
         ):
             raise ValueError("Height must agree with the measurement status")
 
 
 class _ParcelBatch(dai.Buffer):
+    class Outcome(str, Enum):
+        """Whether a whole source frame completed processing.
+
+        Both parcel batch messages expose the same enum as ``Outcome``.
+        """
+
+        SUCCESS = "success"
+        FAILED = "failed"
+
     def __init__(
         self,
         *,
         items: tuple,
         frame: str,
         plane: SupportPlane | None,
-        sources: tuple[ParcelSourceTiming, ...] = (),
+        sources: tuple[_ParcelSourceTiming, ...] = (),
         algorithm_id: str = ALGORITHM_ID,
-        outcome: ParcelFrameOutcome = ParcelFrameOutcome.SUCCESS,
+        outcome: _ParcelBatch.Outcome = Outcome.SUCCESS,
         failure_code: str | None = None,
     ) -> None:
         super().__init__()
         self._frame = _frame(frame)
         if plane is not None and not isinstance(plane, SupportPlane):
             raise TypeError("plane must be SupportPlane or None")
-        if not isinstance(outcome, ParcelFrameOutcome):
-            raise TypeError("outcome must be ParcelFrameOutcome")
+        if not isinstance(outcome, self.Outcome):
+            raise TypeError("outcome must be a parcel batch Outcome")
         if not isinstance(algorithm_id, str) or not algorithm_id:
             raise ValueError("algorithm_id must be nonempty")
         items = tuple(items)
-        if outcome == ParcelFrameOutcome.SUCCESS:
+        if outcome == self.Outcome.SUCCESS:
             if plane is None or failure_code is not None:
                 raise ValueError("A successful frame requires a plane and no failure")
         elif items or not isinstance(failure_code, str) or not failure_code:
@@ -342,8 +357,8 @@ class _ParcelBatch(dai.Buffer):
         if len(set(ids)) != len(ids):
             raise ValueError("Candidate IDs must be unique within a frame")
         sources = tuple(sources)
-        if any(not isinstance(s, ParcelSourceTiming) for s in sources):
-            raise TypeError("sources must contain ParcelSourceTiming values")
+        if any(not isinstance(s, _ParcelSourceTiming) for s in sources):
+            raise TypeError("sources must contain source timing records")
         if len({s.stream for s in sources}) != len(sources):
             raise ValueError("Source stream timings must be unique")
         self._items = items
@@ -374,7 +389,7 @@ class _ParcelBatch(dai.Buffer):
         return self._plane
 
     @property
-    def sources(self) -> tuple[ParcelSourceTiming, ...]:
+    def sources(self) -> tuple[_ParcelSourceTiming, ...]:
         """Timing of every source that was available for this frame."""
         return self._sources
 
@@ -384,7 +399,7 @@ class _ParcelBatch(dai.Buffer):
         return self._algorithm_id
 
     @property
-    def outcome(self) -> ParcelFrameOutcome:
+    def outcome(self) -> _ParcelBatch.Outcome:
         """Whole-frame processing result."""
         return self._outcome
 
@@ -397,6 +412,8 @@ class _ParcelBatch(dai.Buffer):
 class ParcelDetections(_ParcelBatch):
     """One completed or failed frame containing only eligible parcel clouds.
 
+    ``Outcome`` distinguishes successful and failed frames.
+
     Items own their points until consumption. No source cloud or image is retained.
     ``decisions`` contains proposal diagnostics without source-point indices.
     Native Buffer timestamps and sequence repeat the source cloud metadata.
@@ -408,10 +425,10 @@ class ParcelDetections(_ParcelBatch):
         frame: str,
         plane: SupportPlane | None,
         items: tuple[Parcel, ...] = (),
-        decisions: tuple[ParcelDecision, ...] = (),
-        sources: tuple[ParcelSourceTiming, ...] = (),
+        decisions: tuple[_ParcelDecision, ...] = (),
+        sources: tuple[_ParcelSourceTiming, ...] = (),
         algorithm_id: str = ALGORITHM_ID,
-        outcome: ParcelFrameOutcome = ParcelFrameOutcome.SUCCESS,
+        outcome: _ParcelBatch.Outcome = _ParcelBatch.Outcome.SUCCESS,
         failure_code: str | None = None,
     ) -> None:
         items = tuple(items)
@@ -427,8 +444,8 @@ class ParcelDetections(_ParcelBatch):
             failure_code=failure_code,
         )
         decisions = tuple(decisions)
-        if any(not isinstance(d, ParcelDecision) for d in decisions):
-            raise TypeError("decisions must contain ParcelDecision values")
+        if any(not isinstance(d, _ParcelDecision) for d in decisions):
+            raise TypeError("decisions must contain diagnostic decision records")
         if len({d.candidate_id for d in decisions}) != len(decisions):
             raise ValueError("Diagnostic candidate IDs must be unique")
         if decisions and {
@@ -438,7 +455,7 @@ class ParcelDetections(_ParcelBatch):
         self._decisions = decisions
 
     @property
-    def decisions(self) -> tuple[ParcelDecision, ...]:
+    def decisions(self) -> tuple[_ParcelDecision, ...]:
         """Diagnostics for every proposed candidate, in proposal order."""
         return self._decisions
 
@@ -451,6 +468,8 @@ class ParcelDetections(_ParcelBatch):
 class ParcelMeasurements(_ParcelBatch):
     """One measurement frame preserving detector identity, plane, and source timing.
 
+    ``Outcome`` is shared with ``ParcelDetections.Outcome``.
+
     Each eligible parcel has one outcome, including no-fit and unknown-height. An empty
     successful input produces an empty successful output. A failed input or measurement
     call produces a failed frame with no partial results.
@@ -462,9 +481,9 @@ class ParcelMeasurements(_ParcelBatch):
         frame: str,
         plane: SupportPlane | None,
         items: tuple[ParcelMeasurement, ...] = (),
-        sources: tuple[ParcelSourceTiming, ...] = (),
+        sources: tuple[_ParcelSourceTiming, ...] = (),
         algorithm_id: str = ALGORITHM_ID,
-        outcome: ParcelFrameOutcome = ParcelFrameOutcome.SUCCESS,
+        outcome: _ParcelBatch.Outcome = _ParcelBatch.Outcome.SUCCESS,
         failure_code: str | None = None,
     ) -> None:
         items = tuple(items)
