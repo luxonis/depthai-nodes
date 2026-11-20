@@ -283,6 +283,35 @@ Example:
     Each ``BoxMeasurements`` message read from ``measurements`` holds one
     result per box detection, with its box dimensions once measured.
 
+Parcel measurement
+==================
+
+``ParcelDetector`` detects and validates eligible parcels from a millimeter XYZ
+cloud, supplied plane, and calibrated color/left/right images. It binds the frozen
+fast baseline. No algorithm selector or settings API is exposed. Install with
+``pip install "depthai-nodes[parcel]"``. ``ParcelDimensioner`` consumes the emitted
+``depthai_nodes.message.ParcelDetections`` and measures independent parcel clouds
+against that batch's exact upward plane. Outputs are per-frame geometry, without
+tracking or temporal medians. Existing box nodes retain their separate behavior.
+
+Example:
+    With existing ``pointCloud``, ``color``, ``left``, ``right``, and per-frame
+    ``planes`` outputs, plus a ``ParcelRigCalibration`` named ``calibration``::
+
+        from depthai_nodes.node import ParcelDetector, ParcelDimensioner
+
+        detector = pipeline.create(ParcelDetector).build(
+            pointCloud, color, left, right, planes, calibration
+        )
+        dimensioner = pipeline.create(ParcelDimensioner).build(detector.out)
+        results = dimensioner.out.createOutputQueue()
+
+    Plane messages are ``ParcelPlane`` values in ``calibration.frame``. Each plane
+    and all three images must share the cloud sequence number and have device
+    timestamps within 10 ms. Missing required data produces a failed frame after
+    a 250 ms source-arrival deadline. Image grids must match their supplied
+    calibration. These Python messages connect nodes within one host runtime.
+
 Extending the package
 =====================
 
@@ -314,6 +343,8 @@ from .img_detections_filter import ImgDetectionsFilter
 from .img_frame_overlay import ImgFrameOverlay
 from .instance_to_semantic_mask import InstanceToSemanticMask
 from .message_collector import MessageCollector
+from .parcel_detector import ParcelDetector
+from .parcel_dimensioner import ParcelDimensioner
 from .parser_generator import ParserGenerator
 from .parsers.base_parser import BaseParser
 from .parsers.classification import ClassificationParser
@@ -348,6 +379,8 @@ from .support_plane_calibrator import (
 from .tiling import Tiling
 
 __all__ = [
+    "ParcelDetector",
+    "ParcelDimensioner",
     "ApplyColormap",
     "ApplyDepthColormap",
     "CoordinatesMapper",

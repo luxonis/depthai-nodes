@@ -1,0 +1,104 @@
+{
+  "schema_version": "parcel-promotion-verification/1",
+  "candidate_id": "algorithm-2f65a6f6296d48e981f5fe3f77bfde89",
+  "frozen_source_integrity": {
+    "files": 16,
+    "settings_sha256": "66f29d1a54ddb6fd8d3fa957a34aa81dcef53a4ca29a47b0b4e39331afcb8bd8",
+    "result": "passed",
+    "native_binary_sha256": "d777d52c77a31a2fede1f977edf28378e14504dc78a8d4479dc31054f0df2b31"
+  },
+  "frozen_image_tests": {
+    "fast_baseline": 25,
+    "components": 7,
+    "skips": 0,
+    "result": "passed"
+  },
+  "port_tests": {
+    "python_versions": [
+      "3.10.18",
+      "3.12.13"
+    ],
+    "command": "pytest tests/unittests/test_parcel_algorithm tests/unittests/test_parcel_nodes tests/parcel_reference",
+    "passed": 42,
+    "subtests_passed": 58,
+    "native_checks_inside_subprocess": 24,
+    "skips": 0,
+    "result": "passed"
+  },
+  "existing_unit_checks": {
+    "full_suite": {
+      "command": "pytest tests/unittests",
+      "passed": 581,
+      "failed": 181,
+      "errors": 124,
+      "result": "failed with existing baseline failures"
+    },
+    "unchanged_base": {
+      "passed": 571,
+      "failed": 181,
+      "errors": 124
+    },
+    "host_suite": {
+      "passed": 116,
+      "result": "passed with OpenCV4.10 and4.12"
+    },
+    "helpers_messages": {
+      "passed": 382,
+      "result": "passed with OpenCV4.10; combined host/helpers/messages498passed with4.12"
+    },
+    "box_threaded_regressions": {
+      "passed": 31,
+      "result": "passed with OpenCV4.10 and4.12"
+    },
+    "non_node_suite": {
+      "command": "pytest tests/unittests --ignore=tests/unittests/test_nodes",
+      "passed": 524,
+      "result": "passed"
+    },
+    "separate_threaded_suite": {
+      "passed": 195,
+      "failed": 16,
+      "result": "same unavailable model-cache failures on unchanged base"
+    }
+  },
+  "lint": {
+    "command": "pre-commit run --all-files",
+    "result": "passed"
+  },
+  "api_docs": {
+    "command": "pydoctor depthai_nodes",
+    "version": "25.10.1",
+    "warnings_as_errors": true,
+    "result": "passed",
+    "tooling_note": "Separate documentation environment avoids mdformat-toc attrs21/Twisted26 conflict."
+  },
+  "installed_wheel": {
+    "schema_version": "parcel-wheel-check/1",
+    "result": "passed",
+    "platform": "macOS-27.2.1-arm64-arm-64bit",
+    "python": "3.12.13",
+    "dependencies": {
+      "depthai": "3.11.0",
+      "numpy": "2.2.6",
+      "scipy": "1.15.3",
+      "opencv-python-headless": "4.12.0.88"
+    },
+    "hash_covered_files": 24,
+    "no_scipy_imports": "passed before installing parcel extra",
+    "wheel_assets_and_dependencies": "all required JSON/settings/evidence/C++ assets present, no binary/tests/tools/docs bundled; parcel extra pins verified in METADATA",
+    "installed_native_sha256": "6e43ea1fe0ce6ba6a2b8f45d0d36c6cc0b3ba18a3aaa1fc4187478f11789543d",
+    "fallback_pipeline": "passed before optional local build",
+    "native_build": "passed Apple clang21 C++17 -O3 -ffp-contract=off -fPIC -shared",
+    "native_pipeline": "passed, same candidate0 and218.940/158.420/110mm output as fallback",
+    "wheel_sha256": "6067041c22b822b84119b0d1580a5135eede98f95c586d304606207cb7475750",
+    "final_manifest_status": "verified_for_declared_parcel_dependencies",
+    "final_wheel_reinstall": "passed all24file hashes and portable fallback synthetic pipeline after rebuilding final manifest"
+  },
+  "limitations": [
+    "No OAK hardware or live sensor pipeline check.",
+    "No Windows or Linux installed-port execution check. Original frozen Linux image regressions pass.",
+    "No XLink/remote serialization support claimed.",
+    "Historical decoded validation cache coverage; no raw recording decode or new held-out/training data.",
+    "No timing rerun; historical performance remains attributed to original artifact."
+  ]
+}

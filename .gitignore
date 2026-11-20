@@ -175,3 +175,6 @@ cython_debug/
 
 # Generated API reference
 /apidocs/
+# Optional parcel kernels are built for the local operating system and architecture.
+depthai_nodes/algorithms/parcel/**/_kernels.so
+depthai_nodes/algorithms/parcel/**/_kernels.dylib
