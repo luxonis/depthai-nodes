@@ -157,6 +157,11 @@ Message handling and uploads
 Support plane
 =============
 
+`SupportPlaneCalibration` searches for planes and verifies equations for fixed
+installations. `SupportPlaneCalibrationConfig` sets fit timing and shared
+acceptance criteria. Use `depthai_nodes.SupportPlaneStore` to save and restore
+application approvals.
+
 `SupportPlaneCalibrator` finds the support plane in a point cloud, checked
 against gravity from IMU data. Each Start control begins a calibration attempt,
 which ends with one `depthai_nodes.message.SupportPlaneCalibrationResult` on
@@ -201,48 +206,53 @@ Example:
     ``result.outcome`` tells whether the attempt succeeded, failed at the
     attempt cap, or was cancelled; only a succeeded result has candidates.
 
-`AutoSupportPlane` wraps a ``SupportPlaneCalibrator`` to find and hold the
-support plane, sending a `depthai_nodes.message.AutoSupportPlaneResult` on
-``out``. `AutoSupportPlaneConfig` sets the mode: ``ON_START`` finds a plane once
-and holds it; ``CONTINUOUS`` also checks it about every ``check_interval_sec``
-and refits after repeated failed checks, keeping the old plane meanwhile. Its
-``verificationOutput`` passes on the inner calibrator's plane verifications, one
-per ``initialPlane`` gate or plane check, to watch the plane's angle and on-plane
-ratio. A ``selectCandidate`` given to ``build`` picks the plane from a
-successful attempt's ``SupportPlaneCalibrationResult``. It needs open3d, like
-the calibrator.
+`AutoSupportPlaneCalibration` uses `SupportPlaneCalibration` to find and hold a support
+plane. It ranks passing assessments by sampled on-plane point count and breaks
+ties by perpendicular distance. It emits an
+`depthai_nodes.message.AutoSupportPlaneResult` on ``out`` when it finds or
+confirms a plane. Read ``candidatesOutput`` for every fit batch and
+``verificationOutput`` for assessments from the startup gate and periodic
+checks.
 
-Drive ``SupportPlaneCalibrator`` directly instead when a person picks among
-the support plane candidates, or for any custom flow.
+``ON_START`` holds the first passing plane. ``CONTINUOUS`` checks the held
+plane at ``check_interval_sec`` and starts a refit after repeated failed checks.
+The held plane stays in use while the refit searches for a passing replacement.
+A supplied ``initialPlane`` is assessed before use. Use
+`SupportPlaneCalibration` directly for human approval.
+
+Set ``vertical_distance_range_mm``, ``min_on_plane_ratio``,
+``min_sampled_point_count``, ``check_distance_mm``, or ``max_gravity_angle_deg``
+directly on `depthai_nodes.message.AutoSupportPlaneConfig` to override the
+corresponding acceptance limits. Send a complete config to ``inputConfig`` to
+replace the settings at runtime. If the limits change, ``out`` emits a failed
+result with no plane while the node verifies the old plane under the new limits.
+
+Existing callers can pass a `PlaneCalibrationConfig` to select the legacy
+calibrator, which supports the ``selectCandidate`` callback and attempt cap.
+A callback supplied without a config also uses the legacy calibrator.
 
 Example:
     With existing ``pointCloud`` and ``imu`` outputs and a point cloud of
-    ``width`` by ``height`` points, keep the support plane up to date::
+    ``width`` by ``height`` points::
 
-        from depthai_nodes.node import (
-            AutoSupportPlane,
-            AutoSupportPlaneConfig,
-            PlaneCalibrationConfig,
-        )
+        from dataclasses import replace
+
+        from depthai_nodes.message import AutoSupportPlaneConfig
+        from depthai_nodes.node import AutoSupportPlaneCalibration
 
         config = AutoSupportPlaneConfig(
             mode=AutoSupportPlaneConfig.Mode.CONTINUOUS,
-            calibration=PlaneCalibrationConfig(max_calibration_attempts=10),
+            vertical_distance_range_mm=(700, 900),
         )
-        node = pipeline.create(AutoSupportPlane).build(
+        node = pipeline.create(AutoSupportPlaneCalibration).build(
             pointCloud, imu, (width, height), config
         )
         results = node.out.createOutputQueue()
+        checks = node.verificationOutput.createOutputQueue()
+        configs = node.inputConfig.createInputQueue()
         pipeline.start()
+        configs.send(replace(config, min_on_plane_ratio=0.25))
 
-        while pipeline.isRunning():
-            result = results.get()
-            if result.plane is not None:
-                result.plane.toJsonFile("support_plane.json")
-
-    ``result.passed`` is ``False`` when a calibration attempt ended at the
-    attempt cap; the plane is then the old one kept after a failed refit, or
-    ``None`` when there is none yet.
 
 Box measurement
 ===============
@@ -303,6 +313,7 @@ from .base_threaded_host_node import BaseThreadedHostNode
 from .box_detector import BoxDetector
 from .box_dimensioner import BoxDimensioner
 from .box_measurer import BoxMeasurer
+from .camera_movement_detector import CameraMovementConfig, CameraMovementDetector
 from .coordinates_mapper import CoordinatesMapper
 from .depth_merger import DepthMerger
 from .extended_neural_network import ExtendedNeuralNetwork
@@ -340,9 +351,11 @@ from .parsers.yunet import YuNetParser
 from .parsing_neural_network import ParsingNeuralNetwork
 from .snaps_uploader import SnapsUploader
 from .support_plane_calibrator import (
-    AutoSupportPlane,
+    AutoSupportPlaneCalibration,
     AutoSupportPlaneConfig,
     PlaneCalibrationConfig,
+    SupportPlaneCalibration,
+    SupportPlaneCalibrationConfig,
     SupportPlaneCalibrator,
 )
 from .tiling import Tiling
@@ -393,8 +406,12 @@ __all__ = [
     "BoxDimensioner",
     "BoxDetector",
     "BoxMeasurer",
+    "CameraMovementConfig",
+    "CameraMovementDetector",
+    "SupportPlaneCalibration",
+    "SupportPlaneCalibrationConfig",
     "SupportPlaneCalibrator",
     "PlaneCalibrationConfig",
-    "AutoSupportPlane",
+    "AutoSupportPlaneCalibration",
     "AutoSupportPlaneConfig",
 ]

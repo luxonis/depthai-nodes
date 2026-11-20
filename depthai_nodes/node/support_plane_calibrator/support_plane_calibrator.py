@@ -8,6 +8,8 @@ from typing import Any
 import depthai as dai
 import numpy as np
 
+from depthai_nodes.message.auto_support_plane_config import _AutoConfigUpdate
+from depthai_nodes.message.plane_calibration_config import SupportPlaneCalibrationConfig
 from depthai_nodes.message.support_plane import SupportPlane, SupportPlaneCandidate
 from depthai_nodes.message.support_plane_calibration import (
     CalibrationOutcome,
@@ -17,6 +19,7 @@ from depthai_nodes.message.support_plane_calibration import (
 )
 from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
 
+from ._plane_assessment import assess_plane
 from .plane_calibration_config import PlaneCalibrationConfig
 from .plane_validation import (
     gravity_angle_deg,
@@ -117,6 +120,8 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         self._imu_input = self.createInput(name="imu")
         self._state = CalibratorState.IDLE
         self._config: PlaneCalibrationConfig | None = None
+        self._assessment_config: SupportPlaneCalibrationConfig | None = None
+        self._auto_config_revision = 0
         self._fitter: SupportPlaneFitter | None = None
         self._verifications: deque[SupportPlane] = deque()
         self._latest_gravity: np.ndarray | None = None
@@ -158,6 +163,8 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         imu: dai.Node.Output,
         pointCloudSize: tuple[int, int],
         config: PlaneCalibrationConfig | None = None,
+        *,
+        _assessment_config: SupportPlaneCalibrationConfig | None = None,
     ) -> "SupportPlaneCalibrator":
         """Link the inputs and fix the cloud size and fitting settings.
 
@@ -199,6 +206,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                 "config must be PlaneCalibrationConfig, got " f"{type(config).__name__}"
             )
         self._config = config
+        self._assessment_config = _assessment_config
         self._fitter = SupportPlaneFitter((width, height), config)
         pointCloud.link(self._point_cloud_input)
         imu.link(self._imu_input)
@@ -244,6 +252,9 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             control = self._control_input.tryGet()
             if control is None:
                 return
+            if isinstance(control, _AutoConfigUpdate):
+                self._apply_auto_config(control)
+                continue
             if not isinstance(control, SupportPlaneCalibrationControl):
                 continue
             command = control.command
@@ -259,6 +270,22 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                     self._finish(CalibrationOutcome.CANCELLED, [])
             elif self._state is not CalibratorState.RUNNING:
                 self._state = CalibratorState.IDLE
+
+    def _apply_auto_config(self, update: _AutoConfigUpdate) -> None:
+        assert self._fitter is not None
+        calibration = update.config.calibration
+        assert isinstance(calibration, PlaneCalibrationConfig)
+        if calibration != self._config:
+            self._fitter = SupportPlaneFitter(self._fitter.cloud_size, calibration)
+        self._config = calibration
+        self._assessment_config = update.config._assessment
+        self._auto_config_revision = update.revision
+        self._state = (
+            CalibratorState.RUNNING if update.searching else CalibratorState.IDLE
+        )
+        self._verifications.clear()
+        self._last_fitted_cloud = None
+        self._fitted_cloud_count = 0
 
     def _take_latest_gravity(self) -> None:
         """Keep the newest IMU gravity and drop it once it is too old."""
@@ -297,6 +324,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             result.setTimestamp(cloud.getTimestamp())
             result.setTimestampDevice(cloud.getTimestampDevice())
             result.setSequenceNum(cloud.getSequenceNum())
+        result._auto_config_revision = self._auto_config_revision
         self._out.send(result)
 
     def _check_cloud(
@@ -337,14 +365,24 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             plane_eq = orient_along_gravity(
                 np.array([*plane.normal, plane.offset_mm]), gravity
             )
-            on_plane_ratio = _on_plane_ratio(
-                plane, sample, self._config.check_distance_mm
-            )
-            accepted = (
-                is_valid_horizontal_plane(plane_eq, gravity, self._config)
-                and on_plane_ratio is not None
-                and on_plane_ratio >= self._config.min_on_plane_ratio
-            )
+            assessment_config = self._assessment_config
+            if assessment_config is None:
+                on_plane_ratio = _on_plane_ratio(
+                    plane, sample, self._config.check_distance_mm
+                )
+                accepted = (
+                    is_valid_horizontal_plane(plane_eq, gravity, self._config)
+                    and on_plane_ratio is not None
+                    and on_plane_ratio >= self._config.min_on_plane_ratio
+                )
+            else:
+                assessment = assess_plane(
+                    plane, sample, -gravity / np.linalg.norm(gravity), assessment_config
+                )
+                on_plane_ratio = assessment.on_plane_ratio
+                accepted = assessment.accepted and is_valid_horizontal_plane(
+                    plane_eq, gravity, self._config
+                )
             result = SupportPlaneVerificationResult(
                 plane,
                 gravity_angle_deg(plane_eq, gravity),
@@ -354,6 +392,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             result.setTimestamp(cloud.getTimestamp())
             result.setTimestampDevice(cloud.getTimestampDevice())
             result.setSequenceNum(cloud.getSequenceNum())
+            result._auto_config_revision = self._auto_config_revision
             self._verification_output.send(result)
 
     def _fit(
@@ -362,6 +401,16 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         """Fit one cloud and finish the attempt on candidates or at the cap."""
         assert self._fitter is not None and self._config is not None
         candidates = self._fitter.find_candidates(points, gravity)
+        if candidates and (assessment_config := self._assessment_config) is not None:
+            sample = _sample_valid_points(points, self._fitter.cloud_size)
+            direction = -gravity / np.linalg.norm(gravity)
+            candidates = [
+                candidate
+                for candidate in candidates
+                if assess_plane(
+                    candidate.plane, sample, direction, assessment_config
+                ).accepted
+            ]
         self._last_fitted_cloud = cloud
         self._fitted_cloud_count += 1
         cap = self._config.max_calibration_attempts

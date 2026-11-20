@@ -9,6 +9,15 @@ integrations. Parser helpers select native DepthAI parsers by default; use
 from .constants import *
 from .logging import setup_logging
 from .message import *
+from .support_plane_store import (
+    ActiveSupportPlane as ActiveSupportPlane,
+)
+from .support_plane_store import (
+    SupportPlaneStore as SupportPlaneStore,
+)
+from .support_plane_store import (
+    resolve_support_plane_path as resolve_support_plane_path,
+)
 
 __version__ = "0.8.0"
 

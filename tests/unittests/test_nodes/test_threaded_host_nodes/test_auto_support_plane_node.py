@@ -1,4 +1,5 @@
-"""`AutoSupportPlane` with its real inner calibrator, both on mock DepthAI queues.
+"""`AutoSupportPlaneCalibration` with its real inner calibrator, both on mock DepthAI
+queues.
 
 The harness pipeline creates the wrapper and its calibrator subnode on bounded mock
 queues. Internal outputs deliver to the inputs they are linked to, and a send that would
@@ -28,7 +29,7 @@ from depthai_nodes.message import (  # noqa: E402
     SupportPlaneVerificationResult,
 )
 from depthai_nodes.node import (  # noqa: E402
-    AutoSupportPlane,
+    AutoSupportPlaneCalibration,
     AutoSupportPlaneConfig,
     PlaneCalibrationConfig,
     SupportPlaneCalibrator,
@@ -127,7 +128,7 @@ class HarnessCalibrator(OnHarnessQueues, SupportPlaneCalibrator):
     pass
 
 
-class HarnessAutoSupportPlane(OnHarnessQueues, AutoSupportPlane):
+class HarnessAutoSupportPlane(OnHarnessQueues, AutoSupportPlaneCalibration):
     pass
 
 
@@ -136,7 +137,7 @@ class HarnessPipeline(PipelineMock):
 
     HARNESS_TYPES = {
         SupportPlaneCalibrator: HarnessCalibrator,
-        AutoSupportPlane: HarnessAutoSupportPlane,
+        AutoSupportPlaneCalibration: HarnessAutoSupportPlane,
     }
 
     def create(self, node_type: Any) -> Any:
@@ -173,7 +174,9 @@ class Harness:
         self.clouds = Source()
         self.imus = Source()
         self.pipeline = HarnessPipeline()
-        self.node: HarnessAutoSupportPlane = self.pipeline.create(AutoSupportPlane)
+        self.node: HarnessAutoSupportPlane = self.pipeline.create(
+            AutoSupportPlaneCalibration
+        )
         self.node.build(
             cast(dai.Node.Output, self.clouds),
             cast(dai.Node.Output, self.imus),
@@ -257,7 +260,7 @@ def clock():
             clock,
         ),
         patch(
-            "depthai_nodes.node.support_plane_calibrator.auto_support_plane.time.monotonic",
+            "depthai_nodes.node.support_plane_calibrator.auto_support_plane_calibration.time.monotonic",
             clock,
         ),
     ):
@@ -406,11 +409,12 @@ def build_args():
 
 
 def test_build_cannot_run_twice():
-    node = HarnessPipeline().create(AutoSupportPlane)
-    node.build(*build_args())
+    node = HarnessPipeline().create(AutoSupportPlaneCalibration)
+    config = on_start()
+    node.build(*build_args(), config)
 
     with pytest.raises(RuntimeError):
-        node.build(*build_args())
+        node.build(*build_args(), config)
 
 
 def test_build_gives_the_calibrator_the_calibration_config():
@@ -421,7 +425,9 @@ def test_build_gives_the_calibrator_the_calibration_config():
     with patch.object(
         SupportPlaneCalibrator, "build", autospec=True, side_effect=original_build
     ) as build:
-        HarnessPipeline().create(AutoSupportPlane).build(*build_args(), config)
+        HarnessPipeline().create(AutoSupportPlaneCalibration).build(
+            *build_args(), config
+        )
 
     ((_, _, _, _, calibration), _) = build.call_args
     assert calibration is config.calibration
@@ -542,7 +548,7 @@ def test_a_failing_selector_raises_out_of_a_run_pass(selector, error):
     ],
 )
 def test_build_rejects_a_wrong_type(kwargs):
-    node = HarnessPipeline().create(AutoSupportPlane)
+    node = HarnessPipeline().create(AutoSupportPlaneCalibration)
 
     with pytest.raises(TypeError):
         node.build(*build_args(), **kwargs)
@@ -1044,7 +1050,7 @@ def random_walk(clock, seed, steps=40):
 @pytest.fixture
 def no_pass_sleep():
     with patch(
-        "depthai_nodes.node.support_plane_calibrator.auto_support_plane.time.sleep"
+        "depthai_nodes.node.support_plane_calibrator.auto_support_plane_calibration.time.sleep"
     ):
         yield
 

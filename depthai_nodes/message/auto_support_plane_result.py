@@ -1,4 +1,4 @@
-"""The result message of ``AutoSupportPlane``."""
+"""The result message of ``AutoSupportPlaneCalibration``."""
 
 from __future__ import annotations
 
@@ -8,7 +8,8 @@ from .support_plane import SupportPlane
 
 
 class AutoSupportPlaneResult(dai.Buffer):
-    """One finished cycle of ``AutoSupportPlane``: a verdict and the plane in use.
+    """One finished cycle of ``AutoSupportPlaneCalibration``: a verdict and the plane in
+    use.
 
     It is a Python ``Buffer`` subclass, so it travels between host nodes only;
     over XLink or a ``RemoteConnection`` it arrives as a bare ``Buffer``.

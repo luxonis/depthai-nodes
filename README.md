@@ -23,6 +23,7 @@ For complete Python API documentation, see the [DepthAINodes documentation and A
 - [📦 Content](#-content)
   - [📨 Message](#-message)
   - [🧩 Node](#-node)
+  - [Support plane calibration](#support-plane-calibration)
   - [Runtime](#runtime)
 - [🤝 Contributing](#-contributing)
 
@@ -77,12 +78,90 @@ The `node` module provides parsers and pipeline helpers:
 - **Parser nodes** handle model post-processing for architectures such as YOLO, MediaPipe, and YuNet.
 - **Inference helpers**, including `ParsingNeuralNetwork` and `ParserGenerator`, create and connect inference and parser nodes.
 - **Utility nodes** handle detection filtering, image overlays, colormaps, and message collection.
-- **Support plane nodes** find the support plane in a point cloud, checked against gravity from IMU data. `AutoSupportPlane` finds and holds the support plane, and can optionally check and refit it. `SupportPlaneCalibrator` and `AutoSupportPlane` require open3d.
+- **Support plane nodes** find the support plane in a point cloud, checked against gravity from IMU data. `AutoSupportPlaneCalibration` finds and holds the support plane, and can optionally check and refit it. `SupportPlaneCalibrator` and `AutoSupportPlaneCalibration` require open3d.
 - **Box measurement nodes** detect, track, and measure boxes from color and a point cloud. `BoxDetector` and `BoxMeasurer` run on RVC4 only. `BoxDimensioner` requires open3d and has no RVC4-only check.
 
 `ParsingNeuralNetwork` and `ParserGenerator` use native DepthAI parsers by default. Use `HostParsingNeuralNetwork` or pass `hostOnly=True` to `ParserGenerator.build()` to select this package's host parsers.
 
 See the [node package documentation](./depthai_nodes/node/__init__.py) for available nodes and examples.
+
+### Support plane calibration
+
+Use `SupportPlaneCalibration` to commission a fixed camera. It requires the
+`box-measurement` extra. Connect an organized point cloud in millimeters and an
+accelerometer stream expressed in that cloud's coordinate frame.
+
+```python
+from depthai_nodes.message import (
+    SupportPlaneCalibrationControl,
+    SupportPlaneVerificationRequest,
+)
+from depthai_nodes.node import SupportPlaneCalibration, SupportPlaneCalibrationConfig
+
+calibration = pipeline.create(SupportPlaneCalibration).build(
+    pointCloud,
+    imu,
+    (width, height),
+    config=SupportPlaneCalibrationConfig(vertical_distance_range_mm=(700, 900)),
+)
+control = calibration.inputControl.createInputQueue()
+candidates = calibration.candidatesOutput.createOutputQueue(blocking=True)
+verify = calibration.inputVerification.createInputQueue()
+checks = calibration.verificationOutput.createOutputQueue(blocking=True)
+
+pipeline.start()
+control.send(SupportPlaneCalibrationControl.start())
+while True:
+    batch = candidates.get()
+    show_assessments(batch.assessments)
+    if any(assessment.accepted for assessment in batch.assessments):
+        break
+
+# The application presents the batch and obtains the reviewer's selection.
+verify.send(SupportPlaneVerificationRequest(selected_plane, request_id="review-42"))
+reply = checks.get()
+```
+
+Send `SupportPlaneCalibrationControl.stop()` to cancel a search. Send another
+`start()` after cancellation, or if the reviewer declines the batch. The
+verification reply echoes the request ID and contains a fresh assessment.
+Each batch and reply carries the source cloud's Buffer metadata and stream ID.
+The gravity direction and the accelerometer report's timestamps are available
+separately as `gravity_direction`, `imu_timestamp_device`, `imu_timestamp_host`,
+and `imu_timestamp_system`.
+
+To change settings after `pipeline.start()`, send a complete
+`SupportPlaneCalibrationConfig` in a `SupportPlaneCalibrationConfigMessage`
+to an input queue created from `calibration.inputConfig`. The node echoes
+applied updates on `configOutput`. Future fits and verification requests use
+the new settings. A fit already running completes under its original settings.
+
+After explicit approval, save the plane against the device and installation
+frame. Apply the application's resume policy to a compatible record on startup.
+
+```python
+from datetime import datetime, timezone
+
+from depthai_nodes import ActiveSupportPlane, SupportPlaneStore, resolve_support_plane_path
+
+store = SupportPlaneStore(resolve_support_plane_path("inspection", "line-4"))
+store.save(ActiveSupportPlane(
+    plane=approved_plane,
+    device_id=device_id,
+    frame_id=frame_id,
+    approved_at=datetime.now(timezone.utc),
+))
+saved = store.load(device_id=device_id, frame_id=frame_id)
+```
+
+When the application withdraws approval, call `store.invalidate()` and pause
+processing that depends on the plane.
+
+The [standalone OAK4 example](examples/support_plane_calibration/README.md)
+provides a browser workflow for search, review, verification, and approval.
+The [automatic OAK4 example](examples/auto_support_plane_calibration/README.md)
+shows automatic selection, periodic verification, and refitting with
+`AutoSupportPlaneCalibration`.
 
 ### Runtime
 
