@@ -15,6 +15,7 @@ on:
       - requirements-box-measurement.txt
       - requirements-parcel.txt
       - .pre-commit-config.yaml
+      - .gitattributes
       - .github/workflows/ci.yaml
 
 permissions:

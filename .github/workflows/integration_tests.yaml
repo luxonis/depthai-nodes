@@ -6,8 +6,13 @@ on:
       - main
     paths:
       - 'depthai_nodes/**'
-      - 'tests/stability_tests/**'
-      - .github/workflows/stability_tests.yaml
+      - 'tests/**'
+      - pyproject.toml
+      - requirements.txt
+      - requirements-dev.txt
+      - requirements-parcel.txt
+      - .gitattributes
+      - .github/workflows/integration_tests.yaml
 
 jobs:
   Integration-tests:
@@ -34,7 +39,7 @@ jobs:
         cache: pip
 
     - name: Install package
-      run: pip install -e .[dev]
+      run: pip install -e ".[dev,parcel]"
 
     - name: Run integration tests
       run: |
