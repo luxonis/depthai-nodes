@@ -223,7 +223,6 @@ jobs:
           LINUX_RESULT: ${{ needs.HIL-test.result }}
           WINDOWS_RESULT: ${{ needs.HIL-test-windows.result }}
           MAC_RESULT: ${{ needs.HIL-test-mac.result }}
-          BOM_RUN_URL: ${{ github.event.inputs.reservation_name }}
         run: |
           : "${SLACK_BOT_TOKEN:?Set the SLACK_BOT_TOKEN Actions secret to send BOM alerts}"
           failed=()
@@ -232,8 +231,8 @@ jobs:
           [[ "$MAC_RESULT" == failure ]] && failed+=(macOS)
           failed_platforms=$(IFS=', '; echo "${failed[*]}")
           run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          message=$(printf ':rotating_light: *DepthAI Nodes BOM tests failed*\nFailed platforms: %s\nTest run: %s\nBOM run: %s' \
-            "$failed_platforms" "$run_url" "$BOM_RUN_URL")
+          message=$(printf ':rotating_light: *DepthAI Nodes BOM tests failed*\nFailed platforms: %s\nTest run: %s' \
+            "$failed_platforms" "$run_url")
           payload=$(jq -n --arg channel "$SLACK_USER_ID" --arg text "$message" \
             '{channel: $channel, text: $text}')
           response=$(curl --silent --show-error --fail-with-body \
