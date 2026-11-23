@@ -34,8 +34,9 @@ class ParcelDetector(dai.node.ThreadedHostNode):
     images at 1280x800. The first scene with valid message types checks these
     sizes and logs one warning if they differ. Processing continues unchanged.
 
-    ``inputConfig`` accepts ``ParcelDetectorConfig`` messages. The latest
-    queued configuration applies before the next synchronized scene starts.
+    ``inputConfig`` accepts ``ParcelDetectorConfig`` messages. One queued
+    configuration is applied before each synchronized scene, when available.
+    The active configuration persists until another update arrives.
     Its support-plane snapshot travels with the eligible parcels through
     measurement. Updates received during processing apply to a later scene.
 
@@ -58,7 +59,7 @@ class ParcelDetector(dai.node.ThreadedHostNode):
 
     @property
     def inputConfig(self) -> dai.Node.Input:
-        """Latest runtime configuration for the next synchronized scene."""
+        """Optional runtime updates, applied in queue order between scenes."""
         return self._inputConfig
 
     @property
@@ -125,19 +126,23 @@ class ParcelDetector(dai.node.ThreadedHostNode):
         self._config = config
         return self
 
+    def _update_config(self, config: ParcelDetectorConfig) -> None:
+        if not isinstance(config, ParcelDetectorConfig):
+            self.warn("Ignoring config input: expected ParcelDetectorConfig")
+            return
+        self._config = config
+
     def process(
         self,
         pointCloud: dai.Buffer,
         color: dai.Buffer,
         left: dai.Buffer,
         right: dai.Buffer,
-        *,
-        config: ParcelDetectorConfig | None = None,
     ) -> None:
         """Process one synchronized scene using one active plane snapshot.
 
         Input datatype checks happen here. Private conversion helpers receive validated
-        scene messages. Invalid inputs, configuration, metadata, or callback results
+        scene messages. Invalid inputs, plane geometry, metadata, or callback results
         produce a failed batch. The source point cloud's native timestamps and sequence
         number are preserved on every emitted result.
         """
@@ -155,11 +160,6 @@ class ParcelDetector(dai.node.ThreadedHostNode):
             )
         )
         try:
-            if config is not None:
-                if not isinstance(config, ParcelDetectorConfig):
-                    supportPlane = _upward_support_plane(self._config.supportPlane)
-                    raise SceneInputError("invalid_detector_config")
-                self._config = config
             if not isinstance(pointCloud, dai.PointCloudData):
                 raise SceneInputError("invalid_point_cloud")
             if any(
@@ -238,18 +238,15 @@ class ParcelDetector(dai.node.ThreadedHostNode):
         self.out.send(result)
 
     def run(self) -> None:
-        """Receive synchronized scenes and apply the latest queued configuration."""
+        """Receive synchronized scenes and apply an available configuration update."""
         while self.isRunning():
             group = self._sceneInput.get()
-            if group is None:
-                continue
             config = self.inputConfig.tryGet()
-            while (nextConfig := self.inputConfig.tryGet()) is not None:
-                config = nextConfig
+            if config is not None:
+                self._update_config(config)
             self.process(
                 group["pointCloud"],
                 group["color"],
                 group["left"],
                 group["right"],
-                config=config,
             )

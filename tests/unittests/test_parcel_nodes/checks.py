@@ -148,7 +148,9 @@ class App:
         self.pipeline.__exit__(*args)
 
     def detect(self, inputs=None, *, config=None):
-        self.detector.process(*(inputs or messages()), config=config)
+        if config is not None:
+            self.detector._update_config(config)
+        self.detector.process(*(inputs or messages()))
         return self.detected.get()
 
     def send(self, inputs):
@@ -936,7 +938,7 @@ class StreamingTests(unittest.TestCase):
             self.assertIsNone(results.get(timedelta(milliseconds=50)))
             pipeline.stop()
 
-    def test_latest_config_is_applied_on_first_synchronized_group(self):
+    def test_config_updates_apply_in_queue_order_and_persist_without_new_messages(self):
         with App() as app:
             configInput = app.configInput
             app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
@@ -951,25 +953,30 @@ class StreamingTests(unittest.TestCase):
                 )
             )
             app.pipeline.start()
-            app.send(messages())
-            result = app.measured.get(timedelta(seconds=5))
-            self.assertIsNotNone(result)
-            self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
-            self.assertEqual(result.plane.offset_mm, 1200)
-            self.assertEqual(result.plane.normal, (0, 0, -1))
+            for sequence, offset in ((1, 1100), (2, 1200), (3, 1200)):
+                app.send(messages(sequence))
+                result = app.measured.get(timedelta(seconds=5))
+                self.assertIsNotNone(result)
+                self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+                self.assertEqual(result.plane.offset_mm, offset)
+                self.assertEqual(result.plane.normal, (0, 0, -1))
             app.pipeline.stop()
 
-    def test_invalid_config_input_fails_one_frame_then_uses_previous_plane(self):
-        with App() as app:
+    def test_invalid_config_input_warns_and_preserves_active_state(self):
+        with App() as app, patch.object(app.detector, "warn") as warn:
             configInput = app.configInput
             app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
             app.pipeline.start()
             configInput.send(dai.Buffer())
             app.send(messages())
-            failed = app.measured.get(timedelta(seconds=5))
-            self.assertIsNotNone(failed)
-            self.assertEqual(failed.failure_code, "invalid_detector_config")
-            self.assertEqual(failed.plane.offset_mm, 1000)
+            result = app.measured.get(timedelta(seconds=5))
+            self.assertIsNotNone(result)
+            self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+            self.assertEqual(result.plane.offset_mm, 1000)
+            self.assertIn(
+                "Ignoring config input: expected ParcelDetectorConfig",
+                [call.args[0] for call in warn.call_args_list],
+            )
             app.send(messages(2))
             recovered = app.measured.get(timedelta(seconds=5))
             self.assertIsNotNone(recovered)

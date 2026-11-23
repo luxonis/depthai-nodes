@@ -316,7 +316,8 @@ Example:
     the four scene streams by device timestamp with a span below 10 ms. The
     inputs must share a device clock. Sequence counters may differ. Incomplete
     groups are skipped. Before processing each complete group, the detector
-    drains available configuration updates and uses the latest support plane.
+    applies one pending configuration update, when available. Otherwise it
+    keeps the active configuration. Pending updates are applied in queue order.
     Updates received during processing apply to a later group. Each batch
     retains the exact plane used, so measurement cannot observe a newer plane.
 

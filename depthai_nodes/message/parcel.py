@@ -54,8 +54,9 @@ def _numbers(value, shape: tuple[int, ...], field: str) -> np.ndarray:
 class ParcelDetectorConfig(dai.Buffer):
     """Runtime configuration for ``ParcelDetector``.
 
-    Send this same-host message to the node's ``inputConfig``. The latest queued
-    configuration applies before its next synchronized scene starts. Updates
+    Send this same-host message to the node's ``inputConfig``. One pending update
+    is applied in queue order before each synchronized scene, when available.
+    The active configuration persists until another update arrives. Updates
     received during processing apply to a later scene.
 
     Attributes:

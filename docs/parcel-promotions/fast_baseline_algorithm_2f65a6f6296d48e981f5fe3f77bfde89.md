@@ -111,14 +111,17 @@ The batch frame label is derived from the shared native target device and camera
 
 `ParcelDetectorConfig` is a same-host `dai.Buffer` dataclass with exactly one field, `supportPlane`.
 Send it through `detector.inputConfig.createInputQueue()` to update the runtime plane. There is no `setSupportPlane()` method or separate plane-stream message.
-The latest queued full configuration applies before the next synchronized group is processed. An update arriving during processing applies to a later group.
+One queued configuration is applied before each synchronized group, when available. Otherwise, the stored configuration remains active.
+Updates are applied in queue order, one per scene. An update arriving during processing applies to a later group.
+Config input messages with an incorrect datatype log a warning and leave the active state intact.
 Each batch retains the exact oriented plane used for its scene; queued batches cannot observe subsequent updates in the dimensioner.
 
 `ParcelDetector` is a `dai.node.ThreadedHostNode` with a native host `Sync` subnode for `pointCloud`, `color`, `left`, and `right`.
-`run()` blocks on the synchronized scene queue, then reads pending config messages with `tryGet()` before processing.
-The config queue is blocking and bounded. Available updates are drained in Python to retain the latest full state.
+`run()` blocks on the synchronized scene queue, then reads one pending config message with `tryGet()`.
+When an update is available, `_update_config()` applies it to stored state. `process()` receives only the four scene messages and uses the active configuration.
+The config queue is blocking and bounded.
 The combined native pipeline crashed on DepthAI 3.11 with a one-entry nonblocking config queue and two queued Python config messages.
-The blocking queue with Python draining passed that same case. A standalone queue probe did not reproduce the crash, so its broader SDK cause is not established.
+The blocking queue passes that same case with updates applied in queue order. A standalone queue probe did not reproduce the crash, so its broader SDK cause is not established.
 If scenes stop and the config queue fills, config producers experience backpressure until another scene is processed.
 
 Scene synchronization uses DEVICE timestamps and a span below 10 ms. All four streams must share a device clock.
@@ -237,7 +240,7 @@ The full-suite failures include an existing collection-order problem in parser-n
 The native checks cover:
 
 - Incomplete synchronized groups, recovery on the next complete group, and independent sequence counters.
-- Latest queued plane configuration, updates during processing, invalid-config recovery, and retained batch plane snapshots.
+- Config updates in queue order, continued processing without new configs, updates during processing, invalid-config warnings, and retained batch plane snapshots.
 - Expected image resolutions without warnings, one warning for each mismatched role across repeated scenes, continued processing, and invalid message types leaving the check pending.
 - Crop/scale intrinsics, distortion, tilted sensors, pose units, reference compatibility, missing metadata, and default cloud coordinates.
 - Read-only parcel values, zero-copy owned parcel transfer, measurement outcomes, and algorithm identity checks.

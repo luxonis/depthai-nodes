@@ -24,10 +24,10 @@
       "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/scoped-settings.json": "66f29d1a54ddb6fd8d3fa957a34aa81dcef53a4ca29a47b0b4e39331afcb8bd8",
       "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/visibility.py": "9177b8d4c3888655038427602e869290922a5edbc6bf79d96561322cc4c75951",
       "depthai_nodes/algorithms/parcel/manifest.py": "05aea97c272d1b854954d7cf126830ad5be65ba47d63c0ff4421eabbaf7041f4",
-      "depthai_nodes/message/parcel.py": "402b67630cf2da9a795b468d0150be1d105f5d777536a13e26f55cfe418855fd",
+      "depthai_nodes/message/parcel.py": "813e3663570b113a36a81ade7341c01aba446a4644e98be54f618dfdf06f2346",
       "depthai_nodes/message/support_plane.py": "0eaeec70dda37d48b3160d1f1a14cffce766f23182289d1b569ffb444f1f44e3",
       "depthai_nodes/node/parcel_detector/__init__.py": "4bd2d4aaf686835abe5da5203a47a67a2ebe125aee64c5ef8499cac3809b1482",
-      "depthai_nodes/node/parcel_detector/parcel_detector.py": "537126cc8f0450f7acd17598b68fb5b2b6df1a33aca7980e851d8b7587a659f9",
+      "depthai_nodes/node/parcel_detector/parcel_detector.py": "c7b13ce6b31e7ced17c11842b399bdfa33b5b7f14803af08fd83e288bc57b16a",
       "depthai_nodes/node/parcel_detector/scene.py": "13483accb7c7806b6b3d3ace3739605ce7efbb2e84b632a32588cbf8d61744e6",
       "depthai_nodes/node/parcel_dimensioner/__init__.py": "506569fb746e3a1fb9fc525170615c20f027a35ec155fa0a8d5b283012a7b3fc",
       "depthai_nodes/node/parcel_dimensioner/parcel_dimensioner.py": "63d8627a836d32c3f9abed5023d1971cd3b74338c3bfcd0ff5ba53255e125703"
@@ -142,7 +142,7 @@
       "Use explicit DepthAI image/calibration/plane conversion and frame-local owned parcel messages outside the immutable computation directory.",
       "Use native DepthAI HostNode synchronization for complete groups instead of adapter queues and timeouts. Scope status enums under public message owners and keep diagnostic/timing record classes internal. Frozen computation and scene conversion are unchanged.",
       "Read delivered image intrinsics, distortion, and camera-to-reference poses from native ImgTransformation metadata instead of custom calibration objects. Invert calibrated camera poses in float64 millimeters for XYZ already in the common reference frame; retain the explicit plane/gravity input. Replace parcel attribute-assignment bypasses with normal constructors and read-only properties.",
-      "Reuse the existing SupportPlane in build and ParcelDetectorConfig instead of a stamped ParcelPlane or explicit gravity. Orient the plane toward the reference camera, which must be above the surface. Use a ThreadedHostNode with native host Sync for four DEVICE-timestamp scene streams and a separate bounded blocking config queue drained with tryGet before each scene. Validate scene message datatypes once in process. Keep pointCloud and supportPlane names consistent. Accept RAW8 as well as GRAY8 mono frames, including native rectified outputs with matching virtual calibration. Frozen computation is unchanged.",
+      "Reuse the existing SupportPlane in build and ParcelDetectorConfig instead of a stamped ParcelPlane or explicit gravity. Orient the plane toward the reference camera, which must be above the surface. Use a ThreadedHostNode with native host Sync for four DEVICE-timestamp scene streams and a separate bounded blocking config queue read once with tryGet before each scene. Apply an available update to stored state; otherwise keep the current configuration. process receives only scene messages. Validate scene message datatypes once in process. Keep pointCloud and supportPlane names consistent. Accept RAW8 as well as GRAY8 mono frames, including native rectified outputs with matching virtual calibration. Frozen computation is unchanged.",
       "Add a one-time resolution check at the process boundary for the evaluated unrectified image profile: color 2000x1500, left/right 1280x800. Log expected and received sizes on mismatch and continue processing, following the user override of the updated handoff rejection policy. No resize, geometry conversion, pixel-threshold scaling, or frozen computation changes."
     ],
     "lineage_note": "Original settings declare algorithm-f6ab98aa284d4420bfd3bc67761a969f. Registration returned HTTP 403 with this token. The frozen settings copy omits that inaccessible declaration only; computation configuration, policy, objective, modalities, source paths and dependency lock are unchanged. Historical predecessor is retained in this report; no historical scores are reassigned.",
@@ -1085,7 +1085,7 @@
       },
       {
         "name": "Native Sync, SupportPlane, and runtime configuration revision",
-        "result": "44 native checks passed for the Sync/config revision. Four scene inputs synchronize by DEVICE timestamp below 10 ms without requiring equal sequence counters. Config is read separately before each scene; queued updates select the latest plane and in-flight updates apply to a later scene. SupportPlane is supplied in build. ParcelDetectorConfig has only supportPlane. Six public parcel message types remain. Actual host Rectification metadata conversion passes; it falls outside the evaluated unrectified image profile."
+        "result": "47 native checks pass. Four scene inputs synchronize by DEVICE timestamp below 10 ms without requiring equal sequence counters. run blocks on the scene group and reads config once with tryGet; an available update changes stored state before process. Pending configs apply in FIFO order, one per scene. State persists without further updates. Invalid config datatypes log a warning and are ignored. In-flight updates apply to a later scene, while existing batch planes remain unchanged. SupportPlane is supplied in build. ParcelDetectorConfig has only supportPlane. Native host Rectification metadata conversion passes; rectified images remain outside the evaluated unrectified profile."
       }
     ],
     "environment": {

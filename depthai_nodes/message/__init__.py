@@ -120,8 +120,8 @@ Parcel measurement
 
 ``ParcelDetectorConfig`` holds the existing `SupportPlane` value for runtime
 updates through the detector's ``inputConfig``. Its initial support plane is
-passed to ``build``. The latest queued configuration applies before the next
-synchronized scene starts; its plane snapshot is carried through measurement.
+passed to ``build``. One queued update is applied before each synchronized scene,
+when available. Its state persists and its plane snapshot travels through measurement.
 Camera intrinsics, distortion, poses, and the reference-frame label come from
 native image and point-cloud transformation metadata.
 
