@@ -3,12 +3,15 @@
 This first parcel implementation binds `ParcelDetector` and `ParcelDimensioner` to `algorithm-2f65a6f6296d48e981f5fe3f77bfde89`.
 There is no previous bundled parcel candidate.
 Existing `BoxDetector`, `BoxDimensioner`, and `BoxMeasurer` implementations remain unchanged.
-The work is prepared on `codex/parcel-fast-baseline`. It is not merged or published.
+The original work is in [PR #348](https://github.com/luxonis/depthai-nodes/pull/348).
+The packaging migration is prepared on `codex/parcel-stable-implementation`, based on PR revision `10f0b79d5473aada6face5d60a2e192c144d56ce`.
+These changes are not a merged or published release.
 
 ## Frozen source and evidence
 
 | Artifact                       | Identity                                                                  |
 | ------------------------------ | ------------------------------------------------------------------------- |
+| Algorithm and configuration    | `fast_baseline/v001`                                                      |
 | Evaluated source               | `luxonis/BoxLabRunners@0a2f571843f81ac6cc2f8cebe3475540e314f83d`          |
 | Committed evidence             | `luxonis/BoxLabRunners@4b7634cc5806b7fb2e48bc7a830a3434b85cc0cb`          |
 | Executed image                 | `sha256:240c1854f46100c382801e8e0f622d99807c4ef64a0b27875f539087a97d7176` |
@@ -18,18 +21,28 @@ The work is prepared on `codex/parcel-fast-baseline`. It is not merged or publis
 
 Before copying code, all 16 source-file hashes in the committed evidence matched the evaluated Git revision.
 The scoped settings byte hash also matched. The retained image's native binary hash and runtime versions were checked directly.
-The scoped settings omit only an inaccessible historical parent-registration declaration.
-They preserve computation, policy, objective, and input declarations. The packaged evidence preserves that lineage explanation.
+`scoped-settings.json` is byte-identical to the committed release-scoped settings at the evidence revision above.
+BoxLabRunners prepared that artifact by omitting an inaccessible historical parent-registration declaration from earlier registration settings.
+The port makes no further edit. The aggregate evaluation evidence also retains its committed bytes.
+The settings preserve computation, policy, objective, and input declarations.
+
+The revision design maps these settings to `fast_baseline/v001`, with canonical path `algorithms/fast_baseline/configurations/v001.json`.
+That canonical copy has the same bytes. It does not retroactively change the evaluated source tree, image, mounted settings path, or journal.
+The BoxLabRunners revision migration was uncommitted when inspected; this mapping does not claim a new reviewed or evaluated implementation.
 
 The [manifest](../../depthai_nodes/algorithms/parcel/manifest.json) separates original candidate hashes from the port's raw file and configuration hashes.
 Its complete validation and approved held-out evaluation records preserve `boxlab-run-metrics/3`, scoring policy, run IDs, denominators, null reasons, and suppression.
 Exact held-out dimensional medians and p95 errors remain null and suppressed.
 The historical latency reference belongs to `algorithm-8bdaf89d28cf45f29712cb68e1b31357` and its original image.
-No timing benchmark ran for this port. The accepted historical means of 116.32 ms on validation and 105.33 ms on held-out scenes are not live OAK latency claims.
+The original port verification did not run a timing benchmark.
+The accepted historical means of 116.32 ms on validation and 105.33 ms on held-out scenes are not live OAK latency claims.
+Later OAK-4 diagnostics and outstanding algorithm findings are recorded separately in [upstream-findings.md](upstream-findings.md).
 
 ## Source adaptations
 
-The immutable package is `depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/`.
+The single stable package is `depthai_nodes/algorithms/parcel/implementation/`.
+Git history and retained package releases preserve earlier implementation revisions.
+This record retains the full candidate identity independently of the directory name.
 
 | Frozen source                               | Port adaptation                                                                                                                       |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -112,7 +125,7 @@ A plane through the reference origin cannot be oriented this way and produces a 
 The batch frame label is derived from the shared native target device and camera socket.
 
 `ParcelDetectorConfig` is a same-host `dai.Buffer` dataclass with exactly one field, `supportPlane`.
-Send it through `detector.inputConfig.createInputQueue()` to update the runtime plane. There is no `setSupportPlane()` method or separate plane-stream message.
+Send it through `detector.inputConfig.createInputQueue(blocking=True)` to update the runtime plane. There is no `setSupportPlane()` method or separate plane-stream message.
 One queued configuration is applied before each synchronized group, when available. Otherwise, the stored configuration remains active.
 Updates are applied in queue order, one per scene. An update arriving during processing applies to a later group.
 Config input messages with an incorrect datatype log a warning and leave the active state intact.
@@ -152,7 +165,10 @@ Native StereoDepth rectified outputs are declared RAW8, but their device-firmwar
 Rejected proposals can leave gaps in IDs. `decisions` retains proposal outcomes without source-point indices or the whole cloud.
 Each parcel is extracted once with `numpy.take` in selected-point order. The dimensioner retains that array without another extraction or copy.
 Parcel value objects use ordinary constructors and read-only properties, without explicit `object.__setattr__` calls.
-The public parcel constructor retains an owning read-only float32 array and snapshots writable or non-owning inputs.
+The public parcel constructor snapshots all inputs into immutable bytes-backed float32 storage.
+The internal owned-array path also snapshots the extracted points. This adds one boundary copy after `numpy.take`.
+Retained writable aliases cannot modify the published points, and callers cannot re-enable writes through `xyz_mm`.
+The dimensioner adds no point copy. Point values, shape, and selected-point order are unchanged.
 `sources` contains timing records with `stream`, `timestamp`, `timestamp_device`, and `sequence_num` fields for every available input.
 The source-timing and diagnostic-decision record classes are internal. Native output timestamps and sequence repeat the source cloud.
 
@@ -187,14 +203,15 @@ This resolves the incompatible original pins and keeps the selected computation 
 Existing box regressions were checked with OpenCV 4.10 and 4.12. The parcel nodes remain importable without SciPy.
 Installing with the declared parcel extra selects the frozen dependencies. A manually overridden dependency environment is outside that verified binding.
 
-## Verification scope
+## Original comparison coverage
 
 The tolerance was declared before comparison. Indices, candidate order, decisions, parcel points, and point order must agree exactly.
 Cuboid values use absolute tolerance `1e-9` and relative tolerance zero. Fit and unknown-height outcomes must agree exactly.
 
-Both dependency environments compare 15 synthetic scenes and all 18 scenes in the authorized historical validation cache.
+The original comparison ran in both dependency environments on 15 synthetic scenes and all 18 scenes in the authorized historical validation cache.
 Both native and fallback modes run every scene. Source-versus-port geometry differences are zero in each environment.
-The same-environment native and fallback results are also identical on the compared scenes.
+The same-environment native and fallback results were also identical on the compared scenes.
+This is limited coverage. A later explicit cell-boundary case reproduces a native/fallback discrepancy inherited from the evaluated source, as detailed in [upstream-findings.md](upstream-findings.md).
 Separate measurement cases cover a tilted parcel with outliers, unknown height, and no usable footprint.
 
 The cache manifest SHA-256 is `52fb068a961ffb9e7303d3bd8abab20df13ff78cc71e35997c7bad17886b8c84`.
@@ -220,7 +237,10 @@ The reference root contains the pinned source plus committed `fast-baseline.json
 Build both local native libraries before using `--require-native`. Omit that option for fallback-only coverage when native builds are unavailable.
 No fetching or network access occurs in this tool.
 
-## Repository checks and limitations
+## Original repository checks and limitations
+
+The results below describe the earlier port revisions and their recorded artifacts.
+They are retained as historical verification and do not identify a newly built stable-directory wheel.
 
 The promotion checks ran on macOS arm64 with the declared parcel dependencies: NumPy 2.2.6, SciPy 1.15.3, and OpenCV package 4.12.0.88.
 Source checks used Python 3.10.18 and 3.12.13 with DepthAI 3.11.0. The installed-wheel checks used Python 3.12.13 with DepthAI 3.12.2.
@@ -246,12 +266,12 @@ The native checks cover:
 - Optional initial planes, consumed groups without decoding or outputs while unconfigured, and activation from a later config without replaying discarded groups or restarting the pipeline.
 - Expected image resolutions without warnings, one warning for each mismatched role across repeated scenes, continued processing, and invalid message types leaving the check pending.
 - Crop/scale intrinsics, distortion, tilted sensors, pose units, reference compatibility, missing metadata, and default cloud coordinates.
-- Read-only parcel values, zero-copy owned parcel transfer, measurement outcomes, and algorithm identity checks.
+- Read-only parcel values, the earlier owned-array transfer, measurement outcomes, and algorithm identity checks. The migration strengthens storage immutability as described above.
 
 Native host Rectification from distorted 64×48 inputs to 80×36 RAW8 outputs passes metadata-conversion checks.
 This does not validate rectified inputs against the evaluated unrectified profile or establish generated-cloud or live camera behavior on OAK hardware.
 
-### Installed package
+### Original installed package
 
 The wheel installs outside both source trees. All 24 covered installed file hashes and the declared JSON, configuration, attribution, and C++ assets pass validation.
 The package excludes test fixtures, verification tools, documentation packages, and native binaries.
@@ -275,14 +295,64 @@ python -m pip install /path/to/depthai_nodes-0.8.0-py3-none-any.whl
 python -c 'from depthai_nodes.node import ParcelDetector, ParcelDimensioner; from depthai_nodes.algorithms.parcel import validate_manifest; validate_manifest()'
 python -m pip install '/path/to/depthai_nodes-0.8.0-py3-none-any.whl[parcel]'
 python /path/to/copied/synthetic.py
-python -m depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.build_native
+python -m depthai_nodes.algorithms.parcel.implementation.build_native
 python /path/to/copied/synthetic.py
 ```
 
 The test-only report comparison can be repeated with `python -m tests.parcel_reference.compare_reports left.json right.json --output comparison.json`.
 It returns a failing equality result for the observed OpenCV 4.10/4.12 drift at the unchanged tolerance.
 
-No OAK hardware, installed Linux or Windows port execution, XLink serialization, or end-to-end live sensor pipeline was tested.
+The original verification did not test OAK hardware, installed Linux or Windows port execution, XLink serialization, or an end-to-end live sensor pipeline.
+The subsequent OAK-4 investigation is separate diagnostic evidence in [upstream-findings.md](upstream-findings.md); its one-scene prototypes have not been promoted.
 The portable fallback and optional native build have distinct verification records. No hardware performance guarantee is made.
 
+## Stable-directory migration
+
+Both nodes keep their public APIs and bind through the same private factory to `fast_baseline/v001` and the full candidate identity above.
+Imports, package-data declarations, tests, native-build instructions, and manifest paths now use `implementation/`.
+The configuration and computation remain frozen. The pre-migration PR contains no algorithm correction relative to the evaluated source.
+The audit checked computation ASTs after import and docstring adaptations and exact C++ and scoped-settings bytes.
+Directory relocation does not establish evaluated-artifact identity; published port hashes remain separate.
+
+The existing `visualization.html` is now a wheel asset covered by the manifest.
+Its source documentation revision is `1d2aa20e85f6f6b6acb597440ca42d85c495474f`, later than the evaluated computation revision.
+Its source SHA-256 is `aa8837d8b0eaa28261986c5f56681bce84431e77cbd365413b5debf470ff8c71`.
+Only source links are repaired for shipped files or commit-pinned URLs. Embedded candidate identity, configuration, metrics, and case data stay attributed to their original evidence.
+The manifest records the destination hash separately.
+
+The migration strengthens external-reference verification by checking it against repository-owned evidence before importing reference code.
+It also strengthens the worker-completion test and parcel storage immutability, and documents a blocking config producer queue.
+These are integration and verification changes. The [upstream findings](upstream-findings.md) classify algorithm corrections and the stale-native-library ownership question.
+
+A new source-versus-port comparison runs 15 synthetic scenes in native and fallback modes, plus standalone tilted-fit, no-fit, and unknown-height cases.
+The historical 18-scene validation cache was unavailable for this rerun. Its earlier numerical report remains [comparison-summary.json](comparison-summary.json).
+No new Workbench scoring or held-out evaluation ran. The current candidate identity and historical evidence remain unchanged.
+
+The migration checks pass 53 focused tests and 58 subtests on Python 3.10.18 and 3.12.13, including 50 native boundary checks.
+The 498 combined helper, message, and host tests and 31 focused threaded box tests pass.
+The API reference builds with warnings treated as errors.
+All 13 relocated Python, C++, JSON, and dependency-text files match the PR baseline bytes exactly.
+The complete pre-relocation and post-relocation comparison reports match for all 15 synthetic scenes and three standalone cases in native and fallback modes.
+The full unit suite reports 592 passes, 181 failures, and 124 errors.
+The unchanged PR revision reports 581 passes with the same 181 failures and 124 errors.
+All 305 failing or erroring test IDs match. The focused suites above pass in isolation.
+
+The wheel was built from a fresh staging tree because the existing build directory retained deleted candidate-named packages.
+The clean wheel contains only the stable implementation, all 25 covered files, and the visualization. It contains no native binary.
+Installed imports, manifest hashes, candidate/configuration binding, optional SciPy import handling, and all 50 native message checks pass outside both repositories on Python 3.12.13 and DepthAI 3.12.2.
+Fallback and a fresh local native build both measure the synthetic parcel as 218.940 by 158.420 by 110.000 mm.
+The local binary hash is recorded separately in the manifest and is not a distributed artifact.
+
+The verified stable-directory wheel has SHA-256 `65d31a87c09429ba696d5b42b4eb45cffdd91cfadaacf95f083e27a651119b60`.
+The wheel contains 156 files and its manifest bytes match the source manifest.
+This identifies the tested build, not future rebuilds or a published release.
+
+The fresh test environment used previously installed pinned dependencies after new dependency downloads stalled.
+Only the new depthai-nodes wheel was installed as the package under test. No depthai-nodes checkout files or import paths were copied into that environment.
+Its dependency versions are NumPy 2.2.6, SciPy 1.15.3, and OpenCV 4.12.0.88.
+Pre-commit and the warnings-as-errors API reference build pass.
+
+Future algorithm corrections require BoxLabRunners review and evaluation before this repository integrates their new frozen revision and evidence.
+The canonical configuration-path migration does not require re-evaluating these unchanged settings, but its committed provenance must be recorded when available.
 Future changes follow the [update workflow](update-workflow.md), also linked from `CONTRIBUTING.md`.
+Rollback restores the complete prior code, settings, dependencies, assets, and manifest release.

@@ -18,14 +18,24 @@ DepthAI Nodes package retains its Apache-2.0 license in the distribution metadat
 No third-party computation source is vendored. NumPy, SciPy, and OpenCV retain
 their own distribution licenses.
 
-`scoped-settings.json` and `evaluation-evidence.json` retain the original bytes.
-The scoped copy removes an inaccessible historical parent registration declaration.
-It preserves the configuration, policy, objective, and modalities. Historical
-metrics remain attached to the artifact that produced them.
+`scoped-settings.json` is byte-identical to the committed release-scoped
+`experiments/revalidation-2026-11-20/fast-baseline-settings.json` at the evidence
+revision above. BoxLabRunners prepared that scoped artifact by removing an
+inaccessible historical parent registration declaration from earlier settings.
+The port makes no further change. Its unchanged configuration is `fast_baseline/v001`.
+`evaluation-evidence.json` is byte-identical to the committed aggregate
+`experiments/revalidation-2026-11-20/fast-baseline.json` at the same revision.
+Historical metrics remain attached to the artifact that produced them.
+
+The stable `implementation/` path is packaging, not an evaluated identity.
+Git revisions and retained package releases preserve earlier ports. The manifest
+keeps the original source and candidate hashes separate from published file hashes.
+Local native binaries must be rebuilt after an implementation update. They are
+not portable between implementation revisions, operating systems, or architectures.
 
 No native binary is bundled in the universal wheel. Missing or unsupported native
 kernels use the original NumPy/OpenCV fallback. Build an optional local binary with
-`python -m depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.build_native`.
+`python -m depthai_nodes.algorithms.parcel.implementation.build_native`.
 The compiler must support C++17 and `-O3 -ffp-contract=off -fPIC -shared`.
 The output is specific to that operating system and architecture. Do not copy the
 retained Linux aarch64 reference binary to other platforms.

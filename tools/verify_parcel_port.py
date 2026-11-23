@@ -27,10 +27,7 @@ import scipy
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
-PACKAGE = (
-    "depthai_nodes.algorithms.parcel."
-    "fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89"
-)
+PACKAGE = "depthai_nodes.algorithms.parcel.implementation"
 SOURCE_COMMIT = "0a2f571843f81ac6cc2f8cebe3475540e314f83d"
 RELEASE_ID = "release-f14a597a366c46c6bdba00fa25e45bcd"
 ABSOLUTE_TOLERANCE = 1e-9
@@ -41,14 +38,18 @@ def digest(data):
 
 
 def verify_source(root):
+    bundled = REPO_ROOT.joinpath(*PACKAGE.split(".")) / "evaluation-evidence.json"
+    expected = json.loads(bundled.read_bytes())
     evidence = json.loads((root / "fast-baseline.json").read_bytes())
-    if evidence["source_commit"] != SOURCE_COMMIT:
-        raise ValueError("Reference source commit differs from the selected candidate")
-    for name, expected in evidence["provenance"]["source_files_sha256"].items():
-        if digest((root / name).read_bytes()) != expected:
+    if expected["source_commit"] != SOURCE_COMMIT:
+        raise ValueError("Bundled source commit differs from the selected candidate")
+    if evidence != expected:
+        raise ValueError("Reference evidence differs from bundled frozen evidence")
+    for name, expected_digest in expected["provenance"]["source_files_sha256"].items():
+        if digest((root / name).read_bytes()) != expected_digest:
             raise ValueError(f"Frozen reference source changed: {name}")
     settings = (root / "fast-baseline-settings.json").read_bytes()
-    if digest(settings) != evidence["settings_sha256"]:
+    if digest(settings) != expected["settings_sha256"]:
         raise ValueError("Frozen scoped settings changed")
     return evidence, json.loads(settings)
 

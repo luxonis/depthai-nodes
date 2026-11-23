@@ -17,7 +17,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.scene import (
+from depthai_nodes.algorithms.parcel.implementation.scene import (
     CameraView,
     CandidateResult,
     PointCloud,
@@ -151,7 +151,7 @@ class FrozenGeometryRegressionTests(unittest.TestCase):
     def setUpClass(cls):
         configuration = json.loads(SETTINGS.read_bytes())
         _, cls.components = load_components(configuration)
-        from depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.visibility import (
+        from depthai_nodes.algorithms.parcel.implementation.visibility import (
             Visibility,
         )
 
@@ -516,13 +516,14 @@ class FrozenGeometryRegressionTests(unittest.TestCase):
 class NativeKernelTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        from depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89 import (
+        from depthai_nodes.algorithms.parcel.implementation import (
             native,
         )
 
         if native._lib is None:
             raise unittest.SkipTest(
-                "Build optional kernels with python algorithms/fast_baseline/build_native.py"
+                "Build optional kernels with "
+                "python -m depthai_nodes.algorithms.parcel.implementation.build_native"
             )
         cls.native = native
 
@@ -611,7 +612,7 @@ class NativeKernelTests(unittest.TestCase):
     def test_image_boundary_matches_numpy_for_rgb_gray_and_strided_images(self):
         from unittest.mock import patch
 
-        from depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.visibility import (
+        from depthai_nodes.algorithms.parcel.implementation.visibility import (
             Visibility,
         )
 
@@ -657,7 +658,7 @@ class NativeKernelTests(unittest.TestCase):
     def test_native_and_fallback_results_match_on_integer_normal(self):
         from unittest.mock import patch
 
-        from depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.factory import (
+        from depthai_nodes.algorithms.parcel.implementation.factory import (
             create_components,
         )
 
@@ -686,10 +687,10 @@ class CandidateCallbackTests(unittest.TestCase):
         return configuration
 
     def test_returns_ordered_decisions_without_measurement(self):
-        from depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.factory import (
+        from depthai_nodes.algorithms.parcel.implementation.factory import (
             create_components,
         )
-        from depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.visibility import (
+        from depthai_nodes.algorithms.parcel.implementation.visibility import (
             Visibility,
         )
 
@@ -706,14 +707,14 @@ class CandidateCallbackTests(unittest.TestCase):
 
                 with (
                     patch(
-                        "depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.factory.detect",
+                        "depthai_nodes.algorithms.parcel.implementation.factory.detect",
                         return_value=segments,
                     ),
                     patch.object(
                         Visibility, "validate_candidate", side_effect=decision
                     ) as validate,
                     patch(
-                        "depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.factory.measure"
+                        "depthai_nodes.algorithms.parcel.implementation.factory.measure"
                     ) as measure,
                 ):
                     components = create_components(self.configuration(parallel))
@@ -730,7 +731,7 @@ class CandidateCallbackTests(unittest.TestCase):
                 measure.assert_not_called()
 
     def test_reused_scene_does_not_reuse_projection_or_decision_caches(self):
-        from depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.factory import (
+        from depthai_nodes.algorithms.parcel.implementation.factory import (
             create_components,
         )
 
@@ -770,10 +771,10 @@ class CandidateCallbackTests(unittest.TestCase):
                     )
 
     def test_projection_workers_finish_before_return_or_failure(self):
-        from depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.factory import (
+        from depthai_nodes.algorithms.parcel.implementation.factory import (
             create_components,
         )
-        from depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.visibility import (
+        from depthai_nodes.algorithms.parcel.implementation.visibility import (
             Visibility,
         )
 
@@ -781,8 +782,31 @@ class CandidateCallbackTests(unittest.TestCase):
         for path in ("empty", "overlap", "detect_failure", "prepare_failure"):
             with self.subTest(path=path):
                 started, release, detected, finished = (Event() for _ in range(4))
+                waiting, exited, wait_or_exit = (Event() for _ in range(3))
                 completed = []
                 components = create_components(self.configuration())
+
+                class ProjectionExecutor(ThreadPoolExecutor):
+                    wait_started = waiting
+                    wait_observed = wait_or_exit
+
+                    def submit(self, *arguments, **keywords):
+                        future = super().submit(*arguments, **keywords)
+                        result = future.result
+
+                        def wait_for_result(*arguments, **keywords):
+                            self.wait_started.set()
+                            self.wait_observed.set()
+                            return result(*arguments, **keywords)
+
+                        future.result = wait_for_result
+                        return future
+
+                    def shutdown(self, wait=True, **keywords):
+                        if wait:
+                            self.wait_started.set()
+                            self.wait_observed.set()
+                        return super().shutdown(wait=wait, **keywords)
 
                 def project(
                     *arguments,
@@ -813,21 +837,35 @@ class CandidateCallbackTests(unittest.TestCase):
                         raise ValueError("Detection failed")
                     return [parcel, parcel] if path == "overlap" else []
 
-                def invoke(path=path, components=components, finished=finished):
-                    if path in {"detect_failure", "prepare_failure"}:
-                        with self.assertRaisesRegex(ValueError, "failed"):
+                def invoke(
+                    path=path,
+                    components=components,
+                    finished=finished,
+                    exited=exited,
+                    wait_or_exit=wait_or_exit,
+                ):
+                    try:
+                        if path in {"detect_failure", "prepare_failure"}:
+                            with self.assertRaisesRegex(ValueError, "failed"):
+                                components.find_candidates(scene)
+                        else:
                             components.find_candidates(scene)
-                    else:
-                        components.find_candidates(scene)
+                    finally:
+                        exited.set()
+                        wait_or_exit.set()
                     self.assertTrue(finished.is_set())
 
                 with (
                     patch(
-                        "depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.native.project_cells",
+                        "depthai_nodes.algorithms.parcel.implementation.factory.ThreadPoolExecutor",
+                        ProjectionExecutor,
+                    ),
+                    patch(
+                        "depthai_nodes.algorithms.parcel.implementation.native.project_cells",
                         side_effect=project,
                     ),
                     patch(
-                        "depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.factory.detect",
+                        "depthai_nodes.algorithms.parcel.implementation.factory.detect",
                         side_effect=detect,
                     ),
                     patch.object(
@@ -849,7 +887,9 @@ class CandidateCallbackTests(unittest.TestCase):
                         pending = caller.submit(invoke)
                         try:
                             self.assertTrue(detected.wait(5))
-                            self.assertFalse(pending.done())
+                            self.assertTrue(wait_or_exit.wait(5))
+                            self.assertTrue(waiting.is_set())
+                            self.assertFalse(exited.is_set())
                         finally:
                             release.set()
                         pending.result(timeout=5)
@@ -858,7 +898,7 @@ class CandidateCallbackTests(unittest.TestCase):
 
 class AdapterIndexRegressionTests(unittest.TestCase):
     def test_unsorted_unique_indices_keep_parcel_order(self):
-        from depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.components import (
+        from depthai_nodes.algorithms.parcel.implementation.components import (
             Components,
         )
 
@@ -876,7 +916,7 @@ class AdapterIndexRegressionTests(unittest.TestCase):
         np.testing.assert_array_equal(parcels[0], scene.cloud.xyz_mm[indices])
 
     def test_adjacent_and_nonadjacent_duplicates_are_rejected(self):
-        from depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.components import (
+        from depthai_nodes.algorithms.parcel.implementation.components import (
             Components,
         )
 

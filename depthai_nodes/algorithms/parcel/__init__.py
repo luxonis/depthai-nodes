@@ -7,10 +7,10 @@ is loaded only when the computation callbacks are created.
 import json
 from pathlib import Path
 
-from .fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.components import (
+from .implementation.components import (
     Components,
 )
-from .fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.scene import (
+from .implementation.scene import (
     CameraRole,
     CameraView,
     CandidateDecision,
@@ -28,7 +28,9 @@ from .fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.scene import (
 )
 
 ALGORITHM_ID = "algorithm-2f65a6f6296d48e981f5fe3f77bfde89"
-IMPLEMENTATION_NAME = "fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89"
+IMPLEMENTATION_NAME = "implementation"
+_ALGORITHM_NAME = "fast_baseline"
+_CONFIGURATION_VERSION = "v001"
 
 
 def create_components() -> Components:
@@ -41,7 +43,7 @@ def create_components() -> Components:
         ImportError: If the optional parcel computation dependencies are absent.
     """
     try:
-        from .fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89 import (
+        from .implementation import (
             create_components as create,
         )
 

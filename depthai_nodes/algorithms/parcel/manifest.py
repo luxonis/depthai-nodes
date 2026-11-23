@@ -73,7 +73,7 @@ def _metric_records(evaluation: dict) -> dict:
     return records
 
 
-def _covered_files(root: Path, implementation_name: str) -> set[str]:
+def _covered_files(root: Path) -> set[str]:
     package = root / "depthai_nodes"
     paths = set()
     directories = [
@@ -85,7 +85,8 @@ def _covered_files(root: Path, implementation_name: str) -> set[str]:
         for path in directory.rglob("*"):
             if (
                 path.is_file()
-                and path.suffix in {".py", ".json", ".cpp", ".txt", ".md"}
+                and "__pycache__" not in path.parts
+                and path.suffix not in {".pyc", ".so", ".dylib", ".dll", ".pyd"}
                 and path.name != "manifest.json"
             ):
                 paths.add(path.relative_to(root).as_posix())
@@ -97,7 +98,12 @@ def _covered_files(root: Path, implementation_name: str) -> set[str]:
 
 
 def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dict:
-    from . import ALGORITHM_ID, IMPLEMENTATION_NAME
+    from . import (
+        _ALGORITHM_NAME,
+        _CONFIGURATION_VERSION,
+        ALGORITHM_ID,
+        IMPLEMENTATION_NAME,
+    )
 
     _require(
         manifest["schema_version"] == "parcel-algorithm-manifest/1",
@@ -106,7 +112,7 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
     implementation = manifest["implementation"]
     package_path = f"depthai_nodes/algorithms/parcel/{IMPLEMENTATION_NAME}"
     _require(
-        implementation["name"] == IMPLEMENTATION_NAME, "Implementation binding mismatch"
+        implementation["name"] == _ALGORITHM_NAME, "Implementation binding mismatch"
     )
     _require(
         implementation["package_path"] == package_path, "Implementation path mismatch"
@@ -122,7 +128,7 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
     )
     files = implementation["files_sha256"]
     _require(
-        set(files) == _covered_files(root, IMPLEMENTATION_NAME),
+        set(files) == _covered_files(root),
         "Incomplete port file coverage",
     )
     for name, expected in files.items():
@@ -190,6 +196,24 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
         "Executed image mismatch",
     )
     source = manifest["source"]
+    _require(source["algorithm"] == _ALGORITHM_NAME, "Algorithm name mismatch")
+    _require(
+        source["configuration_version"] == _CONFIGURATION_VERSION,
+        "Configuration version mismatch",
+    )
+    _require(
+        settings["algorithm"] == f"algorithms.{_ALGORITHM_NAME}",
+        "Settings algorithm mismatch",
+    )
+    _require(
+        source["settings_path"]
+        == f"algorithms/{_ALGORITHM_NAME}/configurations/{_CONFIGURATION_VERSION}.json",
+        "Canonical settings path mismatch",
+    )
+    _require(
+        source["settings_file_sha256"] == evidence["settings_sha256"],
+        "Canonical settings byte hash mismatch",
+    )
     _require(
         source["commit"] == evidence["source_commit"] == _SOURCE_COMMIT,
         "Frozen source revision mismatch",
@@ -209,6 +233,44 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
     for digest in source["original_files_sha256"].values():
         _digest(digest)
     _require(source["lineage_note"] == evidence["lineage_note"], "Lineage mismatch")
+    visualization = manifest["visualization"]
+    _require(
+        visualization["path"] == package_path + "/visualization.html",
+        "Visualization path mismatch",
+    )
+    _require(
+        visualization["sha256"] == files[visualization["path"]],
+        "Visualization file hash mismatch",
+    )
+    _require(
+        visualization["source_repository"] == source["repository"]
+        and bool(re.fullmatch(r"[0-9a-f]{40}", visualization["source_commit"]))
+        and visualization["source_path"]
+        == f"algorithms/{_ALGORITHM_NAME}/visualization.html",
+        "Visualization source mismatch",
+    )
+    _digest(visualization["source_sha256"])
+    html = (root / visualization["path"]).read_text()
+    match = re.search(
+        r'<script id="evidence-data" type="application/json">(.*?)</script>',
+        html,
+        re.DOTALL,
+    )
+    _require(match is not None, "Missing visualization evidence")
+    displayed = json.loads(match[1])
+    _require(
+        displayed["candidate"] == original
+        and displayed["configuration"] == configuration
+        and displayed["source_commit"] == source["commit"]
+        and displayed["image"] == candidate["image_digest"],
+        "Visualization candidate or configuration mismatch",
+    )
+    for key, target in (("validation", "validation"), ("test", "held_out_result")):
+        _require(
+            displayed["results"][key]["metrics"]
+            == evidence[target]["evaluation"]["metrics"],
+            "Visualization metrics mismatch",
+        )
     inputs = manifest["inputs"]
     _require(
         set(inputs["modalities"]) == set(settings["execution"]["modalities"]),

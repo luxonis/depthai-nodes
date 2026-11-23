@@ -304,7 +304,7 @@ Example:
         detector = pipeline.create(ParcelDetector).build(
             pointCloud, color, left, right
         )
-        configQueue = detector.inputConfig.createInputQueue()
+        configQueue = detector.inputConfig.createInputQueue(blocking=True)
         dimensioner = pipeline.create(ParcelDimensioner).build(detector.out)
         results = dimensioner.out.createOutputQueue()
 
@@ -318,6 +318,8 @@ Example:
     groups are skipped. Before processing each complete group, the detector
     applies one pending configuration update, when available. Otherwise it
     keeps the active configuration. Pending updates are applied in queue order.
+    A full blocking config queue waits for scenes to advance. Send config
+    bursts from a separate thread if the caller also produces scene messages.
     The initial support plane is optional. Until a config supplies one, the
     detector consumes scene groups without processing or emitting outputs.
     Updates received during processing apply to a later group. Each batch

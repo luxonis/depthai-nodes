@@ -1,30 +1,31 @@
 {
   "schema_version": "parcel-algorithm-manifest/1",
   "implementation": {
-    "name": "fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89",
-    "package_path": "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89",
-    "configuration_path": "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/configuration.json",
+    "name": "fast_baseline",
+    "package_path": "depthai_nodes/algorithms/parcel/implementation",
+    "configuration_path": "depthai_nodes/algorithms/parcel/implementation/configuration.json",
     "source_contract_version": "BoxLabRunners@0a2f571843f81ac6cc2f8cebe3475540e314f83d:docs/boxlab/contracts/RUNNER.md",
     "configuration_sha256": "0e563613ccc6ab037d897e82d2f19b9b87b6a787f4f623c73ec33928bc102df3",
     "files_sha256": {
       "depthai_nodes/algorithms/__init__.py": "c5235d0aeaf840d21066d88f4529091e36ea97295c8a81f6dd881687ad93bbb6",
-      "depthai_nodes/algorithms/parcel/__init__.py": "457462fbe9171431e5a1edea9e63d2a90be4ee1eb43ee4576871640df59c9335",
-      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/ATTRIBUTION.md": "e936d83c9948e2f2aeb9ed5103f30152975eb3c01d07fcbb3fc70f30fb3cb749",
-      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/__init__.py": "2fd3633454ab73fccbe04e2574edafd7a00239a135b372e6f22409ee10548579",
-      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/build_native.py": "3121e6d1a04a8d773679f8362e1c10f05848e1cf110951f1a4bcc31e05490362",
-      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/components.py": "05db85213afa257e054ca4cd4f9975666ca8624c4149364e472c1f58e7e75d20",
-      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/configuration.json": "0e563613ccc6ab037d897e82d2f19b9b87b6a787f4f623c73ec33928bc102df3",
-      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/evaluation-evidence.json": "f0e1a88ca91cca57a990877a0ff30bdd70d2d68f0fd6152f6f178ce7d07dbc44",
-      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/factory.py": "07544d895e6ba9cade676f68a04d126f0ed9ec62f1b7e50ccbeea67c2305301b",
-      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/geometry.py": "abebef6c8cf6e3dac2085b603acf649bdb9f7af95567589101e08a19fde57829",
-      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/kernels.cpp": "bdff4769d043410c83677ad6a2d8863420642d27608ade672d52ea309e0c670a",
-      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/native.py": "278acc50e8ab9963b9682389773a0231b4832afb7377de4dc8c8d2d22dc44442",
-      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/reference-requirements.txt": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
-      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/scene.py": "7f8f888d0d242b5a73b5a61350d9be56d76f7a3509f002b225db2c43d2297b94",
-      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/scoped-settings.json": "66f29d1a54ddb6fd8d3fa957a34aa81dcef53a4ca29a47b0b4e39331afcb8bd8",
-      "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/visibility.py": "9177b8d4c3888655038427602e869290922a5edbc6bf79d96561322cc4c75951",
-      "depthai_nodes/algorithms/parcel/manifest.py": "05aea97c272d1b854954d7cf126830ad5be65ba47d63c0ff4421eabbaf7041f4",
-      "depthai_nodes/message/parcel.py": "d25544e85ec9c46f61a7b65c5a38cd3bc02f7758c767a8f41b950b5a786d9ae3",
+      "depthai_nodes/algorithms/parcel/__init__.py": "9d8171d79d002ff4ca8707496045ae4739817bdd200efabe1c24d301218e43f5",
+      "depthai_nodes/algorithms/parcel/implementation/ATTRIBUTION.md": "e8e08db228cbcc6e410162a0e9563d1a56afb7777afb8d770c645b081176920c",
+      "depthai_nodes/algorithms/parcel/implementation/__init__.py": "2fd3633454ab73fccbe04e2574edafd7a00239a135b372e6f22409ee10548579",
+      "depthai_nodes/algorithms/parcel/implementation/build_native.py": "3121e6d1a04a8d773679f8362e1c10f05848e1cf110951f1a4bcc31e05490362",
+      "depthai_nodes/algorithms/parcel/implementation/components.py": "05db85213afa257e054ca4cd4f9975666ca8624c4149364e472c1f58e7e75d20",
+      "depthai_nodes/algorithms/parcel/implementation/configuration.json": "0e563613ccc6ab037d897e82d2f19b9b87b6a787f4f623c73ec33928bc102df3",
+      "depthai_nodes/algorithms/parcel/implementation/evaluation-evidence.json": "f0e1a88ca91cca57a990877a0ff30bdd70d2d68f0fd6152f6f178ce7d07dbc44",
+      "depthai_nodes/algorithms/parcel/implementation/factory.py": "07544d895e6ba9cade676f68a04d126f0ed9ec62f1b7e50ccbeea67c2305301b",
+      "depthai_nodes/algorithms/parcel/implementation/geometry.py": "abebef6c8cf6e3dac2085b603acf649bdb9f7af95567589101e08a19fde57829",
+      "depthai_nodes/algorithms/parcel/implementation/kernels.cpp": "bdff4769d043410c83677ad6a2d8863420642d27608ade672d52ea309e0c670a",
+      "depthai_nodes/algorithms/parcel/implementation/native.py": "278acc50e8ab9963b9682389773a0231b4832afb7377de4dc8c8d2d22dc44442",
+      "depthai_nodes/algorithms/parcel/implementation/reference-requirements.txt": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
+      "depthai_nodes/algorithms/parcel/implementation/scene.py": "7f8f888d0d242b5a73b5a61350d9be56d76f7a3509f002b225db2c43d2297b94",
+      "depthai_nodes/algorithms/parcel/implementation/scoped-settings.json": "66f29d1a54ddb6fd8d3fa957a34aa81dcef53a4ca29a47b0b4e39331afcb8bd8",
+      "depthai_nodes/algorithms/parcel/implementation/visibility.py": "9177b8d4c3888655038427602e869290922a5edbc6bf79d96561322cc4c75951",
+      "depthai_nodes/algorithms/parcel/implementation/visualization.html": "3c1424e2864aa4ddedd5a9ac7fc9a04734c393c17744a14afa174ff3002ed258",
+      "depthai_nodes/algorithms/parcel/manifest.py": "1ff6c16be253d24fcbe317aed3ab72788eaa207b99875b0a02916f54fdfe36af",
+      "depthai_nodes/message/parcel.py": "702ca0222b5a71c0c6a6982161d5c0a1dfb4b7364182e547dc0125513aec43d0",
       "depthai_nodes/message/support_plane.py": "0eaeec70dda37d48b3160d1f1a14cffce766f23182289d1b569ffb444f1f44e3",
       "depthai_nodes/node/parcel_detector/__init__.py": "4bd2d4aaf686835abe5da5203a47a67a2ebe125aee64c5ef8499cac3809b1482",
       "depthai_nodes/node/parcel_detector/parcel_detector.py": "8c08a60467de9b8faf88b92555577f6cc4c1c2629801f8da3dda032488ea2ca0",
@@ -74,6 +75,13 @@
         "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
         "sha256": "feb5917534b5706644ab1ea48b08e2dc5c2bcfdda42f19766c94ba4a02f4d944",
         "scope": "Installed-wheel four-stream native Sync plus separate ParcelDetectorConfig pipeline on DepthAI 3.12.2. Fallback and locally built native synthetic pipelines and 44 installed native boundary checks passed. Rechecked after adding the one-time image-resolution warning; both synthetic paths still pass with unchanged geometry.",
+        "distributed": false
+      },
+      {
+        "platform": "macOS arm64",
+        "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
+        "sha256": "4370f27a5eda2b9f020808920c50068aca7286637c801db377c15b107456d42c",
+        "scope": "Optional native build from the stable-directory wheel in a fresh environment outside both source trees. Native and fallback synthetic two-node pipelines retain 218.940 by 158.420 by 110.000 mm geometry.",
         "distributed": false
       }
     ]
@@ -139,14 +147,34 @@
       "Retain only the two callback fields in Components; supplied-plane mode has no optional estimator.",
       "Serialize the unchanged configuration object as a separately hashed configuration.json; retain original scoped settings and aggregate evidence bytes.",
       "Apply repository formatting without changing computation, thresholds, precision, segment order, or fallback behavior.",
-      "Use explicit DepthAI image/calibration/plane conversion and frame-local owned parcel messages outside the immutable computation directory.",
+      "Use explicit DepthAI image/calibration/plane conversion and frame-local owned parcel messages outside the bundled computation directory.",
       "Use native DepthAI HostNode synchronization for complete groups instead of adapter queues and timeouts. Scope status enums under public message owners and keep diagnostic/timing record classes internal. Frozen computation and scene conversion are unchanged.",
       "Read delivered image intrinsics, distortion, and camera-to-reference poses from native ImgTransformation metadata instead of custom calibration objects. Invert calibrated camera poses in float64 millimeters for XYZ already in the common reference frame; retain the explicit plane/gravity input. Replace parcel attribute-assignment bypasses with normal constructors and read-only properties.",
       "Reuse the existing SupportPlane in build and ParcelDetectorConfig instead of a stamped ParcelPlane or explicit gravity. Orient the plane toward the reference camera, which must be above the surface. Use a ThreadedHostNode with native host Sync for four DEVICE-timestamp scene streams and a separate bounded blocking config queue read once with tryGet before each scene. Apply an available update to stored state; otherwise keep the current configuration. process receives only scene messages. Validate scene message datatypes once in process. Keep pointCloud and supportPlane names consistent. Accept RAW8 as well as GRAY8 mono frames, including native rectified outputs with matching virtual calibration. Frozen computation is unchanged.",
-      "Add a one-time resolution check at the process boundary for the evaluated unrectified image profile: color 2000x1500, left/right 1280x800. Log expected and received sizes on mismatch and continue processing, following the user override of the updated handoff rejection policy. No resize, geometry conversion, pixel-threshold scaling, or frozen computation changes. The initial SupportPlane is optional; inactive scene groups are consumed without processing or output until a config supplies the plane."
+      "Add a one-time resolution check at the process boundary for the evaluated unrectified image profile: color 2000x1500, left/right 1280x800. Log expected and received sizes on mismatch and continue processing, following the user override of the updated handoff rejection policy. No resize, geometry conversion, pixel-threshold scaling, or frozen computation changes. The initial SupportPlane is optional; inactive scene groups are consumed without processing or output until a config supplies the plane.",
+      "Relocate the identical computation and frozen settings to the stable implementation/ directory. Preserve full evaluated candidate identity independently of package location.",
+      "Package and hash visualization.html, retaining its own documentation-source revision and recording link-only repairs.",
+      "Snapshot parcel message points into immutable bytes-backed float32 storage to prevent mutation through retained aliases or the public array. The detector incurs one boundary snapshot; measurement does not copy points."
     ],
     "lineage_note": "Original settings declare algorithm-f6ab98aa284d4420bfd3bc67761a969f. Registration returned HTTP 403 with this token. The frozen settings copy omits that inaccessible declaration only; computation configuration, policy, objective, modalities, source paths and dependency lock are unchanged. Historical predecessor is retained in this report; no historical scores are reassigned.",
-    "license_note": "Pinned BoxLabRunners tree has no LICENSE file. Luxonis attribution is retained. DepthAI Nodes keeps its Apache-2.0 distribution license."
+    "license_note": "Pinned BoxLabRunners tree has no LICENSE file. Luxonis attribution is retained. DepthAI Nodes keeps its Apache-2.0 distribution license.",
+    "algorithm": "fast_baseline",
+    "configuration_version": "v001",
+    "settings_path": "algorithms/fast_baseline/configurations/v001.json",
+    "settings_file_sha256": "66f29d1a54ddb6fd8d3fa957a34aa81dcef53a4ca29a47b0b4e39331afcb8bd8",
+    "evaluated_settings_path": "experiments/revalidation-2026-11-20/fast-baseline-settings.json",
+    "configuration_version_note": "v001 names the unchanged committed release-scoped settings. The canonical configuration path is introduced by the BoxLabRunners revision migration and did not exist at the evaluated source commit.",
+    "review": {
+      "source_commit": "0a2f571843f81ac6cc2f8cebe3475540e314f83d",
+      "url": "https://github.com/luxonis/BoxLabRunners/pull/10",
+      "status": "historical_evaluation_predates_revision_review_requirement"
+    },
+    "revision_design": {
+      "status": "pending_upstream_commit",
+      "branch": "codex/algorithm-revisions",
+      "inspected_base_commit": "1d2aa20e85f6f6b6acb597440ca42d85c495474f",
+      "note": "The operator confirmed the stable-directory requirements and fast_baseline/v001 mapping while BoxLabRunners documentation is being implemented. Finalize commit-pinned configuration-catalog and evaluation-record links after that migration is committed."
+    }
   },
   "inputs": {
     "modalities": [
@@ -1017,7 +1045,7 @@
     }
   ],
   "port_verification": {
-    "status": "verified_for_declared_parcel_dependencies",
+    "status": "verified_on_recorded_inputs_with_known_upstream_findings",
     "record_path": "docs/parcel-promotions/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.md",
     "reference_artifact": "sha256:240c1854f46100c382801e8e0f622d99807c4ef64a0b27875f539087a97d7176",
     "comparison_inputs": {
@@ -1101,8 +1129,67 @@
       "The full existing unit suite has baseline mock collection-order failures. Separate parser model tests also require unavailable model caches.",
       "OpenCV 4.10 changes two validation cuboids above the declared parity tolerance. The parcel extra requires the frozen OpenCV 4.12.0.88.",
       "No new latency benchmark ran. Historical scores and timings remain attached to the evaluated artifacts.",
-      "The native metadata adapter supports millimeter common-reference XYZ, as DEFAULT native PointCloud output with an identity custom transform provides. Incompatible initial native configurations are rejected. Coordinate mode, units, and custom transforms must not change at runtime; PointCloudData does not identify those modes reliably. Metadata conversion is tested with synthetic native messages and actual host Rectification, not live generated clouds or device StereoDepth rectification."
+      "The native metadata adapter supports millimeter common-reference XYZ, as DEFAULT native PointCloud output with an identity custom transform provides. Incompatible initial native configurations are rejected. Coordinate mode, units, and custom transforms must not change at runtime; PointCloudData does not identify those modes reliably. Metadata conversion is tested with synthetic native messages and actual host Rectification, not live generated clouds or device StereoDepth rectification.",
+      "Known inherited native/fallback cell-boundary discrepancy and algorithm performance/runtime findings are recorded in docs/parcel-promotions/upstream-findings.md. No correction is included here; revised BoxLabRunners candidates require review and evaluation before integration."
     ],
-    "dependency_resolution": "The base OpenCV constraint explicitly permits >=4.10,<4.13. The parcel extra pins opencv-python-headless==4.12.0.88, numpy==2.2.6, and scipy==1.15.3. No tolerance was relaxed and no historical score was reassigned."
+    "dependency_resolution": "The base OpenCV constraint explicitly permits >=4.10,<4.13. The parcel extra pins opencv-python-headless==4.12.0.88, numpy==2.2.6, and scipy==1.15.3. No tolerance was relaxed and no historical score was reassigned.",
+    "packaging_update": {
+      "record_path": "docs/parcel-promotions/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.md",
+      "baseline_revision": "10f0b79d5473aada6face5d60a2e192c144d56ce",
+      "stable_package_path": "depthai_nodes/algorithms/parcel/implementation",
+      "configuration_version": "v001",
+      "comparison": {
+        "synthetic_scenes": 15,
+        "standalone_measurement_cases": 3,
+        "modes": [
+          "native",
+          "fallback"
+        ],
+        "pre_post_complete_reports": "exactly_equal",
+        "relocated_byte_identical_files": 13,
+        "historical_validation_cache_available": false
+      },
+      "checks": {
+        "focused_tests": 53,
+        "focused_subtests": 58,
+        "native_message_checks": 50,
+        "helpers_messages_host_tests": 498,
+        "threaded_box_tests": 31,
+        "full_unit_suite": {
+          "passed": 592,
+          "failed": 181,
+          "errors": 124
+        },
+        "unchanged_pr_full_unit_suite": {
+          "passed": 581,
+          "failed": 181,
+          "errors": 124
+        },
+        "installed_manifest_files": 25,
+        "installed_native_message_checks": 50,
+        "installed_sdk": "3.12.2",
+        "installed_python": "3.12.13",
+        "installed_fallback_pipeline": "passed",
+        "installed_native_pipeline": "passed",
+        "pre_commit": "passed",
+        "pydoctor": "passed"
+      },
+      "limitations": [
+        "The canonical configuration path and configuration-version mapping are being documented in BoxLabRunners codex/algorithm-revisions. A committed migration reference is not yet available.",
+        "Historical validation and held-out evidence belong to the original candidate; no new Workbench evaluation or hardware performance claim is made by relocation."
+      ],
+      "wheel_environment": "Fresh virtual environment outside both source repositories, seeded with previously installed DepthAI3.12.2 and pinned algorithm dependencies after fresh dependency downloads stalled. The new package was installed from the clean-built wheel; no source checkout paths were copied or imported."
+    }
+  },
+  "visualization": {
+    "path": "depthai_nodes/algorithms/parcel/implementation/visualization.html",
+    "sha256": "3c1424e2864aa4ddedd5a9ac7fc9a04734c393c17744a14afa174ff3002ed258",
+    "source_repository": "https://github.com/luxonis/BoxLabRunners",
+    "source_commit": "1d2aa20e85f6f6b6acb597440ca42d85c495474f",
+    "source_path": "algorithms/fast_baseline/visualization.html",
+    "source_sha256": "aa8837d8b0eaa28261986c5f56681bce84431e77cbd365413b5debf470ff8c71",
+    "adaptations": [
+      "Repair source links to shipped files or commit-pinned BoxLabRunners URLs; retain embedded candidate, settings, metrics, and case data."
+    ]
   }
 }

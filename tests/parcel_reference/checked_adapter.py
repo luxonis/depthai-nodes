@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.scene import (
+from depthai_nodes.algorithms.parcel.implementation.scene import (
     CandidateResult,
     Cuboid,
     PlaneEstimator,
@@ -146,8 +146,5 @@ def load_components(settings):
     from copy import deepcopy
     from importlib import import_module
 
-    module = import_module(
-        "depthai_nodes.algorithms.parcel."
-        "fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.factory"
-    )
+    module = import_module("depthai_nodes.algorithms.parcel." "implementation.factory")
     return module, module.create_components(deepcopy(settings.get("configuration", {})))

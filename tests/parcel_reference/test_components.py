@@ -14,10 +14,10 @@ from unittest.mock import Mock
 import numpy as np
 
 from depthai_nodes.algorithms.parcel import create_components
-from depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.components import (
+from depthai_nodes.algorithms.parcel.implementation.components import (
     Components,
 )
-from depthai_nodes.algorithms.parcel.fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.scene import (
+from depthai_nodes.algorithms.parcel.implementation.scene import (
     CandidateResult,
     Cuboid,
     PointCloud,

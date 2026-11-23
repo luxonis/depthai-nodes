@@ -818,12 +818,34 @@ class NodeTests(unittest.TestCase):
         points[:] = 0
         np.testing.assert_array_equal(parcel.xyz_mm, np.ones((3, 3)))
         self.assertFalse(parcel.xyz_mm.flags.writeable)
+        with self.assertRaises(ValueError):
+            parcel.xyz_mm.flags.writeable = True
 
-    def test_owned_parcel_points_are_retained_without_a_second_copy(self):
-        points = np.ones((3, 3), np.float32)
+    def test_read_only_input_with_writable_alias_is_snapshotted(self):
+        points = np.arange(9, dtype=np.float32).reshape(3, 3).copy()
+        writable_alias = points.view()
+        points.flags.writeable = False
+        parcel = Parcel(candidate_id=0, xyz_mm=points)
+        writable_alias[:] = np.nan
+        np.testing.assert_array_equal(
+            parcel.xyz_mm, np.arange(9, dtype=np.float32).reshape(3, 3)
+        )
+        with self.assertRaises(ValueError):
+            parcel.xyz_mm.flags.writeable = True
+
+    def test_owned_parcel_points_have_immutable_independent_storage(self):
+        points = np.arange(9, dtype=np.float32).reshape(3, 3).copy()
+        writable_alias = points.view()
         parcel = Parcel._from_owned(0, points)
-        self.assertIs(parcel.xyz_mm, points)
+        writable_alias[:] = np.nan
+        np.testing.assert_array_equal(
+            parcel.xyz_mm, np.arange(9, dtype=np.float32).reshape(3, 3)
+        )
+        self.assertEqual(parcel.xyz_mm.dtype, np.float32)
         self.assertFalse(points.flags.writeable)
+        self.assertFalse(np.shares_memory(parcel.xyz_mm, points))
+        with self.assertRaises(ValueError):
+            parcel.xyz_mm.flags.writeable = True
         with self.assertRaises(AttributeError):
             parcel.candidate_id = 2
         with self.assertRaises(AttributeError):

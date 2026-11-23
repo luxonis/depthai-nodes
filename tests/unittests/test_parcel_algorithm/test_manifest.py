@@ -30,7 +30,12 @@ def installed_copy(tmp_path):
 def test_manifest_validates_installed_bytes_and_evidence():
     manifest = parcel.validate_manifest()
     assert manifest["workbench_candidate"]["id"] == parcel.ALGORITHM_ID
-    assert manifest["implementation"]["name"] == parcel.IMPLEMENTATION_NAME
+    assert manifest["implementation"]["name"] == "fast_baseline"
+    assert manifest["implementation"]["package_path"] == (
+        "depthai_nodes/algorithms/parcel/implementation"
+    )
+    assert parcel.IMPLEMENTATION_NAME == "implementation"
+    assert manifest["source"]["configuration_version"] == "v001"
     assert len(inspect.signature(parcel.create_components).parameters) == 0
 
 
@@ -103,6 +108,50 @@ def test_node_binding_mismatch_is_rejected(monkeypatch):
     monkeypatch.setattr(ParcelDimensioner, "algorithm_id", "algorithm-other")
     with pytest.raises(ValueError, match="Node algorithm binding mismatch"):
         parcel.validate_manifest()
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("algorithm", "other", "Algorithm name mismatch"),
+        ("configuration_version", "v002", "Configuration version mismatch"),
+        ("settings_path", "settings.json", "Canonical settings path mismatch"),
+        ("settings_file_sha256", "0" * 64, "Canonical settings byte hash mismatch"),
+    ],
+)
+def test_source_configuration_identity_is_checked(
+    installed_copy, field, value, message
+):
+    root, manifest = installed_copy
+    manifest["source"][field] = value
+    with pytest.raises(ValueError, match=message):
+        _validate(root, manifest, check_bindings=False)
+
+
+def test_visualization_is_shipped_and_covered(installed_copy):
+    root, manifest = installed_copy
+    name = manifest["visualization"]["path"]
+    assert name in manifest["implementation"]["files_sha256"]
+    page = root / name
+    page.write_text(page.read_text() + "\n")
+    with pytest.raises(ValueError, match="File hash mismatch.*visualization.html"):
+        _validate(root, manifest, check_bindings=False)
+
+
+def test_visualization_cannot_reassign_metrics_with_updated_port_hash(installed_copy):
+    root, manifest = installed_copy
+    name = manifest["visualization"]["path"]
+    page = root / name
+    text = page.read_text()
+    text = text.replace(
+        '"measurement_success_count":6', '"measurement_success_count":7'
+    )
+    page.write_text(text)
+    digest = hashlib.sha256(page.read_bytes()).hexdigest()
+    manifest["implementation"]["files_sha256"][name] = digest
+    manifest["visualization"]["sha256"] = digest
+    with pytest.raises(ValueError, match="Visualization metrics mismatch"):
+        _validate(root, manifest, check_bindings=False)
 
 
 def test_public_node_export_binding_is_checked(monkeypatch):

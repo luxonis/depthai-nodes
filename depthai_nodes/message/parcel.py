@@ -106,18 +106,17 @@ class Parcel:
     """One eligible parcel with read-only float32 XYZ in millimeters.
 
     ``candidate_id`` is the zero-based proposal index within this frame. Gaps
-    identify rejected proposals. Construction retains a read-only owning
-    float32 array and snapshots other inputs into independent point storage.
+    identify rejected proposals. Construction snapshots the points into
+    immutable storage, preserving their float32 values and selected-point order.
     """
 
     def __init__(self, *, candidate_id: int, xyz_mm: NDArray[np.float32]) -> None:
         self._candidate_id = _candidate(candidate_id)
         array = np.asarray(xyz_mm, dtype=np.float32)
         self._check_points(array)
-        if not array.flags.owndata or array.flags.writeable:
-            array = array.copy()
-        array.flags.writeable = False
-        self._xyz_mm = array
+        self._xyz_mm = np.frombuffer(array.tobytes(), dtype=np.float32).reshape(
+            array.shape
+        )
 
     @property
     def candidate_id(self) -> int:

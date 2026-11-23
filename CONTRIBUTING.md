@@ -66,10 +66,16 @@ Review `apidocs/index.html`. CI runs the same build with warnings treated as err
 
 ### Parcel algorithms
 
-`ParcelDetector` and `ParcelDimensioner` share one frozen bundled algorithm.
+`ParcelDetector` and `ParcelDimensioner` share one frozen bundled algorithm in
+`depthai_nodes/algorithms/parcel/implementation/`. Git revisions and retained package
+releases preserve older implementations.
 Install `pip install -e ".[dev,box-measurement,parcel]"` for parcel computation and verification.
 Before changing that algorithm, read the [parcel update workflow](docs/parcel-promotions/update-workflow.md)
-and its linked promotion record. Changes to computation or frozen settings require a new evaluated candidate.
+and its linked promotion record. BoxLabRunners owns algorithm development, review,
+configuration tuning, and evaluation. Return algorithm findings there; this repository
+owns node APIs, message conversion, packaging, and frozen-candidate integration.
+Changes to computation or frozen settings require a newly reviewed and evaluated candidate.
+Keep evaluated-source provenance separate from published port hashes.
 The manifest checks raw installed package bytes and the binding used by both nodes.
 
 Add or update tests for changed behavior. The repository has three test suites:
