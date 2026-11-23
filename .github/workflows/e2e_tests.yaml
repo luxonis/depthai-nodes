@@ -204,7 +204,7 @@ jobs:
           fi
 
   notify-bom-failure:
-    name: Notify Klemen of BOM failure on Slack
+    name: Notify #ml-devs-gh of BOM failure
     needs: [HIL-test, HIL-test-windows, HIL-test-mac]
     if: >
       always() && !cancelled() &&
@@ -216,10 +216,10 @@ jobs:
        needs.HIL-test-mac.result == 'failure')
     runs-on: ubuntu-latest
     steps:
-      - name: Send Slack DM
+      - name: Post to #ml-devs-gh
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_USER_ID: U03PLCLEFU2
+          SLACK_CHANNEL_ID: C06D4HWU7SQ
           LINUX_RESULT: ${{ needs.HIL-test.result }}
           WINDOWS_RESULT: ${{ needs.HIL-test-windows.result }}
           MAC_RESULT: ${{ needs.HIL-test-mac.result }}
@@ -231,9 +231,9 @@ jobs:
           [[ "$MAC_RESULT" == failure ]] && failed+=(macOS)
           failed_platforms=$(IFS=', '; echo "${failed[*]}")
           run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          message=$(printf ':rotating_light: *DepthAI Nodes BOM tests failed*\nFailed platforms: %s\nTest run: %s' \
+          message=$(printf '<@U03PLCLEFU2> :rotating_light: *DepthAI Nodes BOM tests failed*\nFailed platforms: %s\nTest run: %s' \
             "$failed_platforms" "$run_url")
-          payload=$(jq -n --arg channel "$SLACK_USER_ID" --arg text "$message" \
+          payload=$(jq -n --arg channel "$SLACK_CHANNEL_ID" --arg text "$message" \
             '{channel: $channel, text: $text}')
           response=$(curl --silent --show-error --fail-with-body \
             -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
