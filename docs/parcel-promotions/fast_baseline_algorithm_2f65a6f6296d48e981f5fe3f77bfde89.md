@@ -77,7 +77,7 @@ Use the evaluated unrectified source-image profile:
 
 The first scene with valid message types checks all three image sizes. A mismatch logs one warning containing all expected and received sizes.
 This check runs once per detector instance, including when the initial sizes match. Invalid message types do not consume the check.
-Processing continues after a mismatch. This warning behavior follows the user's explicit request instead of the updated handoff's rejection policy.
+Processing continues after a mismatch.
 NeuralDepth at 768 × 480 is preferred upstream. The detector receives a point cloud and cannot check the depth-image resolution directly.
 The synthetic example deliberately uses smaller images and emits this warning. It verifies pipeline wiring and geometry, not the evaluated input profile.
 
@@ -198,7 +198,7 @@ This historical cache is from the same release. Its manifest differs from the se
 These checks establish port equality on the named decoded scenes. They do not rerun scoring, establish equality on new held-out data, or verify original raw recording decoding.
 No training labels or new held-out inputs were accessed.
 
-The committed comparison summaries contain aggregate checks and hashes, without raw scenes or validation cuboid coordinates.
+The [numerical comparison report](comparison-summary.json) contains aggregate checks and hashes, without raw scenes or validation cuboid coordinates.
 The original retained image separately passes 25 fast-baseline regressions and seven component checks without skips.
 The port reruns the adapted regressions and checks its actual native message boundary separately.
 
@@ -217,29 +217,50 @@ No fetching or network access occurs in this tool.
 
 ## Repository checks and limitations
 
-The exact full `pytest tests/unittests` command encounters an existing collection-order problem in parser-node mocks.
-An untouched copy of the original revision reproduces the same 181 failures and 124 errors, with 571 passing tests.
-The isolated host-node suite passes 116 tests. Helpers/messages pass 382 tests. Focused existing box threaded-node regressions pass 31 tests.
-The separate threaded-node suite reproduces the base's 16 unavailable model-cache failures, with 195 tests passing.
-These unrelated failures are retained as limitations rather than hidden as skips.
+The promotion checks ran on macOS arm64 with the declared parcel dependencies: NumPy 2.2.6, SciPy 1.15.3, and OpenCV package 4.12.0.88.
+Source checks used Python 3.10.18 and 3.12.13 with DepthAI 3.11.0. The installed-wheel checks used Python 3.12.13 with DepthAI 3.12.2.
+The numerical source comparisons and OpenCV compatibility checks are recorded separately in [comparison-summary.json](comparison-summary.json).
 
-Final parcel, Python 3.10, wheel, lint, and documentation results are recorded in the manifest and comparison summaries.
-The focused command `pytest tests/unittests/test_parcel_algorithm tests/unittests/test_parcel_nodes tests/parcel_reference` passes 42 tests, including frozen regression subtests, on both Python 3.12.13 and 3.10.18.
-The node wrapper runs 47 native checks in a fresh process to avoid the existing parser mock substitutions.
-The native synchronization cases verify that incomplete input groups are skipped, the next complete frame recovers, and queued plane configurations apply between complete scenes.
-Native metadata checks cover crop/scale intrinsics, distortion and tilted sensors, pose units and reference compatibility, missing metadata, default cloud coordinates, normal value construction, and zero-copy owned parcel transfer.
-These checks include native host Rectification from distorted 64×48 inputs to 80×36 RAW8 outputs with matching virtual metadata. They do not establish generated-cloud or live camera behavior on OAK hardware.
-The final full unit command reports 581 passing tests with the same 181 failures and 124 errors as the unchanged base.
-Pre-commit and `pydoctor depthai_nodes` pass. The API build treats warnings as errors.
+| Check                                                                                                   | Recorded result                                                                                                                      |
+| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `pytest tests/unittests/test_parcel_algorithm tests/unittests/test_parcel_nodes tests/parcel_reference` | 42 tests pass on both Python versions, including frozen regression subtests and 47 native boundary checks in an isolated subprocess. |
+| `pytest tests/unittests`                                                                                | 581 pass, 181 fail, and 124 errors. The unchanged base reproduces the same failures and errors, with 571 passes.                     |
+| Isolated host-node tests                                                                                | 116 pass with OpenCV 4.10 and 4.12.                                                                                                  |
+| Helpers and message tests                                                                               | 382 pass with OpenCV 4.10. Combined host, helper, and message checks pass 498 tests with OpenCV 4.12.                                |
+| Focused existing box threaded-node tests                                                                | 31 pass with OpenCV 4.10 and 4.12.                                                                                                   |
+| `pytest tests/unittests --ignore=tests/unittests/test_nodes`                                            | 524 pass.                                                                                                                            |
+| Separate threaded-node suite                                                                            | 195 pass and 16 fail because model caches are unavailable. The unchanged base reproduces those failures.                             |
+| `pre-commit run --all-files`                                                                            | Passes.                                                                                                                              |
+| `pydoctor depthai_nodes`                                                                                | Passes with pydoctor 25.10.1 and warnings treated as errors.                                                                         |
 
-The wheel installs outside both source trees. Its metadata pins the parcel dependencies, its 24 covered installed file hashes pass, and its JSON, configuration, attribution, and C++ assets are present.
-The wheel excludes test fixtures, verification tools, documentation packages, and local native binaries.
-Public package/node imports pass before installing SciPy. Creating computation without the extra gives the installation hint.
-After installing the declared parcel extra, a host-only synthetic pipeline runs both public nodes from the installed wheel with the fallback.
-The optional native source also builds inside that installation, and the same pipeline passes with it loaded.
-The fresh wheel resolves DepthAI 3.12.2 and passes all 47 native boundary checks with that SDK. Source-tree checks use DepthAI 3.11.0.
-Both paths measure the synthetic 220 by 160 by 110 mm parcel as 218.940 by 158.420 by 110.000 mm, within the fixture's 5 mm sampling allowance.
-That allowance checks synthetic scene sampling. It does not relax the source-to-port numerical tolerance.
+The full-suite failures include an existing collection-order problem in parser-node mocks. Native parcel checks run in a fresh process to avoid those mock substitutions.
+The native checks cover:
+
+- Incomplete synchronized groups, recovery on the next complete group, and independent sequence counters.
+- Latest queued plane configuration, updates during processing, invalid-config recovery, and retained batch plane snapshots.
+- Expected image resolutions without warnings, one warning for each mismatched role across repeated scenes, continued processing, and invalid message types leaving the check pending.
+- Crop/scale intrinsics, distortion, tilted sensors, pose units, reference compatibility, missing metadata, and default cloud coordinates.
+- Read-only parcel values, zero-copy owned parcel transfer, measurement outcomes, and algorithm identity checks.
+
+Native host Rectification from distorted 64×48 inputs to 80×36 RAW8 outputs passes metadata-conversion checks.
+This does not validate rectified inputs against the evaluated unrectified profile or establish generated-cloud or live camera behavior on OAK hardware.
+
+### Installed package
+
+The wheel installs outside both source trees. All 24 covered installed file hashes and the declared JSON, configuration, attribution, and C++ assets pass validation.
+The package excludes test fixtures, verification tools, documentation packages, and native binaries.
+Before installing SciPy, public imports, six parcel message exports, the single-field config dataclass, required build plane, and manifest validation pass.
+Creating computation without the parcel extra produces the installation hint.
+
+After installing the parcel extra, all 47 native boundary checks pass from the installed package.
+A host-only synthetic pipeline runs both public nodes with the fallback and an optional native build using Apple clang 21 and the declared C++17 flags.
+Both paths emit the expected one-time resolution warning for the small synthetic images and measure the 220 by 160 by 110 mm parcel as 218.940 by 158.420 by 110.000 mm.
+The fixture allows 5 mm for sampling. That allowance does not relax the source-to-port numerical tolerance.
+The final reinstall verifies the input-profile provenance, all installed file hashes, and the fallback pipeline.
+
+The tested input-profile revision wheel has SHA-256 `f60ef2ae9ef4eed34c46916568176fe7c6dffffc4cf8ffc5dbc8d85b9012b578`.
+This identifies the previously checked artifact, not a wheel rebuilt after later documentation or provenance changes.
+Native binary identities are retained under `implementation.tested_native_binaries` in the [manifest](../../depthai_nodes/algorithms/parcel/manifest.json).
 
 For the installed-wheel check, use a new virtual environment in a directory outside both repositories:
 
@@ -255,7 +276,7 @@ python /path/to/copied/synthetic.py
 The test-only report comparison can be repeated with `python -m tests.parcel_reference.compare_reports left.json right.json --output comparison.json`.
 It returns a failing equality result for the observed OpenCV 4.10/4.12 drift at the unchanged tolerance.
 
-No OAK hardware, Windows execution, XLink serialization, or end-to-end live sensor pipeline was tested.
+No OAK hardware, installed Linux or Windows port execution, XLink serialization, or end-to-end live sensor pipeline was tested.
 The portable fallback and optional native build have distinct verification records. No hardware performance guarantee is made.
 
 Future changes follow the [update workflow](update-workflow.md), also linked from `CONTRIBUTING.md`.

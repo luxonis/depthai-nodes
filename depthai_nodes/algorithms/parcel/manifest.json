@@ -1102,7 +1102,6 @@
       "No new latency benchmark ran. Historical scores and timings remain attached to the evaluated artifacts.",
       "The native metadata adapter supports millimeter common-reference XYZ, as DEFAULT native PointCloud output with an identity custom transform provides. Incompatible initial native configurations are rejected. Coordinate mode, units, and custom transforms must not change at runtime; PointCloudData does not identify those modes reliably. Metadata conversion is tested with synthetic native messages and actual host Rectification, not live generated clouds or device StereoDepth rectification."
     ],
-    "verification_summary_path": "docs/parcel-promotions/verification-summary.json",
     "dependency_resolution": "The base OpenCV constraint explicitly permits >=4.10,<4.13. The parcel extra pins opencv-python-headless==4.12.0.88, numpy==2.2.6, and scipy==1.15.3. No tolerance was relaxed and no historical score was reassigned."
   }
 }
