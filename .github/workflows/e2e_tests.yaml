@@ -202,3 +202,45 @@ jobs:
           else
             exec hil_runner --models 'oak4_s or oak4_pro or oak4_d' --wait --basic-sanity --reservation-name $RESERVATION_NAME -os mac --sync-workspace --commands "cd /tmp/depthai-nodes && DEPTHAI_TELEMETRY=0 ./tests/end_to_end/run_end_to_end_mac.sh ${{ secrets.HUBAI_API_KEY }} ${{ secrets.HUBAI_TEAM_SLUG }} 3.11.0 ${{secrets.LUXONIS_EXTRA_INDEX_URL}} rvc4"
           fi
+
+  notify-bom-failure:
+    name: Notify Klemen of BOM failure on Slack
+    needs: [HIL-test, HIL-test-windows, HIL-test-mac]
+    if: >
+      always() && !cancelled() &&
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.bom_mode == 'true' &&
+      startsWith(github.event.inputs.reservation_name, 'https://github.com/luxonis/luxonis-bom/actions/runs/') &&
+      (needs.HIL-test.result == 'failure' ||
+       needs.HIL-test-windows.result == 'failure' ||
+       needs.HIL-test-mac.result == 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack DM
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_USER_ID: U03PLCLEFU2
+          LINUX_RESULT: ${{ needs.HIL-test.result }}
+          WINDOWS_RESULT: ${{ needs.HIL-test-windows.result }}
+          MAC_RESULT: ${{ needs.HIL-test-mac.result }}
+          BOM_RUN_URL: ${{ github.event.inputs.reservation_name }}
+        run: |
+          : "${SLACK_BOT_TOKEN:?Set the SLACK_BOT_TOKEN Actions secret to send BOM alerts}"
+          failed=()
+          [[ "$LINUX_RESULT" == failure ]] && failed+=(Linux)
+          [[ "$WINDOWS_RESULT" == failure ]] && failed+=(Windows)
+          [[ "$MAC_RESULT" == failure ]] && failed+=(macOS)
+          failed_platforms=$(IFS=', '; echo "${failed[*]}")
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          message=$(printf ':rotating_light: *DepthAI Nodes BOM tests failed*\nFailed platforms: %s\nTest run: %s\nBOM run: %s' \
+            "$failed_platforms" "$run_url" "$BOM_RUN_URL")
+          payload=$(jq -n --arg channel "$SLACK_USER_ID" --arg text "$message" \
+            '{channel: $channel, text: $text}')
+          response=$(curl --silent --show-error --fail-with-body \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H 'Content-Type: application/json' \
+            --data "$payload" https://slack.com/api/chat.postMessage)
+          jq -e '.ok == true' >/dev/null <<< "$response" || {
+            echo 'Slack rejected the BOM failure notification' >&2
+            exit 1
+          }
