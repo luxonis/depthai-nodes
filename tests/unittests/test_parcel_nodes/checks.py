@@ -7,6 +7,7 @@ from dataclasses import FrozenInstanceError, fields, replace
 from datetime import timedelta
 from threading import Event
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import cv2
 import depthai as dai
@@ -65,27 +66,28 @@ def stamp(message, sequence=1, device_offset=0):
     return message
 
 
-def messages(sequence=1, points=None):
+def messages(sequence=1, points=None, *, imageSizes=((32, 24),) * 3):
     pointCloud = dai.PointCloudData()
     if points is None:
         points = np.array([[1, 2, 900], [3, 4, 901], [5, 6, 902]], np.float32)
     pointCloud.setPoints(np.asarray(points, np.float32))
     color = dai.ImgFrame()
     color.setType(dai.ImgFrame.Type.BGR888i)
-    color.setFrame(np.full((24, 32, 3), (3, 7, 19), np.uint8))
-    color.setWidth(32)
-    color.setHeight(24)
+    width, height = imageSizes[0]
+    color.setFrame(np.full((height, width, 3), (3, 7, 19), np.uint8))
+    color.setWidth(width)
+    color.setHeight(height)
     stereo = []
-    for _ in range(2):
+    for width, height in imageSizes[1:]:
         image = dai.ImgFrame()
         image.setType(dai.ImgFrame.Type.GRAY8)
-        image.setFrame(np.full((24, 32), 35, np.uint8))
-        image.setWidth(32)
-        image.setHeight(24)
+        image.setFrame(np.full((height, width), 35, np.uint8))
+        image.setWidth(width)
+        image.setHeight(height)
         stereo.append(image)
     pointCloud.setTransformation(metadata())
     for image in (color, *stereo):
-        image.setTransformation(metadata())
+        image.setTransformation(metadata(size=(image.getWidth(), image.getHeight())))
     return tuple(stamp(message, sequence) for message in (pointCloud, color, *stereo))
 
 
@@ -466,6 +468,53 @@ class ConversionTests(unittest.TestCase):
 
 
 class NodeTests(unittest.TestCase):
+    def test_expected_resolutions_pass_without_warning_and_are_checked_once(self):
+        with App() as app, patch.object(app.detector, "warn") as warn:
+            app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
+            result = app.detect(
+                messages(imageSizes=((2000, 1500), (1280, 800), (1280, 800)))
+            )
+            self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+            self.assertEqual(app.detect().outcome, ParcelDetections.Outcome.SUCCESS)
+            warn.assert_not_called()
+
+    def test_resolution_mismatches_warn_once_and_continue_processing(self):
+        for index in range(3):
+            with self.subTest(index=index), App() as app, patch.object(
+                app.detector, "warn"
+            ) as warn:
+                app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
+                imageSizes = [(2000, 1500), (1280, 800), (1280, 800)]
+                imageSizes[index] = (320, 320)
+                inputs = messages(imageSizes=imageSizes)
+                for _ in range(2):
+                    result = app.detect(inputs)
+                    self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+                warn.assert_called_once()
+                warning = warn.call_args.args[0]
+                self.assertIn(
+                    "expects unrectified RGB 2000x1500, left 1280x800, "
+                    "and right 1280x800 images",
+                    warning,
+                )
+                self.assertIn(
+                    f"Received RGB {imageSizes[0][0]}x{imageSizes[0][1]}, "
+                    f"left {imageSizes[1][0]}x{imageSizes[1][1]}, "
+                    f"and right {imageSizes[2][0]}x{imageSizes[2][1]}",
+                    warning,
+                )
+                self.assertIn("Processing will continue", warning)
+
+    def test_invalid_image_type_does_not_consume_the_resolution_check(self):
+        with App() as app, patch.object(app.detector, "warn") as warn:
+            app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
+            inputs = list(messages())
+            inputs[1] = stamp(dai.Buffer())
+            self.assertEqual(app.detect(inputs).failure_code, "invalid_source_image")
+            warn.assert_not_called()
+            self.assertEqual(app.detect().outcome, ParcelDetections.Outcome.SUCCESS)
+            warn.assert_called_once()
+
     def test_initial_support_plane_is_required_and_must_be_a_support_plane(self):
         with App() as app:
             self.assertFalse(hasattr(app.detector, "setSupportPlane"))

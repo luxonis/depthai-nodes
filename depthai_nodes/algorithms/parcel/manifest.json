@@ -27,7 +27,7 @@
       "depthai_nodes/message/parcel.py": "402b67630cf2da9a795b468d0150be1d105f5d777536a13e26f55cfe418855fd",
       "depthai_nodes/message/support_plane.py": "0eaeec70dda37d48b3160d1f1a14cffce766f23182289d1b569ffb444f1f44e3",
       "depthai_nodes/node/parcel_detector/__init__.py": "4bd2d4aaf686835abe5da5203a47a67a2ebe125aee64c5ef8499cac3809b1482",
-      "depthai_nodes/node/parcel_detector/parcel_detector.py": "b745520809e0001f226af1bb24370342c4131c8d242b87228f21608b9890d944",
+      "depthai_nodes/node/parcel_detector/parcel_detector.py": "537126cc8f0450f7acd17598b68fb5b2b6df1a33aca7980e851d8b7587a659f9",
       "depthai_nodes/node/parcel_detector/scene.py": "13483accb7c7806b6b3d3ace3739605ce7efbb2e84b632a32588cbf8d61744e6",
       "depthai_nodes/node/parcel_dimensioner/__init__.py": "506569fb746e3a1fb9fc525170615c20f027a35ec155fa0a8d5b283012a7b3fc",
       "depthai_nodes/node/parcel_dimensioner/parcel_dimensioner.py": "63d8627a836d32c3f9abed5023d1971cd3b74338c3bfcd0ff5ba53255e125703"
@@ -73,7 +73,7 @@
         "platform": "macOS arm64",
         "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
         "sha256": "feb5917534b5706644ab1ea48b08e2dc5c2bcfdda42f19766c94ba4a02f4d944",
-        "scope": "Installed-wheel four-stream native Sync plus separate ParcelDetectorConfig pipeline on DepthAI 3.12.2. Fallback and locally built native synthetic pipelines and 44 installed native boundary checks passed.",
+        "scope": "Installed-wheel four-stream native Sync plus separate ParcelDetectorConfig pipeline on DepthAI 3.12.2. Fallback and locally built native synthetic pipelines and 44 installed native boundary checks passed. Rechecked after adding the one-time image-resolution warning; both synthetic paths still pass with unchanged geometry.",
         "distributed": false
       }
     ]
@@ -142,7 +142,8 @@
       "Use explicit DepthAI image/calibration/plane conversion and frame-local owned parcel messages outside the immutable computation directory.",
       "Use native DepthAI HostNode synchronization for complete groups instead of adapter queues and timeouts. Scope status enums under public message owners and keep diagnostic/timing record classes internal. Frozen computation and scene conversion are unchanged.",
       "Read delivered image intrinsics, distortion, and camera-to-reference poses from native ImgTransformation metadata instead of custom calibration objects. Invert calibrated camera poses in float64 millimeters for XYZ already in the common reference frame; retain the explicit plane/gravity input. Replace parcel attribute-assignment bypasses with normal constructors and read-only properties.",
-      "Reuse the existing SupportPlane in build and ParcelDetectorConfig instead of a stamped ParcelPlane or explicit gravity. Orient the plane toward the reference camera, which must be above the surface. Use a ThreadedHostNode with native host Sync for four DEVICE-timestamp scene streams and a separate bounded blocking config queue drained with tryGet before each scene. Validate scene message datatypes once in process. Keep pointCloud and supportPlane names consistent. Accept RAW8 as well as GRAY8 mono frames, including native rectified outputs with matching virtual calibration. Frozen computation is unchanged."
+      "Reuse the existing SupportPlane in build and ParcelDetectorConfig instead of a stamped ParcelPlane or explicit gravity. Orient the plane toward the reference camera, which must be above the surface. Use a ThreadedHostNode with native host Sync for four DEVICE-timestamp scene streams and a separate bounded blocking config queue drained with tryGet before each scene. Validate scene message datatypes once in process. Keep pointCloud and supportPlane names consistent. Accept RAW8 as well as GRAY8 mono frames, including native rectified outputs with matching virtual calibration. Frozen computation is unchanged.",
+      "Add a one-time resolution check at the process boundary for the evaluated unrectified image profile: color 2000x1500, left/right 1280x800. Log expected and received sizes on mismatch and continue processing, following the user override of the updated handoff rejection policy. No resize, geometry conversion, pixel-threshold scaling, or frozen computation changes."
     ],
     "lineage_note": "Original settings declare algorithm-f6ab98aa284d4420bfd3bc67761a969f. Registration returned HTTP 403 with this token. The frozen settings copy omits that inaccessible declaration only; computation configuration, policy, objective, modalities, source paths and dependency lock are unchanged. Historical predecessor is retained in this report; no historical scores are reassigned.",
     "license_note": "Pinned BoxLabRunners tree has no LICENSE file. Luxonis attribution is retained. DepthAI Nodes keeps its Apache-2.0 distribution license."
@@ -156,7 +157,7 @@
     "input_mode": "supplied_plane",
     "length_unit": "mm",
     "plane_orientation": "upward",
-    "frame_convention": "Millimeter XYZ in the common calibration reference frame identified by native target device/socket metadata. SupportPlane supplied in build or ParcelDetectorConfig uses those same coordinates. The reference camera must be above the surface; either normal sign is accepted. Native PointCloud uses DEFAULT coordinates, calibrated translation, and an identity custom transform. Other producers must normalize XYZ and metadata to this frame. Images may have different resolutions, aspect ratios, or rectification when delivered-grid calibration is valid and the capture interval and device clock are shared.",
+    "frame_convention": "Millimeter XYZ in the common calibration reference frame identified by native target device/socket metadata. SupportPlane supplied in build or ParcelDetectorConfig uses those same coordinates. The reference camera must be above the surface; either normal sign is accepted. Native PointCloud uses DEFAULT coordinates, calibrated translation, and an identity custom transform. Other producers must normalize XYZ and metadata to this frame. The capture interval and device clock must be shared. Use delivered-grid calibration and the evaluated unrectified source-image profile; other grids can change eligibility despite correct calibration.",
     "scene_decoding_reference": "https://github.com/luxonis/BoxLabRunners/blob/0a2f571843f81ac6cc2f8cebe3475540e314f83d/runner/scene.py",
     "frozen_runtime": {
       "python": "3.12.16",
@@ -183,7 +184,52 @@
         "opencv-python-headless": "4.12.0.88"
       }
     },
-    "scene_metadata_reference": "https://docs.luxonis.com/software-v3/depthai/api/python/#depthai.ImgTransformation"
+    "scene_metadata_reference": "https://docs.luxonis.com/software-v3/depthai/api/python/#depthai.ImgTransformation",
+    "image_profile": {
+      "color": {
+        "width": 2000,
+        "height": 1500,
+        "geometry": "unrectified",
+        "retained_snapshot_format": "NV12",
+        "accepted_formats": [
+          "NV12",
+          "RGB888i",
+          "RGB888p",
+          "BGR888i",
+          "BGR888p"
+        ],
+        "algorithm_array": "RGB uint8 (1500, 2000, 3)"
+      },
+      "left": {
+        "width": 1280,
+        "height": 800,
+        "geometry": "unrectified",
+        "retained_snapshot_format": "GRAY8",
+        "accepted_formats": [
+          "GRAY8",
+          "RAW8"
+        ],
+        "algorithm_array": "uint8 (800, 1280)"
+      },
+      "right": {
+        "width": 1280,
+        "height": 800,
+        "geometry": "unrectified",
+        "retained_snapshot_format": "GRAY8",
+        "accepted_formats": [
+          "GRAY8",
+          "RAW8"
+        ],
+        "algorithm_array": "uint8 (800, 1280)"
+      },
+      "resolution_check": "Once per detector instance after valid scene message types; warn with all expected and received sizes on mismatch, then continue processing. User override of updated handoff rejection policy.",
+      "geometry_policy": "Preserve native field of view, orientation, and unrectified geometry. Dimensions alone do not verify these properties. No automatic resize, crop, rectification, or threshold scaling. Other profiles have no equivalence guarantee.",
+      "preferred_neural_depth": {
+        "width": 768,
+        "height": 480,
+        "validation": "Upstream recommendation only; ParcelDetector receives PointCloudData, not a depth image."
+      }
+    }
   },
   "evaluations": [
     {
@@ -1011,7 +1057,7 @@
       },
       {
         "name": "Focused port tests on Python 3.10.18 and 3.12.13",
-        "result": "42 tests, including frozen regression subtests, passed in each environment with DepthAI 3.11.0. The isolated native subprocess runs 44 boundary checks covering calibration metadata, PointCloud reference coordinates, native Sync, queued and in-flight config updates, batch ownership, and real host Rectification."
+        "result": "42 tests, including frozen regression subtests, passed in each environment with DepthAI 3.11.0. The isolated native subprocess runs 47 boundary checks covering calibration metadata, PointCloud reference coordinates, native Sync, queued and in-flight config updates, batch ownership, and real host Rectification. Includes one-time image-resolution warnings, silence for the expected profile, per-role mismatches without frame failure, and delayed checking after invalid message types."
       },
       {
         "name": "Frozen image regressions",
@@ -1019,7 +1065,7 @@
       },
       {
         "name": "Clean installed wheel outside both source trees",
-        "result": "All 24 covered file hashes and assets pass. Imports and single-field ParcelDetectorConfig work without SciPy. Fallback and optionally built native synthetic pipelines pass on DepthAI 3.12.2, along with all 44 native checks from the installed package. No native binary is bundled."
+        "result": "All 24 covered file hashes and assets pass. Imports and single-field ParcelDetectorConfig work without SciPy. Fallback and optionally built native synthetic pipelines pass on DepthAI 3.12.2, along with all 47 native checks from the installed package. No native binary is bundled. The synthetic pipeline emits one profile warning and preserves the measured geometry."
       },
       {
         "name": "Existing box compatibility",
@@ -1039,7 +1085,7 @@
       },
       {
         "name": "Native Sync, SupportPlane, and runtime configuration revision",
-        "result": "44 native checks pass on Python 3.10 and 3.12. Four scene inputs are synchronized by DEVICE timestamp below 10 ms without requiring equal sequence counters. Config is read separately before each scene; queued updates select the latest plane and in-flight updates apply to a later scene. SupportPlane is supplied in build. ParcelDetectorConfig has only supportPlane. Six public parcel message types remain; ParcelPlane and custom calibration types are absent. Actual host Rectification with RAW8 output and changed aspect ratio passes."
+        "result": "44 native checks passed for the Sync/config revision. Four scene inputs synchronize by DEVICE timestamp below 10 ms without requiring equal sequence counters. Config is read separately before each scene; queued updates select the latest plane and in-flight updates apply to a later scene. SupportPlane is supplied in build. ParcelDetectorConfig has only supportPlane. Six public parcel message types remain. Actual host Rectification metadata conversion passes; it falls outside the evaluated unrectified image profile."
       }
     ],
     "environment": {

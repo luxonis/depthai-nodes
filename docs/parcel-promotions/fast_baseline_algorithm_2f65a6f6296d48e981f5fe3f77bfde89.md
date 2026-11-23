@@ -67,6 +67,20 @@ Color accepts NV12 and native 8-bit RGB/BGR layouts and becomes RGB. Left and ri
 The detector performs no resize. Intrinsics and distortion describe each delivered pixel grid.
 Transforms map scene coordinates into each camera's optical frame, with translations in millimeters.
 
+Use the evaluated unrectified source-image profile:
+
+| Input | Width × height | Geometry    |
+| ----- | -------------- | ----------- |
+| RGB   | 2000 × 1500    | Unrectified |
+| Left  | 1280 × 800     | Unrectified |
+| Right | 1280 × 800     | Unrectified |
+
+The first scene with valid message types checks all three image sizes. A mismatch logs one warning containing all expected and received sizes.
+This check runs once per detector instance, including when the initial sizes match. Invalid message types do not consume the check.
+Processing continues after a mismatch. This warning behavior follows the user's explicit request instead of the updated handoff's rejection policy.
+NeuralDepth at 768 × 480 is preferred upstream. The detector receives a point cloud and cannot check the depth-image resolution directly.
+The synthetic example deliberately uses smaller images and emits this warning. It verifies pipeline wiring and geometry, not the evaluated input profile.
+
 Camera calibration is read from each `ImgFrame.getTransformation()`:
 
 ```python
@@ -116,11 +130,13 @@ Specific scene datatypes are checked once in public `process()`. Private convers
 
 The point cloud is a 3D point set. It does not need pixel-to-row correspondence with any image and need not be organized.
 The images need not be the exact buffers used by the point-cloud generator. They must show the same scene during the synchronized capture interval.
-Each image must have valid calibration into the shared point-cloud reference frame. Independent resolutions, aspect ratios, crops, and fields of view are supported.
-The algorithm projects XYZ into each view; it never resizes images to match the point-cloud grid. Cropping may make a parcel ineligible under the frozen visibility policy.
+Each image must have valid calibration into the shared point-cloud reference frame. Preserve the evaluated native field of view, orientation, and unrectified geometry.
+The algorithm projects XYZ into each view; it never resizes images to match the point-cloud grid.
+Its absolute pixel thresholds make eligibility resolution-dependent. Other resolutions, aspect ratios, and crops may change decisions even with correct calibration.
 
-Raw and rectified views are supported when metadata describes the actual delivered pixels.
+The adapter can decode raw and rectified views when metadata describes the actual delivered pixels, but rectified inputs fall outside the evaluated profile.
 Raw images retain their lens distortion. Rectified images require the virtual-camera intrinsics and pose, with distortion removed by the rectifier.
+Matching dimensions alone do not prove matching geometry. The resolution warning does not classify rectification or detect every crop.
 The adapter must not pair rectified pixels with the original raw-camera calibration.
 Native host `Rectification` was tested with distorted 64 by 48 inputs and 80 by 36 RAW8 outputs; its metadata had updated intrinsics, rectified poses, and empty distortion.
 Native StereoDepth rectified outputs are declared RAW8, but their device-firmware metadata has not been tested on hardware here.
@@ -209,7 +225,7 @@ These unrelated failures are retained as limitations rather than hidden as skips
 
 Final parcel, Python 3.10, wheel, lint, and documentation results are recorded in the manifest and comparison summaries.
 The focused command `pytest tests/unittests/test_parcel_algorithm tests/unittests/test_parcel_nodes tests/parcel_reference` passes 42 tests, including frozen regression subtests, on both Python 3.12.13 and 3.10.18.
-The node wrapper runs 44 native checks in a fresh process to avoid the existing parser mock substitutions.
+The node wrapper runs 47 native checks in a fresh process to avoid the existing parser mock substitutions.
 The native synchronization cases verify that incomplete input groups are skipped, the next complete frame recovers, and queued plane configurations apply between complete scenes.
 Native metadata checks cover crop/scale intrinsics, distortion and tilted sensors, pose units and reference compatibility, missing metadata, default cloud coordinates, normal value construction, and zero-copy owned parcel transfer.
 These checks include native host Rectification from distorted 64×48 inputs to 80×36 RAW8 outputs with matching virtual metadata. They do not establish generated-cloud or live camera behavior on OAK hardware.
@@ -221,7 +237,7 @@ The wheel excludes test fixtures, verification tools, documentation packages, an
 Public package/node imports pass before installing SciPy. Creating computation without the extra gives the installation hint.
 After installing the declared parcel extra, a host-only synthetic pipeline runs both public nodes from the installed wheel with the fallback.
 The optional native source also builds inside that installation, and the same pipeline passes with it loaded.
-The fresh wheel resolves DepthAI 3.12.2 and passes all 44 native boundary checks with that SDK. Source-tree checks use DepthAI 3.11.0.
+The fresh wheel resolves DepthAI 3.12.2 and passes all 47 native boundary checks with that SDK. Source-tree checks use DepthAI 3.11.0.
 Both paths measure the synthetic 220 by 160 by 110 mm parcel as 218.940 by 158.420 by 110.000 mm, within the fixture's 5 mm sampling allowance.
 That allowance checks synthetic scene sampling. It does not relax the source-to-port numerical tolerance.
 

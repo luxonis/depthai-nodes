@@ -3,6 +3,10 @@
 Install ``depthai-nodes[parcel]`` and run this file with Python. The scene has a
 220 by 160 mm parcel with a 110 mm height. No external checkout, model download,
 source recording, or Workbench connection is used.
+
+The small synthetic images intentionally trigger the detector's one-time
+resolution warning. Production streams use unrectified RGB at 2000x1500 and
+unrectified left/right at 1280x800.
 """
 
 from datetime import timedelta

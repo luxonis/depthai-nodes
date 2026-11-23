@@ -30,6 +30,10 @@ class ParcelDetector(dai.node.ThreadedHostNode):
     device timestamp within 10 ms. Incomplete groups produce no callback.
     Image sequence counters may differ from the point cloud's counter.
 
+    The evaluated profile uses unrectified color at 2000x1500 and left/right
+    images at 1280x800. The first scene with valid message types checks these
+    sizes and logs one warning if they differ. Processing continues unchanged.
+
     ``inputConfig`` accepts ``ParcelDetectorConfig`` messages. The latest
     queued configuration applies before the next synchronized scene starts.
     Its support-plane snapshot travels with the eligible parcels through
@@ -50,6 +54,7 @@ class ParcelDetector(dai.node.ThreadedHostNode):
         self._out = self.createOutput("out")
         self._components = None
         self._config: ParcelDetectorConfig | None = None
+        self._resolutionsChecked = False
 
     @property
     def inputConfig(self) -> dai.Node.Input:
@@ -76,9 +81,12 @@ class ParcelDetector(dai.node.ThreadedHostNode):
                 the common calibration reference frame. Native PointCloud
                 producers must use DEFAULT coordinates, calibrated translation,
                 and an identity custom transform. Organized clouds are optional.
-            color: NV12 or native 8-bit RGB/BGR images of the same capture interval.
-            left: Calibrated mono images of the same scene and capture interval.
-            right: Calibrated mono images of the same scene and capture interval.
+            color: Unrectified 2000x1500 NV12 or native 8-bit RGB/BGR images of
+                the same capture interval.
+            left: Unrectified 1280x800 calibrated mono images of the same scene
+                and capture interval.
+            right: Unrectified 1280x800 calibrated mono images of the same scene
+                and capture interval.
             supportPlane: Initial plane in the point cloud's reference frame.
                 The reference camera must be above the surface. Either normal
                 sign is accepted.
@@ -159,6 +167,22 @@ class ParcelDetector(dai.node.ThreadedHostNode):
                 for imgFrame in (color, left, right)
             ):
                 raise SceneInputError("invalid_source_image")
+            if not self._resolutionsChecked:
+                self._resolutionsChecked = True
+                imageSizes = tuple(
+                    (imgFrame.getWidth(), imgFrame.getHeight())
+                    for imgFrame in (color, left, right)
+                )
+                if imageSizes != ((2000, 1500), (1280, 800), (1280, 800)):
+                    self.warn(
+                        "ParcelDetector expects unrectified RGB 2000x1500, "
+                        "left 1280x800, and right 1280x800 images. "
+                        f"Received RGB {imageSizes[0][0]}x{imageSizes[0][1]}, "
+                        f"left {imageSizes[1][0]}x{imageSizes[1][1]}, "
+                        f"and right {imageSizes[2][0]}x{imageSizes[2][1]}. "
+                        "Processing will continue; other resolutions may change "
+                        "parcel eligibility decisions."
+                    )
             supportPlane = _upward_support_plane(self._config.supportPlane)
             scene = prepare_scene(pointCloud, color, left, right, supportPlane)
             frame = scene.cloud.frame

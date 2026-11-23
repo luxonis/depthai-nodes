@@ -320,10 +320,16 @@ Example:
     Updates received during processing apply to a later group. Each batch
     retains the exact plane used, so measurement cannot observe a newer plane.
 
-    The views may have different resolutions, aspect ratios, and fields of view.
-    They need not be the exact buffers used to generate the cloud. Raw and
-    rectified mono views are supported when ``ImgTransformation`` describes the
-    delivered pixels, including their virtual-camera pose and distortion.
+    Supply unrectified color at 2000x1500 and unrectified left/right at 1280x800,
+    preserving the native field of view and orientation. On the first scene
+    with valid message types, mismatched resolutions log one warning with the
+    expected and received sizes. Processing continues without resizing images
+    or scaling the algorithm's fixed pixel thresholds. Other grids and geometry
+    do not have equivalent detection guarantees. Matching dimensions alone do
+    not establish matching geometry. ``ImgTransformation`` must describe the
+    actual delivered pixels. The views need not be the exact buffers used to
+    generate the cloud. NeuralDepth at 768x480 is preferred upstream; this node
+    receives the point cloud and does not check the depth-image resolution.
     Color uses NV12 or RGB/BGR8; mono views use GRAY8 or RAW8. Intrinsics,
     distortion, camera poses, and frame identification come from metadata.
     Use millimeter XYZ and a support plane in the common reference frame,
