@@ -295,27 +295,41 @@ against that batch's exact upward plane. Outputs are per-frame geometry, without
 tracking or temporal medians. Existing box nodes retain their separate behavior.
 
 Example:
-    With existing ``pointCloud``, ``color``, ``left``, ``right``, and per-frame
-    ``planes`` outputs carrying their native calibration metadata::
+    With existing ``pointCloud``, ``color``, ``left``, and ``right`` outputs
+    carrying their native calibration metadata::
 
+        from depthai_nodes.message import ParcelDetectorConfig, SupportPlane
         from depthai_nodes.node import ParcelDetector, ParcelDimensioner
 
+        supportPlane = SupportPlane.fromJsonFile("support_plane.json")
         detector = pipeline.create(ParcelDetector).build(
-            pointCloud, color, left, right, planes
+            pointCloud, color, left, right, supportPlane
         )
+        configQueue = detector.inputConfig.createInputQueue()
         dimensioner = pipeline.create(ParcelDimensioner).build(detector.out)
         results = dimensioner.out.createOutputQueue()
 
-    Plane messages are ``ParcelPlane(frame=..., plane=..., down=...)`` values in
-    the cloud's common calibration reference frame. Each plane and all three
-    images must share the cloud sequence number and have device
-    timestamps within 10 ms. ``ParcelDetector`` is a native ``HostNode`` and
-    links the five streams through ``link_args``. DepthAI synchronizes complete
-    groups before processing; incomplete groups do not invoke the callback.
-    A synchronized ``ParcelPlane(plane=None, ...)`` reports a failed frame.
-    Intrinsics, distortion, and camera poses come from each frame's native
-    ``ImgTransformation``. Use millimeter XYZ in the common reference frame,
+        newSupportPlane = SupportPlane.fromJsonFile("updated_support_plane.json")
+        configQueue.send(ParcelDetectorConfig(supportPlane=newSupportPlane))
+
+    ``ParcelDetector`` is a ``ThreadedHostNode``. A host ``Sync`` node matches
+    the four scene streams by device timestamp with a span below 10 ms. The
+    inputs must share a device clock. Sequence counters may differ. Incomplete
+    groups are skipped. Before processing each complete group, the detector
+    drains available configuration updates and uses the latest support plane.
+    Updates received during processing apply to a later group. Each batch
+    retains the exact plane used, so measurement cannot observe a newer plane.
+
+    The views may have different resolutions, aspect ratios, and fields of view.
+    They need not be the exact buffers used to generate the cloud. Raw and
+    rectified mono views are supported when ``ImgTransformation`` describes the
+    delivered pixels, including their virtual-camera pose and distortion.
+    Color uses NV12 or RGB/BGR8; mono views use GRAY8 or RAW8. Intrinsics,
+    distortion, camera poses, and frame identification come from metadata.
+    Use millimeter XYZ and a support plane in the common reference frame,
     as native DEFAULT point clouds with an identity custom transform provide.
+    The reference camera must be above the support surface; either plane sign
+    is oriented toward that camera. A plane through the camera origin fails.
     Do not change the cloud's coordinate configuration while the pipeline runs.
     These Python messages connect nodes within one host runtime.
 

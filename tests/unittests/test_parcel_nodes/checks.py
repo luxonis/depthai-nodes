@@ -3,8 +3,9 @@
 import ast
 import inspect
 import unittest
-from dataclasses import replace
+from dataclasses import FrozenInstanceError, fields, replace
 from datetime import timedelta
+from threading import Event
 from types import SimpleNamespace
 
 import cv2
@@ -16,16 +17,16 @@ from depthai_nodes.message import (
     Parcel,
     ParcelCuboid,
     ParcelDetections,
+    ParcelDetectorConfig,
     ParcelMeasurement,
     ParcelMeasurements,
-    ParcelPlane,
     SupportPlane,
 )
 from depthai_nodes.node import ParcelDetector, ParcelDimensioner
 from depthai_nodes.node.parcel_detector.scene import (
-    check_cloud_configuration,
+    _check_cloud_configuration,
+    _upward_support_plane,
     prepare_scene,
-    upward_plane,
 )
 
 IDENTITY = tuple(map(tuple, np.eye(4)))
@@ -64,11 +65,11 @@ def stamp(message, sequence=1, device_offset=0):
     return message
 
 
-def messages(sequence=1, points=None, plane=PLANE):
-    cloud = dai.PointCloudData()
+def messages(sequence=1, points=None):
+    pointCloud = dai.PointCloudData()
     if points is None:
         points = np.array([[1, 2, 900], [3, 4, 901], [5, 6, 902]], np.float32)
-    cloud.setPoints(np.asarray(points, np.float32))
+    pointCloud.setPoints(np.asarray(points, np.float32))
     color = dai.ImgFrame()
     color.setType(dai.ImgFrame.Type.BGR888i)
     color.setFrame(np.full((24, 32, 3), (3, 7, 19), np.uint8))
@@ -82,33 +83,61 @@ def messages(sequence=1, points=None, plane=PLANE):
         image.setWidth(32)
         image.setHeight(24)
         stereo.append(image)
-    cloud.setTransformation(metadata())
+    pointCloud.setTransformation(metadata())
     for image in (color, *stereo):
         image.setTransformation(metadata())
-    supplied = ParcelPlane(frame="scene", plane=plane, down=(0, 0, 1))
-    return tuple(stamp(m, sequence) for m in (cloud, color, *stereo, supplied))
+    return tuple(stamp(message, sequence) for message in (pointCloud, color, *stereo))
 
 
 class Source(dai.node.ThreadedHostNode):
     def __init__(self):
         super().__init__()
-        self.outputs = [self.createOutput(f"source_{n}") for n in range(5)]
+        self.outputs = [self.createOutput(f"source_{n}") for n in range(4)]
 
     def run(self):
         pass
 
 
-class App:
+class RectificationSource(dai.node.ThreadedHostNode):
     def __init__(self):
+        super().__init__()
+        self.left = self.createOutput("left")
+        self.right = self.createOutput("right")
+
+    def run(self):
+        for output, cameraX in ((self.left, 0), (self.right, 75)):
+            pose = np.eye(4)
+            pose[0, 3] = cameraX
+            imgFrame = dai.ImgFrame()
+            imgFrame.setType(dai.ImgFrame.Type.GRAY8)
+            imgFrame.setFrame(np.zeros((48, 64), np.uint8))
+            imgFrame.setWidth(64)
+            imgFrame.setHeight(48)
+            imgFrame.setTransformation(
+                metadata(
+                    size=(64, 48),
+                    pose=pose,
+                    intrinsics=((100, 0, 31.5), (0, 100, 23.5), (0, 0, 1)),
+                    coefficients=(0.1, 0, 0, 0, 0),
+                )
+            )
+            output.send(stamp(imgFrame))
+
+
+class App:
+    def __init__(self, supportPlane=PLANE):
         self.pipeline = dai.Pipeline(False)
         self.pipeline.__enter__()
         self.source = self.pipeline.create(Source)
-        self.detector = self.pipeline.create(ParcelDetector).build(*self.source.outputs)
+        self.detector = self.pipeline.create(ParcelDetector).build(
+            *self.source.outputs, supportPlane
+        )
         self.dimensioner = self.pipeline.create(ParcelDimensioner).build(
             self.detector.out
         )
         self.detected = self.detector.out.createOutputQueue()
         self.measured = self.dimensioner.out.createOutputQueue()
+        self.configInput = self.detector.inputConfig.createInputQueue()
 
     def __enter__(self):
         return self
@@ -116,9 +145,13 @@ class App:
     def __exit__(self, *args):
         self.pipeline.__exit__(*args)
 
-    def detect(self, inputs=None):
-        self.detector.process(*(inputs or messages()))
+    def detect(self, inputs=None, *, config=None):
+        self.detector.process(*(inputs or messages()), config=config)
         return self.detected.get()
+
+    def send(self, inputs):
+        for output, message in zip(self.source.outputs, inputs):
+            output.send(message)
 
     def measure(self, batch):
         self.dimensioner.process(batch)
@@ -136,9 +169,80 @@ def cuboid(height=100):
 
 
 class ConversionTests(unittest.TestCase):
+    def test_native_rectification_metadata_matches_delivered_raw8_pixels(self):
+        with dai.Pipeline(False) as pipeline:
+            source = pipeline.create(RectificationSource)
+            rectification = pipeline.create(dai.node.Rectification)
+            rectification.setRunOnHost(True)
+            rectification.setOutputSize(80, 36)
+            source.left.link(rectification.input1)
+            source.right.link(rectification.input2)
+            queues = [
+                rectification.output1.createOutputQueue(),
+                rectification.output2.createOutputQueue(),
+            ]
+            pipeline.start()
+            images = [queue.get(timedelta(seconds=5)) for queue in queues]
+            self.assertTrue(all(image is not None for image in images))
+            pipeline.stop()
+        inputs = (*messages()[:2], *images)
+        scene = prepare_scene(*inputs, PLANE)
+        for image, view, cameraX in zip(images, scene.views[1:], (0, 75)):
+            self.assertEqual(image.getType(), dai.ImgFrame.Type.RAW8)
+            self.assertEqual(view.image.shape, (36, 80))
+            self.assertEqual(view.distortion_model, "perspective")
+            self.assertEqual(view.distortion_coefficients, ())
+            np.testing.assert_allclose(
+                view.intrinsics,
+                ((125, 0, 39.375), (0, 75, 17.625), (0, 0, 1)),
+            )
+            self.assertEqual(view.scene_to_camera_mm[0][3], -cameraX)
+        with App() as app:
+            app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
+            self.assertEqual(
+                app.detect(inputs).outcome, ParcelDetections.Outcome.SUCCESS
+            )
+
+    def test_views_can_use_different_resolutions_and_aspect_ratios(self):
+        inputs = list(messages())
+        for index, size in ((1, (40, 20)), (2, (16, 30)), (3, (24, 24))):
+            width, height = size
+            imgFrame = dai.ImgFrame()
+            imgFrame.setType(
+                dai.ImgFrame.Type.BGR888i if index == 1 else dai.ImgFrame.Type.GRAY8
+            )
+            imgFrame.setFrame(
+                np.zeros(
+                    (height, width, 3) if index == 1 else (height, width), np.uint8
+                )
+            )
+            imgFrame.setWidth(width)
+            imgFrame.setHeight(height)
+            imgFrame.setTransformation(metadata(size=size))
+            inputs[index] = stamp(imgFrame)
+        with App() as app:
+            app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
+            result = app.detect(inputs)
+            self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+        scene = prepare_scene(*inputs, PLANE)
+        self.assertEqual(
+            [view.image.shape[:2] for view in scene.views],
+            [(20, 40), (30, 16), (24, 24)],
+        )
+
+    def test_raw8_and_gray8_mono_inputs_are_equivalent(self):
+        inputs = messages()
+        gray = prepare_scene(*inputs, PLANE)
+        inputs[2].setType(dai.ImgFrame.Type.RAW8)
+        inputs[3].setType(dai.ImgFrame.Type.RAW8)
+        raw = prepare_scene(*inputs, PLANE)
+        for grayView, rawView in zip(gray.views, raw.views):
+            np.testing.assert_array_equal(grayView.image, rawView.image)
+            self.assertEqual(grayView.intrinsics, rawView.intrinsics)
+
     def test_bgr_is_rgb_and_images_cloud_are_read_only(self):
         inputs = messages()
-        scene = prepare_scene(inputs[0], inputs[1:4], PLANE, "scene")
+        scene = prepare_scene(*inputs, PLANE)
         np.testing.assert_array_equal(scene.views[0].image[0, 0], [19, 7, 3])
         self.assertEqual([v.role for v in scene.views], ["color", "left", "right"])
         self.assertEqual(scene.cloud.xyz_mm.dtype, np.float32)
@@ -157,7 +261,7 @@ class ConversionTests(unittest.TestCase):
         frame.setData(np.concatenate((y.ravel(), uv.ravel())))
         frame.setTransformation(metadata())
         inputs[1] = stamp(frame)
-        scene = prepare_scene(inputs[0], tuple(inputs[1:4]), PLANE, "scene")
+        scene = prepare_scene(*inputs, PLANE)
         expected = cv2.cvtColorTwoPlane(
             y, uv.reshape(12, 16, 2), cv2.COLOR_YUV2RGB_NV12
         )
@@ -167,7 +271,7 @@ class ConversionTests(unittest.TestCase):
         inputs = list(messages())
         pixels = np.arange(24 * 64 * 3, dtype=np.uint8).reshape(24, 64, 3)[:, ::2]
         inputs[1].setFrame(pixels)
-        scene = prepare_scene(inputs[0], tuple(inputs[1:4]), PLANE, "scene")
+        scene = prepare_scene(*inputs, PLANE)
         np.testing.assert_array_equal(scene.views[0].image, pixels[:, :, ::-1])
 
     def test_padded_native_image_rows_preserve_delivered_pixels(self):
@@ -178,7 +282,7 @@ class ConversionTests(unittest.TestCase):
             pixels[:, : 32 * channels] = np.arange(32 * channels, dtype=np.uint8)
             inputs[index].setStride(stride)
             inputs[index].setData(pixels.ravel())
-        scene = prepare_scene(inputs[0], tuple(inputs[1:4]), PLANE, "scene")
+        scene = prepare_scene(*inputs, PLANE)
         expected_color = np.tile(np.arange(96, dtype=np.uint8), (24, 1)).reshape(
             24, 32, 3
         )
@@ -193,21 +297,18 @@ class ConversionTests(unittest.TestCase):
         inputs[1].setType(dai.ImgFrame.Type.NV12)
         inputs[1].setStride(40)
         inputs[1].setData(np.concatenate((padded_y.ravel(), padded_uv.ravel())))
-        scene = prepare_scene(inputs[0], tuple(inputs[1:4]), PLANE, "scene")
+        scene = prepare_scene(*inputs, PLANE)
         expected = cv2.cvtColorTwoPlane(
             y, uv.reshape(12, 16, 2), cv2.COLOR_YUV2RGB_NV12
         )
         np.testing.assert_array_equal(scene.views[0].image, expected)
 
-    def test_plane_is_snapshotted_normalized_and_flipped_upward(self):
-        supplied = ParcelPlane(
-            frame="scene",
-            plane=SupportPlane(normal=(0, 0, 3), offset_mm=-3000),
-            down=(0, 0, 1),
-        )
-        plane = upward_plane(supplied)
-        self.assertEqual(plane, PLANE)
-        self.assertIsNot(plane, supplied.plane)
+    def test_plane_sign_is_oriented_toward_reference_camera(self):
+        supportPlane = SupportPlane(normal=(0, 0, 3), offset_mm=-3000)
+        oriented = _upward_support_plane(supportPlane)
+        self.assertEqual(oriented, PLANE)
+        self.assertIsNot(oriented, supportPlane)
+        self.assertIs(_upward_support_plane(PLANE), PLANE)
 
     def test_delivered_intrinsics_follow_native_crop_and_scale(self):
         inputs = messages()
@@ -218,7 +319,7 @@ class ConversionTests(unittest.TestCase):
         inputs[1].setWidth(16)
         inputs[1].setHeight(12)
         inputs[1].setTransformation(transformation)
-        scene = prepare_scene(inputs[0], inputs[1:4], PLANE, "scene")
+        scene = prepare_scene(*inputs, PLANE)
         expected = np.asarray(transformation.getIntrinsicMatrix())
         np.testing.assert_array_equal(scene.views[0].intrinsics, expected)
         self.assertFalse(
@@ -243,7 +344,7 @@ class ConversionTests(unittest.TestCase):
             coefficients=(0.1, 0.01, 0.001, 0.002, 0.003),
         )
         inputs[1].setTransformation(transformation)
-        scene = prepare_scene(inputs[0], inputs[1:4], PLANE, "scene")
+        scene = prepare_scene(*inputs, PLANE)
         expected = np.linalg.inv(
             np.asarray(
                 transformation.getExtrinsics().getTransformationMatrix(
@@ -266,11 +367,11 @@ class ConversionTests(unittest.TestCase):
         pose = np.eye(4)
         pose[0, 3] = 125
         inputs[0].setTransformation(metadata(pose=pose))
-        scene = prepare_scene(inputs[0], inputs[1:4], PLANE, "reference")
+        scene = prepare_scene(*inputs, PLANE)
         np.testing.assert_array_equal(scene.cloud.xyz_mm, inputs[0].getPoints())
         np.testing.assert_array_equal(scene.views[0].scene_to_camera_mm, np.eye(4))
-        self.assertEqual(scene.cloud.frame, "reference")
-        self.assertEqual(scene.plane.frame, "reference")
+        self.assertEqual(scene.cloud.frame, "synthetic/CAM_A")
+        self.assertEqual(scene.plane.frame, "synthetic/CAM_A")
 
     def test_native_projection_matches_frozen_projector_with_distortion(self):
         for model, coefficients in (
@@ -284,7 +385,7 @@ class ConversionTests(unittest.TestCase):
                 inputs = messages()
                 transformation = metadata(coefficients=coefficients, model=model)
                 inputs[1].setTransformation(transformation)
-                scene = prepare_scene(inputs[0], inputs[1:4], PLANE, "scene")
+                scene = prepare_scene(*inputs, PLANE)
                 actual = algorithm.project_points(scene.cloud.xyz_mm, scene.views[0])
                 points = scene.cloud.xyz_mm.astype(np.float64)
                 distortion = np.asarray(
@@ -339,18 +440,25 @@ class ConversionTests(unittest.TestCase):
                     app.detect(inputs).failure_code, "incompatible_camera_frames"
                 )
 
-    def test_plane_gravity_is_validated_and_snapshotted(self):
-        for gravity in ((0, 0, 2), (0, float("nan"), 1), (0, 1)):
-            with self.subTest(gravity=gravity), self.assertRaises(ValueError):
-                ParcelPlane(frame="scene", plane=PLANE, down=gravity)
-        gravity = np.array([0, 0, 1.0])
-        supplied = ParcelPlane(frame="scene", plane=PLANE, down=gravity)
-        gravity[:] = 0
-        self.assertEqual(supplied.down, (0, 0, 1))
+    def test_plane_through_reference_origin_fails_the_frame(self):
+        supportPlane = SupportPlane(normal=(0, 0, -1), offset_mm=0)
+        with App(supportPlane) as app:
+            app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
+            result = app.detect()
+            self.assertEqual(result.outcome, ParcelDetections.Outcome.FAILED)
+            self.assertEqual(result.failure_code, "plane_through_reference_origin")
+            self.assertEqual(
+                app.detect(messages(2)).failure_code, "plane_through_reference_origin"
+            )
+            recovered = app.detect(
+                messages(3), config=ParcelDetectorConfig(supportPlane=PLANE)
+            )
+            self.assertEqual(recovered.outcome, ParcelDetections.Outcome.SUCCESS)
+            self.assertEqual(recovered.plane.offset_mm, 1000)
 
     def test_scene_snapshots_native_metadata_before_later_changes(self):
         inputs = messages()
-        scene = prepare_scene(inputs[0], inputs[1:4], PLANE, "scene")
+        scene = prepare_scene(*inputs, PLANE)
         expected = scene.views[0]
         inputs[1].setTransformation(metadata(pose=np.diag([-1.0, -1.0, 1.0, 1.0])))
         np.testing.assert_array_equal(expected.scene_to_camera_mm, np.eye(4))
@@ -358,8 +466,34 @@ class ConversionTests(unittest.TestCase):
 
 
 class NodeTests(unittest.TestCase):
+    def test_initial_support_plane_is_required_and_must_be_a_support_plane(self):
+        with App() as app:
+            self.assertFalse(hasattr(app.detector, "setSupportPlane"))
+            for supportPlane in (None, dai.Buffer(), (0, 0, -1, 1000)):
+                with self.subTest(supportPlane=supportPlane), self.assertRaises(
+                    TypeError
+                ):
+                    app.pipeline.create(ParcelDetector).build(
+                        *app.source.outputs, supportPlane
+                    )
+
+    def test_valid_config_survives_an_invalid_scene(self):
+        with App() as app:
+            app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
+            config = ParcelDetectorConfig(
+                supportPlane=SupportPlane(normal=(0, 0, -1), offset_mm=1200)
+            )
+            inputs = list(messages())
+            inputs[1] = stamp(dai.Buffer())
+            self.assertEqual(
+                app.detect(inputs, config=config).failure_code, "invalid_source_image"
+            )
+            recovered = app.detect()
+            self.assertEqual(recovered.outcome, ParcelDetections.Outcome.SUCCESS)
+            self.assertEqual(recovered.plane.offset_mm, 1200)
+
     def test_native_generator_configuration_uses_reference_coordinates(self):
-        check_cloud_configuration(dai.PointCloudConfig())
+        _check_cloud_configuration(dai.PointCloudConfig())
         camera = dai.PointCloudConfig().setTargetCoordinateSystem(
             dai.CameraBoardSocket.CAM_A
         )
@@ -369,7 +503,7 @@ class NodeTests(unittest.TestCase):
         shifted = dai.PointCloudConfig().setTransformationMatrix(transform.tolist())
         for config in (camera, centimeters, shifted):
             with self.subTest(config=config), self.assertRaises(ValueError):
-                check_cloud_configuration(config)
+                _check_cloud_configuration(config)
 
     def test_completed_candidate_call_then_read_only_measurement(self):
         events = []
@@ -394,7 +528,7 @@ class NodeTests(unittest.TestCase):
             app.detector._components = SimpleNamespace(find_candidates=find)
             detected = app.detect()
 
-            def measure(parcel, plane):
+            def measure(parcel, supportPlane):
                 self.assertEqual(events[0], "find")
                 events.append("measure")
                 self.assertFalse(parcel.xyz_mm.flags.writeable)
@@ -402,8 +536,8 @@ class NodeTests(unittest.TestCase):
                 np.testing.assert_array_equal(
                     parcel.xyz_mm, messages()[0].getPoints()[[2, 0]]
                 )
-                self.assertEqual(plane.normal, detected.plane.normal)
-                self.assertEqual(plane.offset_mm, detected.plane.offset_mm)
+                self.assertEqual(supportPlane.normal, detected.plane.normal)
+                self.assertEqual(supportPlane.offset_mm, detected.plane.offset_mm)
                 return next(outcomes)
 
             app.dimensioner._components = SimpleNamespace(measure=measure)
@@ -430,9 +564,9 @@ class NodeTests(unittest.TestCase):
                 )
                 self.assertEqual(
                     [s.stream for s in result.sources],
-                    ["point_cloud", "color", "left", "right", "support_plane"],
+                    ["pointCloud", "color", "left", "right"],
                 )
-                self.assertEqual(result.frame, "scene")
+                self.assertEqual(result.frame, "synthetic/CAM_A")
                 self.assertEqual(result.algorithm_id, algorithm.ALGORITHM_ID)
             self.assertIs(measured.plane, detected.plane)
             self.assertIs(measured.sources, detected.sources)
@@ -456,29 +590,36 @@ class NodeTests(unittest.TestCase):
             self.assertEqual(detected.outcome, ParcelDetections.Outcome.SUCCESS)
             self.assertEqual(app.measure(detected).items, ())
 
-    def test_missing_plane_and_each_missing_image_fail(self):
+    def test_wrong_native_scene_datatypes_fail_at_process_boundary(self):
         with App() as app:
-            for index in range(1, 5):
-                inputs = list(messages())
-                inputs[index] = None
-                detected = app.detect(inputs)
-                self.assertEqual(detected.outcome, ParcelDetections.Outcome.FAILED)
-                self.assertEqual(
-                    app.measure(detected).outcome, ParcelDetections.Outcome.FAILED
-                )
-            inputs = list(messages())
-            inputs[4] = stamp(ParcelPlane(frame="scene", plane=None, down=(0, 0, 1)))
-            self.assertEqual(app.detect(inputs).failure_code, "missing_support_plane")
+            for index in range(4):
+                with self.subTest(index=index):
+                    inputs = list(messages())
+                    inputs[index] = stamp(dai.Buffer())
+                    result = app.detect(inputs)
+                    self.assertEqual(result.outcome, ParcelDetections.Outcome.FAILED)
+                    self.assertEqual(
+                        result.failure_code,
+                        "invalid_point_cloud" if index == 0 else "invalid_source_image",
+                    )
+                    self.assertEqual(result.getSequenceNum(), 1)
+                    self.assertEqual(
+                        app.measure(result).outcome, ParcelDetections.Outcome.FAILED
+                    )
 
-    def test_mismatched_sequence_device_time_and_camera_reference_fail(self):
+    def test_independent_sequence_counters_and_incompatible_reference(self):
         with App() as app:
-            inputs = list(messages())
-            inputs[2].setSequenceNum(9)
-            self.assertEqual(app.detect(inputs).failure_code, "unsynchronized_sources")
-            inputs = list(messages())
-            stamp(inputs[3], device_offset=11)
-            self.assertEqual(app.detect(inputs).failure_code, "unsynchronized_sources")
-            inputs = list(messages())
+            app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
+            inputs = messages()
+            inputs[1].setSequenceNum(100)
+            inputs[2].setSequenceNum(200)
+            inputs[3].setSequenceNum(300)
+            result = app.detect(inputs)
+            self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+            self.assertEqual(result.getSequenceNum(), 1)
+            self.assertEqual(
+                [source.sequence_num for source in result.sources], [1, 100, 200, 300]
+            )
             inputs[2].setTransformation(metadata(device="another"))
             self.assertEqual(
                 app.detect(inputs).failure_code, "incompatible_camera_frames"
@@ -494,7 +635,7 @@ class NodeTests(unittest.TestCase):
                 app.detect(inputs).failure_code, "calibration_grid_mismatch"
             )
             inputs = list(messages())
-            inputs[2].setType(dai.ImgFrame.Type.RAW8)
+            inputs[2].setType(dai.ImgFrame.Type.RAW16)
             self.assertEqual(app.detect(inputs).failure_code, "invalid_stereo_format")
             inputs = messages(points=np.array([[0, np.nan, 900]], np.float32))
             self.assertEqual(app.detect(inputs).failure_code, "invalid_point_cloud")
@@ -572,22 +713,23 @@ class NodeTests(unittest.TestCase):
             self.assertEqual(result.algorithm_id, "algorithm-other")
             self.assertEqual(result.outcome, ParcelDetections.Outcome.FAILED)
 
-    def test_queued_parcels_and_planes_survive_subsequent_frames(self):
+    def test_queued_parcels_and_planes_survive_subsequent_configurations(self):
         with App() as app:
             app.detector._components = SimpleNamespace(
                 find_candidates=lambda _: [candidate()]
             )
             old = app.detect()
             expected = old.items[0].xyz_mm.copy()
-            later_plane = SupportPlane(normal=(0, 0, -1), offset_mm=1200)
+            supportPlane = SupportPlane(normal=(0, 0, -1), offset_mm=1200)
             later = app.detect(
-                messages(2, points=np.full((3, 3), 800), plane=later_plane)
+                messages(2, points=np.full((3, 3), 800)),
+                config=ParcelDetectorConfig(supportPlane=supportPlane),
             )
             self.assertEqual(later.plane.offset_mm, 1200)
             seen = []
 
-            def measure(parcel, plane):
-                seen.append((parcel.xyz_mm.copy(), plane.offset_mm))
+            def measure(parcel, supportPlane):
+                seen.append((parcel.xyz_mm.copy(), supportPlane.offset_mm))
                 return None
 
             app.dimensioner._components = SimpleNamespace(measure=measure)
@@ -663,7 +805,7 @@ class NodeTests(unittest.TestCase):
         with App() as app:
             self.assertEqual(app.detector.algorithm_id, app.dimensioner.algorithm_id)
             with self.assertRaises(RuntimeError):
-                app.detector.build(*app.source.outputs)
+                app.detector.build(*app.source.outputs, PLANE)
             with self.assertRaises(RuntimeError):
                 app.dimensioner.build(app.detector.out)
 
@@ -671,52 +813,34 @@ class NodeTests(unittest.TestCase):
 class MissingSource(dai.node.ThreadedHostNode):
     def __init__(self):
         super().__init__()
-        self.streams = tuple(self.createOutput(f"s{i}") for i in range(5))
+        self.streams = tuple(self.createOutput(f"s{index}") for index in range(4))
         self.omit = 3
-        self.unavailable_plane = False
+        self.sequenceOffsets = (0, 0, 0, 0)
+        self.firstDeviceOffsets = (0, 0, 0, 0)
 
     def run(self):
         for sequence in (1, 2):
             for index, (output, message) in enumerate(
-                zip(
-                    self.streams,
-                    messages(sequence, plane=None)
-                    if sequence == 1 and self.unavailable_plane
-                    else messages(sequence),
-                )
+                zip(self.streams, messages(sequence))
             ):
                 if sequence == 1 and index == self.omit:
                     continue
+                message.setSequenceNum(sequence + self.sequenceOffsets[index])
+                if sequence == 1:
+                    message.setTimestampDevice(
+                        message.getTimestampDevice()
+                        + timedelta(milliseconds=self.firstDeviceOffsets[index])
+                    )
                 output.send(message)
 
 
 class StreamingTests(unittest.TestCase):
-    def test_explicit_unavailable_plane_is_a_failed_frame_then_recovers(self):
-        with dai.Pipeline(False) as pipeline:
-            source = pipeline.create(MissingSource)
-            source.omit = None
-            source.unavailable_plane = True
-            detector = pipeline.create(ParcelDetector).build(*source.streams)
-            dimensioner = pipeline.create(ParcelDimensioner).build(detector.out)
-            results = dimensioner.out.createOutputQueue()
-            pipeline.start()
-            failed = results.get(timedelta(seconds=5))
-            recovered = results.get(timedelta(seconds=5))
-            self.assertIsNotNone(failed)
-            self.assertIsNotNone(recovered)
-            self.assertEqual(failed.getSequenceNum(), 1)
-            self.assertEqual(failed.outcome, ParcelDetections.Outcome.FAILED)
-            self.assertEqual(failed.failure_code, "missing_support_plane")
-            self.assertEqual(recovered.getSequenceNum(), 2)
-            self.assertEqual(recovered.outcome, ParcelDetections.Outcome.SUCCESS)
-            pipeline.stop()
-
     def test_native_sync_skips_incomplete_groups_and_recovers(self):
-        for omitted in (1, 2, 3, 4):
+        for omitted in (0, 1, 2, 3):
             with self.subTest(omitted=omitted), dai.Pipeline(False) as pipeline:
                 source = pipeline.create(MissingSource)
                 source.omit = omitted
-                detector = pipeline.create(ParcelDetector).build(*source.streams)
+                detector = pipeline.create(ParcelDetector).build(*source.streams, PLANE)
                 dimensioner = pipeline.create(ParcelDimensioner).build(detector.out)
                 results = dimensioner.out.createOutputQueue()
                 pipeline.start()
@@ -728,8 +852,132 @@ class StreamingTests(unittest.TestCase):
                 self.assertIsNone(results.get(timedelta(milliseconds=50)))
                 pipeline.stop()
 
+    def test_native_sync_uses_device_timestamps_with_independent_counters(self):
+        with dai.Pipeline(False) as pipeline:
+            source = pipeline.create(MissingSource)
+            source.omit = None
+            source.sequenceOffsets = (0, 100, 200, 300)
+            source.firstDeviceOffsets = (0, 2, 5, 9)
+            detector = pipeline.create(ParcelDetector).build(*source.streams, PLANE)
+            results = detector.out.createOutputQueue()
+            pipeline.start()
+            for sequence in (1, 2):
+                result = results.get(timedelta(seconds=5))
+                self.assertIsNotNone(result)
+                self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+                self.assertEqual(result.getSequenceNum(), sequence)
+                self.assertEqual(
+                    [source.sequence_num for source in result.sources],
+                    [sequence, sequence + 100, sequence + 200, sequence + 300],
+                )
+            pipeline.stop()
+
+    def test_native_sync_skips_device_timestamps_outside_ten_milliseconds(self):
+        with dai.Pipeline(False) as pipeline:
+            source = pipeline.create(MissingSource)
+            source.omit = None
+            source.firstDeviceOffsets = (0, 0, 0, 11)
+            detector = pipeline.create(ParcelDetector).build(*source.streams, PLANE)
+            results = detector.out.createOutputQueue()
+            pipeline.start()
+            result = results.get(timedelta(seconds=5))
+            self.assertIsNotNone(result)
+            self.assertEqual(result.getSequenceNum(), 2)
+            self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+            self.assertIsNone(results.get(timedelta(milliseconds=50)))
+            pipeline.stop()
+
+    def test_latest_config_is_applied_on_first_synchronized_group(self):
+        with App() as app:
+            configInput = app.configInput
+            app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
+            configInput.send(
+                ParcelDetectorConfig(
+                    supportPlane=SupportPlane(normal=(0, 0, -1), offset_mm=1100)
+                )
+            )
+            configInput.send(
+                ParcelDetectorConfig(
+                    supportPlane=SupportPlane(normal=(0, 0, 1), offset_mm=-1200)
+                )
+            )
+            app.pipeline.start()
+            app.send(messages())
+            result = app.measured.get(timedelta(seconds=5))
+            self.assertIsNotNone(result)
+            self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+            self.assertEqual(result.plane.offset_mm, 1200)
+            self.assertEqual(result.plane.normal, (0, 0, -1))
+            app.pipeline.stop()
+
+    def test_invalid_config_input_fails_one_frame_then_uses_previous_plane(self):
+        with App() as app:
+            configInput = app.configInput
+            app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
+            app.pipeline.start()
+            configInput.send(dai.Buffer())
+            app.send(messages())
+            failed = app.measured.get(timedelta(seconds=5))
+            self.assertIsNotNone(failed)
+            self.assertEqual(failed.failure_code, "invalid_detector_config")
+            self.assertEqual(failed.plane.offset_mm, 1000)
+            app.send(messages(2))
+            recovered = app.measured.get(timedelta(seconds=5))
+            self.assertIsNotNone(recovered)
+            self.assertEqual(recovered.outcome, ParcelDetections.Outcome.SUCCESS)
+            self.assertEqual(recovered.plane.offset_mm, 1000)
+            app.pipeline.stop()
+
+    def test_configuration_received_during_processing_applies_to_next_scene(self):
+        entered, release = Event(), Event()
+        with App() as app:
+            configInput = app.configInput
+            scenes = []
+
+            def find(scene):
+                scenes.append(scene.plane.offset_mm)
+                if len(scenes) == 1:
+                    entered.set()
+                    if not release.wait(5):
+                        raise AssertionError("The test did not release the first scene")
+                return []
+
+            app.detector._components = SimpleNamespace(find_candidates=find)
+            app.pipeline.start()
+            try:
+                app.send(messages())
+                self.assertTrue(entered.wait(5))
+                configInput.send(
+                    ParcelDetectorConfig(
+                        supportPlane=SupportPlane(normal=(0, 0, -1), offset_mm=1200)
+                    )
+                )
+                app.send(messages(2))
+                release.set()
+                first = app.measured.get(timedelta(seconds=5))
+                second = app.measured.get(timedelta(seconds=5))
+                self.assertIsNotNone(first)
+                self.assertIsNotNone(second)
+                self.assertEqual(
+                    [first.plane.offset_mm, second.plane.offset_mm], [1000, 1200]
+                )
+                self.assertEqual(scenes, [1000, 1200])
+            finally:
+                release.set()
+                app.pipeline.stop()
+
 
 class PublicApiTests(unittest.TestCase):
+    def test_detector_config_is_a_single_field_immutable_buffer(self):
+        config = ParcelDetectorConfig(supportPlane=PLANE)
+        self.assertIsInstance(config, dai.Buffer)
+        self.assertEqual([field.name for field in fields(config)], ["supportPlane"])
+        self.assertIs(config.supportPlane, PLANE)
+        with self.assertRaises(FrozenInstanceError):
+            config.supportPlane = SupportPlane(normal=(0, 0, -1), offset_mm=1200)
+        with self.assertRaises(TypeError):
+            ParcelDetectorConfig(supportPlane=None)
+
     def test_parcel_values_do_not_bypass_attribute_assignment(self):
         from depthai_nodes.message import parcel
 
@@ -755,11 +1003,12 @@ class PublicApiTests(unittest.TestCase):
             "ParcelDetections",
             "ParcelMeasurement",
             "ParcelMeasurements",
-            "ParcelPlane",
+            "ParcelDetectorConfig",
         }
         self.assertEqual(set(parcel.__all__), public)
         self.assertTrue(public.issubset(messages.__all__))
         for name in (
+            "ParcelPlane",
             "ParcelCameraCalibration",
             "ParcelRigCalibration",
             "ParcelDecision",

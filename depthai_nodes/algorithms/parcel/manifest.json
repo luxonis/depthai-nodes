@@ -24,13 +24,13 @@
       "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/scoped-settings.json": "66f29d1a54ddb6fd8d3fa957a34aa81dcef53a4ca29a47b0b4e39331afcb8bd8",
       "depthai_nodes/algorithms/parcel/fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89/visibility.py": "9177b8d4c3888655038427602e869290922a5edbc6bf79d96561322cc4c75951",
       "depthai_nodes/algorithms/parcel/manifest.py": "05aea97c272d1b854954d7cf126830ad5be65ba47d63c0ff4421eabbaf7041f4",
-      "depthai_nodes/message/parcel.py": "f5c88805c416587f65573f709c513f36fcd3e7e4163041b419552eebac8cf5b3",
+      "depthai_nodes/message/parcel.py": "402b67630cf2da9a795b468d0150be1d105f5d777536a13e26f55cfe418855fd",
       "depthai_nodes/message/support_plane.py": "0eaeec70dda37d48b3160d1f1a14cffce766f23182289d1b569ffb444f1f44e3",
       "depthai_nodes/node/parcel_detector/__init__.py": "4bd2d4aaf686835abe5da5203a47a67a2ebe125aee64c5ef8499cac3809b1482",
-      "depthai_nodes/node/parcel_detector/parcel_detector.py": "46f10bf3a19ccba2e006c2acdf0f8febb87bc65a4aaa977abe3fc070a0eda962",
-      "depthai_nodes/node/parcel_detector/scene.py": "cc251aeca27dd4ba6b156e5b02562a517cd4a15259bb679ccd564c33448fd34a",
+      "depthai_nodes/node/parcel_detector/parcel_detector.py": "b745520809e0001f226af1bb24370342c4131c8d242b87228f21608b9890d944",
+      "depthai_nodes/node/parcel_detector/scene.py": "13483accb7c7806b6b3d3ace3739605ce7efbb2e84b632a32588cbf8d61744e6",
       "depthai_nodes/node/parcel_dimensioner/__init__.py": "506569fb746e3a1fb9fc525170615c20f027a35ec155fa0a8d5b283012a7b3fc",
-      "depthai_nodes/node/parcel_dimensioner/parcel_dimensioner.py": "bcb9530c2bd7f422574ef79ee11cd5975158511d4b5ae0437dabd6d0df910e90"
+      "depthai_nodes/node/parcel_dimensioner/parcel_dimensioner.py": "63d8627a836d32c3f9abed5023d1971cd3b74338c3bfcd0ff5ba53255e125703"
     },
     "binary_distribution": "No native binary in the universal wheel; original fallback is the default. Optional platform-local build uses bundled C++17 source.",
     "native_build_flags": [
@@ -67,6 +67,13 @@
         "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
         "sha256": "812cffc8d1f7a5bb5c655f7c7a5c8b34d24d55d06ec603bf6139e9520ec455a5",
         "scope": "Installed-wheel metadata-based five-stream pipeline and normal parcel value constructors; native and fallback synthetic pipelines passed.",
+        "distributed": false
+      },
+      {
+        "platform": "macOS arm64",
+        "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
+        "sha256": "feb5917534b5706644ab1ea48b08e2dc5c2bcfdda42f19766c94ba4a02f4d944",
+        "scope": "Installed-wheel four-stream native Sync plus separate ParcelDetectorConfig pipeline on DepthAI 3.12.2. Fallback and locally built native synthetic pipelines and 44 installed native boundary checks passed.",
         "distributed": false
       }
     ]
@@ -134,7 +141,8 @@
       "Apply repository formatting without changing computation, thresholds, precision, segment order, or fallback behavior.",
       "Use explicit DepthAI image/calibration/plane conversion and frame-local owned parcel messages outside the immutable computation directory.",
       "Use native DepthAI HostNode synchronization for complete groups instead of adapter queues and timeouts. Scope status enums under public message owners and keep diagnostic/timing record classes internal. Frozen computation and scene conversion are unchanged.",
-      "Read delivered image intrinsics, distortion, and camera-to-reference poses from native ImgTransformation metadata instead of custom calibration objects. Invert calibrated camera poses in float64 millimeters for XYZ already in the common reference frame; retain the explicit plane/gravity input. Replace parcel attribute-assignment bypasses with normal constructors and read-only properties."
+      "Read delivered image intrinsics, distortion, and camera-to-reference poses from native ImgTransformation metadata instead of custom calibration objects. Invert calibrated camera poses in float64 millimeters for XYZ already in the common reference frame; retain the explicit plane/gravity input. Replace parcel attribute-assignment bypasses with normal constructors and read-only properties.",
+      "Reuse the existing SupportPlane in build and ParcelDetectorConfig instead of a stamped ParcelPlane or explicit gravity. Orient the plane toward the reference camera, which must be above the surface. Use a ThreadedHostNode with native host Sync for four DEVICE-timestamp scene streams and a separate bounded blocking config queue drained with tryGet before each scene. Validate scene message datatypes once in process. Keep pointCloud and supportPlane names consistent. Accept RAW8 as well as GRAY8 mono frames, including native rectified outputs with matching virtual calibration. Frozen computation is unchanged."
     ],
     "lineage_note": "Original settings declare algorithm-f6ab98aa284d4420bfd3bc67761a969f. Registration returned HTTP 403 with this token. The frozen settings copy omits that inaccessible declaration only; computation configuration, policy, objective, modalities, source paths and dependency lock are unchanged. Historical predecessor is retained in this report; no historical scores are reassigned.",
     "license_note": "Pinned BoxLabRunners tree has no LICENSE file. Luxonis attribution is retained. DepthAI Nodes keeps its Apache-2.0 distribution license."
@@ -148,7 +156,7 @@
     "input_mode": "supplied_plane",
     "length_unit": "mm",
     "plane_orientation": "upward",
-    "frame_convention": "Millimeter XYZ in the common calibration reference frame identified by native target device/socket metadata. The supplied plane frame labels those same coordinates and carries unit downward gravity. Native PointCloud uses DEFAULT coordinates, calibrated translation, and an identity custom transform. Other producers must normalize their XYZ and metadata to this reference frame.",
+    "frame_convention": "Millimeter XYZ in the common calibration reference frame identified by native target device/socket metadata. SupportPlane supplied in build or ParcelDetectorConfig uses those same coordinates. The reference camera must be above the surface; either normal sign is accepted. Native PointCloud uses DEFAULT coordinates, calibrated translation, and an identity custom transform. Other producers must normalize XYZ and metadata to this frame. Images may have different resolutions, aspect ratios, or rectification when delivered-grid calibration is valid and the capture interval and device clock are shared.",
     "scene_decoding_reference": "https://github.com/luxonis/BoxLabRunners/blob/0a2f571843f81ac6cc2f8cebe3475540e314f83d/runner/scene.py",
     "frozen_runtime": {
       "python": "3.12.16",
@@ -1003,7 +1011,7 @@
       },
       {
         "name": "Focused port tests on Python 3.10.18 and 3.12.13",
-        "result": "42 tests and 58 subtests passed in each environment. The suite includes 34 native boundary checks in an isolated subprocess, including delivered native calibration metadata, point-cloud reference coordinates, synchronization, ownership, and normal value constructors."
+        "result": "42 tests, including frozen regression subtests, passed in each environment with DepthAI 3.11.0. The isolated native subprocess runs 44 boundary checks covering calibration metadata, PointCloud reference coordinates, native Sync, queued and in-flight config updates, batch ownership, and real host Rectification."
       },
       {
         "name": "Frozen image regressions",
@@ -1011,7 +1019,7 @@
       },
       {
         "name": "Clean installed wheel outside both source trees",
-        "result": "All 24 covered file hashes and assets pass. Imports work without SciPy. Synthetic pipelines pass with fallback and an optional locally built native library. No native binary is bundled."
+        "result": "All 24 covered file hashes and assets pass. Imports and single-field ParcelDetectorConfig work without SciPy. Fallback and optionally built native synthetic pipelines pass on DepthAI 3.12.2, along with all 44 native checks from the installed package. No native binary is bundled."
       },
       {
         "name": "Existing box compatibility",
@@ -1030,8 +1038,8 @@
         "result": "Passed with pydoctor 25.10.1."
       },
       {
-        "name": "Native HostNode synchronization and public API revision",
-        "result": "34 native checks pass. Incomplete groups skip callbacks and later complete frames recover. The builder consumes five synchronized streams without a calibration object. Six public message types remain, with scoped status enums and no explicit object.__setattr__ calls in parcel values."
+        "name": "Native Sync, SupportPlane, and runtime configuration revision",
+        "result": "44 native checks pass on Python 3.10 and 3.12. Four scene inputs are synchronized by DEVICE timestamp below 10 ms without requiring equal sequence counters. Config is read separately before each scene; queued updates select the latest plane and in-flight updates apply to a later scene. SupportPlane is supplied in build. ParcelDetectorConfig has only supportPlane. Six public parcel message types remain; ParcelPlane and custom calibration types are absent. Actual host Rectification with RAW8 output and changed aspect ratio passes."
       }
     ],
     "environment": {
@@ -1046,7 +1054,7 @@
       "The full existing unit suite has baseline mock collection-order failures. Separate parser model tests also require unavailable model caches.",
       "OpenCV 4.10 changes two validation cuboids above the declared parity tolerance. The parcel extra requires the frozen OpenCV 4.12.0.88.",
       "No new latency benchmark ran. Historical scores and timings remain attached to the evaluated artifacts.",
-      "The native metadata adapter supports millimeter common-reference XYZ, as DEFAULT native PointCloud output with an identity custom transform provides. Incompatible initial native configurations are rejected. Coordinate mode, units, and custom transforms must not change at runtime; PointCloudData does not identify those modes reliably. Metadata conversion is tested with synthetic native messages, not live generated clouds."
+      "The native metadata adapter supports millimeter common-reference XYZ, as DEFAULT native PointCloud output with an identity custom transform provides. Incompatible initial native configurations are rejected. Coordinate mode, units, and custom transforms must not change at runtime; PointCloudData does not identify those modes reliably. Metadata conversion is tested with synthetic native messages and actual host Rectification, not live generated clouds or device StereoDepth rectification."
     ],
     "verification_summary_path": "docs/parcel-promotions/verification-summary.json",
     "dependency_resolution": "The base OpenCV constraint explicitly permits >=4.10,<4.13. The parcel extra pins opencv-python-headless==4.12.0.88, numpy==2.2.6, and scipy==1.15.3. No tolerance was relaxed and no historical score was reassigned."

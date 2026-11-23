@@ -11,23 +11,23 @@ import depthai as dai
 import numpy as np
 
 from depthai_nodes.message import (
+    ParcelDetectorConfig,
     ParcelMeasurement,
     ParcelMeasurements,
-    ParcelPlane,
     SupportPlane,
 )
 from depthai_nodes.node import ParcelDetector, ParcelDimensioner
 
 
 def make_scene():
-    """Return a cloud, three images with native calibration, and a supplied plane."""
+    """Return a point cloud and three images with native calibration metadata."""
     size, focal, center = 260, 500.0, 129.5
     v, u = np.indices((size, size))
     rays = np.stack(
         ((u - center) / focal, (v - center) / focal, np.ones_like(u)), axis=-1
     )
     images = []
-    cloud = dai.PointCloudData()
+    pointCloud = dai.PointCloudData()
     for role, camera_x in (("color", 0), ("left", -15), ("right", 15)):
         top = rays[:, :, :2] * 890 + np.array([camera_x, 0])
         parcel = (np.abs(top[:, :, 0]) <= 110) & (np.abs(top[:, :, 1]) <= 80)
@@ -37,7 +37,7 @@ def make_scene():
             image.setType(dai.ImgFrame.Type.BGR888i)
             image.setFrame(np.repeat(pixels[:, :, None], 3, axis=2))
             xyz = rays * np.where(parcel, 890.0, 1000.0)[:, :, None]
-            cloud.setPoints(xyz.reshape(-1, 3).astype(np.float32))
+            pointCloud.setPoints(xyz.reshape(-1, 3).astype(np.float32))
         else:
             image.setType(dai.ImgFrame.Type.GRAY8)
             image.setFrame(pixels)
@@ -61,13 +61,8 @@ def make_scene():
         )
         image.setTransformation(transformation)
         if role == "color":
-            cloud.setTransformation(transformation)
-    plane = ParcelPlane(
-        frame="scene",
-        plane=SupportPlane(normal=(0, 0, -1), offset_mm=1000),
-        down=(0, 0, 1),
-    )
-    messages = (cloud, *images, plane)
+            pointCloud.setTransformation(transformation)
+    messages = (pointCloud, *images)
     for message in messages:
         message.setSequenceNum(1)
         message.setTimestamp(timedelta(seconds=1))
@@ -80,7 +75,7 @@ class SyntheticScene(dai.node.ThreadedHostNode):
 
     def __init__(self):
         super().__init__()
-        self.streams = tuple(self.createOutput(f"source_{i}") for i in range(5))
+        self.streams = tuple(self.createOutput(f"source_{i}") for i in range(4))
         self.messages = make_scene()
 
     def run(self):
@@ -92,9 +87,12 @@ def main():
     """Run and assert one measured parcel from the native same-host pipeline."""
     with dai.Pipeline(False) as pipeline:
         source = pipeline.create(SyntheticScene)
-        detector = pipeline.create(ParcelDetector).build(*source.streams)
+        supportPlane = SupportPlane(normal=(0, 0, -1), offset_mm=1000)
+        detector = pipeline.create(ParcelDetector).build(*source.streams, supportPlane)
+        configInput = detector.inputConfig.createInputQueue()
         dimensioner = pipeline.create(ParcelDimensioner).build(detector.out)
         results = dimensioner.out.createOutputQueue()
+        configInput.send(ParcelDetectorConfig(supportPlane=supportPlane))
         pipeline.start()
         result = results.get(timedelta(seconds=15))
         if result is None:

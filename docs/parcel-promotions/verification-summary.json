@@ -20,10 +20,10 @@
     ],
     "command": "pytest tests/unittests/test_parcel_algorithm tests/unittests/test_parcel_nodes tests/parcel_reference",
     "passed": 42,
-    "subtests_passed": 58,
-    "native_checks_inside_subprocess": 34,
+    "native_checks_inside_subprocess": 44,
     "skips": 0,
-    "result": "passed"
+    "result": "passed",
+    "depthai_version": "3.11.0"
   },
   "existing_unit_checks": {
     "full_suite": {
@@ -78,21 +78,22 @@
     "platform": "macOS-27.2.1-arm64-arm-64bit",
     "python": "3.12.13",
     "dependencies": {
-      "depthai": "3.11.0",
+      "depthai": "3.12.2",
       "numpy": "2.2.6",
       "scipy": "1.15.3",
       "opencv-python-headless": "4.12.0.88"
     },
     "hash_covered_files": 24,
-    "no_scipy_imports": "Passed before installing the parcel extra, including absent custom calibration types, six exports, builder signature, value-source setter scan, and manifest integrity.",
+    "no_scipy_imports": "Passed before installing the parcel extra. Six public parcel types, single-field native Buffer config dataclass, required build plane, absent legacy types/setter, 24 covered hashes, and optional-extra error hint verified.",
     "wheel_assets_and_dependencies": "all required JSON/settings/evidence/C++ assets present, no binary/tests/tools/docs bundled; parcel extra pins verified in METADATA",
-    "installed_native_sha256": "812cffc8d1f7a5bb5c655f7c7a5c8b34d24d55d06ec603bf6139e9520ec455a5",
-    "fallback_pipeline": "Passed using image calibration metadata and the five-stream builder in a fresh environment outside both source trees.",
+    "installed_native_sha256": "feb5917534b5706644ab1ea48b08e2dc5c2bcfdda42f19766c94ba4a02f4d944",
+    "fallback_pipeline": "Passed using native image calibration metadata, four scene streams, and an initial SupportPlane plus separate config input outside both source trees.",
     "native_build": "passed Apple clang21 C++17 -O3 -ffp-contract=off -fPIC -shared",
     "native_pipeline": "Passed after optional local native build, with identical synthetic output to fallback.",
     "final_manifest_status": "verified_for_declared_parcel_dependencies",
-    "final_wheel_reinstall": "Passed all 24 file hashes, six public types, and the portable fallback pipeline after rebuilding final metadata provenance.",
-    "wheel_sha256": "229972fa8dfafa5d76544777991520ef464a4677887434524e245f986d9b2eb6"
+    "final_wheel_reinstall": "Passed all 24 installed file hashes, six public parcel exports, single-field config, absence of native binaries, and fallback synthetic pipeline after rebuilding final provenance.",
+    "native_checks": 44,
+    "wheel_sha256": "bd0e6f4d1ed32be404da144906ddf614f437b75d05c91d85e13af3d6ccdef983"
   },
   "limitations": [
     "No OAK hardware or live sensor pipeline check.",
@@ -100,16 +101,16 @@
     "No XLink/remote serialization support claimed.",
     "Historical decoded validation cache coverage; no raw recording decode or new held-out/training data.",
     "No timing rerun; historical performance remains attributed to original artifact.",
-    "Native camera-metadata conversion has synthetic coverage only. Runtime point-cloud coordinate changes and custom/housing/camera-target native modes lack a reliable per-frame metadata discriminator and are unsupported."
+    "Native metadata conversion is tested with synthetic native messages and actual host Rectification. Actual OAK StereoDepth rectification and generated clouds remain untested. Runtime point-cloud coordinate changes and custom/housing/camera-target native modes lack a reliable per-frame discriminator and are unsupported."
   ],
   "public_api": {
     "flat_parcel_message_types": [
       "Parcel",
       "ParcelCuboid",
+      "ParcelDetectorConfig",
       "ParcelDetections",
       "ParcelMeasurement",
-      "ParcelMeasurements",
-      "ParcelPlane"
+      "ParcelMeasurements"
     ],
     "measurement_status": "ParcelMeasurement.Status",
     "frame_outcome": "ParcelDetections.Outcome / ParcelMeasurements.Outcome",
@@ -118,16 +119,20 @@
       "source timing"
     ],
     "detector_build": "ParcelDetector.build(pointCloud, color, left, right, supportPlane)",
-    "plane_input": "ParcelPlane(frame=..., plane=..., down=...)",
+    "plane_input": "Required SupportPlane in build; runtime ParcelDetectorConfig(supportPlane=...) on inputConfig.",
     "camera_calibration": "Read each synchronized ImgFrame.getTransformation(); no custom calibration types or build argument.",
-    "value_construction": "Ordinary constructors with read-only properties for parcels and cuboids; frozen metadata/result records validate without rewriting fields. No explicit object.__setattr__ calls in new parcel values."
+    "value_construction": "Ordinary constructors with read-only properties for parcels and cuboids; frozen metadata/result records validate without rewriting fields. No explicit object.__setattr__ calls in new parcel values.",
+    "detector_config_fields": [
+      "supportPlane"
+    ]
   },
   "synchronization_revision": {
-    "implementation": "dai.node.HostNode.link_args for all five inputs",
-    "complete_groups": "One scene callback per synchronized group, with sequence and device timestamp validation.",
-    "incomplete_groups": "No callback or result; next complete frame can recover.",
-    "explicit_unavailable_plane": "Synchronized ParcelPlane with plane=None emits a failed frame.",
-    "removed": "Custom run loop, per-source queues, future-message cache, and 250 ms timeout."
+    "implementation": "ThreadedHostNode with native host Sync for pointCloud/color/left/right; run gets a synchronized group and drains config with tryGet.",
+    "complete_groups": "One scene call per complete group. DEVICE timestamp span is below 10 ms on a shared device clock. Sequence counters may differ.",
+    "incomplete_groups": "No scene call or result; a later complete frame can recover.",
+    "configuration": "Initial SupportPlane in build. Latest queued full ParcelDetectorConfig applies before a scene. In-flight updates apply to a later scene; batches retain their plane snapshot.",
+    "queue": "Bounded blocking config input, drained in Python. Combined native Sync pipeline with two prequeued custom config messages crashed on DepthAI 3.11 when queueSize=1 and nonblocking; default blocking queue passes. Standalone queue-only probe did not reproduce.",
+    "removed": "Stamped ParcelPlane stream, explicit gravity, manual scene synchronization, private message datatype rechecks, and inconsistent pointCloud/cloud local names."
   },
   "metadata_revision": {
     "intrinsics": "getIntrinsicMatrix includes delivered crop/scale.",
@@ -135,6 +140,7 @@
     "camera_pose": "Calibrated camera-to-reference pose requested in millimeters and inverted with float64 NumPy.",
     "cloud_coordinates": "DEFAULT native common-reference millimeter XYZ with identity custom transform and calibrated translation. Cloud source pose is not applied twice.",
     "native_configuration_guard": "Reject incompatible initial native PointCloud coordinates, units, custom transforms, or spec translation. Coordinate settings must remain fixed at runtime.",
-    "coverage": "34 synthetic native metadata/message/node checks; actual generated-cloud and hardware execution remain untested."
+    "coverage": "44 native metadata/message/node checks on Python 3.10 and 3.12. Includes actual host Rectification from distorted 64x48 input to 80x36 RAW8 with virtual intrinsics, cleared distortion, and 75mm baseline. Actual generated-cloud and hardware execution remain untested.",
+    "image_relationship": "Same scene interval, shared device timestamp clock, and calibrated common reference. Images need not be the original cloud-generator inputs or have matching resolution/aspect ratio. Raw or rectified pixels require their matching delivered-grid calibration."
   }
 }

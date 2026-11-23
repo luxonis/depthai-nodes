@@ -63,7 +63,7 @@ Install `depthai-nodes[parcel]` for computation.
 `pointCloud` produces `dai.PointCloudData`. The three images produce native `dai.ImgFrame` messages.
 The cloud contains finite float32 XYZ in millimeters in the explicitly declared scene frame.
 The detector preserves every point and its order. It rejects invalid input rather than filtering points silently.
-Color accepts NV12 and native 8-bit RGB/BGR layouts and becomes RGB. Left and right must be GRAY8.
+Color accepts NV12 and native 8-bit RGB/BGR layouts and becomes RGB. Left and right accept GRAY8 or RAW8.
 The detector performs no resize. Intrinsics and distortion describe each delivered pixel grid.
 Transforms map scene coordinates into each camera's optical frame, with translations in millimeters.
 
@@ -90,20 +90,42 @@ Custom transforms, housing coordinates, and camera-target cloud modes are outsid
 The builder rejects incompatible initial native PointCloud configurations. Coordinate mode, units, and custom transforms must remain fixed while the pipeline runs.
 Other producers must already provide millimeter XYZ in the declared common reference frame with consistent metadata.
 
-`ParcelPlane(frame=..., plane=..., down=...)` carries the plane's application frame label and unit downward gravity in those same coordinates.
-Camera calibration does not determine gravity or XYZ units. Those remain runtime input requirements.
-`ParcelPlane` is a same-host input message holding the existing `SupportPlane` value, or `None` for an unavailable plane.
-Stamp it with the cloud's host timestamp, device timestamp, and sequence number for every scene.
-An upstream fixed or updated plane becomes applicable only through that explicitly stamped message.
-The detector normalizes and snapshots its equation, flipping its sign against `down` when necessary.
-The batch's `frame` identifies the shared cloud and plane frame.
+The fifth builder argument is the existing `SupportPlane` value, in the common point-cloud reference frame.
+The reference camera must be above the support surface. The detector orients either equation sign toward that camera, producing a positive offset.
+A plane through the reference origin cannot be oriented this way and produces a failed frame.
+The batch frame label is derived from the shared native target device and camera socket.
 
-`ParcelDetector` is a native `dai.node.HostNode`. Its builder uses `link_args` for all five streams.
-DepthAI synchronizes the inputs before invoking `process`. The callback checks matching sequence numbers and device timestamps within 10 ms.
-An incomplete group does not invoke the callback or produce an empty success. The next complete scene can be processed.
-To report an unavailable plane for a synchronized frame, send `ParcelPlane(plane=None, ...)` with that frame's timing. It produces a failed frame.
-This replaces the initial adapter's manual queues and 250 ms timeout. Dropped streams no longer generate timeout failure batches.
-The frozen callback computation and plane snapshot semantics are unchanged.
+`ParcelDetectorConfig` is a same-host `dai.Buffer` dataclass with exactly one field, `supportPlane`.
+Send it through `detector.inputConfig.createInputQueue()` to update the runtime plane. There is no `setSupportPlane()` method or separate plane-stream message.
+The latest queued full configuration applies before the next synchronized group is processed. An update arriving during processing applies to a later group.
+Each batch retains the exact oriented plane used for its scene; queued batches cannot observe subsequent updates in the dimensioner.
+
+`ParcelDetector` is a `dai.node.ThreadedHostNode` with a native host `Sync` subnode for `pointCloud`, `color`, `left`, and `right`.
+`run()` blocks on the synchronized scene queue, then reads pending config messages with `tryGet()` before processing.
+The config queue is blocking and bounded. Available updates are drained in Python to retain the latest full state.
+The combined native pipeline crashed on DepthAI 3.11 with a one-entry nonblocking config queue and two queued Python config messages.
+The blocking queue with Python draining passed that same case. A standalone queue probe did not reproduce the crash, so its broader SDK cause is not established.
+If scenes stop and the config queue fills, config producers experience backpressure until another scene is processed.
+
+Scene synchronization uses DEVICE timestamps and a span below 10 ms. All four streams must share a device clock.
+Sequence counters do not need to match; the output preserves the point cloud's counter and each source's individual metadata.
+An incomplete group produces no callback or empty success. The next complete group can recover. There is no custom scene-matching loop or timeout.
+Specific scene datatypes are checked once in public `process()`. Private conversion helpers trust those types and validate content such as calibration and finite XYZ.
+
+## Image-to-cloud assumptions
+
+The point cloud is a 3D point set. It does not need pixel-to-row correspondence with any image and need not be organized.
+The images need not be the exact buffers used by the point-cloud generator. They must show the same scene during the synchronized capture interval.
+Each image must have valid calibration into the shared point-cloud reference frame. Independent resolutions, aspect ratios, crops, and fields of view are supported.
+The algorithm projects XYZ into each view; it never resizes images to match the point-cloud grid. Cropping may make a parcel ineligible under the frozen visibility policy.
+
+Raw and rectified views are supported when metadata describes the actual delivered pixels.
+Raw images retain their lens distortion. Rectified images require the virtual-camera intrinsics and pose, with distortion removed by the rectifier.
+The adapter must not pair rectified pixels with the original raw-camera calibration.
+Native host `Rectification` was tested with distorted 64 by 48 inputs and 80 by 36 RAW8 outputs; its metadata had updated intrinsics, rectified poses, and empty distortion.
+Native StereoDepth rectified outputs are declared RAW8, but their device-firmware metadata has not been tested on hardware here.
+
+## Parcel batch and measurement
 
 `ParcelDetections` contains eligible `Parcel` items with a zero-based frame-local `candidate_id` and owned read-only `xyz_mm`.
 Rejected proposals can leave gaps in IDs. `decisions` retains proposal outcomes without source-point indices or the whole cloud.
@@ -124,7 +146,7 @@ The dimensioner reads only the batch's plane. No tracking, temporal medians, or 
 These Python messages connect nodes on one host. Nested arrays have no implemented XLink or remote serialization.
 The [synthetic example](../../examples/parcel_measurement/synthetic.py) runs both nodes in a native host-only DepthAI pipeline without an OAK device.
 
-The message package exports six parcel types. `ParcelPlane` constructs the supplied-plane input.
+The message package exports six parcel types. `ParcelDetectorConfig` carries support-plane updates.
 `Parcel`, `ParcelDetections`, `ParcelCuboid`, `ParcelMeasurement`, and `ParcelMeasurements` describe public payloads consumed downstream.
 Status enums live under their owning types. Internal timing and diagnostic records add no flat public constructors.
 
@@ -186,11 +208,11 @@ The separate threaded-node suite reproduces the base's 16 unavailable model-cach
 These unrelated failures are retained as limitations rather than hidden as skips.
 
 Final parcel, Python 3.10, wheel, lint, and documentation results are recorded in the manifest and comparison summaries.
-The focused command `pytest tests/unittests/test_parcel_algorithm tests/unittests/test_parcel_nodes tests/parcel_reference` passes 42 tests and 58 subtests on both Python 3.12.13 and 3.10.18.
-The node wrapper runs 34 native checks in a fresh process to avoid the existing parser mock substitutions.
-The native synchronization cases verify that incomplete input groups are skipped, the next complete frame recovers, and an explicit unavailable plane remains a failed frame.
+The focused command `pytest tests/unittests/test_parcel_algorithm tests/unittests/test_parcel_nodes tests/parcel_reference` passes 42 tests, including frozen regression subtests, on both Python 3.12.13 and 3.10.18.
+The node wrapper runs 44 native checks in a fresh process to avoid the existing parser mock substitutions.
+The native synchronization cases verify that incomplete input groups are skipped, the next complete frame recovers, and queued plane configurations apply between complete scenes.
 Native metadata checks cover crop/scale intrinsics, distortion and tilted sensors, pose units and reference compatibility, missing metadata, default cloud coordinates, normal value construction, and zero-copy owned parcel transfer.
-These metadata checks use synthetic native messages. They do not establish generated-cloud or live camera behavior on OAK hardware.
+These checks include native host Rectification from distorted 64×48 inputs to 80×36 RAW8 outputs with matching virtual metadata. They do not establish generated-cloud or live camera behavior on OAK hardware.
 The final full unit command reports 581 passing tests with the same 181 failures and 124 errors as the unchanged base.
 Pre-commit and `pydoctor depthai_nodes` pass. The API build treats warnings as errors.
 
@@ -199,6 +221,7 @@ The wheel excludes test fixtures, verification tools, documentation packages, an
 Public package/node imports pass before installing SciPy. Creating computation without the extra gives the installation hint.
 After installing the declared parcel extra, a host-only synthetic pipeline runs both public nodes from the installed wheel with the fallback.
 The optional native source also builds inside that installation, and the same pipeline passes with it loaded.
+The fresh wheel resolves DepthAI 3.12.2 and passes all 44 native boundary checks with that SDK. Source-tree checks use DepthAI 3.11.0.
 Both paths measure the synthetic 220 by 160 by 110 mm parcel as 218.940 by 158.420 by 110.000 mm, within the fixture's 5 mm sampling allowance.
 That allowance checks synthetic scene sampling. It does not relax the source-to-port numerical tolerance.
 

@@ -67,12 +67,12 @@ class ParcelDimensioner(dai.node.HostNode):
             failure = parcels.failure_code
         else:
             try:
-                plane = algorithm.SupportPlane(
+                supportPlane = algorithm.SupportPlane(
                     parcels.plane.normal, parcels.plane.offset_mm, parcels.frame
                 )
                 for parcel in parcels.items:
                     cuboid = self._components.measure(
-                        algorithm.PointCloud(parcel.xyz_mm, parcels.frame), plane
+                        algorithm.PointCloud(parcel.xyz_mm, parcels.frame), supportPlane
                     )
                     geometry = None
                     if cuboid is None:
@@ -88,10 +88,11 @@ class ParcelDimensioner(dai.node.HostNode):
                             height_mm=cuboid.height_mm,
                         )
                         if (
-                            abs(np.dot(geometry.length_axis, plane.normal)) > 1e-6
+                            abs(np.dot(geometry.length_axis, supportPlane.normal))
+                            > 1e-6
                             or abs(
-                                np.dot(geometry.base_center_mm, plane.normal)
-                                + plane.offset_mm
+                                np.dot(geometry.base_center_mm, supportPlane.normal)
+                                + supportPlane.offset_mm
                             )
                             > 0.05
                         ):

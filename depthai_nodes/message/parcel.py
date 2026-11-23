@@ -22,10 +22,10 @@ from .support_plane import SupportPlane
 __all__ = [
     "Parcel",
     "ParcelCuboid",
+    "ParcelDetectorConfig",
     "ParcelDetections",
     "ParcelMeasurement",
     "ParcelMeasurements",
-    "ParcelPlane",
 ]
 
 
@@ -50,65 +50,43 @@ def _numbers(value, shape: tuple[int, ...], field: str) -> np.ndarray:
     return result
 
 
-class ParcelPlane(dai.Buffer):
-    """A supplied support plane for exactly one source sequence number.
+@dataclass(frozen=True, kw_only=True, eq=False)
+class ParcelDetectorConfig(dai.Buffer):
+    """Runtime configuration for ``ParcelDetector``.
 
-    Stamp this message with the cloud's host/device timestamps and sequence.
-    ``plane=None`` explicitly reports that this frame has no supplied plane.
-    Reusing a previous plane requires emitting a newly stamped message for the
-    new frame. ``down`` supplies unit gravity in the cloud frame; image metadata
-    does not determine gravity. Plane estimation and selection remain upstream.
+    Send this same-host message to the node's ``inputConfig``. The latest queued
+    configuration applies before its next synchronized scene starts. Updates
+    received during processing apply to a later scene.
+
+    Attributes:
+        supportPlane: Support-plane equation in the point cloud's common
+            calibration reference frame, in millimeters. The reference camera
+            must be above the surface. Either normal sign is accepted.
     """
 
-    def __init__(
-        self,
-        *,
-        frame: str,
-        plane: SupportPlane | None,
-        down: tuple[float, float, float],
-    ) -> None:
-        super().__init__()
-        self._frame = _frame(frame)
-        if plane is not None and not isinstance(plane, SupportPlane):
-            raise TypeError("plane must be SupportPlane or None")
-        gravity = _numbers(down, (3,), "downward gravity")
-        if abs(float(np.linalg.norm(gravity)) - 1) > 1e-6:
-            raise ValueError("down must be a unit gravity vector")
-        self._plane = plane
-        self._down = tuple(gravity.tolist())
+    supportPlane: SupportPlane
 
-    @property
-    def down(self) -> tuple[float, float, float]:
-        """Unit downward gravity in the point cloud and support-plane frame."""
-        return self._down
-
-    @property
-    def frame(self) -> str:
-        """Coordinate frame shared with the source cloud."""
-        return self._frame
-
-    @property
-    def plane(self) -> SupportPlane | None:
-        """Supplied plane, before orientation against scene gravity."""
-        return self._plane
+    def __post_init__(self) -> None:
+        dai.Buffer.__init__(self)
+        if not isinstance(self.supportPlane, SupportPlane):
+            raise TypeError("supportPlane must be SupportPlane")
 
 
 @dataclass(frozen=True, kw_only=True)
 class _ParcelSourceTiming:
     """Host/device timestamps and sequence of one source stream."""
 
-    stream: Literal["point_cloud", "color", "left", "right", "support_plane"]
+    stream: Literal["pointCloud", "color", "left", "right"]
     timestamp: timedelta
     timestamp_device: timedelta
     sequence_num: int
 
     def __post_init__(self) -> None:
         if self.stream not in (
-            "point_cloud",
+            "pointCloud",
             "color",
             "left",
             "right",
-            "support_plane",
         ):
             raise ValueError("Unknown source stream")
         if not isinstance(self.timestamp, timedelta) or not isinstance(
@@ -328,7 +306,7 @@ class _ParcelBatch(dai.Buffer):
         self._outcome = outcome
         self._failure_code = failure_code
         for source in sources:
-            if source.stream == "point_cloud":
+            if source.stream == "pointCloud":
                 self.setTimestamp(source.timestamp)
                 self.setTimestampDevice(source.timestamp_device)
                 self.setSequenceNum(source.sequence_num)

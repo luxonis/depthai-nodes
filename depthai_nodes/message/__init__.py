@@ -118,10 +118,12 @@ Boxes are measured against a support plane; see "Support plane" above.
 Parcel measurement
 ------------------
 
-``ParcelPlane`` supplies one scene plane and unit downward gravity per stamped
-cloud sequence. Its ``frame`` labels the cloud and plane coordinate frame. Camera
-intrinsics, distortion, and relative poses come from the native image and point
-cloud transformation metadata rather than separate calibration objects.
+``ParcelDetectorConfig`` holds the existing `SupportPlane` value for runtime
+updates through the detector's ``inputConfig``. Its initial support plane is
+passed to ``build``. The latest queued configuration applies before the next
+synchronized scene starts; its plane snapshot is carried through measurement.
+Camera intrinsics, distortion, poses, and the reference-frame label come from
+native image and point-cloud transformation metadata.
 
 ``ParcelDetections`` holds a tuple of eligible ``Parcel`` objects. Each retains a
 read-only float32 ``xyz_mm`` array in source-point order. ``candidate_id`` is a
@@ -154,9 +156,9 @@ from .parcel import (
     Parcel,
     ParcelCuboid,
     ParcelDetections,
+    ParcelDetectorConfig,
     ParcelMeasurement,
     ParcelMeasurements,
-    ParcelPlane,
 )
 from .snap_data import SnapData
 from .support_plane import SupportPlane, SupportPlaneCandidate
@@ -170,10 +172,10 @@ from .support_plane_calibration import (
 __all__ = [
     "Parcel",
     "ParcelCuboid",
+    "ParcelDetectorConfig",
     "ParcelDetections",
     "ParcelMeasurement",
     "ParcelMeasurements",
-    "ParcelPlane",
     "GatheredData",
     "SnapData",
     "Collection",
