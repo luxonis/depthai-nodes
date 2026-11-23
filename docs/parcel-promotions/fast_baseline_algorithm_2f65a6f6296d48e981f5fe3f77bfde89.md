@@ -28,7 +28,8 @@ The settings preserve computation, policy, objective, and input declarations.
 
 The revision design maps these settings to `fast_baseline/v001`, with canonical path `algorithms/fast_baseline/configurations/v001.json`.
 That canonical copy has the same bytes. It does not retroactively change the evaluated source tree, image, mounted settings path, or journal.
-The BoxLabRunners revision migration was uncommitted when inspected; this mapping does not claim a new reviewed or evaluated implementation.
+The mapping is committed in [BoxLabRunners PR #15](https://github.com/luxonis/BoxLabRunners/pull/15) at `df216e5253c6f29de677b83c4ad7248cb020f871`. That PR remains open; this mapping does not claim a newly reviewed or evaluated algorithm.
+The manifest separately pins its [configuration catalog](https://github.com/luxonis/BoxLabRunners/blob/df216e5253c6f29de677b83c4ad7248cb020f871/experiments/configurations.json) and [evaluation record](https://github.com/luxonis/BoxLabRunners/blob/df216e5253c6f29de677b83c4ad7248cb020f871/experiments/fast_baseline/v001/release-f14a597a366c46c6bdba00fa25e45bcd/2026-11-20-revalidation/record.json), including their file hashes.
 
 The [manifest](../../depthai_nodes/algorithms/parcel/manifest.json) separates original candidate hashes from the port's raw file and configuration hashes.
 Its complete validation and approved held-out evaluation records preserve `boxlab-run-metrics/3`, scoring policy, run IDs, denominators, null reasons, and suppression.
@@ -343,9 +344,11 @@ Installed imports, manifest hashes, candidate/configuration binding, optional Sc
 Fallback and a fresh local native build both measure the synthetic parcel as 218.940 by 158.420 by 110.000 mm.
 The local binary hash is recorded separately in the manifest and is not a distributed artifact.
 
-The verified stable-directory wheel has SHA-256 `65d31a87c09429ba696d5b42b4eb45cffdd91cfadaacf95f083e27a651119b60`.
+The initial verified stable-directory wheel has SHA-256 `65d31a87c09429ba696d5b42b4eb45cffdd91cfadaacf95f083e27a651119b60`.
 The wheel contains 156 files and its manifest bytes match the source manifest.
 This identifies the tested build, not future rebuilds or a published release.
+After the BoxLabRunners migration commit became available, its commit-pinned catalog and evaluation-record references were added without changing any covered port file.
+The final wheel with those references has SHA-256 `c661200716e15d798de84d601eda1a2c3a671adee9c1ebd0bafae4255c92f379`; its 25 covered files and installed manifest validate again.
 
 The fresh test environment used previously installed pinned dependencies after new dependency downloads stalled.
 Only the new depthai-nodes wheel was installed as the package under test. No depthai-nodes checkout files or import paths were copied into that environment.
@@ -353,6 +356,6 @@ Its dependency versions are NumPy 2.2.6, SciPy 1.15.3, and OpenCV 4.12.0.88.
 Pre-commit and the warnings-as-errors API reference build pass.
 
 Future algorithm corrections require BoxLabRunners review and evaluation before this repository integrates their new frozen revision and evidence.
-The canonical configuration-path migration does not require re-evaluating these unchanged settings, but its committed provenance must be recorded when available.
+The canonical configuration-path migration does not require re-evaluating these unchanged settings, and its committed catalog and evaluation-record provenance are now recorded separately from the evaluated source.
 Future changes follow the [update workflow](update-workflow.md), also linked from `CONTRIBUTING.md`.
 Rollback restores the complete prior code, settings, dependencies, assets, and manifest release.

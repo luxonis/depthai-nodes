@@ -139,7 +139,9 @@
     "evidence_urls": [
       "https://github.com/luxonis/BoxLabRunners/tree/0a2f571843f81ac6cc2f8cebe3475540e314f83d",
       "https://github.com/luxonis/BoxLabRunners/blob/4b7634cc5806b7fb2e48bc7a830a3434b85cc0cb/experiments/revalidation-2026-11-20/fast-baseline.json",
-      "https://github.com/luxonis/BoxLabRunners/blob/4b7634cc5806b7fb2e48bc7a830a3434b85cc0cb/experiments/revalidation-2026-11-20/fast-baseline-settings.json"
+      "https://github.com/luxonis/BoxLabRunners/blob/4b7634cc5806b7fb2e48bc7a830a3434b85cc0cb/experiments/revalidation-2026-11-20/fast-baseline-settings.json",
+      "https://github.com/luxonis/BoxLabRunners/blob/df216e5253c6f29de677b83c4ad7248cb020f871/experiments/configurations.json",
+      "https://github.com/luxonis/BoxLabRunners/blob/df216e5253c6f29de677b83c4ad7248cb020f871/experiments/fast_baseline/v001/release-f14a597a366c46c6bdba00fa25e45bcd/2026-11-20-revalidation/record.json"
     ],
     "adaptations": [
       "Replace runner imports with neutral bundled computation types and projector; exclude transport, registration, journals, and CLI.",
@@ -163,17 +165,26 @@
     "settings_path": "algorithms/fast_baseline/configurations/v001.json",
     "settings_file_sha256": "66f29d1a54ddb6fd8d3fa957a34aa81dcef53a4ca29a47b0b4e39331afcb8bd8",
     "evaluated_settings_path": "experiments/revalidation-2026-11-20/fast-baseline-settings.json",
-    "configuration_version_note": "v001 names the unchanged committed release-scoped settings. The canonical configuration path is introduced by the BoxLabRunners revision migration and did not exist at the evaluated source commit.",
+    "configuration_version_note": "The unchanged release-scoped settings are cataloged as fast_baseline/v001 at the separate configuration_provenance commit. The canonical configuration path did not exist at the evaluated source commit.",
     "review": {
       "source_commit": "0a2f571843f81ac6cc2f8cebe3475540e314f83d",
       "url": "https://github.com/luxonis/BoxLabRunners/pull/10",
       "status": "historical_evaluation_predates_revision_review_requirement"
     },
     "revision_design": {
-      "status": "pending_upstream_commit",
-      "branch": "codex/algorithm-revisions",
-      "inspected_base_commit": "1d2aa20e85f6f6b6acb597440ca42d85c495474f",
-      "note": "The operator confirmed the stable-directory requirements and fast_baseline/v001 mapping while BoxLabRunners documentation is being implemented. Finalize commit-pinned configuration-catalog and evaluation-record links after that migration is committed."
+      "status": "committed_in_open_pr",
+      "commit": "df216e5253c6f29de677b83c4ad7248cb020f871",
+      "url": "https://github.com/luxonis/BoxLabRunners/pull/15",
+      "design_url": "https://github.com/luxonis/BoxLabRunners/blob/df216e5253c6f29de677b83c4ad7248cb020f871/docs/depthai-nodes/design.md",
+      "promotion_url": "https://github.com/luxonis/BoxLabRunners/blob/df216e5253c6f29de677b83c4ad7248cb020f871/docs/depthai-nodes/promote.md",
+      "handoff_url": "https://github.com/luxonis/BoxLabRunners/blob/df216e5253c6f29de677b83c4ad7248cb020f871/docs/depthai-nodes/fast-baseline-handoff.md"
+    },
+    "configuration_provenance": {
+      "commit": "df216e5253c6f29de677b83c4ad7248cb020f871",
+      "catalog_path": "experiments/configurations.json",
+      "catalog_sha256": "36eee6e2462c4264471604e3daaa2233f03abbe681e78c774ac0430ab1b3de2e",
+      "evaluation_record_path": "experiments/fast_baseline/v001/release-f14a597a366c46c6bdba00fa25e45bcd/2026-11-20-revalidation/record.json",
+      "evaluation_record_sha256": "ee9b74238df57174ebe1a12630d473f886be93754cc000248e8a12b3c4cda686"
     }
   },
   "inputs": {
@@ -1175,8 +1186,8 @@
         "pydoctor": "passed"
       },
       "limitations": [
-        "The canonical configuration path and configuration-version mapping are being documented in BoxLabRunners codex/algorithm-revisions. A committed migration reference is not yet available.",
-        "Historical validation and held-out evidence belong to the original candidate; no new Workbench evaluation or hardware performance claim is made by relocation."
+        "Historical validation and held-out evidence belong to the original candidate; no new Workbench evaluation or hardware performance claim is made by relocation.",
+        "The committed revision-design and configuration-catalog migration is in open BoxLabRunners PR15 at df216e5253c6f29de677b83c4ad7248cb020f871. It is provenance organization, not new algorithm review or evaluation."
       ],
       "wheel_environment": "Fresh virtual environment outside both source repositories, seeded with previously installed DepthAI3.12.2 and pinned algorithm dependencies after fresh dependency downloads stalled. The new package was installed from the clean-built wheel; no source checkout paths were copied or imported."
     }
