@@ -301,16 +301,16 @@ Example:
         from depthai_nodes.message import ParcelDetectorConfig, SupportPlane
         from depthai_nodes.node import ParcelDetector, ParcelDimensioner
 
-        supportPlane = SupportPlane.fromJsonFile("support_plane.json")
         detector = pipeline.create(ParcelDetector).build(
-            pointCloud, color, left, right, supportPlane
+            pointCloud, color, left, right
         )
         configQueue = detector.inputConfig.createInputQueue()
         dimensioner = pipeline.create(ParcelDimensioner).build(detector.out)
         results = dimensioner.out.createOutputQueue()
 
-        newSupportPlane = SupportPlane.fromJsonFile("updated_support_plane.json")
-        configQueue.send(ParcelDetectorConfig(supportPlane=newSupportPlane))
+        pipeline.start()
+        supportPlane = SupportPlane.fromJsonFile("support_plane.json")
+        configQueue.send(ParcelDetectorConfig(supportPlane=supportPlane))
 
     ``ParcelDetector`` is a ``ThreadedHostNode``. A host ``Sync`` node matches
     the four scene streams by device timestamp with a span below 10 ms. The
@@ -318,12 +318,14 @@ Example:
     groups are skipped. Before processing each complete group, the detector
     applies one pending configuration update, when available. Otherwise it
     keeps the active configuration. Pending updates are applied in queue order.
+    The initial support plane is optional. Until a config supplies one, the
+    detector consumes scene groups without processing or emitting outputs.
     Updates received during processing apply to a later group. Each batch
     retains the exact plane used, so measurement cannot observe a newer plane.
 
     Supply unrectified color at 2000x1500 and unrectified left/right at 1280x800,
-    preserving the native field of view and orientation. On the first scene
-    with valid message types, mismatched resolutions log one warning with the
+    preserving the native field of view and orientation. On the first configured
+    scene with valid message types, mismatched resolutions log one warning with the
     expected and received sizes. Processing continues without resizing images
     or scaling the algorithm's fixed pixel thresholds. Other grids and geometry
     do not have equivalent detection guarantees. Matching dimensions alone do

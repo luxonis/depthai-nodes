@@ -52,7 +52,7 @@ The retained Linux aarch64 binary is never presented as portable.
 ## Public API and frame contract
 
 ```python
-ParcelDetector.build(pointCloud, color, left, right, supportPlane)
+ParcelDetector.build(pointCloud, color, left, right, supportPlane=None)
 ParcelDimensioner.build(parcels)
 ```
 
@@ -75,7 +75,7 @@ Use the evaluated unrectified source-image profile:
 | Left  | 1280 × 800     | Unrectified |
 | Right | 1280 × 800     | Unrectified |
 
-The first scene with valid message types checks all three image sizes. A mismatch logs one warning containing all expected and received sizes.
+The first configured scene with valid message types checks all three image sizes. A mismatch logs one warning containing all expected and received sizes.
 This check runs once per detector instance, including when the initial sizes match. Invalid message types do not consume the check.
 Processing continues after a mismatch.
 NeuralDepth at 768 × 480 is preferred upstream. The detector receives a point cloud and cannot check the depth-image resolution directly.
@@ -104,7 +104,9 @@ Custom transforms, housing coordinates, and camera-target cloud modes are outsid
 The builder rejects incompatible initial native PointCloud configurations. Coordinate mode, units, and custom transforms must remain fixed while the pipeline runs.
 Other producers must already provide millimeter XYZ in the declared common reference frame with consistent metadata.
 
-The fifth builder argument is the existing `SupportPlane` value, in the common point-cloud reference frame.
+The optional fifth builder argument is an existing `SupportPlane` value in the common point-cloud reference frame.
+If omitted or `None`, the detector consumes synchronized groups without decoding, detection, or outputs until a `ParcelDetectorConfig` supplies a plane.
+Those groups are discarded, not retained for later processing. Capture and configuration polling continue without a pipeline restart.
 The reference camera must be above the support surface. The detector orients either equation sign toward that camera, producing a positive offset.
 A plane through the reference origin cannot be oriented this way and produces a failed frame.
 The batch frame label is derived from the shared native target device and camera socket.
@@ -226,7 +228,7 @@ The numerical source comparisons and OpenCV compatibility checks are recorded se
 
 | Check                                                                                                   | Recorded result                                                                                                                      |
 | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `pytest tests/unittests/test_parcel_algorithm tests/unittests/test_parcel_nodes tests/parcel_reference` | 42 tests pass on both Python versions, including frozen regression subtests and 47 native boundary checks in an isolated subprocess. |
+| `pytest tests/unittests/test_parcel_algorithm tests/unittests/test_parcel_nodes tests/parcel_reference` | 42 tests pass on both Python versions, including frozen regression subtests and 49 native boundary checks in an isolated subprocess. |
 | `pytest tests/unittests`                                                                                | 581 pass, 181 fail, and 124 errors. The unchanged base reproduces the same failures and errors, with 571 passes.                     |
 | Isolated host-node tests                                                                                | 116 pass with OpenCV 4.10 and 4.12.                                                                                                  |
 | Helpers and message tests                                                                               | 382 pass with OpenCV 4.10. Combined host, helper, and message checks pass 498 tests with OpenCV 4.12.                                |
@@ -241,6 +243,7 @@ The native checks cover:
 
 - Incomplete synchronized groups, recovery on the next complete group, and independent sequence counters.
 - Config updates in queue order, continued processing without new configs, updates during processing, invalid-config warnings, and retained batch plane snapshots.
+- Optional initial planes, consumed groups without decoding or outputs while unconfigured, and activation from a later config without replaying discarded groups or restarting the pipeline.
 - Expected image resolutions without warnings, one warning for each mismatched role across repeated scenes, continued processing, and invalid message types leaving the check pending.
 - Crop/scale intrinsics, distortion, tilted sensors, pose units, reference compatibility, missing metadata, and default cloud coordinates.
 - Read-only parcel values, zero-copy owned parcel transfer, measurement outcomes, and algorithm identity checks.
@@ -252,10 +255,10 @@ This does not validate rectified inputs against the evaluated unrectified profil
 
 The wheel installs outside both source trees. All 24 covered installed file hashes and the declared JSON, configuration, attribution, and C++ assets pass validation.
 The package excludes test fixtures, verification tools, documentation packages, and native binaries.
-Before installing SciPy, public imports, six parcel message exports, the single-field config dataclass, required build plane, and manifest validation pass.
+Before installing SciPy, public imports, six parcel message exports, the single-field config dataclass, and manifest validation pass.
 Creating computation without the parcel extra produces the installation hint.
 
-After installing the parcel extra, all 47 native boundary checks pass from the installed package.
+After installing the parcel extra, all 49 native boundary checks pass from the installed package.
 A host-only synthetic pipeline runs both public nodes with the fallback and an optional native build using Apple clang 21 and the declared C++17 flags.
 Both paths emit the expected one-time resolution warning for the small synthetic images and measure the 220 by 160 by 110 mm parcel as 218.940 by 158.420 by 110.000 mm.
 The fixture allows 5 mm for sampling. That allowance does not relax the source-to-port numerical tolerance.

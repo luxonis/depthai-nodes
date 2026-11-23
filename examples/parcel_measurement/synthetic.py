@@ -92,7 +92,7 @@ def main():
     with dai.Pipeline(False) as pipeline:
         source = pipeline.create(SyntheticScene)
         supportPlane = SupportPlane(normal=(0, 0, -1), offset_mm=1000)
-        detector = pipeline.create(ParcelDetector).build(*source.streams, supportPlane)
+        detector = pipeline.create(ParcelDetector).build(*source.streams)
         configInput = detector.inputConfig.createInputQueue()
         dimensioner = pipeline.create(ParcelDimensioner).build(detector.out)
         results = dimensioner.out.createOutputQueue()

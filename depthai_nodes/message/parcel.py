@@ -58,6 +58,8 @@ class ParcelDetectorConfig(dai.Buffer):
     is applied in queue order before each synchronized scene, when available.
     The active configuration persists until another update arrives. Updates
     received during processing apply to a later scene.
+    If the detector was built without a support plane, this config activates
+    processing for the next consumed scene group.
 
     Attributes:
         supportPlane: Support-plane equation in the point cloud's common

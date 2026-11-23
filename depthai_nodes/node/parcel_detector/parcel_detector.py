@@ -31,12 +31,14 @@ class ParcelDetector(dai.node.ThreadedHostNode):
     Image sequence counters may differ from the point cloud's counter.
 
     The evaluated profile uses unrectified color at 2000x1500 and left/right
-    images at 1280x800. The first scene with valid message types checks these
-    sizes and logs one warning if they differ. Processing continues unchanged.
+    images at 1280x800. The first configured scene with valid message types
+    checks these sizes and logs one warning if they differ. Processing continues.
 
     ``inputConfig`` accepts ``ParcelDetectorConfig`` messages. One queued
     configuration is applied before each synchronized scene, when available.
     The active configuration persists until another update arrives.
+    Without a support plane, incoming groups are consumed without processing
+    or output until a configuration supplies one.
     Its support-plane snapshot travels with the eligible parcels through
     measurement. Updates received during processing apply to a later scene.
 
@@ -73,9 +75,9 @@ class ParcelDetector(dai.node.ThreadedHostNode):
         color: dai.Node.Output,
         left: dai.Node.Output,
         right: dai.Node.Output,
-        supportPlane: SupportPlane,
+        supportPlane: SupportPlane | None = None,
     ) -> "ParcelDetector":
-        """Connect the scene streams and initialize the active support plane.
+        """Connect scene streams with an optional initial support plane.
 
         Args:
             pointCloud: ``dai.PointCloudData`` with finite millimeter XYZ in
@@ -88,23 +90,28 @@ class ParcelDetector(dai.node.ThreadedHostNode):
                 and capture interval.
             right: Unrectified 1280x800 calibrated mono images of the same scene
                 and capture interval.
-            supportPlane: Initial plane in the point cloud's reference frame.
+            supportPlane: Optional initial plane in the point cloud's reference frame.
                 The reference camera must be above the surface. Either normal
-                sign is accepted.
+                sign is accepted. If omitted, incoming groups are consumed without
+                processing or output until ``inputConfig`` supplies a plane.
 
         Returns:
-            This configured node.
+            This connected node.
 
         Raises:
             RuntimeError: If already built.
-            TypeError: If ``supportPlane`` is not a ``SupportPlane``.
+            TypeError: If ``supportPlane`` is neither a ``SupportPlane`` nor ``None``.
             ValueError: If a native PointCloud producer has incompatible coordinates
                 or units. Its coordinate configuration must remain fixed at runtime.
             ImportError: If the parcel extra dependencies are missing.
         """
         if self._components is not None:
             raise RuntimeError("ParcelDetector is already built")
-        config = ParcelDetectorConfig(supportPlane=supportPlane)
+        config = (
+            ParcelDetectorConfig(supportPlane=supportPlane)
+            if supportPlane is not None
+            else None
+        )
         producer = pointCloud.getParent()
         if isinstance(producer, dai.node.PointCloud):
             _check_cloud_configuration(producer.initialConfig)
@@ -141,13 +148,16 @@ class ParcelDetector(dai.node.ThreadedHostNode):
     ) -> None:
         """Process one synchronized scene using one active plane snapshot.
 
-        Input datatype checks happen here. Private conversion helpers receive validated
-        scene messages. Invalid inputs, plane geometry, metadata, or callback results
-        produce a failed batch. The source point cloud's native timestamps and sequence
-        number are preserved on every emitted result.
+        Without a configured support plane, return without processing or output. Input
+        datatype checks happen here. Private conversion helpers receive validated scene
+        messages. Invalid inputs, plane geometry, metadata, or callback results produce
+        a failed batch. The source point cloud's native timestamps and sequence number
+        are preserved on every emitted result.
         """
-        if self._components is None or self._config is None:
+        if self._components is None:
             raise RuntimeError("Build ParcelDetector before processing")
+        if self._config is None:
+            return
         supportPlane = None
         frame = "unknown"
         sources = tuple(

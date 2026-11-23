@@ -7,7 +7,7 @@ from dataclasses import FrozenInstanceError, fields, replace
 from datetime import timedelta
 from threading import Event
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import cv2
 import depthai as dai
@@ -517,16 +517,36 @@ class NodeTests(unittest.TestCase):
             self.assertEqual(app.detect().outcome, ParcelDetections.Outcome.SUCCESS)
             warn.assert_called_once()
 
-    def test_initial_support_plane_is_required_and_must_be_a_support_plane(self):
-        with App() as app:
+    def test_initial_support_plane_is_optional_and_validates_provided_values(self):
+        with App(None) as app:
             self.assertFalse(hasattr(app.detector, "setSupportPlane"))
-            for supportPlane in (None, dai.Buffer(), (0, 0, -1, 1000)):
+            app.pipeline.create(ParcelDetector).build(*app.source.outputs)
+            for supportPlane in (dai.Buffer(), (0, 0, -1, 1000)):
                 with self.subTest(supportPlane=supportPlane), self.assertRaises(
                     TypeError
                 ):
                     app.pipeline.create(ParcelDetector).build(
                         *app.source.outputs, supportPlane
                     )
+
+    def test_unconfigured_process_drops_inputs_without_processing_or_output(self):
+        with App(None) as app, patch.object(app.detector, "warn") as warn:
+            find = Mock(return_value=[])
+            app.detector._components = SimpleNamespace(find_candidates=find)
+            with patch(
+                "depthai_nodes.node.parcel_detector.parcel_detector.prepare_scene"
+            ) as prepare:
+                app.detector.process(*(dai.Buffer() for _ in range(4)))
+                app.detector.process(*messages())
+                prepare.assert_not_called()
+            find.assert_not_called()
+            warn.assert_not_called()
+            self.assertIsNone(app.detected.tryGet())
+            self.assertIsNone(app.measured.tryGet())
+            result = app.detect(config=ParcelDetectorConfig(supportPlane=PLANE))
+            self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+            find.assert_called_once()
+            warn.assert_called_once()
 
     def test_valid_config_survives_an_invalid_scene(self):
         with App() as app:
@@ -886,6 +906,43 @@ class MissingSource(dai.node.ThreadedHostNode):
 
 
 class StreamingTests(unittest.TestCase):
+    def test_unconfigured_streams_are_consumed_until_a_config_supplies_the_plane(self):
+        consumed = Event()
+        with App(None) as app, patch.object(app.detector, "warn") as warn:
+            find = Mock(return_value=[])
+            app.detector._components = SimpleNamespace(find_candidates=find)
+            process = app.detector.process
+
+            def observe(*inputs):
+                process(*inputs)
+                consumed.set()
+
+            with patch.object(app.detector, "process", side_effect=observe):
+                app.pipeline.start()
+                try:
+                    for sequence in range(1, 13):
+                        consumed.clear()
+                        app.send(messages(sequence))
+                        self.assertTrue(consumed.wait(5))
+                    find.assert_not_called()
+                    warn.assert_not_called()
+                    self.assertIsNone(app.detected.tryGet())
+                    self.assertIsNone(app.measured.tryGet())
+                    app.configInput.send(ParcelDetectorConfig(supportPlane=PLANE))
+                    for sequence in (13, 14):
+                        app.send(messages(sequence))
+                        result = app.measured.get(timedelta(seconds=5))
+                        self.assertIsNotNone(result)
+                        self.assertEqual(result.getSequenceNum(), sequence)
+                        self.assertEqual(
+                            result.outcome, ParcelDetections.Outcome.SUCCESS
+                        )
+                        self.assertEqual(result.plane, PLANE)
+                    self.assertEqual(find.call_count, 2)
+                    warn.assert_called_once()
+                finally:
+                    app.pipeline.stop()
+
     def test_native_sync_skips_incomplete_groups_and_recovers(self):
         for omitted in (0, 1, 2, 3):
             with self.subTest(omitted=omitted), dai.Pipeline(False) as pipeline:
