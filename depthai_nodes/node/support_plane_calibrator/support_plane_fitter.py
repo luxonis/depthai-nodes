@@ -1,4 +1,4 @@
-"""Horizontal support plane candidates in an organized millimeter point cloud."""
+"""Horizontal support plane candidates in a millimeter point cloud."""
 
 from __future__ import annotations
 
@@ -19,6 +19,17 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _valid_points(points: np.ndarray) -> np.ndarray:
+    """Return the points that are finite and not ``(0, 0, 0)``, in order.
+
+    ``(0, 0, 0)`` marks an empty point of an organized cloud. Other points may
+    lie at any ``z``, because another view's points can lie behind the
+    reference camera.
+    """
+    keep = np.isfinite(points).all(axis=1) & points.any(axis=1)
+    return points[keep]
+
+
 class PlaneFit(NamedTuple):
     """One horizontal RANSAC plane.
 
@@ -34,56 +45,37 @@ class PlaneFit(NamedTuple):
 
 
 class SupportPlaneFitter:
-    """Find horizontal support plane candidates in an organized point cloud.
+    """Find horizontal support plane candidates in a point cloud.
 
     Args:
-        cloud_size: Organized cloud ``(width, height)`` in points.
         config: Plane-fitting settings.
     """
 
-    def __init__(
-        self, cloud_size: tuple[int, int], config: PlaneCalibrationConfig
-    ) -> None:
-        """Create a fitter for clouds of one size.
+    def __init__(self, config: PlaneCalibrationConfig) -> None:
+        """Create a fitter.
 
         Args:
-            cloud_size: Organized cloud ``(width, height)`` in points.
             config: Plane-fitting settings.
         """
-        self._width, self._height = cloud_size
         self._config = config
-
-    @property
-    def cloud_size(self) -> tuple[int, int]:
-        """Organized cloud ``(width, height)`` in points."""
-        return self._width, self._height
 
     def find_candidates(
         self, points: np.ndarray, gravity: np.ndarray
     ) -> list[SupportPlaneCandidate]:
-        """Find the horizontal planes below the camera.
+        """Find the horizontal planes below the reference camera.
 
         Near-parallel planes through the same surface count once, and the kept
         plane reports only its own inliers. Counts are taken on the preprocessed
         cloud, and ratios divide by its size before any plane is removed.
 
         Args:
-            points: ``(width * height, 3)`` cloud points in millimeters; points
-                with no depth have ``z`` of zero.
-            gravity: Raw accelerometer vector.
+            points: ``(N, 3)`` cloud points in millimeters, in any order.
+                Points that are not finite or are ``(0, 0, 0)`` are ignored.
+            gravity: Accelerometer vector (gravity) in shared coordinates.
 
         Returns:
             The candidates, empty when no plane qualifies.
-
-        Raises:
-            ValueError: If ``points`` does not have the organized shape.
         """
-        expected = (self._width * self._height, 3)
-        if points.shape != expected:
-            raise ValueError(
-                f"Point cloud is not organized to {(self._width, self._height)}: "
-                f"got shape {points.shape}, expected {expected}"
-            )
         cloud = self._preprocess(points)
         if cloud is None:
             return []
@@ -94,11 +86,11 @@ class SupportPlaneFitter:
         return self._rank(self._drop_duplicates(fits), len(cloud.points))
 
     def _preprocess(self, points: np.ndarray) -> o3d.geometry.PointCloud | None:
-        """Drop empty points, downsample and denoise; ``None`` if too few remain."""
+        """Drop invalid points, downsample and denoise; ``None`` if too few remain."""
         # open3d is an optional extra, so import it only when fitting.
         import open3d as o3d
 
-        points = points[points[:, 2] > 1e-6]
+        points = _valid_points(points)
         cloud = o3d.geometry.PointCloud()
         cloud.points = o3d.utility.Vector3dVector(points.astype(np.float64))
         cloud = cloud.voxel_down_sample(voxel_size=self._config.voxel_size_mm)
@@ -191,7 +183,7 @@ class SupportPlaneFitter:
 
     @staticmethod
     def _rank(fits: list[PlaneFit], cloud_size: int) -> list[SupportPlaneCandidate]:
-        """Order by inlier count, then by distance to the camera."""
+        """Order by inlier count, then by distance to the reference camera."""
         ranked = sorted(fits, key=lambda f: (-f.inlier_count, abs(f.plane_eq[3])))
         return [
             SupportPlaneCandidate(

@@ -9,13 +9,13 @@ def orient_along_gravity(plane_eq: np.ndarray, gravity: np.ndarray) -> np.ndarra
     """Return the plane equation with its normal pointing away from ``gravity``.
 
     The accelerometer vector points up, so the oriented normal points down,
-    away from a camera above the plane. RANSAC and saved planes may give
-    either sign; orienting them first makes `is_valid_horizontal_plane` depend
-    only on the plane.
+    away from a reference camera above the plane. RANSAC and saved planes may
+    give either sign; orienting them first makes `is_valid_horizontal_plane`
+    depend only on the plane.
 
     Args:
         plane_eq: Plane ``(a, b, c, d)``.
-        gravity: Raw accelerometer vector.
+        gravity: Accelerometer vector (gravity) in shared coordinates.
 
     Returns:
         ``plane_eq`` if its normal already points away from ``gravity``,
@@ -29,19 +29,20 @@ def orient_along_gravity(plane_eq: np.ndarray, gravity: np.ndarray) -> np.ndarra
 def is_valid_horizontal_plane(
     plane_eq: np.ndarray, gravity: np.ndarray, config: PlaneCalibrationConfig
 ) -> bool:
-    """Check that a plane is horizontal and lies below the camera (the level test).
+    """Check that a plane is horizontal and below the reference camera (level test).
 
     Args:
         plane_eq: Plane ``(a, b, c, d)`` with a unit normal ``(a, b, c)``,
             oriented with `orient_along_gravity`.
-        gravity: Raw accelerometer vector; only its direction is used.
+        gravity: Accelerometer vector (gravity) in shared coordinates;
+            only its direction is used.
         config: Supplies the largest angle between the normal and the direction
-            opposing gravity, and the camera height range.
+            opposing gravity, and the reference camera's height range.
 
     Returns:
-        ``True`` if the normal is within the angle and the camera height ``-d``
-        is not negative and within the configured range. ``False`` if
-        ``gravity`` is the zero vector.
+        ``True`` if the normal is within the angle and the reference camera's
+        height ``-d`` is not negative and within the configured range.
+        ``False`` if ``gravity`` is the zero vector.
     """
     gravity_norm = np.linalg.norm(gravity)
     if gravity_norm == 0:
@@ -62,7 +63,8 @@ def gravity_angle_deg(plane_eq: np.ndarray, gravity: np.ndarray) -> float:
 
     Args:
         plane_eq: Plane ``(a, b, c, d)`` with a unit normal ``(a, b, c)``.
-        gravity: Raw accelerometer vector; only its direction is used.
+        gravity: Accelerometer vector (gravity) in shared coordinates;
+            only its direction is used.
 
     Returns:
         The angle in degrees, from 0 to 180.

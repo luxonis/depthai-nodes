@@ -2,7 +2,7 @@
 
 import math
 import numbers
-from typing import Any
+from typing import Any, cast
 
 import depthai as dai
 
@@ -97,7 +97,12 @@ class BoxDetector(BaseThreadedHostNode):
         if self._parser is not None:
             raise RuntimeError("BoxDetector is already built")
         threshold = _check_threshold(confidenceThreshold)
-        device = self._color_device(color)
+        source = color.getParent()
+        if source.runOnHost():
+            device = self.getParentPipeline().getDefaultDevice()
+        else:
+            # A node that doesn't run on the host is a device node.
+            device = cast(dai.DeviceNode, source).getDevice()
         platform = device.getPlatform()
         if platform != dai.Platform.RVC4:
             raise ValueError("BoxDetector currently requires an RVC4 device")
@@ -128,14 +133,6 @@ class BoxDetector(BaseThreadedHostNode):
         color.link(tracker.inputTrackerFrame)
         self._assembler.build(tracker.out, tracker.passthroughDetections, size)
         return self
-
-    def _color_device(self, color: dai.Node.Output) -> dai.Device:
-        """Return the device producing ``color``, or the default device for a host
-        source."""
-        source = color.getParent()
-        if source.runOnHost():
-            return self.getParentPipeline().getDefaultDevice()
-        return source.getDevice()
 
     @property
     def out(self) -> dai.Node.Output:

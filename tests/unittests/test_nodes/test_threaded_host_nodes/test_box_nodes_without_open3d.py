@@ -19,7 +19,7 @@ def test_support_plane_calibrator_build_names_the_extra_without_open3d(monkeypat
     with pytest.raises(
         ImportError, match=r'pip install "depthai-nodes\[box-measurement\]"'
     ):
-        calibrator.build(output, output, (64, 48))
+        calibrator.build(output, output)
 
 
 def test_box_measurer_build_names_the_extra_without_open3d(monkeypatch):
@@ -43,4 +43,4 @@ def test_auto_support_plane_build_names_the_extra_without_open3d(monkeypatch):
     with pytest.raises(
         ImportError, match=r'pip install "depthai-nodes\[box-measurement\]"'
     ):
-        node.build(output, output, (64, 48))
+        node.build(output, output)

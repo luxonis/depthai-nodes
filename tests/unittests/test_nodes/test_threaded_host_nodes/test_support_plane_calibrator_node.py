@@ -20,26 +20,36 @@ from depthai_nodes.node import (  # noqa: E402
 )
 from depthai_nodes.node.support_plane_calibrator.support_plane_calibrator import (  # noqa: E402
     IMU_MAX_AGE_SECONDS,
+    MIN_ON_PLANE_POINTS,
+    ON_PLANE_STRIDE,
 )
 from tests.utils import (  # noqa: E402
     InputMock,
     OutputMock,
     PipelineMock,
 )
+from tests.utils.nodes.mocks.device import (  # noqa: E402
+    DeviceMock,
+    camera_calibration,
+    imu_calibration,
+    imu_device,
+)
 from tests.utils.nodes.mocks.queue import OutputQueueMock  # noqa: E402
 from tests.utils.scripted_open3d import ScriptedScene  # noqa: E402
 
 CLOUD_SIZE = (20, 20)
-# 100 x 100 points, so every 4th row and column samples 25 x 25 = 625 points,
-# enough to measure an on-plane ratio.
+# 100 x 100 points, enough to measure an on-plane ratio.
 LARGE_CLOUD_SIZE = (100, 100)
 
 
 class Source(OutputMock):
-    """An upstream output; messages sent to it reach the input it is linked to."""
+    """An upstream output; messages sent to it reach the input it is linked to.
 
-    def __init__(self):
-        super().__init__()
+    It runs on ``device``, or on the host when no device is given.
+    """
+
+    def __init__(self, device=None):
+        super().__init__(device)
         self._target = None
 
     def link(self, node):
@@ -92,15 +102,20 @@ class MockedCalibrator(SupportPlaneCalibrator):
 
 
 class Harness:
-    def __init__(self, config=None, size=CLOUD_SIZE):
+    """A built calibrator.
+
+    Its IMU source runs on device ``"1000"`` with identity IMU extrinsics, unless
+    ``imus`` replaces it.
+    """
+
+    def __init__(self, config=None, size=CLOUD_SIZE, imus=None):
         self.size = size
         self.clouds = Source()
-        self.imus = Source()
+        self.imus = Source(imu_device()) if imus is None else imus
         self.node = MockedCalibrator()
         self.node.build(
             cast(dai.Node.Output, self.clouds),
             cast(dai.Node.Output, self.imus),
-            size,
             config,
         )
         self.results = cast(OutputQueueMock, self.node.out.createOutputQueue())
@@ -120,11 +135,11 @@ class Harness:
     def reset(self):
         self.control(SupportPlaneCalibrationControl.reset())
 
-    def gravity(self, z=-9.8):
+    def gravity(self, z=-9.8, x=0.0, y=0.0):
         message = dai.IMUData()
         packet = dai.IMUPacket()
-        packet.acceleroMeter.x = 0
-        packet.acceleroMeter.y = 0
+        packet.acceleroMeter.x = x
+        packet.acceleroMeter.y = y
         packet.acceleroMeter.z = z
         message.packets = [packet]
         self.imus.send(message)
@@ -137,13 +152,24 @@ class Harness:
     def depth_cloud(self, depths):
         """An organized cloud with one ``z`` per point, rows by columns, in mm.
 
-        Points sit on a 40 mm grid in ``x`` and ``y``; ``z = 0`` is no depth.
+        Points sit on a 40 mm grid in ``x`` and ``y``; a point with ``z = 0`` has
+        no depth and is sent as ``(0, 0, 0)``, as a camera sends it.
         """
         height, width = depths.shape
-        x, y = np.meshgrid(np.arange(width) * 40.0, np.arange(height) * 40.0)
-        points = np.column_stack([x.ravel(), y.ravel(), depths.ravel()])
+        points = grid_points(width, height, depths.ravel())
+        points[depths.ravel() == 0] = 0
         message = dai.PointCloudData()
         message.setPoints(points.astype(np.float32))  # pyright: ignore[reportArgumentType]
+        message.setWidth(width)
+        message.setHeight(height)
+        self.clouds.send(message)
+
+    def unorganized_cloud(self, points):
+        """A one-row cloud of ``(N, 3)`` points in mm."""
+        message = dai.PointCloudData()
+        message.setPoints(np.asarray(points, dtype=np.float32))  # pyright: ignore[reportArgumentType]
+        message.setWidth(len(points))
+        message.setHeight(1)
         self.clouds.send(message)
 
     def verify(self, plane):
@@ -164,6 +190,12 @@ class Harness:
 
     def no_result(self) -> bool:
         return self.results.is_empty()
+
+
+def grid_points(width, height, z):
+    """Points on a 40 mm grid in ``x`` and ``y``, rows by columns, with ``z``."""
+    x, y = np.meshgrid(np.arange(width) * 40.0, np.arange(height) * 40.0)
+    return np.column_stack([x.ravel(), y.ravel(), np.broadcast_to(z, x.size)])
 
 
 @pytest.fixture
@@ -336,21 +368,6 @@ def test_message_that_is_not_a_point_cloud_raises_and_keeps_the_attempt(
     calibrator.gravity()
     calibrator.clouds.send(dai.Buffer())
     with pytest.raises(TypeError, match="PointCloudData"):
-        calibrator.run()
-    assert calibrator.no_result()
-
-    calibrator.plane_cloud()
-    calibrator.run()
-    assert calibrator.result().outcome is CalibrationOutcome.SUCCEEDED
-
-
-def test_cloud_of_the_wrong_size_raises_and_keeps_the_attempt(calibrator):
-    calibrator.start()
-    calibrator.gravity()
-    cloud = dai.PointCloudData()
-    cloud.setPoints(np.ones((10, 3), dtype=np.float32))  # pyright: ignore[reportArgumentType]
-    calibrator.clouds.send(cloud)
-    with pytest.raises(ValueError, match="organized"):
         calibrator.run()
     assert calibrator.no_result()
 
@@ -696,17 +713,6 @@ def test_message_that_is_not_a_point_cloud_raises_when_taken_for_a_verification(
     assert calibrator.verifications.is_empty()
 
 
-def test_cloud_of_the_wrong_size_raises_when_taken_for_a_verification(calibrator):
-    calibrator.gravity()
-    calibrator.verify(tilted_plane(0))
-    cloud = dai.PointCloudData()
-    cloud.setPoints(np.ones((10, 3), dtype=np.float32))  # pyright: ignore[reportArgumentType]
-    calibrator.clouds.send(cloud)
-    with pytest.raises(ValueError, match="organized"):
-        calibrator.run()
-    assert calibrator.verifications.is_empty()
-
-
 def test_verification_uses_the_built_tolerance():
     calibrator = Harness(
         PlaneCalibrationConfig(max_gravity_angle_deg=1, min_on_plane_ratio=0),
@@ -745,31 +751,9 @@ def test_build_uses_the_default_config():
     assert not verify_on(calibrator, tilted, depths_on(tilted)).accepted
 
 
-def build(size=CLOUD_SIZE, config=None):
+def build(config=None):
     output = cast(dai.Node.Output, OutputMock())
-    return MockedCalibrator().build(output, output, size, config)
-
-
-@pytest.mark.parametrize("size", [(0, 48), (64, -1), (64,), (1, 2, 3), [64]])
-def test_build_rejects_invalid_point_cloud_sizes(size):
-    with pytest.raises(ValueError):
-        build(size)
-
-
-@pytest.mark.parametrize(
-    "size", [(64.0, 48), (True, True), ("64", 48), [64, True], None, 64, b"ab"]
-)
-def test_build_rejects_point_cloud_sizes_of_the_wrong_type(size):
-    with pytest.raises(TypeError):
-        build(size)
-
-
-def test_build_accepts_a_point_cloud_size_list():
-    build([20, 20])
-
-
-def test_build_accepts_numpy_integer_sizes():
-    build((np.int64(20), np.int32(20)))
+    return MockedCalibrator().build(output, output, config)
 
 
 def test_build_rejects_a_config_of_the_wrong_type():
@@ -782,7 +766,7 @@ def test_build_cannot_run_twice():
     output = cast(dai.Node.Output, OutputMock())
 
     with pytest.raises(RuntimeError):
-        node.build(output, output, CLOUD_SIZE)
+        node.build(output, output)
 
 
 def capped(attempts):
@@ -962,54 +946,83 @@ def test_on_plane_ratio_counts_points_within_the_check_distance(offset_mm, ratio
     assert result.on_plane_ratio == ratio
 
 
-def test_on_plane_ratio_is_the_sampled_share_on_the_plane_for_either_sign():
-    calibrator = Harness(size=LARGE_CLOUD_SIZE)
-    # Rows 0-49 are floor at 1000 mm, rows 50-99 a step at 1100 mm. Sampling
-    # rows 0, 4, ..., 96 takes 13 floor rows and 12 step rows.
-    depths = np.full((100, 100), 1000.0)
-    depths[50:] = 1100.0
+# Sampled points on the floor at 1000 mm and on a step at 1100 mm in
+# `stepped_depths`, together enough to measure a ratio.
+FLOOR_SAMPLES = MIN_ON_PLANE_POINTS
+STEP_SAMPLES = MIN_ON_PLANE_POINTS - 1
+SAMPLES = FLOOR_SAMPLES + STEP_SAMPLES
 
-    assert verify_on(calibrator, floor(-1000), depths).on_plane_ratio == 13 / 25
+
+def stepped_depths():
+    """One row whose sample is `FLOOR_SAMPLES` floor points, then the step.
+
+    The floor ends on its last sampled point, so the sampled share differs from
+    the share of all points unless the sample takes 1 in ``ON_PLANE_STRIDE``.
+    """
+    depths = np.full((1, ON_PLANE_STRIDE * SAMPLES), 1100.0)
+    depths[0, : ON_PLANE_STRIDE * (FLOOR_SAMPLES - 1) + 1] = 1000.0
+    return depths
+
+
+def test_on_plane_ratio_is_the_sampled_share_on_the_plane_for_either_sign():
+    calibrator = Harness()
+    depths = stepped_depths()
+
+    assert (
+        verify_on(calibrator, floor(-1000), depths).on_plane_ratio
+        == FLOOR_SAMPLES / SAMPLES
+    )
     assert verify_on(
         calibrator, SupportPlane(normal=(0, 0, -1), offset_mm=1000), depths
-    ).on_plane_ratio == pytest.approx(13 / 25)
-    assert verify_on(calibrator, floor(-1100), depths).on_plane_ratio == 12 / 25
+    ).on_plane_ratio == pytest.approx(FLOOR_SAMPLES / SAMPLES)
+    assert (
+        verify_on(calibrator, floor(-1100), depths).on_plane_ratio
+        == STEP_SAMPLES / SAMPLES
+    )
 
 
-def test_on_plane_ratio_ignores_points_without_depth():
-    calibrator = Harness(size=LARGE_CLOUD_SIZE)
-    # Sampled rows 0-76 are floor: 20 rows of 25, the 500 points needed.
-    depths = np.zeros((100, 100))
-    depths[:80] = 1000.0
+@pytest.mark.parametrize(
+    ("valid_count", "measured"),
+    [
+        (ON_PLANE_STRIDE * (MIN_ON_PLANE_POINTS - 1) + 1, True),
+        (ON_PLANE_STRIDE * (MIN_ON_PLANE_POINTS - 1), False),
+    ],
+    ids=["minimum-sample", "one-sample-short"],
+)
+@pytest.mark.parametrize("with_invalid", [False, True], ids=["dense", "interleaved"])
+def test_on_plane_ratio_is_measured_from_a_minimum_sample_of_valid_points(
+    valid_count, measured, with_invalid
+):
+    calibrator = Harness()
+    # Interleaved, an invalid point off the floor, in turn the origin, NaN and
+    # inf, comes before each floor point; it counts toward neither the sample
+    # size nor the ratio.
+    points = grid_points(valid_count, 1, 1000.0)
+    if with_invalid:
+        invalid = np.resize(
+            [(0.0, 0.0, 0.0), (np.nan, 0.0, 1000.0), (40.0, 0.0, np.inf)],
+            (valid_count, 3),
+        )
+        points = np.insert(points, range(valid_count), invalid, axis=0)
+    calibrator.gravity()
+    calibrator.verify(floor(-1000))
+    calibrator.unorganized_cloud(points)
+    calibrator.run()
 
-    assert verify_on(calibrator, floor(-1000), depths).on_plane_ratio == 1.0
-
-
-def test_on_plane_ratio_is_not_measured_for_a_mostly_empty_cloud():
-    calibrator = Harness(size=LARGE_CLOUD_SIZE)
-    # Sampled rows 0-72 are floor: 19 rows of 25 is 475 points, under 500.
-    depths = np.zeros((100, 100))
-    depths[:76] = 1000.0
-
-    result = verify_on(calibrator, floor(-1000), depths)
-
-    assert result.on_plane_ratio is None
-    assert not result.accepted
+    assert calibrator.verification().on_plane_ratio == (1.0 if measured else None)
 
 
 def test_verification_rejects_a_level_plane_with_too_little_of_the_cloud_on_it():
     calibrator = Harness(
-        PlaneCalibrationConfig(min_on_plane_ratio=13 / 25), LARGE_CLOUD_SIZE
+        PlaneCalibrationConfig(min_on_plane_ratio=FLOOR_SAMPLES / SAMPLES)
     )
-    # As above: 13 of 25 sampled rows are floor at 1000 mm, 12 a step at 1100 mm.
-    depths = np.full((100, 100), 1000.0)
-    depths[50:] = 1100.0
+    depths = stepped_depths()
 
     at_threshold = verify_on(calibrator, floor(-1000), depths)
     below = verify_on(calibrator, floor(-1100), depths)
 
-    assert (at_threshold.on_plane_ratio, at_threshold.accepted) == (13 / 25, True)
-    assert (below.on_plane_ratio, below.accepted) == (12 / 25, False)
+    assert at_threshold.accepted
+    assert not below.accepted
 
 
 def test_verification_rejects_a_tilted_plane_the_cloud_lies_on():
@@ -1025,12 +1038,182 @@ def test_verification_rejects_a_tilted_plane_the_cloud_lies_on():
 
 
 def test_without_a_minimum_ratio_any_measured_level_plane_is_accepted():
-    calibrator = Harness(PlaneCalibrationConfig(min_on_plane_ratio=0), LARGE_CLOUD_SIZE)
-    sparse = np.zeros((100, 100))
-    sparse[:76] = 1000.0
+    calibrator = Harness(PlaneCalibrationConfig(min_on_plane_ratio=0))
+    # One floor point short of a measured ratio.
+    sparse = np.full((1, ON_PLANE_STRIDE * (MIN_ON_PLANE_POINTS - 1)), 1000.0)
 
-    off_the_cloud = verify_on(calibrator, floor(-1500), np.full((100, 100), 1000.0))
+    off_the_cloud = verify_on(calibrator, floor(-1500), stepped_depths())
     unmeasured = verify_on(calibrator, floor(-1000), sparse)
 
     assert (off_the_cloud.on_plane_ratio, off_the_cloud.accepted) == (0.0, True)
     assert (unmeasured.on_plane_ratio, unmeasured.accepted) == (None, False)
+
+
+def test_unorganized_cloud_with_its_floor_at_negative_z_is_fitted_and_measured():
+    calibrator = Harness(PlaneCalibrationConfig(max_plane_passes=3))
+    # The accelerometer reads up along +z, so the floor at z = -1000 mm is
+    # 1000 mm below the camera, as another view's floor can be.
+    floor_below = SupportPlane(normal=(0, 0, -1), offset_mm=-1000)
+    calibrator.start()
+    calibrator.gravity(z=9.8)
+    calibrator.verify(floor_below)
+    calibrator.unorganized_cloud(grid_points(100, 100, -1000.0))
+    calibrator.run()
+
+    assert calibrator.verification().on_plane_ratio == 1.0
+    plane = calibrator.result().candidates[0].plane
+    assert plane.normal == pytest.approx((0, 0, -1), abs=0.001)
+    assert plane.offset_mm == pytest.approx(-1000, abs=1)
+
+
+@pytest.mark.parametrize(
+    ("point", "counts"),
+    [
+        ((0.0, 0.0, 0.0), False),
+        ((np.nan, 0.0, 1000.0), False),
+        ((40.0, -np.inf, 1000.0), False),
+        ((40.0, 0.0, -1000.0), True),
+        ((40.0, 0.0, 0.0), True),
+    ],
+    ids=["origin", "nan", "inf", "negative-z", "zero-z"],
+)
+def test_on_plane_ratio_counts_only_finite_points_other_than_the_origin(point, counts):
+    calibrator = Harness()
+    # Enough floor points to measure a ratio alone, after as many copies of the
+    # point, which lies off the floor; counted, they take half the sample.
+    floor_count = ON_PLANE_STRIDE * MIN_ON_PLANE_POINTS
+    points = np.vstack(
+        [np.tile(point, (floor_count, 1)), grid_points(floor_count, 1, 1000.0)]
+    )
+    calibrator.gravity()
+    calibrator.verify(floor(-1000))
+    calibrator.unorganized_cloud(points)
+    calibrator.run()
+
+    assert calibrator.verification().on_plane_ratio == (0.5 if counts else 1.0)
+
+
+# The IMU's y axis is the camera's z axis: a 90° turn about x, IMU to camera.
+IMU_TURNED_ABOUT_X = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]])
+
+
+def turned_imu_harness(imus):
+    """A calibrator whose verifications judge only the level test, on ``imus``."""
+    return Harness(
+        PlaneCalibrationConfig(max_plane_passes=3, min_on_plane_ratio=0),
+        LARGE_CLOUD_SIZE,
+        imus,
+    )
+
+
+def level_floor(calibrator):
+    """Fit and verify a level floor, with gravity read in the turned IMU's axes.
+
+    Gravity of ``(0, 0, -9.8)`` in the camera's axes reads ``(0, -9.8, 0)`` on an IMU
+    turned by ``IMU_TURNED_ABOUT_X``.
+    """
+    calibrator.start()
+    calibrator.gravity(x=0.0, y=-9.8, z=0.0)
+    calibrator.verify(floor(-1000))
+    calibrator.plane_cloud()
+    calibrator.run()
+    return calibrator.result(), calibrator.verification()
+
+
+def test_imu_mounted_at_90_degrees_to_the_camera_levels_the_floor():
+    calibrator = turned_imu_harness(Source(imu_device(IMU_TURNED_ABOUT_X)))
+
+    result, verification = level_floor(calibrator)
+
+    assert result.outcome is CalibrationOutcome.SUCCEEDED
+    assert verification.accepted
+    assert verification.gravity_angle_deg == pytest.approx(0, abs=1e-3)
+
+
+def test_imu_on_a_host_source_uses_the_default_device_calibration():
+    calibrator = turned_imu_harness(Source())
+    default_device = calibrator.node.getParentPipeline().getDefaultDevice()
+    default_device.setCalibration(imu_calibration(IMU_TURNED_ABOUT_X))
+
+    result, verification = level_floor(calibrator)
+
+    assert result.outcome is CalibrationOutcome.SUCCEEDED
+    assert verification.accepted
+    assert verification.gravity_angle_deg == pytest.approx(0, abs=1e-3)
+
+
+def test_device_without_imu_extrinsics_raises_naming_it():
+    device = DeviceMock("1234")
+    device.setCalibration(camera_calibration())
+    calibrator = Harness(imus=Source(device))
+
+    with pytest.raises(RuntimeError, match="1234.*IMU extrinsics") as error:
+        calibrator.run()
+
+    assert isinstance(error.value.__cause__, RuntimeError)
+
+
+# Device "2000"'s local origin, CAM_B, turned 30° about y into device "1000"'s
+# CAM_A, the shared origin. It does not commute with ``IMU_TURNED_ABOUT_X``.
+COS_30, SIN_30 = np.sqrt(3) / 2, 0.5
+CAMERA_TURNED_ABOUT_Y = np.array(
+    [[COS_30, 0.0, SIN_30], [0.0, 1.0, 0.0], [-SIN_30, 0.0, COS_30]]
+)
+
+
+def two_device_graph():
+    """A graph from device ``"2000"``'s CAM_B to device ``"1000"``'s CAM_A."""
+    extrinsics = dai.Extrinsics(
+        CAMERA_TURNED_ABOUT_Y.tolist(),
+        dai.Point3f(10, 0, 0),
+        dai.CameraBoardSocket.CAM_A,
+    )
+    extrinsics.toDeviceId = "1000"
+    edge = dai.MultiDeviceExtrinsics()
+    edge.fromDeviceId = "2000"
+    edge.fromSocket = dai.CameraBoardSocket.CAM_B
+    edge.extrinsics = extrinsics
+    return [edge]
+
+
+def imu_on_device(device_id):
+    """An IMU source on ``device_id``, turned 90° about x to that device's CAM_B."""
+    device = DeviceMock(device_id)
+    device.setCalibration(
+        imu_calibration(IMU_TURNED_ABOUT_X, dai.CameraBoardSocket.CAM_B)
+    )
+    return Source(device)
+
+
+@pytest.mark.parametrize("set_after_build", [False, True])
+def test_imu_on_the_non_reference_device_levels_the_floor_in_shared_coordinates(
+    set_after_build,
+):
+    pipeline = PipelineMock()
+    if not set_after_build:
+        pipeline.setMultiDeviceCalibration(two_device_graph())
+    with patch.object(MockedCalibrator, "getParentPipeline", return_value=pipeline):
+        calibrator = turned_imu_harness(imu_on_device("2000"))
+        if set_after_build:
+            pipeline.setMultiDeviceCalibration(two_device_graph())
+        calibrator.start()
+        # Gravity of (0, 0, -9.8) in shared coordinates, read on the IMU.
+        calibrator.gravity(x=9.8 * SIN_30, y=-9.8 * COS_30, z=0.0)
+        calibrator.verify(floor(-1000))
+        calibrator.plane_cloud()
+        calibrator.run()
+
+    assert calibrator.result().outcome is CalibrationOutcome.SUCCEEDED
+    verification = calibrator.verification()
+    assert verification.accepted
+    assert verification.gravity_angle_deg == pytest.approx(0, abs=1e-3)
+
+
+def test_imu_device_missing_from_the_multi_device_calibration_raises_naming_it():
+    pipeline = PipelineMock()
+    pipeline.setMultiDeviceCalibration(two_device_graph())
+    with patch.object(MockedCalibrator, "getParentPipeline", return_value=pipeline):
+        calibrator = Harness(imus=Source(imu_device(deviceId="3000")))
+
+        with pytest.raises(RuntimeError, match="3000.*multi-device calibration"):
+            calibrator.run()

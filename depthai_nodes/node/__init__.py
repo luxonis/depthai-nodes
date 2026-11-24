@@ -216,8 +216,8 @@ Drive ``SupportPlaneCalibrator`` directly instead when a person picks among
 the support plane candidates, or for any custom flow.
 
 Example:
-    With existing ``pointCloud`` and ``imu`` outputs and a point cloud of
-    ``width`` by ``height`` points, keep the support plane up to date::
+    With existing ``pointCloud`` and ``imu`` outputs, keep the support plane up
+    to date::
 
         from depthai_nodes.node import (
             AutoSupportPlane,
@@ -229,9 +229,7 @@ Example:
             mode=AutoSupportPlaneConfig.Mode.CONTINUOUS,
             calibration=PlaneCalibrationConfig(max_calibration_attempts=10),
         )
-        node = pipeline.create(AutoSupportPlane).build(
-            pointCloud, imu, (width, height), config
-        )
+        node = pipeline.create(AutoSupportPlane).build(pointCloud, imu, config)
         results = node.out.createOutputQueue()
         pipeline.start()
 

@@ -15,6 +15,7 @@ class PipelineMock:
     def __init__(self):
         self._nodes = []
         self._defaultDevice = DeviceMock()
+        self._multi_device_calibration = None
 
     def __enter__(self):
         return self
@@ -24,6 +25,13 @@ class PipelineMock:
 
     def getDefaultDevice(self):
         return self._defaultDevice
+
+    def setMultiDeviceCalibration(self, graph: list[dai.MultiDeviceExtrinsics]):
+        self._multi_device_calibration = graph
+
+    def getMultiDeviceCalibration(self) -> list[dai.MultiDeviceExtrinsics] | None:
+        """Return the set graph, or ``None`` when unset, as ``dai.Pipeline`` does."""
+        return self._multi_device_calibration
 
     def getAllNodes(self):
         return list(self._nodes)

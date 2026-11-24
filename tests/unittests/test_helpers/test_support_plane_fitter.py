@@ -15,7 +15,7 @@ GRAVITY = np.array([0.0, 0.0, -9.8])
 
 
 def fitter(**config):
-    return SupportPlaneFitter((20, 20), PlaneCalibrationConfig(**config))
+    return SupportPlaneFitter(PlaneCalibrationConfig(**config))
 
 
 def flat_cloud(depth=1000.0):
@@ -37,12 +37,23 @@ def test_finds_a_floor_facing_against_gravity():
 
 
 def test_cloud_without_depth_has_no_candidates():
-    assert fitter().find_candidates(flat_cloud(depth=0), GRAVITY) == []
+    empty = np.zeros((400, 3))
+
+    assert fitter().find_candidates(empty, GRAVITY) == []
 
 
-def test_rejects_a_cloud_that_is_not_organized_to_its_size():
-    with pytest.raises(ValueError, match="not organized"):
-        fitter().find_candidates(np.ones((10, 3)), GRAVITY)
+@pytest.mark.parametrize(
+    "point",
+    [(0.0, 0.0, 0.0), (np.nan, 0.0, 1000.0), (40.0, 0.0, np.inf)],
+    ids=["origin", "nan", "inf"],
+)
+def test_invalid_points_are_left_out_of_the_fit(point):
+    cloud = np.vstack([flat_cloud(), np.tile(point, (100, 1))])
+
+    candidates = fitter().find_candidates(cloud, GRAVITY)
+
+    assert candidates[0].plane.offset_mm == pytest.approx(-1000, abs=1)
+    assert candidates[0].inlier_ratio == 1.0
 
 
 def test_near_parallel_planes_through_one_surface_count_once():
