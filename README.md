@@ -36,6 +36,11 @@ Install from PyPI:
 pip install depthai-nodes
 ```
 
+This branch pins `depthai==3.12.0`. For RGB-aligned depth, use the shared
+[axial-depth correction](docs/axial-depth-correction.md) before PointCloud.
+The [deterministic pipeline example](examples/image_align_depth_correction)
+runs on the host and in an OAK-4 standalone app.
+
 The box measurement and support plane nodes need open3d. Install it with the `box-measurement` extra:
 
 ```bash

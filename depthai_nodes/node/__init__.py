@@ -4,6 +4,10 @@ Create nodes with ``pipeline.create(...)`` and connect their input and output
 ports. The classes in this package integrate native DepthAI inference and
 parsers with Python postprocessing, image utilities, and custom message handling.
 
+`ImageAlignDepthCorrection` converts ImageAlign source axial millimeters into
+RGB target-camera axial depth before PointCloud, with explicit policy and
+associated provenance. See `depthai_nodes.utils.axial_depth`.
+
 .. contents:: Contents
    :depth: 2
 
@@ -371,6 +375,7 @@ from .frame_cropper import FrameCropper
 from .gather_data import GatherData
 from .host_parsing_neural_network import HostParsingNeuralNetwork
 from .host_spatials_calc import HostSpatialsCalc
+from .image_align_depth_correction import ImageAlignDepthCorrection
 from .img_detections_filter import ImgDetectionsFilter
 from .img_frame_overlay import ImgFrameOverlay
 from .instance_to_semantic_mask import InstanceToSemanticMask
@@ -411,6 +416,7 @@ from .support_plane_calibrator import (
 from .tiling import Tiling
 
 __all__ = [
+    "ImageAlignDepthCorrection",
     "ParcelDetector",
     "ParcelDimensioner",
     "ApplyColormap",
