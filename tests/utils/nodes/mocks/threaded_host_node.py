@@ -46,5 +46,7 @@ class ThreadedHostNodeMock(NodeMock):
     def getParentPipeline(self):
         return self._parent_pipeline
 
-    def createSubnode(self, node_type):
-        return self.getParentPipeline().create(node_type)
+    def createSubnode(self, node_type, device=None):
+        if device is None:
+            return self.getParentPipeline().create(node_type)
+        return self.getParentPipeline().create(node_type, device)

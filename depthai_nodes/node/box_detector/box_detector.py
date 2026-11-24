@@ -54,11 +54,17 @@ class BoxDetector(BaseThreadedHostNode):
     Zoo and tracks its detections. The confidence threshold is set at build and
     can change while the pipeline runs through `setConfidenceThreshold`.
 
+    The model and the tracker run on the device that produces the color stream. A
+    color stream produced on the host uses the pipeline's default device. In a
+    pipeline without an implicit device, add the devices before creating the node.
+
     Attributes:
         out: Output stream of `depthai_nodes.message.BoxDetections`: one per
-            processed frame, holding a box detection for every tracked box with a
-            current, non-empty segmentation, and carrying the frame's timestamps
-            and sequence number.
+            processed frame, holding a box detection for every new or tracked box
+            with a current, non-empty segmentation, and carrying the frame's
+            timestamps and sequence number. Detections covering more than half of
+            the frame (false positives on the whole scene) and truncated boxes,
+            whose segmentation reaches the frame border, are left out.
     """
 
     def __init__(self) -> None:
@@ -74,7 +80,8 @@ class BoxDetector(BaseThreadedHostNode):
         """Build the detection, tracking and assembly subnodes.
 
         Args:
-            color: Color stream to detect boxes in.
+            color: Color stream to detect boxes in. Its producing device runs the
+                model and the tracker.
             confidenceThreshold: Minimum detection confidence, between zero and one.
 
         Returns:
@@ -84,41 +91,51 @@ class BoxDetector(BaseThreadedHostNode):
             RuntimeError: If the node is already built.
             TypeError: If ``confidenceThreshold`` is not a real number.
             ValueError: If ``confidenceThreshold`` is not finite or not between
-                zero and one, if the device is not an RVC4, or if the model archive
-                has no input size.
+                zero and one, if the color stream's device is not an RVC4, or if the
+                model archive has no input size.
         """
         if self._parser is not None:
             raise RuntimeError("BoxDetector is already built")
         threshold = _check_threshold(confidenceThreshold)
-        if self._platform != dai.Platform.RVC4:
+        device = self._color_device(color)
+        platform = device.getPlatform()
+        if platform != dai.Platform.RVC4:
             raise ValueError("BoxDetector currently requires an RVC4 device")
-        description = dai.NNModelDescription(MODEL, platform=self._platform.name)
+        description = dai.NNModelDescription(MODEL, platform=platform.name)
         archive = dai.NNArchive(dai.getModelFromZoo(description))
         size = archive.getInputSize()
         if size is None:
             raise ValueError("NNArchive input size is None")
 
-        resize = self.createSubnode(dai.node.ImageManip)
+        resize = self.createSubnode(dai.node.ImageManip, device)
         resize.initialConfig.setOutputSize(
             *size, dai.ImageManipConfig.ResizeMode.STRETCH
         )
         resize.initialConfig.setFrameType(dai.ImgFrame.Type.BGR888i)
         color.link(resize.inputImage)
         # The parser owns the threshold: decoding low-confidence candidates is slow.
-        nn = self.createSubnode(dai.node.DetectionNetwork).build(
+        nn = self.createSubnode(dai.node.DetectionNetwork, device).build(
             resize.out, archive, confidenceThreshold=threshold
         )
         parser = nn.detectionParser
         self._config_queue = parser.inputConfig.createInputQueue()
         self._parser = parser
 
-        tracker = self.createSubnode(dai.node.ObjectTracker)
+        tracker = self.createSubnode(dai.node.ObjectTracker, device)
         tracker.setTrackerType(dai.TrackerType.SHORT_TERM_IMAGELESS)
         tracker.setTrackerIdAssignmentPolicy(dai.TrackerIdAssignmentPolicy.UNIQUE_ID)
         nn.out.link(tracker.inputDetections)
         color.link(tracker.inputTrackerFrame)
-        self._assembler.build(tracker.out, nn.out, size)
+        self._assembler.build(tracker.out, tracker.passthroughDetections, size)
         return self
+
+    def _color_device(self, color: dai.Node.Output) -> dai.Device:
+        """Return the device producing ``color``, or the default device for a host
+        source."""
+        source = color.getParent()
+        if source.runOnHost():
+            return self.getParentPipeline().getDefaultDevice()
+        return source.getDevice()
 
     @property
     def out(self) -> dai.Node.Output:

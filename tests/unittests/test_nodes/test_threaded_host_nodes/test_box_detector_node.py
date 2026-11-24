@@ -3,8 +3,12 @@ import numpy as np
 import pytest
 
 from depthai_nodes.node import BoxDetector
+from depthai_nodes.node.box_detector.box_detection_assembler import (
+    BoxDetectionAssembler,
+)
 from tests.utils import (
     DetectionNetworkMock,
+    DeviceMock,
     ImageManipMock,
     ObjectTrackerMock,
     OutputMock,
@@ -66,7 +70,68 @@ def test_build_links_color_through_the_model_into_the_tracker(
     assert any(link is resize.inputImage for link in color.links)
     assert any(link is nn.input for link in resize.out.links)
     assert any(link is tracker.inputTrackerFrame for link in color.links)
-    assert any(link is tracker.inputDetections for link in nn.out.links)
+    assert nn.out.links == [tracker.inputDetections]
+    assembler = find_node(pipeline, BoxDetectionAssembler)
+    assert assembler._linked_args == (tracker.out, tracker.passthroughDetections)
+
+
+def subnode_devices(pipeline: PipelineMock) -> list:
+    return [
+        find_node(pipeline, node_type).device
+        for node_type in (ImageManipMock, DetectionNetworkMock, ObjectTrackerMock)
+    ]
+
+
+def test_subnodes_run_on_the_color_streams_device(pipeline: PipelineMock):
+    device = DeviceMock("B")
+    device.setPlatform(dai.Platform.RVC4)
+    pipeline.create(BoxDetector).build(OutputMock(device))
+
+    assert subnode_devices(pipeline) == [device, device, device]
+
+
+def test_a_host_color_stream_uses_the_default_device(pipeline: PipelineMock):
+    pipeline.create(BoxDetector).build(OutputMock())
+
+    default = pipeline.getDefaultDevice()
+    assert subnode_devices(pipeline) == [default, default, default]
+
+
+def fetch_recorder(monkeypatch: pytest.MonkeyPatch) -> list:
+    fetched = []
+    monkeypatch.setattr(
+        dai,
+        "getModelFromZoo",
+        lambda description: fetched.append(description) or "box.tar.xz",
+    )
+    return fetched
+
+
+def test_an_rvc4_color_device_builds_with_an_rvc2_default(
+    pipeline: PipelineMock, monkeypatch: pytest.MonkeyPatch
+):
+    fetched = fetch_recorder(monkeypatch)
+    pipeline.getDefaultDevice().setPlatform(dai.Platform.RVC2)
+    device = DeviceMock("B")
+    device.setPlatform(dai.Platform.RVC4)
+
+    pipeline.create(BoxDetector).build(OutputMock(device))
+
+    assert [d.platform for d in fetched] == ["RVC4"]
+
+
+def test_an_rvc2_color_device_is_rejected_with_an_rvc4_default(
+    pipeline: PipelineMock, monkeypatch: pytest.MonkeyPatch
+):
+    fetched = fetch_recorder(monkeypatch)
+    pipeline.getDefaultDevice().setPlatform(dai.Platform.RVC4)
+    device = DeviceMock("B")
+    device.setPlatform(dai.Platform.RVC2)
+    detector = pipeline.create(BoxDetector)
+
+    with pytest.raises(ValueError):
+        detector.build(OutputMock(device))
+    assert fetched == []
 
 
 def test_build_sets_the_parser_threshold(pipeline: PipelineMock):

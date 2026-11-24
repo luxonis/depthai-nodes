@@ -7,6 +7,7 @@ class ObjectTrackerMock:
         self.inputDetections = InputMock()
         self.inputTrackerFrame = InputMock()
         self._out = OutputMock()
+        self.passthroughDetections = OutputMock()
         self._tracker_type = None
         self._id_assignment_policy = None
 

@@ -59,10 +59,6 @@ def _check_instance(name: str, value: Any, expected: type) -> None:
         )
 
 
-# Fraction of the frame; larger detections are false positives on the whole scene.
-MAX_BBOX_AREA = 0.5
-# Fraction of the frame; boxes this close to an edge may be cut off.
-BORDER_MARGIN = 0.05
 # Minimum fraction of mask pixels with a valid point for a box to be measured.
 MIN_VALID_POINT_RATIO = 0.90
 # Valid measurements per track that the aggregated dimensions are taken over.
@@ -82,8 +78,8 @@ class BoxDimensioner(BaseHostNode):
     differ.
 
     Boxes are measured against the active support plane, set through ``build`` or
-    `setSupportPlane`. Without one, every box is ineligible. Detections covering
-    more than half of the frame are omitted. Requires open3d, installed with
+    `setSupportPlane`. Without one, every box is ineligible. Requires open3d,
+    installed with
     ``pip install "depthai-nodes[box-measurement]"``.
     """
 
@@ -243,9 +239,6 @@ class BoxDimensioner(BaseHostNode):
             present.add(track_id)
             self._absent[track_id] = 0
             rect = detection.bounding_box
-            if rect.size.width * rect.size.height > MAX_BBOX_AREA:
-                # Omitted, but still present, so its samples are kept.
-                continue
             # The mask covers the whole source frame, as the cloud does, so
             # nearest-neighbor resizing maps it onto the cloud grid.
             mask = cv2.resize(
@@ -253,16 +246,9 @@ class BoxDimensioner(BaseHostNode):
                 (width, height),
                 interpolation=cv2.INTER_NEAREST,
             ).astype(bool)
-            xmin, ymin, xmax, ymax = rect.getOuterRect()
-            border = (
-                xmin <= BORDER_MARGIN
-                or ymin <= BORDER_MARGIN
-                or xmax >= 1 - BORDER_MARGIN
-                or ymax >= 1 - BORDER_MARGIN
-            )
             status = (
                 MeasurementStatus.INELIGIBLE
-                if plane is None or border
+                if plane is None
                 else MeasurementStatus.FAILED
             )
             box_points = points[mask] if organized else np.empty((0, 3))

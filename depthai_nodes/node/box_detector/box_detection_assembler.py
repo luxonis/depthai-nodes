@@ -13,10 +13,40 @@ CURRENT_STATUSES = (
     dai.Tracklet.TrackingStatus.NEW,
     dai.Tracklet.TrackingStatus.TRACKED,
 )
+# Fraction of the frame; larger detections are false positives on the whole scene.
+MAX_BBOX_AREA = 0.5
+# Fraction of the frame size, on each side; a mask reaching into it is truncated.
+BORDER_MARGIN = 0.05
+
+
+def _is_truncated(region: np.ndarray) -> bool:
+    """Return whether a non-empty mask region has a pixel centre in the margin."""
+    height, width = region.shape
+    rows = np.flatnonzero(region.any(axis=1))
+    cols = np.flatnonzero(region.any(axis=0))
+    return any(
+        (first + 0.5) / size <= BORDER_MARGIN
+        or (last + 0.5) / size >= 1 - BORDER_MARGIN
+        for first, last, size in (
+            (rows[0], rows[-1], height),
+            (cols[0], cols[-1], width),
+        )
+    )
+
+
+def _is_eligible(box: dai.RotatedRect, region: np.ndarray) -> bool:
+    """Return whether a detection is non-empty, not whole-scene and not truncated."""
+    return (
+        bool(region.any())
+        and box.size.width * box.size.height <= MAX_BBOX_AREA
+        and not _is_truncated(region)
+    )
 
 
 class BoxDetectionAssembler(dai.node.HostNode):
     """Emit one box detection per new or tracked box with a non-empty segmentation.
+
+    Whole-scene and truncated detections are left out.
 
     Attributes:
         out: Output stream of ``BoxDetections`` carrying the timestamps and sequence
@@ -38,7 +68,8 @@ class BoxDetectionAssembler(dai.node.HostNode):
 
         Args:
             tracklets: Output producing ``dai.Tracklets``.
-            detections: Output producing ``dai.ImgDetections`` with an instance mask.
+            detections: The tracker's ``passthroughDetections``: the
+                ``dai.ImgDetections`` it matched, with their instance mask.
             maskSize: ``(width, height)`` of the network input, used for the mask of
                 frames that carry none.
 
@@ -95,18 +126,22 @@ class BoxDetectionAssembler(dai.node.HostNode):
         for track_index, det_index in sorted(matches.items(), key=lambda m: m[1]):
             track, det = active[track_index], detections.detections[det_index]
             region = source_mask == det_index
-            if not region.any() or len(items) >= BACKGROUND_LABEL:
-                continue
-            mask[region] = len(items)
             # The network input is stretch-resized, so normalized boxes already
             # use the source frame's coordinates.
-            corners = dai.Rect(
-                dai.Point2f(det.xmin, det.ymin), dai.Point2f(det.xmax, det.ymax)
+            box = dai.RotatedRect(
+                dai.Rect(
+                    dai.Point2f(det.xmin, det.ymin), dai.Point2f(det.xmax, det.ymax)
+                )
             )
+            if not _is_eligible(box, region):
+                continue
+            if len(items) >= BACKGROUND_LABEL:
+                break
+            mask[region] = len(items)
             items.append(
                 BoxDetection(
                     track_id=int(track.id),
-                    bounding_box=dai.RotatedRect(corners),
+                    bounding_box=box,
                     confidence=det.confidence,
                     track_status=track.status,
                 )

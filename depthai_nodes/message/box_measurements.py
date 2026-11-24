@@ -90,9 +90,9 @@ class BoxDimensions:
 class MeasurementStatus(str, Enum):
     """Whether a box was measured in a frame.
 
-    ``INELIGIBLE`` boxes could not be measured, for example because no support
-    plane is set or the box touches the frame border. ``FAILED`` boxes were
-    eligible but their geometry could not be measured. ``MEASURED`` boxes
+    ``INELIGIBLE`` boxes were not measured because no support plane is set.
+    ``FAILED`` boxes were not measured because too few of their pixels have valid
+    depth, or because their geometry could not be measured. ``MEASURED`` boxes
     produced a sample and have dimensions.
     """
 

@@ -31,7 +31,8 @@ class PipelineMock:
     def remove(self, node):
         self._nodes.remove(node)
 
-    def create(self, node_type: type[ThreadedHostNodeMock]):
+    def create(self, node_type: type[ThreadedHostNodeMock], device=None):
+        """Create a node, recording the ``device`` it was created with."""
         from depthai_nodes.node.parsers.base_parser import BaseParser
 
         if issubclass(node_type, BaseParser):
@@ -162,6 +163,7 @@ class PipelineMock:
             node = NodeMock(self)
 
         node.parentPipeline = self
+        node.device = device
         self._nodes.append(node)
         return node
 

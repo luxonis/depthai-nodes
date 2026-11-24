@@ -58,7 +58,7 @@ class BoxMeasurer(BaseThreadedHostNode):
                 ``confidenceThreshold`` is not a real number.
             ValueError: If ``pointCloudSize`` does not have two positive values,
                 if ``confidenceThreshold`` is not finite or not between zero and
-                one, or if the device is not an RVC4.
+                one, or if the color stream's device is not an RVC4.
         """
         # Check open3d and the cloud size before the detector fetches the model,
         # and build the dimensioner last so a detector failure leaves it unlinked

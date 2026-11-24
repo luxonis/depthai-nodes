@@ -220,17 +220,6 @@ def test_without_plane_boxes_are_ineligible_without_dimensions():
     assert item.dimensions is None
 
 
-def test_border_box_is_ineligible_and_keeps_the_aggregate():
-    app = Dimensioning()
-    first = app.item()
-    for bounds in [(0.04, 0.2, 0.8, 0.8), (0.2, 0.2, 0.8, 0.96)]:
-        border = app.item(items=[box(bounds=bounds)], mask=centered_mask())
-        assert border.measurement_status == MeasurementStatus.INELIGIBLE
-        assert border.dimensions == first.dimensions
-    inside = app.item(items=[box(bounds=(0.06, 0.2, 0.8, 0.8))], mask=centered_mask())
-    assert inside.measurement_status == MeasurementStatus.MEASURED
-
-
 @pytest.mark.parametrize("kwargs", [{"depth": False}, {"coverage": 0.8}])
 def test_too_few_valid_points_under_the_mask_fail_and_keep_the_aggregate(kwargs):
     app = Dimensioning()
@@ -362,36 +351,3 @@ def test_process_rejects_messages_of_the_wrong_type():
     app = Dimensioning()
     with pytest.raises(TypeError):
         app.dimensioner.process(flat_top_cloud(), flat_top_cloud())
-
-
-# Area just below (0.4996) and just above (0.5004) half of the frame.
-JUST_BELOW_HALF = (0.1, 0.1, 0.9, 0.7245)
-JUST_ABOVE_HALF = (0.1, 0.1, 0.9, 0.7255)
-
-
-def test_detection_just_below_half_the_frame_is_measured():
-    item = Dimensioning().item(
-        items=[box(bounds=JUST_BELOW_HALF)], mask=centered_mask()
-    )
-
-    assert item.measurement_status == MeasurementStatus.MEASURED
-
-
-def test_detection_just_above_half_the_frame_is_omitted():
-    app = Dimensioning()
-    app.send(items=[box(bounds=JUST_ABOVE_HALF)], mask=centered_mask())
-
-    assert app.receive().items == []
-
-
-def test_track_oversized_in_some_frames_keeps_samples_from_other_frames():
-    app = Dimensioning()
-    first = app.item(height=100)
-    for _ in range(40):
-        app.send(items=[box(bounds=JUST_ABOVE_HALF)], mask=centered_mask(), height=300)
-        assert app.receive().items == []
-
-    item = app.item(depth=False)
-
-    assert item.track_id == 7
-    assert item.dimensions == first.dimensions
