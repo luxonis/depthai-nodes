@@ -50,10 +50,12 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
     out-of-the-box for messages that expose a ``detections`` attribute (e.g.
     ``dai.ImgDetections``).
 
-    ``preserveOrder`` holds later groups behind earlier references. Optional
-    ``timeout`` and ``maxPendingFrames`` limits discard whole incomplete groups.
-    These options require references to arrive in source timestamp order.
-    Defaults retain ready-first, unbounded behavior.
+    By default, ``preserveOrder`` holds later groups behind earlier references and
+    ``maxPendingFrames`` limits pending references and unmatched data messages to 32.
+    Limits and the optional ``timeout`` discard whole incomplete groups. These
+    options require references to arrive in source timestamp order. Pass
+    ``preserveOrder=False`` and ``maxPendingFrames=None`` for ready-first, unbounded
+    behavior.
 
     Attributes:
         FPS_TOLERANCE_DIVISOR (``float``): Divides the per-frame time interval to
@@ -145,8 +147,8 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
         waitCountFn: Callable[[TReference], int] | None = None,
         *,
         timeout: timedelta | None = None,
-        maxPendingFrames: int | None = None,
-        preserveOrder: bool = False,
+        maxPendingFrames: int | None = 32,
+        preserveOrder: bool = True,
     ) -> "GatherData[TReference, TGathered]":
         """Connect the data and reference streams used for gathering.
 
@@ -162,10 +164,12 @@ class GatherData(dai.node.ThreadedHostNode, Generic[TReference, TGathered]):
                 group, including when inputs are idle. None disables expiry.
             maxPendingFrames: Positive limit on pending references and unmatched data
                 messages. Oldest incomplete references and orphan messages are dropped
-                when their respective limit is exceeded. None disables the limits.
+                when their respective limit is exceeded. Defaults to 32. None disables
+                the limits.
             preserveOrder: Emit groups in source timestamp order, holding later groups
                 until earlier references complete or are dropped. References must
                 arrive in order. Complete groups are emitted even after timeout.
+                Defaults to True. False emits groups as soon as they are ready.
 
         Returns:
             The configured node instance.

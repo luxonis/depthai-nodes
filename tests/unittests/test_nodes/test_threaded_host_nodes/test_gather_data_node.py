@@ -91,11 +91,11 @@ def old_img_detections(old_reference_timestamp):
     return create_img_detections(timestamp=old_reference_timestamp)
 
 
-def setup_gather_data_node(generator, fps, duration=None):
+def setup_gather_data_node(generator, fps, duration=None, **options):
     input_data = LinkTrackingOutputMock()
     input_reference = LinkTrackingOutputMock()
     gather_data = generator.build(
-        cameraFps=fps, inputData=input_data, inputReference=input_reference
+        cameraFps=fps, inputData=input_data, inputReference=input_reference, **options
     )
     if duration is not None:
         modified_duration = duration / DIFFERENT_TESTS
@@ -245,7 +245,11 @@ def test_clear_old_data(
         assert len(result.items) == 3
 
     gather_data = setup_gather_data_node(
-        generator=gather_data_generator, fps=fps, duration=duration
+        generator=gather_data_generator,
+        fps=fps,
+        duration=duration,
+        preserveOrder=False,
+        maxPendingFrames=None,
     )
     gather_data._reference_input.send(old_img_detections)
     gather_data._reference_input.send(img_detections)
