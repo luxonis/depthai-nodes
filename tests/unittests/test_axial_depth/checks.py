@@ -1,7 +1,6 @@
 """Independent projection and message contracts for axial depth correction."""
 
 import json
-from dataclasses import replace
 from datetime import datetime, timedelta
 
 import depthai as dai
@@ -182,13 +181,14 @@ def test_full_geometry_cache_cannot_reuse_same_size_stale_calibration():
     first = geometry(transform=pose(0.3))
     second = geometry(transform=pose(0.3), intrinsics=[[7, 0, 1], [0, 8, 2], [0, 0, 1]])
     expected = AxialDepthCorrector(policy=CORRECT, cache_entries=0)
-    for geom in (first, second, first, replace(first, identity=("new-calibration",))):
+    updated = geometry(transform=pose(0.3), identity=("new-calibration",))
+    for geom in (first, second, first, updated):
         actual = corrector.correct(raw, geom)
         np.testing.assert_array_equal(actual.depth, expected.correct(raw, geom).depth)
     assert not np.array_equal(
         corrector.correct(raw, first).depth, corrector.correct(raw, second).depth
     )
-    assert first.digest != replace(first, identity=("new-calibration",)).digest
+    assert first.digest != updated.digest
 
 
 @pytest.mark.parametrize("cache_entries,cache_bytes", [(0, 1024), (4, 1)])
@@ -207,6 +207,8 @@ def test_geometry_copies_mutable_input_matrices():
     transform[2, 3] = 20
     assert geom.target_intrinsics[0][0] == 1
     assert geom.source_from_target_mm[2][3] == 0
+    with pytest.raises(AttributeError):
+        geom.target_size = (1, 1)
 
 
 @pytest.mark.parametrize(

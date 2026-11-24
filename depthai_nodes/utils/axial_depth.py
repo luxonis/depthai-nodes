@@ -11,7 +11,7 @@ from collections import OrderedDict
 from dataclasses import asdict, dataclass, replace
 from enum import Enum
 from hashlib import sha256
-from typing import Mapping
+from typing import Mapping, NamedTuple
 
 import depthai as dai
 import numpy as np
@@ -58,8 +58,14 @@ def _tuples(matrix):
     return tuple(tuple(float(value) for value in row) for row in matrix)
 
 
-@dataclass(frozen=True)
-class AxialDepthGeometry:
+class _GeometryValues(NamedTuple):
+    target_size: tuple[int, int]
+    target_intrinsics: tuple[tuple[float, ...], ...]
+    source_from_target_mm: tuple[tuple[float, ...], ...]
+    identity: tuple
+
+
+class AxialDepthGeometry(_GeometryValues):
     """Immutable geometry for aligned target pixels and source optical Z.
 
     Attributes:
@@ -71,36 +77,36 @@ class AxialDepthGeometry:
             includes both complete image transformations and calibration references.
     """
 
-    target_size: tuple[int, int]
-    target_intrinsics: tuple[tuple[float, ...], ...]
-    source_from_target_mm: tuple[tuple[float, ...], ...]
-    identity: tuple = ()
+    __slots__ = ()
 
-    def __post_init__(self):
-        size = tuple(self.target_size)
+    def __new__(
+        cls,
+        target_size: tuple[int, int],
+        target_intrinsics: tuple[tuple[float, ...], ...],
+        source_from_target_mm: tuple[tuple[float, ...], ...],
+        identity: tuple = (),
+    ):
+        size = tuple(target_size)
         if len(size) != 2 or any(
             not isinstance(value, (int, np.integer)) or value <= 0 for value in size
         ):
             raise ValueError(
                 "Target size must contain positive integer width and height"
             )
-        object.__setattr__(self, "target_size", tuple(int(value) for value in size))
-        object.__setattr__(
-            self, "target_intrinsics", _tuples(_intrinsics(self.target_intrinsics))
-        )
-        object.__setattr__(
-            self, "source_from_target_mm", _tuples(_rigid(self.source_from_target_mm))
-        )
-        identity = tuple(self.identity)
+        intrinsics = _tuples(_intrinsics(target_intrinsics))
+        pose = _tuples(_rigid(source_from_target_mm))
+        identity = tuple(identity)
         hash(identity)
         json.dumps(identity, allow_nan=False)
-        object.__setattr__(self, "identity", identity)
+        return super().__new__(
+            cls, tuple(int(value) for value in size), intrinsics, pose, identity
+        )
 
     @property
     def digest(self) -> str:
         """SHA-256 of all computational geometry and supplied calibration identity."""
         return sha256(
-            json.dumps(asdict(self), sort_keys=True, allow_nan=False).encode()
+            json.dumps(self._asdict(), sort_keys=True, allow_nan=False).encode()
         ).hexdigest()
 
 
