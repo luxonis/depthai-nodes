@@ -23,8 +23,8 @@
       "depthai_nodes/algorithms/parcel/implementation/scene.py": "7f8f888d0d242b5a73b5a61350d9be56d76f7a3509f002b225db2c43d2297b94",
       "depthai_nodes/algorithms/parcel/implementation/scoped-settings.json": "66f29d1a54ddb6fd8d3fa957a34aa81dcef53a4ca29a47b0b4e39331afcb8bd8",
       "depthai_nodes/algorithms/parcel/implementation/visibility.py": "9177b8d4c3888655038427602e869290922a5edbc6bf79d96561322cc4c75951",
-      "depthai_nodes/algorithms/parcel/implementation/visualization.html": "3c1424e2864aa4ddedd5a9ac7fc9a04734c393c17744a14afa174ff3002ed258",
-      "depthai_nodes/algorithms/parcel/manifest.py": "1ff6c16be253d24fcbe317aed3ab72788eaa207b99875b0a02916f54fdfe36af",
+      "depthai_nodes/algorithms/parcel/implementation/visualization.html": "c0b2e6a25c611e43851ba818f52be050d7838a8c7f5e44717c267c472f30eac3",
+      "depthai_nodes/algorithms/parcel/manifest.py": "6ebb54d1df2d3ed36049357d00cb9640b7acf8bdcd69ababe153fb67c7a13b20",
       "depthai_nodes/message/parcel.py": "702ca0222b5a71c0c6a6982161d5c0a1dfb4b7364182e547dc0125513aec43d0",
       "depthai_nodes/message/support_plane.py": "0eaeec70dda37d48b3160d1f1a14cffce766f23182289d1b569ffb444f1f44e3",
       "depthai_nodes/node/parcel_detector/__init__.py": "4bd2d4aaf686835abe5da5203a47a67a2ebe125aee64c5ef8499cac3809b1482",
@@ -156,7 +156,8 @@
       "Add a one-time resolution check at the process boundary for the evaluated unrectified image profile: color 2000x1500, left/right 1280x800. Log expected and received sizes on mismatch and continue processing, following the user override of the updated handoff rejection policy. No resize, geometry conversion, pixel-threshold scaling, or frozen computation changes. The initial SupportPlane is optional; inactive scene groups are consumed without processing or output until a config supplies the plane.",
       "Relocate the identical computation and frozen settings to the stable implementation/ directory. Preserve full evaluated candidate identity independently of package location.",
       "Package and hash visualization.html, retaining its own documentation-source revision and recording link-only repairs.",
-      "Snapshot parcel message points into immutable bytes-backed float32 storage to prevent mutation through retained aliases or the public array. The detector incurs one boundary snapshot; measurement does not copy points."
+      "Snapshot parcel message points into immutable bytes-backed float32 storage to prevent mutation through retained aliases or the public array. The detector incurs one boundary snapshot; measurement does not copy points.",
+      "Decode UTF-8 package text independently of the host locale. Restore documentation chart keyboard focus without changing computation or evaluation data."
     ],
     "lineage_note": "Original settings declare algorithm-f6ab98aa284d4420bfd3bc67761a969f. Registration returned HTTP 403 with this token. The frozen settings copy omits that inaccessible declaration only; computation configuration, policy, objective, modalities, source paths and dependency lock are unchanged. Historical predecessor is retained in this report; no historical scores are reassigned.",
     "license_note": "Pinned BoxLabRunners tree has no LICENSE file. Luxonis attribution is retained. DepthAI Nodes keeps its Apache-2.0 distribution license.",
@@ -1190,17 +1191,36 @@
         "The committed revision-design and configuration-catalog migration is in open BoxLabRunners PR15 at df216e5253c6f29de677b83c4ad7248cb020f871. It is provenance organization, not new algorithm review or evaluation."
       ],
       "wheel_environment": "Fresh virtual environment outside both source repositories, seeded with previously installed DepthAI3.12.2 and pinned algorithm dependencies after fresh dependency downloads stalled. The new package was installed from the clean-built wheel; no source checkout paths were copied or imported."
+    },
+    "review_corrections_2026_11_24": {
+      "scope": "Packaging, documentation/UI, and upstream findings only. Evaluated algorithm source and frozen configuration unchanged.",
+      "utf8": "Explicit UTF-8 validator/test text I/O. Regression reproduces a cp1252-default decode failure at byte 21095 before the fix and passes after it.",
+      "focused_tests": 54,
+      "focused_subtests": 58,
+      "python310_manifest_tests": 16,
+      "installed_visualization": {
+        "before": "Enter activation replaces the focused mark; active element becomes BODY.",
+        "after": "Enter and Space retain the same record and axis in all 12 combinations of signed/absolute mode and three axes.",
+        "embedded_evidence": "Both JSON datasets unchanged."
+      },
+      "prototype_comparison_scope": "Matching checked adapter output hashes only. Proposal indices, point membership/order, and per-proposal decisions are not part of the hashed output. Raw retained comparisons contain hashes and separate decision counts, not complete result objects.",
+      "upstream_allocations": [
+        "centered_hull_candidates",
+        "group_rows"
+      ],
+      "windows_results": "Actual Windows job results are retained in PR #348 CI checks; local cp1252 regression is not a Windows execution claim."
     }
   },
   "visualization": {
     "path": "depthai_nodes/algorithms/parcel/implementation/visualization.html",
-    "sha256": "3c1424e2864aa4ddedd5a9ac7fc9a04734c393c17744a14afa174ff3002ed258",
+    "sha256": "c0b2e6a25c611e43851ba818f52be050d7838a8c7f5e44717c267c472f30eac3",
     "source_repository": "https://github.com/luxonis/BoxLabRunners",
     "source_commit": "1d2aa20e85f6f6b6acb597440ca42d85c495474f",
     "source_path": "algorithms/fast_baseline/visualization.html",
     "source_sha256": "aa8837d8b0eaa28261986c5f56681bce84431e77cbd365413b5debf470ff8c71",
     "adaptations": [
-      "Repair source links to shipped files or commit-pinned BoxLabRunners URLs; retain embedded candidate, settings, metrics, and case data."
+      "Repair source links to shipped files or commit-pinned BoxLabRunners URLs; retain embedded candidate, settings, metrics, and case data.",
+      "Restore focus to the same record and chart axis after Enter/Space activation redraws the marks. This documentation UI correction preserves embedded candidate, configuration, metrics, and case data."
     ]
   }
 }

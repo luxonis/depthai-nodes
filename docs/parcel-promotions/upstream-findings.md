@@ -42,7 +42,7 @@ Five alternating samples per configuration on the same saved scene measured:
 | Sparse native voxel processing                              |                  219.85 ms |
 | Sparse processing plus actual-neighbor clustering selection |                  178.19 ms |
 
-The complete checked results matched exactly across these 15 runs. Capture and UI were stopped during replay, and each sample used a fresh process, one warm-up, and fresh measured components.
+The checked adapter output hashes matched across these 15 runs. The hashed output contains eligible fitted detections/cuboids and frame/status metadata, not proposal indices, point membership/order, or per-proposal eligibility decisions. Decision counts were recorded separately. Retained comparison records contain hashes rather than complete output objects; proposal/segment parity requires additional evidence in the BoxLabRunners algorithm task. Capture and UI were stopped during replay, and each sample used a fresh process, one warm-up, and fresh measured components.
 These are one-scene diagnostic results, not Workbench evaluation statistics or measured live FPS for the prototypes.
 No prototype is included in the packaged algorithm. The final 178 ms result still falls short of 8 to 10 FPS before application overhead.
 The historical approximately 100 ms reference ran in a Linux arm64 container on an Apple M1 Pro and remains attributed to its original artifact.
@@ -55,6 +55,12 @@ The historical approximately 100 ms reference ran in a Linux arm64 container on 
 | [4667613138](https://github.com/luxonis/depthai-nodes/pull/348#discussion_r4667613138), native allocation failure    | Native runtime failure semantics. The `centered_hull_candidates` vector allocation can throw across the C ABI into ctypes and terminate the host. Source inspection confirms the missing catch; memory exhaustion was not induced. An upstream correction needs a distinct error status and matching wrapper handling.                                                                                 |
 | [4667613147](https://github.com/luxonis/depthai-nodes/pull/348#discussion_r4667613147), label-grid copies            | Frozen visibility computation. Boolean indexing copies other labels' layers for each proposal, causing quadratic work. This is a source-level finding; the review's 100-proposal scenario was not benchmarked. Review nearest and second-nearest depth caching upstream with equal-depth and excluded-label tests.                                                                                     |
 | [4667613143](https://github.com/luxonis/depthai-nodes/pull/348#discussion_r4667613143), stale native exports         | Ownership crosses installation and frozen loader behavior. A local binary can load yet lack an export, raising `AttributeError` outside the loader's `OSError` handler. The loader is unchanged from upstream. This port excludes native binaries and requires fresh local builds after updates. Robust ABI fallback changes belong in BoxLabRunners because they alter the frozen dependency closure. |
+
+## Additional uncaught allocation in `group_rows`
+
+The [review follow-up](https://github.com/luxonis/depthai-nodes/pull/348#pullrequestreview-6023977030) identifies `group_rows` as another native allocation hazard. It allocates `std::vector<int64_t> next(starts, starts + count)` inside an uncaught `extern "C" void` export. The ctypes binding declares `restype = None` and has no failure status to inspect. An allocation exception can cross the C ABI and terminate the Python host.
+
+This is inherited unchanged from the evaluated source and confirmed by inspection without inducing memory exhaustion. Track it alongside `centered_hull_candidates` in the BoxLabRunners native-runtime backlog. Review a defined allocation-failure status and matching wrapper handling upstream, preserve grouping and point order, and evaluate a new combined candidate before promotion. No kernel or wrapper correction is included here.
 
 ## Integration findings addressed here
 
@@ -71,3 +77,8 @@ The stable-directory migration addresses the following packaging and message-bou
 The migration also packages and hashes the existing visualization, with separate documentation-source provenance and repaired links.
 Relocation and packaging checks do not establish that the production port is the original evaluated artifact.
 The [promotion record](fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.md) states the actual source-comparison coverage.
+
+## Review corrections on November 24, 2026
+
+The validator and affected tests explicitly decode and encode the visualization as UTF-8, including under a simulated cp1252 default. Actual Windows verification is recorded in PR #348 checks.
+The installed visualization restores focus to the same record and axis after Enter or Space activation replaces the chart marks. This documentation UI correction leaves embedded evaluation data and frozen computation unchanged and requires UI/packaging verification, not algorithm re-evaluation.

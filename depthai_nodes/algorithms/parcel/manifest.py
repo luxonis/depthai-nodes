@@ -250,7 +250,7 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
         "Visualization source mismatch",
     )
     _digest(visualization["source_sha256"])
-    html = (root / visualization["path"]).read_text()
+    html = (root / visualization["path"]).read_text(encoding="utf-8")
     match = re.search(
         r'<script id="evidence-data" type="application/json">(.*?)</script>',
         html,
@@ -367,7 +367,9 @@ def validate_manifest() -> dict:
     """
     root = Path(__file__).resolve().parents[3]
     try:
-        manifest = json.loads(Path(__file__).with_name("manifest.json").read_text())
+        manifest = json.loads(
+            Path(__file__).with_name("manifest.json").read_text(encoding="utf-8")
+        )
         return _validate(root, manifest)
     except (KeyError, TypeError, OSError, json.JSONDecodeError) as exc:
         raise ValueError(f"Invalid parcel manifest: {exc}") from exc

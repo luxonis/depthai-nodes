@@ -318,7 +318,7 @@ Directory relocation does not establish evaluated-artifact identity; published p
 The existing `visualization.html` is now a wheel asset covered by the manifest.
 Its source documentation revision is `1d2aa20e85f6f6b6acb597440ca42d85c495474f`, later than the evaluated computation revision.
 Its source SHA-256 is `aa8837d8b0eaa28261986c5f56681bce84431e77cbd365413b5debf470ff8c71`.
-Only source links are repaired for shipped files or commit-pinned URLs. Embedded candidate identity, configuration, metrics, and case data stay attributed to their original evidence.
+Source links are repaired for shipped files or commit-pinned URLs. The later documentation UI correction restores keyboard focus to the same record and axis after chart redraw. Embedded candidate identity, configuration, metrics, and case data stay attributed to their original evidence.
 The manifest records the destination hash separately.
 
 The migration strengthens external-reference verification by checking it against repository-owned evidence before importing reference code.
@@ -359,3 +359,15 @@ Future algorithm corrections require BoxLabRunners review and evaluation before 
 The canonical configuration-path migration does not require re-evaluating these unchanged settings, and its committed catalog and evaluation-record provenance are now recorded separately from the evaluated source.
 Future changes follow the [update workflow](update-workflow.md), also linked from `CONTRIBUTING.md`.
 Rollback restores the complete prior code, settings, dependencies, assets, and manifest release.
+
+## Review corrections on November 24, 2026
+
+The validator and affected tests now use explicit UTF-8 for text assets, with a regression exercising a cp1252 default. The preceding Windows CI run failed with a decode error at byte 21095; the updated Windows results are retained in PR #348 checks.
+
+The visualization restores focus after Enter and Space activate a chart mark. Both embedded evidence datasets remain unchanged. The HTML and validator have refreshed production-port hashes; the evaluated-source identity and original visualization hash are retained. This is a packaging/documentation correction, not a newly evaluated algorithm. Earlier wheel hashes above continue to identify their exact prior artifacts.
+
+The captured-scene prototype report and handoff now limit hash agreement to the checked adapter output. The hash does not establish proposal indices, point membership/order, or per-proposal decision parity. Raw retained records contain output hashes and separate decision counts. Stronger prototype parity remains a separate BoxLabRunners task.
+
+The upstream allocation backlog now includes both `centered_hull_candidates` and `group_rows`. Their inherited code remains unchanged here; corrections require upstream review and evaluation.
+
+The corrected wheel has SHA-256 `b1ba20a7195a034e9cebf971b93677d03d5c05e4e910558efca2bd5a882dfa3f`. All 25 installed hashes validate with cp1252 as the simulated locale default. The installed page passes 12 real-browser focus checks covering Enter and Space, all three axes, and signed/absolute mode. The focused suite passes 54 tests and 58 subtests on Python 3.10 and 3.12.

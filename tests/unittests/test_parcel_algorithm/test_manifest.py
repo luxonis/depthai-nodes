@@ -19,7 +19,7 @@ MANIFEST = ROOT / "depthai_nodes/algorithms/parcel/manifest.json"
 
 @pytest.fixture
 def installed_copy(tmp_path):
-    manifest = json.loads(MANIFEST.read_text())
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     for name in manifest["implementation"]["files_sha256"]:
         destination = tmp_path / name
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -39,10 +39,25 @@ def test_manifest_validates_installed_bytes_and_evidence():
     assert len(inspect.signature(parcel.create_components).parameters) == 0
 
 
+def test_manifest_validates_with_cp1252_default_encoding(monkeypatch):
+    original_open = Path.open
+
+    def cp1252_open(
+        path, mode="r", buffering=-1, encoding=None, errors=None, newline=None
+    ):
+        if "b" not in mode and encoding in (None, "locale"):
+            encoding = "cp1252"
+        return original_open(path, mode, buffering, encoding, errors, newline)
+
+    monkeypatch.setattr(Path, "open", cp1252_open)
+    manifest = parcel.validate_manifest()
+    assert manifest["workbench_candidate"]["id"] == parcel.ALGORITHM_ID
+
+
 def test_editing_computation_fails_integrity_check(installed_copy):
     root, manifest = installed_copy
     source = root / manifest["implementation"]["package_path"] / "geometry.py"
-    source.write_text(source.read_text() + "\n")
+    source.write_text(source.read_text(encoding="utf-8") + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="File hash mismatch.*geometry.py"):
         _validate(root, manifest, check_bindings=False)
 
@@ -52,7 +67,7 @@ def test_shared_plane_normalization_is_part_of_the_covered_port(installed_copy):
     name = "depthai_nodes/message/support_plane.py"
     assert name in manifest["implementation"]["files_sha256"]
     path = root / name
-    path.write_text(path.read_text() + "\n")
+    path.write_text(path.read_text(encoding="utf-8") + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="File hash mismatch.*support_plane.py"):
         _validate(root, manifest, check_bindings=False)
 
@@ -66,7 +81,7 @@ def test_omitted_file_and_added_computation_fail_coverage(installed_copy):
     with pytest.raises(ValueError, match="Incomplete port file coverage"):
         _validate(root, changed, check_bindings=False)
     extra = root / manifest["implementation"]["package_path"] / "unrecorded.py"
-    extra.write_text("pass\n")
+    extra.write_text("pass\n", encoding="utf-8")
     with pytest.raises(ValueError, match="Incomplete port file coverage"):
         _validate(root, manifest, check_bindings=False)
 
@@ -75,9 +90,9 @@ def test_frozen_configuration_cannot_change_with_port_hashes(installed_copy):
     root, manifest = installed_copy
     key = manifest["implementation"]["configuration_path"]
     path = root / key
-    configuration = json.loads(path.read_text())
+    configuration = json.loads(path.read_text(encoding="utf-8"))
     configuration["detection"]["foreground_min_height_mm"] += 1
-    path.write_text(json.dumps(configuration))
+    path.write_text(json.dumps(configuration), encoding="utf-8")
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     manifest["implementation"]["files_sha256"][key] = digest
     manifest["implementation"]["configuration_sha256"] = digest
@@ -133,7 +148,7 @@ def test_visualization_is_shipped_and_covered(installed_copy):
     name = manifest["visualization"]["path"]
     assert name in manifest["implementation"]["files_sha256"]
     page = root / name
-    page.write_text(page.read_text() + "\n")
+    page.write_text(page.read_text(encoding="utf-8") + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="File hash mismatch.*visualization.html"):
         _validate(root, manifest, check_bindings=False)
 
@@ -142,11 +157,11 @@ def test_visualization_cannot_reassign_metrics_with_updated_port_hash(installed_
     root, manifest = installed_copy
     name = manifest["visualization"]["path"]
     page = root / name
-    text = page.read_text()
+    text = page.read_text(encoding="utf-8")
     text = text.replace(
         '"measurement_success_count":6', '"measurement_success_count":7'
     )
-    page.write_text(text)
+    page.write_text(text, encoding="utf-8")
     digest = hashlib.sha256(page.read_bytes()).hexdigest()
     manifest["implementation"]["files_sha256"][name] = digest
     manifest["visualization"]["sha256"] = digest
