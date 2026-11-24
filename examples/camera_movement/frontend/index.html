@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Camera movement · OAK4</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <main>
+    <header class="page-header">
+      <div>
+        <div class="device">OAK4 <span>/</span> DepthAI</div>
+        <h1>Camera movement</h1>
+      </div>
+      <span id="connection" class="pill" role="status">Connecting</span>
+    </header>
+
+    <div class="workspace">
+      <div class="monitor">
+        <section class="panel">
+          <div class="section-heading">
+            <h2>Live RGB</h2>
+            <span class="format">720p · H.264</span>
+          </div>
+          <div class="video">
+            <canvas id="video" width="1280" height="720" aria-label="Live camera video"></canvas>
+            <p id="video-status" role="status">Waiting for video</p>
+          </div>
+          <p class="caption"><strong>Moved</strong> appears for two seconds when the detector reports an alert. The same alert appears in Recent events.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="status-heading">
+          <div class="section-heading calibration-heading">
+            <h2 id="status-heading">Detector status</h2>
+            <button id="calibrate" type="button" disabled>Calibrate</button>
+          </div>
+          <p class="caption">Hold the camera still at the intended pose while calibrating.</p>
+          <p id="calibration-feedback" class="feedback" role="status"></p>
+          <dl id="metrics" class="metrics">
+            <div><dt>Calibration</dt><dd data-status="calibration">—</dd></div>
+            <div><dt>Baseline</dt><dd data-status="baseline_ready">—</dd></div>
+            <div><dt>Tilt from baseline</dt><dd data-status="tilt_deg">—</dd></div>
+            <div><dt>Tilt alert</dt><dd data-status="tilt_changed">—</dd></div>
+            <div><dt>IMU</dt><dd data-status="imu_stale">—</dd></div>
+            <div><dt>Accelerometer age</dt><dd data-status="accelerometer_age_s">—</dd></div>
+            <div><dt>Gyroscope age</dt><dd data-status="gyroscope_age_s">—</dd></div>
+          </dl>
+          <p id="status-note" class="caption" role="status">Waiting for a heartbeat.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="events-heading">
+          <div class="section-heading">
+            <h2 id="events-heading">Recent events</h2>
+          </div>
+          <p id="no-events" class="caption">Confirmed tilt changes and turns will appear here.</p>
+          <table id="events-table" hidden>
+            <thead><tr><th>Event</th><th>Angle</th><th>Time</th></tr></thead>
+            <tbody id="events"></tbody>
+          </table>
+        </section>
+      </div>
+
+      <section class="panel settings" aria-labelledby="settings-heading">
+        <div class="section-heading">
+          <h2 id="settings-heading">Detector settings</h2>
+        </div>
+        <p class="caption">Changes apply to the running detector and keep its current baseline.</p>
+        <form id="settings-form">
+          <div id="fields"></div>
+          <div class="actions">
+            <button id="defaults" class="secondary" type="button" disabled>Load defaults</button>
+            <button id="apply" type="submit" disabled>Apply settings</button>
+          </div>
+          <p id="feedback" class="feedback" role="status"></p>
+        </form>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

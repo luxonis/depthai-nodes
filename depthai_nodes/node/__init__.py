@@ -303,6 +303,7 @@ from .base_threaded_host_node import BaseThreadedHostNode
 from .box_detector import BoxDetector
 from .box_dimensioner import BoxDimensioner
 from .box_measurer import BoxMeasurer
+from .camera_movement_detector import CameraMovementConfig, CameraMovementDetector
 from .coordinates_mapper import CoordinatesMapper
 from .depth_merger import DepthMerger
 from .extended_neural_network import ExtendedNeuralNetwork
@@ -397,4 +398,6 @@ __all__ = [
     "PlaneCalibrationConfig",
     "AutoSupportPlane",
     "AutoSupportPlaneConfig",
+    "CameraMovementConfig",
+    "CameraMovementDetector",
 ]

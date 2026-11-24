@@ -124,6 +124,13 @@ from .box_measurements import (
     BoxMeasurements,
     MeasurementStatus,
 )
+from .camera_movement import (
+    CameraMovementCalibrationState,
+    CameraMovementControl,
+    CameraMovementEvent,
+    CameraMovementReason,
+    CameraMovementStatus,
+)
 from .collection import Collection
 from .gathered_data import GatheredData
 from .snap_data import SnapData
@@ -152,4 +159,9 @@ __all__ = [
     "SupportPlaneVerificationResult",
     "AutoSupportPlaneResult",
     "CalibrationOutcome",
+    "CameraMovementCalibrationState",
+    "CameraMovementControl",
+    "CameraMovementEvent",
+    "CameraMovementReason",
+    "CameraMovementStatus",
 ]
