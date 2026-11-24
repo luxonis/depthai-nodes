@@ -146,8 +146,8 @@ Message handling and uploads
 
 * `GatherData`: collects a configurable number of timestamp-matched messages
   per reference into `depthai_nodes.message.GatheredData`. The default count
-  is the number of detections in the reference message. Supports optional ordered
-  output, timeouts, and pending-message limits.
+  is the number of detections in the reference message. Emits groups in order with
+  at most 32 pending references by default, and supports optional timeouts.
 * `MessageCollector`: batches messages within half a frame interval into
   `depthai_nodes.message.Collection`, emitting when a newer timestamp falls outside the
   matching window.

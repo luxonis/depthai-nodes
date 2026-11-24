@@ -90,6 +90,19 @@ def test_final_incomplete_group_expires_with_idle_inputs(preserve_order):
     assert not node._arrived_at
 
 
+def test_defaults_preserve_order_with_32_pending_references():
+    _, sent = gather([message(1, 1), message(2, 0)], [None, None, message(1)])
+    assert [group.getSequenceNum() for _, group in sent] == [1, 2]
+
+    node, sent = gather([message(1, 1)] + [message(i, 0) for i in range(2, 35)])
+    send_times = [clock for clock, _ in sent]
+    assert [group.getSequenceNum() for _, group in sent] == list(range(2, 35))
+    # Reference 33 exceeds the limit, dropping 1 and releasing 2-33 together.
+    assert len(set(send_times[:32])) == 1
+    assert send_times[32] > send_times[31]
+    assert not node._reference_data
+
+
 def test_ordering_without_limits_waits_for_missing_results():
     node, sent = gather([message(1, 1), message(2, 0)], preserveOrder=True)
     assert not sent
