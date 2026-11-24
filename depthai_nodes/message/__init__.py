@@ -1,7 +1,7 @@
 """Native parser messages and custom messages for DepthAI v3.
 
 Parser creators return native DepthAI messages. The package requires DepthAI
-3.11 or newer. Use `depthai_nodes.message.creators` to construct messages from
+3.12.0. Use `depthai_nodes.message.creators` to construct messages from
 arrays and `depthai_nodes.message.utils` for copying and detection geometry.
 
 .. contents:: Contents
@@ -28,6 +28,10 @@ and value ranges for each payload:
 
 Custom messages
 ===============
+
+`AxialDepthFrameResult` associates native target-axial depth with correction
+provenance inside one Python runtime, including standalone OAK-4 apps.
+
 
 `Collection` stores items of one runtime type. Add items with ``append()``
 or ``extend()``. The first item establishes the accepted type; an initially
@@ -144,6 +148,7 @@ RemoteConnection serialization.
 """
 
 from .auto_support_plane_result import AutoSupportPlaneResult
+from .axial_depth import AxialDepthFrameResult
 from .box_detections import BoxDetection, BoxDetections
 from .box_measurements import (
     BoxDimensions,
@@ -171,6 +176,7 @@ from .support_plane_calibration import (
 )
 
 __all__ = [
+    "AxialDepthFrameResult",
     "Parcel",
     "ParcelCuboid",
     "ParcelDetectorConfig",
