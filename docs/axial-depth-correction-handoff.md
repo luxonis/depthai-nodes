@@ -8,10 +8,10 @@ exact initial dependency pin `depthai==3.12.0`.
 | Field                             | Value                                                                      |
 | --------------------------------- | -------------------------------------------------------------------------- |
 | PR base                           | `codex/parcel-fast-baseline` at `51b6897d4efca7b6ada5400e05e009b3e57c495b` |
-| Implementation revision           | `5c9e8b411391b572e8e47d38b0c58169ff1df00e`                                 |
+| Implementation revision           | `6ef43a9a2fcd40480976232121ca7077256aee86`                                 |
 | Wheel                             | `depthai_nodes-0.8.0-py3-none-any.whl`                                     |
-| Wheel SHA-256                     | `386a9767a5185fe28729314cc3b154a7012392fe53490d6f1568572da571fd1f`         |
-| Installed package content SHA-256 | `28cca5468716c8ab4ea2a94a65d3dbda6f763aa9a3a54686267bbe59f629fa38`         |
+| Wheel SHA-256                     | `4b4dc99309d56a8379809c729d7f97b413ec6fa60fcd7b9a875eb9dde5ac9760`         |
+| Installed package content SHA-256 | `f3531040550d973e2e3f588cd82ab18b0a9cbdd13c71e642ccf54a9083a05f40`         |
 | SDK                               | `3.12.0`                                                                   |
 | Example dependency pins           | NumPy `2.2.6`, OpenCV headless `4.12.0.88`                                 |
 | Wheel build timestamp             | `SOURCE_DATE_EPOCH=1795528800`                                             |
@@ -122,6 +122,10 @@ It does not publish a new PyPI release or claim neural-depth or algorithm
 throughput.
 
 ## Implementation decisions
+
+Geometry is an immutable tuple value. Its constructor validates and normalizes
+inputs before construction, without explicit attribute mutation. The revised
+artifact retains the original geometry digests and corrected depth bytes.
 
 Model the Domain shaped the immutable geometry, explicit policy, and associated
 provenance result. Prove It Works required checking installed wheel bytes and
