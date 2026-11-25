@@ -87,6 +87,8 @@ To combine `dai.ImgDetections` with aligned depth, use DepthAI's native
 Link detections to `inputDetections` and depth to `inputDepth`; read the resulting
 `dai.SpatialImgDetections` from `outputDetections`. Both input messages need valid
 image transformations so the node can map detections onto the depth frame.
+For ROI measurements without detections, configure its ROIs and read `out`.
+Call `setRunOnHost(True)` if the calculation should run on the host.
 
 See the [node package documentation](./depthai_nodes/node/__init__.py) for available nodes and examples.
 

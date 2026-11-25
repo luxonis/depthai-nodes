@@ -112,7 +112,6 @@ Image and depth processing
 * `ApplyColormap`: colorizes 2D maps and masks into ``dai.ImgFrame`` messages.
 * `ApplyDepthColormap`: uses percentile normalization for depth or disparity;
   non-positive values are excluded from normalization and displayed as black.
-* `HostSpatialsCalc`: computes spatial coordinates from depth regions on the host.
 * `FrameCropper`: crops and resizes frames using detections or groups of
   ``dai.ImageManipConfig`` messages, emitting one frame per crop.
 * `Tiling`: produces tiled ``dai.ImageManipConfig`` groups and accepts runtime
@@ -306,7 +305,6 @@ from .extended_neural_network import ExtendedNeuralNetwork
 from .frame_cropper import FrameCropper
 from .gather_data import GatherData
 from .host_parsing_neural_network import HostParsingNeuralNetwork
-from .host_spatials_calc import HostSpatialsCalc
 from .img_detections_filter import ImgDetectionsFilter
 from .img_frame_overlay import ImgFrameOverlay
 from .instance_to_semantic_mask import InstanceToSemanticMask
@@ -353,7 +351,6 @@ __all__ = [
     "ParserGenerator",
     "ParsingNeuralNetwork",
     "HostParsingNeuralNetwork",
-    "HostSpatialsCalc",
     "ImageOutputParser",
     "YuNetParser",
     "KeypointParser",
