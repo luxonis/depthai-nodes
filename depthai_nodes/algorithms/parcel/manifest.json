@@ -20,7 +20,7 @@
       "depthai_nodes/algorithms/parcel/implementation/scene.py": "7f8f888d0d242b5a73b5a61350d9be56d76f7a3509f002b225db2c43d2297b94",
       "depthai_nodes/algorithms/parcel/implementation/scoped-settings.json": "66f029694119c77ddad557bd58257b8743e7f284441d94a317b08fffc5496f10",
       "depthai_nodes/algorithms/parcel/implementation/visibility.py": "1b1bbc5a28441dadd8c68a6031531d6330f99a32af3baeb7c709cf6240a48f30",
-      "depthai_nodes/algorithms/parcel/implementation/visualization.html": "9ff6cd5f76323d886856dc821d08e1a116cd42bf17b94eced5a49b94402cd216",
+      "depthai_nodes/algorithms/parcel/implementation/visualization.html": "c3d13be60436c6dd6e8e548e26290211e715fdb07c8d33960091328a482ae280",
       "depthai_nodes/algorithms/parcel/manifest.py": "6aabd2b06eb0c18ea26d7f21f914185bf043c47a5d91d59dc4b95f3f232cac43",
       "depthai_nodes/message/parcel.py": "702ca0222b5a71c0c6a6982161d5c0a1dfb4b7364182e547dc0125513aec43d0",
       "depthai_nodes/message/support_plane.py": "0eaeec70dda37d48b3160d1f1a14cffce766f23182289d1b569ffb444f1f44e3",
@@ -1220,15 +1220,22 @@
       "installed_browser_report": "docs/parcel-promotions/oak4-visibility-keyboard-browser.json",
       "embedded_evidence": "byte-identical to the previous shipped page",
       "scope": "Keyboard-only chart focus restoration from upstream documentation; pointer behavior and frozen computation/settings unchanged."
+    },
+    "customer_visualization": {
+      "record_path": "docs/parcel-promotions/oak4-visibility-customer-guide.md",
+      "source_documentation_commit": "515ded0ebc24ea91f74d1555a346314c41cf5310",
+      "source_generation_receipt": "https://github.com/luxonis/BoxLabRunners/blob/515ded0ebc24ea91f74d1555a346314c41cf5310/experiments/oak4_visibility_10fps/evidence/visualisation-customer-verification.json",
+      "installed_browser_report": "docs/parcel-promotions/oak4-visibility-customer-browser.json",
+      "scope": "Customer-facing document; validation best/worst cases and errors derived from this candidate predictions and already-published reference dimensions. Official aggregates, suppression and computational identity unchanged."
     }
   },
   "visualization": {
     "path": "depthai_nodes/algorithms/parcel/implementation/visualization.html",
-    "sha256": "9ff6cd5f76323d886856dc821d08e1a116cd42bf17b94eced5a49b94402cd216",
+    "sha256": "c3d13be60436c6dd6e8e548e26290211e715fdb07c8d33960091328a482ae280",
     "source_repository": "https://github.com/luxonis/BoxLabRunners",
-    "source_commit": "96a2c2d781845eda3f7f64ae0f151263084aa499",
+    "source_commit": "515ded0ebc24ea91f74d1555a346314c41cf5310",
     "source_path": "algorithms/fast_baseline_oak4_visibility_01/visualization.html",
-    "source_sha256": "a57c2f3a5d1ca00a3529fed045ac2f22c85443d0056560b6444a942fa7fbce55",
+    "source_sha256": "85a1cdbb9c6baffb59c8038cb46212d72e22e0fc79f608d7858af711e4e6ef5b",
     "adaptations": [
       "Resolve four relative href links to commit-pinned upstream files; embedded evidence and interactions unchanged."
     ]

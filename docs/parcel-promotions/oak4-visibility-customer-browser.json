@@ -1,0 +1,38 @@
+{
+  "status": "passed",
+  "browser": "158.0.8127.88",
+  "offline": true,
+  "alias_redirect": false,
+  "viewport_widths": [
+    1440,
+    768,
+    390
+  ],
+  "external_requests": 0,
+  "javascript_errors": 0,
+  "stages_tested": 49,
+  "keyboard_focus_cases": 24,
+  "pointer_cases": 12,
+  "html_sha256": "c3d13be60436c6dd6e8e548e26290211e715fdb07c8d33960091328a482ae280",
+  "predictions": 19,
+  "validation_scenes": 18,
+  "test_predictions": 17,
+  "test_scenes": 17,
+  "test_feedback": "available",
+  "review_provider": "Independent",
+  "controls": [
+    "stage buttons",
+    "camera views",
+    "crop",
+    "keyboard navigation",
+    "prediction selection",
+    "derived signed dimension errors",
+    "aggregate statistics",
+    "performance scopes",
+    "validation/test prediction splits",
+    "held-out aggregate errors",
+    "suppressed held-out P95"
+  ],
+  "relative_links": "all resolve",
+  "traced_cases": "exact output parity verified during page generation"
+}

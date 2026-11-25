@@ -166,3 +166,7 @@ the extracted configuration file, and passes all 50 native message checks outsid
 the source checkout. Its SHA-256 is
 `483af9d44ff14824a52474d3b92a0e78c5fd536d120c59ddb083edbd3b5d3ec5`.
 Earlier wheel receipts continue to identify their original artifacts.
+
+## Customer measurement guide
+
+The [customer-guide record](oak4-visibility-customer-guide.md) supersedes the original page's unranked examples with the best and worst real validation measurements. This candidate's per-parcel errors are recomputed from already-public reference dimensions, with full-split cross-checks against the official receipts. No historical candidate errors, pass flags or overlap scores are reassigned. Source/destination HTML hashes, source revision, installed browser and wheel evidence accompany the new page. Computation and frozen settings remain unchanged.
