@@ -2,11 +2,11 @@
 
 `ImageAlignDepthCorrection` converts aligned source-camera axial Z into
 target-camera axial Z before native PointCloud generation. Values remain RAW16
-millimeters. The initial SDK pin is `depthai==3.12.0`.
+millimeters. The verified SDK version is `depthai==3.12.0`.
 
 ImageAlign places samples on the target pixel grid while retaining source axial
-Z. For the initial benchmark profile, the target is an undistorted RGB pinhole
-grid. The source is the actual depth optical frame, including its rectification.
+Z. The correction requires an undistorted target pinhole grid. The source is
+the actual depth optical frame, including its rectification.
 The original RGB and stereo views remain separate algorithm inputs.
 
 ## Pipeline API
@@ -28,7 +28,6 @@ results = correction.result.createOutputQueue()
 alignment. A native left image cannot substitute for rectified NeuralDepth
 geometry. `alignedDepth.getTransformation()` describes the actual target grid,
 so a third RGB input is unnecessary. ImageAlign owns the target-image match.
-The benchmark must separately retain native image and replay occurrence IDs.
 
 The node uses bounded blocking inputs and ordered lossless pairing. Source
 sequence number and host and device timestamps must match exactly. A dropped
@@ -39,7 +38,7 @@ unique occurrence sequence numbers when replaying.
 `AxialDepthFrameResult` containing that frame and its provenance. The structured
 message travels within one Python runtime, including an OAK-4 application's
 CPU. Its Python fields do not serialize through XLink or RemoteConnection.
-Serialize `result.provenance.to_dict()` into benchmark reports explicitly.
+Use `result.provenance.to_dict()` to serialize provenance for logging or reports.
 
 ## Computational API
 
@@ -47,7 +46,6 @@ Serialize `result.provenance.to_dict()` into benchmark reports explicitly.
 from depthai_nodes.utils.axial_depth import (
     AxialDepthCorrector,
     AxialDepthPolicy,
-    geometry_from_frames,
 )
 
 corrector = AxialDepthCorrector(
@@ -56,15 +54,12 @@ corrector = AxialDepthCorrector(
 result = corrector.correct_frame(aligned_frame, source_depth_frame)
 corrected_frame = result.frame
 report_fields = result.provenance.to_dict()
-
-geometry = geometry_from_frames(aligned_frame, source_depth_frame)
-array_result = corrector.correct(aligned_frame.getFrame(), geometry)
 ```
 
-`AxialDepthGeometry` accepts `target_size=(width, height)`, `target_intrinsics`,
-and `source_from_target_mm`. The frame adapter derives these from the actual
-messages and retains their full geometry identity. Array-only callers own the
-meaning and calibration of their supplied geometry.
+For NumPy arrays, use `corrector.correct(depth, geometry)`. Construct an
+`AxialDepthGeometry` with the target size, target intrinsics and source-from-target
+transform in millimeters, or derive it with `geometry_from_frames()`. Array
+callers are responsible for supplying geometry matching their depth values.
 
 The corrector owns a bounded denominator cache. Defaults are four entries and
 64 MiB. Its key includes geometry identity, rather than only image dimensions.
@@ -81,10 +76,8 @@ Choose the policy explicitly. There is no SDK-version heuristic. Passthrough
 is for a verified producer that already supplies target Z. An SDK upgrade
 requires new host and OAK-4 behavioral evidence and an explicit profile change.
 
-Provenance records `correction_enabled`, `correction_method`, the input and
-output axial conventions, geometry identity, invalid-value and quantization
-rules, rejected count, and frame association. The enabled method is
-`source_axial_to_target_axial/1`.
+Provenance records axial conventions, geometry, frame association, invalid-value
+and quantization rules, and the correction method `source_axial_to_target_axial/1`.
 
 Passing a structured corrected result back into correction rejects double
 conversion. Array callers or callers retaining a bare native frame can supply
@@ -128,9 +121,22 @@ configuration or coordinate conversion before parcel consumers.
 Detection and measurement receive an already corrected cloud. Existing box
 nodes and the frozen parcel implementations do not perform this correction.
 
-## Verification artifacts
+## Verification and limits
 
 The [pipeline example](../examples/image_align_depth_correction/README.md)
-tests actual ImageAlign source-Z behavior and corrected PointCloud coordinates.
-The [handoff](axial-depth-correction-handoff.md) records the package artifact,
-verification results, and remaining hardware or production acceptance work.
+reproduces the synthetic ImageAlign and PointCloud checks on the host or in an
+OAK-4 standalone app. Recorded checks on November 24, 2026 used DepthAI 3.12.0
+and matched corrected depth bytes on both paths. With 3,331 valid pixels, the
+maximum corrected source-plane residual was 0.530 mm, versus 84.235 mm without
+correction. These results describe that synthetic fixture, not general accuracy
+or performance on live NeuralDepth streams.
+
+Production integration still needs checks of real NeuralDepth 768x480
+rectification metadata, calibration changes and replay across devices. Frozen
+scene comparisons must verify cloud count, point order, validity, image
+association and unchanged parcel outcomes before replacing another correction.
+The synthetic checks do not establish those properties or live throughput.
+
+The [historical verification record](https://github.com/luxonis/depthai-nodes/blob/a8f9f9b0e86c8e9cebb6c7e3b60f4ecd7b2ae6b1/docs/axial-depth-correction-handoff.md)
+retains the original artifact hashes and detailed results; it does not identify
+later package builds.
