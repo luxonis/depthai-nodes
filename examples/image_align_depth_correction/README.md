@@ -20,8 +20,10 @@ python -m build --wheel --outdir /tmp/axial-dist
 python -m venv /tmp/axial-installed
 /tmp/axial-installed/bin/python -m pip install /tmp/axial-dist/depthai_nodes-*.whl
 cp examples/image_align_depth_correction/main.py /tmp/axial-example.py
-cd /tmp
-oakctl run-script /tmp/axial-installed/bin/python -I /tmp/axial-example.py --report /tmp/axial-host.json
+(
+    cd /tmp
+    oakctl run-script /tmp/axial-installed/bin/python -I /tmp/axial-example.py --report /tmp/axial-host.json
+)
 ```
 
 Expected output includes `source_z_retained_by_image_align=true` and a maximum
@@ -36,8 +38,8 @@ SHA-256 and source revision to the report. Editable installs fail this check.
 
 ## Run inside an OAK-4 standalone app
 
-Use the same wheel and source fixture. Stage only these example files and one
-wheel, so the app cannot import a hidden checkout.
+From the repository root, use the same wheel and source fixture. Stage only
+these example files and one wheel, so the app cannot import a hidden checkout.
 
 ```bash
 mkdir -p /tmp/axial-oak4/wheels
@@ -47,9 +49,12 @@ cp examples/image_align_depth_correction/oakapp.toml /tmp/axial-oak4/
 cp /tmp/axial-dist/depthai_nodes-*.whl /tmp/axial-oak4/wheels/
 python -m pip download --dest /tmp/axial-oak4/wheels --platform manylinux_2_28_aarch64 --platform manylinux2014_aarch64 --platform linux_aarch64 --python-version 3.11 --implementation cp --abi cp311 --only-binary=:all: -r /tmp/axial-oak4/requirements.txt
 oakctl app list -d DEVICE --format json
-oakctl app run /tmp/axial-oak4 -d DEVICE --detach
+oakctl app run /tmp/axial-oak4 -d DEVICE
 oakctl app logs 00000000-0000-0000-0000-000000000000 -d DEVICE --no-follow
 ```
+
+Run the app in the foreground and wait for it to exit before reading retained
+logs with the next command.
 
 Use an authenticated, exclusively available device. Do not replace a running
 development app. This one-shot app exits after writing its JSON result to logs
