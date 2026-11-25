@@ -14,7 +14,7 @@ For replacements, follow the [update workflow](update-workflow.md).
 | Full candidate identity        | `algorithm-5e4abc3a09b54148950317cdeac60ba2` |
 | Evaluated BoxLabRunners source | `d5e35e17d75f91368889dc53d950792eed4096e6`   |
 | Committed evaluation evidence  | `d5964eee714737750787066fc24bc29744536d45`   |
-| Visualization source           | `924313a24979d88966cb9e37d9a35da5b05dc1f7`   |
+| Visualization source           | `4b3853742c34a2d4548cfb599e05f37217dcec83`   |
 
 The [package manifest](../../depthai_nodes/algorithms/parcel/manifest.json) records
 original source hashes, build artifact, dependencies, weights, candidate hashes,
@@ -155,3 +155,61 @@ python -m build --wheel --no-isolation
 # Install the wheel with [parcel] into a fresh environment outside both repositories.
 # Run BoxLabRunners' visualisation/check.cjs against the installed HTML offline.
 ```
+
+## Replay performance guide update
+
+The guide now leads with the retained three-parcel application result: 671
+completed frames in a fixed 60-second window after ten seconds of warm-up,
+11.183333333333334 frames/s. The builder independently reproduces the count,
+all-three-parcels measured status, unique sequences and timestamps from the
+original prepared-application timeline. Four predecoded recorded image inputs
+feed fresh NeuralDepth LARGE, point cloud generation, controller and parcel nodes.
+Camera/file decoding and browser rendering are outside the benchmark. Throughput
+is not per-frame latency.
+
+A separate chart recovers detector-entry-to-measurement-callback-arrival wall
+times from all 663 native replay outputs. Detector start is its logged monotonic
+end time minus its recorded duration. Every ordered single-inflight pair must
+match sequence IDs, have a successful result after its own start and before the
+next detector start. Repeated sequence IDs are preserved. Measurement arrival
+can precede the detector's finally log; joining solely on log completion order
+would discard one valid output. Source instrumentation, candidate identities and
+shared session code hashes are checked.
+
+| Reported parcels | Frames | Mean node interval ms | Median ms |      P95 ms |
+| ---------------- | -----: | --------------------: | --------: | ----------: |
+| 1                |    343 |    48.125655379008755 | 46.380065 |  58.2414152 |
+| 2                |    226 |     55.22905627876106 | 55.027959 |  65.1538215 |
+| 3                |     80 |     62.63724366250001 | 62.214069 | 69.54066335 |
+
+All outputs, including startup and 14 with zero/four/five parcels, are retained in
+embedded evidence. No warm-up or outlier filtering is applied. Frames come from
+one recording and are correlated. Counts are algorithm-reported, not independent
+field labels. The native replay was paced at 3 FPS. This interval includes parcel
+node conversion/checks, detection, visibility, extraction, fitting and scheduling;
+it excludes upstream inference, point-cloud generation, controller input
+preparation and subsequent display. It does not establish full-pipeline latency
+or maximum throughput. One/two-parcel full-pipeline FPS and camera-to-result
+latency remain unavailable. Scene geometry/visibility also vary, so no controlled
+count scaling law is claimed.
+
+Mean/median/P95 replay controls are separate from the validation timing views.
+The source generation/browser receipts and exact source commit are linked from
+`port_verification.replay_processing_visualization`. Frozen computation, settings,
+evaluation receipts, scores and candidate identity are unchanged; no new hardware
+run or Workbench evaluation is added. Earlier guide checks remain historical.
+
+Verification of the replay guide: all 41 parcel algorithm tests and pre-commit
+pass. A fresh installed wheel, SHA-256
+`1a472655b44259bde69e80b0b449abf037ef2027a59035898244f7c05a007687`,
+validates all 22 covered files outside both source trees. Source and installed
+evidence JSON are identical. Package bytes compared with PR head
+`ee676729571544206aef6593afec999f709bdbc3` differ only in the HTML guide
+and manifest; computation, original settings, receipts and validator are unchanged.
+The installed HTML SHA-256 is
+`c195176e3d77e4df433ea824bb219c7a91ef17412792635baf106ef6c6a2ae32`.
+Its offline Chrome 158.0.8127.88 check verifies every one of the 663 paired
+intervals, mean/median/P95 by count, 671/60 application throughput, 49 walkthrough
+stage/view combinations, 24 dimension-chart keyboard cases, six validation-timing
+and six replay-chart keyboard cases, 12 pointer cases, both accuracy splits and
+responsive widths 390/768/1440 px. No JavaScript errors or external requests occur.
