@@ -14,7 +14,7 @@ For replacements, follow the [update workflow](update-workflow.md).
 | Full candidate identity        | `algorithm-5e4abc3a09b54148950317cdeac60ba2` |
 | Evaluated BoxLabRunners source | `d5e35e17d75f91368889dc53d950792eed4096e6`   |
 | Committed evaluation evidence  | `d5964eee714737750787066fc24bc29744536d45`   |
-| Visualization source           | `515ded0ebc24ea91f74d1555a346314c41cf5310`   |
+| Visualization source           | `924313a24979d88966cb9e37d9a35da5b05dc1f7`   |
 
 The [package manifest](../../depthai_nodes/algorithms/parcel/manifest.json) records
 original source hashes, build artifact, dependencies, weights, candidate hashes,
@@ -109,3 +109,49 @@ both allocation hazards, are resolved in the
 The [OAK-4 follow-up](https://github.com/luxonis/BoxLabRunners/blob/d5964eee714737750787066fc24bc29744536d45/experiments/oak4_visibility_10fps/FOLLOWUP.md)
 records the subsequent algorithm work. These findings concern earlier candidates;
 the current implementation contains no custom C++ kernels.
+
+## Support-plane and timing guide update
+
+The current source guide is pinned above. Its simulated parcel rests at z=0,
+with support samples on that plane surrounding all four sides of its footprint.
+The unrelated orange point cluster is removed; occlusion hides far-side samples
+behind the parcel. The walkthrough remains explicitly simulated.
+
+The speed section contains this candidate's timings only. Its 54 measured
+validation runs (18 scenes × three repetitions) average 35.25630757407408 ms/scene;
+fitting time divided by 57 fitting calls is 4.860072929824561 ms/parcel. An
+interactive plot separates whole-scene time, amortized scene cost per measured
+parcel and fitting-only cost. The count table has 17 one-parcel scenes and one
+two-parcel scene. Geometry, input points and rejected proposals differ, so no
+controlled count scaling curve or extrapolation is claimed. The separate
+three-parcel wrapper workload averages 51.194926545 ms/batch over 200 batches
+after ten warm-ups, or 17.064975515 ms/parcel amortized. Its different timer
+boundaries and full-application throughput are explained separately.
+
+Source generation and browser receipts are linked from
+`port_verification.surface_and_timing_visualization`. Earlier receipts retain
+their original observations through the historical links above. Computation,
+settings, evaluation receipts, official scores and candidate identity are unchanged.
+
+Verification of this update: all 41 parcel algorithm tests and pre-commit pass.
+The freshly built wheel, SHA-256
+`faf53e669e503eda225dfa6f7ae98fb9f58c3867c901ec8dedd0f0238fc6e5a7`,
+validates all 22 covered files outside both source trees, preserves the original
+settings file and `/configuration` pointer, and contains exactly the source
+evidence JSON. Comparing package bytes with PR head
+`da95b7be7c88a4473d2824dc9ba1c28bb19d5453` changes only the HTML guide and
+manifest. Computation, frozen settings, receipts and validator are byte-identical.
+The installed guide passes 49 stage/view combinations, 24 dimension-chart keyboard
+cases, six timing-chart keyboard cases with retained focus, 12 pointer cases,
+all three timing views, support-plane geometry checks, arithmetic/ranking and
+responsive widths 390/768/1440 px. Chrome 158.0.8127.88 runs offline with zero
+JavaScript errors or external requests. The installed HTML SHA-256 is
+`2c5d6e33511cac821fafc826f7e2082f97341649c7d02b95d9b793bb92659fbe`.
+
+```sh
+python -m pytest tests/unittests/test_parcel_algorithm -q
+pre-commit run --all-files
+python -m build --wheel --no-isolation
+# Install the wheel with [parcel] into a fresh environment outside both repositories.
+# Run BoxLabRunners' visualisation/check.cjs against the installed HTML offline.
+```
