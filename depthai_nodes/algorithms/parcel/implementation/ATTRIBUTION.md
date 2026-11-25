@@ -11,8 +11,8 @@ Workbench transport, identity registration, journal, or CLI is packaged.
 The lazy entry point keeps SciPy optional until computation is constructed.
 No custom native kernel, compiler, or binary is used by this candidate.
 
-Settings are byte-identical to the frozen v002 file; `configuration.json`
-contains its unchanged parameter object. The source archive digest is not
+`scoped-settings.json` is byte-identical to the frozen v002 settings file.
+Both nodes load its nested `configuration` object directly. The source archive digest is not
 an OCI image. See manifest.json for original and port hashes separately.
 Visualization links alone point to commit-pinned upstream evidence.
 

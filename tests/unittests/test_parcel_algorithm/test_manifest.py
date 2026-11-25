@@ -36,7 +36,40 @@ def test_manifest_validates_installed_bytes_and_evidence():
     )
     assert parcel.IMPLEMENTATION_NAME == "implementation"
     assert manifest["source"]["configuration_version"] == "v002"
+    assert manifest["implementation"]["configuration_path"] == (
+        "depthai_nodes/algorithms/parcel/implementation/scoped-settings.json"
+    )
+    assert manifest["implementation"]["configuration_pointer"] == "/configuration"
     assert len(inspect.signature(parcel.create_components).parameters) == 0
+
+
+def test_factory_receives_only_nested_frozen_configuration(monkeypatch):
+    from depthai_nodes.algorithms.parcel import implementation
+
+    settings_path = (
+        ROOT / "depthai_nodes/algorithms/parcel/implementation/scoped-settings.json"
+    )
+    original = settings_path.read_bytes()
+    expected = json.loads(original)["configuration"]
+    received = []
+    result = object()
+
+    def create(configuration):
+        received.append(configuration)
+        return result
+
+    monkeypatch.setattr(implementation, "create_components", create)
+    assert parcel.create_components() is result
+    assert received == [expected]
+    assert settings_path.read_bytes() == original
+    assert not settings_path.with_name("configuration.json").exists()
+
+
+def test_configuration_pointer_cannot_change(installed_copy):
+    root, manifest = installed_copy
+    manifest["implementation"]["configuration_pointer"] = "/other"
+    with pytest.raises(ValueError, match="Configuration pointer mismatch"):
+        _validate(root, manifest, check_bindings=False)
 
 
 def test_manifest_validates_with_cp1252_default_encoding(monkeypatch):
@@ -90,13 +123,13 @@ def test_frozen_configuration_cannot_change_with_port_hashes(installed_copy):
     root, manifest = installed_copy
     key = manifest["implementation"]["configuration_path"]
     path = root / key
-    configuration = json.loads(path.read_text(encoding="utf-8"))
-    configuration["detection"]["foreground_min_height_mm"] += 1
-    path.write_text(json.dumps(configuration), encoding="utf-8")
+    settings = json.loads(path.read_text(encoding="utf-8"))
+    settings["configuration"]["detection"]["foreground_min_height_mm"] += 1
+    path.write_text(json.dumps(settings), encoding="utf-8")
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     manifest["implementation"]["files_sha256"][key] = digest
     manifest["implementation"]["configuration_sha256"] = digest
-    with pytest.raises(ValueError, match="Frozen configuration changed"):
+    with pytest.raises(ValueError, match="Frozen settings byte hash mismatch"):
         _validate(root, manifest, check_bindings=False)
 
 

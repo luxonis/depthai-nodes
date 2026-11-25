@@ -47,10 +47,11 @@ def create_components() -> Components:
             create_components as create,
         )
 
-        configuration_path = (
-            Path(__file__).parent / IMPLEMENTATION_NAME / "configuration.json"
+        settings_path = (
+            Path(__file__).parent / IMPLEMENTATION_NAME / "scoped-settings.json"
         )
-        return create(json.loads(configuration_path.read_text()))
+        settings = json.loads(settings_path.read_text(encoding="utf-8"))
+        return create(settings["configuration"])
     except ModuleNotFoundError as exc:
         if exc.name == "scipy" or (exc.name or "").startswith("scipy."):
             raise ImportError(

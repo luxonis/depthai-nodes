@@ -19,7 +19,8 @@ no package is published and the PR is not merged.
   digest null and verifies archive kind and digest separately.
 - Complete settings are byte-identical to upstream
   `algorithms/fast_baseline_oak4_visibility_01/configurations/v002.json`.
-  `configuration.json` serializes the unchanged parameter object. Three projection
+  The initial promotion serialized the parameter object into `configuration.json`;
+  the packaging simplification below removes that extracted copy. Three projection
   workers, sequential candidate validation, stride-one boundary probes, sampling,
   geometry, and all thresholds remain frozen.
 
@@ -143,3 +144,25 @@ The [review-fix record](oak4-visibility-provenance-review.md) corrects the inher
 ## Visualization keyboard focus
 
 The [keyboard-focus record](oak4-visibility-keyboard-focus.md) documents the regenerated upstream page, keyboard-only focus restoration, preserved pointer selection, and current source/destination HTML hashes. Earlier browser and wheel receipts describe their original artifacts. Frozen computation, settings, and embedded evidence remain unchanged.
+
+## Single frozen settings file
+
+Both nodes now load the nested `configuration` object directly from the original
+`scoped-settings.json`. The extracted `configuration.json` is removed. Settings
+bytes retain SHA-256 `66f029694119c77ddad557bd58257b8743e7f284441d94a317b08fffc5496f10`;
+the selected candidate, configuration version, canonical configuration hash,
+computation, and public APIs are unchanged. The manifest identifies the full
+settings file and its `/configuration` pointer, with refreshed port hashes.
+
+All 70 focused tests and 46 subtests pass. Tests verify exact factory parameters,
+unchanged settings bytes, the fixed configuration pointer, and tampering rejection.
+The synthetic example produces the same geometry before and after this change,
+but both versions fail its existing 5 mm accuracy assertion: length is
+213.599998 mm against the fixture's 220 mm. This existing example limitation is
+not corrected or hidden by the packaging change.
+
+The installed wheel validates all 22 covered files, creates both callbacks, omits
+the extracted configuration file, and passes all 50 native message checks outside
+the source checkout. Its SHA-256 is
+`483af9d44ff14824a52474d3b92a0e78c5fd536d120c59ddb083edbd3b5d3ec5`.
+Earlier wheel receipts continue to identify their original artifacts.

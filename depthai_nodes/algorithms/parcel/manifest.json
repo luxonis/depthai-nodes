@@ -3,16 +3,15 @@
   "implementation": {
     "name": "fast_baseline_oak4_visibility_01",
     "package_path": "depthai_nodes/algorithms/parcel/implementation",
-    "configuration_path": "depthai_nodes/algorithms/parcel/implementation/configuration.json",
+    "configuration_path": "depthai_nodes/algorithms/parcel/implementation/scoped-settings.json",
     "source_contract_version": "BoxLabRunners@d5e35e17d75f91368889dc53d950792eed4096e6:docs/boxlab/contracts/RUNNER.md",
-    "configuration_sha256": "0034c6c2acb4e18fa2b8a5161ccba54a73c6b342d717eaa59b8993d60f886734",
+    "configuration_sha256": "66f029694119c77ddad557bd58257b8743e7f284441d94a317b08fffc5496f10",
     "files_sha256": {
       "depthai_nodes/algorithms/__init__.py": "c5235d0aeaf840d21066d88f4529091e36ea97295c8a81f6dd881687ad93bbb6",
-      "depthai_nodes/algorithms/parcel/__init__.py": "166d37797c1f09ab7fad67d08aab1b4320d6ea4057a8b2989c0d6d8d557f0270",
-      "depthai_nodes/algorithms/parcel/implementation/ATTRIBUTION.md": "04b44a29c7566e95a6cef439a2b911d70ea6224ed2b54aff64401c2b9447782b",
+      "depthai_nodes/algorithms/parcel/__init__.py": "85d0aa2a443c3100fbc2c611c6e64cc895ce482fb084936a765481250d8bf4f9",
+      "depthai_nodes/algorithms/parcel/implementation/ATTRIBUTION.md": "22b44d6428c8f32770f1b17c0ff49a78a73be8ee4e5aa56e446da6ce57c73828",
       "depthai_nodes/algorithms/parcel/implementation/__init__.py": "d97fe754c1703f0661a957bbc345bbe532989cd4efc3601b092ddc5773923997",
       "depthai_nodes/algorithms/parcel/implementation/components.py": "05db85213afa257e054ca4cd4f9975666ca8624c4149364e472c1f58e7e75d20",
-      "depthai_nodes/algorithms/parcel/implementation/configuration.json": "0034c6c2acb4e18fa2b8a5161ccba54a73c6b342d717eaa59b8993d60f886734",
       "depthai_nodes/algorithms/parcel/implementation/evaluation-evidence.json": "e23bcd5d41638487409b52dcce3ace3bb024c954c4cae6a65307f235fbc0a9d8",
       "depthai_nodes/algorithms/parcel/implementation/factory.py": "52d9dd277d6d58782643961e29db34337f0a0fd7a599c4f2ac2f008f2bdb5b6e",
       "depthai_nodes/algorithms/parcel/implementation/geometry.py": "fc8f513b8aedd6783b2f3645636c1234f31ac555e94b13547b4ed526a3f8f724",
@@ -22,7 +21,7 @@
       "depthai_nodes/algorithms/parcel/implementation/scoped-settings.json": "66f029694119c77ddad557bd58257b8743e7f284441d94a317b08fffc5496f10",
       "depthai_nodes/algorithms/parcel/implementation/visibility.py": "1b1bbc5a28441dadd8c68a6031531d6330f99a32af3baeb7c709cf6240a48f30",
       "depthai_nodes/algorithms/parcel/implementation/visualization.html": "9ff6cd5f76323d886856dc821d08e1a116cd42bf17b94eced5a49b94402cd216",
-      "depthai_nodes/algorithms/parcel/manifest.py": "6f5bc836b4e2fe75fa32374d0e69d84941c8dc6d77302efe2bbe10fffed06787",
+      "depthai_nodes/algorithms/parcel/manifest.py": "6aabd2b06eb0c18ea26d7f21f914185bf043c47a5d91d59dc4b95f3f232cac43",
       "depthai_nodes/message/parcel.py": "702ca0222b5a71c0c6a6982161d5c0a1dfb4b7364182e547dc0125513aec43d0",
       "depthai_nodes/message/support_plane.py": "0eaeec70dda37d48b3160d1f1a14cffce766f23182289d1b569ffb444f1f44e3",
       "depthai_nodes/node/parcel_detector/__init__.py": "4bd2d4aaf686835abe5da5203a47a67a2ebe125aee64c5ef8499cac3809b1482",
@@ -33,7 +32,8 @@
     },
     "binary_distribution": "No custom native kernels, sources, build flags, or binaries; computation uses NumPy, SciPy, and OpenCV.",
     "native_build_flags": [],
-    "tested_native_binaries": []
+    "tested_native_binaries": [],
+    "configuration_pointer": "/configuration"
   },
   "workbench_candidate": {
     "id": "algorithm-5e4abc3a09b54148950317cdeac60ba2",
@@ -156,7 +156,8 @@
       "Relocate computation imports; keep the private lazy entry point and neutral scene types.",
       "Keep existing public nodes, message conversion, profile warnings, and ownership semantics.",
       "No custom native kernel assets apply to this candidate.",
-      "Copy visualization with link-only repairs to commit-pinned upstream files."
+      "Copy visualization with link-only repairs to commit-pinned upstream files.",
+      "Load the frozen configuration directly from the original scoped-settings.json configuration object instead of shipping a separately serialized configuration.json. Original settings bytes, canonical configuration hash, candidate identity, and factory input are unchanged."
     ],
     "selection": {
       "commit": "2cb32ae03881d4b897d15512c9850b1790fae703",
@@ -1126,13 +1127,14 @@
         "skip_reason": "Existing box tests require optional Open3D, which is absent."
       },
       {
-        "name": "Installed wheel outside source trees",
+        "name": "Initial promotion wheel outside source trees",
         "result": "passed",
         "manifest_files": 23,
         "native_message_checks": 50,
         "synthetic_pipeline_objects": 1,
         "synthetic_pipeline_geometry_absolute_tolerance": 1e-09,
-        "obsolete_kernel_assets": false
+        "obsolete_kernel_assets": false,
+        "scope": "Historical promotion artifact; the single-settings-file packaging update is verified separately below."
       },
       {
         "name": "Installed visualization offline",
@@ -1173,6 +1175,18 @@
         },
         "new_failing_test_ids": [],
         "note": "An earlier replacement run reproduced all 144 baseline failing/erroring test IDs. Final run does not reproduce the unchanged axial-depth deterministic-host-pipeline failure; no axial-depth code changed."
+      },
+      {
+        "name": "Single settings file packaging",
+        "result": "passed",
+        "manifest_files": 22,
+        "focused_tests_passed": 70,
+        "focused_subtests_passed": 46,
+        "installed_native_message_checks": 50,
+        "original_settings_bytes_unchanged": true,
+        "configuration_pointer": "/configuration",
+        "record_path": "docs/parcel-promotions/fast_baseline_oak4_visibility_01_algorithm-5e4abc3a09b54148950317cdeac60ba2.md",
+        "limitation": "The unchanged synthetic example fails its existing 5 mm length assertion before and after the packaging change; identical output is recorded in the promotion record."
       }
     ],
     "environment": {

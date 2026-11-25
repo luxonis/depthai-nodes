@@ -121,8 +121,12 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
         implementation["package_path"] == package_path, "Implementation path mismatch"
     )
     _require(
-        implementation["configuration_path"] == package_path + "/configuration.json",
+        implementation["configuration_path"] == package_path + "/scoped-settings.json",
         "Configuration path mismatch",
+    )
+    _require(
+        implementation["configuration_pointer"] == "/configuration",
+        "Configuration pointer mismatch",
     )
     _require(
         implementation["source_contract_version"]
@@ -157,15 +161,14 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
             hashlib.sha256(actual_path.read_bytes()).hexdigest() == _digest(expected),
             f"File hash mismatch: {name}",
         )
-    configuration_bytes = (root / implementation["configuration_path"]).read_bytes()
+    settings_bytes = (root / implementation["configuration_path"]).read_bytes()
     _require(
-        hashlib.sha256(configuration_bytes).hexdigest()
+        hashlib.sha256(settings_bytes).hexdigest()
         == _digest(implementation["configuration_sha256"]),
         "Configuration byte hash mismatch",
     )
-    configuration = json.loads(configuration_bytes)
-    settings_bytes = (root / package_path / "scoped-settings.json").read_bytes()
     settings = json.loads(settings_bytes)
+    configuration = settings["configuration"]
     evidence = json.loads(
         (root / package_path / "evaluation-evidence.json").read_bytes()
     )
@@ -173,7 +176,6 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
         hashlib.sha256(settings_bytes).hexdigest() == evidence["settings_sha256"],
         "Frozen settings byte hash mismatch",
     )
-    _require(configuration == settings["configuration"], "Frozen configuration changed")
     candidate = manifest["workbench_candidate"]
     original = evidence["validation"]["run"]["candidate"]
     _require(
