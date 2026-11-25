@@ -1093,7 +1093,7 @@
   },
   "timings": [],
   "port_verification": {
-    "record_path": "docs/parcel-promotions/fast_baseline_oak4_visibility_01_algorithm-5e4abc3a09b54148950317cdeac60ba2.md",
+    "record_path": "docs/parcel-promotions/implementation.md",
     "reference_artifact": "bad3b09ff518e15b05db814bdc8bb40d26818328f38a1dddf78d4fc9523d322c",
     "comparison_inputs": "15 synthetic scenes, three standalone measurement cases, and authorized cached validation scenes; see committed comparison report.",
     "numerical_tolerance": {
@@ -1105,7 +1105,7 @@
       {
         "name": "Frozen source and port comparison",
         "result": "passed",
-        "report": "docs/parcel-promotions/oak4-visibility-comparison.json",
+        "report": "docs/parcel-promotions/comparison.json",
         "synthetic_scenes": 15,
         "standalone_measurement_cases": 3,
         "validation_scenes": 18,
@@ -1185,7 +1185,7 @@
         "installed_native_message_checks": 50,
         "original_settings_bytes_unchanged": true,
         "configuration_pointer": "/configuration",
-        "record_path": "docs/parcel-promotions/fast_baseline_oak4_visibility_01_algorithm-5e4abc3a09b54148950317cdeac60ba2.md",
+        "record_path": "docs/parcel-promotions/implementation.md",
         "limitation": "The unchanged synthetic example fails its existing 5 mm length assertion before and after the packaging change; identical output is recorded in the promotion record."
       }
     ],
@@ -1206,27 +1206,27 @@
       "No Windows, Linux, or OAK execution of this newly built port. Existing full-unit failures are compared with the unchanged PR head in the promotion record."
     ],
     "provenance_review_fixes": {
-      "record_path": "docs/parcel-promotions/oak4-visibility-provenance-review.md",
+      "record_path": "docs/parcel-promotions/implementation.md",
       "scope": "Approval and native-build metadata/validator corrections only; frozen computation, settings, receipts, metrics, and visualization unchanged.",
-      "historical_native_builds_path": "docs/parcel-promotions/historical-native-builds-algorithm-2f65a6f6296d48e981f5fe3f77bfde89.json",
       "focused_tests_passed": 85,
       "focused_subtests_passed": 46,
-      "optional_open3d_skips": 1
+      "optional_open3d_skips": 1,
+      "historical_native_builds_url": "https://github.com/luxonis/depthai-nodes/blob/30e30d1eaac3561adcecda4f05110edae03982c0/docs/parcel-promotions/historical-native-builds-algorithm-2f65a6f6296d48e981f5fe3f77bfde89.json"
     },
     "visualization_keyboard_fix": {
-      "record_path": "docs/parcel-promotions/oak4-visibility-keyboard-focus.md",
+      "record_path": "docs/parcel-promotions/implementation.md",
       "source_documentation_commit": "96a2c2d781845eda3f7f64ae0f151263084aa499",
       "source_browser_report": "https://github.com/luxonis/BoxLabRunners/blob/96a2c2d781845eda3f7f64ae0f151263084aa499/experiments/oak4_visibility_10fps/evidence/visualisation-keyboard-browser-check.json",
-      "installed_browser_report": "docs/parcel-promotions/oak4-visibility-keyboard-browser.json",
       "embedded_evidence": "byte-identical to the previous shipped page",
-      "scope": "Keyboard-only chart focus restoration from upstream documentation; pointer behavior and frozen computation/settings unchanged."
+      "scope": "Keyboard-only chart focus restoration from upstream documentation; pointer behavior and frozen computation/settings unchanged.",
+      "installed_browser_report": "https://github.com/luxonis/depthai-nodes/blob/30e30d1eaac3561adcecda4f05110edae03982c0/docs/parcel-promotions/oak4-visibility-keyboard-browser.json"
     },
     "customer_visualization": {
-      "record_path": "docs/parcel-promotions/oak4-visibility-customer-guide.md",
+      "record_path": "docs/parcel-promotions/implementation.md",
       "source_documentation_commit": "515ded0ebc24ea91f74d1555a346314c41cf5310",
       "source_generation_receipt": "https://github.com/luxonis/BoxLabRunners/blob/515ded0ebc24ea91f74d1555a346314c41cf5310/experiments/oak4_visibility_10fps/evidence/visualisation-customer-verification.json",
-      "installed_browser_report": "docs/parcel-promotions/oak4-visibility-customer-browser.json",
-      "scope": "Customer-facing document; validation best/worst cases and errors derived from this candidate predictions and already-published reference dimensions. Official aggregates, suppression and computational identity unchanged."
+      "scope": "Customer-facing document; validation best/worst cases and errors derived from this candidate predictions and already-published reference dimensions. Official aggregates, suppression and computational identity unchanged.",
+      "installed_browser_report": "https://github.com/luxonis/depthai-nodes/blob/30e30d1eaac3561adcecda4f05110edae03982c0/docs/parcel-promotions/oak4-visibility-customer-browser.json"
     }
   },
   "visualization": {

@@ -259,18 +259,16 @@ def test_held_out_candidate_and_evaluation_are_linked(
 
 
 @pytest.mark.parametrize(
-    "field", ("binary_distribution", "native_build_flags", "tested_native_binaries")
+    ("field", "value"),
+    [
+        ("binary_distribution", "Custom C++ kernels built locally"),
+        ("native_build_flags", ["-std=c++17", "-O3"]),
+        ("tested_native_binaries", [{"path": "native.so", "sha256": "0" * 64}]),
+    ],
 )
-def test_predecessor_native_build_claims_are_rejected(installed_copy, field):
+def test_predecessor_native_build_claims_are_rejected(installed_copy, field, value):
     root, manifest = installed_copy
-    historical = json.loads(
-        (
-            ROOT
-            / "docs/parcel-promotions/historical-native-builds-algorithm-2f65a6f6296d48e981f5fe3f77bfde89.json"
-        ).read_bytes()
-    )
-    assert len(historical["implementation"]["tested_native_binaries"]) == 6
-    manifest["implementation"][field] = historical["implementation"][field]
+    manifest["implementation"][field] = value
     with pytest.raises(ValueError, match="Native build metadata does not describe"):
         _validate(root, manifest, check_bindings=False)
 

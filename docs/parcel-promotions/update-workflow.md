@@ -1,38 +1,99 @@
 # Update the bundled parcel algorithm
 
-Use this procedure when changing the implementation shared by `ParcelDetector` and `ParcelDimensioner`.
-The existing box nodes have a separate contract and remain unchanged.
+BoxLabRunners owns algorithm development, review, tuning and evaluation.
+DepthAI Nodes owns public APIs, message conversion, packaging and integration.
+Return computation or frozen-settings findings to BoxLabRunners with a reproduction
+and their effect. If ownership is unclear, record the uncertainty before changing
+the frozen dependency closure. Packaging and documentation corrections can be
+verified here without claiming a new algorithm evaluation.
 
-BoxLabRunners owns algorithm development, review, configuration tuning, and Workbench evaluation.
-This repository owns public node APIs, message conversion, packaging, and integration of the selected frozen algorithm.
-Return computation or frozen-settings findings to BoxLabRunners with a reproduction and their effect.
-Record uncertain ownership explicitly before changing the frozen dependency closure.
-The current [upstream findings](upstream-findings.md) include a confirmed projection discrepancy and performance limitations.
+The [current implementation record](implementation.md) identifies the selected
+candidate and actual verification coverage. Read the commit-pinned BoxLabRunners
+[design](https://github.com/luxonis/BoxLabRunners/blob/2cb32ae03881d4b897d15512c9850b1790fae703/docs/depthai-nodes/design.md)
+and [promotion runbook](https://github.com/luxonis/BoxLabRunners/blob/2cb32ae03881d4b897d15512c9850b1790fae703/docs/depthai-nodes/promote.md)
+before selecting a replacement. Node contracts and input requirements live in the
+[public API overview](../../depthai_nodes/node/__init__.py) and node docstrings.
+Existing box nodes have a separate contract.
 
-1. Obtain a newly reviewed and evaluated combined candidate from [BoxLabRunners](https://github.com/luxonis/BoxLabRunners). Record its algorithm name, implementation Git revision, configuration version, full candidate identity, dependency lock, settings, weights, executed image, and evaluation evidence. BoxLabRunners keeps algorithm code in one source directory and frozen settings in `algorithms/<name>/configurations/vNNN.json`. Computational changes require a new evaluated candidate. Another dataset evaluation of unchanged code and settings adds evidence to that algorithm and configuration version. It does not require another source directory. Record the actual reviewer or independent review method and finding resolutions; completed review remains a prerequisite. Historical candidates retain their original review and evaluation status.
-1. Read the [accepted design](https://github.com/luxonis/BoxLabRunners/blob/2cb32ae03881d4b897d15512c9850b1790fae703/docs/depthai-nodes/design.md) and [promotion runbook](https://github.com/luxonis/BoxLabRunners/blob/2cb32ae03881d4b897d15512c9850b1790fae703/docs/depthai-nodes/promote.md) in that repository. Obtain the exact evaluated revision and committed evidence revision. Verify source-file hashes and scoped-settings bytes before copying code. Do not substitute the checkout's current `HEAD`.
-1. Replace the contents of the stable `depthai_nodes/algorithms/parcel/implementation/` directory with the selected frozen port. Include the complete computational dependency closure, original frozen `scoped-settings.json`, required assets, attribution, and any native source/build instructions needed by the candidate. Load its nested `configuration` object directly; do not maintain a separately serialized parameter file. Update code, settings, dependency requirements, binding, and manifest together in Git. Keep previous implementations recoverable through Git history and retain their exact released wheels, source artifacts, manifests, settings, and native assets. Do not accumulate candidate-named implementation directories. Exclude Workbench transport and credentials.
-1. Keep runtime inputs separate from frozen settings. Both nodes must use one explicit internal binding. Do not expose an algorithm selector, injected backend, settings dictionary, or threshold controls.
-1. Compare the original and port on identical synthetic scenes and already-authorized validation inputs. Declare numerical tolerances before comparisons. Check proposal order, indices, eligibility, point order, no-fit and unknown-height outcomes, and cuboid geometry. Verify native and fallback paths, repeated scenes, and completion of workers on exceptions. Fixture parity does not establish full dataset parity.
-1. Test the message boundary with real DepthAI messages. Check calibration grids, RGB order, distortion and transforms, millimeter units, reference-camera plane orientation, timing, config application between scenes, failed versus empty frames, identity mismatch, multiple parcels, and queued ownership. The dimensioner must use the plane carried by the batch.
-   Read camera calibration from native `ImgTransformation` metadata rather than asking callers to construct duplicate camera or rig types. Use delivered-grid intrinsics and calibrated poses in millimeters. Native DEFAULT cloud XYZ are already in the shared reference frame; do not apply the original source-camera pose again. Recheck SDK metadata semantics before adding other cloud coordinate modes.
-   Snapshot published parcel points into immutable storage so retained writable aliases cannot change queued messages. Keep float32 values and selected-point order. The dimensioner must not extract or copy points again.
-   Construct parcel values normally with read-only properties, or validate frozen records without rewriting their fields. Do not use `object.__setattr__` to mutate frozen parcel dataclasses.
-   Synchronize the four scene streams with the native host `Sync` node. Block on the scene input, then use one nonblocking `tryGet()` on the config input. Apply an available config to stored state before processing; otherwise keep the current state. Apply queued updates in order, one per scene. The initial plane is optional: while unset, consume scene groups without decoding, algorithm calls, or outputs. A config supplying a plane activates subsequent groups without a restart. Use `createInputQueue(blocking=True)` for the producer queue. A full queue can block the sender, so avoid config bursts from a thread that must also produce scenes. Keep the node config queue blocking: a one-entry nonblocking config queue crashed the combined pipeline on SDK 3.11, while the blocking alternative passed. A standalone queue probe did not reproduce the crash.
-   Preserve the evaluated unrectified image profile: color 2000x1500 and left/right 1280x800. Check dimensions once during processing and warn on mismatch, as explicitly requested by the user. Continue processing without resizing or retuning. The warning is not a claim of equivalent behavior on other grids or a geometry validator. NeuralDepth 768x480 is preferred upstream but has no direct detector input to validate.
-1. Build a wheel from a clean staging tree and install it in a clean environment outside both source trees. Do not reuse an old `build/lib` directory: setuptools can retain a removed candidate-named package there. Check wheel entries for obsolete implementation directories and optional native binaries before installation. Check every declared asset hash, lazy optional imports, and a synthetic pipeline through both public nodes. Test the target dependencies separately from the frozen reference environment. Record platform and dependency differences without assuming equivalence.
-1. Fill `depthai_nodes/algorithms/parcel/manifest.json`. Record algorithm name, configuration version and canonical settings path separately from the full release-scoped candidate identity. Set `implementation.configuration_path` to the packaged settings file and `configuration_pointer` to `/configuration`. Its `configuration_sha256` hashes the complete original settings-file bytes; Workbench's separate canonical configuration hash remains under `workbench_candidate`. Preserve the evaluated source commit and original settings path when a later catalog migration introduces new paths. Preserve original candidate hashes separately from port hashes. Relocation does not establish evaluated-artifact identity. Copy complete scoring policy, metric version, run and evaluation IDs, denominators, null reasons, and suppression. Record precisely which comparisons ran. Hash raw installed file bytes with repository-relative keys beginning with `depthai_nodes/`. Exclude the manifest itself and optional local binaries from the portable file map. Record native build hashes separately. Copy the selected visualization and assets, repair links to shipped files or commit-pinned sources, and record its own documentation source commit and source/destination hashes. The documentation revision can differ from the evaluated computation revision. Verify the installed page against the same candidate, settings, and evidence.
-1. Add a distinct promotion record under `docs/parcel-promotions/` for the full candidate identity. Preserve earlier published evidence and artifact hashes unchanged. Include source adaptations, exact verification commands, environments, observed results, and limitations. Historical scores and timings stay attributed to their evaluated artifacts. Do not assign historical performance to a newly built wheel.
-1. Run `pytest tests/unittests`, `pre-commit run --all-files`, and `pydoctor depthai_nodes`, plus the focused reference comparisons. Investigate failures against the unchanged base. Report unavailable checks and existing failures explicitly.
-1. Update the binding and manifest together only after the applicable checks pass. Validate the manifest from the installed wheel. Update public package docstrings and examples when the API changes. Link the target review and promotion record from the experiment workspace when that write is authorized.
+1. Select a newly reviewed and evaluated BoxLabRunners candidate. Pin the evaluated
+   source commit and committed evidence revision, rather than the checkout's `HEAD`.
+   Verify source hashes, original settings bytes and independent review resolutions.
+   Record algorithm name, configuration version and full candidate identity.
+   Computational or settings changes require a new candidate; additional evaluation
+   of unchanged code/settings adds evidence to the existing version.
+1. Replace the contents of the stable
+   `depthai_nodes/algorithms/parcel/implementation/` directory. Include the complete
+   computational dependency closure, original `scoped-settings.json`, required
+   assets, attribution and any native source/build instructions. Load its nested
+   `configuration` directly. Exclude Workbench transport and credentials.
+   Update code, settings, dependencies, binding and manifest together. Keep one
+   implementation directory; Git history and retained release artifacts preserve
+   previous implementations.
+1. Bind both nodes to the same frozen implementation, configuration and full
+   identity. Preserve the public API, point order, numerical behavior, runtime
+   support plane/config handling, calibration conversion and native/fallback
+   support where applicable. Keep settings private, without selectors or overrides.
+1. Compare source and port on identical synthetic and already-authorized validation
+   inputs. Declare tolerances first. Check proposal order, indices, eligibility,
+   selected-point order, geometry, no-fit and unknown-height outcomes. Exercise
+   repeated scenes, exception cleanup and native/fallback paths when present.
+   State unavailable assets and comparison limits. Fixtures do not establish full
+   dataset parity; fetching held-out inputs or reading training labels needs
+   separate authorization.
+1. Run focused algorithm, message, node, reference and relevant box tests. Use real
+   SDK messages to check delivered-pixel calibration, units/transforms, synchronized
+   timing, config application, unset-plane behavior, failed/empty frames, immutable
+   queued ownership and identity mismatch. The dimensioner uses the plane carried
+   by the batch. Preserve existing input-profile warnings and frozen settings.
+   Run the full unit suite, pre-commit and API documentation build; compare failures
+   against the unchanged base and report existing failures explicitly.
+1. Update `depthai_nodes/algorithms/parcel/manifest.json`. Keep evaluated-source
+   provenance separate from production-port hashes and adaptations. Preserve source
+   commit, candidate hashes, original image or build artifact kind/digest, dependency
+   lock, weights and frozen settings. Preserve complete review, scoring policy,
+   metric version, evaluation/run IDs, denominators, null reasons and suppression.
+   Record the settings-file hash and `/configuration` pointer separately from the
+   candidate's canonical configuration hash. Hash raw installed package bytes with
+   repository-relative `depthai_nodes/` keys. Exclude the manifest and optional
+   local binaries from that map; record native builds separately.
+1. Copy the selected visualization/assets. Repair links to shipped files or
+   commit-pinned sources. Record its documentation revision and source/destination
+   hashes independently of computation. Verify the installed page offline against
+   the selected candidate/settings/evidence, including keyboard focus, responsive
+   layout and interactions. Documentation updates do not imply reevaluation.
+1. Build a wheel from a clean staging tree, then install it outside both source
+   repositories. A reused `build/lib` can retain removed packages. Check wheel
+   contents for obsolete directories/assets/binaries, validate all declared hashes,
+   verify lazy optional imports and both node bindings, and run native SDK checks
+   plus a synthetic pipeline through both nodes. Record platform/dependency
+   differences. If the candidate uses custom native libraries, build from its
+   selected source, test a clean fallback, and exclude local binaries from a
+   universal wheel.
+1. Replace `implementation.md` with the new candidate's concise integration record
+   and `comparison.json` with its actual comparison evidence. Keep these three
+   documentation files. Put detailed development receipts in retained review/build
+   artifacts, with exact hashes and immutable links from the implementation record.
+   Before replacement, pin the earlier record/evidence and retain exact released
+   wheels, manifests, settings and assets. Never transfer old scores or performance
+   claims to a newly built artifact. Update README and manifest references together.
 
-The current bundled candidate is `fast_baseline_oak4_visibility_01/v002`, `algorithm-5e4abc3a09b54148950317cdeac60ba2`. It uses no custom native kernels.
+Useful commands (install `.[dev,box-measurement,parcel]` first):
 
-The first promotion record is [fast baseline](fast_baseline_algorithm_2f65a6f6296d48e981f5fe3f77bfde89.md).
-The repeatable comparison tool is `tools/verify_parcel_port.py`.
-The regression fixtures are in `tests/parcel_reference/`.
+```sh
+python -m pytest tests/unittests/test_parcel_algorithm tests/unittests/test_parcel_nodes tests/parcel_reference -q
+python -m pytest tests/unittests
+pre-commit run --all-files
+pydoctor depthai_nodes
+python -m build --wheel --no-isolation
+```
 
-Publishing a package, merging a change, fetching new held-out inputs, and reading training labels require their own authorization.
-When a future candidate uses custom native libraries, rebuild them from its selected source. Remove stale local binaries before testing the fallback; the frozen loader does not safely handle every stale ABI. Never ship a locally built binary in the universal wheel.
+`tools/verify_parcel_port.py` performs the repeatable frozen-source comparison;
+`tests/parcel_reference/` supplies repository fixtures. Its reference root must
+contain the exact evaluated files and evidence. Record the command, asset hashes,
+environment and coverage in `comparison.json`; keep temporary reports outside the
+repository. Preserve prior published evidence unchanged in Git/release artifacts.
 
-Rollback restores the complete previously verified release, including code, settings, dependencies, assets, and manifest. Restoring only a binding or manifest would misattribute the installed computation. A packaging correction gets its own port verification; an algorithm correction returns through BoxLabRunners review and evaluation before promotion.
+Rollback restores the complete previously verified release: code, settings,
+dependencies, assets and manifest. Restoring only an identity or binding would
+misattribute the installed computation. Publishing or merging requires separate
+authorization.
