@@ -1,15 +1,17 @@
+import depthai as dai
 import numpy as np
 import pytest
 
 import depthai_nodes.message
 import depthai_nodes.node
-from depthai_nodes.node import AutoSupportPlaneConfig
+from depthai_nodes.node import AutoSupportPlaneConfig, SupportPlaneCalibrationConfig
 
 
-@pytest.mark.parametrize("name", ["AutoSupportPlane", "AutoSupportPlaneConfig"])
-def test_node_and_configuration_are_exported_from_node_not_message(name):
-    assert name in depthai_nodes.node.__all__
-    assert name not in depthai_nodes.message.__all__
+def test_configuration_is_exported_as_a_message():
+    assert "AutoSupportPlaneCalibration" in depthai_nodes.node.__all__
+    assert "AutoSupportPlaneConfig" in depthai_nodes.message.__all__
+    assert AutoSupportPlaneConfig is depthai_nodes.message.AutoSupportPlaneConfig
+    assert isinstance(AutoSupportPlaneConfig(), dai.Buffer)
 
 
 def test_configuration_stores_built_in_numbers():
@@ -24,6 +26,10 @@ def test_configuration_stores_built_in_numbers():
     assert config.failed_checks_before_refit == 5
 
 
+def test_default_configuration_uses_shared_assessment():
+    assert AutoSupportPlaneConfig().calibration == SupportPlaneCalibrationConfig()
+
+
 @pytest.mark.parametrize(
     "name,value",
     [
@@ -34,6 +40,11 @@ def test_configuration_stores_built_in_numbers():
         ("failed_checks_before_refit", True),
         ("failed_checks_before_refit", 3.0),
         ("calibration", None),
+        ("vertical_distance_range_mm", 700),
+        ("min_on_plane_ratio", True),
+        ("min_sampled_point_count", 500.0),
+        ("check_distance_mm", "30"),
+        ("max_gravity_angle_deg", False),
         ("calibration", {"check_distance_mm": 30.0}),
     ],
 )
@@ -50,6 +61,11 @@ def test_configuration_rejects_wrong_types(name, value):
         ("check_interval_sec", float("nan")),
         ("check_interval_sec", float("inf")),
         ("failed_checks_before_refit", 0),
+        ("vertical_distance_range_mm", (900, 700)),
+        ("min_on_plane_ratio", 1.1),
+        ("min_sampled_point_count", 0),
+        ("check_distance_mm", -1),
+        ("max_gravity_angle_deg", 91),
     ],
 )
 def test_configuration_rejects_out_of_range_values(name, value):
