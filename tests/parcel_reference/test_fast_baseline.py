@@ -513,177 +513,15 @@ class FrozenGeometryRegressionTests(unittest.TestCase):
         )
 
 
-class NativeKernelTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        from depthai_nodes.algorithms.parcel.implementation import (
-            native,
-        )
-
-        if native._lib is None:
-            raise unittest.SkipTest(
-                "Build optional kernels with "
-                "python -m depthai_nodes.algorithms.parcel.implementation.build_native"
-            )
-        cls.native = native
-
-    def test_projection_cells_match_shared_projector_with_distortion_and_tilt(self):
-        rng = np.random.default_rng(731)
-        xyz = rng.uniform((-200, -150, -50), (200, 150, 1200), (5000, 3)).astype(
-            np.float32
-        )
-        image = np.zeros((120, 180), np.uint8)
-        transform = ((1, 0, 0, 12), (0, 1, 0, -3), (0, 0, 1, 1), (0, 0, 0, 1))
-        coefficients = (
-            0.03,
-            -0.002,
-            0.0003,
-            -0.0002,
-            0.0001,
-            0.01,
-            -0.001,
-            0.0001,
-            0.0001,
-            0.0002,
-            -0.0001,
-            0.0002,
-            0.02,
-            -0.03,
-        )
-        for size in (0, 4, 5, 8, 12, 14):
-            for skew in (0, 0.07):
-                with self.subTest(coefficients=size, skew=skew):
-                    intrinsics = ((100, skew, 90), (0, 100, 60), (0, 0, 1))
-                    view = CameraView(
-                        "left",
-                        image,
-                        intrinsics,
-                        "perspective",
-                        coefficients[:size],
-                        transform,
-                    )
-                    scene = Scene(
-                        PointCloud(xyz, "scene"),
-                        SupportPlane((0, 0, -1), 1000, "scene"),
-                        (view,),
-                    )
-                    cells, depth = self.native.project_cells(scene, view, 6)
-                    projected = project_points(xyz, view)
-                    x, y, z = projected.T
-                    inside = (x >= 0) & (x < 180) & (y >= 0) & (y < 120)
-                    expected = np.full(len(xyz), -1, np.int32)
-                    expected[inside] = (y[inside] // 6).astype(np.int32) * 30 + (
-                        x[inside] // 6
-                    ).astype(np.int32)
-                    np.testing.assert_array_equal(cells, expected)
-                    np.testing.assert_array_equal(
-                        depth[inside], z[inside].astype(np.float32)
-                    )
-
-    def test_voxel_membership_and_centroids_preserve_numpy_order(self):
-        rng = np.random.default_rng(41)
-        xyz = rng.uniform(-80, 80, (3000, 3)).astype(np.float32)
-        xyz[:6] = np.array(
-            [
-                [-8, 0, 8],
-                [-0.00001, 8, -8],
-                [0, 0, 0],
-                [8, 8, 8],
-                [-8, -8, -8],
-                [8, 8, 8],
-            ],
-            np.float32,
-        )
-        expected, membership, counts = np.unique(
-            np.floor(xyz / 8), axis=0, return_inverse=True, return_counts=True
-        )
-        centroids = np.column_stack(
-            [np.bincount(membership, weights=axis) / counts for axis in xyz.T]
-        )
-        actual, actual_membership = self.native.voxel_centroids(xyz, 8)
-        np.testing.assert_array_equal(actual_membership, membership)
-        np.testing.assert_array_equal(actual, centroids)
-        rows = np.arange(0, len(xyz), 3, dtype=np.int32)
-        a, am = self.native.voxel_centroids(xyz, 8, rows)
-        b, bm = self.native.voxel_centroids(xyz[rows], 8)
-        np.testing.assert_array_equal(a, b)
-        np.testing.assert_array_equal(am, bm)
-
-    def test_image_boundary_matches_numpy_for_rgb_gray_and_strided_images(self):
-        from unittest.mock import patch
-
-        from depthai_nodes.algorithms.parcel.implementation.visibility import (
-            Visibility,
-        )
-
-        configuration = json.loads(
-            (Path(__file__).with_name("frozen-settings.json")).read_text()
-        )["configuration"]["visibility"]
-        rng = np.random.default_rng(47)
-        for channels in (1, 3):
-            storage = np.zeros((120, 360, channels), np.uint8)
-            image = storage[:, ::2]
-            image[:, :100] = 180
-            image[:, 100:] = 35
-            image = image[:, :, 0] if channels == 1 else image
-            grid = np.full((20, 30), 500, np.float32)
-            samples = np.column_stack((np.full(80, 100.0), np.linspace(20, 100, 80)))
-            for window in (4, 5):
-                visibility = Visibility(
-                    **dict(configuration, boundary_contrast_window_px=window)
-                )
-                for outward in (
-                    np.array([1.0, 0.0]),
-                    np.array([-1.0, 0.0]),
-                    np.array([0.6, 0.8]),
-                ):
-                    actual = self.native.image_boundary(
-                        visibility, image, grid, samples, outward
-                    )
-                    with patch.object(self.native, "image_boundary", return_value=None):
-                        expected = visibility._image_boundary(
-                            image, grid, samples, outward
-                        )
-                    np.testing.assert_array_equal(actual, expected)
-                random_samples = rng.uniform((0, 0), (180, 120), (200, 2))
-                actual = self.native.image_boundary(
-                    visibility, image, grid, random_samples, np.array([0.6, 0.8])
-                )
-                with patch.object(self.native, "image_boundary", return_value=None):
-                    expected = visibility._image_boundary(
-                        image, grid, random_samples, np.array([0.6, 0.8])
-                    )
-                np.testing.assert_array_equal(actual, expected)
-
-    def test_native_and_fallback_results_match_on_integer_normal(self):
-        from unittest.mock import patch
-
-        from depthai_nodes.algorithms.parcel.implementation.factory import (
-            create_components,
-        )
-
-        configuration = json.loads(
-            (Path(__file__).with_name("frozen-settings.json")).read_text()
-        )["configuration"]
-        scene = render_topdown(
-            (((-110, -80), (110, 80)),), contrast=150, background_depth=True
-        )
-        actual = process_scene(
-            "same", scene, create_components(configuration), "supplied_plane"
-        )
-        with patch.object(self.native, "_lib", None):
-            expected = process_scene(
-                "same", scene, create_components(configuration), "supplied_plane"
-            )
-        self.assertEqual(actual, expected)
-        self.assertIsNotNone(actual["detections"][0]["height_mm"])
-
-
 class CandidateCallbackTests(unittest.TestCase):
     def configuration(self, parallel=False):
         settings = Path(__file__).with_name("frozen-settings.json")
         configuration = json.loads(settings.read_text())["configuration"]
-        configuration.setdefault("pipeline", {})["parallel_validation"] = parallel
+        # These callback mocks return indices into the full fixture cloud.
+        # Disable sampling only for these isolated callback regression probes.
+        configuration.setdefault("pipeline", {}).update(
+            parallel_validation=parallel, point_stride=1, fallback_point_stride=1
+        )
         return configuration
 
     def test_returns_ordered_decisions_without_measurement(self):
@@ -861,7 +699,7 @@ class CandidateCallbackTests(unittest.TestCase):
                         ProjectionExecutor,
                     ),
                     patch(
-                        "depthai_nodes.algorithms.parcel.implementation.native.project_cells",
+                        "depthai_nodes.algorithms.parcel.implementation.numpy_ops.project_cells",
                         side_effect=project,
                     ),
                     patch(

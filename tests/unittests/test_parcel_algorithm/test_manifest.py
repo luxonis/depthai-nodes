@@ -30,12 +30,12 @@ def installed_copy(tmp_path):
 def test_manifest_validates_installed_bytes_and_evidence():
     manifest = parcel.validate_manifest()
     assert manifest["workbench_candidate"]["id"] == parcel.ALGORITHM_ID
-    assert manifest["implementation"]["name"] == "fast_baseline"
+    assert manifest["implementation"]["name"] == "fast_baseline_oak4_visibility_01"
     assert manifest["implementation"]["package_path"] == (
         "depthai_nodes/algorithms/parcel/implementation"
     )
     assert parcel.IMPLEMENTATION_NAME == "implementation"
-    assert manifest["source"]["configuration_version"] == "v001"
+    assert manifest["source"]["configuration_version"] == "v002"
     assert len(inspect.signature(parcel.create_components).parameters) == 0
 
 
@@ -125,11 +125,48 @@ def test_node_binding_mismatch_is_rejected(monkeypatch):
         parcel.validate_manifest()
 
 
+def test_native_source_archive_cannot_be_mislabeled_as_an_image(installed_copy):
+    root, manifest = installed_copy
+    candidate = manifest["workbench_candidate"]
+    assert candidate["image_digest"] is None
+    assert candidate["build_kind"] == "native-source-archive"
+    candidate["image_digest"] = "sha256:" + candidate["build_sha256"]
+    with pytest.raises(ValueError, match="Executed native build mismatch"):
+        _validate(root, manifest, check_bindings=False)
+
+
+def test_review_must_cover_the_frozen_source(installed_copy):
+    root, manifest = installed_copy
+    manifest["source"]["review"]["source_commit"] = "0" * 40
+    with pytest.raises(ValueError, match="Frozen source review mismatch"):
+        _validate(root, manifest, check_bindings=False)
+
+
+def test_numpy_candidate_has_no_obsolete_kernel_assets_or_imports():
+    root = ROOT / "depthai_nodes/algorithms/parcel/implementation"
+    assert not any(
+        (root / name).exists()
+        for name in ("native.py", "kernels.cpp", "build_native.py")
+    )
+    assert "numpy_ops.py" in {path.name for path in root.iterdir()}
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from depthai_nodes.algorithms import parcel; import sys; parcel.create_components(); assert not any(name.endswith('.native') and ('parcel' in name or 'fast_baseline' in name) for name in sys.modules)",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+
+
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     [
         ("algorithm", "other", "Algorithm name mismatch"),
-        ("configuration_version", "v002", "Configuration version mismatch"),
+        ("configuration_version", "v999", "Configuration version mismatch"),
         ("settings_path", "settings.json", "Canonical settings path mismatch"),
         ("settings_file_sha256", "0" * 64, "Canonical settings byte hash mismatch"),
     ],
@@ -159,7 +196,7 @@ def test_visualization_cannot_reassign_metrics_with_updated_port_hash(installed_
     page = root / name
     text = page.read_text(encoding="utf-8")
     text = text.replace(
-        '"measurement_success_count":6', '"measurement_success_count":7'
+        '"measurement_success_count":8', '"measurement_success_count":9'
     )
     page.write_text(text, encoding="utf-8")
     digest = hashlib.sha256(page.read_bytes()).hexdigest()

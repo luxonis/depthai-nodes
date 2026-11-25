@@ -1,0 +1,1396 @@
+{
+  "schema_version": "parcel-port-comparison/1",
+  "result": "passed",
+  "candidate_id": "algorithm-5e4abc3a09b54148950317cdeac60ba2",
+  "reference_source_commit": "d5e35e17d75f91368889dc53d950792eed4096e6",
+  "reference_image": null,
+  "reference_build": {
+    "kind": "native-source-archive",
+    "artifact": {
+      "path": "experiments/oak4_visibility_10fps/frozen-native-build.tar.gz",
+      "sha256": "bad3b09ff518e15b05db814bdc8bb40d26818328f38a1dddf78d4fc9523d322c",
+      "pointer": ""
+    },
+    "runtime": {
+      "path": "experiments/oak4_visibility_10fps/frozen-candidate.json",
+      "sha256": "bbe360f342ad1a06a375c8aa635dc1d1348375b87e5dd77844617db579847703",
+      "pointer": "/runtime"
+    }
+  },
+  "reference_source_file_count": 14,
+  "scoped_settings_sha256": "66f029694119c77ddad557bd58257b8743e7f284441d94a317b08fffc5496f10",
+  "tolerance": {
+    "geometry_absolute": 1e-09,
+    "geometry_relative": 0,
+    "indices_points_order_decisions": "exact"
+  },
+  "environment": {
+    "python": "3.12.2",
+    "platform": "macOS-27.2.1-arm64-arm-64bit",
+    "numpy": "2.2.6",
+    "scipy": "1.15.3",
+    "opencv": "4.12.0"
+  },
+  "native_available": false,
+  "native_binaries_sha256": {},
+  "synthetic_scene_count": 15,
+  "validation_scene_count": 18,
+  "validation_manifest_sha256": "52fb068a961ffb9e7303d3bd8abab20df13ff78cc71e35997c7bad17886b8c84",
+  "validation_cache_scope": "historical authorized decoded validation cache; not labels or new held-out inputs",
+  "records": [
+    {
+      "name": "clear",
+      "mode": "numpy",
+      "candidate_count": 1,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "eligible",
+          "indices_sha256": "fc6dfa129147c145465a65f5566c251eb3a2fdbf0d8dacd83b6baf383c214782",
+          "points_sha256": "92d5a2e51180e6a7bb5452e36da66e3018a68013d023229010dd6fb1ae1adaa3",
+          "cuboid": {
+            "base_center_mm": [
+              -0.11535263061523171,
+              210.0,
+              597.0786437988281
+            ],
+            "length_axis": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "length_mm": 176.46833038330078,
+            "width_mm": 154.15728759765625,
+            "height_mm": 110.0
+          }
+        }
+      ]
+    },
+    {
+      "name": "one_clear_view",
+      "mode": "numpy",
+      "candidate_count": 1,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "eligible",
+          "indices_sha256": "fc6dfa129147c145465a65f5566c251eb3a2fdbf0d8dacd83b6baf383c214782",
+          "points_sha256": "92d5a2e51180e6a7bb5452e36da66e3018a68013d023229010dd6fb1ae1adaa3",
+          "cuboid": {
+            "base_center_mm": [
+              -0.11535263061523171,
+              210.0,
+              597.0786437988281
+            ],
+            "length_axis": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "length_mm": 176.46833038330078,
+            "width_mm": 154.15728759765625,
+            "height_mm": 110.0
+          }
+        }
+      ]
+    },
+    {
+      "name": "clipped",
+      "mode": "numpy",
+      "candidate_count": 1,
+      "eligible_count": 0,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "uncertain",
+          "indices_sha256": "66119afe75690ea00a867c902228755d687c54b777826a12934bc4ad81f52bf5",
+          "points_sha256": "683b03adc5d1b3e39efe8d5d7d1e369646e9982ffa7a36d4ee10a56bdc3e6556"
+        }
+      ]
+    },
+    {
+      "name": "occluded",
+      "mode": "numpy",
+      "candidate_count": 3,
+      "eligible_count": 0,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "f44e9d8ba26aa07de74ef6e4cfa2456bfee24095db6aab507e3207b5fac08349",
+          "points_sha256": "1221d611428347681d24acb93d732e687529d0ab8199d8001fda2b2d6ed1e231"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "11b46478bb3b0c62ccf3d6b376f0a167710709dbf0e0f66072bba908fa6a1c12",
+          "points_sha256": "a0eb6e86e8f4abb906a2784d2faae26369346904e50b7d023de118ccfff935d1"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "c6fb497b77fe5e1eb41577b0326061e58c7ecc8fd278b6c3fe849589a4932398",
+          "points_sha256": "3acde1de0916d5f08887d72ec00e64950387f81c8623f21c9ffe0ce0b4a902fd"
+        }
+      ]
+    },
+    {
+      "name": "touching",
+      "mode": "numpy",
+      "candidate_count": 1,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "eligible",
+          "indices_sha256": "4f5ebfafdba49b0aaaa1031c9f3932b9904ac22d47f2a20f47f9578c4c9cb74e",
+          "points_sha256": "edda35ec4f0d54375f3fd8dadd0699b2ebb97b6969521a477e05b825365ff73d",
+          "cuboid": {
+            "base_center_mm": [
+              50.26874542236328,
+              210.0,
+              597.0786437988281
+            ],
+            "length_axis": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "length_mm": 277.6803436279297,
+            "width_mm": 154.15728759765625,
+            "height_mm": 110.0
+          }
+        }
+      ]
+    },
+    {
+      "name": "multiple",
+      "mode": "numpy",
+      "candidate_count": 2,
+      "eligible_count": 2,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "eligible",
+          "indices_sha256": "75b3e639d6f21e13b2707e2e47696dfcaa4efc54cfcd4cf8d91e123d62cf1d57",
+          "points_sha256": "c1697abb51d356cf9108865e204ad13d089f050daa4a582a0ece85ab4e017539",
+          "cuboid": {
+            "base_center_mm": [
+              -0.3463211059570287,
+              210.0,
+              597.0786437988281
+            ],
+            "length_axis": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "length_mm": 176.45021057128906,
+            "width_mm": 154.15728759765625,
+            "height_mm": 110.0
+          }
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "c5be872f57e9da69856aa24773749c35d37a86d27e149a9fd08c5f6aac538d73",
+          "points_sha256": "334d35621cc12a87aef8cb025e4a1e0a5a4921a88193b1ec4f1fffa0f7d85afa",
+          "cuboid": {
+            "base_center_mm": [
+              188.8095245361328,
+              210.0,
+              617.0786437988281
+            ],
+            "length_axis": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "length_mm": 114.15728759765625,
+            "width_mm": 77.61904907226562,
+            "height_mm": 110.0
+          }
+        }
+      ]
+    },
+    {
+      "name": "floor",
+      "mode": "numpy",
+      "candidate_count": 0,
+      "eligible_count": 0,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": []
+    },
+    {
+      "name": "empty",
+      "mode": "numpy",
+      "candidate_count": 0,
+      "eligible_count": 0,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": []
+    },
+    {
+      "name": "dropout",
+      "mode": "numpy",
+      "candidate_count": 1,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "eligible",
+          "indices_sha256": "2074bace52aa862e1ab92b048c162ff03f6020a73d8465f2a39d1bcff35d2e1b",
+          "points_sha256": "4fbf19b2d9fe5c6d31240c4672c95dd25e018e6cedbda981a7dd639b20d31dae",
+          "cuboid": {
+            "base_center_mm": [
+              -1.7763568394002505e-15,
+              3.795138196977432e-16,
+              1000.0
+            ],
+            "length_axis": [
+              1.0,
+              6.123233995736766e-17,
+              -0.0
+            ],
+            "length_mm": 218.94000244140625,
+            "width_mm": 158.4199981689453,
+            "height_mm": 110.0
+          }
+        }
+      ]
+    },
+    {
+      "name": "uniform_dropout",
+      "mode": "numpy",
+      "candidate_count": 1,
+      "eligible_count": 0,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "uncertain",
+          "indices_sha256": "2074bace52aa862e1ab92b048c162ff03f6020a73d8465f2a39d1bcff35d2e1b",
+          "points_sha256": "4fbf19b2d9fe5c6d31240c4672c95dd25e018e6cedbda981a7dd639b20d31dae"
+        }
+      ]
+    },
+    {
+      "name": "l_shaped",
+      "mode": "numpy",
+      "candidate_count": 1,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "eligible",
+          "indices_sha256": "885f02ee05f2b02a213e2b16706594b85e76e39c51a520b87c0c53b8247f26ba",
+          "points_sha256": "da7c59e8a8430edc9991548149cb20c11ea5d34522df46abbcdaf45e4882b474",
+          "cuboid": {
+            "base_center_mm": [
+              7.105427357601002e-15,
+              -3.552713678800501e-15,
+              1000.0
+            ],
+            "length_axis": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "length_mm": 258.1000061035156,
+            "width_mm": 218.94000244140625,
+            "height_mm": 110.0
+          }
+        }
+      ]
+    },
+    {
+      "name": "strided_images",
+      "mode": "numpy",
+      "candidate_count": 1,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "eligible",
+          "indices_sha256": "fc6dfa129147c145465a65f5566c251eb3a2fdbf0d8dacd83b6baf383c214782",
+          "points_sha256": "92d5a2e51180e6a7bb5452e36da66e3018a68013d023229010dd6fb1ae1adaa3",
+          "cuboid": {
+            "base_center_mm": [
+              -0.11535263061523171,
+              210.0,
+              597.0786437988281
+            ],
+            "length_axis": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "length_mm": 176.46833038330078,
+            "width_mm": 154.15728759765625,
+            "height_mm": 110.0
+          }
+        }
+      ]
+    },
+    {
+      "name": "distortion_tilt",
+      "mode": "numpy",
+      "candidate_count": 1,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "eligible",
+          "indices_sha256": "fc6dfa129147c145465a65f5566c251eb3a2fdbf0d8dacd83b6baf383c214782",
+          "points_sha256": "92d5a2e51180e6a7bb5452e36da66e3018a68013d023229010dd6fb1ae1adaa3",
+          "cuboid": {
+            "base_center_mm": [
+              -0.11535263061523171,
+              210.0,
+              597.0786437988281
+            ],
+            "length_axis": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "length_mm": 176.46833038330078,
+            "width_mm": 154.15728759765625,
+            "height_mm": 110.0
+          }
+        }
+      ]
+    },
+    {
+      "name": "sparse",
+      "mode": "numpy",
+      "candidate_count": 0,
+      "eligible_count": 0,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": []
+    },
+    {
+      "name": "repeated_clear",
+      "mode": "numpy",
+      "candidate_count": 1,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "eligible",
+          "indices_sha256": "fc6dfa129147c145465a65f5566c251eb3a2fdbf0d8dacd83b6baf383c214782",
+          "points_sha256": "92d5a2e51180e6a7bb5452e36da66e3018a68013d023229010dd6fb1ae1adaa3",
+          "cuboid": {
+            "base_center_mm": [
+              -0.11535263061523171,
+              210.0,
+              597.0786437988281
+            ],
+            "length_axis": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "length_mm": 176.46833038330078,
+            "width_mm": 154.15728759765625,
+            "height_mm": 110.0
+          }
+        }
+      ]
+    },
+    {
+      "name": "snapshot-0e38dd70c69e4f7f814ef7e569b95e23",
+      "mode": "numpy",
+      "candidate_count": 6,
+      "eligible_count": 2,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "2737551d80c4ac2d4d3e7b11eebae35425c11c305d21469cfd51cdfa9af42c00",
+          "points_sha256": "ca37879ad93e730877c7f96302a220437bd0936a761326b17f4012836e9f0e8b"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "623646ba56a2a81a0cf8ef705fc28652ca38d677da0e262666dc92e1fed5a6d2",
+          "points_sha256": "2a6a03a219d5acd8d9909e14cb03ebeac7d4a980db593e9ad65d596ac9ed7272"
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "5503d9f5f2f224ad509bf24681ab38059af44d43230c7d59a60cbfe3cc231583",
+          "points_sha256": "be372b7bfcca3053054270b35904a462398e45de19d59876f2b2c0635443793a",
+          "cuboid": {
+            "base_center_mm": [
+              -71.02863315535436,
+              54.82092375307974,
+              773.190884747532
+            ],
+            "length_axis": [
+              0.6266443861699014,
+              -0.5431002201469769,
+              0.5588908338468727
+            ],
+            "length_mm": 194.5495146937506,
+            "width_mm": 110.10066150002936,
+            "height_mm": 78.00747014084368
+          }
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "b5e28f85b647c4c9fa8fbffb5e1f51fa76c6ec536a73f5ccd6a2e7c6b2ca344c",
+          "points_sha256": "e9ee66c5e627043b979a8d6f01da7b244106fd5f6e3f8131ad0cb4c9b47944ab",
+          "cuboid": {
+            "base_center_mm": [
+              127.02653531534875,
+              53.98517695661093,
+              772.7707788118978
+            ],
+            "length_axis": [
+              -0.06819748609417788,
+              -0.6924600001367949,
+              0.7182257661076944
+            ],
+            "length_mm": 345.6648469401367,
+            "width_mm": 121.14270099702969,
+            "height_mm": 176.9916120604408
+          }
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "d9f4571ae34f0038539fdac5ba39de188dca3ac6dabd6b7f943fd2078d958640",
+          "points_sha256": "877d2869f1088d7a07cfbfd05faee5e36d9bcff427d20a9391b8304dd6fc96f6"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "18bc81332382b17906584443431abfa2f0a1d548a0c69bad56647b3fe22e5db2",
+          "points_sha256": "57a223bcca36a459863e9f871d4c0c53a28257c227e1db1af676718c2aa662bb"
+        }
+      ]
+    },
+    {
+      "name": "snapshot-8a3017fd207d49f08ba906186eaad014",
+      "mode": "numpy",
+      "candidate_count": 5,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "f500f967715a196e52eca04c13a8c534f8c7f0bca19ea2c504236fcd989be005",
+          "points_sha256": "d6b8e7e6b15ff8862035b559ae67e038e3d72b6307d48ee77f31709318e886af"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "4e412a4a3b0f20b061b8d43215c9970ddfffb3f9f35fea5c906ecb931bd74e30",
+          "points_sha256": "e0582f131698dc74106f55c92f952ade8cf5a9dd3d2ede92238307011e082055"
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "9f533580e12d13060cbd53930f9b82fec8b555f4586bee47fa14f9d5fe0f2957",
+          "points_sha256": "06afe3bab07c5cecb343fceb6d3371202bf9b5a606e5238f20a9703105a4c169",
+          "cuboid": {
+            "base_center_mm": [
+              147.13510051359862,
+              48.8397943766372,
+              777.9737147354588
+            ],
+            "length_axis": [
+              0.13086651860187354,
+              -0.6887514507403111,
+              0.7130886294228385
+            ],
+            "length_mm": 191.25689946853552,
+            "width_mm": 106.07059449140753,
+            "height_mm": 80.74862401071806
+          }
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "51f289e5f28ebc77d5fe66c197840bb8eb133cda13cd19a9dcf00eaebcad8fcd",
+          "points_sha256": "006e9f573f0d3a4c2615a403bfde49257c053478386bde689c6d9b7d3defeae6"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "483a032562587ca32344600c588173e1e5a9ebc6f2e44bc306de49447e6202e9",
+          "points_sha256": "54010516c1fcbf748d57473fc9088520692447ed481ae38eadf860dd1b580ea8"
+        }
+      ]
+    },
+    {
+      "name": "snapshot-5c6e5c7d4600416a9f463ff6dc5f820a",
+      "mode": "numpy",
+      "candidate_count": 5,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "0e9daa618d9a998966b97a1909950c99abc1aef6e36c74198059b704d41d2901",
+          "points_sha256": "c91d2496e327fea13bbffd3b3f9b0c6b8792abd82e4e88fd53110913c29ef2a7"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "eea15873413ed7e51847a0c9b455a268953bbde1683ae4fb819543670fb24439",
+          "points_sha256": "62059b6d51e4174eac6d5d5d7fa638ec18a455b45ce4c0126b7a8fe8e75f54d8"
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "4772134839ac435e3ca61f6b1cd3fec2621fa88c8b2a744a8fe1c157c58c17b6",
+          "points_sha256": "ad0866debdc06046a7be707325fa32ecf98a4d784564a002823f942feb27f9a6",
+          "cuboid": {
+            "base_center_mm": [
+              -137.86542025222053,
+              47.93684708918613,
+              780.7608284052237
+            ],
+            "length_axis": [
+              0.6469607429872545,
+              -0.5315141122209434,
+              0.546749069997711
+            ],
+            "length_mm": 195.59873213672768,
+            "width_mm": 109.1007961438659,
+            "height_mm": 79.03510071777163
+          }
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "cf48b070773d8b529b7eacea19dd168d1ebcd63fded48c3840aa996710112f10",
+          "points_sha256": "4e5eabbadc71760684d4bb63bbcfa9a2f3cfdce8363e42e8c24fea2b2bf9a521"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "1354e3693e3472c4d1012f552a188b72595b4b3475888ece6769b0871e8dd53d",
+          "points_sha256": "ecff7679852e9fe41d19cd5da3748137d59be4d34e7bc2de4b62811a1aeef232"
+        }
+      ]
+    },
+    {
+      "name": "snapshot-a155f25c672149e68ebc556ec296a69e",
+      "mode": "numpy",
+      "candidate_count": 4,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "5cea42d44bc502bca096f66e052209bd7e6adbe39d7184171f9dfe32bed5fd0a",
+          "points_sha256": "bfc5f7b7d9f414b6a2e90422d935c9377fd5f50b7652f9448cb9fcb34e3ffdae"
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "1c14ddcf4a0f53f7407cb01af172b9361cf242533ea03be86a9002b374c3f58b",
+          "points_sha256": "66643d16687935fbe579fe35916ad3d00e31a53be26914c13ac7c682f4f33d73",
+          "cuboid": {
+            "base_center_mm": [
+              44.22339322530041,
+              -13.709698847872403,
+              843.4790378402843
+            ],
+            "length_axis": [
+              0.9999844842021716,
+              -0.0009748740375321417,
+              -0.005484612614182513
+            ],
+            "length_mm": 348.17698088531563,
+            "width_mm": 110.73635393354095,
+            "height_mm": 175.21681380241034
+          }
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "b988c58d147da938fc87bb347d7f0f34a8f98115573177543e37b4a46d6d26c1",
+          "points_sha256": "c02bab4549d4619e64945a63e2920d12bd99fe2762fe183f37d01315fb3713f3"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "1d77f32c29f314ab4f505ab870c4d2a70b364b81bdafbf9fc088ff4a6c5ff824",
+          "points_sha256": "8c1e8b4d2d13ef8d4437fa0b7645b86f4119090e79d266df2565b368128fe7ae"
+        }
+      ]
+    },
+    {
+      "name": "snapshot-38081a54cb474dcc83bc78d1ccb067fb",
+      "mode": "numpy",
+      "candidate_count": 6,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "347b2a561198915251fdb2c9b64744c5b14fd61ac14e0dc7dd707e256fcf4cf6",
+          "points_sha256": "4a475d1817487c19be6ab2ad22b53d8e6e235a79a6cb9962dcbfe3d6684bd385"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "c2902fc8b71125c1de928a5cbc1d81bd1d02e3df81285be88551dabef8567582",
+          "points_sha256": "9e410f5a00bf382ab82035c6ad27a024204e5e111d19d4b7d96391ef263088b4"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "296bbd8de8a076955bb11efac4067867d4703b45f76f79cca0dc5a760c3e7ad3",
+          "points_sha256": "a6f9da15fc98fd0564e360c54792accfd7519c83028f1ec18ad728fc137b64a5"
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "b3cab528f9cbd9f27825b2094a792d10fa75e0c75d479c5952f759996603c373",
+          "points_sha256": "997c18f753ef20807b4b8ad6c59baac0703a2cc425bfb2267acc45c8f8e336fc",
+          "cuboid": {
+            "base_center_mm": [
+              1.918337088674537,
+              86.203306280964,
+              740.1870611890323
+            ],
+            "length_axis": [
+              0.9896443043020482,
+              0.09640042362583101,
+              -0.10635369898257112
+            ],
+            "length_mm": 346.8180990138312,
+            "width_mm": 121.1081856075455,
+            "height_mm": 176.60262620073502
+          }
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "68f801d5b2f850b482b7a15f68e3d7cd144302a3efe384f36970c470c462c64c",
+          "points_sha256": "63c6e54266fd7bce65595407f1d276d7557de0a9975603c6d3f9c65e24d20308"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "38ca85b079729cfe18618278c775d30658fac6bea67450630e8e3b1bde1b0234",
+          "points_sha256": "a4a86df57eb074f2420f46f0e01ed68cf59072204f55dfde8ff659354abab415"
+        }
+      ]
+    },
+    {
+      "name": "snapshot-8d992b24919f41adb729e2f8ba6cdae0",
+      "mode": "numpy",
+      "candidate_count": 4,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "4f783cd7fecb1b6e4890ddded31393c0ea6b592777d02ce8d8322c2218e50ba0",
+          "points_sha256": "5988c3e2f8161d8a6d49567f7fc32d9429f5bc00057c85a66350af380d81d9d0"
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "24f2bff4fa4d8655420de90499b206450654b1dd1740fe59478f7831936dd131",
+          "points_sha256": "14cbdcafcdc04da09ae995c2026dc2e87a0e6f4d0bd3067114ae452b07f69998",
+          "cuboid": {
+            "base_center_mm": [
+              155.7627943721746,
+              69.07488310518073,
+              756.9426031875888
+            ],
+            "length_axis": [
+              0.7615758100693182,
+              -0.4524230238750838,
+              0.46402122040375177
+            ],
+            "length_mm": 357.75714532750186,
+            "width_mm": 121.00940475895794,
+            "height_mm": 172.8363990177216
+          }
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "006bbeace40f030ba7c2af5950de5100375effbc2756fa7118ad100363bcfe81",
+          "points_sha256": "a096d7e6054d243f8eabe562dd439b5d7b71da97131f1f9ee7f040c27b214536"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "470ba39d8fc6abe2c502128c7130f9d32667dbe5d4cf2582349282a729bb6ad8",
+          "points_sha256": "67068fdf5e68210181cc314675dd9b2a869b9931fbc79387d9a9589676e669d0"
+        }
+      ]
+    },
+    {
+      "name": "snapshot-b0c14f774afd434986184f0467a05654",
+      "mode": "numpy",
+      "candidate_count": 7,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "d7b3d33dbd2aa1bc73d02255bef0e76030c1d4fdb84f072396790c0d66d7dd58",
+          "points_sha256": "79d04a2b7daf259b808e827b1c44dd83cdd979a6c3a9ad92366425f44aa60798"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "981686ffc54e77d5ee670172d5aec0de89d9bb6c39ed4619c4badb675f7bfeae",
+          "points_sha256": "c62ab36a2fe97de2c03c49d17990ad5f8bb34f35c8d1b96056e78880f5206a2f"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "1162b1ec0224c5a5df5ea4da599ce0a64155a56cf584ea188e5ccf5148a58067",
+          "points_sha256": "8ff2c8a1f5c33eff2ff7d9d7eba0f6aced3b193bacebede5847dcdd58973e99a"
+        },
+        {
+          "decision": "uncertain",
+          "indices_sha256": "67760fa1d0d50b53cb09ee6c310c84b12d2c0636d352a917f2501375333004a7",
+          "points_sha256": "39716ba1bea224970f601d98fb7090ecad942a70ba787df21766c065f94904f8"
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "e69fb15ec0eacc3b72c5a01a9aa60bf43052bd8e5a930bbcb295b5640a26da04",
+          "points_sha256": "4e8498e832f50d6aa93250dea9c11dfbc4d6c0938c46bf1288bcb648d8ebbc54",
+          "cuboid": {
+            "base_center_mm": [
+              109.97904999946427,
+              78.22482948639362,
+              747.755425594373
+            ],
+            "length_axis": [
+              0.09818085911066544,
+              -0.6912619466718818,
+              0.7159032336759572
+            ],
+            "length_mm": 340.5574927601624,
+            "width_mm": 118.84715234360348,
+            "height_mm": 177.53072917897975
+          }
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "58e29f2f80ca9049b5d4697c8b98903e1564576c9e4d6f5e48f11607924f58db",
+          "points_sha256": "0c34be5be08b164f4873a9928d63a76a67fff03ddd36148b47c76ce99d15b615"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "f9ae63e4653a3c4ee0738e4b32c877f65aae853f0666e7ea45f0e278548c76f2",
+          "points_sha256": "27270733b811b299a46496d4633d0e8e60eb9ec797a71f61e0ffb8664dcf5bad"
+        }
+      ]
+    },
+    {
+      "name": "snapshot-39ec5dabee0145aeb5c7456f968a0701",
+      "mode": "numpy",
+      "candidate_count": 5,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "50a1aa86f1c5b56ab554d18f110afaa5841fcff671e1534997d691cfc857da8e",
+          "points_sha256": "6a2370a848e53b6b25594baebe6895eb5e3dbbae4590938bf810297c296d5443"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "5ccd7168f5e765ea2e3d7b1b246fcd7a84097bf4268affdd4a45fe761bcb4cb4",
+          "points_sha256": "83e4b6f32e6b331acaca8f099452d6c598ba2486fe6ab06a8285c6e18ec4ca99"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "9562b93014ae3e9272769b42b754a7527beeaa7873bad8ba95725392590c38b5",
+          "points_sha256": "f073a8498a6aad30ecfc0edbbfd372db4aafcbfee1ea0956897ff3ae3d1242eb"
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "99d3f599cd569f8abadf792594d232ded31a0a695dec97db07138e16617de149",
+          "points_sha256": "41140aa8d8f3b3f4bafdb2ebed1e5ee13af2e98bac403ab412b2669eba431ea6",
+          "cuboid": {
+            "base_center_mm": [
+              -125.16845496897048,
+              73.21638116749631,
+              754.4743685705872
+            ],
+            "length_axis": [
+              0.7866622368041272,
+              0.42608787842194173,
+              -0.4467791904825201
+            ],
+            "length_mm": 354.58106361484977,
+            "width_mm": 120.22760903794166,
+            "height_mm": 174.1995755694319
+          }
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "f8a8ca5bf1f4b6420b7a84e59c82584eef459cc8eaaf18d51c767a38c83564ee",
+          "points_sha256": "d7e6c65e1575228a15463459062753ad5cf47dd96fdff36aff7025ce261149c0"
+        }
+      ]
+    },
+    {
+      "name": "snapshot-e12ea5e61985429a96d625eb88c5b8fa",
+      "mode": "numpy",
+      "candidate_count": 6,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "36ada5f38d0ebfd79ae9a6e9a70ac459e630483997f7350bc965bd8610eaccde",
+          "points_sha256": "95593b6bda5a6806a00771e7391e76982420319ea360df1f667f775522f7fc1f"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "659c1b01a03afd1ed32fb93dad3576643df85127f7a9a6e77b5dbefe5f74b425",
+          "points_sha256": "d6b6cb2884235df4123d6735c71e393bbc9edef59fe75bd44a9ea6233b16d62a"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "b447638483dd98b31a78c39f47c8039ac050a80192c903e0ea0eaafa93897a02",
+          "points_sha256": "08bfa9f9493920e5656291d72e57158a7081353d716e3d645e3cda1916a7a49c"
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "11067d93d680a21acfe1fb3ebd28717a72811786d8375f16fab89b2a22878391",
+          "points_sha256": "0cc1e5dc0f0a999650d389e7383782ff714430949e72cdb903f3f71922817d3b",
+          "cuboid": {
+            "base_center_mm": [
+              17.44286921731766,
+              118.72965115771643,
+              706.370413728728
+            ],
+            "length_axis": [
+              0.9972419884976286,
+              0.048198625055790534,
+              -0.056438541086981826
+            ],
+            "length_mm": 348.6679044083295,
+            "width_mm": 110.27844094776361,
+            "height_mm": 175.46069608399148
+          }
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "e69af23899573615cc8472fc7d3e0df8d9c9b4648d5ef263e877be994f9abe15",
+          "points_sha256": "cc8737f81d8f9a998e7daae18fe11d675d6ea101cd10dc02d6c2989263d63303"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "59a008b2a976970af0b9036a2cbcf93e0b574dbfdebb9d741ee83c1c92d17183",
+          "points_sha256": "f3deea7d6cde25302287b5ce143135a7baa261cff7b6a09cafc5dfeaa833a3ae"
+        }
+      ]
+    },
+    {
+      "name": "snapshot-210197c3d8504e32955cfca3e3e18157",
+      "mode": "numpy",
+      "candidate_count": 5,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "a23d6219c8217d483210c8b019efd09739c83766f3b77b69757023cc5b69da07",
+          "points_sha256": "e46c1ded361fa9d135c13d702d40ba1fbb037f3193c0c517fbcf4530594a7f58"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "56d27dcd431c025b8237f075e00a96ecd74aa061dc6c68423c9fd2db641e843b",
+          "points_sha256": "2c70c058fbf9c200ecf795319182119b80256624cf44143c277ed99e48e397c8"
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "3bb8763e791bf207cbb46a0cdcdd3f3369629c95ea412005d08f000f41db0a8e",
+          "points_sha256": "90827174a65da3d54868c16009f83e7fbed9bcea0f929c23a946dc5b8b874eeb",
+          "cuboid": {
+            "base_center_mm": [
+              129.6882625550875,
+              30.52690406476853,
+              795.0493031918877
+            ],
+            "length_axis": [
+              0.5776853882856204,
+              -0.5753566473753282,
+              0.5790028674214958
+            ],
+            "length_mm": 463.53050467976936,
+            "width_mm": 323.2031487151726,
+            "height_mm": 143.9482859499252
+          }
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "b16e1b85cfe9111a907704885ba281790f99278615b8b5522a29f8bb0b924381",
+          "points_sha256": "a734e1a5613d8c9ecfa2c3ba9054261321a6c04a6f13823572a38234e121c718"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "3489475c3f99084499932390b18e11c19c1c67371dd18f4bb0c82d1fe46613cf",
+          "points_sha256": "97e328d22584ff8387f696049dd10c632d6d8ef1512c91ff25a02ae5f9adbf3e"
+        }
+      ]
+    },
+    {
+      "name": "snapshot-c2a5a51154e749d7b51a15be45a23b89",
+      "mode": "numpy",
+      "candidate_count": 5,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "cdbe710c2faee8c0a976e76383d6a20e923adf928245670b478cfd782a8be3ba",
+          "points_sha256": "b10e63fb048ba4fa5b8aa8ad7699ecec58d4418eeee4c34c1a03ddb6de2a89fb"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "54f0a0fbf672adf9be1f1f19407fe06ece6037add0199b938d7763579f30d521",
+          "points_sha256": "7058661dfb9ca739ed64922ab114585656e5e04f74093d817562065a529f484f"
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "28b2985e0ed9efb1b0ce89fdf95aa831a5c1481a1b5cee6508b64e5cc0cf2c6f",
+          "points_sha256": "09f0233477ebae81f126a6eb6889b50f933e641c0bb44280da750a7bde236ce3",
+          "cuboid": {
+            "base_center_mm": [
+              20.481735278939798,
+              -13.481653013418622,
+              842.3069708213873
+            ],
+            "length_axis": [
+              -0.3883607103175839,
+              -0.6408569903453338,
+              0.662176922436249
+            ],
+            "length_mm": 454.34098114221763,
+            "width_mm": 327.80639730524047,
+            "height_mm": 142.4206300845177
+          }
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "e763b78e7c97c820d27482546e1b8b7ff24a83eb1a23238803fc406a3f211948",
+          "points_sha256": "796e22660981350b90c9199f0b367394f493946d5f3aadd696b43b075fa9577b"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "509ccab6d678ec7648912bdd1a0e39ec69c1d912445588991e58a6e17889c5d6",
+          "points_sha256": "69a9091a5790bef3c1ec75506a536dd16b25b67a8ad59e03f2da11fcfd4301e9"
+        }
+      ]
+    },
+    {
+      "name": "snapshot-dabfe0635e3b401a964b3518c0a417e7",
+      "mode": "numpy",
+      "candidate_count": 6,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "f157a11f6704133a270d9fffab340f2f7eaed718760a3beaa63a4c6843d87228",
+          "points_sha256": "c5d42ad11401274e1f2a1b6d7f665ae739d31fa53ec53b2fe3b8ad7d60f60702"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "bd2611735d37476bdee399161875a1b5eed1b0e288bee6182f797a223c5294f7",
+          "points_sha256": "29bb808ad0f2f08606caf2cb3687ae472955935806aa0ad97b8c234bb813d48b"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "1a5fdfc9f5c3c3ca1e77f889c9881b7cba1abc4974135575dbca1f5fa9f9cae3",
+          "points_sha256": "b650542b6278e011f0025b43a244d84013ff8a92160af576459049c3b4c0b59b"
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "9270f53d29f18a948c54492296cfb2577e4fd63e4bc01279352b9c465b544a3c",
+          "points_sha256": "0f4bcef40267b8a20090832c2694a019fa736d13ae8291572c8f5f1ecbb19a31",
+          "cuboid": {
+            "base_center_mm": [
+              33.844830080919486,
+              40.88253111384989,
+              786.2181436055836
+            ],
+            "length_axis": [
+              0.9019812351340571,
+              -0.30259206028556923,
+              0.3080063254515645
+            ],
+            "length_mm": 466.60694172127376,
+            "width_mm": 318.3104371183002,
+            "height_mm": 144.3893181083787
+          }
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "9056a27e6d396a63016264e01e7bf44b3077b427368113692eb7dc0ffd58c22b",
+          "points_sha256": "1d26c91cd53aac7d07e2028ddbb9cca4705862a372800ff7e35f6b585b549a7f"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "3319ed1c69fdeedf7c1b28ba735ec48c06e9ab99a1b97f8bb0b2852b39f13409",
+          "points_sha256": "181e9bad7d7774abde099fdee24b845626140d1f403a0264fbf0ea5c148351a1"
+        }
+      ]
+    },
+    {
+      "name": "snapshot-9fee58e742014509b0e3a38d7a4a3d05",
+      "mode": "numpy",
+      "candidate_count": 5,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "b0a008acb77d55670e5da78ff71ef6613c3a868bbaf9ab72b9eb6ebd00090a20",
+          "points_sha256": "4a1ae6020b86269de91a18ee6473818b3532fa15f9ba1aa6dad55b54ce0707b9"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "f7f8473d6e9a9cecdfbb323ae82297be18f272045c91d815927e38f0b8da403f",
+          "points_sha256": "65306c97bf65ff427a823706ec1b50034c131ab7819cb65d56c76b8bac9e404f"
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "972a60f2587476ba8c1bfff5eb387e56e7b10bfaecdec3045aa9e441bd509353",
+          "points_sha256": "44b2d3c3d37c0ce889cf851efd626a37ed4ff1eaf6da6ce79aa36edca046383b",
+          "cuboid": {
+            "base_center_mm": [
+              2.5440093144536355,
+              26.202390297257978,
+              801.4826976261381
+            ],
+            "length_axis": [
+              0.8035631747126084,
+              -0.4161977052126021,
+              0.42551814816944994
+            ],
+            "length_mm": 458.35371539251435,
+            "width_mm": 322.19563226210875,
+            "height_mm": 145.10367978299018
+          }
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "110e5a55acca6cda2a8c460586bc96c7bc2bbfa684730cf2334b8a7b828775a5",
+          "points_sha256": "cf068c98a9c8deb714130bfbe95a841df5163df73cc2fe33f3a34e2902d06e3b"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "33c5dc77749698dd9d7e6fdbda485e53968028bca441519b519add67ca926eb0",
+          "points_sha256": "f1ccfaef18f79a9c485abc6382afd93aef262ae66de18f169507636c5118d819"
+        }
+      ]
+    },
+    {
+      "name": "snapshot-f656fa97a7a44023b1618bcdb9f9cd50",
+      "mode": "numpy",
+      "candidate_count": 7,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "8e01d191b5ff274c74a3dd1a188baad4b318baee272739b41ac31b86e1e7d032",
+          "points_sha256": "ab38f7d639d27a4772e1a70aaffd4f3d85e21e54415fca360d1e2f2562631def"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "051325e23f4313e1fd50e657f5c5af79892e1e30ae8eac191a06514ff3f029ab",
+          "points_sha256": "38b45d246440b9e293af8bad11f9145bad43a47f6ba69820062d6f114b1cf680"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "45d151a12771a94ed7748aa41ced1f42a32490d6c0baa1aeb32862f3277c8d5d",
+          "points_sha256": "31d1cd57d3ebf009a22c5e680f960e227526746c28fb142623608b05d8d41a2e"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "9d6f76274ba0c45a135b9d2dba816d8496506a2452aab7804c95f6b21475e51b",
+          "points_sha256": "4f6aad0ea2aae97b3f8292578824e4669c3e787c51994e13433a527d1e5ffba8"
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "6d0c0654b81d282374c87e33934e253d3bb609c814abd6be1951b54406eb1bcc",
+          "points_sha256": "28feaec300f675abc1a0bcb435b80ee1ad65b17274426a6a86e1c804e332ff5c",
+          "cuboid": {
+            "base_center_mm": [
+              38.69150549963255,
+              -53.858696036688,
+              883.8443320916149
+            ],
+            "length_axis": [
+              0.7875519575119053,
+              -0.4308069889440157,
+              0.44064413362276433
+            ],
+            "length_mm": 461.1493856638812,
+            "width_mm": 316.1951842067335,
+            "height_mm": 144.81907179308115
+          }
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "ed9b4c60d5f83e51a5c343c0c1c7f086941b73a6c885582ddb8387d2876018f2",
+          "points_sha256": "910f0fb6f81bf9653243adab2a0fdbb3911725d698330e2df40540fed10e1937"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "da960533ad26df60700e52eb51ec3142fd2ebc59ad9be4507c628a4322bc3381",
+          "points_sha256": "d9e6ab3c21858d0dd176fbf3248b53cfe26eaa7b383e2b4770eb9a4ca9258448"
+        }
+      ]
+    },
+    {
+      "name": "snapshot-8e1d51f1afbc4122816c6ff00a5a5302",
+      "mode": "numpy",
+      "candidate_count": 7,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "a376d5a563244f3770bb2028fcd8209de5f40bce1373350ff2452c209e4abe83",
+          "points_sha256": "d29e99e494ce8747f50aa3740804a5eed5c0daf208096de334193d45101f74f9"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "cd78f0a8242836b72e262b3cf42abda3f8184bacdf5f67827d54b5af0cdc8bff",
+          "points_sha256": "1fe9a7685667bd48142b14e9ed4ae1c8d7bbad315cc3f4a23dc5f329dabeb693"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "b31c9361286c5b35d12fce432884233bf0d6b030f4d6c14f58d988eb7c2e6e5a",
+          "points_sha256": "8d06eaa09404500ec0b659abaae0e991f42d46bce96aefe7014ecd506cf5be0a"
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "36befc66b56d5dd7d405548dea55a4b818b6ca65f674500479c5dfbe2ed8ad7c",
+          "points_sha256": "77079cf5a860155fb332df94814eab6294e1144a95139b081513d7bb4665e39c",
+          "cuboid": {
+            "base_center_mm": [
+              145.63966826516972,
+              -33.176381381547856,
+              862.0692567797644
+            ],
+            "length_axis": [
+              0.5528541968414236,
+              -0.5814343303171652,
+              0.5968972747160552
+            ],
+            "length_mm": 240.22587285836147,
+            "width_mm": 157.26668251461706,
+            "height_mm": 61.38679130132198
+          }
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "4d93f633756aed8b9a4f59b9dc03bdb652587604652706c77d8d7b30adec1fc1",
+          "points_sha256": "40c23393084efc076b80756883c79544dc6e0e6d522ed7a2618533cdc0170761"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "f9db1dec188542dbaa5f018cdda9d465dbfcf25757886287f7c0706133fbc37f",
+          "points_sha256": "196d46189c416d23203da96688772f1db8775b1a33014a0702018b261177971e"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "b961941e479e96eb346dda10ff04ccdb3368604877b879eea68e68cf56157b19",
+          "points_sha256": "e9e83b02fe1acfdcbb18b47427ebd3ad0bb811851f318e70f3f881fc86a0c2ee"
+        }
+      ]
+    },
+    {
+      "name": "snapshot-91a4f47fb6344c2fb6069605d9a28137",
+      "mode": "numpy",
+      "candidate_count": 5,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "9897836649fda122dbf7247d4adbe4d58c04112ce212c825ce9a26caadf93032",
+          "points_sha256": "b395c4fc97acd4423ffd75e635ece8fce220bb61d007ba75519774471dae967c"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "93af123999d2c65416aeaeb746fa6fd8085c954447180e4d1cb881cf8a48deb2",
+          "points_sha256": "e418834616b4a86f79b00f58a46b4c1df9b215baa33bf1d6eabc43fff8724372"
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "b96f9cdcafd6f07c26c6c9044cd9e0997aaeed084d89b28702ab0ff85ce8bbd0",
+          "points_sha256": "06a4d8d5f8ce78fc4fb1da348332a4f5c0b2d0ee4ff987027b1432d21c7885c4",
+          "cuboid": {
+            "base_center_mm": [
+              -116.23196274439185,
+              41.16240806344041,
+              786.5729809704227
+            ],
+            "length_axis": [
+              -0.40304366446140166,
+              -0.6364199186526309,
+              0.6576667025779118
+            ],
+            "length_mm": 237.85148270988827,
+            "width_mm": 142.96413681312404,
+            "height_mm": 53.294727103340165
+          }
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "6445955b1d6b0f74b97dd226bcd2fd44e26986dddab1a85c97fe1c9bbb35df41",
+          "points_sha256": "3f09cfcfe9ad6edf6b957cbafb8885ea39d08ff63ac74a8479d5b7a1ce13525d"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "9d08763a01b6ff1ef1a25daa4a7110571e982dd2e9d20f7ca895a0f4d14cf917",
+          "points_sha256": "368b2ea0e4ca196779b174dc2f035a453c69b5344307c11d509354595384e58a"
+        }
+      ]
+    },
+    {
+      "name": "snapshot-b6961ede5d7f4d68b392aa692ecee068",
+      "mode": "numpy",
+      "candidate_count": 6,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "425f1762c68ecb680a34a5a0d1a34502acca819746ef6db7139125970269eb91",
+          "points_sha256": "c85f26ce9cf0f3c03d30643df2d7d424c952a9ca5676e5a38fd9dfe4bdd2b270"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "0d50a7cac1ec43e3618bbc4868b351a8830c3bd6854355f076f5df9a7d347feb",
+          "points_sha256": "f41c9ed1b799a3cc0f19629ada4da1652103f8436e51b1883609a14c2e69885c"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "7fe884e6cf920b1b6691cf7b47b460fd94a6d1c4874f9a6aab8c9b046434cb1f",
+          "points_sha256": "4410d818ae49ea8207295860e03f69fd0a15413c70148486f777f02da6d817aa"
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "596617a3060b88cfbf4c47951df8e0122fa0f041b847afa2839292bca9896abb",
+          "points_sha256": "57be4dad584e038092ba2cf17fa405d2fe6e52f8ebc9765fd2636b92c641ef95",
+          "cuboid": {
+            "base_center_mm": [
+              18.665051288772958,
+              84.46252657074962,
+              741.3666066358346
+            ],
+            "length_axis": [
+              0.5747814395372418,
+              -0.5710561440343558,
+              0.586106796688205
+            ],
+            "length_mm": 245.72372906426068,
+            "width_mm": 120.64708150647739,
+            "height_mm": 57.84036417592415
+          }
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "80526fd3a178dd4ca5a0eb7f5b3f3aaaaf36a66e684381878273b494147dae5f",
+          "points_sha256": "a394f101c5ca6a37b1ce8c227a41af5de04cb78f54289d8584bc4e55d769fd3b"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "181c82d5a82a4afc9c59f0f548c5dad2bdad5fed981b5668f1e2e0817fc3d74c",
+          "points_sha256": "58490c922febb13760aa7a08a289587da2e0c3a8eca77fe44e6e827effccb111"
+        }
+      ]
+    },
+    {
+      "name": "snapshot-3c32b577c48f4d25939f989c281cc83d",
+      "mode": "numpy",
+      "candidate_count": 5,
+      "eligible_count": 1,
+      "maximum_geometry_absolute_difference": 0.0,
+      "candidates": [
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "ae842a6a5fcc5099c3b18c9f7b220ec6078041539540673579151cfabd6073ac",
+          "points_sha256": "8b7da3cf42f3227bc93b2725d9c03887a5fa7acd57e1bb2588bcf9d2d8c44269"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "bf410a94369c2db27da99f8ebd5aeb4543cc51724ec5356d6bc32805968ddfa9",
+          "points_sha256": "abafbba3249ab28f231a65c1ade105e680dd5bc8752bc306c724d16605b34b52"
+        },
+        {
+          "decision": "eligible",
+          "indices_sha256": "2bac895f4b21b88e1adcdc520bc19c0ff3d153b2d5162ca2dc25c36781bc99e2",
+          "points_sha256": "b64a181361edfb9e134af9518fcc4d6d1b0f168138a8724007b2201160b1155d",
+          "cuboid": {
+            "base_center_mm": [
+              43.98769133581084,
+              24.96613399679967,
+              802.8870232299253
+            ],
+            "length_axis": [
+              0.936802906476436,
+              -0.24806914098102503,
+              0.2467022815262115
+            ],
+            "length_mm": 327.0189382353375,
+            "width_mm": 297.55041203961423,
+            "height_mm": 124.11633956981183
+          }
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "c15532106afafa8af0c5b4a986578c1757073b7aea16d536c34d5198748051c9",
+          "points_sha256": "e003803f6d53a629b9bb4322dc9aafb00f0bbecb987023669fa219e633e803fe"
+        },
+        {
+          "decision": "partially_visible",
+          "indices_sha256": "9e216cb1760aa5f0185075460e0bbe23ea18694636f18fa9ca6b169d001b87f1",
+          "points_sha256": "dd017bd4f8f7e722210bcc1c3ea3142357df092bfbf0c05a4fe8770a2853f9d2"
+        }
+      ]
+    }
+  ],
+  "standalone_measurements": [
+    {
+      "mode": "numpy",
+      "cases": [
+        {
+          "name": "tilted_with_outliers",
+          "maximum_geometry_absolute_difference": 0.0,
+          "cuboid": {
+            "base_center_mm": [
+              240.00000034425693,
+              268.00000073453106,
+              499.00000097937476
+            ],
+            "length_axis": [
+              0.8000000179153027,
+              0.3599999856677573,
+              0.4799999808903431
+            ],
+            "length_mm": 200.00000500575686,
+            "width_mm": 100.00000762280723,
+            "height_mm": 80.0000061035156
+          }
+        },
+        {
+          "name": "unknown_height",
+          "maximum_geometry_absolute_difference": 0.0,
+          "cuboid": {
+            "base_center_mm": [
+              240.0000003600667,
+              268.0000007218832,
+              499.00000096251097
+            ],
+            "length_axis": [
+              0.8000000179153027,
+              0.3599999856677573,
+              0.4799999808903431
+            ],
+            "length_mm": 200.00000500575686,
+            "width_mm": 100.0000061825645,
+            "height_mm": null
+          }
+        },
+        {
+          "name": "line_no_fit",
+          "maximum_geometry_absolute_difference": 0.0,
+          "cuboid": null
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "No live OAK hardware or remote serialization coverage.",
+    "Comparisons share one interpreter and dependency environment per invocation.",
+    "Cached scenes exercise decoded arrays, not original raw artifact decoding."
+  ]
+}

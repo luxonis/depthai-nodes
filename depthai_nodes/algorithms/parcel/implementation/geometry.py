@@ -7,7 +7,7 @@ from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
 from scipy.spatial import cKDTree
 
-from . import native
+from . import numpy_ops as ops
 from .scene import Cuboid, PointCloud, Scene, Segment, SupportPlane
 
 _PAIR_QUERY_NEIGHBOR_BUDGET = 8_000_000
@@ -18,26 +18,16 @@ def _voxel_centroids(
     points_mm: NDArray,
     size_mm: float,
 ) -> tuple[NDArray[np.float64], NDArray[np.intp]]:
-    accelerated = native.voxel_centroids(points_mm, size_mm)
+    accelerated = ops.voxel_centroids(points_mm, size_mm)
     if accelerated is not None:
         return accelerated
     grid = np.floor(points_mm / size_mm)
-    low = grid.min(axis=0).astype(np.int64)
-    span = (grid.max(axis=0) - low + 1).astype(np.int64)
-    if int(span[0]) * int(span[1]) * int(span[2]) < 8_000_000:
-        integer = grid.astype(np.int64) - low
-        keys = (integer[:, 0] * span[1] + integer[:, 1]) * span[2] + integer[:, 2]
-        dense_counts = np.bincount(keys)
-        occupied = dense_counts != 0
-        counts = dense_counts[occupied]
-        point_to_voxel = (np.cumsum(occupied) - 1)[keys]
-    else:
-        _, point_to_voxel, counts = np.unique(
-            grid,
-            axis=0,
-            return_inverse=True,
-            return_counts=True,
-        )
+    _, point_to_voxel, counts = np.unique(
+        grid,
+        axis=0,
+        return_inverse=True,
+        return_counts=True,
+    )
     centroids = np.column_stack(
         [
             np.bincount(point_to_voxel, weights=axis, minlength=len(counts)) / counts
@@ -124,6 +114,7 @@ def _cluster_voxels(
 def detect(
     scene: Scene,
     *,
+    heights: NDArray | None = None,
     foreground_min_height_mm: float,
     foreground_max_height_mm: float,
     voxel_size_mm: float,
@@ -134,34 +125,16 @@ def detect(
     xyz = scene.cloud.xyz_mm
     if len(xyz) > np.iinfo(np.int32).max + 1:
         raise ValueError("Cloud has too many rows for int32 segment indices")
-    prepared = native.detect_voxels(
-        scene, foreground_min_height_mm, foreground_max_height_mm, voxel_size_mm
+    distances = (
+        xyz @ scene.plane.normal + scene.plane.offset_mm if heights is None else heights
     )
-    if prepared is not None:
-        rows, centroids, point_to_voxel = prepared
-        if len(rows) < cluster_min_points:
-            return []
-    else:
-        rows = native.foreground_rows(
-            xyz, scene.plane, foreground_min_height_mm, foreground_max_height_mm
-        )
-        if rows is None:
-            distances = (
-                np.einsum("ij,j->i", xyz, scene.plane.normal) + scene.plane.offset_mm
-            )
-            rows = np.flatnonzero(
-                (distances >= foreground_min_height_mm)
-                & (distances <= foreground_max_height_mm)
-            ).astype(np.int32)
-        if len(rows) < cluster_min_points:
-            return []
-
-        accelerated = native.voxel_centroids(xyz, voxel_size_mm, rows)
-        centroids, point_to_voxel = (
-            accelerated
-            if accelerated is not None
-            else _voxel_centroids(xyz[rows], voxel_size_mm)
-        )
+    rows = np.flatnonzero(
+        (distances >= foreground_min_height_mm)
+        & (distances <= foreground_max_height_mm)
+    ).astype(np.int32)
+    if len(rows) < cluster_min_points:
+        return []
+    centroids, point_to_voxel = _voxel_centroids(xyz[rows], voxel_size_mm)
     if len(centroids) < cluster_min_voxels:
         return []
     count, voxel_labels = _cluster_voxels(centroids, cluster_radius_mm, voxel_size_mm)
@@ -174,9 +147,7 @@ def detect(
     if not accepted.any():
         return []
     included = accepted[point_labels]
-    ordered_rows = native.group_rows(rows, point_labels, accepted, points_per_cluster)
-    if ordered_rows is None:
-        ordered_rows = rows[included][np.argsort(point_labels[included], kind="stable")]
+    ordered_rows = rows[included][np.argsort(point_labels[included], kind="stable")]
     starts = np.cumsum(points_per_cluster[accepted])[:-1]
     return [Segment(indices) for indices in np.split(ordered_rows, starts)]
 
@@ -228,20 +199,11 @@ def _footprint_bounds(
     quantile_window_mm: float | None = None,
     preserve_separated_extents: bool = False,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
-    lows, highs = xy.min(axis=0), xy.max(axis=0)
+    lows = np.array([a.min() for a in xy.T])
+    highs = np.array([a.max() for a in xy.T])
     for axis in range(2):
-        accelerated = native.cross_extrema(xy, axis, cell_mm)
-        if accelerated is None:
-            _, cross_cells = np.unique(
-                np.floor(xy[:, 1 - axis] / cell_mm), return_inverse=True
-            )
-            count = cross_cells.max() + 1
-        for side, (sign, bounds) in enumerate(((-1, lows), (1, highs))):
-            if accelerated is None:
-                cell_extrema = np.full(count, -np.inf)
-                np.maximum.at(cell_extrema, cross_cells, sign * xy[:, axis])
-            else:
-                cell_extrema = accelerated[side]
+        extrema = ops.cross_extrema(xy, axis, cell_mm)
+        for cell_extrema, (sign, bounds) in zip(extrema, ((-1, lows), (1, highs))):
             extreme = _supported_extreme(
                 cell_extrema,
                 band_mm,
@@ -269,29 +231,11 @@ def _supported_height(
     quantile_window_mm: float | None = None,
     preserve_separated_extents: bool = False,
 ) -> float | None:
-    maxima = native.height_maxima(
-        footprint_mm, heights_mm, voxel_size_mm, min_height_mm
-    )
-    if maxima is not None:
-        if len(maxima) < min_support_voxels:
-            return None
-        return _supported_extreme(
-            maxima,
-            band_mm,
-            min_support_voxels,
-            quantile=quantile,
-            quantile_window_mm=quantile_window_mm,
-            preserve_separated_extents=preserve_separated_extents,
-        )
-    above_plane = heights_mm >= min_height_mm
-    grid = np.floor(footprint_mm[above_plane] / voxel_size_mm)
-    cells, membership = np.unique(grid, axis=0, return_inverse=True)
-    if len(cells) < min_support_voxels:
+    maxima = ops.height_maxima(footprint_mm, heights_mm, voxel_size_mm, min_height_mm)
+    if len(maxima) < min_support_voxels:
         return None
-    cell_maxima = np.full(len(cells), -np.inf)
-    np.maximum.at(cell_maxima, membership, heights_mm[above_plane])
     return _supported_extreme(
-        cell_maxima,
+        maxima,
         band_mm,
         min_support_voxels,
         quantile=quantile,
@@ -375,22 +319,12 @@ def measure(
     tangent /= np.linalg.norm(tangent)
     axes = np.stack((tangent, np.cross(normal, tangent)))
     keep = counts - 1 >= outlier_min_neighbor_voxels
-    prepared = native.supported_footprint(
-        xyz, point_to_voxel, keep, axes, normal, plane.offset_mm, 1
+    footprint, heights, origin = ops.supported_footprint(
+        xyz, point_to_voxel, keep, axes, normal, plane.offset_mm
     )
-    if prepared is None:
-        supported = xyz[keep[point_to_voxel]]
-        footprint = supported @ axes.T
-        heights = supported @ normal + plane.offset_mm
-    else:
-        footprint, heights, origin = prepared
     if len(footprint) < 3:
         return None
-    if prepared is None:
-        origin = footprint.mean(axis=0)
-    _, _, angle_deg = cv2.minAreaRect(
-        native.centered_hull_candidates(footprint, origin)
-    )
+    _, _, angle_deg = cv2.minAreaRect(ops.centered_hull_candidates(footprint, origin))
     if orientation_tail_fraction:
         angle_deg = _trimmed_rectangle_angle(
             footprint - origin,
@@ -399,41 +333,16 @@ def measure(
             angle_deg,
         )
     rectangle_axes = _rectangle_axes(angle_deg)
-    extrema = native.rectangle_extrema(
-        footprint, origin, rectangle_axes, outlier_voxel_size_mm
+    low, high = _footprint_bounds(
+        (footprint - origin) @ rectangle_axes.T,
+        outlier_voxel_size_mm,
+        footprint_edge_band_mm,
+        min_footprint_edge_cells,
+        min_footprint_side_mm,
+        quantile=footprint_edge_quantile,
+        quantile_window_mm=extent_quantile_window_mm,
+        preserve_separated_extents=preserve_separated_extents,
     )
-    if extrema is None:
-        low, high = _footprint_bounds(
-            (footprint - origin) @ rectangle_axes.T,
-            outlier_voxel_size_mm,
-            footprint_edge_band_mm,
-            min_footprint_edge_cells,
-            min_footprint_side_mm,
-            quantile=footprint_edge_quantile,
-            quantile_window_mm=extent_quantile_window_mm,
-            preserve_separated_extents=preserve_separated_extents,
-        )
-    else:
-        low, high, strips = extrema
-        for axis in range(2):
-            for sign, bounds, values in (
-                (-1, low, strips[axis][0]),
-                (1, high, strips[axis][1]),
-            ):
-                extreme = _supported_extreme(
-                    values,
-                    footprint_edge_band_mm,
-                    min_footprint_edge_cells,
-                    quantile=footprint_edge_quantile,
-                    quantile_window_mm=extent_quantile_window_mm,
-                    preserve_separated_extents=preserve_separated_extents,
-                )
-                if extreme is not None:
-                    bounds[axis] = sign * extreme
-            if high[axis] - low[axis] < min_footprint_side_mm:
-                # Preserve the original untrimmed fallback for a narrow supported fit.
-                aligned = (footprint - origin) @ rectangle_axes.T
-                low[axis], high[axis] = aligned[:, axis].min(), aligned[:, axis].max()
     length, width = high - low
     if min(length, width) < min_footprint_side_mm:
         return None

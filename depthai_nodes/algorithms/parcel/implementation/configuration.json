@@ -2,9 +2,9 @@
   "detection": {
     "foreground_min_height_mm": 18.0,
     "foreground_max_height_mm": 1200.0,
-    "voxel_size_mm": 12.0,
+    "voxel_size_mm": 18.0,
     "cluster_radius_mm": 26.0,
-    "cluster_min_voxels": 12,
+    "cluster_min_voxels": 24,
     "cluster_min_points": 40
   },
   "measurement": {
@@ -31,16 +31,23 @@
     "boundary_contrast_intensity": 18,
     "boundary_depth_gap_mm": 15.0,
     "min_edge_support_fraction": 0.55,
-    "depth_cell_px": 6,
+    "depth_cell_px": 12,
     "silhouette_close_radius_cells": 1,
     "silhouette_simplify_px": 10.0,
     "min_depth_coverage_fraction": 0.3,
     "occlusion_depth_mm": 25,
     "occlusion_min_height_mm": 18,
     "min_occlusion_cells": 4,
-    "max_hull_gap_fraction": 0.2
+    "max_hull_gap_fraction": 0.2,
+    "projection_stride": 1,
+    "boundary_probe_stride": 1
   },
   "pipeline": {
-    "parallel_validation": true
+    "parallel_validation": false,
+    "point_stride": 64,
+    "fallback_point_stride": 64,
+    "sampling_pattern": "stride",
+    "min_scene_points": 16384,
+    "workers": 3
   }
 }

@@ -68,4 +68,4 @@ markers = [
 
 [tool.setuptools.package-data]
 "depthai_nodes.algorithms.parcel" = ["manifest.json"]
-"depthai_nodes.algorithms.parcel.implementation" = ["*.json", "*.cpp", "*.txt", "*.md", "*.html"]
+"depthai_nodes.algorithms.parcel.implementation" = ["*.json", "*.txt", "*.md", "*.html"]

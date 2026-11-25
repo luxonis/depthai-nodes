@@ -1,8 +1,7 @@
 """Integrity checks for the installed parcel implementation.
 
 File keys are repository-relative paths beginning with ``depthai_nodes/``. Hashes
-cover raw installed bytes and exclude this self-describing manifest. Native
-binaries are optional platform-local builds and are not distributed in the wheel.
+cover raw installed bytes and exclude this self-describing manifest. The selected implementation uses no custom native kernels or binaries.
 """
 
 import hashlib
@@ -11,8 +10,8 @@ import re
 from pathlib import Path, PurePosixPath
 
 _DIGEST = re.compile(r"[0-9a-f]{64}\Z")
-_SOURCE_COMMIT = "0a2f571843f81ac6cc2f8cebe3475540e314f83d"
-_EVIDENCE_COMMIT = "4b7634cc5806b7fb2e48bc7a830a3434b85cc0cb"
+_SOURCE_COMMIT = "d5e35e17d75f91368889dc53d950792eed4096e6"
+_EVIDENCE_COMMIT = "d5964eee714737750787066fc24bc29744536d45"
 
 
 def _require(condition: bool, message: str) -> None:
@@ -190,10 +189,15 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
         "Unexpected weights",
     )
     _require(
-        candidate["image_digest"]
-        == evidence["image"]
-        == "sha256:" + original["build_sha256"],
-        "Executed image mismatch",
+        candidate["image_digest"] is None
+        and evidence["image"] is None
+        and candidate["build_kind"]
+        == evidence["build"]["kind"]
+        == "native-source-archive"
+        and candidate["build_sha256"]
+        == original["build_sha256"]
+        == evidence["build"]["artifact"]["sha256"],
+        "Executed native build mismatch",
     )
     source = manifest["source"]
     _require(source["algorithm"] == _ALGORITHM_NAME, "Algorithm name mismatch")
@@ -233,6 +237,15 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
     for digest in source["original_files_sha256"].values():
         _digest(digest)
     _require(source["lineage_note"] == evidence["lineage_note"], "Lineage mismatch")
+    review = source["review"]
+    _require(
+        review == evidence["review"]
+        and review["source_commit"] == source["commit"]
+        and bool(review["provider"].strip())
+        and review["url"] == "https://github.com/luxonis/BoxLabRunners/pull/19"
+        and all(finding.get("resolution") for finding in review["findings"]),
+        "Frozen source review mismatch",
+    )
     visualization = manifest["visualization"]
     _require(
         visualization["path"] == package_path + "/visualization.html",
@@ -262,12 +275,16 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
         displayed["candidate"] == original
         and displayed["configuration"] == configuration
         and displayed["source_commit"] == source["commit"]
-        and displayed["image"] == candidate["image_digest"],
+        and displayed["candidate"]["build_sha256"] == candidate["build_sha256"],
         "Visualization candidate or configuration mismatch",
     )
     for key, target in (("validation", "validation"), ("test", "held_out_result")):
         _require(
-            displayed["results"][key]["metrics"]
+            (
+                displayed[key]["evaluation"]["metrics"]
+                if key == "validation"
+                else displayed[key]["metrics"]
+            )
             == evidence[target]["evaluation"]["metrics"],
             "Visualization metrics mismatch",
         )
@@ -291,6 +308,14 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
     _require(len(manifest["evaluations"]) == 2, "Expected validation and test evidence")
     for entry, key in zip(manifest["evaluations"], ("validation", "held_out_result")):
         run, evaluation = evidence[key]["run"], evidence[key]["evaluation"]
+        _require(
+            run["candidate"] == original
+            and run["input_mode"] == settings["input_mode"]
+            and run["execution"] == evidence["validation"]["run"]["execution"]
+            and run["policy"] == evidence["validation"]["run"]["policy"]
+            and evaluation["policy"] == run["policy"],
+            "Evaluation candidate or settings mismatch",
+        )
         expected = {
             "split": run["split"],
             "release_id": run["release_id"],
@@ -326,7 +351,7 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
         "Missing promotion record",
     )
     _require(
-        verification["reference_artifact"] == evidence["image"],
+        verification["reference_artifact"] == original["build_sha256"],
         "Port reference mismatch",
     )
     for field in (

@@ -104,3 +104,5 @@ session = onnx_qnn_session("model.onnx")
 ## 🤝 Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup, parser guidelines, and testing instructions. Feedback and bug reports are welcome in [GitHub issues](https://github.com/luxonis/depthai-nodes/issues).
+
+The parcel nodes bundle `fast_baseline_oak4_visibility_01/v002` (`algorithm-5e4abc3a09b54148950317cdeac60ba2`). See the [current promotion record](docs/parcel-promotions/fast_baseline_oak4_visibility_01_algorithm-5e4abc3a09b54148950317cdeac60ba2.md) and [packaged visualization](depthai_nodes/algorithms/parcel/implementation/visualization.html). Install `depthai-nodes[parcel]` for the frozen NumPy/SciPy/OpenCV dependencies.

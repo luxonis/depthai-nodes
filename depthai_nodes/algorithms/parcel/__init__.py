@@ -27,10 +27,10 @@ from .implementation.scene import (
     project_points,
 )
 
-ALGORITHM_ID = "algorithm-2f65a6f6296d48e981f5fe3f77bfde89"
+ALGORITHM_ID = "algorithm-5e4abc3a09b54148950317cdeac60ba2"
 IMPLEMENTATION_NAME = "implementation"
-_ALGORITHM_NAME = "fast_baseline"
-_CONFIGURATION_VERSION = "v001"
+_ALGORITHM_NAME = "fast_baseline_oak4_visibility_01"
+_CONFIGURATION_VERSION = "v002"
 
 
 def create_components() -> Components:

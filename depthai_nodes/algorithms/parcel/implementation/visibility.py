@@ -5,9 +5,14 @@ from typing import Literal
 import cv2
 import numpy as np
 from numpy.typing import NDArray
-from scipy.ndimage import distance_transform_edt, minimum_filter
+from scipy.ndimage import (
+    distance_transform_edt,
+    minimum_filter,
+    minimum_filter1d,
+    rank_filter,
+)
 
-from . import native
+from . import numpy_ops as ops
 from .scene import (
     CameraView,
     CandidateDecision,
@@ -19,6 +24,35 @@ from .scene import (
 
 ViewDecision = Literal["clear", "blocked", "uncertain"]
 _CHUNK_POINTS = 65_536
+
+
+@dataclass(frozen=True)
+class _OtherDepths:
+    nearest: NDArray[np.float32]
+    second: NDArray[np.float32]
+    owner: NDArray[np.int32]
+
+    @classmethod
+    def from_layers(cls, layers):
+        nearest = np.full(layers.shape[1:], np.inf, np.float32)
+        second = np.full_like(nearest, np.inf)
+        owner = np.zeros(nearest.shape, np.int32)
+        for label, layer in enumerate(layers):
+            closer = layer < nearest
+            second = np.minimum(second, np.where(closer, nearest, layer))
+            owner = np.where(closer, label, owner)
+            nearest = np.minimum(nearest, layer)
+        return cls(nearest, second, owner)
+
+    def excluding(self, label):
+        return np.where(self.owner == label, self.second, self.nearest)
+
+
+@dataclass(frozen=True)
+class _ViewGrids:
+    depth: NDArray[np.float32]
+    outside: _OtherDepths
+    foreground: _OtherDepths
 
 
 @dataclass(frozen=True)
@@ -39,22 +73,51 @@ class Visibility:
     occlusion_min_height_mm: float
     min_occlusion_cells: int
     max_hull_gap_fraction: float = 0.0
+    projection_stride: int = 1
+    boundary_probe_stride: int = 1
 
     _cache: dict = field(default_factory=dict, init=False, repr=False, compare=False)
 
-    def begin(self, scene, foreground_min_height_mm, pool: ThreadPoolExecutor):
+    def __post_init__(self):
+        if (
+            type(self.boundary_probe_stride) is not int  # noqa: E721 - frozen exact-type check
+            or self.boundary_probe_stride < 1
+        ):
+            raise ValueError("boundary_probe_stride must be a positive integer")
+
+    def begin(
+        self, scene, foreground_min_height_mm, pool: ThreadPoolExecutor, *, heights=None
+    ):
         self._cache.clear()
         minimum = min(foreground_min_height_mm, self.occlusion_min_height_mm)
-        active = native.height_mask(scene, minimum)
-        included = np.flatnonzero(active).astype(np.int32)
+        active = (
+            ops.height_mask(scene, minimum)
+            if heights is None
+            else np.asarray(heights >= minimum, dtype=np.uint8)
+        )
+        included = None
+        rows = np.arange(
+            0, len(scene.cloud.xyz_mm), self.projection_stride, dtype=np.int32
+        )
+        points = np.asarray(scene.cloud.xyz_mm[rows], dtype=np.float64)
         foreground = (
             active
             if minimum == self.occlusion_min_height_mm
-            else native.height_mask(scene, self.occlusion_min_height_mm)
+            else (
+                ops.height_mask(scene, self.occlusion_min_height_mm)
+                if heights is None
+                else np.asarray(heights >= self.occlusion_min_height_mm, dtype=np.uint8)
+            )
         )
         futures = {
             id(view): pool.submit(
-                native.project_cells, scene, view, self.depth_cell_px, active
+                ops.project_cells,
+                scene,
+                view,
+                self.depth_cell_px,
+                active,
+                self.projection_stride,
+                (rows, points),
             )
             for view in scene.views
         }
@@ -62,7 +125,7 @@ class Visibility:
             scene=scene, projections=futures, included=included, foreground=foreground
         )
 
-    def prepare(self, scene: Scene, segments: list[Segment]) -> None:
+    def prepare(self, scene: Scene, segments: list[Segment], *, pool=None) -> None:
         labels = np.zeros(len(scene.cloud.xyz_mm), dtype=np.int32)
         for label, segment in enumerate(segments, 1):
             if np.any(labels[segment.point_indices]):
@@ -87,7 +150,7 @@ class Visibility:
             self._cache["projections"] = {}
             return
         if foreground is None:
-            foreground = native.height_mask(scene, self.occlusion_min_height_mm)
+            foreground = ops.height_mask(scene, self.occlusion_min_height_mm)
         self._cache["foreground"] = foreground
 
         def finish(view):
@@ -95,80 +158,64 @@ class Visibility:
             projected = (
                 future.result()
                 if future is not None
-                else native.project_cells(scene, view, self.depth_cell_px)
+                else ops.project_cells(scene, view, self.depth_cell_px)
             )
-            if projected is None:
-                return None
+            cell = self.depth_cell_px
             h, w = view.image.shape[:2]
-            c = self.depth_cell_px
-            return native.accumulate_grids(
-                projected,
-                labels,
-                len(segments) + 1,
-                foreground,
-                ((h + c - 1) // c, (w + c - 1) // c),
-                included,
+            shape = (len(segments) + 1, (h + cell - 1) // cell, (w + cell - 1) // cell)
+            grids = (
+                None
+                if projected is None
+                else ops.accumulate_grids(
+                    projected,
+                    labels,
+                    len(segments) + 1,
+                    foreground,
+                    shape[1:],
+                    included,
+                )
+            )
+            if grids is None:
+                depth = np.full(shape, np.inf, np.float32)
+                foreground_depth = np.full_like(depth, np.inf)
+                xyz = scene.cloud.xyz_mm
+                for start in range(0, len(xyz), _CHUNK_POINTS):
+                    batch = slice(start, start + _CHUNK_POINTS)
+                    cells, z, inside = _projected_cells(view, xyz[batch], cell)
+                    owners = labels[batch][inside]
+                    np.minimum.at(depth, (owners, *cells), z)
+                    fg = foreground[batch][inside].astype(bool)
+                    np.minimum.at(
+                        foreground_depth,
+                        (owners[fg], cells[0][fg], cells[1][fg]),
+                        z[fg],
+                    )
+                grids = depth, foreground_depth
+            depth, foreground_depth = grids
+            return _ViewGrids(
+                depth,
+                _OtherDepths.from_layers(depth),
+                _OtherDepths.from_layers(foreground_depth),
             )
 
-        with ThreadPoolExecutor(max_workers=len(scene.views) or 1) as pool:
+        if pool is None:
+            with ThreadPoolExecutor(max_workers=len(scene.views) or 1) as owned_pool:
+                self._cache["views"] = dict(
+                    zip(map(id, scene.views), owned_pool.map(finish, scene.views))
+                )
+        else:
             self._cache["views"] = dict(
                 zip(map(id, scene.views), pool.map(finish, scene.views))
             )
         self._cache["projections"] = {}
 
     def _grids(self, scene, view, label):
-        cache = self._cache
-        key = id(view)
-        if cache["views"].get(key) is None:
-            if "foreground" not in cache:
-                cache["foreground"] = np.asarray(
-                    scene.cloud.xyz_mm @ scene.plane.normal + scene.plane.offset_mm
-                    >= self.occlusion_min_height_mm,
-                    dtype=np.uint8,
-                )
-            count = len(cache["segments"]) + 1
-            future = cache["projections"].pop(key, None)
-            projected = (
-                future.result()
-                if future is not None
-                else native.project_cells(scene, view, self.depth_cell_px)
-            )
-            cell = self.depth_cell_px
-            h, w = view.image.shape[:2]
-            grids = (
-                None
-                if projected is None
-                else native.accumulate_grids(
-                    projected,
-                    cache["labels"],
-                    count,
-                    cache["foreground"],
-                    ((h + cell - 1) // cell, (w + cell - 1) // cell),
-                )
-            )
-            if grids is None:
-                cell = self.depth_cell_px
-                h, w = view.image.shape[:2]
-                shape = (count, (h + cell - 1) // cell, (w + cell - 1) // cell)
-                depth, foreground = (
-                    np.full(shape, np.inf, np.float32),
-                    np.full(shape, np.inf, np.float32),
-                )
-                xyz = scene.cloud.xyz_mm
-                for start in range(0, len(xyz), _CHUNK_POINTS):
-                    batch = slice(start, start + _CHUNK_POINTS)
-                    cells, z, inside = _projected_cells(view, xyz[batch], cell)
-                    owners = cache["labels"][batch][inside]
-                    np.minimum.at(depth, (owners, *cells), z)
-                    fg = cache["foreground"][batch][inside].astype(bool)
-                    np.minimum.at(
-                        foreground, (owners[fg], cells[0][fg], cells[1][fg]), z[fg]
-                    )
-                grids = depth, foreground
-            cache["views"][key] = grids
-        depth, foreground = cache["views"][key]
-        others = np.arange(len(depth)) != label
-        return depth[label], depth[others].min(axis=0), foreground[others].min(axis=0)
+        grids = self._cache["views"][id(view)]
+        return (
+            grids.depth[label],
+            grids.outside.excluding(label),
+            grids.foreground.excluding(label),
+        )
 
     def validate_candidate(self, scene: Scene, candidate: Segment) -> CandidateDecision:
         cache = self._cache
@@ -231,9 +278,18 @@ class Visibility:
         kernel = cv2.getStructuringElement(
             cv2.MORPH_ELLIPSE, (2 * radius + 1, 2 * radius + 1)
         )
-        closed = cv2.morphologyEx(occupied.astype(np.uint8), cv2.MORPH_CLOSE, kernel)
+        x0, y0, w0, h0 = cv2.boundingRect(occupied.astype(np.uint8))
+        padding = 2 * radius + 1
+        left, top = max(0, x0 - padding), max(0, y0 - padding)
+        right, bottom = (
+            min(shape[1], x0 + w0 + padding),
+            min(shape[0], y0 + h0 + padding),
+        )
+        closed = cv2.morphologyEx(
+            occupied[top:bottom, left:right].astype(np.uint8), cv2.MORPH_CLOSE, kernel
+        )
         contours, _ = cv2.findContours(
-            closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+            closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE, offset=(left, top)
         )
         contour = max(contours, key=cv2.contourArea)
         contour_area = cv2.contourArea(contour)
@@ -333,18 +389,27 @@ class Visibility:
             length = np.linalg.norm(delta)
             outward = orientation * np.array([delta[1], -delta[0]]) / length
             # Adjacent edges can cross the same probe near a vertex.
-            samples = (
-                start + np.linspace(0.2, 0.8, max(2, int(length)))[:, None] * delta
-            )
+            count = max(2, int(length))
+            if self.boundary_probe_stride > 1:
+                count = max(
+                    2,
+                    (count + self.boundary_probe_stride - 1)
+                    // self.boundary_probe_stride,
+                )
+            samples = start + np.linspace(0.2, 0.8, count)[:, None] * delta
             if check_frame_continuation and self._continuous_strip_to_frame(
                 view.image, samples, outward
             ):
                 return False
-            image_evidence = self._image_boundary(
-                view.image, parcel_depth, samples, outward
-            )
             depth_evidence = self._depth_boundary(
                 parcel_depth, outside_depth, samples, outward
+            )
+            if np.mean(depth_evidence) >= self.min_edge_support_fraction:
+                continue
+            image_evidence = np.zeros(len(samples), dtype=bool)
+            unresolved = ~depth_evidence
+            image_evidence[unresolved] = self._image_boundary(
+                view.image, parcel_depth, samples[unresolved], outward
             )
             if (
                 np.mean(image_evidence | depth_evidence)
@@ -361,6 +426,21 @@ class Visibility:
         *,
         observed_region: NDArray | None = None,
     ) -> bool:
+        # The 3x3 filter can produce finite neighbors only within one cell of
+        # the region. Crop this exact domain before filtering/labeling.
+        if observed_region is None:
+            x, y, w, h = cv2.boundingRect(np.asarray(region, dtype=np.uint8))
+            if not w or not h:
+                return False
+            crop = (
+                slice(max(0, y - 1), min(region.shape[0], y + h + 1)),
+                slice(max(0, x - 1), min(region.shape[1], x + w + 1)),
+            )
+            parcel_depth, outside_depth, region = (
+                parcel_depth[crop],
+                outside_depth[crop],
+                region[crop],
+            )
         # A nearer surface at the observed edge can hide the continuation of a split segment.
         neighbors = minimum_filter(
             np.where(region != 0, parcel_depth, np.inf),
@@ -392,9 +472,6 @@ class Visibility:
         samples: NDArray,
         outward: NDArray,
     ) -> NDArray[np.bool_]:
-        accelerated = native.image_boundary(self, image, parcel_depth, samples, outward)
-        if accelerated is not None:
-            return accelerated
         inner_width = self.boundary_contrast_window_px
         outer_width = self.boundary_exterior_px
         band = self.boundary_band_px
@@ -416,21 +493,37 @@ class Visibility:
         anchor_pixels = pixels[:, anchor]
         on_parcel = np.isfinite(self._probe_depth(parcel_depth, anchor_pixels))
         reference = np.median(values[:, anchor], axis=1)
-        strips = np.lib.stride_tricks.sliding_window_view(
-            values, inner_width + outer_width, axis=1
+        windows = len(offsets) - inner_width - outer_width + 1
+        median = rank_filter(values, inner_width // 2, size=(1, inner_width, 1))
+        inner = median[:, inner_width // 2 : inner_width // 2 + windows].astype(
+            np.float64
         )
-        inner = np.median(strips[..., :inner_width], axis=-1)
+        if inner_width % 2 == 0:
+            lower = rank_filter(values, inner_width // 2 - 1, size=(1, inner_width, 1))
+            inner = (
+                inner + lower[:, inner_width // 2 : inner_width // 2 + windows]
+            ) / 2
         matches_parcel = (
             np.abs(inner - reference[:, None]).max(axis=2)
             < self.boundary_contrast_intensity
         )
-        exterior = np.abs(strips[..., inner_width:] - reference[:, None, :, None]).max(
-            axis=2
+        exterior = np.abs(values.astype(np.float64) - reference[:, None]).max(axis=2)
+        minimum = minimum_filter1d(exterior, outer_width, axis=1)
+        contrast = (
+            minimum[
+                :,
+                inner_width + outer_width // 2 : inner_width
+                + outer_width // 2
+                + windows,
+            ]
+            >= self.boundary_contrast_intensity
         )
-        contrast = exterior.min(axis=-1) >= self.boundary_contrast_intensity
-        fits_image = np.lib.stride_tricks.sliding_window_view(
-            inside, inner_width + outer_width, axis=1
-        ).all(axis=-1)
+        fits = minimum_filter1d(inside, inner_width + outer_width, axis=1)
+        fits_image = fits[
+            :,
+            (inner_width + outer_width) // 2 : (inner_width + outer_width) // 2
+            + windows,
+        ]
         separates = np.any(matches_parcel & contrast & fits_image, axis=1)
         continues = self._continues_to_frame(image, samples, outward, reference)
         return on_parcel & separates & ~continues
@@ -502,14 +595,27 @@ class Visibility:
         offsets = np.arange((self.depth_cell_px + 1) // 2, self.boundary_band_px + 1)
         if not len(offsets):
             return np.zeros(len(samples), dtype=bool)
-        delta = offsets[None, :, None] * outward
-        inner = self._probe_depth(parcel_depth, samples[:, None, :] - delta)
-        outer = self._probe_depth(outside_depth, samples[:, None, :] + delta)
+        # Keep coordinate operations in their original order, but use contiguous
+        # coordinate planes instead of allocating/transposing an N x K x 2 tensor.
+        inner = self._probe_band(parcel_depth, samples, outward, -offsets)
+        outer = self._probe_band(outside_depth, samples, outward, offsets)
         return (
             np.isfinite(inner)
             & np.isfinite(outer)
             & (outer >= inner + self.boundary_depth_gap_mm)
         )
+
+    def _probe_band(self, grid, samples, outward, offsets):
+        x = np.floor(
+            (samples[:, 0, None] + offsets[None, :] * outward[0]) / self.depth_cell_px
+        ).astype(np.int32)
+        y = np.floor(
+            (samples[:, 1, None] + offsets[None, :] * outward[1]) / self.depth_cell_px
+        ).astype(np.int32)
+        height, width = grid.shape
+        inside = (x >= 0) & (x < width) & (y >= 0) & (y < height)
+        values = grid[y.clip(0, height - 1), x.clip(0, width - 1)]
+        return np.where(inside, values, np.inf).min(axis=1)
 
     def _probe_depth(self, grid: NDArray, pixels: NDArray) -> NDArray:
         x, y = np.floor(pixels / self.depth_cell_px).astype(np.int32).transpose(2, 0, 1)

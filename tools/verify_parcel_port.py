@@ -1,9 +1,10 @@
 """Compare the frozen parcel computation with the bundled port, without network I/O.
 
-The reference root must contain the pinned BoxLabRunners files and committed fast-
-baseline.json and fast-baseline-settings.json evidence. Optional cached inputs must be
-an already-authorized validation cache from benchmark_fast.py. No labels, training
-inputs, or held-out inputs are read. This is an output comparison, not a timing
+The reference root must contain the pinned BoxLabRunners source and copies of the
+bundled evaluation-evidence.json and scoped-settings.json named fast-baseline.json and
+fast-baseline-settings.json (legacy comparison tool filenames). Optional cached inputs
+must be an already-authorized validation cache from benchmark_fast.py. No labels,
+training inputs, or held-out inputs are read. This is an output comparison, not a timing
 benchmark.
 """
 
@@ -15,10 +16,8 @@ import importlib
 import json
 import platform
 import sys
-from contextlib import ExitStack
 from dataclasses import asdict, replace
 from pathlib import Path
-from unittest.mock import patch
 
 import cv2
 import numpy as np
@@ -28,7 +27,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 PACKAGE = "depthai_nodes.algorithms.parcel.implementation"
-SOURCE_COMMIT = "0a2f571843f81ac6cc2f8cebe3475540e314f83d"
+SOURCE_COMMIT = "d5e35e17d75f91368889dc53d950792eed4096e6"
 RELEASE_ID = "release-f14a597a366c46c6bdba00fa25e45bcd"
 ABSOLUTE_TOLERANCE = 1e-9
 
@@ -347,24 +346,20 @@ def main():
     parser.add_argument("--reference-root", type=Path, required=True)
     parser.add_argument("--validation-cache", type=Path)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--require-native", action="store_true")
     args = parser.parse_args()
     reference_root = args.reference_root.resolve()
     evidence, settings = verify_source(reference_root)
     sys.path.insert(0, str(reference_root))
-    reference_module = importlib.import_module("algorithms.fast_baseline")
+    reference_module = importlib.import_module(
+        "algorithms.fast_baseline_oak4_visibility_01"
+    )
     reference_types = importlib.import_module("runner.scene")
-    reference_native = importlib.import_module("algorithms.fast_baseline.native")
     binding = importlib.import_module("depthai_nodes.algorithms.parcel")
-    port_native = importlib.import_module(PACKAGE + ".native")
     if (
         binding.ALGORITHM_ID
         != evidence["validation"]["run"]["candidate"]["candidate_id"]
     ):
         raise ValueError("Port binding differs from evaluated candidate")
-    available = reference_native._lib is not None and port_native._lib is not None
-    if args.require_native and not available:
-        raise ValueError("Both native libraries must be built for this comparison")
     scenarios = synthetic_scenes()
     cached, manifest_digest = (
         ([], None)
@@ -372,29 +367,25 @@ def main():
         else cached_scenes(args.validation_cache)
     )
     records, measurements = [], []
-    for mode in ["native", "fallback"] if available else ["fallback"]:
-        with ExitStack() as context:
-            if mode == "fallback":
-                context.enter_context(patch.object(reference_native, "_lib", None))
-                context.enter_context(patch.object(port_native, "_lib", None))
-            reference = reference_module.create_components(settings["configuration"])
-            port = binding.create_components()
-            for name, scene in scenarios + cached:
-                records.append(
-                    compare_scene(name, scene, reference_types, reference, port, mode)
-                )
-            measurements.append(
-                {
-                    "mode": mode,
-                    "cases": standalone_measurements(reference_types, reference, port),
-                }
-            )
+    reference = reference_module.create_components(settings["configuration"])
+    port = binding.create_components()
+    for name, scene in scenarios + cached:
+        records.append(
+            compare_scene(name, scene, reference_types, reference, port, "numpy")
+        )
+    measurements.append(
+        {
+            "mode": "numpy",
+            "cases": standalone_measurements(reference_types, reference, port),
+        }
+    )
     result = {
         "schema_version": "parcel-port-comparison/1",
         "result": "passed",
         "candidate_id": binding.ALGORITHM_ID,
         "reference_source_commit": SOURCE_COMMIT,
-        "reference_image": evidence["image"],
+        "reference_image": None,
+        "reference_build": evidence["build"],
         "reference_source_file_count": len(
             evidence["provenance"]["source_files_sha256"]
         ),
@@ -411,13 +402,8 @@ def main():
             "scipy": scipy.__version__,
             "opencv": cv2.__version__,
         },
-        "native_available": available,
-        "native_binaries_sha256": {
-            "reference": digest(Path(reference_native._path).read_bytes())
-            if available
-            else None,
-            "port": digest(Path(port_native._path).read_bytes()) if available else None,
-        },
+        "native_available": False,
+        "native_binaries_sha256": {},
         "synthetic_scene_count": len(scenarios),
         "validation_scene_count": len(cached),
         "validation_manifest_sha256": manifest_digest,

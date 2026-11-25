@@ -1,29 +1,29 @@
 {
-  "schema_version": "boxlab-refactor-revalidation/1",
-  "algorithm": "fast_baseline",
-  "date": "2026-11-20",
-  "release_id": "release-f14a597a366c46c6bdba00fa25e45bcd",
-  "source_commit": "0a2f571843f81ac6cc2f8cebe3475540e314f83d",
-  "source_tree_status": "Algorithm, adapter, build files and original settings unmodified from source commit.",
-  "image": "sha256:240c1854f46100c382801e8e0f622d99807c4ef64a0b27875f539087a97d7176",
-  "dockerfile": "Dockerfile.fast",
-  "settings_path": "experiments/revalidation-2026-11-20/fast-baseline-settings.json",
-  "settings_sha256": "66f29d1a54ddb6fd8d3fa957a34aa81dcef53a4ca29a47b0b4e39331afcb8bd8",
-  "runner_volume": "boxlab-runner-work",
-  "runner_state": "/work/refactor-20261120-fast-baseline-scoped.json",
-  "historical_candidate_id": "algorithm-8bdaf89d28cf45f29712cb68e1b31357",
-  "historical_validation_evaluation_id": "evaluation-a2368f2756f84d18970ec41c18cc8623",
-  "lineage_note": "Original settings declare algorithm-f6ab98aa284d4420bfd3bc67761a969f. Registration returned HTTP 403 with this token. The frozen settings copy omits that inaccessible declaration only; computation configuration, policy, objective, modalities, source paths and dependency lock are unchanged. Historical predecessor is retained in this report; no historical scores are reassigned.",
-  "abandoned_registration_state": "/work/refactor-20261120-fast-baseline.json",
+  "schema_version": "boxlab-promotion-evidence/1",
+  "source_commit": "d5e35e17d75f91368889dc53d950792eed4096e6",
+  "image": null,
+  "build": {
+    "kind": "native-source-archive",
+    "artifact": {
+      "path": "experiments/oak4_visibility_10fps/frozen-native-build.tar.gz",
+      "sha256": "bad3b09ff518e15b05db814bdc8bb40d26818328f38a1dddf78d4fc9523d322c",
+      "pointer": ""
+    },
+    "runtime": {
+      "path": "experiments/oak4_visibility_10fps/frozen-candidate.json",
+      "sha256": "bbe360f342ad1a06a375c8aa635dc1d1348375b87e5dd77844617db579847703",
+      "pointer": "/runtime"
+    }
+  },
+  "settings_sha256": "66f029694119c77ddad557bd58257b8743e7f284441d94a317b08fffc5496f10",
   "provenance": {
+    "source_commit": "d5e35e17d75f91368889dc53d950792eed4096e6",
     "source_files_sha256": {
-      "Dockerfile.fast": "326d91f132f0327a796c950c3d646aef8347a7f85ef20aac55657e26855b5091",
-      "algorithms/fast_baseline/__init__.py": "7a26ed6551a8304b0212a51c317995fe74dcf222b084b2dfee187acd2919f194",
-      "algorithms/fast_baseline/build_native.py": "e055e330e7e2d66c4979df7ba5a68893559fbbc4f3e18f482737ede34470c232",
-      "algorithms/fast_baseline/geometry.py": "e26f37b4b86a501983a58e7bc4130a6224ecfb2d9585d847d42f144e9c2b0194",
-      "algorithms/fast_baseline/kernels.cpp": "bdff4769d043410c83677ad6a2d8863420642d27608ade672d52ea309e0c670a",
-      "algorithms/fast_baseline/native.py": "4507451694d3c5fd80e890521e8b9f70b38bd40f1a989320f82f6f784cac379e",
-      "algorithms/fast_baseline/visibility.py": "89c0cc7968c030352054f343570333ac7cd4442f65d5272631066967ea3e8bbb",
+      "algorithms/fast_baseline_oak4_visibility_01/__init__.py": "4d6cadbea34ac45254b212c3c99a4a4d105725da4c289eb7bf736a2cf1c140cd",
+      "algorithms/fast_baseline_oak4_visibility_01/geometry.py": "85435650f043539724444e7bb13a464a21e5a19ad0fecc23e5c78944d841e53c",
+      "algorithms/fast_baseline_oak4_visibility_01/numpy_ops.py": "487a257b5a781973a7778288eeb569ef9f87802ab5cbc95c5720852fe730bbf5",
+      "algorithms/fast_baseline_oak4_visibility_01/visibility.py": "5ac08deef7c0268a7450428f10f196cad770224ac388d84e5c22efe5a56ddbb3",
+      "requirements.txt": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
       "runner/__init__.py": "34868df65684bae52a8e8ed576e1d90d1059ea36ed883b7f1d3cd7ec0980b7a3",
       "runner/__main__.py": "b02197657defb0a080886e631d74e748e06909967aedd26e0c8e0e2ba1472072",
       "runner/api.py": "9f0219be1374d1cbb57d79f498510be6602bc874236722a84c66db65b3864ba4",
@@ -34,29 +34,68 @@
       "runner/scene.py": "7527d3f8aca5509179fec75c18ca8aa8396219774399885bd7add8dbd462f3e3",
       "runner/workflow.py": "a238f453481780d35da0d392fe563b68fc505bf1d68014f29f03de1681b6eab6"
     },
-    "native_binary_sha256": "d777d52c77a31a2fede1f977edf28378e14504dc78a8d4479dc31054f0df2b31",
-    "native_loaded": true,
+    "scope": "Native source archive evaluated on Mac; identical computation and private port benchmarked on OAK. No container image was built for this evaluation.",
     "runtime": {
-      "python": "3.12.16",
-      "platform": "aarch64",
-      "numpy": "2.2.6",
-      "scipy": "1.15.3",
-      "opencv": "4.12.0"
+      "python": "3.12.13 (main, Jun 11 2026, 03:55:21) [Clang 22.1.3 ]",
+      "platform": "macOS-27.2.1-arm64-arm-64bit",
+      "thread_environment": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1"
+      }
+    }
+  },
+  "lineage_note": "Selected frozen v002 from BoxLabRunners PR19; no computation or settings changes after held-out evaluation.",
+  "review": {
+    "provider": "Independent",
+    "source_commit": "d5e35e17d75f91368889dc53d950792eed4096e6",
+    "url": "https://github.com/luxonis/BoxLabRunners/pull/19",
+    "reviewed_files": [
+      "algorithms/fast_baseline_oak4_visibility_01/__init__.py",
+      "algorithms/fast_baseline_oak4_visibility_01/visibility.py",
+      "algorithms/fast_baseline_oak4_visibility_01/numpy_ops.py",
+      "algorithms/fast_baseline_oak4_visibility_01/geometry.py",
+      "experiments/oak4_visibility_10fps/app/nodes.py",
+      "experiments/oak4_visibility_10fps/admission.py"
+    ],
+    "findings": [],
+    "result": "No actionable correctness regressions found in the frozen algorithm or controller. Geometry and NumPy operations match the retained reference. Selected stride-one probes retain arithmetic order. Workers complete before returning. Admission preserves matching source identity.",
+    "verification": [
+      "Five visibility/admission tests passed.",
+      "Candidate payload recomputed from current source exactly matches frozen-candidate.json.",
+      "Algorithm/controller files match evaluated source commit.",
+      "Full validation rerun preserves all 99 proposals/decisions and all 19 measurements across 18 scenes."
+    ],
+    "limitations": [
+      "Independent agent review is not CodeRabbit approval.",
+      "No new device throughput or live-camera measurement was performed."
+    ],
+    "operator_exception": {
+      "authorization": "Use independent review and proceed",
+      "reason": "The user confirmed CodeRabbit is not installed and explicitly authorized independent review for PR #19 held-out testing.",
+      "scope": {
+        "repository": "https://github.com/luxonis/BoxLabRunners",
+        "source_commit": "d5e35e17d75f91368889dc53d950792eed4096e6",
+        "candidate_id": "algorithm-5e4abc3a09b54148950317cdeac60ba2",
+        "release_id": "release-f14a597a366c46c6bdba00fa25e45bcd",
+        "pull_request_url": "https://github.com/luxonis/BoxLabRunners/pull/19"
+      }
     }
   },
   "validation": {
     "run": {
       "schema_version": "boxlab-run/1",
-      "id": "run-6b9eae917aa6406c97b04a7ebb7d4870",
-      "created_at": "2026-11-20T15:02:25.102778+00:00",
+      "id": "run-5fef9c146c9148c8aae4c1b5e251b82d",
+      "created_at": "2026-11-24T21:09:46.285522+00:00",
+      "created_by": "consumer:dev-token-dacce6ddd0df4aebac228fe0862b1d58",
       "release_id": "release-f14a597a366c46c6bdba00fa25e45bcd",
       "candidate": {
         "weight_sha256s": [],
-        "candidate_id": "algorithm-2f65a6f6296d48e981f5fe3f77bfde89",
-        "code_sha256": "0eb1d9fc835e13176f653f29e295a00c19c15a78d24ad21dddd00d53b5b996ba",
-        "build_sha256": "240c1854f46100c382801e8e0f622d99807c4ef64a0b27875f539087a97d7176",
+        "candidate_id": "algorithm-5e4abc3a09b54148950317cdeac60ba2",
+        "code_sha256": "f2a20d3ed2067386b498019361c0491619838a2ce88049a9e22e01f5bf10a74b",
+        "build_sha256": "bad3b09ff518e15b05db814bdc8bb40d26818328f38a1dddf78d4fc9523d322c",
         "dependencies_sha256": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
-        "configuration_sha256": "28f3ca43ff3665292cdbf8c8f087f1d9c3968ed2a4679bc238d147e84258d3dd"
+        "configuration_sha256": "958a8f9760c2afe310178933f59e28c93054663af9cf90619cebc72865c7d0a6"
       },
       "split": "validation",
       "input_mode": "supplied_plane",
@@ -89,14 +128,14 @@
       "status": "sealed",
       "expected_count": 18,
       "accepted_count": 18,
-      "evaluation_id": "evaluation-32a3c7421e0140a38cf6bcdf02a77d8a",
+      "evaluation_id": "evaluation-c446358a3b3e434e8a60e9434fc76df1",
       "test_request_id": null,
       "authorization_id": null
     },
     "evaluation": {
       "schema_version": "boxlab-evaluation-view/1",
-      "id": "evaluation-32a3c7421e0140a38cf6bcdf02a77d8a",
-      "run_id": "run-6b9eae917aa6406c97b04a7ebb7d4870",
+      "id": "evaluation-c446358a3b3e434e8a60e9434fc76df1",
+      "run_id": "run-5fef9c146c9148c8aae4c1b5e251b82d",
       "status": "completed",
       "policy": {
         "version": "boxlab-evaluation/1",
@@ -123,40 +162,40 @@
         "tp": 19,
         "fp": 0,
         "fn": 0,
-        "measurement_success_count": 6,
+        "measurement_success_count": 8,
         "precision": 1.0,
         "recall": 1.0,
         "f1": 1.0,
-        "footprint_iou_mean": 0.9017715562531117,
-        "matched_3d_iou_mean": 0.8810710155954674,
-        "all_reference_3d_iou_mean": 0.8810710155954674,
+        "footprint_iou_mean": 0.9030068269643747,
+        "matched_3d_iou_mean": 0.8809379728036629,
+        "all_reference_3d_iou_mean": 0.8809379728036629,
         "dimension_output_coverage": 1.0,
         "reference_dimension_coverage": 1.0,
-        "measurement_success_rate": 0.3157894736842105,
+        "measurement_success_rate": 0.42105263157894735,
         "dimension_errors_mm": {
           "length": {
             "count": 19,
-            "bias": 1.8071876970828407,
-            "mae": 3.544147406352052,
-            "median_absolute": 3.40625607378013,
-            "p95_absolute": 9.6089985804124,
-            "mean_relative_absolute": 0.011289030036685362
+            "bias": -3.7141983833344696,
+            "mae": 4.689736474346443,
+            "median_absolute": 4.75714532750186,
+            "p95_absolute": 12.4425072398376,
+            "mean_relative_absolute": 0.013878834055449086
           },
           "width": {
             "count": 19,
-            "bias": 4.354362289283119,
-            "mae": 6.042213462893736,
-            "median_absolute": 3.1565418726902,
-            "p95_absolute": 26.85306411524408,
-            "mean_relative_absolute": 0.04155642786784968
+            "bias": -0.43363093457506013,
+            "mae": 6.248406234380762,
+            "median_absolute": 4.35291849352261,
+            "p95_absolute": 32.26668251461706,
+            "mean_relative_absolute": 0.04414320467897073
           },
           "height": {
             "count": 19,
-            "bias": 1.5257683632975136,
-            "mae": 3.1795227648485254,
-            "median_absolute": 2.03558656528719,
-            "p95_absolute": 7.39590143786666,
-            "mean_relative_absolute": 0.025593079885946054
+            "bias": 0.36572919222817446,
+            "mae": 3.2104673578508707,
+            "median_absolute": 2.6106818916213,
+            "p95_absolute": 6.705272896659835,
+            "mean_relative_absolute": 0.026729192240312716
           }
         },
         "plane": null,
@@ -171,90 +210,174 @@
           "recall": 19,
           "reference_dimension_coverage": 19
         },
-        "null_reasons": {}
+        "null_reasons": {},
+        "scenario_groups": {
+          "multi-object": {
+            "snapshot_count": 1,
+            "reference_count": 2,
+            "complete_match_count": 2,
+            "failed_snapshot_count": 0,
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "measurement_success_count": 1,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "footprint_iou_mean": 0.9132231000564325,
+            "matched_3d_iou_mean": 0.8877278138738589,
+            "all_reference_3d_iou_mean": 0.8877278138738589,
+            "dimension_output_coverage": 1.0,
+            "reference_dimension_coverage": 1.0,
+            "measurement_success_rate": 0.5,
+            "dimension_errors_mm": {
+              "length": {
+                "count": 2,
+                "bias": -3.89281918305635,
+                "mae": 3.89281918305635,
+                "median_absolute": 3.89281918305635,
+                "p95_absolute": 7.3351530598633,
+                "mean_relative_absolute": 0.011544825741115579
+              },
+              "width": {
+                "count": 2,
+                "bias": -0.878318751470475,
+                "mae": 0.878318751470475,
+                "median_absolute": 0.878318751470475,
+                "p95_absolute": 0.89933849997064,
+                "mean_relative_absolute": 0.0075645948281687515
+              },
+              "height": {
+                "count": 2,
+                "bias": 1.9995411006422399,
+                "mae": 3.9920709597985597,
+                "median_absolute": 3.9920709597985597,
+                "p95_absolute": 5.9916120604408,
+                "mean_relative_absolute": 0.02997264512978782
+              }
+            },
+            "plane": null,
+            "denominators": {
+              "all_reference_3d_iou_mean": 2,
+              "dimension_output_coverage": 2,
+              "f1": 4,
+              "footprint_iou_mean": 2,
+              "matched_3d_iou_mean": 2,
+              "measurement_success_rate": 2,
+              "precision": 2,
+              "recall": 2,
+              "reference_dimension_coverage": 2
+            },
+            "null_reasons": {}
+          }
+        }
       },
       "failure_code": null,
-      "suppressed_metrics": []
+      "suppressed_metrics": [],
+      "exposure_history": [
+        "audit-15ffb418691e439e990a53e33ccd1ba0",
+        "audit-03062cd194904597abc9c4958475b54d",
+        "audit-3bb1b0ae17cf412189308fc8aecbc73a",
+        "audit-f9efc1959ef64a1f821b5bfb52061fbe",
+        "audit-b601f6852e834b50a12ea994280d6950",
+        "audit-088737949d13411f8cd8a3872b80cf8b",
+        "audit-171edc2f73544f5487eaa36b1aa3f524",
+        "audit-028d6063aea246a5873b1cde06db244a",
+        "audit-2da06fe25055423d8b652aa5eae6b31b",
+        "audit-06ff38abc9214502baaba7af6a1d5990",
+        "audit-97912a4f0d774f4daaf6b780a9e7573f",
+        "audit-7507708d545e4d9fa33031164eee0653",
+        "audit-19d08ceee9ef4751988a1127d32aa712",
+        "audit-884618810fe04eb88e56ca36b9bbb72a",
+        "audit-e917b5e0f4434eab9c37d53c96c33196",
+        "audit-a6e858608b1e4fcbb40566c2886219dc",
+        "audit-63351f650086401b99e08d2d3004b4e8",
+        "audit-02446d3ffa0e41f99120cabf16e5efe8",
+        "audit-f2bef0296baa4caa97ae07da8175461a",
+        "audit-97ee51b5174f41b99dc7b4672b4714ce",
+        "audit-694037b9578745659651d2f6efc46a94",
+        "audit-14fcacc1d4444c88ac164c53524f0108",
+        "audit-d3419d9eadb743ceb95770263b8f78b5",
+        "audit-b0e4b0beea01449ab38727c332dc60d9",
+        "audit-ad92f7c57da746ac9f8809b1597caed5",
+        "audit-d9fd73364bb44170829306116b9334fa",
+        "audit-68351b92c8e44cc5a63eb9069597db38",
+        "audit-d97c44fcf11d43c3b7c5832072d4c25b",
+        "audit-2361529f1a7843e9956262a6e4f7c387",
+        "audit-eb242d11e2df41209d942caf67c6f13e",
+        "audit-ed90039ebaca4e3eaa671062d5db000c",
+        "audit-98a46ec344d540a6a23fa4c760485fe4",
+        "audit-f2bb244632ed4937b31d4f05994824c6",
+        "audit-92a89daaea124da6af5c8676d755cfc8",
+        "audit-5665c663bf974107a3f09e72f82d25af",
+        "audit-5c08b5f938ed410ba0e6a9e0361c487c",
+        "audit-8c23a7a18f5c4ac98802a0074524c352",
+        "audit-42053b8cf19749acb8b9b77db72994ab",
+        "audit-0e63af6d0b83409cb493f56b90aef7e5",
+        "audit-562eb06db65c4437bb3e84d95d6858ed",
+        "audit-107eeb9695b7439383009e1ea25a63a3",
+        "audit-6df89a8e9dfb49ec9a1cca4c961f2b2c",
+        "audit-591aeaaeaf1a4d538fe86a0c900035b7",
+        "audit-a7e973fbfc4849d1943c3e9ea66bd196",
+        "audit-06f946ee6b1441a1a8b0887ccaab99fb",
+        "audit-38af04a0ea4b46ee9cd1ba15d281f3e6",
+        "audit-29b80de95598418dac4eae2c11a34e78",
+        "audit-915e8600cd964434922baf8141e0b356",
+        "audit-83c1ae6386164222b4325547ca8753c1",
+        "audit-ba5f7a093f35438c8a6aec7c2fd98609",
+        "audit-3274c015763a49fa9906d89515911565",
+        "audit-c066eb5b65ae4e26992221651a4b33d7",
+        "audit-81ea78a3af774ade9ea4ebe9137cf5e5",
+        "audit-d3441efc70ec4e59bd934867c11c55ea",
+        "audit-b14f0af8470f4594a1975d4b418171d9",
+        "audit-9065c95512514c4686aab39e502a3d6c",
+        "audit-9555397ba9a0422eb2bc4e132459b878",
+        "audit-f4feab3143d9482fa23110175c242a41",
+        "audit-849e685cafe74c6a89480182120e596c",
+        "audit-e617b74bb2c743d4865e6ebbe3694488",
+        "audit-7cb97220551548b095adf26c97bd988d",
+        "audit-a3a9c9f5a3614771a52828aaa813f570",
+        "audit-893ad65793454338b20d86b1f3e999ad",
+        "audit-03ebbd6242d4453c9e7856310d5c99d8"
+      ],
+      "later_exposure_history": [],
+      "declared_lineage": {
+        "candidate_ids": [
+          "algorithm-c020cc6708bc4e48940f03731e43bbb1"
+        ],
+        "feedback_event_ids": []
+      },
+      "disclosure_event_id": "audit-ad07989f44c64938ac56e4c8b2910981"
     }
   },
-  "test_request": {
-    "schema_version": "boxlab-test-request/1",
-    "id": "test-request-8bbaac21223541948afcfd16bb0c6c35",
-    "created_at": "2026-11-20T15:03:07.202613+00:00",
-    "status": "approved",
-    "release_id": "release-f14a597a366c46c6bdba00fa25e45bcd",
-    "input_mode": "supplied_plane",
-    "feedback_timing": "after_batch_complete",
-    "feedback_released": true,
-    "run_ids": [
-      "run-efd2b5483a4c452787a56f77e264e98e"
-    ],
-    "authorization_id": "test-grant-c4a80185c19f4f54b72364796855a30a"
-  },
-  "tests": {
-    "native_fast_baseline": {
-      "command": "python -m unittest discover -s tests -p test_fast_baseline.py -v",
-      "passed": 25,
-      "failed": 0,
-      "skipped": 0
-    },
-    "combined_callback_adapter": {
-      "command": "python -m unittest discover -s tests -p test_components.py -v",
-      "passed": 7,
-      "failed": 0,
-      "skipped": 0
-    }
-  },
-  "historical_comparison": {
-    "basis": "Committed experiments/fast-baseline-benchmark.json workbench.validation.optimized. Historical run/evaluation are inaccessible to this token (HTTP 403); no new Workbench comparison receipt is claimed.",
-    "old": {
-      "tp": 19,
-      "fp": 0,
-      "fn": 0,
-      "failed_snapshot_count": 0,
-      "measurement_success_count": 6,
-      "mae_mm": {
-        "length": 3.544147406352052,
-        "width": 6.042213462893736,
-        "height": 3.1795227648485254
-      }
-    },
-    "new": {
-      "tp": 19,
-      "fp": 0,
-      "fn": 0,
-      "failed_snapshot_count": 0,
-      "measurement_success_count": 6,
-      "mae_mm": {
-        "length": 3.544147406352052,
-        "width": 6.042213462893736,
-        "height": 3.1795227648485254
-      }
-    },
-    "exactly_equal_for_reported_fields": true,
-    "mae_delta_mm": {
-      "length": 0.0,
-      "width": 0.0,
-      "height": 0.0
-    },
-    "compatibility": "Same recorded release, validation manifest digest, policy digest, input mode, execution declaration and metric version. Same computational settings/configuration digest.",
-    "scope": "Counts and full-precision per-axis MAEs match exactly. Historical IoU and other detailed metric values are not present at full precision in the committed optimized summary; no full-metric or per-prediction parity claim is made."
-  },
-  "held_out_status": "Completed approved held-out evaluation with available aggregate feedback. Exact dimensional medians and p95 errors remain suppressed.",
-  "timing_status": "No latency benchmark rerun; historical timing claims remain attributed to their original frozen image.",
   "held_out_result": {
+    "test_request": {
+      "schema_version": "boxlab-test-request/1",
+      "id": "test-request-058dab05ac1a49d7a838469670eb611d",
+      "created_at": "2026-11-25T08:51:20.446813+00:00",
+      "status": "approved",
+      "release_id": "release-f14a597a366c46c6bdba00fa25e45bcd",
+      "input_mode": "supplied_plane",
+      "feedback_timing": "after_batch_complete",
+      "feedback_released": false,
+      "run_ids": [
+        "run-5cb93153a4cc436baad5ecaea3d8670a"
+      ],
+      "authorization_id": "test-grant-6bc4742fc6e044a1a78149edb5418e1e"
+    },
     "run": {
       "schema_version": "boxlab-run/1",
-      "id": "run-efd2b5483a4c452787a56f77e264e98e",
-      "created_at": "2026-11-20T15:08:12.779033+00:00",
+      "id": "run-5cb93153a4cc436baad5ecaea3d8670a",
+      "created_at": "2026-11-25T08:52:52.433245+00:00",
+      "created_by": "consumer:dev-token-dacce6ddd0df4aebac228fe0862b1d58",
       "release_id": "release-f14a597a366c46c6bdba00fa25e45bcd",
       "candidate": {
         "weight_sha256s": [],
-        "candidate_id": "algorithm-2f65a6f6296d48e981f5fe3f77bfde89",
-        "code_sha256": "0eb1d9fc835e13176f653f29e295a00c19c15a78d24ad21dddd00d53b5b996ba",
-        "build_sha256": "240c1854f46100c382801e8e0f622d99807c4ef64a0b27875f539087a97d7176",
+        "candidate_id": "algorithm-5e4abc3a09b54148950317cdeac60ba2",
+        "code_sha256": "f2a20d3ed2067386b498019361c0491619838a2ce88049a9e22e01f5bf10a74b",
+        "build_sha256": "bad3b09ff518e15b05db814bdc8bb40d26818328f38a1dddf78d4fc9523d322c",
         "dependencies_sha256": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
-        "configuration_sha256": "28f3ca43ff3665292cdbf8c8f087f1d9c3968ed2a4679bc238d147e84258d3dd"
+        "configuration_sha256": "958a8f9760c2afe310178933f59e28c93054663af9cf90619cebc72865c7d0a6"
       },
       "split": "test",
       "input_mode": "supplied_plane",
@@ -287,14 +410,14 @@
       "status": "sealed",
       "expected_count": 17,
       "accepted_count": 17,
-      "evaluation_id": "evaluation-3dc46b10a7bf40a0ae0f357825e69770",
-      "test_request_id": "test-request-8bbaac21223541948afcfd16bb0c6c35",
-      "authorization_id": "test-grant-c4a80185c19f4f54b72364796855a30a"
+      "evaluation_id": "evaluation-6ce5ecda7afb46c8bb735b590bec0283",
+      "test_request_id": "test-request-058dab05ac1a49d7a838469670eb611d",
+      "authorization_id": "test-grant-6bc4742fc6e044a1a78149edb5418e1e"
     },
     "evaluation": {
       "schema_version": "boxlab-evaluation-view/1",
-      "id": "evaluation-3dc46b10a7bf40a0ae0f357825e69770",
-      "run_id": "run-efd2b5483a4c452787a56f77e264e98e",
+      "id": "evaluation-6ce5ecda7afb46c8bb735b590bec0283",
+      "run_id": "run-5cb93153a4cc436baad5ecaea3d8670a",
       "status": "completed",
       "policy": {
         "version": "boxlab-evaluation/1",
@@ -321,40 +444,40 @@
         "tp": 17,
         "fp": 0,
         "fn": 0,
-        "measurement_success_count": 5,
+        "measurement_success_count": 8,
         "precision": 1.0,
         "recall": 1.0,
         "f1": 1.0,
-        "footprint_iou_mean": 0.8895080939537824,
-        "matched_3d_iou_mean": 0.873339198380587,
-        "all_reference_3d_iou_mean": 0.873339198380587,
+        "footprint_iou_mean": 0.9212504927261803,
+        "matched_3d_iou_mean": 0.9004668274561473,
+        "all_reference_3d_iou_mean": 0.9004668274561473,
         "dimension_output_coverage": 1.0,
         "reference_dimension_coverage": 1.0,
-        "measurement_success_rate": 0.29411764705882354,
+        "measurement_success_rate": 0.47058823529411764,
         "dimension_errors_mm": {
           "length": {
             "count": 17,
-            "bias": 9.506210541668107,
-            "mae": 10.735414027351593,
+            "bias": -0.8834764174073105,
+            "mae": 4.414301767905942,
             "median_absolute": null,
             "p95_absolute": null,
-            "mean_relative_absolute": 0.04002831684287694
+            "mean_relative_absolute": 0.014819509477199368
           },
           "width": {
             "count": 17,
-            "bias": 5.393830894498632,
-            "mae": 6.46945474521522,
+            "bias": -1.5792332076423887,
+            "mae": 3.809994109376463,
             "median_absolute": null,
             "p95_absolute": null,
-            "mean_relative_absolute": 0.052396659171924105
+            "mean_relative_absolute": 0.028766243643752697
           },
           "height": {
             "count": 17,
-            "bias": 0.6157834262618913,
-            "mae": 2.295216625664263,
+            "bias": -0.5238689531330228,
+            "mae": 2.3389752628108735,
             "median_absolute": null,
             "p95_absolute": null,
-            "mean_relative_absolute": 0.022727893108374267
+            "mean_relative_absolute": 0.024727408006549514
           }
         },
         "plane": null,
@@ -386,48 +509,32 @@
         "dimension_errors_mm.length.p95_absolute",
         "dimension_errors_mm.width.median_absolute",
         "dimension_errors_mm.width.p95_absolute"
-      ]
+      ],
+      "exposure_history": [
+        "audit-57043ba83de14cc9ad198047a83f4734",
+        "audit-0b945041c4fe47ce90541e556878e4e5",
+        "audit-3c4d068a2d094a3e953fd34007527cdf",
+        "audit-162c040036804a20b90178921e635178",
+        "audit-7c431f889a0846db9626ebf3239fd409",
+        "audit-3c554149488f480e8cd56c895ff4502a",
+        "audit-718d63e93f504a14ad0edfe1da4a2a2a",
+        "audit-9e80f5f34f6a404697c128dc02086bd1",
+        "audit-046eb34ecb914ae5b6ebcf5d737fe480",
+        "audit-6771321085f541ef911598d493fa5ffe",
+        "audit-ab5eaa06e91941148d1d945db20d6c7c",
+        "audit-e176972bd4b241d2bf9b2ac91df7f9fa",
+        "audit-648c0dae42424f0483609253b903f579",
+        "audit-490dc032496942518f9b74d6e4ee5e6b",
+        "audit-09a7d4298e4c4587a576ab93e52e5c37"
+      ],
+      "later_exposure_history": [],
+      "declared_lineage": {
+        "candidate_ids": [
+          "algorithm-c020cc6708bc4e48940f03731e43bbb1"
+        ],
+        "feedback_event_ids": []
+      },
+      "disclosure_event_id": "audit-7a9d78f65f5f4df29da0f51756b0b81e"
     }
-  },
-  "checks": {
-    "training_labels_accessed": false,
-    "new_held_out_inputs_accessed": true,
-    "held_out_access_basis": "Operator approved the frozen candidate request before resume-test. Exact image, settings and journal reused; no algorithm/configuration changes followed held-out exposure."
-  },
-  "held_out_comparison": {
-    "basis": "Committed experiments/fast-baseline-benchmark.json workbench.test.optimized. Historical test evaluation retrieval returned HTTP 403 FORBIDDEN under this scoped token; no new Workbench comparison receipt is claimed.",
-    "historical_candidate_id": "algorithm-8bdaf89d28cf45f29712cb68e1b31357",
-    "historical_evaluation_id": "evaluation-28e229ce680545b08463d587fe267e1d",
-    "old": {
-      "tp": 17,
-      "fp": 0,
-      "fn": 0,
-      "failed_snapshot_count": 0,
-      "measurement_success_count": 5,
-      "mae_mm": {
-        "length": 10.735414027351593,
-        "width": 6.46945474521522,
-        "height": 2.295216625664263
-      }
-    },
-    "new": {
-      "tp": 17,
-      "fp": 0,
-      "fn": 0,
-      "failed_snapshot_count": 0,
-      "measurement_success_count": 5,
-      "mae_mm": {
-        "length": 10.735414027351593,
-        "width": 6.46945474521522,
-        "height": 2.295216625664263
-      }
-    },
-    "exactly_equal_for_reported_fields": true,
-    "mae_delta_mm": {
-      "length": 0.0,
-      "width": 0.0,
-      "height": 0.0
-    },
-    "scope": "Counts and full-precision per-axis MAEs match exactly. Historical detailed IoU/full metric dictionaries are not available in this committed summary; no full-metric or per-prediction parity claim is made. Suppressed held-out statistics remain null."
   }
 }
