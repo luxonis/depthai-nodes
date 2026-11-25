@@ -23,7 +23,7 @@ import cv2
 import numpy as np
 import scipy
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 PACKAGE = "depthai_nodes.algorithms.parcel.implementation"

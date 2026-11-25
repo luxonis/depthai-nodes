@@ -87,7 +87,8 @@ pydoctor depthai_nodes
 python -m build --wheel --no-isolation
 ```
 
-`tools/verify_parcel_port.py` performs the repeatable frozen-source comparison;
+`tests/parcel_reference/verify_parcel_port.py` performs the repeatable
+frozen-source comparison;
 `tests/parcel_reference/` supplies repository fixtures. Its reference root must
 contain the exact evaluated files and evidence. Record the command, asset hashes,
 environment and coverage in `comparison.json`; keep temporary reports outside the

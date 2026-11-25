@@ -30,8 +30,9 @@ Expected output includes `source_z_retained_by_image_align=true` and a maximum
 corrected source-plane residual below 0.6 mm. The uncorrected residual exceeds
 50 mm. ImageAlign and PointCloud run on the workstation CPU.
 
-For artifact verification, copy `tools/verify_axial_depth.py` outside the
-checkout and run it with the installed environment. Supply `--wheel`,
+For artifact verification, copy
+`tests/unittests/test_axial_depth/verify_axial_depth.py` outside the checkout and
+run it with the installed environment. Supply `--wheel`,
 `--example`, `--revision`, and `--report`. It compares installed package files
 with the wheel, runs this fixture in isolated Python mode, and adds the wheel
 SHA-256 and source revision to the report. Editable installs fail this check.

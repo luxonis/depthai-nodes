@@ -12,7 +12,7 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from tools.verify_parcel_port import ABSOLUTE_TOLERANCE, vector
+from tests.parcel_reference.verify_parcel_port import ABSOLUTE_TOLERANCE, vector
 
 
 def compare_candidates(left, right, name):
