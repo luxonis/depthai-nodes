@@ -1,7 +1,7 @@
 """Native parser messages and custom messages for DepthAI v3.
 
 Parser creators return native DepthAI messages. The package requires DepthAI
-3.11 or newer. Use `depthai_nodes.message.creators` to construct messages from
+3.12 or newer. Use `depthai_nodes.message.creators` to construct messages from
 arrays and `depthai_nodes.message.utils` for copying and detection geometry.
 
 .. contents:: Contents
@@ -113,10 +113,20 @@ through ``getVisualizationMessage()``. `BoxDetection`, `BoxMeasurementResult`,
 and `BoxDimensions` are frozen dataclasses that take keyword arguments and
 raise the same errors as the support plane value types.
 
+`BoxClouds` is a `Collection` that accepts only `BoxCloud` items, one per box
+seen in a frame. A `BoxCloud` holds the box's ``box_id``, which is never reused
+and is unrelated to any track ID, its points in millimeters in shared
+coordinates as an ``(N, 3)`` ``float32`` array, its ``depth_coverage``, and a
+non-empty tuple of `BoxViewDetection`, one per box view that took part: the
+view's index, track ID, normalized bounding box, and confidence. `BoxCloud`
+and `BoxViewDetection` are frozen dataclasses that take keyword arguments and
+raise the same errors as the support plane value types.
+
 Boxes are measured against a support plane; see "Support plane" above.
 """
 
 from .auto_support_plane_result import AutoSupportPlaneResult
+from .box_clouds import BoxCloud, BoxClouds, BoxViewDetection
 from .box_detections import BoxDetection, BoxDetections
 from .box_measurements import (
     BoxDimensions,
@@ -145,6 +155,9 @@ __all__ = [
     "BoxMeasurementResult",
     "BoxDimensions",
     "MeasurementStatus",
+    "BoxClouds",
+    "BoxCloud",
+    "BoxViewDetection",
     "SupportPlane",
     "SupportPlaneCandidate",
     "SupportPlaneCalibrationControl",

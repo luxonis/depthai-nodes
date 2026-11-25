@@ -265,7 +265,8 @@ class BoxDimensioner(BaseHostNode):
                 assert plane is not None
                 try:
                     dimensions = self._geometry.measure(
-                        box_points, np.array((*plane.normal, plane.offset_mm))
+                        self._geometry.clean(box_points),
+                        np.array((*plane.normal, plane.offset_mm)),
                     )
                 except (ValueError, RuntimeError, cv2.error):
                     dimensions = None

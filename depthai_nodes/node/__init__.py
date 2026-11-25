@@ -251,6 +251,9 @@ Box measurement
   emits `depthai_nodes.message.BoxMeasurements`.
 * `BoxMeasurer`: wires ``BoxDetector`` into ``BoxDimensioner`` behind one
   ``build``.
+* `BoxAssociator`: associates box detections from one or more views, each with
+  depth aligned to its color, into `depthai_nodes.message.BoxClouds` in shared
+  coordinates. It needs open3d.
 
 Boxes are measured against a support plane; see "Support plane" above. It
 comes from the ``plane`` of a support plane candidate in a
@@ -298,6 +301,7 @@ from .apply_colormap import ApplyColormap
 from .apply_depth_colormap import ApplyDepthColormap
 from .base_host_node import BaseHostNode
 from .base_threaded_host_node import BaseThreadedHostNode
+from .box_associator import BoxAssociator
 from .box_detector import BoxDetector
 from .box_dimensioner import BoxDimensioner
 from .box_measurer import BoxMeasurer
@@ -391,6 +395,7 @@ __all__ = [
     "BoxDimensioner",
     "BoxDetector",
     "BoxMeasurer",
+    "BoxAssociator",
     "SupportPlaneCalibrator",
     "PlaneCalibrationConfig",
     "AutoSupportPlane",

@@ -7,6 +7,7 @@ from .neural_network import NeuralNetworkMock
 from .object_tracker import ObjectTrackerMock
 from .output import OutputMock
 from .pipeline import PipelineMock
+from .point_cloud import PointCloudMock
 from .queue import QueueMock
 from .sync_node import SyncMock
 from .threaded_host_node import ThreadedHostNodeMock
@@ -25,4 +26,5 @@ __all__ = [
     "ImageManipMock",
     "ObjectTrackerMock",
     "SyncMock",
+    "PointCloudMock",
 ]
