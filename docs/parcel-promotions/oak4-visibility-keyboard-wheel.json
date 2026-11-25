@@ -1,0 +1,17 @@
+{
+  "result": "passed",
+  "candidate": "algorithm-5e4abc3a09b54148950317cdeac60ba2",
+  "wheel": "depthai_nodes-0.8.0-py3-none-any.whl",
+  "wheel_sha256": "06f35b441a3afd5f6b4c32e482e4590ae845d20e07be45621b366b0e7b81238e",
+  "source_documentation_commit": "96a2c2d781845eda3f7f64ae0f151263084aa499",
+  "source_visualization_sha256": "a57c2f3a5d1ca00a3529fed045ac2f22c85443d0056560b6444a942fa7fbce55",
+  "installed_visualization_sha256": "9ff6cd5f76323d886856dc821d08e1a116cd42bf17b94eced5a49b94402cd216",
+  "manifest_files": 23,
+  "installed_outside_source_trees": true,
+  "source_and_installed_embedded_json_byte_identical": true,
+  "changed_package_files_from_provenance_fix_wheel": [
+    "depthai_nodes/algorithms/parcel/implementation/visualization.html",
+    "depthai_nodes/algorithms/parcel/manifest.json"
+  ],
+  "computation_settings_receipts_validator_byte_identical": true
+}

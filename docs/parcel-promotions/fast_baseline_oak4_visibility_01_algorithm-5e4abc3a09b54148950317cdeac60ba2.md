@@ -139,3 +139,7 @@ not only its candidate ID. See [future update workflow](update-workflow.md).
 ## Provenance review corrections
 
 The [review-fix record](oak4-visibility-provenance-review.md) corrects the inherited held-out approval and native-build metadata after the initial promotion. Original accuracy, comparison, and wheel receipts above describe that earlier artifact and are retained unchanged. The frozen computation, settings, and evaluation receipts are unchanged.
+
+## Visualization keyboard focus
+
+The [keyboard-focus record](oak4-visibility-keyboard-focus.md) documents the regenerated upstream page, keyboard-only focus restoration, preserved pointer selection, and current source/destination HTML hashes. Earlier browser and wheel receipts describe their original artifacts. Frozen computation, settings, and embedded evidence remain unchanged.
