@@ -112,8 +112,6 @@ Image and depth processing
 * `ApplyColormap`: colorizes 2D maps and masks into ``dai.ImgFrame`` messages.
 * `ApplyDepthColormap`: uses percentile normalization for depth or disparity;
   non-positive values are excluded from normalization and displayed as black.
-* `DepthMerger`: combines 2D detections and aligned depth into
-  ``dai.SpatialImgDetections`` using device calibration.
 * `HostSpatialsCalc`: computes spatial coordinates from depth regions on the host.
 * `FrameCropper`: crops and resizes frames using detections or groups of
   ``dai.ImageManipConfig`` messages, emitting one frame per crop.
@@ -304,7 +302,6 @@ from .box_detector import BoxDetector
 from .box_dimensioner import BoxDimensioner
 from .box_measurer import BoxMeasurer
 from .coordinates_mapper import CoordinatesMapper
-from .depth_merger import DepthMerger
 from .extended_neural_network import ExtendedNeuralNetwork
 from .frame_cropper import FrameCropper
 from .gather_data import GatherData
@@ -351,7 +348,6 @@ __all__ = [
     "ApplyColormap",
     "ApplyDepthColormap",
     "CoordinatesMapper",
-    "DepthMerger",
     "ExtendedNeuralNetwork",
     "Tiling",
     "ParserGenerator",

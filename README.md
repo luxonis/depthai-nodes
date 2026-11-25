@@ -82,6 +82,12 @@ The `node` module provides parsers and pipeline helpers:
 
 `ParsingNeuralNetwork` and `ParserGenerator` use native DepthAI parsers by default. Use `HostParsingNeuralNetwork` or pass `hostOnly=True` to `ParserGenerator.build()` to select this package's host parsers.
 
+To combine `dai.ImgDetections` with aligned depth, use DepthAI's native
+[`dai.node.SpatialLocationCalculator`](https://docs.luxonis.com/software-v3/depthai/depthai-components/nodes/spatial_location_calculator).
+Link detections to `inputDetections` and depth to `inputDepth`; read the resulting
+`dai.SpatialImgDetections` from `outputDetections`. Both input messages need valid
+image transformations so the node can map detections onto the depth frame.
+
 See the [node package documentation](./depthai_nodes/node/__init__.py) for available nodes and examples.
 
 ### Runtime
