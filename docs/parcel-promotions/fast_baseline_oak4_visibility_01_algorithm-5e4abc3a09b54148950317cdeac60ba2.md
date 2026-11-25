@@ -135,3 +135,7 @@ experiment's predecoded-image/fresh-inference processing scope; it is not a clai
 for this newly built wheel. Remote/XLink serialization remains unsupported.
 Rollback restores the complete previous source/settings/assets/manifest revision,
 not only its candidate ID. See [future update workflow](update-workflow.md).
+
+## Provenance review corrections
+
+The [review-fix record](oak4-visibility-provenance-review.md) corrects the inherited held-out approval and native-build metadata after the initial promotion. Original accuracy, comparison, and wheel receipts above describe that earlier artifact and are retained unchanged. The frozen computation, settings, and evaluation receipts are unchanged.

@@ -142,6 +142,106 @@ def test_review_must_cover_the_frozen_source(installed_copy):
         _validate(root, manifest, check_bindings=False)
 
 
+def test_held_out_approval_matches_the_packaged_selected_candidate_receipt():
+    manifest = parcel.validate_manifest()
+    evidence = json.loads(
+        (
+            ROOT
+            / manifest["implementation"]["package_path"]
+            / "evaluation-evidence.json"
+        ).read_bytes()
+    )["held_out_result"]
+    assert manifest["test_request"] == evidence["test_request"]
+    assert manifest["test_request"]["id"] == evidence["run"]["test_request_id"]
+    assert evidence["run"]["candidate"]["candidate_id"] == parcel.ALGORITHM_ID
+
+
+def test_predecessor_approval_is_rejected(installed_copy):
+    root, manifest = installed_copy
+    manifest["test_request"].update(
+        id="test-request-8bbaac21223541948afcfd16bb0c6c35",
+        run_ids=["run-efd2b5483a4c452787a56f77e264e98e"],
+        authorization_id="test-grant-c4a80185c19f4f54b72364796855a30a",
+    )
+    with pytest.raises(ValueError, match="Held-out approval receipt mismatch"):
+        _validate(root, manifest, check_bindings=False)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("id", "test-request-other"),
+        ("status", "pending"),
+        ("run_ids", ["run-other"]),
+        ("authorization_id", "test-grant-other"),
+        ("release_id", "release-other"),
+        ("input_mode", "estimated_plane"),
+        ("feedback_timing", "after_operator_release"),
+    ],
+)
+def test_matching_receipt_still_requires_approval_run_linkage(
+    installed_copy, field, value
+):
+    root, manifest = installed_copy
+    name = manifest["implementation"]["package_path"] + "/evaluation-evidence.json"
+    path = root / name
+    evidence = json.loads(path.read_bytes())
+    # Updating both declarations and their file hash cannot detach approval from
+    # the selected candidate's saved run and frozen settings.
+    evidence["held_out_result"]["test_request"][field] = value
+    manifest["test_request"][field] = value
+    path.write_text(json.dumps(evidence), encoding="utf-8")
+    manifest["implementation"]["files_sha256"][name] = hashlib.sha256(
+        path.read_bytes()
+    ).hexdigest()
+    with pytest.raises(ValueError, match="Held-out approval is not linked"):
+        _validate(root, manifest, check_bindings=False)
+
+
+@pytest.mark.parametrize(
+    ("section", "field", "value"),
+    [
+        ("run", "candidate", {"candidate_id": "algorithm-predecessor"}),
+        ("run", "evaluation_id", "evaluation-other"),
+        ("evaluation", "run_id", "run-other"),
+    ],
+)
+def test_held_out_candidate_and_evaluation_are_linked(
+    installed_copy, section, field, value
+):
+    root, manifest = installed_copy
+    name = manifest["implementation"]["package_path"] + "/evaluation-evidence.json"
+    path = root / name
+    evidence = json.loads(path.read_bytes())
+    evidence["held_out_result"][section][field] = value
+    path.write_text(json.dumps(evidence), encoding="utf-8")
+    manifest["implementation"]["files_sha256"][name] = hashlib.sha256(
+        path.read_bytes()
+    ).hexdigest()
+    with pytest.raises(
+        ValueError,
+        match="Held-out approval is not linked|Evaluation candidate or settings mismatch",
+    ):
+        _validate(root, manifest, check_bindings=False)
+
+
+@pytest.mark.parametrize(
+    "field", ("binary_distribution", "native_build_flags", "tested_native_binaries")
+)
+def test_predecessor_native_build_claims_are_rejected(installed_copy, field):
+    root, manifest = installed_copy
+    historical = json.loads(
+        (
+            ROOT
+            / "docs/parcel-promotions/historical-native-builds-algorithm-2f65a6f6296d48e981f5fe3f77bfde89.json"
+        ).read_bytes()
+    )
+    assert len(historical["implementation"]["tested_native_binaries"]) == 6
+    manifest["implementation"][field] = historical["implementation"][field]
+    with pytest.raises(ValueError, match="Native build metadata does not describe"):
+        _validate(root, manifest, check_bindings=False)
+
+
 def test_numpy_candidate_has_no_obsolete_kernel_assets_or_imports():
     root = ROOT / "depthai_nodes/algorithms/parcel/implementation"
     assert not any(

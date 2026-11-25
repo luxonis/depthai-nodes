@@ -12,6 +12,10 @@ from pathlib import Path, PurePosixPath
 _DIGEST = re.compile(r"[0-9a-f]{64}\Z")
 _SOURCE_COMMIT = "d5e35e17d75f91368889dc53d950792eed4096e6"
 _EVIDENCE_COMMIT = "d5964eee714737750787066fc24bc29744536d45"
+_BINARY_DISTRIBUTION = (
+    "No custom native kernels, sources, build flags, or binaries; "
+    "computation uses NumPy, SciPy, and OpenCV."
+)
 
 
 def _require(condition: bool, message: str) -> None:
@@ -124,6 +128,12 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
         implementation["source_contract_version"]
         == f"BoxLabRunners@{_SOURCE_COMMIT}:docs/boxlab/contracts/RUNNER.md",
         "Source contract mismatch",
+    )
+    _require(
+        implementation["binary_distribution"] == _BINARY_DISTRIBUTION
+        and implementation["native_build_flags"] == []
+        and implementation["tested_native_binaries"] == [],
+        "Native build metadata does not describe the selected NumPy implementation",
     )
     files = implementation["files_sha256"]
     _require(
@@ -305,11 +315,38 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
         inputs["frozen_runtime"] == evidence["provenance"]["runtime"],
         "Frozen runtime mismatch",
     )
+    request = manifest["test_request"]
+    held_out = evidence["held_out_result"]
+    test_run = held_out["run"]
+    _require(
+        request == held_out["test_request"],
+        "Held-out approval receipt mismatch",
+    )
+    _require(
+        request["schema_version"] == "boxlab-test-request/1"
+        and request["status"] == "approved"
+        and bool(request["id"])
+        and request["id"] == test_run["test_request_id"]
+        and isinstance(request["run_ids"], list)
+        and test_run["id"] in request["run_ids"]
+        and bool(request["authorization_id"])
+        and request["authorization_id"] == test_run["authorization_id"]
+        and request["release_id"]
+        == test_run["release_id"]
+        == evidence["validation"]["run"]["release_id"]
+        and request["input_mode"] == test_run["input_mode"] == settings["input_mode"]
+        and request["feedback_timing"] == settings["feedback_timing"]
+        and test_run["candidate"] == original,
+        "Held-out approval is not linked to the selected candidate and run",
+    )
     _require(len(manifest["evaluations"]) == 2, "Expected validation and test evidence")
     for entry, key in zip(manifest["evaluations"], ("validation", "held_out_result")):
         run, evaluation = evidence[key]["run"], evidence[key]["evaluation"]
         _require(
             run["candidate"] == original
+            and run["split"] == ("validation" if key == "validation" else "test")
+            and evaluation["id"] == run["evaluation_id"]
+            and evaluation["run_id"] == run["id"]
             and run["input_mode"] == settings["input_mode"]
             and run["execution"] == evidence["validation"]["run"]["execution"]
             and run["policy"] == evidence["validation"]["run"]["policy"]

@@ -22,7 +22,7 @@
       "depthai_nodes/algorithms/parcel/implementation/scoped-settings.json": "66f029694119c77ddad557bd58257b8743e7f284441d94a317b08fffc5496f10",
       "depthai_nodes/algorithms/parcel/implementation/visibility.py": "1b1bbc5a28441dadd8c68a6031531d6330f99a32af3baeb7c709cf6240a48f30",
       "depthai_nodes/algorithms/parcel/implementation/visualization.html": "bddda64d1f808c62e1602a5cf61849646d86c1ec1a501f26be5a76ad44a80ba4",
-      "depthai_nodes/algorithms/parcel/manifest.py": "fe75b92a914b4f1b66ea4a8d3f887487b36aa0af3a70030c7cf2dc620b75e2b5",
+      "depthai_nodes/algorithms/parcel/manifest.py": "6f5bc836b4e2fe75fa32374d0e69d84941c8dc6d77302efe2bbe10fffed06787",
       "depthai_nodes/message/parcel.py": "702ca0222b5a71c0c6a6982161d5c0a1dfb4b7364182e547dc0125513aec43d0",
       "depthai_nodes/message/support_plane.py": "0eaeec70dda37d48b3160d1f1a14cffce766f23182289d1b569ffb444f1f44e3",
       "depthai_nodes/node/parcel_detector/__init__.py": "4bd2d4aaf686835abe5da5203a47a67a2ebe125aee64c5ef8499cac3809b1482",
@@ -31,58 +31,9 @@
       "depthai_nodes/node/parcel_dimensioner/__init__.py": "506569fb746e3a1fb9fc525170615c20f027a35ec155fa0a8d5b283012a7b3fc",
       "depthai_nodes/node/parcel_dimensioner/parcel_dimensioner.py": "63d8627a836d32c3f9abed5023d1971cd3b74338c3bfcd0ff5ba53255e125703"
     },
-    "binary_distribution": "No native binary in the universal wheel; original fallback is the default. Optional platform-local build uses bundled C++17 source.",
-    "native_build_flags": [
-      "-std=c++17",
-      "-O3",
-      "-ffp-contract=off",
-      "-fPIC",
-      "-shared"
-    ],
-    "tested_native_binaries": [
-      {
-        "platform": "macOS arm64",
-        "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
-        "sha256": "a37cfb453d5a037efcf49051eea6bd42d0c2a6c319c3a7752db8e6d1ac3bf0ec",
-        "scope": "Source checkout optional local build; native/fallback source-port comparison on 15 synthetic and 18 authorized validation scenes in both dependency environments",
-        "distributed": false
-      },
-      {
-        "platform": "macOS arm64",
-        "compiler": "Apple clang21.0.0 (clang-2100.4.1.1)",
-        "sha256": "6e43ea1fe0ce6ba6a2b8f45d0d36c6cc0b3ba18a3aaa1fc4187478f11789543d",
-        "scope": "Optional native build from clean installed wheel; synthetic two-node host pipeline passed",
-        "distributed": false
-      },
-      {
-        "platform": "macOS arm64",
-        "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
-        "sha256": "0a5b98ee16e74db6cfa451d7044019a14a3115ccba3e40d16e65e985e5525afc",
-        "scope": "Optional native build from installed wheel after native HostNode and public message API revision; synthetic two-node pipeline passed.",
-        "distributed": false
-      },
-      {
-        "platform": "macOS arm64",
-        "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
-        "sha256": "812cffc8d1f7a5bb5c655f7c7a5c8b34d24d55d06ec603bf6139e9520ec455a5",
-        "scope": "Installed-wheel metadata-based five-stream pipeline and normal parcel value constructors; native and fallback synthetic pipelines passed.",
-        "distributed": false
-      },
-      {
-        "platform": "macOS arm64",
-        "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
-        "sha256": "feb5917534b5706644ab1ea48b08e2dc5c2bcfdda42f19766c94ba4a02f4d944",
-        "scope": "Installed-wheel four-stream native Sync plus separate ParcelDetectorConfig pipeline on DepthAI 3.12.2. Fallback and locally built native synthetic pipelines and 44 installed native boundary checks passed. Rechecked after adding the one-time image-resolution warning; both synthetic paths still pass with unchanged geometry.",
-        "distributed": false
-      },
-      {
-        "platform": "macOS arm64",
-        "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
-        "sha256": "4370f27a5eda2b9f020808920c50068aca7286637c801db377c15b107456d42c",
-        "scope": "Optional native build from the stable-directory wheel in a fresh environment outside both source trees. Native and fallback synthetic two-node pipelines retain 218.940 by 158.420 by 110.000 mm geometry.",
-        "distributed": false
-      }
-    ]
+    "binary_distribution": "No custom native kernels, sources, build flags, or binaries; computation uses NumPy, SciPy, and OpenCV.",
+    "native_build_flags": [],
+    "tested_native_binaries": []
   },
   "workbench_candidate": {
     "id": "algorithm-5e4abc3a09b54148950317cdeac60ba2",
@@ -1127,17 +1078,17 @@
   ],
   "test_request": {
     "schema_version": "boxlab-test-request/1",
-    "id": "test-request-8bbaac21223541948afcfd16bb0c6c35",
-    "created_at": "2026-11-20T15:03:07.202613+00:00",
+    "id": "test-request-058dab05ac1a49d7a838469670eb611d",
+    "created_at": "2026-11-25T08:51:20.446813+00:00",
     "status": "approved",
     "release_id": "release-f14a597a366c46c6bdba00fa25e45bcd",
     "input_mode": "supplied_plane",
     "feedback_timing": "after_batch_complete",
-    "feedback_released": true,
+    "feedback_released": false,
     "run_ids": [
-      "run-efd2b5483a4c452787a56f77e264e98e"
+      "run-5cb93153a4cc436baad5ecaea3d8670a"
     ],
-    "authorization_id": "test-grant-c4a80185c19f4f54b72364796855a30a"
+    "authorization_id": "test-grant-6bc4742fc6e044a1a78149edb5418e1e"
   },
   "timings": [],
   "port_verification": {
@@ -1239,7 +1190,15 @@
       "Historical OAK throughput belongs to the recorded experiment, not this newly built wheel.",
       "Source archive is a build artifact, not a container image.",
       "No Windows, Linux, or OAK execution of this newly built port. Existing full-unit failures are compared with the unchanged PR head in the promotion record."
-    ]
+    ],
+    "provenance_review_fixes": {
+      "record_path": "docs/parcel-promotions/oak4-visibility-provenance-review.md",
+      "scope": "Approval and native-build metadata/validator corrections only; frozen computation, settings, receipts, metrics, and visualization unchanged.",
+      "historical_native_builds_path": "docs/parcel-promotions/historical-native-builds-algorithm-2f65a6f6296d48e981f5fe3f77bfde89.json",
+      "focused_tests_passed": 85,
+      "focused_subtests_passed": 46,
+      "optional_open3d_skips": 1
+    }
   },
   "visualization": {
     "path": "depthai_nodes/algorithms/parcel/implementation/visualization.html",

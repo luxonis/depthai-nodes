@@ -371,3 +371,7 @@ The captured-scene prototype report and handoff now limit hash agreement to the 
 The upstream allocation backlog now includes both `centered_hull_candidates` and `group_rows`. Their inherited code remains unchanged here; corrections require upstream review and evaluation.
 
 The corrected wheel has SHA-256 `b1ba20a7195a034e9cebf971b93677d03d5c05e4e910558efca2bd5a882dfa3f`. All 25 installed hashes validate with cp1252 as the simulated locale default. The installed page passes 12 real-browser focus checks covering Enter and Space, all three axes, and signed/absolute mode. The focused suite passes 54 tests and 58 subtests on Python 3.10 and 3.12.
+
+## Retained native-build evidence
+
+The predecessor C++17 build flags and all six local binary records are retained verbatim in [historical native-build provenance](historical-native-builds-algorithm-2f65a6f6296d48e981f5fe3f77bfde89.json), pinned to the predecessor manifest revision. They do not apply to the replacement visibility v002 implementation.

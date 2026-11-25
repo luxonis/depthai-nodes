@@ -1,0 +1,19 @@
+{
+  "result": "passed",
+  "candidate": "algorithm-5e4abc3a09b54148950317cdeac60ba2",
+  "wheel": "depthai_nodes-0.8.0-py3-none-any.whl",
+  "wheel_sha256": "e8756a9dcf83575a04577cb1877efe3bb51dfb3d520cf116ecae744aa970f2ef",
+  "manifest_files": 23,
+  "installed_outside_source_trees": true,
+  "selected_approval_receipt_exact": true,
+  "stale_approval_and_native_metadata_rejected": true,
+  "changed_package_files_from_initial_promotion_wheel": [
+    "depthai_nodes/algorithms/parcel/manifest.json",
+    "depthai_nodes/algorithms/parcel/manifest.py"
+  ],
+  "frozen_computation_settings_receipts_visualization_byte_identical": true,
+  "installed_native_message_checks_passed": 50,
+  "installed_synthetic_pipeline_objects": 1,
+  "sdk": "3.12.0",
+  "python": "3.12.2"
+}

@@ -1,0 +1,62 @@
+{
+  "schema_version": "parcel-historical-native-builds/1",
+  "candidate_id": "algorithm-2f65a6f6296d48e981f5fe3f77bfde89",
+  "algorithm": "fast_baseline",
+  "configuration_version": "v001",
+  "source_manifest": "https://github.com/luxonis/depthai-nodes/blob/db6c4e780679b4be52f5adcc25d581c70d593928/depthai_nodes/algorithms/parcel/manifest.json",
+  "scope": "Retained predecessor build evidence only. These custom kernel sources, flags, and six local binaries do not apply to fast_baseline_oak4_visibility_01/v002.",
+  "implementation": {
+    "binary_distribution": "No native binary in the universal wheel; original fallback is the default. Optional platform-local build uses bundled C++17 source.",
+    "native_build_flags": [
+      "-std=c++17",
+      "-O3",
+      "-ffp-contract=off",
+      "-fPIC",
+      "-shared"
+    ],
+    "tested_native_binaries": [
+      {
+        "platform": "macOS arm64",
+        "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
+        "sha256": "a37cfb453d5a037efcf49051eea6bd42d0c2a6c319c3a7752db8e6d1ac3bf0ec",
+        "scope": "Source checkout optional local build; native/fallback source-port comparison on 15 synthetic and 18 authorized validation scenes in both dependency environments",
+        "distributed": false
+      },
+      {
+        "platform": "macOS arm64",
+        "compiler": "Apple clang21.0.0 (clang-2100.4.1.1)",
+        "sha256": "6e43ea1fe0ce6ba6a2b8f45d0d36c6cc0b3ba18a3aaa1fc4187478f11789543d",
+        "scope": "Optional native build from clean installed wheel; synthetic two-node host pipeline passed",
+        "distributed": false
+      },
+      {
+        "platform": "macOS arm64",
+        "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
+        "sha256": "0a5b98ee16e74db6cfa451d7044019a14a3115ccba3e40d16e65e985e5525afc",
+        "scope": "Optional native build from installed wheel after native HostNode and public message API revision; synthetic two-node pipeline passed.",
+        "distributed": false
+      },
+      {
+        "platform": "macOS arm64",
+        "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
+        "sha256": "812cffc8d1f7a5bb5c655f7c7a5c8b34d24d55d06ec603bf6139e9520ec455a5",
+        "scope": "Installed-wheel metadata-based five-stream pipeline and normal parcel value constructors; native and fallback synthetic pipelines passed.",
+        "distributed": false
+      },
+      {
+        "platform": "macOS arm64",
+        "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
+        "sha256": "feb5917534b5706644ab1ea48b08e2dc5c2bcfdda42f19766c94ba4a02f4d944",
+        "scope": "Installed-wheel four-stream native Sync plus separate ParcelDetectorConfig pipeline on DepthAI 3.12.2. Fallback and locally built native synthetic pipelines and 44 installed native boundary checks passed. Rechecked after adding the one-time image-resolution warning; both synthetic paths still pass with unchanged geometry.",
+        "distributed": false
+      },
+      {
+        "platform": "macOS arm64",
+        "compiler": "Apple clang 21.0.0 (clang-2100.4.1.1)",
+        "sha256": "4370f27a5eda2b9f020808920c50068aca7286637c801db377c15b107456d42c",
+        "scope": "Optional native build from the stable-directory wheel in a fresh environment outside both source trees. Native and fallback synthetic two-node pipelines retain 218.940 by 158.420 by 110.000 mm geometry.",
+        "distributed": false
+      }
+    ]
+  }
+}
