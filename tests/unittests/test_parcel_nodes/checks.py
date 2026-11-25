@@ -6,6 +6,7 @@ import unittest
 from dataclasses import FrozenInstanceError, fields, replace
 from datetime import timedelta
 from threading import Event
+from time import monotonic, sleep
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -156,6 +157,18 @@ class App:
     def send(self, inputs):
         for output, message in zip(self.source.outputs, inputs):
             output.send(message)
+
+    def send_config(self, config):
+        # InputQueue forwards on another thread. Wait for delivery to the detector
+        # before sending a scene that is expected to use this configuration.
+        configInput = self.detector.inputConfig
+        expected = configInput.getSize() + 1
+        self.configInput.send(config)
+        deadline = monotonic() + 5
+        while configInput.getSize() < expected:
+            if monotonic() >= deadline:
+                raise AssertionError("Configuration did not reach the detector input")
+            sleep(0.001)
 
     def measure(self, batch):
         self.dimensioner.process(batch)
@@ -950,7 +963,7 @@ class StreamingTests(unittest.TestCase):
                     warn.assert_not_called()
                     self.assertIsNone(app.detected.tryGet())
                     self.assertIsNone(app.measured.tryGet())
-                    app.configInput.send(ParcelDetectorConfig(supportPlane=PLANE))
+                    app.send_config(ParcelDetectorConfig(supportPlane=PLANE))
                     for sequence in (13, 14):
                         app.send(messages(sequence))
                         result = app.measured.get(timedelta(seconds=5))
@@ -1019,19 +1032,18 @@ class StreamingTests(unittest.TestCase):
 
     def test_config_updates_apply_in_queue_order_and_persist_without_new_messages(self):
         with App() as app:
-            configInput = app.configInput
             app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
-            configInput.send(
+            app.pipeline.start()
+            app.send_config(
                 ParcelDetectorConfig(
                     supportPlane=SupportPlane(normal=(0, 0, -1), offset_mm=1100)
                 )
             )
-            configInput.send(
+            app.send_config(
                 ParcelDetectorConfig(
                     supportPlane=SupportPlane(normal=(0, 0, 1), offset_mm=-1200)
                 )
             )
-            app.pipeline.start()
             for sequence, offset in ((1, 1100), (2, 1200), (3, 1200)):
                 app.send(messages(sequence))
                 result = app.measured.get(timedelta(seconds=5))
@@ -1039,14 +1051,16 @@ class StreamingTests(unittest.TestCase):
                 self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
                 self.assertEqual(result.plane.offset_mm, offset)
                 self.assertEqual(result.plane.normal, (0, 0, -1))
+                self.assertEqual(
+                    app.detector.inputConfig.getSize(), max(2 - sequence, 0)
+                )
             app.pipeline.stop()
 
     def test_invalid_config_input_warns_and_preserves_active_state(self):
         with App() as app, patch.object(app.detector, "warn") as warn:
-            configInput = app.configInput
             app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
             app.pipeline.start()
-            configInput.send(dai.Buffer())
+            app.send_config(dai.Buffer())
             app.send(messages())
             result = app.measured.get(timedelta(seconds=5))
             self.assertIsNotNone(result)
@@ -1066,7 +1080,6 @@ class StreamingTests(unittest.TestCase):
     def test_configuration_received_during_processing_applies_to_next_scene(self):
         entered, release = Event(), Event()
         with App() as app:
-            configInput = app.configInput
             scenes = []
 
             def find(scene):
@@ -1082,7 +1095,7 @@ class StreamingTests(unittest.TestCase):
             try:
                 app.send(messages())
                 self.assertTrue(entered.wait(5))
-                configInput.send(
+                app.send_config(
                     ParcelDetectorConfig(
                         supportPlane=SupportPlane(normal=(0, 0, -1), offset_mm=1200)
                     )
