@@ -37,8 +37,10 @@ adaptations; the port is not presented as the original evaluated artifact.
 [`evaluation-evidence.json`](../../depthai_nodes/algorithms/measure_anything/implementation/evaluation-evidence.json)
 is a derived public export. It retains scoring parameters, metric definitions,
 run/evaluation identities, denominators, units, numerical results and suppressed
-values. Nonpublic links and review administration metadata are removed. Schema
-and metric-version labels use public names. Public policy digests are recomputed;
+values. Nonpublic links and review administration metadata are removed. Internal
+support-module paths use neutral `reference/` labels with original file hashes.
+Source comparison tooling and its integrity checks are maintained privately.
+Schema and metric-version labels use public names. Public policy digests are recomputed;
 reference policy digests remain alongside them. The `public_export` block records
 the original evidence checksum and these transformations.
 
@@ -69,10 +71,10 @@ native SDK message checks, same-host pipeline integration and the guide's offlin
 interactions are verified separately from reference accuracy and throughput.
 
 The packaged MeasureAnything extra now pins OpenCV-headless 4.10.0.84 instead.
-This runtime dependency override has not been tested or compared with the reference.
+Repository CI exercises that runtime, but full reference parity and algorithm
+accuracy/performance have not been established for the dependency override.
 Original dependency hashes and accuracy/performance evidence remain attributed to
-the 4.12.0.88 environment. Tests were not rerun for this change; future algorithm
-evaluation will use 4.10.0.84.
+the 4.12.0.88 environment. Future algorithm evaluation will use 4.10.0.84.
 
 The public-export update reran the 15 synthetic scenes and three standalone fits
 with identical outputs. The historical 18-scene comparison was not rerun. The

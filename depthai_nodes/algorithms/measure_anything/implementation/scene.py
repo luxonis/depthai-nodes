@@ -1,4 +1,4 @@
-"""Neutral computation types and projector from the pinned Runner scene.py."""
+"""Scene types and calibrated 3D-to-image projection for the measurement algorithm."""
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal

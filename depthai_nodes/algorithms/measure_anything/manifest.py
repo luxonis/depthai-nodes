@@ -18,7 +18,7 @@ _REFERENCE_VISUALIZATION_SHA256 = (
 _REFERENCE_EVIDENCE_SHA256 = (
     "e23bcd5d41638487409b52dcce3ace3bb024c954c4cae6a65307f235fbc0a9d8"
 )
-_EVIDENCE_SHA256 = "eca5fb520bac16dd504ff3c3a4c5b33ffba0e1b3cc6d84b14662cdb5e24f80bf"
+_EVIDENCE_SHA256 = "e340730a3045a515cc8efb6bdc70b6cfa8540c6e1d07e1ea8b59f13cce6207fe"
 _BINARY_DISTRIBUTION = (
     "No custom native kernels, sources, build flags, or binaries; "
     "computation uses NumPy, SciPy, and OpenCV."

@@ -24,15 +24,15 @@
       "algorithms/fast_baseline_oak4_visibility_01/numpy_ops.py": "487a257b5a781973a7778288eeb569ef9f87802ab5cbc95c5720852fe730bbf5",
       "algorithms/fast_baseline_oak4_visibility_01/visibility.py": "5ac08deef7c0268a7450428f10f196cad770224ac388d84e5c22efe5a56ddbb3",
       "requirements.txt": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
-      "runner/__init__.py": "34868df65684bae52a8e8ed576e1d90d1059ea36ed883b7f1d3cd7ec0980b7a3",
-      "runner/__main__.py": "b02197657defb0a080886e631d74e748e06909967aedd26e0c8e0e2ba1472072",
-      "runner/api.py": "9f0219be1374d1cbb57d79f498510be6602bc874236722a84c66db65b3864ba4",
-      "runner/components.py": "875633e6744e81e263d53045fe2cc8535ebe51fe4d3948d7d29e40dc7cf3db80",
-      "runner/demo.py": "636afdb0b1aa535ecf3bfa3e358b3970628b3c64889a6a085d0e4c1b255be86f",
-      "runner/identity.py": "54f235fc5d4f1df5b0d25e1d395e49b6e2e2d414969f564dc6d6aa64c23f3ed6",
-      "runner/journal.py": "de30346a5ed872ece1d94dc4cc9d4be26d56103191a044d104be13295affd45b",
-      "runner/scene.py": "7527d3f8aca5509179fec75c18ca8aa8396219774399885bd7add8dbd462f3e3",
-      "runner/workflow.py": "a238f453481780d35da0d392fe563b68fc505bf1d68014f29f03de1681b6eab6"
+      "reference/__init__.py": "34868df65684bae52a8e8ed576e1d90d1059ea36ed883b7f1d3cd7ec0980b7a3",
+      "reference/__main__.py": "b02197657defb0a080886e631d74e748e06909967aedd26e0c8e0e2ba1472072",
+      "reference/api.py": "9f0219be1374d1cbb57d79f498510be6602bc874236722a84c66db65b3864ba4",
+      "reference/components.py": "875633e6744e81e263d53045fe2cc8535ebe51fe4d3948d7d29e40dc7cf3db80",
+      "reference/demo.py": "636afdb0b1aa535ecf3bfa3e358b3970628b3c64889a6a085d0e4c1b255be86f",
+      "reference/identity.py": "54f235fc5d4f1df5b0d25e1d395e49b6e2e2d414969f564dc6d6aa64c23f3ed6",
+      "reference/journal.py": "de30346a5ed872ece1d94dc4cc9d4be26d56103191a044d104be13295affd45b",
+      "reference/scene.py": "7527d3f8aca5509179fec75c18ca8aa8396219774399885bd7add8dbd462f3e3",
+      "reference/workflow.py": "a238f453481780d35da0d392fe563b68fc505bf1d68014f29f03de1681b6eab6"
     },
     "scope": "Native source archive evaluated on Mac; identical computation and private port benchmarked on OAK. No container image was built for this evaluation.",
     "runtime": {
@@ -534,6 +534,8 @@
     "changes": [
       "Removed nonpublic repository links and review administration metadata.",
       "Translated schema, metric-version and artifact labels for public distribution.",
+      "Relabeled internal support-module paths under reference/ while retaining original file hashes.",
+      "Replaced internal tool descriptions and stage links with bundled computation and node references.",
       "Recomputed public policy digests; reference policy digests remain alongside them.",
       "Preserved candidates, scoring parameters, numerical outcomes, units, denominators and suppressed values."
     ],

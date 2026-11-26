@@ -404,6 +404,22 @@ def test_exported_policy_digest_covers_public_scoring_parameters(installed_copy)
         _validate(root, manifest, check_bindings=False)
 
 
+def test_every_visualization_stage_links_to_bundled_sources(installed_copy):
+    import re
+
+    root, manifest = installed_copy
+    page = root / manifest["visualization"]["path"]
+    stages = re.findall(r"sources:\[(.*?)\],legend:", page.read_text(encoding="utf-8"))
+    assert len(stages) == 7
+    for stage in stages:
+        links = re.findall(r"\['([^']+)',", stage)
+        assert links
+        for link in links:
+            target = (page.parent / link).resolve()
+            assert target.is_relative_to((root / "depthai_nodes").resolve())
+            assert target.is_file(), link
+
+
 def test_visualization_is_shipped_and_covered(installed_copy):
     root, manifest = installed_copy
     name = manifest["visualization"]["path"]

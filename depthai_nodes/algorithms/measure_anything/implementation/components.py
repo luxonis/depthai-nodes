@@ -1,4 +1,4 @@
-"""The two computation callbacks from the pinned Runner contract."""
+"""Detection and measurement callbacks for the bundled algorithm."""
 
 from collections.abc import Callable
 from dataclasses import dataclass

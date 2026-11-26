@@ -1,7 +1,7 @@
 """Port component checks adapted from reference revision 0a2f571.
 
 The first five cases reuse tests/test_components.py against the port's types and test-
-only checked adapter. The two Runner loader cases are replaced by checks of the
+only checked adapter. The two reference loader cases are replaced by checks of the
 production frozen binding, which deliberately has no loader, settings argument, or
 optional plane estimator. Public frame/message behavior is covered separately by the
 parcel node tests.
