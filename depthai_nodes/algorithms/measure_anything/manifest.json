@@ -9,8 +9,7 @@
     "files_sha256": {
       "depthai_nodes/algorithms/__init__.py": "c5235d0aeaf840d21066d88f4529091e36ea97295c8a81f6dd881687ad93bbb6",
       "depthai_nodes/algorithms/measure_anything/__init__.py": "5aa9e7615fab1febcddb24fd6cd3d9d21cae8b49bcd62769b80aef48ecee1dd6",
-      "depthai_nodes/algorithms/measure_anything/implementation/ATTRIBUTION.md": "9892c6179e7303b5779cabf648856ad4c32602074b39413ae839f984f6fce204",
-      "depthai_nodes/algorithms/measure_anything/implementation/__init__.py": "7a48c3280ca62bfbcce2fd2b68fce468578bb2ac7f70711dc10324d9d265ecd1",
+      "depthai_nodes/algorithms/measure_anything/implementation/__init__.py": "90f9a328393bfe1b975e61208a9e17fe09e382f84ffc6c608325040544038f2a",
       "depthai_nodes/algorithms/measure_anything/implementation/components.py": "05db85213afa257e054ca4cd4f9975666ca8624c4149364e472c1f58e7e75d20",
       "depthai_nodes/algorithms/measure_anything/implementation/evaluation-evidence.json": "e23bcd5d41638487409b52dcce3ace3bb024c954c4cae6a65307f235fbc0a9d8",
       "depthai_nodes/algorithms/measure_anything/implementation/factory.py": "52d9dd277d6d58782643961e29db34337f0a0fd7a599c4f2ac2f008f2bdb5b6e",
