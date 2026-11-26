@@ -50,8 +50,11 @@ Existing box nodes have a separate contract.
 1. Update `depthai_nodes/algorithms/measure_anything/manifest.json`. Keep evaluated-source
    provenance separate from production-port hashes and adaptations. Preserve source
    commit, candidate hashes, original image or build artifact kind/digest, dependency
-   lock, weights and frozen settings. Preserve complete review, scoring policy,
-   metric version, evaluation/run IDs, denominators, null reasons and suppression.
+   lock, weights and frozen settings. Reference the original packaged
+   `evaluation-evidence.json` for review, scoring policy, metric version, run IDs,
+   denominators, null reasons and suppression; do not duplicate those receipts or
+   metrics in the manifest. Update the validator's selected source/evidence
+   revisions and frozen evidence checksum when promoting a new evaluated candidate.
    Record the settings-file hash and `/configuration` pointer separately from the
    candidate's canonical configuration hash. Hash raw installed package bytes with
    repository-relative `depthai_nodes/` keys. Exclude the manifest and optional
@@ -73,6 +76,7 @@ Existing box nodes have a separate contract.
    and `comparison.json` with its actual comparison evidence. Keep these three
    documentation files. Put detailed development receipts in retained review/build
    artifacts, with exact hashes and immutable links from the implementation record.
+   Update the manifest's comparison path, digest and commit-pinned URL together.
    Before replacement, pin the earlier record/evidence and retain exact released
    wheels, manifests, settings and assets. Never transfer old scores or performance
    claims to a newly built artifact. Update README and manifest references together.

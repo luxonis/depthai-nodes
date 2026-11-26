@@ -27,6 +27,19 @@ def installed_copy(tmp_path):
     return tmp_path, manifest
 
 
+def _evidence(root, manifest):
+    return json.loads((root / manifest["source"]["evidence_path"]).read_bytes())
+
+
+def _write_evidence(root, manifest, evidence):
+    name = manifest["source"]["evidence_path"]
+    path = root / name
+    path.write_text(json.dumps(evidence), encoding="utf-8")
+    manifest["implementation"]["files_sha256"][name] = hashlib.sha256(
+        path.read_bytes()
+    ).hexdigest()
+
+
 def test_manifest_validates_installed_bytes_and_evidence():
     manifest = measure_anything.validate_manifest()
     assert manifest["workbench_candidate"]["id"] == measure_anything.ALGORITHM_ID
@@ -140,14 +153,19 @@ def test_candidate_and_suppressed_metrics_are_checked(installed_copy):
     changed["workbench_candidate"]["id"] = "algorithm-other"
     with pytest.raises(ValueError, match="Candidate binding mismatch"):
         _validate(root, changed, check_bindings=False)
-    test_entry = manifest["evaluations"][1]
-    assert len(test_entry["suppressed_metrics"]) == 6
-    for key in test_entry["suppressed_metrics"]:
-        assert test_entry["metrics"][key]["status"] == "suppressed"
-        assert test_entry["metrics"][key]["value"] is None
-        assert test_entry["metrics"][key]["reason"]
-    test_entry["metrics"][test_entry["suppressed_metrics"][0]]["value"] = 0
-    with pytest.raises(ValueError, match="Evaluation test metrics mismatch"):
+    evidence = _evidence(root, manifest)
+    evaluation = evidence["held_out_result"]["evaluation"]
+    suppressed = evaluation["suppressed_metrics"]
+    assert len(suppressed) == 6
+    for key in suppressed:
+        value = evaluation["metrics"]
+        for part in key.split("."):
+            value = value[part]
+        assert value is None
+        assert evaluation["metrics"]["null_reasons"][key]
+    evaluation["metrics"]["dimension_errors_mm"]["height"]["median_absolute"] = 0
+    _write_evidence(root, manifest, evidence)
+    with pytest.raises(ValueError, match="Visualization metrics mismatch"):
         _validate(root, manifest, check_bindings=False)
 
 
@@ -173,33 +191,75 @@ def test_native_source_archive_cannot_be_mislabeled_as_an_image(installed_copy):
 
 def test_review_must_cover_the_frozen_source(installed_copy):
     root, manifest = installed_copy
-    manifest["source"]["review"]["source_commit"] = "0" * 40
+    evidence = _evidence(root, manifest)
+    evidence["review"]["source_commit"] = "0" * 40
+    _write_evidence(root, manifest, evidence)
     with pytest.raises(ValueError, match="Frozen source review mismatch"):
         _validate(root, manifest, check_bindings=False)
 
 
 def test_held_out_approval_matches_the_packaged_selected_candidate_receipt():
     manifest = measure_anything.validate_manifest()
-    evidence = json.loads(
-        (
-            ROOT
-            / manifest["implementation"]["package_path"]
-            / "evaluation-evidence.json"
-        ).read_bytes()
-    )["held_out_result"]
-    assert manifest["test_request"] == evidence["test_request"]
-    assert manifest["test_request"]["id"] == evidence["run"]["test_request_id"]
-    assert evidence["run"]["candidate"]["candidate_id"] == measure_anything.ALGORITHM_ID
+    held_out = _evidence(ROOT, manifest)["held_out_result"]
+    request = held_out["test_request"]
+    assert request["id"] == held_out["run"]["test_request_id"]
+    assert request["feedback_released"] is False
+    assert held_out["run"]["candidate"]["candidate_id"] == measure_anything.ALGORITHM_ID
 
 
 def test_predecessor_approval_is_rejected(installed_copy):
     root, manifest = installed_copy
-    manifest["test_request"].update(
+    evidence = _evidence(root, manifest)
+    evidence["held_out_result"]["test_request"].update(
         id="test-request-8bbaac21223541948afcfd16bb0c6c35",
         run_ids=["run-efd2b5483a4c452787a56f77e264e98e"],
         authorization_id="test-grant-c4a80185c19f4f54b72364796855a30a",
     )
-    with pytest.raises(ValueError, match="Held-out approval receipt mismatch"):
+    _write_evidence(root, manifest, evidence)
+    with pytest.raises(ValueError, match="Held-out approval is not linked"):
+        _validate(root, manifest, check_bindings=False)
+
+
+def test_evidence_cannot_be_replaced_by_updating_port_hashes(installed_copy):
+    root, manifest = installed_copy
+    evidence = _evidence(root, manifest)
+    evidence["lineage_note"] += " changed"
+    _write_evidence(root, manifest, evidence)
+    with pytest.raises(
+        ValueError, match="Frozen evaluation evidence byte hash mismatch"
+    ):
+        _validate(root, manifest, check_bindings=False)
+
+
+def test_evidence_path_cannot_point_outside_the_selected_package(installed_copy):
+    root, manifest = installed_copy
+    manifest["source"]["evidence_path"] = "../other-evidence.json"
+    with pytest.raises(ValueError, match="Evidence path mismatch"):
+        _validate(root, manifest, check_bindings=False)
+
+
+@pytest.mark.parametrize("field", ("path", "url"))
+def test_comparison_reference_is_pinned(installed_copy, field):
+    root, manifest = installed_copy
+    manifest["port_verification"]["comparison"][field] = "other.json"
+    with pytest.raises(ValueError, match="Comparison reference mismatch"):
+        _validate(root, manifest, check_bindings=False)
+
+
+@pytest.mark.parametrize("change", ("unrecorded", "missing", "swapped"))
+def test_source_to_port_mapping_is_complete_and_correct(installed_copy, change):
+    root, manifest = installed_copy
+    mapping = manifest["source"]["source_to_port"]
+    if change == "unrecorded":
+        mapping["unrecorded.py"] = "geometry.py"
+    elif change == "missing":
+        mapping.clear()
+    else:
+        mapping["geometry.py"], mapping["visibility.py"] = (
+            mapping["visibility.py"],
+            mapping["geometry.py"],
+        )
+    with pytest.raises(ValueError, match="Source-to-port mapping mismatch"):
         _validate(root, manifest, check_bindings=False)
 
 
@@ -215,21 +275,11 @@ def test_predecessor_approval_is_rejected(installed_copy):
         ("feedback_timing", "after_operator_release"),
     ],
 )
-def test_matching_receipt_still_requires_approval_run_linkage(
-    installed_copy, field, value
-):
+def test_approval_receipt_requires_matching_run(installed_copy, field, value):
     root, manifest = installed_copy
-    name = manifest["implementation"]["package_path"] + "/evaluation-evidence.json"
-    path = root / name
-    evidence = json.loads(path.read_bytes())
-    # Updating both declarations and their file hash cannot detach approval from
-    # the selected candidate's saved run and frozen settings.
+    evidence = _evidence(root, manifest)
     evidence["held_out_result"]["test_request"][field] = value
-    manifest["test_request"][field] = value
-    path.write_text(json.dumps(evidence), encoding="utf-8")
-    manifest["implementation"]["files_sha256"][name] = hashlib.sha256(
-        path.read_bytes()
-    ).hexdigest()
+    _write_evidence(root, manifest, evidence)
     with pytest.raises(ValueError, match="Held-out approval is not linked"):
         _validate(root, manifest, check_bindings=False)
 
@@ -246,14 +296,9 @@ def test_held_out_candidate_and_evaluation_are_linked(
     installed_copy, section, field, value
 ):
     root, manifest = installed_copy
-    name = manifest["implementation"]["package_path"] + "/evaluation-evidence.json"
-    path = root / name
-    evidence = json.loads(path.read_bytes())
+    evidence = _evidence(root, manifest)
     evidence["held_out_result"][section][field] = value
-    path.write_text(json.dumps(evidence), encoding="utf-8")
-    manifest["implementation"]["files_sha256"][name] = hashlib.sha256(
-        path.read_bytes()
-    ).hexdigest()
+    _write_evidence(root, manifest, evidence)
     with pytest.raises(
         ValueError,
         match="Held-out approval is not linked|Evaluation candidate or settings mismatch",
@@ -311,6 +356,20 @@ def test_source_configuration_identity_is_checked(
     root, manifest = installed_copy
     manifest["source"][field] = value
     with pytest.raises(ValueError, match=message):
+        _validate(root, manifest, check_bindings=False)
+
+
+@pytest.mark.parametrize(
+    "field", ("source_generation_receipt", "source_browser_report")
+)
+def test_visualization_receipts_follow_the_documentation_revision(
+    installed_copy, field
+):
+    root, manifest = installed_copy
+    manifest["visualization"][
+        field
+    ] = "https://github.com/luxonis/BoxLabRunners/blob/main/report.json"
+    with pytest.raises(ValueError, match="Visualization receipt revision mismatch"):
         _validate(root, manifest, check_bindings=False)
 
 

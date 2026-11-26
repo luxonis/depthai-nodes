@@ -17,15 +17,18 @@ and [replacement workflow](update-workflow.md).
 | Visualization source           | `4b3853742c34a2d4548cfb599e05f37217dcec83`   |
 
 The [manifest](../../depthai_nodes/algorithms/measure_anything/manifest.json) records
-original source and candidate hashes, build artifact, dependencies, weights,
-review, evaluation evidence and separate production-port hashes. The original
-build is a native source archive, not an OCI image. Packaging does not establish
-that the port is the evaluated artifact.
+candidate hashes, source revisions, build artifact, weights and production-port
+hashes, with references to the original review/evaluation evidence and port
+comparison. Original source-file hashes, dependency/runtime details and complete
+receipts remain in the packaged evidence rather than duplicated in the manifest.
+The original build is a native source archive, not an OCI image. Packaging does
+not establish that the port is the evaluated artifact.
 
 The original [evaluation receipts](../../depthai_nodes/algorithms/measure_anything/implementation/evaluation-evidence.json)
 retain scoring policies, run/evaluation IDs, denominators, approval observations
 and suppressed fields. The validator checks their linkage to the selected
-candidate and run. Both nodes read `/configuration` from the original
+candidate and run, and checks the frozen evidence bytes against the selected
+checksum. Both nodes read `/configuration` from the original
 [`scoped-settings.json`](../../depthai_nodes/algorithms/measure_anything/implementation/scoped-settings.json).
 The manifest distinguishes its complete byte hash from the candidate's canonical
 configuration hash. Settings remain private and frozen.
@@ -47,8 +50,8 @@ compiler, build flags or binaries. Existing box-node behavior is unchanged.
 
 The packaged guide explains inputs, simulated processing, real validation
 examples, accuracy and performance scopes. Four relative links become
-commit-pinned upstream URLs. Documentation source/destination hashes and browser
-receipts are recorded separately from computational provenance in the manifest.
+commit-pinned upstream URLs. Documentation source/destination hashes and upstream generation/browser receipt
+references are recorded separately from computational provenance in the manifest.
 Derived dimensional errors use this candidate's predictions and already-public
 reference dimensions, cross-checked against official aggregates at absolute
 tolerance 1e-10. Reference dimensions have 0.01 mm display precision. Held-out

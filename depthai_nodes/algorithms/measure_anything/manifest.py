@@ -12,6 +12,7 @@ from pathlib import Path, PurePosixPath
 _DIGEST = re.compile(r"[0-9a-f]{64}\Z")
 _SOURCE_COMMIT = "d5e35e17d75f91368889dc53d950792eed4096e6"
 _EVIDENCE_COMMIT = "d5964eee714737750787066fc24bc29744536d45"
+_EVIDENCE_SHA256 = "e23bcd5d41638487409b52dcce3ace3bb024c954c4cae6a65307f235fbc0a9d8"
 _BINARY_DISTRIBUTION = (
     "No custom native kernels, sources, build flags, or binaries; "
     "computation uses NumPy, SciPy, and OpenCV."
@@ -34,46 +35,6 @@ def _canonical(value: object) -> bytes:
     return (
         json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n"
     ).encode()
-
-
-def _metric_records(evaluation: dict) -> dict:
-    metrics = evaluation["metrics"]
-    suppressed = evaluation["suppressed_metrics"]
-    records = {}
-    for name, value in metrics.items():
-        if name in {"denominators", "null_reasons"}:
-            continue
-        if name == "dimension_errors_mm":
-            for axis, errors in value.items():
-                for statistic, number in errors.items():
-                    key = f"dimension_errors_mm.{axis}.{statistic}"
-                    records[key] = {
-                        "status": "suppressed" if key in suppressed else "available",
-                        "value": number,
-                        "unit": "count"
-                        if statistic == "count"
-                        else "ratio"
-                        if statistic == "mean_relative_absolute"
-                        else "mm",
-                        "denominator": errors["count"],
-                        "reason": metrics["null_reasons"].get(key),
-                    }
-        else:
-            records[name] = {
-                "status": "available" if value is not None else "not_reported",
-                "value": value,
-                "unit": "count"
-                if name.endswith("_count") or name in {"tp", "fp", "fn"}
-                else "ratio",
-                "denominator": metrics["denominators"].get(name),
-                "reason": metrics["null_reasons"].get(name)
-                or (
-                    "Not reported by the retained supplied-plane evaluation"
-                    if value is None
-                    else None
-                ),
-            }
-    return records
 
 
 def _covered_files(root: Path) -> set[str]:
@@ -109,7 +70,7 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
     )
 
     _require(
-        manifest["schema_version"] == "measure-anything-algorithm-manifest/1",
+        manifest["schema_version"] == "measure-anything-algorithm-manifest/2",
         "Unknown manifest schema",
     )
     implementation = manifest["implementation"]
@@ -169,9 +130,13 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
     )
     settings = json.loads(settings_bytes)
     configuration = settings["configuration"]
-    evidence = json.loads(
-        (root / package_path / "evaluation-evidence.json").read_bytes()
+    source = manifest["source"]
+    _require(
+        source["evidence_path"] == package_path + "/evaluation-evidence.json",
+        "Evidence path mismatch",
     )
+    evidence_bytes = (root / source["evidence_path"]).read_bytes()
+    evidence = json.loads(evidence_bytes)
     _require(
         hashlib.sha256(settings_bytes).hexdigest() == evidence["settings_sha256"],
         "Frozen settings byte hash mismatch",
@@ -211,7 +176,6 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
         == evidence["build"]["artifact"]["sha256"],
         "Executed native build mismatch",
     )
-    source = manifest["source"]
     _require(source["algorithm"] == _ALGORITHM_NAME, "Algorithm name mismatch")
     _require(
         source["configuration_version"] == _CONFIGURATION_VERSION,
@@ -237,22 +201,30 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
     _require(
         source["evidence_commit"] == _EVIDENCE_COMMIT, "Evidence revision mismatch"
     )
-    _require(
-        source["original_files_sha256"]
-        == evidence["provenance"]["source_files_sha256"],
-        "Original source hashes mismatch",
-    )
-    _require(
-        set(source["paths"]) == set(source["original_files_sha256"]),
-        "Original source coverage mismatch",
-    )
-    for digest in source["original_files_sha256"].values():
+    original_files = evidence["provenance"]["source_files_sha256"]
+    for digest in original_files.values():
         _digest(digest)
-    _require(source["lineage_note"] == evidence["lineage_note"], "Lineage mismatch")
-    review = source["review"]
+    prefix = f"algorithms/{_ALGORITHM_NAME}/"
+    expected_ports = {}
+    for name in original_files:
+        if name.startswith(prefix):
+            original_name = name.removeprefix(prefix)
+            expected_ports[original_name] = (
+                "factory.py" if original_name == "__init__.py" else original_name
+            )
     _require(
-        review == evidence["review"]
-        and review["source_commit"] == source["commit"]
+        source["source_to_port"] == expected_ports,
+        "Source-to-port mapping mismatch",
+    )
+    for original_name, port_name in source["source_to_port"].items():
+        _require(
+            f"algorithms/{_ALGORITHM_NAME}/{original_name}" in original_files
+            and package_path + "/" + port_name in files,
+            "Source-to-port mapping mismatch",
+        )
+    review = evidence["review"]
+    _require(
+        review["source_commit"] == source["commit"]
         and bool(review["provider"].strip())
         and review["url"] == "https://github.com/luxonis/BoxLabRunners/pull/19"
         and all(finding.get("resolution") for finding in review["findings"]),
@@ -275,6 +247,13 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
         "Visualization source mismatch",
     )
     _digest(visualization["source_sha256"])
+    for field in ("source_generation_receipt", "source_browser_report"):
+        _require(
+            visualization[field].startswith(
+                source["repository"] + "/blob/" + visualization["source_commit"] + "/"
+            ),
+            "Visualization receipt revision mismatch",
+        )
     html = (root / visualization["path"]).read_text(encoding="utf-8")
     match = re.search(
         r'<script id="evidence-data" type="application/json">(.*?)</script>',
@@ -313,17 +292,9 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
         inputs["length_unit"] == "mm" and inputs["plane_orientation"] == "upward",
         "Scene conventions mismatch",
     )
-    _require(
-        inputs["frozen_runtime"] == evidence["provenance"]["runtime"],
-        "Frozen runtime mismatch",
-    )
-    request = manifest["test_request"]
     held_out = evidence["held_out_result"]
+    request = held_out["test_request"]
     test_run = held_out["run"]
-    _require(
-        request == held_out["test_request"],
-        "Held-out approval receipt mismatch",
-    )
     _require(
         request["schema_version"] == "boxlab-test-request/1"
         and request["status"] == "approved"
@@ -341,8 +312,7 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
         and test_run["candidate"] == original,
         "Held-out approval is not linked to the selected candidate and run",
     )
-    _require(len(manifest["evaluations"]) == 2, "Expected validation and test evidence")
-    for entry, key in zip(manifest["evaluations"], ("validation", "held_out_result")):
+    for key in ("validation", "held_out_result"):
         run, evaluation = evidence[key]["run"], evidence[key]["evaluation"]
         _require(
             run["candidate"] == original
@@ -355,35 +325,16 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
             and evaluation["policy"] == run["policy"],
             "Evaluation candidate or settings mismatch",
         )
-        expected = {
-            "split": run["split"],
-            "release_id": run["release_id"],
-            "run_id": run["id"],
-            "evaluation_id": evaluation["id"],
-            "run_status": run["status"],
-            "evaluation_status": evaluation["status"],
-            "expected_count": run["expected_count"],
-            "accepted_count": run["accepted_count"],
-            "failed_snapshot_count": evaluation["metrics"]["failed_snapshot_count"],
-            "metric_version": evaluation["metric_version"],
-            "policy": evaluation["policy"],
-            "policy_sha256": run["policy_sha256"],
-            "objective": settings["objective"],
-            "feedback_status": evaluation["feedback"],
-            "suppressed_metrics": evaluation["suppressed_metrics"],
-            "raw_metrics": evaluation["metrics"],
-            "metrics": _metric_records(evaluation),
-        }
-        for field, value in expected.items():
-            _require(
-                entry[field] == value, f"Evaluation {run['split']} {field} mismatch"
-            )
         _require(
-            entry["run_status"] == "sealed"
-            and entry["evaluation_status"] == "completed"
-            and entry["accepted_count"] == entry["expected_count"],
+            run["status"] == "sealed"
+            and evaluation["status"] == "completed"
+            and run["accepted_count"] == run["expected_count"],
             "Incomplete frozen evaluation",
         )
+    _require(
+        hashlib.sha256(evidence_bytes).hexdigest() == _EVIDENCE_SHA256,
+        "Frozen evaluation evidence byte hash mismatch",
+    )
     verification = manifest["port_verification"]
     _require(
         verification["record_path"].startswith("docs/measure-anything/"),
@@ -393,14 +344,27 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
         verification["reference_artifact"] == original["build_sha256"],
         "Port reference mismatch",
     )
-    for field in (
-        "comparison_inputs",
-        "numerical_tolerance",
-        "checks",
-        "environment",
-        "limitations",
-    ):
-        _require(field in verification, f"Missing port verification {field}")
+    comparison = verification["comparison"]
+    _require(
+        comparison["path"] == "docs/measure-anything/comparison.json"
+        and bool(
+            re.fullmatch(
+                r"https://github\.com/luxonis/depthai-nodes/blob/[0-9a-f]{40}/"
+                + re.escape(comparison["path"]),
+                comparison["url"],
+            )
+        ),
+        "Comparison reference mismatch",
+    )
+    _digest(comparison["sha256"])
+    _require(
+        bool(verification["adaptations"])
+        and all(
+            isinstance(value, str) and value.strip()
+            for value in verification["adaptations"]
+        ),
+        "Missing port adaptations",
+    )
     if check_bindings:
         from depthai_nodes.node import MeasureAnythingDetector as PublicDetector
         from depthai_nodes.node import MeasureAnythingDimensioner as PublicDimensioner
