@@ -247,10 +247,10 @@ Box measurement
 
 * `BoxDetector`: detects, segments, and tracks boxes in a color stream and
   emits `depthai_nodes.message.BoxDetections`.
-* `BoxDimensioner`: measures box detections in an organized point cloud and
-  emits `depthai_nodes.message.BoxMeasurements`.
-* `BoxMeasurer`: wires ``BoxDetector`` into ``BoxDimensioner`` behind one
-  ``build``.
+* `BoxDimensioner`: measures `depthai_nodes.message.BoxClouds` from
+  ``BoxAssociator`` and emits `depthai_nodes.message.BoxMeasurements`.
+* `BoxMeasurer`: wires a ``BoxDetector`` per view into ``BoxAssociator`` and
+  ``BoxDimensioner`` behind one ``build``.
 * `BoxAssociator`: associates box detections from one or more views, each with
   depth aligned to its color, into `depthai_nodes.message.BoxClouds` in shared
   coordinates. It needs open3d.
@@ -264,25 +264,25 @@ change while the pipeline runs.
 
 ``BoxDetector`` and ``BoxMeasurer`` run on RVC4 only and download the
 ``luxonis/box-instance-segmentation`` model from the Model Zoo at build.
-``BoxDimensioner`` and ``BoxMeasurer`` need open3d, installed with
+``BoxAssociator`` and ``BoxMeasurer`` need open3d, installed with
 ``pip install "depthai-nodes[box-measurement]"``; without it their ``build``
 raises ``ImportError``.
 
 Example:
-    With existing ``color`` and ``pointCloud`` outputs and a point cloud of
-    ``width`` by ``height`` points::
+    With existing ``color`` and ``depth`` outputs, the depth aligned to the
+    color::
 
         from depthai_nodes.message import SupportPlane
         from depthai_nodes.node import BoxMeasurer
 
         plane = SupportPlane.fromJsonFile("support_plane.json")
         measurer = pipeline.create(BoxMeasurer).build(
-            color, pointCloud, (width, height), supportPlane=plane
+            [(color, depth)], supportPlane=plane
         )
         measurements = measurer.out.createOutputQueue()
 
     Each ``BoxMeasurements`` message read from ``measurements`` holds one
-    result per box detection, with its box dimensions once measured.
+    result per box, with its box dimensions once measured.
 
 Extending the package
 =====================

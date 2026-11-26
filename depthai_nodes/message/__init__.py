@@ -106,12 +106,12 @@ holds the index of the item it belongs to, and 255 marks background.
 ``getMask()`` returns one item's boolean mask.
 
 `BoxMeasurements` is a `Collection` of `BoxMeasurementResult` items. Each result
-repeats the box detection fields and adds a `MeasurementStatus` and, when the
-box has any, its `BoxDimensions`: length, width, and height in millimeters. A
-measured result always has dimensions. Both messages draw labelled box outlines
-through ``getVisualizationMessage()``. `BoxDetection`, `BoxMeasurementResult`,
-and `BoxDimensions` are frozen dataclasses that take keyword arguments and
-raise the same errors as the support plane value types.
+holds the box identity, its `BoxViewDetection` items, a `MeasurementStatus` and,
+when the box has any, its `BoxDimensions`: length, width, and height in
+millimeters. A measured result always has dimensions. Only `BoxDetections` draws
+labelled box outlines through ``getVisualizationMessage()``. `BoxDetection`,
+`BoxMeasurementResult`, and `BoxDimensions` are frozen dataclasses that take
+keyword arguments and raise the same errors as the support plane value types.
 
 `BoxClouds` is a `Collection` that accepts only `BoxCloud` items, one per box
 seen in a frame. A `BoxCloud` holds the box's ``box_id``, which is never reused

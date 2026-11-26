@@ -1,7 +1,6 @@
 import dataclasses
 from datetime import timedelta
 
-import depthai as dai
 import numpy as np
 import pytest
 
@@ -15,18 +14,14 @@ from tests.utils.messages.creators.box import (
     BOX_DIMENSIONS,
     create_box_measurement_result,
     create_box_measurements,
-    create_rotated_rect,
+    create_box_view_detection,
 )
-
-TRACKED = dai.Tracklet.TrackingStatus.TRACKED
 
 
 def result_fields(**overrides) -> dict:
     return {
-        "track_id": 7,
-        "bounding_box": create_rotated_rect(),
-        "confidence": 0.8,
-        "track_status": TRACKED,
+        "box_id": 7,
+        "detections": (create_box_view_detection(),),
         "measurement_status": MeasurementStatus.FAILED,
         **overrides,
     }
@@ -74,14 +69,19 @@ def test_measurement_status_values_are_strings():
 
 
 def test_result_has_direct_fields_and_is_immutable():
-    result = create_box_measurement_result()
+    detections = (create_box_view_detection(view=0), create_box_view_detection(view=1))
+    result = create_box_measurement_result(
+        box_id=np.int64(7),  # pyright: ignore[reportArgumentType]
+        detections=detections,
+    )
 
-    assert result.track_id == 7
-    assert result.bounding_box.angle == 0
+    assert result.box_id == 7
+    assert result.box_id.__class__ is int
+    assert result.detections is detections
     assert result.dimensions == BOX_DIMENSIONS
     assert create_box_measurements([result]).items == [result]
     with pytest.raises(dataclasses.FrozenInstanceError):
-        result.track_id = 8  # type: ignore[misc]
+        result.box_id = 8  # type: ignore[misc]
 
 
 def test_result_without_dimensions_defaults_to_none():
@@ -95,13 +95,18 @@ def test_measured_result_requires_dimensions():
         )
 
 
+def test_result_requires_at_least_one_detection():
+    with pytest.raises(ValueError):
+        BoxMeasurementResult(**result_fields(detections=()))
+
+
 @pytest.mark.parametrize(
     "field,value",
     [
-        ("track_id", 7.5),
-        ("bounding_box", (0.5, 0.5)),
-        ("confidence", "0.8"),
-        ("track_status", "tracked"),
+        ("box_id", "7"),
+        ("box_id", True),
+        ("detections", [create_box_view_detection()]),
+        ("detections", (create_box_view_detection(), "detection")),
         ("measurement_status", "failed"),
         ("dimensions", (200, 100, 50)),
     ],
@@ -114,63 +119,3 @@ def test_result_rejects_wrong_types(field, value):
 def test_constructor_takes_no_timestamps():
     with pytest.raises(TypeError):
         BoxMeasurements([], timestamp=timedelta(seconds=2))  # type: ignore[call-arg]
-
-
-def annotation_texts(message: dai.ImgAnnotations) -> list[str]:
-    return [text.text for ann in message.annotations for text in ann.texts]
-
-
-def outlines(message: dai.ImgAnnotations) -> list[list[tuple[float, float]]]:
-    return [
-        [(point.x, point.y) for point in points.points]
-        for ann in message.annotations
-        for points in ann.points
-    ]
-
-
-def test_measured_box_displays_confidence_and_aggregated_units():
-    message = create_box_measurements(
-        [create_box_measurement_result()]
-    ).getVisualizationMessage()
-
-    assert annotation_texts(message) == [
-        "Box 7 (80%)\nH: 5.0 cm\nL: 20.0 cm W: 10.0 cm\nV: 1000 cm³"
-    ]
-
-
-def test_box_without_dimensions_displays_identity_and_confidence_only():
-    message = create_box_measurements(
-        [create_box_measurement_result(MeasurementStatus.FAILED, None)]
-    ).getVisualizationMessage()
-
-    assert annotation_texts(message) == ["Box 7 (80%)"]
-
-
-def test_box_is_outlined_by_its_bounding_box():
-    message = create_box_measurements(
-        [create_box_measurement_result()]
-    ).getVisualizationMessage()
-
-    drawn = outlines(message)
-    assert len(drawn) == 1
-    assert np.allclose(drawn[0], [(0.3, 0.3), (0.7, 0.3), (0.7, 0.7), (0.3, 0.7)])
-
-
-def test_empty_measurements_render_nothing():
-    message = create_box_measurements().getVisualizationMessage()
-
-    assert annotation_texts(message) == []
-    assert outlines(message) == []
-
-
-def test_annotations_carry_source_metadata():
-    measurements = create_box_measurements([create_box_measurement_result()])
-    measurements.setTimestamp(timedelta(seconds=2))
-    measurements.setTimestampDevice(timedelta(seconds=12))
-    measurements.setSequenceNum(9)
-
-    message = measurements.getVisualizationMessage()
-
-    assert message.getTimestamp() == timedelta(seconds=2)
-    assert message.getTimestampDevice() == timedelta(seconds=12)
-    assert message.getSequenceNum() == 9

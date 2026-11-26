@@ -1,4 +1,4 @@
-"""Measure box detections against the active support plane."""
+"""Measure box clouds against the active support plane."""
 
 from .box_dimensioner import BoxDimensioner
 

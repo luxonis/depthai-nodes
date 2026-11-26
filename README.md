@@ -81,7 +81,7 @@ The `node` module provides parsers and pipeline helpers:
 - **Inference helpers**, including `ParsingNeuralNetwork` and `ParserGenerator`, create and connect inference and parser nodes.
 - **Utility nodes** handle detection filtering, image overlays, colormaps, and message collection.
 - **Support plane nodes** find the support plane in a point cloud, checked against gravity from IMU data. `AutoSupportPlane` finds and holds the support plane, and can optionally check and refit it. `SupportPlaneCalibrator` and `AutoSupportPlane` require open3d.
-- **Box measurement nodes** detect, track, and measure boxes from color and a point cloud. `BoxDetector` and `BoxMeasurer` run on RVC4 only. `BoxDimensioner` requires open3d and has no RVC4-only check.
+- **Box measurement nodes** detect, track, and measure boxes from one or more views, each a color stream and the depth aligned to it. `BoxDetector` and `BoxMeasurer` run on RVC4 only. `BoxAssociator` and `BoxMeasurer` require open3d; `BoxDimensioner` doesn't, and has no RVC4-only check.
 
 `ParsingNeuralNetwork` and `ParserGenerator` use native DepthAI parsers by default. Use `HostParsingNeuralNetwork` or pass `hostOnly=True` to `ParserGenerator.build()` to select this package's host parsers.
 
