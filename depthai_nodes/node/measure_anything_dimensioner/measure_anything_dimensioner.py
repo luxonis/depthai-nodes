@@ -13,12 +13,45 @@ from depthai_nodes.message.measure_anything import (
 
 
 class MeasureAnythingDimensioner(dai.node.HostNode):
-    """Measure each eligible detection using the single bundled fast baseline.
+    """Fit dimensions for each eligible object emitted by the detector.
 
-    ``out`` emits same-host ``MeasureAnythingMeasurements``. Each input detection receives
-    a no-fit, unknown-height, or measured outcome. Input frame failure and
-    algorithm identity mismatch produce failed frames. The dimensioner uses
-    only the plane in the batch, without independent plane state or tracking.
+    Install ``depthai-nodes[measure-anything]`` and connect a
+    ``MeasureAnythingDetections`` output through ``build()``. This host node
+    consumes each object's selected, read-only point array without another
+    extraction or copy. Both nodes bind to the same frozen algorithm and
+    configuration. A different algorithm identity produces a failed frame.
+
+    Measurement uses the exact upward ``SupportPlane`` and calibrated frame
+    stored in the input batch. It has no independent plane/config input, so a
+    newer detector configuration cannot change measurement of a queued batch.
+    The bundled algorithm fits a cuboid footprint and height in millimeters;
+    its published accuracy applies to the evaluated object and input profile.
+    The packaged ``visualization.html`` in
+    ``depthai_nodes/algorithms/measure_anything/implementation/`` explains the
+    geometry, real examples and measurement limits.
+
+    ``out`` emits ``MeasureAnythingMeasurements`` with one
+    ``MeasureAnythingMeasurement`` per eligible input object, preserving order
+    and frame-local candidate IDs. Its ``Status`` is ``NO_FIT`` when there is no
+    cuboid, ``HEIGHT_UNKNOWN`` for a footprint without height, or ``MEASURED``
+    for a complete fit. A ``MeasureAnythingCuboid`` contains base center, length
+    axis, length, width and optional height. Results have no tracking or temporal
+    aggregation.
+
+    Input frame failures propagate as failed measurement frames. Computation or
+    invalid-geometry errors fail the whole frame; an empty successful input
+    produces an empty successful output. Frame timestamps, sequence, source
+    timing and algorithm identity are retained. These messages contain Python
+    values for one host runtime; XLink and RemoteConnection do not serialize
+    their nested fields.
+
+    Example:
+        With an existing ``MeasureAnythingDetector`` node::
+
+            from depthai_nodes.node import MeasureAnythingDimensioner
+
+            dimensioner = pipeline.create(MeasureAnythingDimensioner).build(detector.out)
+            results = dimensioner.out.createOutputQueue()
     """
 
     algorithm_id = algorithm.ALGORITHM_ID

@@ -1,4 +1,4 @@
-"""Test-only checked adapter from BoxLabRunners@0a2f571.
+"""Test-only checked adapter from reference revision 0a2f571.
 
 This preserves the upstream regression harness. It is not installed runtime code and
 does not replace tests of the public parcel node boundary.
@@ -59,7 +59,7 @@ def _detection(cuboid: Cuboid, plane: SupportPlane, number: int) -> dict:
 
 def failure(snapshot: dict, code: str) -> dict:
     return {
-        "schema_version": "boxlab-run-result/1",
+        "schema_version": "measurement-run-result/1",
         "snapshot_id": snapshot["snapshot_id"],
         "frame": snapshot["cloud_frame"],
         "status": "failed",
@@ -77,7 +77,7 @@ def process_scene(
         input_mode == "estimated_plane"
         and not abs(plane.offset_mm) <= MAX_RESULT_COORDINATE_MM
     ):
-        raise ValueError("Estimated plane offset exceeds Workbench result bounds")
+        raise ValueError("Estimated plane offset exceeds reference result bounds")
 
     detections = []
     xyz = scene.cloud.xyz_mm
@@ -125,7 +125,7 @@ def process_scene(
                 detections.append(_detection(cuboid, plane, len(detections) + 1))
 
     return {
-        "schema_version": "boxlab-run-result/1",
+        "schema_version": "measurement-run-result/1",
         "snapshot_id": snapshot_id,
         "frame": scene.cloud.frame,
         "status": "success",

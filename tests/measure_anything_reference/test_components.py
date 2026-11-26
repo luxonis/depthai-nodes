@@ -1,4 +1,4 @@
-"""Port component checks adapted from BoxLabRunners@0a2f571.
+"""Port component checks adapted from reference revision 0a2f571.
 
 The first five cases reuse tests/test_components.py against the port's types and test-
 only checked adapter. The two Runner loader cases are replaced by checks of the

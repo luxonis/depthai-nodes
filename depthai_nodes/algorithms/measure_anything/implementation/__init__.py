@@ -1,4 +1,4 @@
-"""Frozen OAK-4 visibility computation, mechanically ported from Luxonis BoxLabRunners.
+"""Frozen OAK-4 visibility computation, mechanically ported from Luxonis.
 
 The factory is imported only when used so the measure-anything extra remains optional.
 The package manifest records source identity and port adaptations.

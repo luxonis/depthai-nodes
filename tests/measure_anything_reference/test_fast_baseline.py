@@ -1,6 +1,6 @@
-"""Pinned BoxLabRunners fast-baseline regressions with relocated imports.
+"""Pinned reference implementation fast-baseline regressions with relocated imports.
 
-Source: luxonis/BoxLabRunners@0a2f571843f81ac6cc2f8cebe3475540e314f83d,
+Reference source revision: 0a2f571843f81ac6cc2f8cebe3475540e314f83d,
 tests/test_fast_baseline.py. Settings changes here are upstream
 regression probes, not the public frozen binding. The checked adapter is
 test-only; production frame/message behavior has separate node tests.

@@ -67,7 +67,7 @@ Dependency installation uses the staged arm64 wheels without device downloads.
 Record the wheel SHA-256, source revision, device identity, app build identity,
 and complete JSON output with the benchmark evidence. A passed synthetic
 fixture does not replace cross-device snapshot replay, NeuralDepth rectification
-metadata checks, or frozen Workbench scene parity.
+metadata checks, or frozen reference-scene parity.
 
 See the [API reference](../../docs/axial-depth-correction.md) for production
 wiring and provenance handling.

@@ -1,10 +1,10 @@
 """Compare the frozen MeasureAnything computation with the bundled port, without network
 I/O.
 
-The reference root must contain the pinned BoxLabRunners source and copies of the
-bundled evaluation-evidence.json and scoped-settings.json named fast-baseline.json and
-fast-baseline-settings.json (legacy comparison tool filenames). Optional cached inputs
-must be an already-authorized validation cache from benchmark_fast.py. No labels,
+The reference root must contain the pinned reference implementation source and copies of
+the bundled evaluation-evidence.json and scoped-settings.json named fast-baseline.json
+and fast-baseline-settings.json (legacy comparison tool filenames). Optional cached
+inputs must be an already-authorized validation cache from benchmark_fast.py. No labels,
 training inputs, or held-out inputs are read. This is an output comparison, not a timing
 benchmark.
 """

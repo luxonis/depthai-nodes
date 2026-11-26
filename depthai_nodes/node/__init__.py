@@ -290,63 +290,16 @@ Example:
 MeasureAnything measurement
 ===========================
 
-``MeasureAnythingDetector`` detects and validates eligible objects from a millimeter XYZ
-cloud, supplied plane, and calibrated color/left/right images. It binds the frozen
-fast baseline. No algorithm selector or settings API is exposed. Install with
-``pip install "depthai-nodes[measure-anything]"``. ``MeasureAnythingDimensioner`` consumes the emitted
-``depthai_nodes.message.MeasureAnythingDetections`` and measures independent object clouds
-against that batch's exact upward plane. Outputs are per-frame geometry, without
-tracking or temporal medians. Existing box nodes retain their separate behavior.
+`MeasureAnythingDetector` selects eligible object point clouds from calibrated
+scene inputs. `MeasureAnythingDimensioner` fits their dimensions against the
+plane carried by each detection batch. Install
+``depthai-nodes[measure-anything]`` for the frozen algorithm's dependencies.
 
-Example:
-    With existing ``pointCloud``, ``color``, ``left``, and ``right`` outputs
-    carrying their native calibration metadata::
-
-        from depthai_nodes.message import MeasureAnythingDetectorConfig, SupportPlane
-        from depthai_nodes.node import MeasureAnythingDetector, MeasureAnythingDimensioner
-
-        detector = pipeline.create(MeasureAnythingDetector).build(
-            pointCloud, color, left, right
-        )
-        configQueue = detector.inputConfig.createInputQueue(blocking=True)
-        dimensioner = pipeline.create(MeasureAnythingDimensioner).build(detector.out)
-        results = dimensioner.out.createOutputQueue()
-
-        pipeline.start()
-        supportPlane = SupportPlane.fromJsonFile("support_plane.json")
-        configQueue.send(MeasureAnythingDetectorConfig(supportPlane=supportPlane))
-
-    ``MeasureAnythingDetector`` is a ``ThreadedHostNode``. A host ``Sync`` node matches
-    the four scene streams by device timestamp with a span below 10 ms. The
-    inputs must share a device clock. Sequence counters may differ. Incomplete
-    groups are skipped. Before processing each complete group, the detector
-    applies one pending configuration update, when available. Otherwise it
-    keeps the active configuration. Pending updates are applied in queue order.
-    A full blocking config queue waits for scenes to advance. Send config
-    bursts from a separate thread if the caller also produces scene messages.
-    The initial support plane is optional. Until a config supplies one, the
-    detector consumes scene groups without processing or emitting outputs.
-    Updates received during processing apply to a later group. Each batch
-    retains the exact plane used, so measurement cannot observe a newer plane.
-
-    Supply unrectified color at 2000x1500 and unrectified left/right at 1280x800,
-    preserving the native field of view and orientation. On the first configured
-    scene with valid message types, mismatched resolutions log one warning with the
-    expected and received sizes. Processing continues without resizing images
-    or scaling the algorithm's fixed pixel thresholds. Other grids and geometry
-    do not have equivalent detection guarantees. Matching dimensions alone do
-    not establish matching geometry. ``ImgTransformation`` must describe the
-    actual delivered pixels. The views need not be the exact buffers used to
-    generate the cloud. NeuralDepth at 768x480 is preferred upstream; this node
-    receives the point cloud and does not check the depth-image resolution.
-    Color uses NV12 or RGB/BGR8; mono views use GRAY8 or RAW8. Intrinsics,
-    distortion, camera poses, and frame identification come from metadata.
-    Use millimeter XYZ and a support plane in the common reference frame,
-    as native DEFAULT point clouds with an identity custom transform provide.
-    The reference camera must be above the support surface; either plane sign
-    is oriented toward that camera. A plane through the camera origin fails.
-    Do not change the cloud's coordinate configuration while the pipeline runs.
-    These Python messages connect nodes within one host runtime.
+The node class docstrings describe wiring, input profiles, calibration,
+synchronization, support-plane updates, outputs and current limitations.
+The packaged ``algorithms/measure_anything/implementation/visualization.html``
+provides the interactive algorithm and evidence guide. Existing box nodes retain
+their separate APIs and behavior.
 
 Extending the package
 =====================

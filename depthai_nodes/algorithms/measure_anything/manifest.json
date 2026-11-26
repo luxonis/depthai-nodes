@@ -1,17 +1,16 @@
 {
-  "schema_version": "measure-anything-algorithm-manifest/2",
+  "schema_version": "measure-anything-algorithm-manifest/3",
   "implementation": {
     "name": "fast_baseline_oak4_visibility_01",
     "package_path": "depthai_nodes/algorithms/measure_anything/implementation",
     "configuration_path": "depthai_nodes/algorithms/measure_anything/implementation/scoped-settings.json",
-    "source_contract_version": "BoxLabRunners@d5e35e17d75f91368889dc53d950792eed4096e6:docs/boxlab/contracts/RUNNER.md",
     "configuration_sha256": "66f029694119c77ddad557bd58257b8743e7f284441d94a317b08fffc5496f10",
     "files_sha256": {
       "depthai_nodes/algorithms/__init__.py": "c5235d0aeaf840d21066d88f4529091e36ea97295c8a81f6dd881687ad93bbb6",
       "depthai_nodes/algorithms/measure_anything/__init__.py": "5aa9e7615fab1febcddb24fd6cd3d9d21cae8b49bcd62769b80aef48ecee1dd6",
-      "depthai_nodes/algorithms/measure_anything/implementation/__init__.py": "90f9a328393bfe1b975e61208a9e17fe09e382f84ffc6c608325040544038f2a",
+      "depthai_nodes/algorithms/measure_anything/implementation/__init__.py": "f5b46b349e65c786c81f287e5c042901c7cba570b3c33118c19dc106fa429870",
       "depthai_nodes/algorithms/measure_anything/implementation/components.py": "05db85213afa257e054ca4cd4f9975666ca8624c4149364e472c1f58e7e75d20",
-      "depthai_nodes/algorithms/measure_anything/implementation/evaluation-evidence.json": "e23bcd5d41638487409b52dcce3ace3bb024c954c4cae6a65307f235fbc0a9d8",
+      "depthai_nodes/algorithms/measure_anything/implementation/evaluation-evidence.json": "eca5fb520bac16dd504ff3c3a4c5b33ffba0e1b3cc6d84b14662cdb5e24f80bf",
       "depthai_nodes/algorithms/measure_anything/implementation/factory.py": "52d9dd277d6d58782643961e29db34337f0a0fd7a599c4f2ac2f008f2bdb5b6e",
       "depthai_nodes/algorithms/measure_anything/implementation/geometry.py": "fc8f513b8aedd6783b2f3645636c1234f31ac555e94b13547b4ed526a3f8f724",
       "depthai_nodes/algorithms/measure_anything/implementation/numpy_ops.py": "e5ce2721f806f7f3ad5533c3f8ff8a8644aa35b5934805c8f833baa366cb5df4",
@@ -19,33 +18,22 @@
       "depthai_nodes/algorithms/measure_anything/implementation/scene.py": "7f8f888d0d242b5a73b5a61350d9be56d76f7a3509f002b225db2c43d2297b94",
       "depthai_nodes/algorithms/measure_anything/implementation/scoped-settings.json": "66f029694119c77ddad557bd58257b8743e7f284441d94a317b08fffc5496f10",
       "depthai_nodes/algorithms/measure_anything/implementation/visibility.py": "1b1bbc5a28441dadd8c68a6031531d6330f99a32af3baeb7c709cf6240a48f30",
-      "depthai_nodes/algorithms/measure_anything/implementation/visualization.html": "c195176e3d77e4df433ea824bb219c7a91ef17412792635baf106ef6c6a2ae32",
-      "depthai_nodes/algorithms/measure_anything/manifest.py": "080a52b27de1c9fc945647fff1a50e2f017832634efd5c022751aef75feb8326",
+      "depthai_nodes/algorithms/measure_anything/implementation/visualization.html": "fc6ece67c6a2cf7621956ba1a51f4ccb1570f039ae26c43fe242a166a7d347cc",
+      "depthai_nodes/algorithms/measure_anything/manifest.py": "f441d412a52e0ec0b3b55a0b029ba5973398d8f3165140769107f118629ca103",
       "depthai_nodes/message/measure_anything.py": "293bab0b45df214692f3c4dcc257c9e067b11a24031ef72e96dfdc12448a33c2",
       "depthai_nodes/message/support_plane.py": "0eaeec70dda37d48b3160d1f1a14cffce766f23182289d1b569ffb444f1f44e3",
       "depthai_nodes/node/measure_anything_detector/__init__.py": "4b47171911e6ffae1c0d8ff80128b603f54beadbc65cb3c893ba697db23d530a",
-      "depthai_nodes/node/measure_anything_detector/measure_anything_detector.py": "7b0163fbf5bdf0a13645f54d3c3368b3cbc7934c6f8f1d768a6b747c53f8756a",
+      "depthai_nodes/node/measure_anything_detector/measure_anything_detector.py": "83b631adb35d51005c9a4321b0415f762d1bdb0aa510870e7b5000366f2631b4",
       "depthai_nodes/node/measure_anything_detector/scene.py": "ea76f04265b9faa800d7bc184cedc0a131c69355a609c7576db3b07123430927",
       "depthai_nodes/node/measure_anything_dimensioner/__init__.py": "f23c5d006aa7a0e8b0700c2736c6f0e3ee143fd6c56230a6d854bda01be7c371",
-      "depthai_nodes/node/measure_anything_dimensioner/measure_anything_dimensioner.py": "699351f8e8235a0b209b0f53f6f4d3532cd636235b4dc1e9481c6167360357a5"
+      "depthai_nodes/node/measure_anything_dimensioner/measure_anything_dimensioner.py": "82ec652db75288b999d30fc07ff22a9251fdc803682bb3dd13d3528949176dc9"
     },
     "binary_distribution": "No custom native kernels, sources, build flags, or binaries; computation uses NumPy, SciPy, and OpenCV.",
     "native_build_flags": [],
     "tested_native_binaries": [],
     "configuration_pointer": "/configuration"
   },
-  "workbench_candidate": {
-    "id": "algorithm-5e4abc3a09b54148950317cdeac60ba2",
-    "weight_sha256s": [],
-    "code_sha256": "f2a20d3ed2067386b498019361c0491619838a2ce88049a9e22e01f5bf10a74b",
-    "build_sha256": "bad3b09ff518e15b05db814bdc8bb40d26818328f38a1dddf78d4fc9523d322c",
-    "dependencies_sha256": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
-    "configuration_sha256": "958a8f9760c2afe310178933f59e28c93054663af9cf90619cebc72865c7d0a6",
-    "image_digest": null,
-    "build_kind": "native-source-archive"
-  },
   "source": {
-    "repository": "https://github.com/luxonis/BoxLabRunners",
     "commit": "d5e35e17d75f91368889dc53d950792eed4096e6",
     "evidence_commit": "d5964eee714737750787066fc24bc29744536d45",
     "algorithm": "fast_baseline_oak4_visibility_01",
@@ -58,7 +46,8 @@
       "geometry.py": "geometry.py",
       "visibility.py": "visibility.py",
       "numpy_ops.py": "numpy_ops.py"
-    }
+    },
+    "publisher": "Luxonis"
   },
   "inputs": {
     "modalities": [
@@ -82,21 +71,30 @@
       "Relocate computation imports; keep the private lazy entry point and neutral scene types.",
       "Keep existing public nodes, message conversion, profile warnings, and ownership semantics.",
       "No custom native kernel assets apply to this candidate.",
-      "Copy visualization with link-only repairs to commit-pinned upstream files.",
+      "Publish explicitly derived evidence and visualization exports, retaining original checksums and numerical results.",
       "Load the frozen configuration directly from the original scoped-settings.json configuration object instead of shipping a separately serialized configuration.json. Original settings bytes, canonical configuration hash, candidate identity, and factory input are unchanged."
     ]
   },
   "visualization": {
     "path": "depthai_nodes/algorithms/measure_anything/implementation/visualization.html",
-    "sha256": "c195176e3d77e4df433ea824bb219c7a91ef17412792635baf106ef6c6a2ae32",
-    "source_repository": "https://github.com/luxonis/BoxLabRunners",
+    "sha256": "fc6ece67c6a2cf7621956ba1a51f4ccb1570f039ae26c43fe242a166a7d347cc",
     "source_commit": "4b3853742c34a2d4548cfb599e05f37217dcec83",
     "source_path": "algorithms/fast_baseline_oak4_visibility_01/visualization.html",
     "source_sha256": "9dabd2783d4afdbc61217091fe341e8bb30c9cbc796cb5401125bf8c8f7c328e",
     "adaptations": [
-      "Resolve four relative href links to commit-pinned upstream files; embedded evidence and interactions unchanged."
+      "Public documentation export removes nonpublic references and uses bundled/public links; scientific data is unchanged."
     ],
-    "source_generation_receipt": "https://github.com/luxonis/BoxLabRunners/blob/4b3853742c34a2d4548cfb599e05f37217dcec83/experiments/oak4_visibility_10fps/evidence/visualisation-replay-verification.json",
-    "source_browser_report": "https://github.com/luxonis/BoxLabRunners/blob/4b3853742c34a2d4548cfb599e05f37217dcec83/experiments/oak4_visibility_10fps/evidence/visualisation-replay-browser-check.json"
+    "source_publisher": "Luxonis",
+    "reference_sha256": "c195176e3d77e4df433ea824bb219c7a91ef17412792635baf106ef6c6a2ae32"
+  },
+  "candidate": {
+    "id": "algorithm-5e4abc3a09b54148950317cdeac60ba2",
+    "weight_sha256s": [],
+    "code_sha256": "f2a20d3ed2067386b498019361c0491619838a2ce88049a9e22e01f5bf10a74b",
+    "build_sha256": "bad3b09ff518e15b05db814bdc8bb40d26818328f38a1dddf78d4fc9523d322c",
+    "dependencies_sha256": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
+    "configuration_sha256": "958a8f9760c2afe310178933f59e28c93054663af9cf90619cebc72865c7d0a6",
+    "image_digest": null,
+    "build_kind": "native-source-archive"
   }
 }

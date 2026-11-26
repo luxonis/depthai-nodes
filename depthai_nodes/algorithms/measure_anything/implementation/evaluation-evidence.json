@@ -1,5 +1,5 @@
 {
-  "schema_version": "boxlab-promotion-evidence/1",
+  "schema_version": "measure-anything-evaluation-evidence/1",
   "source_commit": "d5e35e17d75f91368889dc53d950792eed4096e6",
   "image": null,
   "build": {
@@ -45,11 +45,10 @@
       }
     }
   },
-  "lineage_note": "Selected frozen v002 from BoxLabRunners PR19; no computation or settings changes after held-out evaluation.",
+  "lineage_note": "Frozen v002 reference implementation; computation and settings unchanged since evaluation.",
   "review": {
     "provider": "Independent",
     "source_commit": "d5e35e17d75f91368889dc53d950792eed4096e6",
-    "url": "https://github.com/luxonis/BoxLabRunners/pull/19",
     "reviewed_files": [
       "algorithms/fast_baseline_oak4_visibility_01/__init__.py",
       "algorithms/fast_baseline_oak4_visibility_01/visibility.py",
@@ -70,21 +69,11 @@
       "Independent agent review is not CodeRabbit approval.",
       "No new device throughput or live-camera measurement was performed."
     ],
-    "operator_exception": {
-      "authorization": "Use independent review and proceed",
-      "reason": "The user confirmed CodeRabbit is not installed and explicitly authorized independent review for PR #19 held-out testing.",
-      "scope": {
-        "repository": "https://github.com/luxonis/BoxLabRunners",
-        "source_commit": "d5e35e17d75f91368889dc53d950792eed4096e6",
-        "candidate_id": "algorithm-5e4abc3a09b54148950317cdeac60ba2",
-        "release_id": "release-f14a597a366c46c6bdba00fa25e45bcd",
-        "pull_request_url": "https://github.com/luxonis/BoxLabRunners/pull/19"
-      }
-    }
+    "status": "completed"
   },
   "validation": {
     "run": {
-      "schema_version": "boxlab-run/1",
+      "schema_version": "measurement-run/1",
       "id": "run-5fef9c146c9148c8aae4c1b5e251b82d",
       "created_at": "2026-11-24T21:09:46.285522+00:00",
       "created_by": "consumer:dev-token-dacce6ddd0df4aebac228fe0862b1d58",
@@ -101,7 +90,7 @@
       "input_mode": "supplied_plane",
       "manifest_sha256": "baec14e249caa505bf16a86abdf4ea31e888f631eda0e955d641406ac53c5535",
       "policy": {
-        "version": "boxlab-evaluation/1",
+        "version": "measurement-evaluation/1",
         "iou_gate": 0.5,
         "matching": "maximum-cardinality-then-total-iou-stable/1",
         "unmatched_predictions": "false_positive-no-ignored-regions",
@@ -114,7 +103,7 @@
         "unconfigured_tolerances": "report-unconfigured-no-hidden-defaults",
         "plane_normal_dot_epsilon": 1e-06
       },
-      "policy_sha256": "26abc2f98d574665a33d5c7abca94ba48837dd7962c3ec0bbc30c58b5114ca06",
+      "policy_sha256": "46bb29178680f0c8c81b25d37917e2a7f1fe8409d1b85780bc2019158dc7e4fa",
       "execution": {
         "synthetic": false,
         "runtime_basis": "not_reported",
@@ -124,21 +113,22 @@
           "source_images"
         ]
       },
-      "metric_version": "boxlab-run-metrics/3",
+      "metric_version": "measurement-run-metrics/3",
       "status": "sealed",
       "expected_count": 18,
       "accepted_count": 18,
       "evaluation_id": "evaluation-c446358a3b3e434e8a60e9434fc76df1",
       "test_request_id": null,
-      "authorization_id": null
+      "authorization_id": null,
+      "reference_policy_sha256": "26abc2f98d574665a33d5c7abca94ba48837dd7962c3ec0bbc30c58b5114ca06"
     },
     "evaluation": {
-      "schema_version": "boxlab-evaluation-view/1",
+      "schema_version": "measurement-evaluation-view/1",
       "id": "evaluation-c446358a3b3e434e8a60e9434fc76df1",
       "run_id": "run-5fef9c146c9148c8aae4c1b5e251b82d",
       "status": "completed",
       "policy": {
-        "version": "boxlab-evaluation/1",
+        "version": "measurement-evaluation/1",
         "iou_gate": 0.5,
         "matching": "maximum-cardinality-then-total-iou-stable/1",
         "unmatched_predictions": "false_positive-no-ignored-regions",
@@ -151,7 +141,7 @@
         "unconfigured_tolerances": "report-unconfigured-no-hidden-defaults",
         "plane_normal_dot_epsilon": 1e-06
       },
-      "metric_version": "boxlab-run-metrics/3",
+      "metric_version": "measurement-run-metrics/3",
       "distribution_statement": "within-collected-distribution evaluation",
       "feedback": "available",
       "metrics": {
@@ -352,7 +342,7 @@
   },
   "held_out_result": {
     "test_request": {
-      "schema_version": "boxlab-test-request/1",
+      "schema_version": "measurement-test-request/1",
       "id": "test-request-058dab05ac1a49d7a838469670eb611d",
       "created_at": "2026-11-25T08:51:20.446813+00:00",
       "status": "approved",
@@ -366,7 +356,7 @@
       "authorization_id": "test-grant-6bc4742fc6e044a1a78149edb5418e1e"
     },
     "run": {
-      "schema_version": "boxlab-run/1",
+      "schema_version": "measurement-run/1",
       "id": "run-5cb93153a4cc436baad5ecaea3d8670a",
       "created_at": "2026-11-25T08:52:52.433245+00:00",
       "created_by": "consumer:dev-token-dacce6ddd0df4aebac228fe0862b1d58",
@@ -383,7 +373,7 @@
       "input_mode": "supplied_plane",
       "manifest_sha256": "5ba1bc50df7586e110f4da4225376691b41f0cf066c9add52ddd4c6bcfc46892",
       "policy": {
-        "version": "boxlab-evaluation/1",
+        "version": "measurement-evaluation/1",
         "iou_gate": 0.5,
         "matching": "maximum-cardinality-then-total-iou-stable/1",
         "unmatched_predictions": "false_positive-no-ignored-regions",
@@ -396,7 +386,7 @@
         "unconfigured_tolerances": "report-unconfigured-no-hidden-defaults",
         "plane_normal_dot_epsilon": 1e-06
       },
-      "policy_sha256": "26abc2f98d574665a33d5c7abca94ba48837dd7962c3ec0bbc30c58b5114ca06",
+      "policy_sha256": "46bb29178680f0c8c81b25d37917e2a7f1fe8409d1b85780bc2019158dc7e4fa",
       "execution": {
         "synthetic": false,
         "runtime_basis": "not_reported",
@@ -406,21 +396,22 @@
           "source_images"
         ]
       },
-      "metric_version": "boxlab-run-metrics/3",
+      "metric_version": "measurement-run-metrics/3",
       "status": "sealed",
       "expected_count": 17,
       "accepted_count": 17,
       "evaluation_id": "evaluation-6ce5ecda7afb46c8bb735b590bec0283",
       "test_request_id": "test-request-058dab05ac1a49d7a838469670eb611d",
-      "authorization_id": "test-grant-6bc4742fc6e044a1a78149edb5418e1e"
+      "authorization_id": "test-grant-6bc4742fc6e044a1a78149edb5418e1e",
+      "reference_policy_sha256": "26abc2f98d574665a33d5c7abca94ba48837dd7962c3ec0bbc30c58b5114ca06"
     },
     "evaluation": {
-      "schema_version": "boxlab-evaluation-view/1",
+      "schema_version": "measurement-evaluation-view/1",
       "id": "evaluation-6ce5ecda7afb46c8bb735b590bec0283",
       "run_id": "run-5cb93153a4cc436baad5ecaea3d8670a",
       "status": "completed",
       "policy": {
-        "version": "boxlab-evaluation/1",
+        "version": "measurement-evaluation/1",
         "iou_gate": 0.5,
         "matching": "maximum-cardinality-then-total-iou-stable/1",
         "unmatched_predictions": "false_positive-no-ignored-regions",
@@ -433,7 +424,7 @@
         "unconfigured_tolerances": "report-unconfigured-no-hidden-defaults",
         "plane_normal_dot_epsilon": 1e-06
       },
-      "metric_version": "boxlab-run-metrics/3",
+      "metric_version": "measurement-run-metrics/3",
       "distribution_statement": "within-collected-distribution evaluation",
       "feedback": "available",
       "metrics": {
@@ -536,5 +527,16 @@
       },
       "disclosure_event_id": "audit-7a9d78f65f5f4df29da0f51756b0b81e"
     }
+  },
+  "public_export": {
+    "schema_version": "public-evidence-export/1",
+    "reference_evidence_sha256": "e23bcd5d41638487409b52dcce3ace3bb024c954c4cae6a65307f235fbc0a9d8",
+    "changes": [
+      "Removed nonpublic repository links and review administration metadata.",
+      "Translated schema, metric-version and artifact labels for public distribution.",
+      "Recomputed public policy digests; reference policy digests remain alongside them.",
+      "Preserved candidates, scoring parameters, numerical outcomes, units, denominators and suppressed values."
+    ],
+    "reproducibility": "Full evaluation inputs are not distributed. Synthetic integration fixtures do not reproduce the complete benchmark."
   }
 }

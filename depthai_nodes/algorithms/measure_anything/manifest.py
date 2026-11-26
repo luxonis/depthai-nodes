@@ -12,7 +12,13 @@ from pathlib import Path, PurePosixPath
 _DIGEST = re.compile(r"[0-9a-f]{64}\Z")
 _SOURCE_COMMIT = "d5e35e17d75f91368889dc53d950792eed4096e6"
 _EVIDENCE_COMMIT = "d5964eee714737750787066fc24bc29744536d45"
-_EVIDENCE_SHA256 = "e23bcd5d41638487409b52dcce3ace3bb024c954c4cae6a65307f235fbc0a9d8"
+_REFERENCE_VISUALIZATION_SHA256 = (
+    "c195176e3d77e4df433ea824bb219c7a91ef17412792635baf106ef6c6a2ae32"
+)
+_REFERENCE_EVIDENCE_SHA256 = (
+    "e23bcd5d41638487409b52dcce3ace3bb024c954c4cae6a65307f235fbc0a9d8"
+)
+_EVIDENCE_SHA256 = "eca5fb520bac16dd504ff3c3a4c5b33ffba0e1b3cc6d84b14662cdb5e24f80bf"
 _BINARY_DISTRIBUTION = (
     "No custom native kernels, sources, build flags, or binaries; "
     "computation uses NumPy, SciPy, and OpenCV."
@@ -70,7 +76,7 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
     )
 
     _require(
-        manifest["schema_version"] == "measure-anything-algorithm-manifest/2",
+        manifest["schema_version"] == "measure-anything-algorithm-manifest/3",
         "Unknown manifest schema",
     )
     implementation = manifest["implementation"]
@@ -88,11 +94,6 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
     _require(
         implementation["configuration_pointer"] == "/configuration",
         "Configuration pointer mismatch",
-    )
-    _require(
-        implementation["source_contract_version"]
-        == f"BoxLabRunners@{_SOURCE_COMMIT}:docs/boxlab/contracts/RUNNER.md",
-        "Source contract mismatch",
     )
     _require(
         implementation["binary_distribution"] == _BINARY_DISTRIBUTION
@@ -141,7 +142,7 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
         hashlib.sha256(settings_bytes).hexdigest() == evidence["settings_sha256"],
         "Frozen settings byte hash mismatch",
     )
-    candidate = manifest["workbench_candidate"]
+    candidate = manifest["candidate"]
     original = evidence["validation"]["run"]["candidate"]
     _require(
         candidate["id"] == original["candidate_id"] == ALGORITHM_ID,
@@ -201,6 +202,13 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
     _require(
         source["evidence_commit"] == _EVIDENCE_COMMIT, "Evidence revision mismatch"
     )
+    _require(source["publisher"] == "Luxonis", "Reference publisher mismatch")
+    _require(
+        evidence["public_export"]["schema_version"] == "public-evidence-export/1"
+        and evidence["public_export"]["reference_evidence_sha256"]
+        == _REFERENCE_EVIDENCE_SHA256,
+        "Public evidence export provenance mismatch",
+    )
     original_files = evidence["provenance"]["source_files_sha256"]
     for digest in original_files.values():
         _digest(digest)
@@ -226,7 +234,7 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
     _require(
         review["source_commit"] == source["commit"]
         and bool(review["provider"].strip())
-        and review["url"] == "https://github.com/luxonis/BoxLabRunners/pull/19"
+        and review["status"] == "completed"
         and all(finding.get("resolution") for finding in review["findings"]),
         "Frozen source review mismatch",
     )
@@ -240,20 +248,13 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
         "Visualization file hash mismatch",
     )
     _require(
-        visualization["source_repository"] == source["repository"]
+        visualization["source_publisher"] == source["publisher"]
         and bool(re.fullmatch(r"[0-9a-f]{40}", visualization["source_commit"]))
         and visualization["source_path"]
         == f"algorithms/{_ALGORITHM_NAME}/visualization.html",
         "Visualization source mismatch",
     )
     _digest(visualization["source_sha256"])
-    for field in ("source_generation_receipt", "source_browser_report"):
-        _require(
-            visualization[field].startswith(
-                source["repository"] + "/blob/" + visualization["source_commit"] + "/"
-            ),
-            "Visualization receipt revision mismatch",
-        )
     html = (root / visualization["path"]).read_text(encoding="utf-8")
     match = re.search(
         r'<script id="evidence-data" type="application/json">(.*?)</script>',
@@ -262,6 +263,15 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
     )
     _require(match is not None, "Missing visualization evidence")
     displayed = json.loads(match[1])
+    _require(
+        displayed["public_export"]["schema_version"] == "public-evidence-export/1"
+        and displayed["public_export"]["reference_evidence_sha256"]
+        == _REFERENCE_EVIDENCE_SHA256
+        and displayed["public_export"]["reference_visualization_sha256"]
+        == visualization["reference_sha256"]
+        == _REFERENCE_VISUALIZATION_SHA256,
+        "Public visualization export provenance mismatch",
+    )
     _require(
         displayed["candidate"] == original
         and displayed["configuration"] == configuration
@@ -296,7 +306,7 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
     request = held_out["test_request"]
     test_run = held_out["run"]
     _require(
-        request["schema_version"] == "boxlab-test-request/1"
+        request["schema_version"] == "measurement-test-request/1"
         and request["status"] == "approved"
         and bool(request["id"])
         and request["id"] == test_run["test_request_id"]
@@ -324,6 +334,11 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
             and run["policy"] == evidence["validation"]["run"]["policy"]
             and evaluation["policy"] == run["policy"],
             "Evaluation candidate or settings mismatch",
+        )
+        _require(
+            hashlib.sha256(_canonical(run["policy"])).hexdigest()
+            == run["policy_sha256"],
+            "Public scoring policy digest mismatch",
         )
         _require(
             run["status"] == "sealed"

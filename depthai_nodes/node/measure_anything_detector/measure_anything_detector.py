@@ -24,27 +24,74 @@ from .scene import (
 
 
 class MeasureAnythingDetector(dai.node.ThreadedHostNode):
-    """Detect eligible detections using the single bundled fast baseline.
+    """Find objects eligible for measurement in calibrated point-cloud scenes.
 
-    A host ``Sync`` node matches the point cloud and three image streams by
-    device timestamp within 10 ms. Incomplete groups produce no callback.
-    Image sequence counters may differ from the point cloud's counter.
+    Install ``depthai-nodes[measure-anything]`` for the bundled algorithm's
+    dependencies. The published accuracy applies to its evaluated parcel and
+    camera profile. The packaged ``visualization.html`` in
+    ``depthai_nodes/algorithms/measure_anything/implementation/`` explains the
+    algorithm, measured examples, accuracy and performance scopes.
 
-    The evaluated profile uses unrectified color at 2000x1500 and left/right
-    images at 1280x800. The first configured scene with valid message types
-    checks these sizes and logs one warning if they differ. Processing continues.
+    Connect a millimeter XYZ point cloud and calibrated color, left and right
+    images through ``build()``. A host ``Sync`` node matches the four streams by
+    device timestamp with a span below 10 ms. They must share a device clock and
+    capture the same scene interval; sequence counters may differ. Incomplete
+    groups are skipped. The images need not be the original cloud-source frames.
 
-    ``inputConfig`` accepts ``MeasureAnythingDetectorConfig`` messages. One queued
-    configuration is applied before each synchronized scene, when available.
-    The active configuration persists until another update arrives.
-    Without a support plane, incoming groups are consumed without processing
-    or output until a configuration supplies one.
-    Its support-plane snapshot travels with the eligible detections through
-    measurement. Updates received during processing apply to a later scene.
+    The evaluated image profile is unrectified color at 2000x1500 and unrectified
+    left/right at 1280x800, preserving the native field of view and orientation.
+    Color accepts NV12 or native 8-bit RGB/BGR formats. Mono views accept GRAY8
+    or RAW8. The first configured scene with valid message types checks sizes
+    and logs one warning with expected and received values if they differ.
+    Processing continues without resizing, rectification or threshold scaling.
+    Other profiles have no equivalent accuracy guarantee. Matching dimensions
+    alone do not establish matching geometry. NeuralDepth at 768x480 is the
+    reference depth profile; this node receives XYZ and cannot check that grid.
 
-    ``out`` emits same-host ``MeasureAnythingDetections`` with independent read-only
-    detection arrays. Candidate IDs are frame-local proposal indices. There is no
-    tracking, temporal aggregation, or frozen-algorithm configuration API.
+    Each image's ``ImgTransformation`` must describe its delivered pixels,
+    including intrinsics, distortion, crop/scale and camera pose. All inputs
+    must identify the same calibrated reference frame. XYZ and ``SupportPlane``
+    use that frame and millimeters. Native PointCloud producers use DEFAULT
+    coordinates, calibrated translation and an identity custom transform.
+    Keep the cloud coordinate configuration fixed while running. The reference
+    camera must be above the support surface. Either plane-normal sign is
+    accepted; a plane through the reference origin is invalid.
+
+    The initial ``SupportPlane`` in ``build()`` is optional. While unset, this
+    node consumes synchronized groups without scene decoding, algorithm calls
+    or outputs. A ``MeasureAnythingDetectorConfig`` on ``inputConfig`` activates
+    processing without rebuilding the pipeline. One queued update is applied
+    before each scene when available; the active state otherwise persists.
+    An update received during processing applies to a later scene. Use a blocking
+    producer queue. A full queue blocks its sender, so send bursts from another
+    thread if the caller must also supply scene messages.
+
+    ``out`` emits a ``MeasureAnythingDetections`` batch with eligible objects'
+    independent, immutable float32 point arrays in selected source-point order.
+    It carries the exact upward plane snapshot, frame identity, source timing,
+    algorithm identity and proposal decisions. Candidate IDs are frame-local
+    proposal indices. A successful empty frame differs from a failed frame.
+    The dimensioner consumes the batch's plane rather than a later config.
+    There is no tracking, temporal smoothing or public algorithm-settings API.
+    Nested Python values remain in one host runtime and do not serialize through
+    XLink or RemoteConnection.
+
+    Example:
+        With existing outputs carrying native calibration metadata::
+
+            from depthai_nodes.message import MeasureAnythingDetectorConfig, SupportPlane
+            from depthai_nodes.node import MeasureAnythingDetector, MeasureAnythingDimensioner
+
+            detector = pipeline.create(MeasureAnythingDetector).build(
+                pointCloud, color, left, right
+            )
+            configQueue = detector.inputConfig.createInputQueue(blocking=True)
+            dimensioner = pipeline.create(MeasureAnythingDimensioner).build(detector.out)
+            results = dimensioner.out.createOutputQueue()
+
+            pipeline.start()
+            supportPlane = SupportPlane.fromJsonFile("support_plane.json")
+            configQueue.send(MeasureAnythingDetectorConfig(supportPlane=supportPlane))
     """
 
     algorithm_id = algorithm.ALGORITHM_ID

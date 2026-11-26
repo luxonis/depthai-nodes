@@ -42,7 +42,7 @@ def _write_evidence(root, manifest, evidence):
 
 def test_manifest_validates_installed_bytes_and_evidence():
     manifest = measure_anything.validate_manifest()
-    assert manifest["workbench_candidate"]["id"] == measure_anything.ALGORITHM_ID
+    assert manifest["candidate"]["id"] == measure_anything.ALGORITHM_ID
     assert manifest["implementation"]["name"] == "fast_baseline_oak4_visibility_01"
     assert manifest["implementation"]["package_path"] == (
         "depthai_nodes/algorithms/measure_anything/implementation"
@@ -98,7 +98,7 @@ def test_manifest_validates_with_cp1252_default_encoding(monkeypatch):
 
     monkeypatch.setattr(Path, "open", cp1252_open)
     manifest = measure_anything.validate_manifest()
-    assert manifest["workbench_candidate"]["id"] == measure_anything.ALGORITHM_ID
+    assert manifest["candidate"]["id"] == measure_anything.ALGORITHM_ID
 
 
 def test_editing_computation_fails_integrity_check(installed_copy):
@@ -150,7 +150,7 @@ def test_frozen_configuration_cannot_change_with_port_hashes(installed_copy):
 def test_candidate_and_suppressed_metrics_are_checked(installed_copy):
     root, manifest = installed_copy
     changed = copy.deepcopy(manifest)
-    changed["workbench_candidate"]["id"] = "algorithm-other"
+    changed["candidate"]["id"] = "algorithm-other"
     with pytest.raises(ValueError, match="Candidate binding mismatch"):
         _validate(root, changed, check_bindings=False)
     evidence = _evidence(root, manifest)
@@ -181,7 +181,7 @@ def test_node_binding_mismatch_is_rejected(monkeypatch):
 
 def test_native_source_archive_cannot_be_mislabeled_as_an_image(installed_copy):
     root, manifest = installed_copy
-    candidate = manifest["workbench_candidate"]
+    candidate = manifest["candidate"]
     assert candidate["image_digest"] is None
     assert candidate["build_kind"] == "native-source-archive"
     candidate["image_digest"] = "sha256:" + candidate["build_sha256"]
@@ -359,17 +359,48 @@ def test_source_configuration_identity_is_checked(
         _validate(root, manifest, check_bindings=False)
 
 
-@pytest.mark.parametrize(
-    "field", ("source_generation_receipt", "source_browser_report")
-)
-def test_visualization_receipts_follow_the_documentation_revision(
-    installed_copy, field
+def test_public_visualization_identifies_the_selected_reference_artifact(
+    installed_copy,
 ):
     root, manifest = installed_copy
-    manifest["visualization"][
-        field
-    ] = "https://github.com/luxonis/BoxLabRunners/blob/main/report.json"
-    with pytest.raises(ValueError, match="Visualization receipt revision mismatch"):
+    manifest["visualization"]["reference_sha256"] = "0" * 64
+    with pytest.raises(
+        ValueError, match="Public visualization export provenance mismatch"
+    ):
+        _validate(root, manifest, check_bindings=False)
+
+
+def test_public_evidence_identifies_the_selected_reference_artifact(installed_copy):
+    root, manifest = installed_copy
+    evidence = _evidence(root, manifest)
+    evidence["public_export"]["reference_evidence_sha256"] = "0" * 64
+    _write_evidence(root, manifest, evidence)
+    with pytest.raises(ValueError, match="Public evidence export provenance mismatch"):
+        _validate(root, manifest, check_bindings=False)
+
+
+def test_visualization_uses_existing_bundled_links(installed_copy):
+    import re
+
+    root, manifest = installed_copy
+    manifest_path = root / "depthai_nodes/algorithms/measure_anything/manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    page = root / manifest["visualization"]["path"]
+    static_html = page.read_text(encoding="utf-8").split("<script", 1)[0]
+    for href in re.findall(r'href="([^"]+)"', static_html):
+        if href.startswith("#"):
+            continue
+        target = (page.parent / href).resolve()
+        assert target.is_relative_to((root / "depthai_nodes").resolve())
+        assert target.is_file(), href
+
+
+def test_exported_policy_digest_covers_public_scoring_parameters(installed_copy):
+    root, manifest = installed_copy
+    evidence = _evidence(root, manifest)
+    evidence["validation"]["run"]["policy_sha256"] = "0" * 64
+    _write_evidence(root, manifest, evidence)
+    with pytest.raises(ValueError, match="Public scoring policy digest mismatch"):
         _validate(root, manifest, check_bindings=False)
 
 

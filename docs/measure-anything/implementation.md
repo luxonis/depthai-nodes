@@ -1,108 +1,95 @@
-# Bundled MeasureAnything implementation
+# MeasureAnything implementation and evidence
 
-`MeasureAnythingDetector` and `MeasureAnythingDimensioner` share the frozen implementation in
-[`depthai_nodes/algorithms/measure_anything/implementation/`](../../depthai_nodes/algorithms/measure_anything/implementation).
-See the [public API overview](../../depthai_nodes/node/__init__.py),
-[interactive measurement guide](../../depthai_nodes/algorithms/measure_anything/implementation/visualization.html)
-and [replacement workflow](update-workflow.md).
+`MeasureAnythingDetector` and `MeasureAnythingDimensioner` share the frozen
+Luxonis measurement algorithm in
+[`implementation/`](../../depthai_nodes/algorithms/measure_anything/implementation).
+Node class docstrings describe wiring, calibration, configuration and outputs:
+[detector](../../depthai_nodes/node/measure_anything_detector/measure_anything_detector.py)
+and [dimensioner](../../depthai_nodes/node/measure_anything_dimensioner/measure_anything_dimensioner.py).
+The [interactive guide](../../depthai_nodes/algorithms/measure_anything/implementation/visualization.html)
+explains the algorithm, real validation examples, accuracy and performance scopes.
+Integration requirements are in [CONTRIBUTING.md](../../CONTRIBUTING.md#measureanything-integration).
 
-## Identity and provenance
+## Frozen identity
 
-| Field                          | Selected value                               |
-| ------------------------------ | -------------------------------------------- |
-| Algorithm / configuration      | `fast_baseline_oak4_visibility_01/v002`      |
-| Full candidate identity        | `algorithm-5e4abc3a09b54148950317cdeac60ba2` |
-| Evaluated BoxLabRunners source | `d5e35e17d75f91368889dc53d950792eed4096e6`   |
-| Committed evaluation evidence  | `d5964eee714737750787066fc24bc29744536d45`   |
-| Visualization source           | `4b3853742c34a2d4548cfb599e05f37217dcec83`   |
+| Field                             | Selected value                               |
+| --------------------------------- | -------------------------------------------- |
+| Algorithm / configuration         | `fast_baseline_oak4_visibility_01/v002`      |
+| Candidate identity                | `algorithm-5e4abc3a09b54148950317cdeac60ba2` |
+| Reference implementation revision | `d5e35e17d75f91368889dc53d950792eed4096e6`   |
+| Reference evaluation revision     | `d5964eee714737750787066fc24bc29744536d45`   |
 
-The [manifest](../../depthai_nodes/algorithms/measure_anything/manifest.json) records
-candidate hashes, source revisions, build artifact, weights and production-port
-hashes, with references to the original review/evaluation evidence and port
-comparison. Original source-file hashes, dependency/runtime details and complete
-receipts remain in the packaged evidence rather than duplicated in the manifest.
-The original build is a native source archive, not an OCI image. Packaging does
-not establish that the port is the evaluated artifact.
-
-The original [evaluation receipts](../../depthai_nodes/algorithms/measure_anything/implementation/evaluation-evidence.json)
-retain scoring policies, run/evaluation IDs, denominators, approval observations
-and suppressed fields. The validator checks their linkage to the selected
-candidate and run, and checks the frozen evidence bytes against the selected
-checksum. Both nodes read `/configuration` from the original
+MeasureAnything is the public API family name. It does not broaden this
+implementation's evaluated object or input coverage. Both nodes load
+`/configuration` from the original
 [`scoped-settings.json`](../../depthai_nodes/algorithms/measure_anything/implementation/scoped-settings.json).
-The manifest distinguishes its complete byte hash from the candidate's canonical
-configuration hash. Settings remain private and frozen.
+Settings are frozen and have no public override API. Computation uses NumPy,
+SciPy and OpenCV, without custom native kernels or a compiler.
 
-## Integration
+The [manifest](../../depthai_nodes/algorithms/measure_anything/manifest.json)
+separates reference candidate/source hashes from production-port file hashes.
+The reference build is a source archive, not a container image. Import relocation,
+neutral scene types, lazy dependency loading and public API naming are integration
+adaptations; the port is not presented as the original evaluated artifact.
 
-MeasureAnything is the public API family name. The frozen candidate remains
-`fast_baseline_oak4_visibility_01/v002`; renaming does not broaden its evaluated
-object or input coverage. The packaged guide retains its original parcel-focused
-examples and historical benchmark node labels. Source receipts and the numerical
-comparison retain their original bytes and format identity.
+## Public evidence export
 
-The upstream factory becomes private `factory.py`; Runner imports use bundled
-neutral scene/component types and the projector. Mechanical import relocation,
-repository formatting and lazy SciPy loading preserve computation. Both nodes
-use one binding and full identity, without public selectors or parameter overrides.
-This candidate uses NumPy, SciPy and OpenCV, with no custom native kernels,
-compiler, build flags or binaries. Existing box-node behavior is unchanged.
+[`evaluation-evidence.json`](../../depthai_nodes/algorithms/measure_anything/implementation/evaluation-evidence.json)
+is a derived public export. It retains scoring parameters, metric definitions,
+run/evaluation identities, denominators, units, numerical results and suppressed
+values. Nonpublic links and review administration metadata are removed. Schema
+and metric-version labels use public names. Public policy digests are recomputed;
+reference policy digests remain alongside them. The `public_export` block records
+the original evidence checksum and these transformations.
 
-The packaged guide explains inputs, simulated processing, real validation
-examples, accuracy and performance scopes. Four relative links become
-commit-pinned upstream URLs. Documentation source/destination hashes and upstream generation/browser receipt
-references are recorded separately from computational provenance in the manifest.
-Derived dimensional errors use this candidate's predictions and already-public
-reference dimensions, cross-checked against official aggregates at absolute
-tolerance 1e-10. Reference dimensions have 0.01 mm display precision. Held-out
-median/P95 remain suppressed; reference poses and individual IoUs are unavailable.
+The visualization is also a declared public export. Its embedded `public_export`
+block records the original guide/evidence checksums. Predictions, point samples,
+example geometry, reference dimensions, accuracy cross-checks and timing samples
+are unchanged. Its links resolve to bundled settings, evidence, manifest and
+public node source. No new evaluation or hardware measurement is added by export.
 
-## Verification coverage
+The validator checks both installed export hashes, reference-to-port mapping,
+frozen settings, candidate/review/run/approval linkage and displayed metrics.
+Original artifacts and the export process are retained by the algorithm maintainers;
+users do not need access to those systems to use the package or inspect its evidence.
 
-The unchanged [source-versus-port comparison](comparison.json) covers 15 synthetic
-scenes, three standalone fits and 18 authorized cached validation scenes. All
-99 validation proposals and 19 eligible objects agree in membership, ordering,
+## Evaluation and integration coverage
+
+The [retained numerical comparison](comparison.json) covers 15 synthetic scenes,
+three standalone fits and 18 authorized decoded validation scenes. All 99
+validation proposals and 19 eligible objects agree in membership, ordering,
 decisions and selected-point order. Maximum geometry difference is zero at
-absolute tolerance 1e-9 and relative tolerance zero. Cases include repeated scenes,
-strided images, distortion, occlusion, no-fit and unknown height. These are decoded
-array comparisons; the historical cache keeps its own manifest digest and is not
-relabeled as the selected evaluated run. No fresh raw decoding, held-out input
-comparison or Workbench evaluation is established by these checks.
+absolute tolerance 1e-9 and relative tolerance zero. The cache has its own recorded
+manifest identity; it is not relabeled as the evaluated dataset release.
 
 Reference and port checks used macOS arm64, Python 3.12.2, DepthAI 3.12.0,
 NumPy 2.2.6, SciPy 1.15.3 and OpenCV-headless 4.12.0.88. Numerical dependencies
-match the frozen reference, which used Python 3.12.13. Recorded integration checks
-include focused regressions, installed-wheel validation of 22 covered files,
-both node bindings, 50 native SDK checks and a synthetic pipeline. Prior full-suite
-failures were compared against an unchanged PR head; exact results remain in the
-historical records linked below.
+match the reference, which used Python 3.12.13. Installed package integrity,
+native SDK message checks, same-host pipeline integration and the guide's offline
+interactions are verified separately from reference accuracy and throughput.
 
-The latest recorded installed-guide check covers all 663 replay intervals,
-application throughput arithmetic, 49 walkthrough stage/view combinations,
-dimension and timing chart keyboard focus, pointer selection, both accuracy
-splits and widths 390/768/1440 px. It passed offline without JavaScript errors
-or external requests. Exact artifact hashes and browser observations identify
-their original wheels; they do not verify a later rebuild.
+The public-export update reran the 15 synthetic scenes and three standalone fits
+with identical outputs. The historical 18-scene comparison was not rerun. The
+installed wheel passed 50 native SDK checks and offline guide checks covering
+keyboard focus, portable links, displayed metrics and 663 retained replay samples.
 
-## Limits and history
+Full evaluation inputs are not distributed. Synthetic integration fixtures do not
+reproduce the complete benchmark. Previously published reference dimensions have
+0.01 mm display precision. Held-out median/P95 remain suppressed; individual
+reference poses and IoUs are unavailable. Derived error plots do not add new
+reference labels or evaluation results.
+
+## Limits
 
 Guide timings distinguish three-parcel application throughput using predecoded
-images and fresh inference from the original parcel-node intervals in a replay paced at 3 FPS.
+images and fresh inference from parcel-node intervals in replay paced at 3 FPS.
 They exclude camera/file decoding and display; node intervals also exclude upstream
 inference and cloud generation. They establish neither camera-to-result latency,
-maximum throughput nor a controlled scaling law with parcel count.
+maximum throughput nor a controlled scaling law with object count.
 
 Other image grids retain a one-time warning without an equivalent accuracy claim.
-Remote/XLink serialization is unsupported. The removed synthetic demo exceeded its
-5 mm length tolerance (213.599998 mm versus 220 mm); removing it does not correct
-that algorithm/fixture limitation. Algorithm corrections return to BoxLabRunners
-for review and evaluation before another promotion.
-
-[Historical integration and guide verification records](https://github.com/luxonis/depthai-nodes/blob/bc2f080f1efd9cb88e70207fd876e34918a84596/docs/parcel-promotions/implementation.md)
-retain the earlier wheel hashes, environments, results and limitations.
-[Predecessor promotion records and receipts](https://github.com/luxonis/depthai-nodes/tree/30e30d1eaac3561adcecda4f05110edae03982c0/docs/parcel-promotions)
-retain their original candidate attribution. The predecessor's six native/visibility
-findings are resolved in the
-[upstream review-fix record](https://github.com/luxonis/BoxLabRunners/blob/d5964eee714737750787066fc24bc29744536d45/experiments/fast_baseline/v001/release-f14a597a366c46c6bdba00fa25e45bcd/2026-11-23-review-fixes/README.md).
-Those native hazards do not describe the current NumPy implementation. Rollback
-restores the complete code, settings, dependencies, assets and manifest together.
+Nested Python messages have no XLink or RemoteConnection serialization. The
+removed synthetic demo exceeded its 5 mm length tolerance (213.599998 mm versus
+220 mm); removal does not correct that algorithm/fixture limitation. Changes to
+computation or settings need review and evaluation before another integration.
+Rollback restores code, settings, dependencies, assets and manifest together.

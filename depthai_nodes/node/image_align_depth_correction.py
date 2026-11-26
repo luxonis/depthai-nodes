@@ -6,21 +6,63 @@ from depthai_nodes.utils.axial_depth import AxialDepthCorrector, AxialDepthPolic
 
 
 class ImageAlignDepthCorrection(dai.node.ThreadedHostNode):
-    """Convert aligned source axial Z before native PointCloud generation.
+    """Convert aligned source-camera axial Z into target-camera axial depth.
 
-    This Python node runs on the workstation for a host pipeline, or on the OAK-4
-    application CPU inside a standalone app. It needs no implicit camera device.
-    Both bounded blocking inputs must originate from one ImageAlign node. The
-    source input is its exact ``passthroughInput``, including rectified geometry.
-    Wrong sequence or timestamps fail visibly rather than selecting nearby frames.
+    Connect ``outputAligned`` and the exact ``passthroughInput`` from one
+    ImageAlign node. Both bounded blocking inputs must remain lossless. Sequence
+    number, host timestamp and device timestamp must match exactly. A mismatched
+    pair fails visibly. Missing inputs block until messages arrive, so keep both
+    streams lossless. Preserve unique occurrence sequence numbers when replaying.
+    ImageAlign owns the target-image match, so no third image input is needed.
 
-    ``out`` emits native RAW16 target-camera axial millimeters. ``result`` emits
-    same-runtime ``AxialDepthFrameResult`` containing that frame and its provenance.
-    Retain the associated result for reporting or explicit double-conversion checks.
-    Native frame copies and XLink do not preserve the Python provenance.
+    The aligned frame's ``ImgTransformation`` describes the actual target grid.
+    It must be an undistorted perspective grid. The source passthrough must
+    retain the depth optical frame's actual calibration and rectification;
+    a native left image cannot substitute for rectified depth metadata.
+    Branch RGB undistortion before alignment when needed, retaining separate
+    native image streams for detection. Source and target calibration references,
+    sizes, intrinsics, rigid poses and RAW16 layouts are checked per frame.
+
+    Select ``policy`` explicitly in ``build()``. Use
+    ``AxialDepthPolicy.SOURCE_AXIAL_REQUIRES_CORRECTION`` for the source-Z
+    ImageAlign behavior verified with DepthAI 3.12.0. Use
+    ``AxialDepthPolicy.TARGET_AXIAL_PASSTHROUGH`` only for a producer verified
+    to already provide target-camera Z. There is no SDK-version heuristic.
+    Recheck the producer's behavior when upgrading the SDK.
+
+    ``out`` emits an independent native RAW16 ``ImgFrame`` in target-camera
+    axial millimeters for PointCloud. ``result`` emits an ``AxialDepthFrameResult``
+    containing that frame and its provenance. Use ``result.provenance.to_dict()``
+    for reports. Geometry identity, axial conventions, correction method,
+    invalid-value/quantization rules and source association are retained.
+    The structured result stays in one Python runtime, including an OAK-4 app's
+    CPU. XLink, RemoteConnection and native frame cloning do not retain its
+    Python fields. Keep the matching result or sidecar at later correction
+    boundaries. Structured results reject double conversion; an unmarked bare
+    native frame cannot reveal its earlier conversion history.
+
+    Conversion uses float64 arithmetic and nearest-integer millimeter rounding
+    with ties to even. Depth 0 and 65535 remain invalid; nonfinite, nonpositive
+    or out-of-range conversions become zero. Input buffers remain unchanged.
+    The cloned output preserves target transformation, source metadata, timing,
+    sequence, active-plane offset, row stride and padding. PointCloud consumers
+    still need to exclude both invalid depths and nonfinite points, preserve
+    raster order when filtering, and select the intended millimeter coordinate
+    frame explicitly.
+
+    This Python node runs on the workstation in a host pipeline or on the OAK-4
+    application CPU in a standalone app. It does not require an implicit device.
+    The repository's ``examples/image_align_depth_correction`` fixture verifies
+    alignment and corrected cloud geometry on the host or OAK-4. Its synthetic
+    result does not establish live NeuralDepth accuracy or throughput.
+    For array-based correction and explicit previous provenance, use
+    ``depthai_nodes.utils.axial_depth.AxialDepthCorrector``.
 
     Example:
         With configured ImageAlign and PointCloud nodes::
+
+            from depthai_nodes.node import ImageAlignDepthCorrection
+            from depthai_nodes.utils.axial_depth import AxialDepthPolicy
 
             correction = pipeline.create(ImageAlignDepthCorrection).build(
                 align.outputAligned,
@@ -28,6 +70,7 @@ class ImageAlignDepthCorrection(dai.node.ThreadedHostNode):
                 policy=AxialDepthPolicy.SOURCE_AXIAL_REQUIRES_CORRECTION,
             )
             correction.out.link(cloud.inputDepth)
+            provenance = correction.result.createOutputQueue()
     """
 
     def __init__(self) -> None:
