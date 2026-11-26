@@ -1,2 +1,1 @@
-"""Regression fixtures adapted from the pinned reference implementation computation
-tests."""
+"""Synthetic regression fixtures for the bundled MeasureAnything implementation."""

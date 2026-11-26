@@ -1,18 +1,17 @@
-"""Test-only checked adapter from reference revision 0a2f571.
+"""Test-only result and geometry checks for the bundled computation callbacks.
 
-This preserves the upstream regression harness. It is not installed runtime code and
-does not replace tests of the public parcel node boundary.
+This helper uses the packaged component types and never selects an algorithm or loads
+settings. Public node/message behavior is tested separately.
 """
-
-from collections.abc import Callable
-from dataclasses import dataclass
 
 import numpy as np
 
+from depthai_nodes.algorithms.measure_anything.implementation.components import (
+    Components,
+)
 from depthai_nodes.algorithms.measure_anything.implementation.scene import (
     CandidateResult,
     Cuboid,
-    PlaneEstimator,
     PointCloud,
     Scene,
     Segment,
@@ -20,13 +19,6 @@ from depthai_nodes.algorithms.measure_anything.implementation.scene import (
 )
 
 MAX_RESULT_COORDINATE_MM = 10_000_000
-
-
-@dataclass(frozen=True)
-class Components:
-    find_candidates: Callable[[Scene], list[CandidateResult]]
-    measure: Callable[[PointCloud, SupportPlane], Cuboid | None]
-    estimate_plane: PlaneEstimator | None = None
 
 
 def _detection(cuboid: Cuboid, plane: SupportPlane, number: int) -> dict:
@@ -140,13 +132,3 @@ def process_scene(
         else None,
         "detections": detections,
     }
-
-
-def load_components(settings):
-    from copy import deepcopy
-    from importlib import import_module
-
-    module = import_module(
-        "depthai_nodes.algorithms.measure_anything." "implementation.factory"
-    )
-    return module, module.create_components(deepcopy(settings.get("configuration", {})))

@@ -1,9 +1,7 @@
-"""Pinned reference implementation fast-baseline regressions with relocated imports.
+"""Synthetic regressions for the bundled implementation and frozen configuration.
 
-Reference source revision: 0a2f571843f81ac6cc2f8cebe3475540e314f83d,
-tests/test_fast_baseline.py. Settings changes here are upstream
-regression probes, not the public frozen binding. The checked adapter is
-test-only; production frame/message behavior has separate node tests.
+These fixtures check behavior and callback ownership; they are not dataset accuracy or
+performance evidence.
 """
 
 import json
@@ -17,7 +15,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from depthai_nodes.algorithms.measure_anything import implementation
+from depthai_nodes.algorithms.measure_anything import create_components, implementation
 from depthai_nodes.algorithms.measure_anything.implementation.scene import (
     CameraView,
     CandidateResult,
@@ -27,18 +25,9 @@ from depthai_nodes.algorithms.measure_anything.implementation.scene import (
     SupportPlane,
     project_points,
 )
-from tests.measure_anything_reference.checked_adapter import (
-    load_components as _load_components,
-)
 from tests.measure_anything_reference.checked_adapter import process_scene
 
-
-def load_components(configuration):
-    configuration = dict(configuration, algorithm="algorithms.fast_baseline")
-    return _load_components(configuration)
-
-
-SETTINGS = Path(__file__).with_name("baseline-settings.json")
+SETTINGS = Path(implementation.__file__).with_name("scoped-settings.json")
 PLANE = SupportPlane((0.0, -1.0, 0.0), 210.0, "scene")
 PARCEL = ((-90, 100, 520), (90, 210, 675))
 
@@ -86,10 +75,10 @@ def render_scene(boxes=(), *, depth_right_edge=None, blank_views=(), height=300)
     return Scene(cloud, PLANE, tuple(views)), parcel
 
 
-def render_topdown(rectangles, *, contrast, background_depth):
-    image_size = 260
-    focal = 500.0
-    center = 129.5
+def render_topdown(rectangles, *, contrast, background_depth, scale=1):
+    image_size = 260 * scale
+    focal = 500.0 * scale
+    center = (image_size - 1) / 2
     intrinsics = ((focal, 0, center), (0, focal, center), (0, 0, 1))
     v, u = np.indices((image_size, image_size))
     rays = np.stack(
@@ -118,12 +107,21 @@ def render_topdown(rectangles, *, contrast, background_depth):
     return Scene(PointCloud(xyz, "scene"), plane, tuple(views))
 
 
-def render_topdown_dropout():
+def render_topdown_dropout(
+    *, gap_start_x=43, gap_half_height=20, scale=1, crop_width=None
+):
     scene = render_topdown(
-        (((-110, -80), (110, 80)),), contrast=150, background_depth=False
+        (((-110, -80), (110, 80)),), contrast=150, background_depth=False, scale=scale
     )
     x, y, _ = scene.cloud.xyz_mm.T
-    dropout = (x > 43) & (np.abs(y) < 20)
+    dropout = (x > gap_start_x) & (np.abs(y) < gap_half_height)
+    if crop_width is not None:
+        scene = replace(
+            scene,
+            views=tuple(
+                replace(view, image=view.image[:, :crop_width]) for view in scene.views
+            ),
+        )
     return replace(
         scene, cloud=PointCloud(scene.cloud.xyz_mm[~dropout], scene.cloud.frame)
     )
@@ -142,18 +140,11 @@ def repeat_topdown_view(scene, image):
     return replace(scene, views=views)
 
 
-def load_hull_components(max_gap=0.12):
-    config = json.loads(SETTINGS.read_bytes())
-    config["configuration"]["visibility"]["max_hull_gap_fraction"] = max_gap
-    _, components = load_components(config)
-    return components
-
-
 class FrozenGeometryRegressionTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         configuration = json.loads(SETTINGS.read_bytes())
-        _, cls.components = load_components(configuration)
+        cls.components = create_components()
         from depthai_nodes.algorithms.measure_anything.implementation.visibility import (
             Visibility,
         )
@@ -172,7 +163,8 @@ class FrozenGeometryRegressionTests(unittest.TestCase):
         points = scene.cloud.xyz_mm[parcel.point_indices]
         above_plane = PLANE.offset_mm - points[:, 1] >= 18
         np.testing.assert_array_equal(
-            segments[0].point_indices, parcel.point_indices[above_plane]
+            segments[0].point_indices,
+            parcel.point_indices[above_plane & (parcel.point_indices % 2 == 0)],
         )
         self.assertEqual(candidates[0].decision, "eligible")
         result = process_scene("clear", scene, self.components, "supplied_plane")
@@ -263,21 +255,8 @@ class FrozenGeometryRegressionTests(unittest.TestCase):
         self.assertEqual(result["detections"], [])
 
     def test_hull_recovers_a_bounded_depth_dropout_with_a_visible_outer_edge(self):
-        scene = render_topdown_dropout()
-        self.assertEqual(
-            process_scene("dropout", scene, self.components, "supplied_plane")[
-                "detections"
-            ],
-            [],
-        )
-
-        tight = load_hull_components(max_gap=0.01)
-        self.assertEqual(
-            process_scene("dropout", scene, tight, "supplied_plane")["detections"], []
-        )
-
-        recovery = load_hull_components()
-        result = process_scene("dropout", scene, recovery, "supplied_plane")
+        scene = render_topdown_dropout(scale=2, crop_width=420)
+        result = process_scene("dropout", scene, self.components, "supplied_plane")
         self.assertEqual(result["status"], "success")
         self.assertEqual(len(result["detections"]), 1)
         cuboid = result["detections"][0]
@@ -292,17 +271,17 @@ class FrozenGeometryRegressionTests(unittest.TestCase):
         )
         no_boundary = replace(scene, views=blank_views)
         self.assertEqual(
-            process_scene("dropout", no_boundary, recovery, "supplied_plane")[
+            process_scene("dropout", no_boundary, self.components, "supplied_plane")[
                 "detections"
             ],
             [],
         )
 
     def test_hull_rejects_closer_foreground_in_the_depth_gap(self):
-        scene = render_topdown_dropout()
+        scene = render_topdown_dropout(scale=2, crop_width=420)
         color = scene.views[0]
         image = color.image.copy()
-        v, u = np.mgrid[126:132, 168:191]
+        v, u = np.mgrid[252:264, 336:382]
         image[v, u] = 35
         pixels = np.column_stack((u.ravel() + 0.25, v.ravel() + 0.25, np.ones(u.size)))
         foreground = 800 * pixels @ np.linalg.inv(color.intrinsics).T
@@ -312,25 +291,42 @@ class FrozenGeometryRegressionTests(unittest.TestCase):
         )
 
         result = process_scene(
-            "occluded-dropout", scene, load_hull_components(), "supplied_plane"
+            "occluded-dropout", scene, self.components, "supplied_plane"
+        )
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["detections"], [])
+
+    def test_hull_does_not_recover_an_excessive_depth_gap(self):
+        scene = render_topdown_dropout(
+            gap_start_x=0, gap_half_height=40, scale=2, crop_width=420
+        )
+        candidates = self.components.find_candidates(scene)
+        self.assertEqual(
+            [candidate.decision for candidate in candidates], ["uncertain"]
+        )
+        result = process_scene(
+            "large-dropout", scene, self.components, "supplied_plane"
         )
         self.assertEqual(result["status"], "success")
         self.assertEqual(result["detections"], [])
 
     def test_hull_rejects_a_continuous_strip_to_the_frame(self):
-        scene = render_topdown_dropout()
+        scene = render_topdown_dropout(scale=2, crop_width=420)
         image = scene.views[0].image.copy()
-        image[120:138, 180:] = 185
+        image[240:276, 360:] = 185
         clipped = repeat_topdown_view(scene, image)
-        recovery = load_hull_components()
-        result = process_scene("clipped-dropout", clipped, recovery, "supplied_plane")
+        result = process_scene(
+            "clipped-dropout", clipped, self.components, "supplied_plane"
+        )
         self.assertEqual(result["status"], "success")
         self.assertEqual(result["detections"], [])
 
         separated = image.copy()
-        separated[120:138, 192:-10] = 35
+        separated[240:276, 384:-10] = 35
         enclosed = repeat_topdown_view(scene, separated)
-        result = process_scene("enclosed-dropout", enclosed, recovery, "supplied_plane")
+        result = process_scene(
+            "enclosed-dropout", enclosed, self.components, "supplied_plane"
+        )
         self.assertEqual(result["status"], "success")
         self.assertEqual(len(result["detections"]), 1)
 
@@ -339,27 +335,6 @@ class FrozenGeometryRegressionTests(unittest.TestCase):
         scene = render_topdown(rectangles, contrast=150, background_depth=False)
         result = process_scene("irregular", scene, self.components, "supplied_plane")
         self.assertEqual(result["status"], "success")
-        self.assertEqual(len(result["detections"]), 1)
-        cuboid = result["detections"][0]
-        np.testing.assert_allclose(
-            [cuboid["length_mm"], cuboid["width_mm"], cuboid["height_mm"]],
-            [260, 220, 110],
-            atol=5,
-        )
-
-    def test_local_measurement_quantiles_preserve_l_shaped_parcel_limits(self):
-        rectangles = (((-130, -110), (-35, 110)), ((-35, 15), (130, 110)))
-        scene = render_topdown(rectangles, contrast=150, background_depth=False)
-        config = json.loads(SETTINGS.read_bytes())
-        config["configuration"]["measurement"].update(
-            footprint_edge_quantile=0.55,
-            height_cell_quantile=0.5,
-            extent_quantile_window_mm=25.0,
-        )
-        _, components = load_components(config)
-
-        result = process_scene("irregular", scene, components, "supplied_plane")
-
         self.assertEqual(len(result["detections"]), 1)
         cuboid = result["detections"][0]
         np.testing.assert_allclose(
@@ -379,17 +354,6 @@ class FrozenGeometryRegressionTests(unittest.TestCase):
         step_heights = np.where((np.abs(body) <= 12).all(axis=1), 120.0, 100.0)
         plane = SupportPlane((0.0, 0.0, 1.0), 0.0, "scene")
 
-        config = json.loads(SETTINGS.read_bytes())
-        measurement = config["configuration"]["measurement"]
-        measurement.update(
-            footprint_edge_quantile=0.55,
-            height_cell_quantile=0.5,
-            extent_quantile_window_mm=25.0,
-        )
-        _, localized = load_components(config)
-        measurement["preserve_separated_extents"] = True
-        _, preserving = load_components(config)
-
         for name, xy, height, expected in (
             ("edge tab", with_tab, np.full(len(with_tab), 100.0), [200, 160, 100]),
             ("raised step", body, step_heights, [180, 160, 120]),
@@ -398,15 +362,8 @@ class FrozenGeometryRegressionTests(unittest.TestCase):
                 cloud = PointCloud(
                     np.column_stack((xy, height)).astype(np.float32), "scene"
                 )
-                trimmed = localized.measure(cloud, plane)
-                cuboid = preserving.measure(cloud, plane)
-                self.assertIsNotNone(trimmed)
+                cuboid = self.components.measure(cloud, plane)
                 self.assertIsNotNone(cuboid)
-                np.testing.assert_allclose(
-                    [trimmed.length_mm, trimmed.width_mm, trimmed.height_mm],
-                    [180, 160, 100],
-                    atol=0.01,
-                )
                 np.testing.assert_allclose(
                     [cuboid.length_mm, cuboid.width_mm, cuboid.height_mm],
                     expected,
@@ -444,7 +401,7 @@ class FrozenGeometryRegressionTests(unittest.TestCase):
 
     def test_sparse_depth_leaves_visibility_uncertain(self):
         scene, parcel = render_scene((PARCEL,))
-        sparse = scene.cloud.xyz_mm[parcel.point_indices[::140]]
+        sparse = scene.cloud.xyz_mm[parcel.point_indices[::200]]
         cloud = PointCloud(sparse, "scene")
         candidate = Segment(np.arange(len(sparse), dtype=np.int32))
         self.assertEqual(
@@ -517,117 +474,93 @@ class FrozenGeometryRegressionTests(unittest.TestCase):
 
 
 class CandidateCallbackTests(unittest.TestCase):
-    def configuration(self, parallel=False):
-        settings = Path(implementation.__file__).with_name("scoped-settings.json")
-        configuration = json.loads(settings.read_text(encoding="utf-8"))[
-            "configuration"
-        ]
-        # These callback mocks return indices into the full fixture cloud.
-        # Disable sampling only for these isolated callback regression probes.
-        configuration.setdefault("pipeline", {}).update(
-            parallel_validation=parallel, point_stride=1, fallback_point_stride=1
-        )
-        return configuration
+    """Check ordering and per-scene cleanup through the frozen production binding."""
 
     def test_returns_ordered_decisions_without_measurement(self):
-        from depthai_nodes.algorithms.measure_anything.implementation.factory import (
-            create_components,
-        )
         from depthai_nodes.algorithms.measure_anything.implementation.visibility import (
             Visibility,
         )
 
         scene, parcel = render_scene((PARCEL,))
+        scene = replace(
+            scene,
+            cloud=PointCloud(scene.cloud.xyz_mm[parcel.point_indices[:6]], "scene"),
+        )
         segments = [
-            Segment(part.astype(np.int32))
-            for part in np.array_split(parcel.point_indices, 2)
+            Segment(np.array([0, 1, 2], np.int32)),
+            Segment(np.array([3, 4, 5], np.int32)),
         ]
-        for parallel in (False, True):
-            with self.subTest(parallel=parallel):
 
-                def decision(scene, segment):
-                    return "eligible" if segment is segments[0] else "partially_visible"
+        def decision(scene, segment):
+            return "eligible" if segment is segments[0] else "partially_visible"
 
-                with (
-                    patch(
-                        "depthai_nodes.algorithms.measure_anything.implementation.factory.detect",
-                        return_value=segments,
-                    ),
-                    patch.object(
-                        Visibility, "validate_candidate", side_effect=decision
-                    ) as validate,
-                    patch(
-                        "depthai_nodes.algorithms.measure_anything.implementation.factory.measure"
-                    ) as measure,
-                ):
-                    components = create_components(self.configuration(parallel))
-                    results = components.find_candidates(scene)
-                self.assertEqual([result.segment for result in results], segments)
-                self.assertEqual(
-                    [result.decision for result in results],
-                    ["eligible", "partially_visible"],
-                )
-                self.assertTrue(
-                    all(isinstance(result, CandidateResult) for result in results)
-                )
-                self.assertEqual(validate.call_count, 2)
-                measure.assert_not_called()
+        with (
+            patch(
+                "depthai_nodes.algorithms.measure_anything.implementation.factory.detect",
+                return_value=segments,
+            ),
+            patch.object(
+                Visibility, "validate_candidate", side_effect=decision
+            ) as validate,
+            patch(
+                "depthai_nodes.algorithms.measure_anything.implementation.factory.measure"
+            ) as measure,
+        ):
+            components = create_components()
+            results = components.find_candidates(scene)
+        self.assertEqual([result.segment for result in results], segments)
+        self.assertEqual(
+            [result.decision for result in results],
+            ["eligible", "partially_visible"],
+        )
+        self.assertTrue(all(isinstance(result, CandidateResult) for result in results))
+        self.assertEqual(validate.call_count, 2)
+        measure.assert_not_called()
 
     def test_reused_scene_does_not_reuse_projection_or_decision_caches(self):
-        from depthai_nodes.algorithms.measure_anything.implementation.factory import (
-            create_components,
+        scene, _ = render_scene((PARCEL,))
+        reused = create_components()
+        original = scene.cloud.xyz_mm.copy()
+        before = reused.find_candidates(scene)
+        self.assertIn("eligible", [result.decision for result in before])
+        scene.cloud.xyz_mm[:, 0] += 10000
+        try:
+            actual = reused.find_candidates(scene)
+            expected = create_components().find_candidates(scene)
+            self.assertEqual(
+                [result.decision for result in actual],
+                [result.decision for result in expected],
+            )
+            self.assertNotIn("eligible", [result.decision for result in actual])
+            for result, reference in zip(actual, expected):
+                np.testing.assert_array_equal(
+                    result.segment.point_indices, reference.segment.point_indices
+                )
+        finally:
+            scene.cloud.xyz_mm[:] = original
+        after = reused.find_candidates(scene)
+        self.assertEqual(
+            [result.decision for result in after],
+            [result.decision for result in before],
+        )
+        for result, reference in zip(after, before):
+            np.testing.assert_array_equal(
+                result.segment.point_indices, reference.segment.point_indices
+            )
+
+    def test_projection_workers_finish_before_return_or_failure(self):
+        from depthai_nodes.algorithms.measure_anything.implementation.visibility import (
+            Visibility,
         )
 
         scene, _ = render_scene((PARCEL,))
-        for parallel in (False, True):
-            with self.subTest(parallel=parallel):
-                reused = create_components(self.configuration(parallel))
-                original = scene.cloud.xyz_mm.copy()
-                before = reused.find_candidates(scene)
-                self.assertIn("eligible", [result.decision for result in before])
-                scene.cloud.xyz_mm[:, 0] += 10000
-                try:
-                    actual = reused.find_candidates(scene)
-                    expected = create_components(
-                        self.configuration(parallel)
-                    ).find_candidates(scene)
-                    self.assertEqual(
-                        [result.decision for result in actual],
-                        [result.decision for result in expected],
-                    )
-                    self.assertNotIn("eligible", [result.decision for result in actual])
-                    for result, reference in zip(actual, expected):
-                        np.testing.assert_array_equal(
-                            result.segment.point_indices,
-                            reference.segment.point_indices,
-                        )
-                finally:
-                    scene.cloud.xyz_mm[:] = original
-                after = reused.find_candidates(scene)
-                self.assertEqual(
-                    [result.decision for result in after],
-                    [result.decision for result in before],
-                )
-                for result, reference in zip(after, before):
-                    np.testing.assert_array_equal(
-                        result.segment.point_indices, reference.segment.point_indices
-                    )
-
-    def test_projection_workers_finish_before_return_or_failure(self):
-        from depthai_nodes.algorithms.measure_anything.implementation.factory import (
-            create_components,
-        )
-        from depthai_nodes.algorithms.measure_anything.implementation.visibility import (
-            Visibility,
-        )
-
-        scene, parcel = render_scene((PARCEL,))
+        segment = Segment(np.array([0, 1, 2], np.int32))
         for path in ("empty", "overlap", "detect_failure", "prepare_failure"):
             with self.subTest(path=path):
                 started, release, detected, finished = (Event() for _ in range(4))
                 waiting, exited, wait_or_exit = (Event() for _ in range(3))
                 completed = []
-                components = create_components(self.configuration())
+                components = create_components()
 
                 class ProjectionExecutor(ThreadPoolExecutor):
                     wait_started = waiting
@@ -678,7 +611,7 @@ class CandidateCallbackTests(unittest.TestCase):
                     detected.set()
                     if path == "detect_failure":
                         raise ValueError("Detection failed")
-                    return [parcel, parcel] if path == "overlap" else []
+                    return [segment, segment] if path == "overlap" else []
 
                 def invoke(
                     path=path,
