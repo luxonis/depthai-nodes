@@ -62,35 +62,15 @@ pydoctor depthai_nodes
 
 Review `apidocs/index.html`. CI runs the same build with warnings treated as errors.
 
+## MeasureAnything integration
+
+Node APIs, message conversion and packaging are maintained here. Algorithm
+development, evaluation and promotion are handled by the algorithm maintainers.
+Changes to bundled files must update matching hashes in the manifest. See the
+[implementation record](docs/measure-anything/implementation.md) for the selected
+algorithm and evaluation coverage.
+
 ## Testing
-
-### MeasureAnything integration
-
-Both nodes bind one reviewed, frozen algorithm and configuration in
-`depthai_nodes/algorithms/measure_anything/implementation/`. Algorithm maintainers
-supply evaluated releases; this repository owns public APIs, message conversion,
-packaging and integration. Changes to computation or settings require new review
-and evaluation before integration. Previous releases remain recoverable through
-Git history and retained artifacts.
-
-Each integration update must include the selected identity, original code/settings/
-dependency hashes, public evaluation evidence, source-versus-port comparison and
-updated port file hashes. Keep reference evaluation results separate from checks
-of the shipped port. Public evidence exports must identify their original artifact
-checksums and any metadata redactions, preserve numerical results and suppression,
-and state which evaluation inputs are unavailable. Public files and links must
-not depend on nonpublic infrastructure.
-
-Document node contracts in class docstrings. Ship the algorithm's interactive
-`visualization.html` with portable links to public or bundled evidence/settings.
-Update the manifest and its selected export checksum together. Run algorithm,
-message, node and packaging checks; validate a clean installed wheel outside the
-checkout. Return algorithm findings to the algorithm maintainers rather than
-changing the frozen implementation during integration.
-
-Install `pip install -e ".[dev,box-measurement,measure-anything]"` for these checks.
-The [implementation record](docs/measure-anything/implementation.md) describes the
-selected release and actual verification coverage.
 
 Add or update tests for changed behavior. The repository has three test suites:
 
@@ -109,6 +89,8 @@ pytest tests/unittests
 ```
 
 Install the extra with `pip install -e ".[dev,box-measurement]"` to run all box measurement tests. Without open3d, the tests in modules that call `pytest.importorskip("open3d")` are skipped. The message, box detector, and missing-open3d import tests still run.
+
+For MeasureAnything tests, install `pip install -e ".[dev,measure-anything]"`.
 
 ### Integration tests
 
