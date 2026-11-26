@@ -199,9 +199,7 @@ class ApplyDepthColormap(BaseHostNode):
     ) -> dai.ImgFrame:
         frame = dai.ImgFrame()
         frame.setCvFrame(color_map, self._img_frame_type)
-        frame.setTimestamp(src_frame.getTimestamp())
-        frame.setSequenceNum(src_frame.getSequenceNum())
-        frame.setTimestampDevice(src_frame.getTimestampDevice())
+        frame.setBufferMetadataFrom(src_frame)
 
         t = src_frame.getTransformation()
         if t is not None:

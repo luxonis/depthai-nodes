@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import depthai as dai
 
@@ -10,6 +10,7 @@ def create_reference() -> dai.Buffer:
     reference.setSequenceNum(42)
     reference.setTimestamp(timedelta(seconds=5))
     reference.setTimestampDevice(timedelta(seconds=7))
+    reference.setTimestampSystem(datetime(2026, 1, 2))
     return reference
 
 
@@ -43,3 +44,4 @@ def test_gathered_data_copies_metadata_from_reference():
     assert gathered_data.getSequenceNum() == reference.getSequenceNum()
     assert gathered_data.getTimestamp() == reference.getTimestamp()
     assert gathered_data.getTimestampDevice() == reference.getTimestampDevice()
+    assert gathered_data.getTimestampSystem() == reference.getTimestampSystem()

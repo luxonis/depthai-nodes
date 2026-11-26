@@ -1,4 +1,5 @@
 import time
+from datetime import datetime, timedelta
 
 import depthai as dai
 import numpy as np
@@ -47,6 +48,11 @@ def test_processing(
     duration: float,
 ):
     img_frame1: dai.ImgFrame = create_img_frame(FRAME1)
+    img_frame1.setTimestamp(timedelta(seconds=2))
+    img_frame1.setTimestampDevice(timedelta(seconds=12))
+    img_frame1.setTimestampSystem(datetime(2026, 1, 2))
+    img_frame1.setSequenceNum(9)
+    img_frame1.setTransformation(dai.ImgTransformation(WIDTH, HEIGHT))
     img_frame2: dai.ImgFrame = create_img_frame(FRAME2)
     img_frame3: dai.ImgFrame = create_img_frame(FRAME3)
 
@@ -77,6 +83,11 @@ def test_processing(
         overlay = q_overlayer.get()
 
         assert isinstance(overlay, dai.ImgFrame)
+        assert overlay.getTimestamp() == img_frame1.getTimestamp()
+        assert overlay.getTimestampDevice() == img_frame1.getTimestampDevice()
+        assert overlay.getTimestampSystem() == img_frame1.getTimestampSystem()
+        assert overlay.getSequenceNum() == img_frame1.getSequenceNum()
+        assert overlay.getTransformation().getSize() == (WIDTH, HEIGHT)
         assert np.array_equal(
             overlay.getCvFrame(),
             np.round(FRAME1 * ALPHA + FRAME2 * (1 - ALPHA)).astype(np.uint8),

@@ -302,6 +302,23 @@ class AnnotationHelper:
         annotations_msg.setSequenceNum(sequence_num)
         return annotations_msg
 
+    def build_from(self, source: dai.Buffer) -> dai.ImgAnnotations:
+        """Create annotations with the source message's metadata and image geometry.
+
+        Args:
+            source: Message whose metadata and optional transformation to preserve.
+
+        Returns:
+            Created ImgAnnotations message.
+        """
+        annotations_msg = self.build(source.getTimestamp(), source.getSequenceNum())
+        annotations_msg.setBufferMetadataFrom(source)
+        if hasattr(source, "getTransformation"):
+            transformation = source.getTransformation()
+            if transformation is not None:
+                annotations_msg.setTransformation(transformation)
+        return annotations_msg
+
     def _create_point(self, point: Point) -> dai.Point2f:
         return dai.Point2f(point[0], point[1], True)
 

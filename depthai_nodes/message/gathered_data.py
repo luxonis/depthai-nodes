@@ -21,7 +21,7 @@ class GatheredData(Collection[TGathered], Generic[TReference, TGathered]):
         """Initialize gathered items and copy metadata from the reference message.
 
         Args:
-            reference_data: Reference whose timestamps and sequence number are copied.
+            reference_data: Reference whose buffer metadata is copied.
             items: Messages gathered for this reference, all of the same runtime type.
         """
         super().__init__(items=items)
@@ -43,7 +43,5 @@ class GatheredData(Collection[TGathered], Generic[TReference, TGathered]):
         Args:
             value: Reference data.
         """
-        self.setSequenceNum(value.getSequenceNum())
-        self.setTimestamp(value.getTimestamp())
-        self.setTimestampDevice(value.getTimestampDevice())
+        self.setBufferMetadataFrom(value)
         self._reference_data = value

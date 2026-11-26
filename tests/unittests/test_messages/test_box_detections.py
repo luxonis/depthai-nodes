@@ -1,5 +1,5 @@
 import dataclasses
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import depthai as dai
 import numpy as np
@@ -229,10 +229,12 @@ def test_annotations_carry_source_metadata():
     detections = create_box_detections([create_box_detection()])
     detections.setTimestamp(timedelta(seconds=2))
     detections.setTimestampDevice(timedelta(seconds=12))
+    detections.setTimestampSystem(datetime(2026, 1, 2))
     detections.setSequenceNum(9)
 
     message = detections.getVisualizationMessage()
 
     assert message.getTimestamp() == timedelta(seconds=2)
     assert message.getTimestampDevice() == timedelta(seconds=12)
+    assert message.getTimestampSystem() == detections.getTimestampSystem()
     assert message.getSequenceNum() == 9
