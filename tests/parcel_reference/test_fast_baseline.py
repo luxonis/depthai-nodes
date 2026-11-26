@@ -17,6 +17,7 @@ from unittest.mock import patch
 
 import numpy as np
 
+from depthai_nodes.algorithms.parcel import implementation
 from depthai_nodes.algorithms.parcel.implementation.scene import (
     CameraView,
     CandidateResult,
@@ -515,8 +516,10 @@ class FrozenGeometryRegressionTests(unittest.TestCase):
 
 class CandidateCallbackTests(unittest.TestCase):
     def configuration(self, parallel=False):
-        settings = Path(__file__).with_name("frozen-settings.json")
-        configuration = json.loads(settings.read_text())["configuration"]
+        settings = Path(implementation.__file__).with_name("scoped-settings.json")
+        configuration = json.loads(settings.read_text(encoding="utf-8"))[
+            "configuration"
+        ]
         # These callback mocks return indices into the full fixture cloud.
         # Disable sampling only for these isolated callback regression probes.
         configuration.setdefault("pipeline", {}).update(
