@@ -60,6 +60,11 @@ Install the dependencies for `MeasureAnythingDetector` and `MeasureAnythingDimen
 pip install "depthai-nodes[measure-anything]"
 ```
 
+See the [interactive algorithm guide](depthai_nodes/algorithms/measure_anything/implementation/visualization.html)
+for processing steps, accuracy and performance, and the
+[implementation record](docs/measure-anything/implementation.md) for provenance
+and verification coverage.
+
 For RGB-aligned depth, use the shared
 [axial-depth correction](docs/axial-depth-correction.md) before PointCloud.
 The [deterministic pipeline example](examples/image_align_depth_correction)
@@ -116,5 +121,3 @@ session = onnx_qnn_session("model.onnx")
 ## 🤝 Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup, parser guidelines, and testing instructions. Feedback and bug reports are welcome in [GitHub issues](https://github.com/luxonis/depthai-nodes/issues).
-
-The MeasureAnything nodes bundle `fast_baseline_oak4_visibility_01/v002` (`algorithm-5e4abc3a09b54148950317cdeac60ba2`). See the [bundled implementation record](docs/measure-anything/implementation.md) and [packaged visualization](depthai_nodes/algorithms/measure_anything/implementation/visualization.html).
