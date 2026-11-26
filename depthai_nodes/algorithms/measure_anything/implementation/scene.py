@@ -17,12 +17,34 @@ InputMode = Literal["supplied_plane", "estimated_plane"]
 
 @dataclass(frozen=True)
 class PointCloud:
+    """XYZ samples in one metric scene coordinate frame.
+
+    The container retains the supplied array without copying or validating it.
+    Computation expects finite float32 points and treats the array as read-only.
+
+    Attributes:
+        xyz_mm: An ``(N, 3)`` array in millimeters. Row order defines segment indices.
+        frame: Coordinate-frame identifier shared with the support plane.
+    """
+
     xyz_mm: NDArray[np.float32]
     frame: str
 
 
 @dataclass(frozen=True)
 class SupportPlane:
+    """A unit-normal plane defining zero height in the scene frame.
+
+    Signed height in millimeters is ``xyz_mm @ normal + offset_mm``. The normal
+    points upward from the support surface. The message adapter establishes this
+    orientation before constructing the computation scene.
+
+    Attributes:
+        normal: Unit normal expressed in the scene coordinate frame.
+        offset_mm: Constant term in the plane equation, in millimeters.
+        frame: Coordinate-frame identifier shared with the point cloud.
+    """
+
     normal: Vec3
     offset_mm: float
     frame: str
@@ -30,6 +52,20 @@ class SupportPlane:
 
 @dataclass(frozen=True)
 class CameraView:
+    """One delivered image and its calibrated scene-to-camera projection.
+
+    Calibration describes the image's actual pixel grid, including any crop,
+    scale or rectification. Transform translations use millimeters.
+
+    Attributes:
+        role: The color, left or right view identifier.
+        image: Read-only uint8 RGB ``(H, W, 3)`` or mono ``(H, W)`` pixels.
+        intrinsics: Camera intrinsic matrix for the delivered image coordinates.
+        distortion_model: Perspective, fisheye or undistorted projection model.
+        distortion_coefficients: Coefficients for the selected distortion model.
+        scene_to_camera_mm: Homogeneous transform from scene XYZ to camera XYZ.
+    """
+
     role: CameraRole
     image: NDArray[np.uint8]
     intrinsics: Matrix3
@@ -40,6 +76,18 @@ class CameraView:
 
 @dataclass(frozen=True)
 class Scene:
+    """Point cloud, support plane and calibrated images for one capture interval.
+
+    The cloud and plane share a coordinate frame. Each view maps that frame to
+    its camera coordinates. Scene arrays remain unchanged during detection,
+    visibility checks and measurement.
+
+    Attributes:
+        cloud: Source XYZ samples whose row ordering defines all segments.
+        plane: Upward support plane used for foreground heights and cuboid placement.
+        views: Retained calibrated color and mono views for visibility checks.
+    """
+
     cloud: PointCloud
     plane: SupportPlane
     views: tuple[CameraView, ...]
@@ -47,17 +95,46 @@ class Scene:
 
 @dataclass(frozen=True)
 class Segment:
+    """Rows of a scene cloud belonging to one proposed object.
+
+    Attributes:
+        point_indices: Unique int32 indices into the scene cloud. Their order is
+            retained when object points are extracted.
+    """
+
     point_indices: NDArray[np.int32]
 
 
 @dataclass(frozen=True)
 class CandidateResult:
+    """A proposed segment and its measurement-eligibility decision.
+
+    Attributes:
+        segment: Source-cloud rows retained for this proposal.
+        decision: Eligibility outcome. Only eligible segments enter measurement.
+    """
+
     segment: Segment
     decision: CandidateDecision
 
 
 @dataclass(frozen=True)
 class Cuboid:
+    """An oriented footprint and optional height relative to a support plane.
+
+    The base center lies on the plane. The length axis is unit length and tangent
+    to the plane. The width axis is the plane normal crossed with the length
+    axis. Length is at least width. This container retains geometry without
+    validating it; the message adapter checks the emitted result.
+
+    Attributes:
+        base_center_mm: Footprint center in the scene frame, in millimeters.
+        length_axis: Unit vector along the longer footprint side.
+        length_mm: Longer footprint extent in millimeters.
+        width_mm: Shorter footprint extent in millimeters.
+        height_mm: Supported height above the plane, or ``None`` if unavailable.
+    """
+
     base_center_mm: Vec3
     length_axis: Vec3
     length_mm: float
@@ -74,10 +151,24 @@ class SceneError(ValueError):
 
 
 def project_points(xyz_mm: NDArray, view: CameraView) -> NDArray[np.float64]:
-    """Return (u, v, camera Z in mm) in input order, with NaN rows for invalid
-    projections.
+    """Project scene XYZ into a calibrated image while preserving point order.
 
-    Finite points outside the image remain available for the caller to clip.
+    The view's transform and lens model produce image coordinates without
+    clipping, resizing or rectifying the image. Points with nonpositive camera Z
+    or nonfinite projections produce NaN rows. Finite pixels outside the image
+    remain available for the caller to clip.
+
+    Args:
+        xyz_mm: An ``(N, 3)`` array of scene coordinates in millimeters.
+        view: Image-grid calibration and scene-to-camera transform.
+
+    Returns:
+        A float64 ``(N, 3)`` array containing pixel u, pixel v and camera Z in
+        millimeters for each input row.
+
+    Raises:
+        SceneError: If XYZ has the wrong shape or the lens model and coefficient
+            count are unsupported.
     """
     import cv2
 

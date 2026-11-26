@@ -1,3 +1,5 @@
+"""Calibrated image and depth evidence for measurement eligibility."""
+
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Literal
@@ -57,6 +59,39 @@ class _ViewGrids:
 
 @dataclass(frozen=True)
 class Visibility:
+    """Classify proposal visibility across calibrated images with a per-scene cache.
+
+    One clear retained view makes a candidate eligible. Candidates blocked in
+    every view are partially visible. Insufficient or conflicting evidence is
+    uncertain. Pixel thresholds apply to the delivered image grids, and depth
+    thresholds use millimeters. The factory supplies these frozen settings.
+
+    The cache belongs to one component instance. Scenes must not be processed
+    concurrently on that instance. Input arrays remain unchanged until all
+    projection and validation work for a scene has completed.
+
+    Attributes:
+        frame_margin_px: Required image margin around a projected silhouette.
+        frame_continuation_px: Maximum edge-to-frame distance checked for continuation.
+        boundary_band_px: Maximum pixel offset for probes around a silhouette edge.
+        boundary_contrast_window_px: Image window size for local contrast evidence.
+        boundary_exterior_px: Exterior image-window width for boundary evidence.
+        boundary_contrast_intensity: Minimum image-intensity contrast at an edge.
+        boundary_depth_gap_mm: Minimum depth difference supporting a boundary.
+        min_edge_support_fraction: Required supported fraction of each silhouette edge.
+        depth_cell_px: Pixel side length of a nearest-depth grid cell.
+        silhouette_close_radius_cells: Morphological closing radius in grid cells.
+        silhouette_simplify_px: Pixel tolerance for polygon approximation.
+        min_depth_coverage_fraction: Required observed coverage of the silhouette.
+        occlusion_depth_mm: Nearer-foreground gap used to identify occlusion.
+        occlusion_min_height_mm: Foreground height for occlusion evidence.
+        min_occlusion_cells: Minimum connected nearer-foreground area in grid cells.
+        max_hull_gap_fraction: Maximum fraction of convex-hull area missing from the
+            observed silhouette. Zero disables recovery.
+        projection_stride: Row stride for shared scene projection.
+        boundary_probe_stride: Stride factor reducing the number of edge samples.
+    """
+
     frame_margin_px: int
     frame_continuation_px: int
     boundary_band_px: int
@@ -88,6 +123,14 @@ class Visibility:
     def begin(
         self, scene, foreground_min_height_mm, pool: ThreadPoolExecutor, *, heights=None
     ):
+        """Reset scene state and schedule shared projections on the caller's pool.
+
+        Args:
+            scene: Scene whose arrays remain stable until scheduled work completes.
+            foreground_min_height_mm: Detection's lower foreground height threshold.
+            pool: Executor retained by the caller until all submitted work finishes.
+            heights: Optional signed heights aligned with the scene cloud rows.
+        """
         self._cache.clear()
         minimum = min(foreground_min_height_mm, self.occlusion_min_height_mm)
         active = (
@@ -126,6 +169,19 @@ class Visibility:
         )
 
     def prepare(self, scene: Scene, segments: list[Segment], *, pool=None) -> None:
+        """Prepare shared depth grids for one scene's nonoverlapping proposals.
+
+        Matching projections from ``begin`` are reused, and per-view grid work
+        completes before cached validation starts. Overlapping segments disable
+        the shared cache, so validation uses independent projections instead.
+        The caller remains responsible for completing work scheduled by ``begin``.
+
+        Args:
+            scene: Scene associated with the supplied segments.
+            segments: Proposed source-cloud row sets in candidate order.
+            pool: Optional caller-owned executor. An omitted pool creates an executor
+                scoped to this preparation call.
+        """
         labels = np.zeros(len(scene.cloud.xyz_mm), dtype=np.int32)
         for label, segment in enumerate(segments, 1):
             if np.any(labels[segment.point_indices]):
@@ -218,6 +274,20 @@ class Visibility:
         )
 
     def validate_candidate(self, scene: Scene, candidate: Segment) -> CandidateDecision:
+        """Return measurement eligibility from all retained calibrated views.
+
+        Prepared grids are reused only for the same scene object and an exactly
+        matching segment. Other candidates are projected independently. This call
+        checks clipping, observed depth coverage, occlusion and edge support.
+
+        Args:
+            scene: Scene supplying the cloud, plane and calibrated view pixels.
+            candidate: Source-cloud indices of one proposed object.
+
+        Returns:
+            ``eligible`` if any view is clear, ``partially_visible`` if every view
+            is blocked, or ``uncertain`` otherwise, including scenes with no views.
+        """
         cache = self._cache
         if cache.get("scene") is scene and len(candidate.point_indices):
             label = int(cache["labels"][candidate.point_indices[0]])

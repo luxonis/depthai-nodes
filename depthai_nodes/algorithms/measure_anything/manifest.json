@@ -11,13 +11,13 @@
       "depthai_nodes/algorithms/measure_anything/implementation/__init__.py": "f5b46b349e65c786c81f287e5c042901c7cba570b3c33118c19dc106fa429870",
       "depthai_nodes/algorithms/measure_anything/implementation/components.py": "ff22b1a92402e6cd1aa79a049fea88051381128bf1dac59ccac3322b1048cc91",
       "depthai_nodes/algorithms/measure_anything/implementation/evaluation-evidence.json": "e340730a3045a515cc8efb6bdc70b6cfa8540c6e1d07e1ea8b59f13cce6207fe",
-      "depthai_nodes/algorithms/measure_anything/implementation/factory.py": "52d9dd277d6d58782643961e29db34337f0a0fd7a599c4f2ac2f008f2bdb5b6e",
-      "depthai_nodes/algorithms/measure_anything/implementation/geometry.py": "fc8f513b8aedd6783b2f3645636c1234f31ac555e94b13547b4ed526a3f8f724",
+      "depthai_nodes/algorithms/measure_anything/implementation/factory.py": "f7fd8fcf645bab3a734357ba652eff8d7314902dac4dca2607e8ac3713afb859",
+      "depthai_nodes/algorithms/measure_anything/implementation/geometry.py": "141e47371b4d07b2ae57582e93a6a7ca6335f05939e395c09f355589dcd4533f",
       "depthai_nodes/algorithms/measure_anything/implementation/numpy_ops.py": "e5ce2721f806f7f3ad5533c3f8ff8a8644aa35b5934805c8f833baa366cb5df4",
       "depthai_nodes/algorithms/measure_anything/implementation/reference-requirements.txt": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
-      "depthai_nodes/algorithms/measure_anything/implementation/scene.py": "fd36bf5375f7262c3d562f0541afe8dee5f1f4470c79b27a1b52778b9b1a0c6f",
+      "depthai_nodes/algorithms/measure_anything/implementation/scene.py": "c0255f54039e08a1fbe3099d879c4f287a96360544f7a1b1deff91cc0518a0ab",
       "depthai_nodes/algorithms/measure_anything/implementation/scoped-settings.json": "66f029694119c77ddad557bd58257b8743e7f284441d94a317b08fffc5496f10",
-      "depthai_nodes/algorithms/measure_anything/implementation/visibility.py": "1b1bbc5a28441dadd8c68a6031531d6330f99a32af3baeb7c709cf6240a48f30",
+      "depthai_nodes/algorithms/measure_anything/implementation/visibility.py": "d042314beab94946a839e4ec6eb9ca41752f09f42a3ce8d285676d286297fdd3",
       "depthai_nodes/algorithms/measure_anything/implementation/visualization.html": "d25983f1160f95e3ad770647f681f71543f86b460e885d5a03ed2219fc4df498",
       "depthai_nodes/algorithms/measure_anything/manifest.py": "84da6fc763a8265d1c7aae15418977c80de9bf743d2d73628a5e4bd9ddf76547",
       "depthai_nodes/message/measure_anything.py": "293bab0b45df214692f3c4dcc257c9e067b11a24031ef72e96dfdc12448a33c2",
@@ -73,7 +73,8 @@
       "No custom native kernel assets apply to this candidate.",
       "Runtime packaging pins OpenCV-headless 4.10.0.84; reference evaluation and retained port comparisons used 4.12.0.88. Repository CI exercises the runtime, but full reference parity and algorithm accuracy/performance on this dependency override have not been established.",
       "Publish explicitly derived evidence and visualization exports, retaining original checksums and numerical results.",
-      "Load the frozen configuration directly from the original scoped-settings.json configuration object instead of shipping a separately serialized configuration.json. Original settings bytes, canonical configuration hash, candidate identity, and factory input are unchanged."
+      "Load the frozen configuration directly from the original scoped-settings.json configuration object instead of shipping a separately serialized configuration.json. Original settings bytes, canonical configuration hash, candidate identity, and factory input are unchanged.",
+      "Document internal computation contracts without changing executable logic or frozen settings."
     ]
   },
   "visualization": {

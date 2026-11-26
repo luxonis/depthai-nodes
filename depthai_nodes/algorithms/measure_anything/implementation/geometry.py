@@ -1,3 +1,5 @@
+"""Foreground segmentation and support-plane cuboid fitting in millimeters."""
+
 from math import ceil
 
 import cv2
@@ -122,6 +124,30 @@ def detect(
     cluster_min_voxels: int,
     cluster_min_points: int,
 ) -> list[Segment]:
+    """Propose connected foreground segments in source point order.
+
+    Height filtering selects points above the support plane. Voxel centroids
+    define connected components, and both voxel-count and point-count limits
+    determine which components survive. Visibility is checked by the enclosing
+    candidate callback after this proposal stage.
+
+    Args:
+        scene: Source XYZ and upward support plane in a common metric frame.
+        heights: Optional precomputed signed heights aligned with the cloud rows.
+        foreground_min_height_mm: Inclusive lower foreground height in millimeters.
+        foreground_max_height_mm: Inclusive upper foreground height in millimeters.
+        voxel_size_mm: Voxel side length for connectivity centroids.
+        cluster_radius_mm: Maximum centroid separation for a connectivity edge.
+        cluster_min_voxels: Minimum number of voxels in an accepted component.
+        cluster_min_points: Minimum number of source points in an accepted component.
+
+    Returns:
+        Segments in connected-component order. Each segment contains int32 cloud
+        indices in source-row order. No accepted components produces an empty list.
+
+    Raises:
+        ValueError: If the cloud is too large for int32 segment indices.
+    """
     xyz = scene.cloud.xyz_mm
     if len(xyz) > np.iinfo(np.int32).max + 1:
         raise ValueError("Cloud has too many rows for int32 segment indices")
@@ -301,6 +327,46 @@ def measure(
     extent_quantile_window_mm: float | None = None,
     preserve_separated_extents: bool = False,
 ) -> Cuboid | None:
+    """Fit supported footprint bounds and height for one eligible object's points.
+
+    Local voxel support removes isolated returns before fitting a rectangle in
+    the plane's tangent coordinates. Supported edge extrema refine the footprint.
+    Independent per-cell maxima determine the height. Points and plane must share
+    a coordinate frame, with a unit upward plane normal and millimeter units.
+
+    These arguments are bound internally from the selected frozen configuration.
+
+    Args:
+        parcel: Finite XYZ samples belonging to one eligible object.
+        plane: Support plane for footprint placement and signed heights.
+        outlier_voxel_size_mm: Voxel side length, also used for edge and height cells.
+        outlier_radius_mm: Search radius for neighboring support voxels.
+        outlier_min_neighbor_voxels: Required neighboring voxels, excluding the voxel
+            itself.
+        footprint_edge_band_mm: Band width for mutually supported edge extrema.
+        min_footprint_edge_cells: Required cross-strip extrema supporting an edge.
+        min_footprint_side_mm: Minimum accepted extent for either footprint side.
+        min_height_mm: Minimum height included in roof-support cells.
+        height_support_band_mm: Band width for mutually supported cell maxima.
+        min_height_support_voxels: Required cell maxima supporting a height.
+        footprint_edge_quantile: Optional quantile for supported footprint extrema.
+        height_cell_quantile: Optional quantile for supported height maxima.
+        orientation_tail_fraction: Fraction of voxel-centroid tails ignored when
+            refining orientation. Zero retains the initial rectangle orientation.
+        extent_quantile_window_mm: Optional window below the highest supported
+            extreme within which quantiles are evaluated.
+        preserve_separated_extents: Preserve a separated group containing the
+            highest supported extreme during quantile selection.
+
+    Returns:
+        A cuboid with its base center on the plane and length at least width.
+        ``height_mm=None`` denotes a usable footprint without supported height.
+        Returns ``None`` when too few supported points remain or the footprint is
+        smaller than the configured minimum side length.
+
+    Raises:
+        ValueError: If the orientation tail fraction or extent window is invalid.
+    """
     if not 0 <= orientation_tail_fraction < 0.5:
         raise ValueError("Orientation tail fraction must be in [0, 0.5)")
     if extent_quantile_window_mm is not None and not extent_quantile_window_mm > 0:

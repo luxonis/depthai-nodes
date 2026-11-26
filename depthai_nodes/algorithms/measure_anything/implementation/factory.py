@@ -13,6 +13,30 @@ from .visibility import Visibility
 
 
 def create_components(configuration: dict) -> Components:
+    """Bind detection, visibility and measurement to one internal configuration.
+
+    The outer zero-argument package entry point supplies the bundled frozen
+    configuration. Each component instance retains one visibility cache. Scene
+    calls on that instance must complete before another scene starts. Projection and validation
+    workers finish before ``find_candidates`` returns or propagates a failure.
+
+    Detection samples scene rows according to the frozen pipeline settings and
+    maps returned segment indices back to the original cloud. Measurement uses
+    the same configuration on each eligible object's retained original points.
+
+    Args:
+        configuration: Internal detection, measurement, visibility and pipeline
+            settings loaded from the selected frozen configuration.
+
+    Returns:
+        Callbacks for ordered candidate decisions and per-object cuboid fitting.
+
+    Raises:
+        KeyError: If a required configuration section is absent.
+        TypeError: If detection, measurement or visibility arguments do not match
+            their computation signatures.
+        ValueError: If pipeline sampling or worker settings are invalid.
+    """
     detection = configuration["detection"]
     measurement = configuration["measurement"]
     visibility = Visibility(**configuration["visibility"])
