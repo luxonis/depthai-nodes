@@ -71,6 +71,7 @@
       "Relocate computation imports; keep the private lazy entry point and neutral scene types.",
       "Keep existing public nodes, message conversion, profile warnings, and ownership semantics.",
       "No custom native kernel assets apply to this candidate.",
+      "Runtime packaging pins OpenCV-headless 4.10.0.84; reference evaluation and retained port checks used 4.12.0.88. This dependency override has not been tested or numerically verified.",
       "Publish explicitly derived evidence and visualization exports, retaining original checksums and numerical results.",
       "Load the frozen configuration directly from the original scoped-settings.json configuration object instead of shipping a separately serialized configuration.json. Original settings bytes, canonical configuration hash, candidate identity, and factory input are unchanged."
     ]

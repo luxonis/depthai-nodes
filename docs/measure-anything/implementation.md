@@ -62,11 +62,17 @@ decisions and selected-point order. Maximum geometry difference is zero at
 absolute tolerance 1e-9 and relative tolerance zero. The cache has its own recorded
 manifest identity; it is not relabeled as the evaluated dataset release.
 
-Reference and port checks used macOS arm64, Python 3.12.2, DepthAI 3.12.0,
+Historical reference and port checks used macOS arm64, Python 3.12.2, DepthAI 3.12.0,
 NumPy 2.2.6, SciPy 1.15.3 and OpenCV-headless 4.12.0.88. Numerical dependencies
-match the reference, which used Python 3.12.13. Installed package integrity,
+matched the reference, which used Python 3.12.13. Installed package integrity,
 native SDK message checks, same-host pipeline integration and the guide's offline
 interactions are verified separately from reference accuracy and throughput.
+
+The packaged MeasureAnything extra now pins OpenCV-headless 4.10.0.84 instead.
+This runtime dependency override has not been tested or compared with the reference.
+Original dependency hashes and accuracy/performance evidence remain attributed to
+the 4.12.0.88 environment. Tests were not rerun for this change; future algorithm
+evaluation will use 4.10.0.84.
 
 The public-export update reran the 15 synthetic scenes and three standalone fits
 with identical outputs. The historical 18-scene comparison was not rerun. The
