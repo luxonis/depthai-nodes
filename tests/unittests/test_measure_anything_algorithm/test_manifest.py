@@ -1,4 +1,4 @@
-"""The installed parcel bundle must agree with its frozen evidence."""
+"""The installed MeasureAnything bundle must agree with its frozen evidence."""
 
 import copy
 import hashlib
@@ -10,11 +10,11 @@ from pathlib import Path
 
 import pytest
 
-from depthai_nodes.algorithms import parcel
-from depthai_nodes.algorithms.parcel.manifest import _validate
+from depthai_nodes.algorithms import measure_anything
+from depthai_nodes.algorithms.measure_anything.manifest import _validate
 
 ROOT = Path(__file__).resolve().parents[3]
-MANIFEST = ROOT / "depthai_nodes/algorithms/parcel/manifest.json"
+MANIFEST = ROOT / "depthai_nodes/algorithms/measure_anything/manifest.json"
 
 
 @pytest.fixture
@@ -28,26 +28,27 @@ def installed_copy(tmp_path):
 
 
 def test_manifest_validates_installed_bytes_and_evidence():
-    manifest = parcel.validate_manifest()
-    assert manifest["workbench_candidate"]["id"] == parcel.ALGORITHM_ID
+    manifest = measure_anything.validate_manifest()
+    assert manifest["workbench_candidate"]["id"] == measure_anything.ALGORITHM_ID
     assert manifest["implementation"]["name"] == "fast_baseline_oak4_visibility_01"
     assert manifest["implementation"]["package_path"] == (
-        "depthai_nodes/algorithms/parcel/implementation"
+        "depthai_nodes/algorithms/measure_anything/implementation"
     )
-    assert parcel.IMPLEMENTATION_NAME == "implementation"
+    assert measure_anything.IMPLEMENTATION_NAME == "implementation"
     assert manifest["source"]["configuration_version"] == "v002"
     assert manifest["implementation"]["configuration_path"] == (
-        "depthai_nodes/algorithms/parcel/implementation/scoped-settings.json"
+        "depthai_nodes/algorithms/measure_anything/implementation/scoped-settings.json"
     )
     assert manifest["implementation"]["configuration_pointer"] == "/configuration"
-    assert len(inspect.signature(parcel.create_components).parameters) == 0
+    assert len(inspect.signature(measure_anything.create_components).parameters) == 0
 
 
 def test_factory_receives_only_nested_frozen_configuration(monkeypatch):
-    from depthai_nodes.algorithms.parcel import implementation
+    from depthai_nodes.algorithms.measure_anything import implementation
 
     settings_path = (
-        ROOT / "depthai_nodes/algorithms/parcel/implementation/scoped-settings.json"
+        ROOT
+        / "depthai_nodes/algorithms/measure_anything/implementation/scoped-settings.json"
     )
     original = settings_path.read_bytes()
     expected = json.loads(original)["configuration"]
@@ -59,7 +60,7 @@ def test_factory_receives_only_nested_frozen_configuration(monkeypatch):
         return result
 
     monkeypatch.setattr(implementation, "create_components", create)
-    assert parcel.create_components() is result
+    assert measure_anything.create_components() is result
     assert received == [expected]
     assert settings_path.read_bytes() == original
     assert not settings_path.with_name("configuration.json").exists()
@@ -83,8 +84,8 @@ def test_manifest_validates_with_cp1252_default_encoding(monkeypatch):
         return original_open(path, mode, buffering, encoding, errors, newline)
 
     monkeypatch.setattr(Path, "open", cp1252_open)
-    manifest = parcel.validate_manifest()
-    assert manifest["workbench_candidate"]["id"] == parcel.ALGORITHM_ID
+    manifest = measure_anything.validate_manifest()
+    assert manifest["workbench_candidate"]["id"] == measure_anything.ALGORITHM_ID
 
 
 def test_editing_computation_fails_integrity_check(installed_copy):
@@ -151,11 +152,13 @@ def test_candidate_and_suppressed_metrics_are_checked(installed_copy):
 
 
 def test_node_binding_mismatch_is_rejected(monkeypatch):
-    from depthai_nodes.node.parcel_dimensioner import ParcelDimensioner
+    from depthai_nodes.node.measure_anything_dimensioner import (
+        MeasureAnythingDimensioner,
+    )
 
-    monkeypatch.setattr(ParcelDimensioner, "algorithm_id", "algorithm-other")
+    monkeypatch.setattr(MeasureAnythingDimensioner, "algorithm_id", "algorithm-other")
     with pytest.raises(ValueError, match="Node algorithm binding mismatch"):
-        parcel.validate_manifest()
+        measure_anything.validate_manifest()
 
 
 def test_native_source_archive_cannot_be_mislabeled_as_an_image(installed_copy):
@@ -176,7 +179,7 @@ def test_review_must_cover_the_frozen_source(installed_copy):
 
 
 def test_held_out_approval_matches_the_packaged_selected_candidate_receipt():
-    manifest = parcel.validate_manifest()
+    manifest = measure_anything.validate_manifest()
     evidence = json.loads(
         (
             ROOT
@@ -186,7 +189,7 @@ def test_held_out_approval_matches_the_packaged_selected_candidate_receipt():
     )["held_out_result"]
     assert manifest["test_request"] == evidence["test_request"]
     assert manifest["test_request"]["id"] == evidence["run"]["test_request_id"]
-    assert evidence["run"]["candidate"]["candidate_id"] == parcel.ALGORITHM_ID
+    assert evidence["run"]["candidate"]["candidate_id"] == measure_anything.ALGORITHM_ID
 
 
 def test_predecessor_approval_is_rejected(installed_copy):
@@ -274,7 +277,7 @@ def test_predecessor_native_build_claims_are_rejected(installed_copy, field, val
 
 
 def test_numpy_candidate_has_no_obsolete_kernel_assets_or_imports():
-    root = ROOT / "depthai_nodes/algorithms/parcel/implementation"
+    root = ROOT / "depthai_nodes/algorithms/measure_anything/implementation"
     assert not any(
         (root / name).exists()
         for name in ("native.py", "kernels.cpp", "build_native.py")
@@ -284,7 +287,7 @@ def test_numpy_candidate_has_no_obsolete_kernel_assets_or_imports():
         [
             sys.executable,
             "-c",
-            "from depthai_nodes.algorithms import parcel; import sys; parcel.create_components(); assert not any(name.endswith('.native') and ('parcel' in name or 'fast_baseline' in name) for name in sys.modules)",
+            "from depthai_nodes.algorithms import measure_anything; import sys; measure_anything.create_components(); assert not any(name.endswith('.native') and ('measure_anything' in name or 'fast_baseline' in name) for name in sys.modules)",
         ],
         cwd=ROOT,
         capture_output=True,
@@ -340,9 +343,9 @@ def test_visualization_cannot_reassign_metrics_with_updated_port_hash(installed_
 def test_public_node_export_binding_is_checked(monkeypatch):
     import depthai_nodes.node
 
-    monkeypatch.setattr(depthai_nodes.node, "ParcelDimensioner", object)
+    monkeypatch.setattr(depthai_nodes.node, "MeasureAnythingDimensioner", object)
     with pytest.raises(ValueError, match="Public node export binding mismatch"):
-        parcel.validate_manifest()
+        measure_anything.validate_manifest()
 
 
 def test_optional_scipy_does_not_prevent_type_imports():
@@ -353,11 +356,11 @@ def test_optional_scipy_does_not_prevent_type_imports():
             """
 import sys
 sys.modules["scipy"] = None
-from depthai_nodes.algorithms.parcel import PointCloud, create_components
+from depthai_nodes.algorithms.measure_anything import PointCloud, create_components
 try:
     create_components()
 except ImportError as exc:
-    assert 'depthai-nodes[parcel]' in str(exc)
+    assert 'depthai-nodes[measure-anything]' in str(exc)
 else:
     raise AssertionError("Missing scipy must produce an installation hint")
 """,

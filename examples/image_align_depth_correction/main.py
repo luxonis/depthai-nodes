@@ -1,8 +1,8 @@
 """Verify ImageAlign -> axial correction -> PointCloud with deterministic replay.
 
 Run with an installed depthai-nodes wheel and depthai==3.12.0. No camera, model,
-recording, network input, or parcel algorithm is used. The same file runs on the
-workstation or inside the accompanying OAK-4 standalone app.
+recording, network input, or MeasureAnything algorithm is used. The same file runs on
+the workstation or inside the accompanying OAK-4 standalone app.
 """
 
 import argparse

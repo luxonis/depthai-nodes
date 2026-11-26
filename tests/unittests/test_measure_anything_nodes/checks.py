@@ -1,4 +1,4 @@
-"""Run native DepthAI parcel checks without repository node monkeypatches."""
+"""Run native DepthAI MeasureAnything checks without repository node monkeypatches."""
 
 import ast
 import inspect
@@ -14,18 +14,18 @@ import cv2
 import depthai as dai
 import numpy as np
 
-from depthai_nodes.algorithms import parcel as algorithm
+from depthai_nodes.algorithms import measure_anything as algorithm
 from depthai_nodes.message import (
-    Parcel,
-    ParcelCuboid,
-    ParcelDetections,
-    ParcelDetectorConfig,
-    ParcelMeasurement,
-    ParcelMeasurements,
+    MeasureAnythingCuboid,
+    MeasureAnythingDetection,
+    MeasureAnythingDetections,
+    MeasureAnythingDetectorConfig,
+    MeasureAnythingMeasurement,
+    MeasureAnythingMeasurements,
     SupportPlane,
 )
-from depthai_nodes.node import ParcelDetector, ParcelDimensioner
-from depthai_nodes.node.parcel_detector.scene import (
+from depthai_nodes.node import MeasureAnythingDetector, MeasureAnythingDimensioner
+from depthai_nodes.node.measure_anything_detector.scene import (
     _check_cloud_configuration,
     _upward_support_plane,
     prepare_scene,
@@ -132,10 +132,10 @@ class App:
         self.pipeline = dai.Pipeline(False)
         self.pipeline.__enter__()
         self.source = self.pipeline.create(Source)
-        self.detector = self.pipeline.create(ParcelDetector).build(
+        self.detector = self.pipeline.create(MeasureAnythingDetector).build(
             *self.source.outputs, supportPlane
         )
-        self.dimensioner = self.pipeline.create(ParcelDimensioner).build(
+        self.dimensioner = self.pipeline.create(MeasureAnythingDimensioner).build(
             self.detector.out
         )
         self.detected = self.detector.out.createOutputQueue()
@@ -217,7 +217,7 @@ class ConversionTests(unittest.TestCase):
         with App() as app:
             app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
             self.assertEqual(
-                app.detect(inputs).outcome, ParcelDetections.Outcome.SUCCESS
+                app.detect(inputs).outcome, MeasureAnythingDetections.Outcome.SUCCESS
             )
 
     def test_views_can_use_different_resolutions_and_aspect_ratios(self):
@@ -240,7 +240,7 @@ class ConversionTests(unittest.TestCase):
         with App() as app:
             app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
             result = app.detect(inputs)
-            self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+            self.assertEqual(result.outcome, MeasureAnythingDetections.Outcome.SUCCESS)
         scene = prepare_scene(*inputs, PLANE)
         self.assertEqual(
             [view.image.shape[:2] for view in scene.views],
@@ -462,15 +462,17 @@ class ConversionTests(unittest.TestCase):
         with App(supportPlane) as app:
             app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
             result = app.detect()
-            self.assertEqual(result.outcome, ParcelDetections.Outcome.FAILED)
+            self.assertEqual(result.outcome, MeasureAnythingDetections.Outcome.FAILED)
             self.assertEqual(result.failure_code, "plane_through_reference_origin")
             self.assertEqual(
                 app.detect(messages(2)).failure_code, "plane_through_reference_origin"
             )
             recovered = app.detect(
-                messages(3), config=ParcelDetectorConfig(supportPlane=PLANE)
+                messages(3), config=MeasureAnythingDetectorConfig(supportPlane=PLANE)
             )
-            self.assertEqual(recovered.outcome, ParcelDetections.Outcome.SUCCESS)
+            self.assertEqual(
+                recovered.outcome, MeasureAnythingDetections.Outcome.SUCCESS
+            )
             self.assertEqual(recovered.plane.offset_mm, 1000)
 
     def test_scene_snapshots_native_metadata_before_later_changes(self):
@@ -489,8 +491,10 @@ class NodeTests(unittest.TestCase):
             result = app.detect(
                 messages(imageSizes=((2000, 1500), (1280, 800), (1280, 800)))
             )
-            self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
-            self.assertEqual(app.detect().outcome, ParcelDetections.Outcome.SUCCESS)
+            self.assertEqual(result.outcome, MeasureAnythingDetections.Outcome.SUCCESS)
+            self.assertEqual(
+                app.detect().outcome, MeasureAnythingDetections.Outcome.SUCCESS
+            )
             warn.assert_not_called()
 
     def test_resolution_mismatches_warn_once_and_continue_processing(self):
@@ -504,7 +508,9 @@ class NodeTests(unittest.TestCase):
                 inputs = messages(imageSizes=imageSizes)
                 for _ in range(2):
                     result = app.detect(inputs)
-                    self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+                    self.assertEqual(
+                        result.outcome, MeasureAnythingDetections.Outcome.SUCCESS
+                    )
                 warn.assert_called_once()
                 warning = warn.call_args.args[0]
                 self.assertIn(
@@ -527,18 +533,20 @@ class NodeTests(unittest.TestCase):
             inputs[1] = stamp(dai.Buffer())
             self.assertEqual(app.detect(inputs).failure_code, "invalid_source_image")
             warn.assert_not_called()
-            self.assertEqual(app.detect().outcome, ParcelDetections.Outcome.SUCCESS)
+            self.assertEqual(
+                app.detect().outcome, MeasureAnythingDetections.Outcome.SUCCESS
+            )
             warn.assert_called_once()
 
     def test_initial_support_plane_is_optional_and_validates_provided_values(self):
         with App(None) as app:
             self.assertFalse(hasattr(app.detector, "setSupportPlane"))
-            app.pipeline.create(ParcelDetector).build(*app.source.outputs)
+            app.pipeline.create(MeasureAnythingDetector).build(*app.source.outputs)
             for supportPlane in (dai.Buffer(), (0, 0, -1, 1000)):
                 with self.subTest(supportPlane=supportPlane), self.assertRaises(
                     TypeError
                 ):
-                    app.pipeline.create(ParcelDetector).build(
+                    app.pipeline.create(MeasureAnythingDetector).build(
                         *app.source.outputs, supportPlane
                     )
 
@@ -547,7 +555,7 @@ class NodeTests(unittest.TestCase):
             find = Mock(return_value=[])
             app.detector._components = SimpleNamespace(find_candidates=find)
             with patch(
-                "depthai_nodes.node.parcel_detector.parcel_detector.prepare_scene"
+                "depthai_nodes.node.measure_anything_detector.measure_anything_detector.prepare_scene"
             ) as prepare:
                 app.detector.process(*(dai.Buffer() for _ in range(4)))
                 app.detector.process(*messages())
@@ -556,15 +564,17 @@ class NodeTests(unittest.TestCase):
             warn.assert_not_called()
             self.assertIsNone(app.detected.tryGet())
             self.assertIsNone(app.measured.tryGet())
-            result = app.detect(config=ParcelDetectorConfig(supportPlane=PLANE))
-            self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+            result = app.detect(
+                config=MeasureAnythingDetectorConfig(supportPlane=PLANE)
+            )
+            self.assertEqual(result.outcome, MeasureAnythingDetections.Outcome.SUCCESS)
             find.assert_called_once()
             warn.assert_called_once()
 
     def test_valid_config_survives_an_invalid_scene(self):
         with App() as app:
             app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
-            config = ParcelDetectorConfig(
+            config = MeasureAnythingDetectorConfig(
                 supportPlane=SupportPlane(normal=(0, 0, -1), offset_mm=1200)
             )
             inputs = list(messages())
@@ -573,7 +583,9 @@ class NodeTests(unittest.TestCase):
                 app.detect(inputs, config=config).failure_code, "invalid_source_image"
             )
             recovered = app.detect()
-            self.assertEqual(recovered.outcome, ParcelDetections.Outcome.SUCCESS)
+            self.assertEqual(
+                recovered.outcome, MeasureAnythingDetections.Outcome.SUCCESS
+            )
             self.assertEqual(recovered.plane.offset_mm, 1200)
 
     def test_native_generator_configuration_uses_reference_coordinates(self):
@@ -630,7 +642,8 @@ class NodeTests(unittest.TestCase):
             self.assertEqual([p.candidate_id for p in detected.items], [3, 4, 5])
             self.assertEqual([p.candidate_id for p in measured.items], [3, 4, 5])
             self.assertEqual(
-                [p.status for p in measured.items], list(ParcelMeasurement.Status)
+                [p.status for p in measured.items],
+                list(MeasureAnythingMeasurement.Status),
             )
             self.assertEqual(len(detected.decisions), 6)
 
@@ -664,14 +677,18 @@ class NodeTests(unittest.TestCase):
                 detected = app.detect()
                 measured = app.measure(detected)
                 for result in (detected, measured):
-                    self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+                    self.assertEqual(
+                        result.outcome, MeasureAnythingDetections.Outcome.SUCCESS
+                    )
                     self.assertEqual(result.items, ())
                     self.assertIsNone(result.failure_code)
 
     def test_empty_scene_calls_real_algorithm(self):
         with App() as app:
             detected = app.detect(messages(points=np.empty((0, 3), np.float32)))
-            self.assertEqual(detected.outcome, ParcelDetections.Outcome.SUCCESS)
+            self.assertEqual(
+                detected.outcome, MeasureAnythingDetections.Outcome.SUCCESS
+            )
             self.assertEqual(app.measure(detected).items, ())
 
     def test_wrong_native_scene_datatypes_fail_at_process_boundary(self):
@@ -681,14 +698,17 @@ class NodeTests(unittest.TestCase):
                     inputs = list(messages())
                     inputs[index] = stamp(dai.Buffer())
                     result = app.detect(inputs)
-                    self.assertEqual(result.outcome, ParcelDetections.Outcome.FAILED)
+                    self.assertEqual(
+                        result.outcome, MeasureAnythingDetections.Outcome.FAILED
+                    )
                     self.assertEqual(
                         result.failure_code,
                         "invalid_point_cloud" if index == 0 else "invalid_source_image",
                     )
                     self.assertEqual(result.getSequenceNum(), 1)
                     self.assertEqual(
-                        app.measure(result).outcome, ParcelDetections.Outcome.FAILED
+                        app.measure(result).outcome,
+                        MeasureAnythingDetections.Outcome.FAILED,
                     )
 
     def test_independent_sequence_counters_and_incompatible_reference(self):
@@ -699,7 +719,7 @@ class NodeTests(unittest.TestCase):
             inputs[2].setSequenceNum(200)
             inputs[3].setSequenceNum(300)
             result = app.detect(inputs)
-            self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+            self.assertEqual(result.outcome, MeasureAnythingDetections.Outcome.SUCCESS)
             self.assertEqual(result.getSequenceNum(), 1)
             self.assertEqual(
                 [source.sequence_num for source in result.sources], [1, 100, 200, 300]
@@ -755,7 +775,9 @@ class NodeTests(unittest.TestCase):
                 raise RuntimeError("test callback error")
 
             app.detector._components = SimpleNamespace(find_candidates=fail)
-            self.assertEqual(app.detect().outcome, ParcelDetections.Outcome.FAILED)
+            self.assertEqual(
+                app.detect().outcome, MeasureAnythingDetections.Outcome.FAILED
+            )
             app.detector._components = SimpleNamespace(
                 find_candidates=lambda _: [candidate()]
             )
@@ -789,15 +811,15 @@ class NodeTests(unittest.TestCase):
 
     def test_algorithm_identity_mismatch_is_failed_not_empty(self):
         with App() as app:
-            batch = ParcelDetections(
+            batch = MeasureAnythingDetections(
                 frame="scene", plane=PLANE, algorithm_id="algorithm-other"
             )
             result = app.measure(batch)
             self.assertEqual(result.failure_code, "algorithm_identity_mismatch")
             self.assertEqual(result.algorithm_id, "algorithm-other")
-            self.assertEqual(result.outcome, ParcelDetections.Outcome.FAILED)
+            self.assertEqual(result.outcome, MeasureAnythingDetections.Outcome.FAILED)
 
-    def test_queued_parcels_and_planes_survive_subsequent_configurations(self):
+    def test_queued_detections_and_planes_survive_subsequent_configurations(self):
         with App() as app:
             app.detector._components = SimpleNamespace(
                 find_candidates=lambda _: [candidate()]
@@ -807,7 +829,7 @@ class NodeTests(unittest.TestCase):
             supportPlane = SupportPlane(normal=(0, 0, -1), offset_mm=1200)
             later = app.detect(
                 messages(2, points=np.full((3, 3), 800)),
-                config=ParcelDetectorConfig(supportPlane=supportPlane),
+                config=MeasureAnythingDetectorConfig(supportPlane=supportPlane),
             )
             self.assertEqual(later.plane.offset_mm, 1200)
             seen = []
@@ -825,9 +847,9 @@ class NodeTests(unittest.TestCase):
                 np.shares_memory(old.items[0].xyz_mm, later.items[0].xyz_mm)
             )
 
-    def test_public_parcel_constructor_snapshots_points(self):
+    def test_public_detection_constructor_snapshots_points(self):
         points = np.ones((3, 3), np.float32)
-        parcel = Parcel(candidate_id=0, xyz_mm=points)
+        parcel = MeasureAnythingDetection(candidate_id=0, xyz_mm=points)
         points[:] = 0
         np.testing.assert_array_equal(parcel.xyz_mm, np.ones((3, 3)))
         self.assertFalse(parcel.xyz_mm.flags.writeable)
@@ -838,7 +860,7 @@ class NodeTests(unittest.TestCase):
         points = np.arange(9, dtype=np.float32).reshape(3, 3).copy()
         writable_alias = points.view()
         points.flags.writeable = False
-        parcel = Parcel(candidate_id=0, xyz_mm=points)
+        parcel = MeasureAnythingDetection(candidate_id=0, xyz_mm=points)
         writable_alias[:] = np.nan
         np.testing.assert_array_equal(
             parcel.xyz_mm, np.arange(9, dtype=np.float32).reshape(3, 3)
@@ -846,10 +868,10 @@ class NodeTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parcel.xyz_mm.flags.writeable = True
 
-    def test_owned_parcel_points_have_immutable_independent_storage(self):
+    def test_owned_detection_points_have_immutable_independent_storage(self):
         points = np.arange(9, dtype=np.float32).reshape(3, 3).copy()
         writable_alias = points.view()
-        parcel = Parcel._from_owned(0, points)
+        parcel = MeasureAnythingDetection._from_owned(0, points)
         writable_alias[:] = np.nan
         np.testing.assert_array_equal(
             parcel.xyz_mm, np.arange(9, dtype=np.float32).reshape(3, 3)
@@ -867,7 +889,7 @@ class NodeTests(unittest.TestCase):
     def test_cuboid_constructor_snapshots_vectors_with_read_only_properties(self):
         center = np.array([0.0, 0.0, 1000.0])
         axis = [1.0, 0.0, 0.0]
-        geometry = ParcelCuboid(
+        geometry = MeasureAnythingCuboid(
             base_center_mm=center,
             length_axis=axis,
             length_mm=100,
@@ -883,16 +905,18 @@ class NodeTests(unittest.TestCase):
 
     def test_message_invariants(self):
         with self.assertRaises(ValueError):
-            ParcelDetections(frame="scene", plane=None)
+            MeasureAnythingDetections(frame="scene", plane=None)
         with self.assertRaises(ValueError):
-            ParcelMeasurements(
-                frame="scene", plane=PLANE, outcome=ParcelDetections.Outcome.FAILED
+            MeasureAnythingMeasurements(
+                frame="scene",
+                plane=PLANE,
+                outcome=MeasureAnythingDetections.Outcome.FAILED,
             )
         with self.assertRaises(ValueError):
-            ParcelMeasurement(
+            MeasureAnythingMeasurement(
                 candidate_id=0,
-                status=ParcelMeasurement.Status.NO_FIT,
-                cuboid=ParcelCuboid(
+                status=MeasureAnythingMeasurement.Status.NO_FIT,
+                cuboid=MeasureAnythingCuboid(
                     base_center_mm=(0, 0, 0),
                     length_axis=(1, 0, 0),
                     length_mm=100,
@@ -901,10 +925,13 @@ class NodeTests(unittest.TestCase):
                 ),
             )
         with self.assertRaises(ValueError):
-            ParcelDetections(
+            MeasureAnythingDetections(
                 frame="scene",
                 plane=PLANE,
-                items=(Parcel(candidate_id=0, xyz_mm=np.ones((1, 3))),) * 2,
+                items=(
+                    MeasureAnythingDetection(candidate_id=0, xyz_mm=np.ones((1, 3))),
+                )
+                * 2,
             )
 
     def test_rebuild_rejected_and_nodes_share_binding(self):
@@ -963,14 +990,14 @@ class StreamingTests(unittest.TestCase):
                     warn.assert_not_called()
                     self.assertIsNone(app.detected.tryGet())
                     self.assertIsNone(app.measured.tryGet())
-                    app.send_config(ParcelDetectorConfig(supportPlane=PLANE))
+                    app.send_config(MeasureAnythingDetectorConfig(supportPlane=PLANE))
                     for sequence in (13, 14):
                         app.send(messages(sequence))
                         result = app.measured.get(timedelta(seconds=5))
                         self.assertIsNotNone(result)
                         self.assertEqual(result.getSequenceNum(), sequence)
                         self.assertEqual(
-                            result.outcome, ParcelDetections.Outcome.SUCCESS
+                            result.outcome, MeasureAnythingDetections.Outcome.SUCCESS
                         )
                         self.assertEqual(result.plane, PLANE)
                     self.assertEqual(find.call_count, 2)
@@ -983,14 +1010,20 @@ class StreamingTests(unittest.TestCase):
             with self.subTest(omitted=omitted), dai.Pipeline(False) as pipeline:
                 source = pipeline.create(MissingSource)
                 source.omit = omitted
-                detector = pipeline.create(ParcelDetector).build(*source.streams, PLANE)
-                dimensioner = pipeline.create(ParcelDimensioner).build(detector.out)
+                detector = pipeline.create(MeasureAnythingDetector).build(
+                    *source.streams, PLANE
+                )
+                dimensioner = pipeline.create(MeasureAnythingDimensioner).build(
+                    detector.out
+                )
                 results = dimensioner.out.createOutputQueue()
                 pipeline.start()
                 result = results.get(timedelta(seconds=5))
                 self.assertIsNotNone(result)
                 self.assertEqual(result.getSequenceNum(), 2)
-                self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+                self.assertEqual(
+                    result.outcome, MeasureAnythingDetections.Outcome.SUCCESS
+                )
                 self.assertEqual(result.items, ())
                 self.assertIsNone(results.get(timedelta(milliseconds=50)))
                 pipeline.stop()
@@ -1001,13 +1034,17 @@ class StreamingTests(unittest.TestCase):
             source.omit = None
             source.sequenceOffsets = (0, 100, 200, 300)
             source.firstDeviceOffsets = (0, 2, 5, 9)
-            detector = pipeline.create(ParcelDetector).build(*source.streams, PLANE)
+            detector = pipeline.create(MeasureAnythingDetector).build(
+                *source.streams, PLANE
+            )
             results = detector.out.createOutputQueue()
             pipeline.start()
             for sequence in (1, 2):
                 result = results.get(timedelta(seconds=5))
                 self.assertIsNotNone(result)
-                self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+                self.assertEqual(
+                    result.outcome, MeasureAnythingDetections.Outcome.SUCCESS
+                )
                 self.assertEqual(result.getSequenceNum(), sequence)
                 self.assertEqual(
                     [source.sequence_num for source in result.sources],
@@ -1020,13 +1057,15 @@ class StreamingTests(unittest.TestCase):
             source = pipeline.create(MissingSource)
             source.omit = None
             source.firstDeviceOffsets = (0, 0, 0, 11)
-            detector = pipeline.create(ParcelDetector).build(*source.streams, PLANE)
+            detector = pipeline.create(MeasureAnythingDetector).build(
+                *source.streams, PLANE
+            )
             results = detector.out.createOutputQueue()
             pipeline.start()
             result = results.get(timedelta(seconds=5))
             self.assertIsNotNone(result)
             self.assertEqual(result.getSequenceNum(), 2)
-            self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+            self.assertEqual(result.outcome, MeasureAnythingDetections.Outcome.SUCCESS)
             self.assertIsNone(results.get(timedelta(milliseconds=50)))
             pipeline.stop()
 
@@ -1035,12 +1074,12 @@ class StreamingTests(unittest.TestCase):
             app.detector._components = SimpleNamespace(find_candidates=lambda _: [])
             app.pipeline.start()
             app.send_config(
-                ParcelDetectorConfig(
+                MeasureAnythingDetectorConfig(
                     supportPlane=SupportPlane(normal=(0, 0, -1), offset_mm=1100)
                 )
             )
             app.send_config(
-                ParcelDetectorConfig(
+                MeasureAnythingDetectorConfig(
                     supportPlane=SupportPlane(normal=(0, 0, 1), offset_mm=-1200)
                 )
             )
@@ -1048,7 +1087,9 @@ class StreamingTests(unittest.TestCase):
                 app.send(messages(sequence))
                 result = app.measured.get(timedelta(seconds=5))
                 self.assertIsNotNone(result)
-                self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+                self.assertEqual(
+                    result.outcome, MeasureAnythingDetections.Outcome.SUCCESS
+                )
                 self.assertEqual(result.plane.offset_mm, offset)
                 self.assertEqual(result.plane.normal, (0, 0, -1))
                 self.assertEqual(
@@ -1064,16 +1105,18 @@ class StreamingTests(unittest.TestCase):
             app.send(messages())
             result = app.measured.get(timedelta(seconds=5))
             self.assertIsNotNone(result)
-            self.assertEqual(result.outcome, ParcelDetections.Outcome.SUCCESS)
+            self.assertEqual(result.outcome, MeasureAnythingDetections.Outcome.SUCCESS)
             self.assertEqual(result.plane.offset_mm, 1000)
             self.assertIn(
-                "Ignoring config input: expected ParcelDetectorConfig",
+                "Ignoring config input: expected MeasureAnythingDetectorConfig",
                 [call.args[0] for call in warn.call_args_list],
             )
             app.send(messages(2))
             recovered = app.measured.get(timedelta(seconds=5))
             self.assertIsNotNone(recovered)
-            self.assertEqual(recovered.outcome, ParcelDetections.Outcome.SUCCESS)
+            self.assertEqual(
+                recovered.outcome, MeasureAnythingDetections.Outcome.SUCCESS
+            )
             self.assertEqual(recovered.plane.offset_mm, 1000)
             app.pipeline.stop()
 
@@ -1096,7 +1139,7 @@ class StreamingTests(unittest.TestCase):
                 app.send(messages())
                 self.assertTrue(entered.wait(5))
                 app.send_config(
-                    ParcelDetectorConfig(
+                    MeasureAnythingDetectorConfig(
                         supportPlane=SupportPlane(normal=(0, 0, -1), offset_mm=1200)
                     )
                 )
@@ -1117,19 +1160,19 @@ class StreamingTests(unittest.TestCase):
 
 class PublicApiTests(unittest.TestCase):
     def test_detector_config_is_a_single_field_immutable_buffer(self):
-        config = ParcelDetectorConfig(supportPlane=PLANE)
+        config = MeasureAnythingDetectorConfig(supportPlane=PLANE)
         self.assertIsInstance(config, dai.Buffer)
         self.assertEqual([field.name for field in fields(config)], ["supportPlane"])
         self.assertIs(config.supportPlane, PLANE)
         with self.assertRaises(FrozenInstanceError):
             config.supportPlane = SupportPlane(normal=(0, 0, -1), offset_mm=1200)
         with self.assertRaises(TypeError):
-            ParcelDetectorConfig(supportPlane=None)
+            MeasureAnythingDetectorConfig(supportPlane=None)
 
-    def test_parcel_values_do_not_bypass_attribute_assignment(self):
-        from depthai_nodes.message import parcel
+    def test_measure_anything_values_do_not_bypass_attribute_assignment(self):
+        from depthai_nodes.message import measure_anything
 
-        source = ast.parse(inspect.getsource(parcel))
+        source = ast.parse(inspect.getsource(measure_anything))
         forbidden = [
             node
             for node in ast.walk(source)
@@ -1143,33 +1186,39 @@ class PublicApiTests(unittest.TestCase):
 
     def test_public_types_and_scoped_statuses(self):
         import depthai_nodes.message as messages
-        from depthai_nodes.message import parcel
+        from depthai_nodes.message import measure_anything
 
         public = {
-            "Parcel",
-            "ParcelCuboid",
-            "ParcelDetections",
-            "ParcelMeasurement",
-            "ParcelMeasurements",
-            "ParcelDetectorConfig",
+            "MeasureAnythingDetection",
+            "MeasureAnythingCuboid",
+            "MeasureAnythingDetections",
+            "MeasureAnythingMeasurement",
+            "MeasureAnythingMeasurements",
+            "MeasureAnythingDetectorConfig",
         }
-        self.assertEqual(set(parcel.__all__), public)
+        self.assertEqual(set(measure_anything.__all__), public)
+        from depthai_nodes import node as nodes
+
+        for module in (messages, nodes):
+            self.assertFalse(any(name.startswith("Parcel") for name in vars(module)))
         self.assertTrue(public.issubset(messages.__all__))
         for name in (
-            "ParcelPlane",
-            "ParcelCameraCalibration",
-            "ParcelRigCalibration",
-            "ParcelDecision",
-            "ParcelSourceTiming",
-            "ParcelFrameOutcome",
-            "ParcelMeasurementStatus",
+            "MeasureAnythingPlane",
+            "MeasureAnythingCameraCalibration",
+            "MeasureAnythingRigCalibration",
+            "MeasureAnythingDecision",
+            "MeasureAnythingSourceTiming",
+            "MeasureAnythingFrameOutcome",
+            "MeasureAnythingMeasurementStatus",
         ):
             self.assertFalse(hasattr(messages, name))
-            self.assertFalse(hasattr(parcel, name))
-        self.assertIs(ParcelDetections.Outcome, ParcelMeasurements.Outcome)
-        self.assertEqual(ParcelDetections.Outcome.SUCCESS.value, "success")
+            self.assertFalse(hasattr(measure_anything, name))
+        self.assertIs(
+            MeasureAnythingDetections.Outcome, MeasureAnythingMeasurements.Outcome
+        )
+        self.assertEqual(MeasureAnythingDetections.Outcome.SUCCESS.value, "success")
         self.assertEqual(
-            ParcelMeasurement.Status.HEIGHT_UNKNOWN.value, "height_unknown"
+            MeasureAnythingMeasurement.Status.HEIGHT_UNKNOWN.value, "height_unknown"
         )
 
 

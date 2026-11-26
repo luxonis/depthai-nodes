@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from tests.parcel_reference import verify_parcel_port as verifier
+from tests.measure_anything_reference import verify_measure_anything_port as verifier
 
 
 @pytest.fixture

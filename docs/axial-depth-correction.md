@@ -116,10 +116,10 @@ Native unorganized PointCloud omits zero but can retain saturated depth. Keep
 the corresponding valid-depth mask and raster order when filtering. Configure
 millimeter units and the RGB optical coordinate frame explicitly. A common
 calibration reference other than RGB requires the corresponding cloud-frame
-configuration or coordinate conversion before parcel consumers.
+configuration or coordinate conversion before MeasureAnything consumers.
 
 Detection and measurement receive an already corrected cloud. Existing box
-nodes and the frozen parcel implementations do not perform this correction.
+nodes and the frozen MeasureAnything implementation do not perform this correction.
 
 ## Verification and limits
 
@@ -134,7 +134,7 @@ or performance on live NeuralDepth streams.
 Production integration still needs checks of real NeuralDepth 768x480
 rectification metadata, calibration changes and replay across devices. Frozen
 scene comparisons must verify cloud count, point order, validity, image
-association and unchanged parcel outcomes before replacing another correction.
+association and unchanged MeasureAnything outcomes before replacing another correction.
 The synthetic checks do not establish those properties or live throughput.
 
 The [historical verification record](https://github.com/luxonis/depthai-nodes/blob/a8f9f9b0e86c8e9cebb6c7e3b60f4ecd7b2ae6b1/docs/axial-depth-correction-handoff.md)

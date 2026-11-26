@@ -1,4 +1,4 @@
-# Update the bundled parcel algorithm
+# Update the bundled MeasureAnything algorithm
 
 BoxLabRunners owns algorithm development, review, tuning and evaluation.
 DepthAI Nodes owns public APIs, message conversion, packaging and integration.
@@ -22,7 +22,7 @@ Existing box nodes have a separate contract.
    Computational or settings changes require a new candidate; additional evaluation
    of unchanged code/settings adds evidence to the existing version.
 1. Replace the contents of the stable
-   `depthai_nodes/algorithms/parcel/implementation/` directory. Include the complete
+   `depthai_nodes/algorithms/measure_anything/implementation/` directory. Include the complete
    computational dependency closure, original `scoped-settings.json`, required
    assets, attribution and any native source/build instructions. Load its nested
    `configuration` directly. Exclude Workbench transport and credentials.
@@ -47,7 +47,7 @@ Existing box nodes have a separate contract.
    by the batch. Preserve existing input-profile warnings and frozen settings.
    Run the full unit suite, pre-commit and API documentation build; compare failures
    against the unchanged base and report existing failures explicitly.
-1. Update `depthai_nodes/algorithms/parcel/manifest.json`. Keep evaluated-source
+1. Update `depthai_nodes/algorithms/measure_anything/manifest.json`. Keep evaluated-source
    provenance separate from production-port hashes and adaptations. Preserve source
    commit, candidate hashes, original image or build artifact kind/digest, dependency
    lock, weights and frozen settings. Preserve complete review, scoring policy,
@@ -77,19 +77,19 @@ Existing box nodes have a separate contract.
    wheels, manifests, settings and assets. Never transfer old scores or performance
    claims to a newly built artifact. Update README and manifest references together.
 
-Useful commands (install `.[dev,box-measurement,parcel]` first):
+Useful commands (install `.[dev,box-measurement,measure-anything]` first):
 
 ```sh
-python -m pytest tests/unittests/test_parcel_algorithm tests/unittests/test_parcel_nodes tests/parcel_reference -q
+python -m pytest tests/unittests/test_measure_anything_algorithm tests/unittests/test_measure_anything_nodes tests/measure_anything_reference -q
 python -m pytest tests/unittests
 pre-commit run --all-files
 pydoctor depthai_nodes
 python -m build --wheel --no-isolation
 ```
 
-`tests/parcel_reference/verify_parcel_port.py` performs the repeatable
+`tests/measure_anything_reference/verify_measure_anything_port.py` performs the repeatable
 frozen-source comparison;
-`tests/parcel_reference/` supplies repository fixtures. Its reference root must
+`tests/measure_anything_reference/` supplies repository fixtures. Its reference root must
 contain the exact evaluated files and evidence. Record the command, asset hashes,
 environment and coverage in `comparison.json`; keep temporary reports outside the
 repository. Preserve prior published evidence unchanged in Git/release artifacts.

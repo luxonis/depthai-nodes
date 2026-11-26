@@ -10,7 +10,7 @@ on:
       - pyproject.toml
       - requirements.txt
       - requirements-dev.txt
-      - requirements-parcel.txt
+      - requirements-measure-anything.txt
       - .gitattributes
       - .github/workflows/integration_tests.yaml
 
@@ -39,7 +39,7 @@ jobs:
         cache: pip
 
     - name: Install package
-      run: pip install -e ".[dev,parcel]"
+      run: pip install -e ".[dev,measure-anything]"
 
     - name: Run integration tests
       run: |

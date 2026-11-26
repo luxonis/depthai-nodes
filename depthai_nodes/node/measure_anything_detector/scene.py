@@ -1,4 +1,4 @@
-"""DepthAI message conversion into the frozen parcel computation types."""
+"""DepthAI message conversion into the frozen MeasureAnything computation types."""
 
 from __future__ import annotations
 
@@ -6,9 +6,9 @@ import cv2
 import depthai as dai
 import numpy as np
 
-from depthai_nodes.algorithms.parcel import CameraView, PointCloud, Scene
-from depthai_nodes.algorithms.parcel import SupportPlane as AlgorithmPlane
-from depthai_nodes.message.parcel import _ParcelSourceTiming
+from depthai_nodes.algorithms.measure_anything import CameraView, PointCloud, Scene
+from depthai_nodes.algorithms.measure_anything import SupportPlane as AlgorithmPlane
+from depthai_nodes.message.measure_anything import _MeasureAnythingSourceTiming
 from depthai_nodes.message.support_plane import SupportPlane
 
 
@@ -30,14 +30,16 @@ def _check_cloud_configuration(pointCloudConfig: dai.PointCloudConfig) -> None:
         or not np.array_equal(pointCloudConfig.getTransformationMatrix(), np.eye(4))
     ):
         raise ValueError(
-            "ParcelDetector requires DEFAULT point-cloud coordinates, millimeters, "
+            "MeasureAnythingDetector requires DEFAULT point-cloud coordinates, millimeters, "
             "calibrated extrinsics, and an identity custom transform"
         )
 
 
-def _source_timing(streamName: str, message: dai.Buffer) -> _ParcelSourceTiming:
+def _source_timing(
+    streamName: str, message: dai.Buffer
+) -> _MeasureAnythingSourceTiming:
     """Snapshot one source message's native frame identity."""
-    return _ParcelSourceTiming(
+    return _MeasureAnythingSourceTiming(
         stream=streamName,
         timestamp=message.getTimestamp(),
         timestamp_device=message.getTimestampDevice(),

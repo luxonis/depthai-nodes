@@ -1,7 +1,7 @@
 """Frozen OAK-4 visibility computation, mechanically ported from Luxonis BoxLabRunners.
 
-The factory is imported only when used so the parcel extra remains optional. See
-ATTRIBUTION.md for source identity and adaptations.
+The factory is imported only when used so the measure-anything extra remains optional.
+See ATTRIBUTION.md for source identity and adaptations.
 """
 
 

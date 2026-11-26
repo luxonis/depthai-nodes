@@ -13,11 +13,11 @@ from unittest.mock import Mock
 
 import numpy as np
 
-from depthai_nodes.algorithms.parcel import create_components
-from depthai_nodes.algorithms.parcel.implementation.components import (
+from depthai_nodes.algorithms.measure_anything import create_components
+from depthai_nodes.algorithms.measure_anything.implementation.components import (
     Components,
 )
-from depthai_nodes.algorithms.parcel.implementation.scene import (
+from depthai_nodes.algorithms.measure_anything.implementation.scene import (
     CandidateResult,
     Cuboid,
     PointCloud,
@@ -25,8 +25,8 @@ from depthai_nodes.algorithms.parcel.implementation.scene import (
     Segment,
     SupportPlane,
 )
-from tests.parcel_reference.checked_adapter import process_scene
-from tests.parcel_reference.test_fast_baseline import PARCEL, render_scene
+from tests.measure_anything_reference.checked_adapter import process_scene
+from tests.measure_anything_reference.test_fast_baseline import PARCEL, render_scene
 
 
 class ComponentTests(unittest.TestCase):

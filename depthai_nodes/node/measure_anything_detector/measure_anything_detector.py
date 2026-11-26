@@ -5,12 +5,12 @@ from datetime import timedelta
 import depthai as dai
 import numpy as np
 
-from depthai_nodes.algorithms import parcel as algorithm
-from depthai_nodes.message.parcel import (
-    Parcel,
-    ParcelDetections,
-    ParcelDetectorConfig,
-    _ParcelDecision,
+from depthai_nodes.algorithms import measure_anything as algorithm
+from depthai_nodes.message.measure_anything import (
+    MeasureAnythingDetection,
+    MeasureAnythingDetections,
+    MeasureAnythingDetectorConfig,
+    _MeasureAnythingDecision,
 )
 from depthai_nodes.message.support_plane import SupportPlane
 
@@ -23,8 +23,8 @@ from .scene import (
 )
 
 
-class ParcelDetector(dai.node.ThreadedHostNode):
-    """Detect eligible parcels using the single bundled fast baseline.
+class MeasureAnythingDetector(dai.node.ThreadedHostNode):
+    """Detect eligible detections using the single bundled fast baseline.
 
     A host ``Sync`` node matches the point cloud and three image streams by
     device timestamp within 10 ms. Incomplete groups produce no callback.
@@ -34,16 +34,16 @@ class ParcelDetector(dai.node.ThreadedHostNode):
     images at 1280x800. The first configured scene with valid message types
     checks these sizes and logs one warning if they differ. Processing continues.
 
-    ``inputConfig`` accepts ``ParcelDetectorConfig`` messages. One queued
+    ``inputConfig`` accepts ``MeasureAnythingDetectorConfig`` messages. One queued
     configuration is applied before each synchronized scene, when available.
     The active configuration persists until another update arrives.
     Without a support plane, incoming groups are consumed without processing
     or output until a configuration supplies one.
-    Its support-plane snapshot travels with the eligible parcels through
+    Its support-plane snapshot travels with the eligible detections through
     measurement. Updates received during processing apply to a later scene.
 
-    ``out`` emits same-host ``ParcelDetections`` with independent read-only
-    parcel arrays. Candidate IDs are frame-local proposal indices. There is no
+    ``out`` emits same-host ``MeasureAnythingDetections`` with independent read-only
+    detection arrays. Candidate IDs are frame-local proposal indices. There is no
     tracking, temporal aggregation, or frozen-algorithm configuration API.
     """
 
@@ -56,7 +56,7 @@ class ParcelDetector(dai.node.ThreadedHostNode):
         self._inputConfig = self.createInput("config")
         self._out = self.createOutput("out")
         self._components = None
-        self._config: ParcelDetectorConfig | None = None
+        self._config: MeasureAnythingDetectorConfig | None = None
         self._resolutionsChecked = False
 
     @property
@@ -66,7 +66,7 @@ class ParcelDetector(dai.node.ThreadedHostNode):
 
     @property
     def out(self) -> dai.Node.Output:
-        """One eligible-parcel batch or failure per processed synchronized group."""
+        """One eligible-object batch or failure per processed synchronized group."""
         return self._out
 
     def build(
@@ -76,7 +76,7 @@ class ParcelDetector(dai.node.ThreadedHostNode):
         left: dai.Node.Output,
         right: dai.Node.Output,
         supportPlane: SupportPlane | None = None,
-    ) -> "ParcelDetector":
+    ) -> "MeasureAnythingDetector":
         """Connect scene streams with an optional initial support plane.
 
         Args:
@@ -103,12 +103,12 @@ class ParcelDetector(dai.node.ThreadedHostNode):
             TypeError: If ``supportPlane`` is neither a ``SupportPlane`` nor ``None``.
             ValueError: If a native PointCloud producer has incompatible coordinates
                 or units. Its coordinate configuration must remain fixed at runtime.
-            ImportError: If the parcel extra dependencies are missing.
+            ImportError: If the measure-anything extra dependencies are missing.
         """
         if self._components is not None:
-            raise RuntimeError("ParcelDetector is already built")
+            raise RuntimeError("MeasureAnythingDetector is already built")
         config = (
-            ParcelDetectorConfig(supportPlane=supportPlane)
+            MeasureAnythingDetectorConfig(supportPlane=supportPlane)
             if supportPlane is not None
             else None
         )
@@ -133,9 +133,9 @@ class ParcelDetector(dai.node.ThreadedHostNode):
         self._config = config
         return self
 
-    def _update_config(self, config: ParcelDetectorConfig) -> None:
-        if not isinstance(config, ParcelDetectorConfig):
-            self.warn("Ignoring config input: expected ParcelDetectorConfig")
+    def _update_config(self, config: MeasureAnythingDetectorConfig) -> None:
+        if not isinstance(config, MeasureAnythingDetectorConfig):
+            self.warn("Ignoring config input: expected MeasureAnythingDetectorConfig")
             return
         self._config = config
 
@@ -155,7 +155,7 @@ class ParcelDetector(dai.node.ThreadedHostNode):
         are preserved on every emitted result.
         """
         if self._components is None:
-            raise RuntimeError("Build ParcelDetector before processing")
+            raise RuntimeError("Build MeasureAnythingDetector before processing")
         if self._config is None:
             return
         supportPlane = None
@@ -185,13 +185,13 @@ class ParcelDetector(dai.node.ThreadedHostNode):
                 )
                 if imageSizes != ((2000, 1500), (1280, 800), (1280, 800)):
                     self.warn(
-                        "ParcelDetector expects unrectified RGB 2000x1500, "
+                        "MeasureAnythingDetector expects unrectified RGB 2000x1500, "
                         "left 1280x800, and right 1280x800 images. "
                         f"Received RGB {imageSizes[0][0]}x{imageSizes[0][1]}, "
                         f"left {imageSizes[1][0]}x{imageSizes[1][1]}, "
                         f"and right {imageSizes[2][0]}x{imageSizes[2][1]}. "
                         "Processing will continue; other resolutions may change "
-                        "parcel eligibility decisions."
+                        "detection eligibility decisions."
                     )
             supportPlane = _upward_support_plane(self._config.supportPlane)
             scene = prepare_scene(pointCloud, color, left, right, supportPlane)
@@ -199,7 +199,7 @@ class ParcelDetector(dai.node.ThreadedHostNode):
             candidates = self._components.find_candidates(scene)
             if not isinstance(candidates, list):
                 raise ValueError("find_candidates must return a list")
-            parcels, decisions = [], []
+            detections, decisions = [], []
             for number, candidate in enumerate(candidates):
                 if not isinstance(
                     candidate, algorithm.CandidateResult
@@ -219,15 +219,17 @@ class ParcelDetector(dai.node.ThreadedHostNode):
                     )
                 ):
                     raise ValueError("Invalid candidate segment indices")
-                decision = _ParcelDecision(
+                decision = _MeasureAnythingDecision(
                     candidate_id=number, decision=candidate.decision
                 )
                 decisions.append(decision)
                 if decision.decision == "eligible":
                     points = np.take(scene.cloud.xyz_mm, indices, axis=0)
-                    parcels.append(Parcel._from_owned(number, points))
-            result = ParcelDetections(
-                items=tuple(parcels),
+                    detections.append(
+                        MeasureAnythingDetection._from_owned(number, points)
+                    )
+            result = MeasureAnythingDetections(
+                items=tuple(detections),
                 decisions=tuple(decisions),
                 frame=frame,
                 plane=supportPlane,
@@ -235,12 +237,12 @@ class ParcelDetector(dai.node.ThreadedHostNode):
                 algorithm_id=self.algorithm_id,
             )
         except Exception as exc:
-            result = ParcelDetections(
+            result = MeasureAnythingDetections(
                 frame=frame,
                 plane=supportPlane,
                 sources=sources,
                 algorithm_id=self.algorithm_id,
-                outcome=ParcelDetections.Outcome.FAILED,
+                outcome=MeasureAnythingDetections.Outcome.FAILED,
                 failure_code=exc.code
                 if isinstance(exc, SceneInputError)
                 else "detection_failed",

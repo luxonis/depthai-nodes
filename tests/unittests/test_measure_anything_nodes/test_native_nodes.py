@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 
-def test_parcel_messages_conversion_and_native_nodes():
+def test_measure_anything_messages_conversion_and_native_nodes():
     root = Path(__file__).resolve().parents[3]
     environment = dict(os.environ, DEPTHAI_TELEMETRY="0", PYTHONPATH=str(root))
     result = subprocess.run(

@@ -1,4 +1,4 @@
-"""Integrity checks for the installed parcel implementation.
+"""Integrity checks for the installed MeasureAnything implementation.
 
 File keys are repository-relative paths beginning with ``depthai_nodes/``. Hashes
 cover raw installed bytes and exclude this self-describing manifest. The selected implementation uses no custom native kernels or binaries.
@@ -80,9 +80,9 @@ def _covered_files(root: Path) -> set[str]:
     package = root / "depthai_nodes"
     paths = set()
     directories = [
-        package / "algorithms" / "parcel",
-        package / "node" / "parcel_detector",
-        package / "node" / "parcel_dimensioner",
+        package / "algorithms" / "measure_anything",
+        package / "node" / "measure_anything_detector",
+        package / "node" / "measure_anything_dimensioner",
     ]
     for directory in directories:
         for path in directory.rglob("*"):
@@ -95,7 +95,7 @@ def _covered_files(root: Path) -> set[str]:
                 paths.add(path.relative_to(root).as_posix())
     paths.add("depthai_nodes/algorithms/__init__.py")
     paths.add("depthai_nodes/message/support_plane.py")
-    for path in (package / "message").glob("parcel*.py"):
+    for path in (package / "message").glob("measure_anything*.py"):
         paths.add(path.relative_to(root).as_posix())
     return paths
 
@@ -109,11 +109,11 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
     )
 
     _require(
-        manifest["schema_version"] == "parcel-algorithm-manifest/1",
+        manifest["schema_version"] == "measure-anything-algorithm-manifest/1",
         "Unknown manifest schema",
     )
     implementation = manifest["implementation"]
-    package_path = f"depthai_nodes/algorithms/parcel/{IMPLEMENTATION_NAME}"
+    package_path = f"depthai_nodes/algorithms/measure_anything/{IMPLEMENTATION_NAME}"
     _require(
         implementation["name"] == _ALGORITHM_NAME, "Implementation binding mismatch"
     )
@@ -386,7 +386,7 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
         )
     verification = manifest["port_verification"]
     _require(
-        verification["record_path"].startswith("docs/parcel-promotions/"),
+        verification["record_path"].startswith("docs/measure-anything/"),
         "Missing promotion record",
     )
     _require(
@@ -402,19 +402,22 @@ def _validate(root: Path, manifest: dict, *, check_bindings: bool = True) -> dic
     ):
         _require(field in verification, f"Missing port verification {field}")
     if check_bindings:
-        from depthai_nodes.node import ParcelDetector as PublicDetector
-        from depthai_nodes.node import ParcelDimensioner as PublicDimensioner
-        from depthai_nodes.node.parcel_detector import ParcelDetector
-        from depthai_nodes.node.parcel_dimensioner import ParcelDimensioner
+        from depthai_nodes.node import MeasureAnythingDetector as PublicDetector
+        from depthai_nodes.node import MeasureAnythingDimensioner as PublicDimensioner
+        from depthai_nodes.node.measure_anything_detector import MeasureAnythingDetector
+        from depthai_nodes.node.measure_anything_dimensioner import (
+            MeasureAnythingDimensioner,
+        )
 
         _require(
-            ParcelDetector.algorithm_id
-            == ParcelDimensioner.algorithm_id
+            MeasureAnythingDetector.algorithm_id
+            == MeasureAnythingDimensioner.algorithm_id
             == ALGORITHM_ID,
             "Node algorithm binding mismatch",
         )
         _require(
-            PublicDetector is ParcelDetector and PublicDimensioner is ParcelDimensioner,
+            PublicDetector is MeasureAnythingDetector
+            and PublicDimensioner is MeasureAnythingDimensioner,
             "Public node export binding mismatch",
         )
     return manifest
@@ -436,4 +439,4 @@ def validate_manifest() -> dict:
         )
         return _validate(root, manifest)
     except (KeyError, TypeError, OSError, json.JSONDecodeError) as exc:
-        raise ValueError(f"Invalid parcel manifest: {exc}") from exc
+        raise ValueError(f"Invalid MeasureAnything manifest: {exc}") from exc

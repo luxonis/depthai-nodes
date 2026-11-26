@@ -1,7 +1,7 @@
-"""The single bundled parcel algorithm and its private frozen configuration.
+"""The single bundled MeasureAnything algorithm and its private frozen configuration.
 
-There is no runtime algorithm selection or settings override. The optional parcel extra
-is loaded only when the computation callbacks are created.
+There is no runtime algorithm selection or settings override. The optional measure-
+anything extra is loaded only when the computation callbacks are created.
 """
 
 import json
@@ -40,7 +40,7 @@ def create_components() -> Components:
         A fresh component instance. Complete a scene call before reusing it.
 
     Raises:
-        ImportError: If the optional parcel computation dependencies are absent.
+        ImportError: If the optional MeasureAnything computation dependencies are absent.
     """
     try:
         from .implementation import (
@@ -55,7 +55,7 @@ def create_components() -> Components:
     except ModuleNotFoundError as exc:
         if exc.name == "scipy" or (exc.name or "").startswith("scipy."):
             raise ImportError(
-                'Parcel nodes require scipy. Install "depthai-nodes[parcel]".'
+                'MeasureAnything nodes require scipy. Install "depthai-nodes[measure-anything]".'
             ) from exc
         raise
 

@@ -287,14 +287,14 @@ Example:
     Each ``BoxMeasurements`` message read from ``measurements`` holds one
     result per box detection, with its box dimensions once measured.
 
-Parcel measurement
-==================
+MeasureAnything measurement
+===========================
 
-``ParcelDetector`` detects and validates eligible parcels from a millimeter XYZ
+``MeasureAnythingDetector`` detects and validates eligible objects from a millimeter XYZ
 cloud, supplied plane, and calibrated color/left/right images. It binds the frozen
 fast baseline. No algorithm selector or settings API is exposed. Install with
-``pip install "depthai-nodes[parcel]"``. ``ParcelDimensioner`` consumes the emitted
-``depthai_nodes.message.ParcelDetections`` and measures independent parcel clouds
+``pip install "depthai-nodes[measure-anything]"``. ``MeasureAnythingDimensioner`` consumes the emitted
+``depthai_nodes.message.MeasureAnythingDetections`` and measures independent object clouds
 against that batch's exact upward plane. Outputs are per-frame geometry, without
 tracking or temporal medians. Existing box nodes retain their separate behavior.
 
@@ -302,21 +302,21 @@ Example:
     With existing ``pointCloud``, ``color``, ``left``, and ``right`` outputs
     carrying their native calibration metadata::
 
-        from depthai_nodes.message import ParcelDetectorConfig, SupportPlane
-        from depthai_nodes.node import ParcelDetector, ParcelDimensioner
+        from depthai_nodes.message import MeasureAnythingDetectorConfig, SupportPlane
+        from depthai_nodes.node import MeasureAnythingDetector, MeasureAnythingDimensioner
 
-        detector = pipeline.create(ParcelDetector).build(
+        detector = pipeline.create(MeasureAnythingDetector).build(
             pointCloud, color, left, right
         )
         configQueue = detector.inputConfig.createInputQueue(blocking=True)
-        dimensioner = pipeline.create(ParcelDimensioner).build(detector.out)
+        dimensioner = pipeline.create(MeasureAnythingDimensioner).build(detector.out)
         results = dimensioner.out.createOutputQueue()
 
         pipeline.start()
         supportPlane = SupportPlane.fromJsonFile("support_plane.json")
-        configQueue.send(ParcelDetectorConfig(supportPlane=supportPlane))
+        configQueue.send(MeasureAnythingDetectorConfig(supportPlane=supportPlane))
 
-    ``ParcelDetector`` is a ``ThreadedHostNode``. A host ``Sync`` node matches
+    ``MeasureAnythingDetector`` is a ``ThreadedHostNode``. A host ``Sync`` node matches
     the four scene streams by device timestamp with a span below 10 ms. The
     inputs must share a device clock. Sequence counters may differ. Incomplete
     groups are skipped. Before processing each complete group, the detector
@@ -379,9 +379,9 @@ from .image_align_depth_correction import ImageAlignDepthCorrection
 from .img_detections_filter import ImgDetectionsFilter
 from .img_frame_overlay import ImgFrameOverlay
 from .instance_to_semantic_mask import InstanceToSemanticMask
+from .measure_anything_detector import MeasureAnythingDetector
+from .measure_anything_dimensioner import MeasureAnythingDimensioner
 from .message_collector import MessageCollector
-from .parcel_detector import ParcelDetector
-from .parcel_dimensioner import ParcelDimensioner
 from .parser_generator import ParserGenerator
 from .parsers.base_parser import BaseParser
 from .parsers.classification import ClassificationParser
@@ -417,8 +417,8 @@ from .tiling import Tiling
 
 __all__ = [
     "ImageAlignDepthCorrection",
-    "ParcelDetector",
-    "ParcelDimensioner",
+    "MeasureAnythingDetector",
+    "MeasureAnythingDimensioner",
     "ApplyColormap",
     "ApplyDepthColormap",
     "CoordinatesMapper",

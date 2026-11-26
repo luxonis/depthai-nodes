@@ -1,4 +1,4 @@
-# Frozen parcel implementation
+# Frozen MeasureAnything implementation
 
 Open [How OAK measures a parcel](visualization.html) in a browser for an
 interactive guide to how the algorithm detects and measures parcels. It explains
@@ -6,7 +6,7 @@ the required inputs, processing steps, accuracy, performance and limitations.
 
 Luxonis BoxLabRunners `fast_baseline_oak4_visibility_01/v002`, source `d5e35e17d75f91368889dc53d950792eed4096e6`.
 Candidate `algorithm-5e4abc3a09b54148950317cdeac60ba2` replaces
-`algorithm-2f65a6f6296d48e981f5fe3f77bfde89` in both parcel nodes.
+`algorithm-2f65a6f6296d48e981f5fe3f77bfde89` in both MeasureAnything nodes.
 
 `factory.py`, `geometry.py`, `visibility.py`, and `numpy_ops.py` are the
 frozen computation with only imports relocated and repository formatting.

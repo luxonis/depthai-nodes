@@ -31,7 +31,7 @@ include = ["depthai_nodes*"]
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
-optional-dependencies = { dev = { file = ["requirements-dev.txt"] }, box-measurement = { file = ["requirements-box-measurement.txt"] }, parcel = { file = ["requirements-parcel.txt"] } }
+optional-dependencies = { dev = { file = ["requirements-dev.txt"] }, box-measurement = { file = ["requirements-box-measurement.txt"] }, measure-anything = { file = ["requirements-measure-anything.txt"] } }
 version = {attr = "depthai_nodes.__version__"}
 
 [tool.ruff]
@@ -67,5 +67,5 @@ markers = [
 ]
 
 [tool.setuptools.package-data]
-"depthai_nodes.algorithms.parcel" = ["manifest.json"]
-"depthai_nodes.algorithms.parcel.implementation" = ["*.json", "*.txt", "*.md", "*.html"]
+"depthai_nodes.algorithms.measure_anything" = ["manifest.json"]
+"depthai_nodes.algorithms.measure_anything.implementation" = ["*.json", "*.txt", "*.md", "*.html"]

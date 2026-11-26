@@ -1,9 +1,9 @@
-# Bundled parcel implementation
+# Bundled MeasureAnything implementation
 
-`ParcelDetector` and `ParcelDimensioner` share the frozen implementation in
-[`depthai_nodes/algorithms/parcel/implementation/`](../../depthai_nodes/algorithms/parcel/implementation).
+`MeasureAnythingDetector` and `MeasureAnythingDimensioner` share the frozen implementation in
+[`depthai_nodes/algorithms/measure_anything/implementation/`](../../depthai_nodes/algorithms/measure_anything/implementation).
 See the [public API overview](../../depthai_nodes/node/__init__.py),
-[interactive measurement guide](../../depthai_nodes/algorithms/parcel/implementation/visualization.html)
+[interactive measurement guide](../../depthai_nodes/algorithms/measure_anything/implementation/visualization.html)
 and [replacement workflow](update-workflow.md).
 
 ## Identity and provenance
@@ -16,21 +16,27 @@ and [replacement workflow](update-workflow.md).
 | Committed evaluation evidence  | `d5964eee714737750787066fc24bc29744536d45`   |
 | Visualization source           | `4b3853742c34a2d4548cfb599e05f37217dcec83`   |
 
-The [manifest](../../depthai_nodes/algorithms/parcel/manifest.json) records
+The [manifest](../../depthai_nodes/algorithms/measure_anything/manifest.json) records
 original source and candidate hashes, build artifact, dependencies, weights,
 review, evaluation evidence and separate production-port hashes. The original
 build is a native source archive, not an OCI image. Packaging does not establish
 that the port is the evaluated artifact.
 
-The original [evaluation receipts](../../depthai_nodes/algorithms/parcel/implementation/evaluation-evidence.json)
+The original [evaluation receipts](../../depthai_nodes/algorithms/measure_anything/implementation/evaluation-evidence.json)
 retain scoring policies, run/evaluation IDs, denominators, approval observations
 and suppressed fields. The validator checks their linkage to the selected
 candidate and run. Both nodes read `/configuration` from the original
-[`scoped-settings.json`](../../depthai_nodes/algorithms/parcel/implementation/scoped-settings.json).
+[`scoped-settings.json`](../../depthai_nodes/algorithms/measure_anything/implementation/scoped-settings.json).
 The manifest distinguishes its complete byte hash from the candidate's canonical
 configuration hash. Settings remain private and frozen.
 
 ## Integration
+
+MeasureAnything is the public API family name. The frozen candidate remains
+`fast_baseline_oak4_visibility_01/v002`; renaming does not broaden its evaluated
+object or input coverage. The packaged guide retains its original parcel-focused
+examples and historical benchmark node labels. Source receipts and the numerical
+comparison retain their original bytes and format identity.
 
 The upstream factory becomes private `factory.py`; Runner imports use bundled
 neutral scene/component types and the projector. Mechanical import relocation,
@@ -78,7 +84,7 @@ their original wheels; they do not verify a later rebuild.
 ## Limits and history
 
 Guide timings distinguish three-parcel application throughput using predecoded
-images and fresh inference from parcel-node intervals in a replay paced at 3 FPS.
+images and fresh inference from the original parcel-node intervals in a replay paced at 3 FPS.
 They exclude camera/file decoding and display; node intervals also exclude upstream
 inference and cloud generation. They establish neither camera-to-result latency,
 maximum throughput nor a controlled scaling law with parcel count.

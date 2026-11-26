@@ -17,8 +17,8 @@ from unittest.mock import patch
 
 import numpy as np
 
-from depthai_nodes.algorithms.parcel import implementation
-from depthai_nodes.algorithms.parcel.implementation.scene import (
+from depthai_nodes.algorithms.measure_anything import implementation
+from depthai_nodes.algorithms.measure_anything.implementation.scene import (
     CameraView,
     CandidateResult,
     PointCloud,
@@ -27,8 +27,10 @@ from depthai_nodes.algorithms.parcel.implementation.scene import (
     SupportPlane,
     project_points,
 )
-from tests.parcel_reference.checked_adapter import load_components as _load_components
-from tests.parcel_reference.checked_adapter import process_scene
+from tests.measure_anything_reference.checked_adapter import (
+    load_components as _load_components,
+)
+from tests.measure_anything_reference.checked_adapter import process_scene
 
 
 def load_components(configuration):
@@ -152,7 +154,7 @@ class FrozenGeometryRegressionTests(unittest.TestCase):
     def setUpClass(cls):
         configuration = json.loads(SETTINGS.read_bytes())
         _, cls.components = load_components(configuration)
-        from depthai_nodes.algorithms.parcel.implementation.visibility import (
+        from depthai_nodes.algorithms.measure_anything.implementation.visibility import (
             Visibility,
         )
 
@@ -528,10 +530,10 @@ class CandidateCallbackTests(unittest.TestCase):
         return configuration
 
     def test_returns_ordered_decisions_without_measurement(self):
-        from depthai_nodes.algorithms.parcel.implementation.factory import (
+        from depthai_nodes.algorithms.measure_anything.implementation.factory import (
             create_components,
         )
-        from depthai_nodes.algorithms.parcel.implementation.visibility import (
+        from depthai_nodes.algorithms.measure_anything.implementation.visibility import (
             Visibility,
         )
 
@@ -548,14 +550,14 @@ class CandidateCallbackTests(unittest.TestCase):
 
                 with (
                     patch(
-                        "depthai_nodes.algorithms.parcel.implementation.factory.detect",
+                        "depthai_nodes.algorithms.measure_anything.implementation.factory.detect",
                         return_value=segments,
                     ),
                     patch.object(
                         Visibility, "validate_candidate", side_effect=decision
                     ) as validate,
                     patch(
-                        "depthai_nodes.algorithms.parcel.implementation.factory.measure"
+                        "depthai_nodes.algorithms.measure_anything.implementation.factory.measure"
                     ) as measure,
                 ):
                     components = create_components(self.configuration(parallel))
@@ -572,7 +574,7 @@ class CandidateCallbackTests(unittest.TestCase):
                 measure.assert_not_called()
 
     def test_reused_scene_does_not_reuse_projection_or_decision_caches(self):
-        from depthai_nodes.algorithms.parcel.implementation.factory import (
+        from depthai_nodes.algorithms.measure_anything.implementation.factory import (
             create_components,
         )
 
@@ -612,10 +614,10 @@ class CandidateCallbackTests(unittest.TestCase):
                     )
 
     def test_projection_workers_finish_before_return_or_failure(self):
-        from depthai_nodes.algorithms.parcel.implementation.factory import (
+        from depthai_nodes.algorithms.measure_anything.implementation.factory import (
             create_components,
         )
-        from depthai_nodes.algorithms.parcel.implementation.visibility import (
+        from depthai_nodes.algorithms.measure_anything.implementation.visibility import (
             Visibility,
         )
 
@@ -698,15 +700,15 @@ class CandidateCallbackTests(unittest.TestCase):
 
                 with (
                     patch(
-                        "depthai_nodes.algorithms.parcel.implementation.factory.ThreadPoolExecutor",
+                        "depthai_nodes.algorithms.measure_anything.implementation.factory.ThreadPoolExecutor",
                         ProjectionExecutor,
                     ),
                     patch(
-                        "depthai_nodes.algorithms.parcel.implementation.numpy_ops.project_cells",
+                        "depthai_nodes.algorithms.measure_anything.implementation.numpy_ops.project_cells",
                         side_effect=project,
                     ),
                     patch(
-                        "depthai_nodes.algorithms.parcel.implementation.factory.detect",
+                        "depthai_nodes.algorithms.measure_anything.implementation.factory.detect",
                         side_effect=detect,
                     ),
                     patch.object(
@@ -739,7 +741,7 @@ class CandidateCallbackTests(unittest.TestCase):
 
 class AdapterIndexRegressionTests(unittest.TestCase):
     def test_unsorted_unique_indices_keep_parcel_order(self):
-        from depthai_nodes.algorithms.parcel.implementation.components import (
+        from depthai_nodes.algorithms.measure_anything.implementation.components import (
             Components,
         )
 
@@ -757,7 +759,7 @@ class AdapterIndexRegressionTests(unittest.TestCase):
         np.testing.assert_array_equal(parcels[0], scene.cloud.xyz_mm[indices])
 
     def test_adjacent_and_nonadjacent_duplicates_are_rejected(self):
-        from depthai_nodes.algorithms.parcel.implementation.components import (
+        from depthai_nodes.algorithms.measure_anything.implementation.components import (
             Components,
         )
 

@@ -1,34 +1,34 @@
 {
-  "schema_version": "parcel-algorithm-manifest/1",
+  "schema_version": "measure-anything-algorithm-manifest/1",
   "implementation": {
     "name": "fast_baseline_oak4_visibility_01",
-    "package_path": "depthai_nodes/algorithms/parcel/implementation",
-    "configuration_path": "depthai_nodes/algorithms/parcel/implementation/scoped-settings.json",
+    "package_path": "depthai_nodes/algorithms/measure_anything/implementation",
+    "configuration_path": "depthai_nodes/algorithms/measure_anything/implementation/scoped-settings.json",
     "source_contract_version": "BoxLabRunners@d5e35e17d75f91368889dc53d950792eed4096e6:docs/boxlab/contracts/RUNNER.md",
     "configuration_sha256": "66f029694119c77ddad557bd58257b8743e7f284441d94a317b08fffc5496f10",
     "files_sha256": {
       "depthai_nodes/algorithms/__init__.py": "c5235d0aeaf840d21066d88f4529091e36ea97295c8a81f6dd881687ad93bbb6",
-      "depthai_nodes/algorithms/parcel/__init__.py": "85d0aa2a443c3100fbc2c611c6e64cc895ce482fb084936a765481250d8bf4f9",
-      "depthai_nodes/algorithms/parcel/implementation/ATTRIBUTION.md": "94afa699e33f7aac7bad2ead8b29aab9a7adaa0c66d1d216f2178073114698a7",
-      "depthai_nodes/algorithms/parcel/implementation/__init__.py": "d97fe754c1703f0661a957bbc345bbe532989cd4efc3601b092ddc5773923997",
-      "depthai_nodes/algorithms/parcel/implementation/components.py": "05db85213afa257e054ca4cd4f9975666ca8624c4149364e472c1f58e7e75d20",
-      "depthai_nodes/algorithms/parcel/implementation/evaluation-evidence.json": "e23bcd5d41638487409b52dcce3ace3bb024c954c4cae6a65307f235fbc0a9d8",
-      "depthai_nodes/algorithms/parcel/implementation/factory.py": "52d9dd277d6d58782643961e29db34337f0a0fd7a599c4f2ac2f008f2bdb5b6e",
-      "depthai_nodes/algorithms/parcel/implementation/geometry.py": "fc8f513b8aedd6783b2f3645636c1234f31ac555e94b13547b4ed526a3f8f724",
-      "depthai_nodes/algorithms/parcel/implementation/numpy_ops.py": "e5ce2721f806f7f3ad5533c3f8ff8a8644aa35b5934805c8f833baa366cb5df4",
-      "depthai_nodes/algorithms/parcel/implementation/reference-requirements.txt": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
-      "depthai_nodes/algorithms/parcel/implementation/scene.py": "7f8f888d0d242b5a73b5a61350d9be56d76f7a3509f002b225db2c43d2297b94",
-      "depthai_nodes/algorithms/parcel/implementation/scoped-settings.json": "66f029694119c77ddad557bd58257b8743e7f284441d94a317b08fffc5496f10",
-      "depthai_nodes/algorithms/parcel/implementation/visibility.py": "1b1bbc5a28441dadd8c68a6031531d6330f99a32af3baeb7c709cf6240a48f30",
-      "depthai_nodes/algorithms/parcel/implementation/visualization.html": "c195176e3d77e4df433ea824bb219c7a91ef17412792635baf106ef6c6a2ae32",
-      "depthai_nodes/algorithms/parcel/manifest.py": "6aabd2b06eb0c18ea26d7f21f914185bf043c47a5d91d59dc4b95f3f232cac43",
-      "depthai_nodes/message/parcel.py": "702ca0222b5a71c0c6a6982161d5c0a1dfb4b7364182e547dc0125513aec43d0",
+      "depthai_nodes/algorithms/measure_anything/__init__.py": "5aa9e7615fab1febcddb24fd6cd3d9d21cae8b49bcd62769b80aef48ecee1dd6",
+      "depthai_nodes/algorithms/measure_anything/implementation/ATTRIBUTION.md": "9892c6179e7303b5779cabf648856ad4c32602074b39413ae839f984f6fce204",
+      "depthai_nodes/algorithms/measure_anything/implementation/__init__.py": "7a48c3280ca62bfbcce2fd2b68fce468578bb2ac7f70711dc10324d9d265ecd1",
+      "depthai_nodes/algorithms/measure_anything/implementation/components.py": "05db85213afa257e054ca4cd4f9975666ca8624c4149364e472c1f58e7e75d20",
+      "depthai_nodes/algorithms/measure_anything/implementation/evaluation-evidence.json": "e23bcd5d41638487409b52dcce3ace3bb024c954c4cae6a65307f235fbc0a9d8",
+      "depthai_nodes/algorithms/measure_anything/implementation/factory.py": "52d9dd277d6d58782643961e29db34337f0a0fd7a599c4f2ac2f008f2bdb5b6e",
+      "depthai_nodes/algorithms/measure_anything/implementation/geometry.py": "fc8f513b8aedd6783b2f3645636c1234f31ac555e94b13547b4ed526a3f8f724",
+      "depthai_nodes/algorithms/measure_anything/implementation/numpy_ops.py": "e5ce2721f806f7f3ad5533c3f8ff8a8644aa35b5934805c8f833baa366cb5df4",
+      "depthai_nodes/algorithms/measure_anything/implementation/reference-requirements.txt": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
+      "depthai_nodes/algorithms/measure_anything/implementation/scene.py": "7f8f888d0d242b5a73b5a61350d9be56d76f7a3509f002b225db2c43d2297b94",
+      "depthai_nodes/algorithms/measure_anything/implementation/scoped-settings.json": "66f029694119c77ddad557bd58257b8743e7f284441d94a317b08fffc5496f10",
+      "depthai_nodes/algorithms/measure_anything/implementation/visibility.py": "1b1bbc5a28441dadd8c68a6031531d6330f99a32af3baeb7c709cf6240a48f30",
+      "depthai_nodes/algorithms/measure_anything/implementation/visualization.html": "c195176e3d77e4df433ea824bb219c7a91ef17412792635baf106ef6c6a2ae32",
+      "depthai_nodes/algorithms/measure_anything/manifest.py": "c5271e225d8007664e7e26e63fbdd01ea49719cf515140dffb7018163b9b22c8",
+      "depthai_nodes/message/measure_anything.py": "293bab0b45df214692f3c4dcc257c9e067b11a24031ef72e96dfdc12448a33c2",
       "depthai_nodes/message/support_plane.py": "0eaeec70dda37d48b3160d1f1a14cffce766f23182289d1b569ffb444f1f44e3",
-      "depthai_nodes/node/parcel_detector/__init__.py": "4bd2d4aaf686835abe5da5203a47a67a2ebe125aee64c5ef8499cac3809b1482",
-      "depthai_nodes/node/parcel_detector/parcel_detector.py": "8c08a60467de9b8faf88b92555577f6cc4c1c2629801f8da3dda032488ea2ca0",
-      "depthai_nodes/node/parcel_detector/scene.py": "13483accb7c7806b6b3d3ace3739605ce7efbb2e84b632a32588cbf8d61744e6",
-      "depthai_nodes/node/parcel_dimensioner/__init__.py": "506569fb746e3a1fb9fc525170615c20f027a35ec155fa0a8d5b283012a7b3fc",
-      "depthai_nodes/node/parcel_dimensioner/parcel_dimensioner.py": "63d8627a836d32c3f9abed5023d1971cd3b74338c3bfcd0ff5ba53255e125703"
+      "depthai_nodes/node/measure_anything_detector/__init__.py": "4b47171911e6ffae1c0d8ff80128b603f54beadbc65cb3c893ba697db23d530a",
+      "depthai_nodes/node/measure_anything_detector/measure_anything_detector.py": "7b0163fbf5bdf0a13645f54d3c3368b3cbc7934c6f8f1d768a6b747c53f8756a",
+      "depthai_nodes/node/measure_anything_detector/scene.py": "ea76f04265b9faa800d7bc184cedc0a131c69355a609c7576db3b07123430927",
+      "depthai_nodes/node/measure_anything_dimensioner/__init__.py": "f23c5d006aa7a0e8b0700c2736c6f0e3ee143fd6c56230a6d854bda01be7c371",
+      "depthai_nodes/node/measure_anything_dimensioner/measure_anything_dimensioner.py": "699351f8e8235a0b209b0f53f6f4d3532cd636235b4dc1e9481c6167360357a5"
     },
     "binary_distribution": "No custom native kernels, sources, build flags, or binaries; computation uses NumPy, SciPy, and OpenCV.",
     "native_build_flags": [],
@@ -174,7 +174,7 @@
     "input_mode": "supplied_plane",
     "length_unit": "mm",
     "plane_orientation": "upward",
-    "frame_convention": "Millimeter XYZ in the common calibration reference frame identified by native target device/socket metadata. SupportPlane supplied in build or ParcelDetectorConfig uses those same coordinates. The reference camera must be above the surface; either normal sign is accepted. Native PointCloud uses DEFAULT coordinates, calibrated translation, and an identity custom transform. Other producers must normalize XYZ and metadata to this frame. The capture interval and device clock must be shared. Use delivered-grid calibration and the evaluated unrectified source-image profile; other grids can change eligibility despite correct calibration.",
+    "frame_convention": "Millimeter XYZ in the common calibration reference frame identified by native target device/socket metadata. SupportPlane supplied in build or MeasureAnythingDetectorConfig uses those same coordinates. The reference camera must be above the surface; either normal sign is accepted. Native PointCloud uses DEFAULT coordinates, calibrated translation, and an identity custom transform. Other producers must normalize XYZ and metadata to this frame. The capture interval and device clock must be shared. Use delivered-grid calibration and the evaluated unrectified source-image profile; other grids can change eligibility despite correct calibration.",
     "scene_decoding_reference": "https://github.com/luxonis/BoxLabRunners/blob/d5e35e17d75f91368889dc53d950792eed4096e6/runner/scene.py",
     "frozen_runtime": {
       "python": "3.12.13 (main, Jun 11 2026, 03:55:21) [Clang 22.1.3 ]",
@@ -190,7 +190,7 @@
       "python": ">=3.10",
       "numpy": "==2.2.6",
       "scipy": "==1.15.3",
-      "opencv-python-headless": ">=4.10.0,<4.13.0; parcel extra ==4.12.0.88",
+      "opencv-python-headless": ">=4.10.0,<4.13.0; measure-anything extra ==4.12.0.88",
       "depthai": "==3.12.0"
     },
     "tested_runtime": {
@@ -246,10 +246,10 @@
       "preferred_neural_depth": {
         "width": 768,
         "height": 480,
-        "validation": "Upstream recommendation only; ParcelDetector receives PointCloudData, not a depth image."
+        "validation": "Upstream recommendation only; MeasureAnythingDetector receives PointCloudData, not a depth image."
       }
     },
-    "support_plane_configuration": "Optional SupportPlane in build, default None. While unset, consume and discard synchronized groups without scene decoding, algorithm execution or outputs. ParcelDetectorConfig supplies the plane and activates subsequent groups without restarting. Config messages still require a real SupportPlane."
+    "support_plane_configuration": "Optional SupportPlane in build, default None. While unset, consume and discard synchronized groups without scene decoding, algorithm execution or outputs. MeasureAnythingDetectorConfig supplies the plane and activates subsequent groups without restarting. Config messages still require a real SupportPlane."
   },
   "evaluations": [
     {
@@ -1093,7 +1093,7 @@
   },
   "timings": [],
   "port_verification": {
-    "record_path": "docs/parcel-promotions/implementation.md",
+    "record_path": "docs/measure-anything/implementation.md",
     "reference_artifact": "bad3b09ff518e15b05db814bdc8bb40d26818328f38a1dddf78d4fc9523d322c",
     "comparison_inputs": "15 synthetic scenes, three standalone measurement cases, and authorized cached validation scenes; see committed comparison report.",
     "numerical_tolerance": {
@@ -1105,7 +1105,7 @@
       {
         "name": "Frozen source and port comparison",
         "result": "passed",
-        "report": "docs/parcel-promotions/comparison.json",
+        "report": "docs/measure-anything/comparison.json",
         "synthetic_scenes": 15,
         "standalone_measurement_cases": 3,
         "validation_scenes": 18,
@@ -1185,8 +1185,14 @@
         "installed_native_message_checks": 50,
         "original_settings_bytes_unchanged": true,
         "configuration_pointer": "/configuration",
-        "record_path": "docs/parcel-promotions/implementation.md",
+        "record_path": "docs/measure-anything/implementation.md",
         "limitation": "The unchanged synthetic example fails its existing 5 mm length assertion before and after the packaging change; identical output is recorded in the promotion record."
+      },
+      {
+        "name": "MeasureAnything public API naming",
+        "result": "passed",
+        "record_path": "docs/measure-anything/implementation.md",
+        "scope": "Public classes, modules, package paths and installation extra renamed; frozen source computation, settings, candidate identity and historical evidence unchanged."
       }
     ],
     "environment": {
@@ -1206,7 +1212,7 @@
       "No Windows, Linux, or OAK execution of this newly built port. Existing full-unit failures are compared with the unchanged PR head in the promotion record."
     ],
     "provenance_review_fixes": {
-      "record_path": "docs/parcel-promotions/implementation.md",
+      "record_path": "docs/measure-anything/implementation.md",
       "scope": "Approval and native-build metadata/validator corrections only; frozen computation, settings, receipts, metrics, and visualization unchanged.",
       "focused_tests_passed": 85,
       "focused_subtests_passed": 46,
@@ -1214,7 +1220,7 @@
       "historical_native_builds_url": "https://github.com/luxonis/depthai-nodes/blob/30e30d1eaac3561adcecda4f05110edae03982c0/docs/parcel-promotions/historical-native-builds-algorithm-2f65a6f6296d48e981f5fe3f77bfde89.json"
     },
     "visualization_keyboard_fix": {
-      "record_path": "docs/parcel-promotions/implementation.md",
+      "record_path": "docs/measure-anything/implementation.md",
       "source_documentation_commit": "96a2c2d781845eda3f7f64ae0f151263084aa499",
       "source_browser_report": "https://github.com/luxonis/BoxLabRunners/blob/96a2c2d781845eda3f7f64ae0f151263084aa499/experiments/oak4_visibility_10fps/evidence/visualisation-keyboard-browser-check.json",
       "embedded_evidence": "byte-identical to the previous shipped page",
@@ -1222,21 +1228,21 @@
       "installed_browser_report": "https://github.com/luxonis/depthai-nodes/blob/30e30d1eaac3561adcecda4f05110edae03982c0/docs/parcel-promotions/oak4-visibility-keyboard-browser.json"
     },
     "customer_visualization": {
-      "record_path": "docs/parcel-promotions/implementation.md",
+      "record_path": "docs/measure-anything/implementation.md",
       "source_documentation_commit": "515ded0ebc24ea91f74d1555a346314c41cf5310",
       "source_generation_receipt": "https://github.com/luxonis/BoxLabRunners/blob/515ded0ebc24ea91f74d1555a346314c41cf5310/experiments/oak4_visibility_10fps/evidence/visualisation-customer-verification.json",
       "scope": "Customer-facing document; validation best/worst cases and errors derived from this candidate predictions and already-published reference dimensions. Official aggregates, suppression and computational identity unchanged.",
       "installed_browser_report": "https://github.com/luxonis/depthai-nodes/blob/30e30d1eaac3561adcecda4f05110edae03982c0/docs/parcel-promotions/oak4-visibility-customer-browser.json"
     },
     "surface_and_timing_visualization": {
-      "record_path": "docs/parcel-promotions/implementation.md",
+      "record_path": "docs/measure-anything/implementation.md",
       "source_documentation_commit": "924313a24979d88966cb9e37d9a35da5b05dc1f7",
       "source_generation_receipt": "https://github.com/luxonis/BoxLabRunners/blob/924313a24979d88966cb9e37d9a35da5b05dc1f7/experiments/oak4_visibility_10fps/evidence/visualisation-surface-timing-verification.json",
       "source_browser_report": "https://github.com/luxonis/BoxLabRunners/blob/924313a24979d88966cb9e37d9a35da5b05dc1f7/experiments/oak4_visibility_10fps/evidence/visualisation-surface-timing-browser-check.json",
       "scope": "Documentation only: simulated parcel resting on surrounding coplanar support samples; current-algorithm scene, amortized parcel and fitting-only timings. Official aggregates, computation, settings and candidate unchanged."
     },
     "replay_processing_visualization": {
-      "record_path": "docs/parcel-promotions/implementation.md",
+      "record_path": "docs/measure-anything/implementation.md",
       "source_documentation_commit": "4b3853742c34a2d4548cfb599e05f37217dcec83",
       "source_generation_receipt": "https://github.com/luxonis/BoxLabRunners/blob/4b3853742c34a2d4548cfb599e05f37217dcec83/experiments/oak4_visibility_10fps/evidence/visualisation-replay-verification.json",
       "source_browser_report": "https://github.com/luxonis/BoxLabRunners/blob/4b3853742c34a2d4548cfb599e05f37217dcec83/experiments/oak4_visibility_10fps/evidence/visualisation-replay-browser-check.json",
@@ -1244,7 +1250,7 @@
     }
   },
   "visualization": {
-    "path": "depthai_nodes/algorithms/parcel/implementation/visualization.html",
+    "path": "depthai_nodes/algorithms/measure_anything/implementation/visualization.html",
     "sha256": "c195176e3d77e4df433ea824bb219c7a91ef17412792635baf106ef6c6a2ae32",
     "source_repository": "https://github.com/luxonis/BoxLabRunners",
     "source_commit": "4b3853742c34a2d4548cfb599e05f37217dcec83",

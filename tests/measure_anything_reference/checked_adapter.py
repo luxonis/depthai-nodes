@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from depthai_nodes.algorithms.parcel.implementation.scene import (
+from depthai_nodes.algorithms.measure_anything.implementation.scene import (
     CandidateResult,
     Cuboid,
     PlaneEstimator,
@@ -146,5 +146,7 @@ def load_components(settings):
     from copy import deepcopy
     from importlib import import_module
 
-    module = import_module("depthai_nodes.algorithms.parcel." "implementation.factory")
+    module = import_module(
+        "depthai_nodes.algorithms.measure_anything." "implementation.factory"
+    )
     return module, module.create_components(deepcopy(settings.get("configuration", {})))

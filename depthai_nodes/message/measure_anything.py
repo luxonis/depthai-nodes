@@ -1,4 +1,4 @@
-"""Per-frame parcel geometry and same-host Python messages.
+"""Per-frame detection geometry and same-host Python messages.
 
 Arrays and nested Python values are retained only within one host runtime. XLink and
 RemoteConnection serialization is not implemented.
@@ -15,17 +15,17 @@ import depthai as dai
 import numpy as np
 from numpy.typing import NDArray
 
-from depthai_nodes.algorithms.parcel import ALGORITHM_ID
+from depthai_nodes.algorithms.measure_anything import ALGORITHM_ID
 
 from .support_plane import SupportPlane
 
 __all__ = [
-    "Parcel",
-    "ParcelCuboid",
-    "ParcelDetectorConfig",
-    "ParcelDetections",
-    "ParcelMeasurement",
-    "ParcelMeasurements",
+    "MeasureAnythingDetection",
+    "MeasureAnythingCuboid",
+    "MeasureAnythingDetectorConfig",
+    "MeasureAnythingDetections",
+    "MeasureAnythingMeasurement",
+    "MeasureAnythingMeasurements",
 ]
 
 
@@ -51,8 +51,8 @@ def _numbers(value, shape: tuple[int, ...], field: str) -> np.ndarray:
 
 
 @dataclass(frozen=True, kw_only=True, eq=False)
-class ParcelDetectorConfig(dai.Buffer):
-    """Runtime configuration for ``ParcelDetector``.
+class MeasureAnythingDetectorConfig(dai.Buffer):
+    """Runtime configuration for ``MeasureAnythingDetector``.
 
     Send this same-host message to the node's ``inputConfig``. One pending update
     is applied in queue order before each synchronized scene, when available.
@@ -76,7 +76,7 @@ class ParcelDetectorConfig(dai.Buffer):
 
 
 @dataclass(frozen=True, kw_only=True)
-class _ParcelSourceTiming:
+class _MeasureAnythingSourceTiming:
     """Host/device timestamps and sequence of one source stream."""
 
     stream: Literal["pointCloud", "color", "left", "right"]
@@ -102,8 +102,8 @@ class _ParcelSourceTiming:
             raise TypeError("Source sequence number must be an integer")
 
 
-class Parcel:
-    """One eligible parcel with read-only float32 XYZ in millimeters.
+class MeasureAnythingDetection:
+    """One eligible detection with read-only float32 XYZ in millimeters.
 
     ``candidate_id`` is the zero-based proposal index within this frame. Gaps
     identify rejected proposals. Construction snapshots the points into
@@ -131,19 +131,23 @@ class Parcel:
     @staticmethod
     def _check_points(array: np.ndarray) -> None:
         if array.ndim != 2 or array.shape[1] != 3 or not np.isfinite(array).all():
-            raise ValueError("Parcel points must be finite (N, 3) XYZ")
+            raise ValueError(
+                "MeasureAnythingDetection points must be finite (N, 3) XYZ"
+            )
 
     @classmethod
-    def _from_owned(cls, candidate_id: int, xyz_mm: NDArray[np.float32]) -> Parcel:
+    def _from_owned(
+        cls, candidate_id: int, xyz_mm: NDArray[np.float32]
+    ) -> MeasureAnythingDetection:
         cls._check_points(xyz_mm)
         if xyz_mm.dtype != np.float32 or not xyz_mm.flags.owndata:
-            raise ValueError("Extracted parcel must own float32 point storage")
+            raise ValueError("Extracted detection must own float32 point storage")
         xyz_mm.flags.writeable = False
         return cls(candidate_id=candidate_id, xyz_mm=xyz_mm)
 
 
 @dataclass(frozen=True, kw_only=True)
-class _ParcelDecision:
+class _MeasureAnythingDecision:
     """Optional proposal diagnostic, independent of measurement inputs."""
 
     candidate_id: int
@@ -160,8 +164,8 @@ class _ParcelDecision:
             raise ValueError("Unknown eligibility decision")
 
 
-class ParcelCuboid:
-    """A parcel footprint and optional height, without temporal aggregation.
+class MeasureAnythingCuboid:
+    """A detection footprint and optional height, without temporal aggregation.
 
     The base center is on the support plane. The unit length axis is tangent to it. The
     width axis is the upward plane normal crossed with the length axis. All dimensions
@@ -226,43 +230,43 @@ class ParcelCuboid:
 
 
 @dataclass(frozen=True, kw_only=True)
-class ParcelMeasurement:
+class MeasureAnythingMeasurement:
     """One candidate's no-fit, unknown-height, or measured cuboid outcome.
 
     ``Status`` identifies the footprint and height result.
     """
 
     class Status(str, Enum):
-        """A parcel's footprint and height outcome."""
+        """A detection's footprint and height outcome."""
 
         NO_FIT = "no_fit"
         HEIGHT_UNKNOWN = "height_unknown"
         MEASURED = "measured"
 
     candidate_id: int
-    status: ParcelMeasurement.Status
-    cuboid: ParcelCuboid | None
+    status: MeasureAnythingMeasurement.Status
+    cuboid: MeasureAnythingCuboid | None
 
     def __post_init__(self) -> None:
         _candidate(self.candidate_id)
         if not isinstance(self.status, self.Status):
-            raise TypeError("status must be ParcelMeasurement.Status")
+            raise TypeError("status must be MeasureAnythingMeasurement.Status")
         if self.status == self.Status.NO_FIT:
             if self.cuboid is not None:
                 raise ValueError("A no-fit outcome cannot contain a cuboid")
-        elif not isinstance(self.cuboid, ParcelCuboid):
-            raise TypeError("A fitted outcome requires a ParcelCuboid")
+        elif not isinstance(self.cuboid, MeasureAnythingCuboid):
+            raise TypeError("A fitted outcome requires a MeasureAnythingCuboid")
         elif (self.cuboid.height_mm is None) != (
             self.status == self.Status.HEIGHT_UNKNOWN
         ):
             raise ValueError("Height must agree with the measurement status")
 
 
-class _ParcelBatch(dai.Buffer):
+class _MeasureAnythingBatch(dai.Buffer):
     class Outcome(str, Enum):
         """Whether a whole source frame completed processing.
 
-        Both parcel batch messages expose the same enum as ``Outcome``.
+        Both detection batch messages expose the same enum as ``Outcome``.
         """
 
         SUCCESS = "success"
@@ -274,9 +278,9 @@ class _ParcelBatch(dai.Buffer):
         items: tuple,
         frame: str,
         plane: SupportPlane | None,
-        sources: tuple[_ParcelSourceTiming, ...] = (),
+        sources: tuple[_MeasureAnythingSourceTiming, ...] = (),
         algorithm_id: str = ALGORITHM_ID,
-        outcome: _ParcelBatch.Outcome = Outcome.SUCCESS,
+        outcome: _MeasureAnythingBatch.Outcome = Outcome.SUCCESS,
         failure_code: str | None = None,
     ) -> None:
         super().__init__()
@@ -284,7 +288,7 @@ class _ParcelBatch(dai.Buffer):
         if plane is not None and not isinstance(plane, SupportPlane):
             raise TypeError("plane must be SupportPlane or None")
         if not isinstance(outcome, self.Outcome):
-            raise TypeError("outcome must be a parcel batch Outcome")
+            raise TypeError("outcome must be a detection batch Outcome")
         if not isinstance(algorithm_id, str) or not algorithm_id:
             raise ValueError("algorithm_id must be nonempty")
         items = tuple(items)
@@ -297,7 +301,7 @@ class _ParcelBatch(dai.Buffer):
         if len(set(ids)) != len(ids):
             raise ValueError("Candidate IDs must be unique within a frame")
         sources = tuple(sources)
-        if any(not isinstance(s, _ParcelSourceTiming) for s in sources):
+        if any(not isinstance(s, _MeasureAnythingSourceTiming) for s in sources):
             raise TypeError("sources must contain source timing records")
         if len({s.stream for s in sources}) != len(sources):
             raise ValueError("Source stream timings must be unique")
@@ -329,7 +333,7 @@ class _ParcelBatch(dai.Buffer):
         return self._plane
 
     @property
-    def sources(self) -> tuple[_ParcelSourceTiming, ...]:
+    def sources(self) -> tuple[_MeasureAnythingSourceTiming, ...]:
         """Timing of every source that was available for this frame."""
         return self._sources
 
@@ -339,7 +343,7 @@ class _ParcelBatch(dai.Buffer):
         return self._algorithm_id
 
     @property
-    def outcome(self) -> _ParcelBatch.Outcome:
+    def outcome(self) -> _MeasureAnythingBatch.Outcome:
         """Whole-frame processing result."""
         return self._outcome
 
@@ -349,8 +353,8 @@ class _ParcelBatch(dai.Buffer):
         return self._failure_code
 
 
-class ParcelDetections(_ParcelBatch):
-    """One completed or failed frame containing only eligible parcel clouds.
+class MeasureAnythingDetections(_MeasureAnythingBatch):
+    """One completed or failed frame containing only eligible detection clouds.
 
     ``Outcome`` distinguishes successful and failed frames.
 
@@ -364,16 +368,16 @@ class ParcelDetections(_ParcelBatch):
         *,
         frame: str,
         plane: SupportPlane | None,
-        items: tuple[Parcel, ...] = (),
-        decisions: tuple[_ParcelDecision, ...] = (),
-        sources: tuple[_ParcelSourceTiming, ...] = (),
+        items: tuple[MeasureAnythingDetection, ...] = (),
+        decisions: tuple[_MeasureAnythingDecision, ...] = (),
+        sources: tuple[_MeasureAnythingSourceTiming, ...] = (),
         algorithm_id: str = ALGORITHM_ID,
-        outcome: _ParcelBatch.Outcome = _ParcelBatch.Outcome.SUCCESS,
+        outcome: _MeasureAnythingBatch.Outcome = _MeasureAnythingBatch.Outcome.SUCCESS,
         failure_code: str | None = None,
     ) -> None:
         items = tuple(items)
-        if any(not isinstance(item, Parcel) for item in items):
-            raise TypeError("items must contain Parcel values")
+        if any(not isinstance(item, MeasureAnythingDetection) for item in items):
+            raise TypeError("items must contain MeasureAnythingDetection values")
         super().__init__(
             items=items,
             frame=frame,
@@ -384,33 +388,33 @@ class ParcelDetections(_ParcelBatch):
             failure_code=failure_code,
         )
         decisions = tuple(decisions)
-        if any(not isinstance(d, _ParcelDecision) for d in decisions):
+        if any(not isinstance(d, _MeasureAnythingDecision) for d in decisions):
             raise TypeError("decisions must contain diagnostic decision records")
         if len({d.candidate_id for d in decisions}) != len(decisions):
             raise ValueError("Diagnostic candidate IDs must be unique")
         if decisions and {
             d.candidate_id for d in decisions if d.decision == "eligible"
         } != {p.candidate_id for p in items}:
-            raise ValueError("Diagnostics must agree with eligible parcels")
+            raise ValueError("Diagnostics must agree with eligible detections")
         self._decisions = decisions
 
     @property
-    def decisions(self) -> tuple[_ParcelDecision, ...]:
+    def decisions(self) -> tuple[_MeasureAnythingDecision, ...]:
         """Diagnostics for every proposed candidate, in proposal order."""
         return self._decisions
 
     @property
-    def items(self) -> tuple[Parcel, ...]:
-        """Eligible parcels in proposal order."""
+    def items(self) -> tuple[MeasureAnythingDetection, ...]:
+        """Eligible detections in proposal order."""
         return self._items
 
 
-class ParcelMeasurements(_ParcelBatch):
+class MeasureAnythingMeasurements(_MeasureAnythingBatch):
     """One measurement frame preserving detector identity, plane, and source timing.
 
-    ``Outcome`` is shared with ``ParcelDetections.Outcome``.
+    ``Outcome`` is shared with ``MeasureAnythingDetections.Outcome``.
 
-    Each eligible parcel has one outcome, including no-fit and unknown-height. An empty
+    Each eligible detection has one outcome, including no-fit and unknown-height. An empty
     successful input produces an empty successful output. A failed input or measurement
     call produces a failed frame with no partial results.
     """
@@ -420,15 +424,15 @@ class ParcelMeasurements(_ParcelBatch):
         *,
         frame: str,
         plane: SupportPlane | None,
-        items: tuple[ParcelMeasurement, ...] = (),
-        sources: tuple[_ParcelSourceTiming, ...] = (),
+        items: tuple[MeasureAnythingMeasurement, ...] = (),
+        sources: tuple[_MeasureAnythingSourceTiming, ...] = (),
         algorithm_id: str = ALGORITHM_ID,
-        outcome: _ParcelBatch.Outcome = _ParcelBatch.Outcome.SUCCESS,
+        outcome: _MeasureAnythingBatch.Outcome = _MeasureAnythingBatch.Outcome.SUCCESS,
         failure_code: str | None = None,
     ) -> None:
         items = tuple(items)
-        if any(not isinstance(item, ParcelMeasurement) for item in items):
-            raise TypeError("items must contain ParcelMeasurement values")
+        if any(not isinstance(item, MeasureAnythingMeasurement) for item in items):
+            raise TypeError("items must contain MeasureAnythingMeasurement values")
         super().__init__(
             items=items,
             frame=frame,
@@ -440,6 +444,6 @@ class ParcelMeasurements(_ParcelBatch):
         )
 
     @property
-    def items(self) -> tuple[ParcelMeasurement, ...]:
-        """Per-parcel geometry outcomes in input order."""
+    def items(self) -> tuple[MeasureAnythingMeasurement, ...]:
+        """Per-object geometry outcomes in input order."""
         return self._items

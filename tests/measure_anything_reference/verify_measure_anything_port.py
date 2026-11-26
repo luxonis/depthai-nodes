@@ -1,4 +1,5 @@
-"""Compare the frozen parcel computation with the bundled port, without network I/O.
+"""Compare the frozen MeasureAnything computation with the bundled port, without network
+I/O.
 
 The reference root must contain the pinned BoxLabRunners source and copies of the
 bundled evaluation-evidence.json and scoped-settings.json named fast-baseline.json and
@@ -26,7 +27,7 @@ import scipy
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-PACKAGE = "depthai_nodes.algorithms.parcel.implementation"
+PACKAGE = "depthai_nodes.algorithms.measure_anything.implementation"
 SOURCE_COMMIT = "d5e35e17d75f91368889dc53d950792eed4096e6"
 RELEASE_ID = "release-f14a597a366c46c6bdba00fa25e45bcd"
 ABSOLUTE_TOLERANCE = 1e-9
@@ -80,7 +81,7 @@ def convert_scene(scene, types):
 
 
 def synthetic_scenes():
-    from tests.parcel_reference.test_fast_baseline import (
+    from tests.measure_anything_reference.test_fast_baseline import (
         PARCEL,
         PLANE,
         render_scene,
@@ -354,7 +355,7 @@ def main():
         "algorithms.fast_baseline_oak4_visibility_01"
     )
     reference_types = importlib.import_module("runner.scene")
-    binding = importlib.import_module("depthai_nodes.algorithms.parcel")
+    binding = importlib.import_module("depthai_nodes.algorithms.measure_anything")
     if (
         binding.ALGORITHM_ID
         != evidence["validation"]["run"]["candidate"]["candidate_id"]
