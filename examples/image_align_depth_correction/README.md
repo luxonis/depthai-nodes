@@ -10,8 +10,9 @@ the source plane within quantization tolerance. A contradiction fails the run.
 It prints a JSON verification record with the policy, method, conventions,
 package location, SDK version, geometry, placement, and measured residuals.
 It checks behavior on the installed SDK rather than requiring an exact SDK
-version. The OAK-4 app requirements retain the versions used for its recorded
-hardware verification.
+version. The OAK-4 app pins DepthAI 3.12.0, NumPy 2.2.6 and OpenCV 4.10.0.84;
+its OpenCV pin matches the package requirement. Recorded hardware verification
+used OpenCV 4.12.0.88, so it does not verify this updated dependency bundle.
 
 ## Run the host fixture
 
@@ -19,13 +20,15 @@ Build from the repository root and install the wheel into an isolated
 environment. Run the copied example outside the checkout.
 
 ```bash
-python -m build --wheel --outdir /tmp/axial-dist
-python -m venv /tmp/axial-installed
-/tmp/axial-installed/bin/python -m pip install /tmp/axial-dist/depthai_nodes-*.whl
-cp examples/image_align_depth_correction/main.py /tmp/axial-example.py
+AXIAL_DIST="$(mktemp -d /tmp/axial-dist.XXXXXX)"
+AXIAL_ENV="$(mktemp -d /tmp/axial-installed.XXXXXX)"
+python -m build --wheel --outdir "$AXIAL_DIST"
+python -m venv "$AXIAL_ENV"
+"$AXIAL_ENV/bin/python" -m pip install "$AXIAL_DIST"/depthai_nodes-*.whl
+cp examples/image_align_depth_correction/main.py "$AXIAL_ENV/axial-example.py"
 (
     cd /tmp
-    oakctl run-script /tmp/axial-installed/bin/python -I /tmp/axial-example.py --report /tmp/axial-host.json
+    oakctl run-script "$AXIAL_ENV/bin/python" -I "$AXIAL_ENV/axial-example.py" --report /tmp/axial-host.json
 )
 ```
 
@@ -44,16 +47,19 @@ SHA-256 and source revision to the report. Editable installs fail this check.
 
 From the repository root, use the same wheel and source fixture. Stage only
 these example files and one wheel, so the app cannot import a hidden checkout.
+Use a fresh staging directory and resolve the example requirements together with
+the package wheel to avoid incompatible or stale dependencies.
 
 ```bash
-mkdir -p /tmp/axial-oak4/wheels
-cp examples/image_align_depth_correction/main.py /tmp/axial-oak4/
-cp examples/image_align_depth_correction/requirements.txt /tmp/axial-oak4/
-cp examples/image_align_depth_correction/oakapp.toml /tmp/axial-oak4/
-cp /tmp/axial-dist/depthai_nodes-*.whl /tmp/axial-oak4/wheels/
-python -m pip download --dest /tmp/axial-oak4/wheels --platform manylinux_2_28_aarch64 --platform manylinux2014_aarch64 --platform linux_aarch64 --python-version 3.11 --implementation cp --abi cp311 --only-binary=:all: -r /tmp/axial-oak4/requirements.txt
+AXIAL_STAGE="$(mktemp -d /tmp/axial-oak4.XXXXXX)"
+mkdir "$AXIAL_STAGE/wheels"
+cp examples/image_align_depth_correction/main.py "$AXIAL_STAGE/"
+cp examples/image_align_depth_correction/requirements.txt "$AXIAL_STAGE/"
+cp examples/image_align_depth_correction/oakapp.toml "$AXIAL_STAGE/"
+cp "$AXIAL_DIST"/depthai_nodes-*.whl "$AXIAL_STAGE/wheels/"
+python -m pip download --dest "$AXIAL_STAGE/wheels" --platform manylinux_2_28_aarch64 --platform manylinux2014_aarch64 --platform linux_aarch64 --python-version 3.11 --implementation cp --abi cp311 --only-binary=:all: -r "$AXIAL_STAGE/requirements.txt" "$AXIAL_STAGE"/wheels/depthai_nodes-*.whl
 oakctl app list -d DEVICE --format json
-oakctl app run /tmp/axial-oak4 -d DEVICE
+oakctl app run "$AXIAL_STAGE" -d DEVICE
 oakctl app logs 00000000-0000-0000-0000-000000000000 -d DEVICE --no-follow
 ```
 

@@ -18,7 +18,7 @@
       "depthai_nodes/algorithms/measure_anything/implementation/scene.py": "fd36bf5375f7262c3d562f0541afe8dee5f1f4470c79b27a1b52778b9b1a0c6f",
       "depthai_nodes/algorithms/measure_anything/implementation/scoped-settings.json": "66f029694119c77ddad557bd58257b8743e7f284441d94a317b08fffc5496f10",
       "depthai_nodes/algorithms/measure_anything/implementation/visibility.py": "1b1bbc5a28441dadd8c68a6031531d6330f99a32af3baeb7c709cf6240a48f30",
-      "depthai_nodes/algorithms/measure_anything/implementation/visualization.html": "013c991515477602844bd0d59a81ab58f77adb6a8cd8b1a544cf865a866d9491",
+      "depthai_nodes/algorithms/measure_anything/implementation/visualization.html": "d25983f1160f95e3ad770647f681f71543f86b460e885d5a03ed2219fc4df498",
       "depthai_nodes/algorithms/measure_anything/manifest.py": "84da6fc763a8265d1c7aae15418977c80de9bf743d2d73628a5e4bd9ddf76547",
       "depthai_nodes/message/measure_anything.py": "293bab0b45df214692f3c4dcc257c9e067b11a24031ef72e96dfdc12448a33c2",
       "depthai_nodes/message/support_plane.py": "0eaeec70dda37d48b3160d1f1a14cffce766f23182289d1b569ffb444f1f44e3",
@@ -78,7 +78,7 @@
   },
   "visualization": {
     "path": "depthai_nodes/algorithms/measure_anything/implementation/visualization.html",
-    "sha256": "013c991515477602844bd0d59a81ab58f77adb6a8cd8b1a544cf865a866d9491",
+    "sha256": "d25983f1160f95e3ad770647f681f71543f86b460e885d5a03ed2219fc4df498",
     "source_commit": "4b3853742c34a2d4548cfb599e05f37217dcec83",
     "source_path": "algorithms/fast_baseline_oak4_visibility_01/visualization.html",
     "source_sha256": "9dabd2783d4afdbc61217091fe341e8bb30c9cbc796cb5401125bf8c8f7c328e",
