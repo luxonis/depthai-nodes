@@ -1,6 +1,6 @@
 """Verify ImageAlign -> axial correction -> PointCloud with deterministic replay.
 
-Run with an installed depthai-nodes wheel and depthai==3.12.0. No camera, model,
+Run with an installed depthai-nodes wheel and depthai>=3.12.0. No camera, model,
 recording, network input, or MeasureAnything algorithm is used. The same file runs on
 the workstation or inside the accompanying OAK-4 standalone app.
 """
@@ -100,8 +100,6 @@ def fixture():
 
 def run(execution="host"):
     """Assert SDK source-Z behavior and corrected RGB-frame cloud geometry."""
-    if dai.__version__ != "3.12.0":
-        raise RuntimeError("This behavioral fixture requires depthai==3.12.0")
     native_device = execution == "oak4"
     source, target = fixture()
     with dai.Pipeline(createImplicitDevice=native_device) as pipeline:

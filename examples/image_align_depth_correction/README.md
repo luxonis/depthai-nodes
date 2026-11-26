@@ -9,6 +9,9 @@ the target Z across the image, and that the resulting RGB-frame cloud recovers
 the source plane within quantization tolerance. A contradiction fails the run.
 It prints a JSON verification record with the policy, method, conventions,
 package location, SDK version, geometry, placement, and measured residuals.
+It checks behavior on the installed SDK rather than requiring an exact SDK
+version. The OAK-4 app requirements retain the versions used for its recorded
+hardware verification.
 
 ## Run the host fixture
 

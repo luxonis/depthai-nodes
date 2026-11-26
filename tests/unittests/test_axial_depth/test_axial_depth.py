@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+from importlib.metadata import version
 from pathlib import Path
 
 
@@ -44,6 +45,7 @@ def test_deterministic_host_pipeline(tmp_path):
     )
     assert completed.returncode == 0, completed.stdout + completed.stderr
     result = json.loads(report.read_text())
+    assert result["sdk_version"] == version("depthai")
     assert result["source_z_retained_by_image_align"]
     assert result["correction"]["correction_enabled"]
     assert result["correction"]["output_axial_convention"] == "target_camera_axial_z"
