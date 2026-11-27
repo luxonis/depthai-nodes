@@ -121,6 +121,25 @@ from depthai_nodes.runtime import onnx_qnn_session
 session = onnx_qnn_session("model.onnx")
 ```
 
+For peripheral custom frontends, run `cd frontend && npm ci && npm run build`, then:
+
+```python
+from pathlib import Path
+
+import depthai as dai
+from depthai_nodes.runtime import serve_frontend
+
+with serve_frontend(Path(__file__).resolve().parent / "frontend" / "dist"):
+    visualizer = dai.RemoteConnection(serveFrontend=False)
+    # Initialize the device and run the application's pipeline here.
+```
+
+- Serves assets and browser routes at `http://localhost:8082`; closes on exit or
+  exception. Missing builds report the build command.
+- Use `enabled=False` for a separate development server. Hosting also skips when
+  `OAKAPP_STATIC_FRONTEND_PORT` is set; standalone apps keep `[static_frontend]` in
+  `oakapp.toml`.
+
 ## 🤝 Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup, parser guidelines, and testing instructions. Feedback and bug reports are welcome in [GitHub issues](https://github.com/luxonis/depthai-nodes/issues).
