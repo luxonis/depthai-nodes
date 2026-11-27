@@ -2,7 +2,6 @@
 
 from collections.abc import Sequence
 from datetime import timedelta
-from typing import Any
 
 import depthai as dai
 
@@ -16,26 +15,6 @@ from depthai_nodes.node.box_associator.box_labeler import BoxLabeler
 
 # A label colour (`box_label`) carries view + 1 in one byte, 0 being background.
 MAX_VIEWS = 255
-
-
-def _check_sync_threshold(value: Any) -> None:
-    """Check a sync threshold given to ``build``.
-
-    Args:
-        value: Threshold to check, ``None`` for depthai's default.
-
-    Raises:
-        TypeError: If the threshold is not ``None`` and not a ``timedelta``.
-        ValueError: If the threshold is zero or negative.
-    """
-    if value is None:
-        return
-    if not isinstance(value, timedelta):
-        raise TypeError(
-            f"syncThreshold must be a timedelta or None, got {type(value).__name__}"
-        )
-    if value <= timedelta(0):
-        raise ValueError(f"syncThreshold must be positive, got {value}")
 
 
 class BoxAssociator(BaseThreadedHostNode):
@@ -113,7 +92,14 @@ class BoxAssociator(BaseThreadedHostNode):
             raise ValueError(
                 f"views must hold 1 to {MAX_VIEWS} views, got {len(views)}"
             )
-        _check_sync_threshold(syncThreshold)
+        if syncThreshold is not None:
+            if not isinstance(syncThreshold, timedelta):
+                raise TypeError(
+                    "syncThreshold must be a timedelta or None, got "
+                    f"{type(syncThreshold).__name__}"
+                )
+            if syncThreshold <= timedelta(0):
+                raise ValueError(f"syncThreshold must be positive, got {syncThreshold}")
 
         cloud = self.createSubnode(dai.node.PointCloud)
         cloud.initialConfig.setOrganized(True)

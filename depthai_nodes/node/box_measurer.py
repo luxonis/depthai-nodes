@@ -8,10 +8,7 @@ import depthai as dai
 from depthai_nodes.message.support_plane import SupportPlane
 from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
 from depthai_nodes.node.box_associator import BoxAssociator
-from depthai_nodes.node.box_associator.box_associator import (
-    MAX_VIEWS,
-    _check_sync_threshold,
-)
+from depthai_nodes.node.box_associator.box_associator import MAX_VIEWS
 from depthai_nodes.node.box_detector import BoxDetector
 from depthai_nodes.node.box_detector.box_detector import _check_threshold
 from depthai_nodes.node.box_dimensioner import BoxDimensioner
@@ -102,7 +99,14 @@ class BoxMeasurer(BaseThreadedHostNode):
         if supportPlane is not None:
             _check_instance("supportPlane", supportPlane, SupportPlane)
         threshold = _check_threshold(confidenceThreshold)
-        _check_sync_threshold(syncThreshold)
+        if syncThreshold is not None:
+            if not isinstance(syncThreshold, timedelta):
+                raise TypeError(
+                    "syncThreshold must be a timedelta or None, got "
+                    f"{type(syncThreshold).__name__}"
+                )
+            if syncThreshold <= timedelta(0):
+                raise ValueError(f"syncThreshold must be positive, got {syncThreshold}")
         if not 1 <= len(views) <= MAX_VIEWS:
             raise ValueError(
                 f"views must hold 1 to {MAX_VIEWS} views, got {len(views)}"
