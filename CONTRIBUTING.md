@@ -4,6 +4,9 @@ This guide covers setting up a development environment, adding parsers, and vali
 
 ## Development setup
 
+Use Python 3.12 for development. The package requires Python 3.10 or newer,
+and CI tests both Python 3.10 and 3.12.
+
 Clone the repository and run these commands from its root, preferably in a virtual environment:
 
 ```bash

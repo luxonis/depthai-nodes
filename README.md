@@ -30,6 +30,9 @@ For complete Python API documentation, see the [DepthAINodes documentation and A
 
 ## 🛠️ Installation
 
+Requires Python 3.10 or newer. We use Python 3.12 for development and release
+builds, and CI tests both Python 3.10 and 3.12.
+
 Install from PyPI:
 
 ```bash
