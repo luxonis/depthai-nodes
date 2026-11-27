@@ -443,22 +443,26 @@ def ids_by_key(clouds: BoxClouds) -> dict[tuple[int, int], int]:
 
 
 def test_a_merge_keeps_the_older_id_and_the_newer_never_reappears():
+    # View 2 sees the same side as view 1 and is absent from the merge.
     left, right = opposite_sides().views
 
     sent = run(
         [
-            frame([left, {}]),
-            frame([{}, right]),
-            frame([left, right]),
-            frame([{}, right]),
+            frame([left, {}, {}]),
+            frame([{}, right, right]),
+            frame([left, right, {}]),
+            frame([{}, right, {}]),
+            frame([{}, {}, right]),
         ]
     )
 
     older = ids_by_key(sent[0])[(0, 1)]
     newer = ids_by_key(sent[1])[(1, 1)]
     assert older != newer
+    assert ids_by_key(sent[1]) == {(1, 1): newer, (2, 1): newer}
     assert ids_by_key(sent[2]) == {(0, 1): older, (1, 1): older}
     assert ids_by_key(sent[3]) == {(1, 1): older}
+    assert ids_by_key(sent[4]) == {(2, 1): older}
 
 
 def test_on_a_split_the_group_with_most_of_the_ids_keys_keeps_it():

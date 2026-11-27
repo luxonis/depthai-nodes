@@ -326,6 +326,7 @@ class _BoxIdentities:
                 box_id = self._next_box_id
                 self._next_box_id += 1
             box_ids.append(box_id)
+        self._retire_merged_ids(claims, box_ids)
         present = set()
         for group, box_id in zip(groups, box_ids, strict=True):
             for key in group.keys:
@@ -333,6 +334,33 @@ class _BoxIdentities:
                 present.add(key)
         self._age(present)
         return box_ids
+
+    def _retire_merged_ids(self, claims: Sequence[_Claim], box_ids: list[int]) -> None:
+        """Move the absent keys of each ID no group took to the ID that replaced it.
+
+        The heir is the ID of the group with the most keys mapping to the retired ID,
+        then the most points, then the first. Without this, an absent key would bring
+        the retired ID back when its view sees the box alone.
+        """
+        retired = {box_id for claim in claims for box_id in claim.candidates}
+        retired -= set(box_ids)
+        heirs = {}
+        for box_id in retired:
+            heir = max(
+                (
+                    index
+                    for index, claim in enumerate(claims)
+                    if box_id in claim.candidates
+                ),
+                key=lambda index: (
+                    claims[index].candidates.count(box_id),
+                    claims[index].points,
+                ),
+            )
+            heirs[box_id] = box_ids[heir]
+        for key, box_id in self._box_ids.items():
+            if box_id in heirs:
+                self._box_ids[key] = heirs[box_id]
 
     def _age(self, present: set[Key]) -> None:
         """Reset present keys and forget keys absent for ``MAX_ABSENT_FRAMES``."""
