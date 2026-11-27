@@ -1,6 +1,8 @@
 """Association of tracked box detections from one or more views into box clouds."""
 
 from collections.abc import Sequence
+from datetime import timedelta
+from typing import Any
 
 import depthai as dai
 
@@ -16,6 +18,26 @@ from depthai_nodes.node.box_associator.box_labeler import BoxLabeler
 MAX_VIEWS = 255
 
 
+def _check_sync_threshold(value: Any) -> None:
+    """Check a sync threshold given to ``build``.
+
+    Args:
+        value: Threshold to check, ``None`` for depthai's default.
+
+    Raises:
+        TypeError: If the threshold is not ``None`` and not a ``timedelta``.
+        ValueError: If the threshold is zero or negative.
+    """
+    if value is None:
+        return
+    if not isinstance(value, timedelta):
+        raise TypeError(
+            f"syncThreshold must be a timedelta or None, got {type(value).__name__}"
+        )
+    if value <= timedelta(0):
+        raise ValueError(f"syncThreshold must be positive, got {value}")
+
+
 class BoxAssociator(BaseThreadedHostNode):
     """Associate tracked box detections from one or more views into box clouds.
 
@@ -29,10 +51,12 @@ class BoxAssociator(BaseThreadedHostNode):
     coordinates are the frame of the depth's extrinsics, which is the color camera
     for depth aligned to color.
 
-    With several devices, their capture must be frame-synced (PTP). A frame that
-    lacks any view's frame produces no output. If any view's device is lost or any
-    view's stream stalls, output stops for good while the pipeline keeps running;
-    an app that wants an error calls ``pipeline.setStopOnDeviceLoss(True)``.
+    With several devices, views are grouped by host timestamp, and a frame whose
+    views are not captured within the sync threshold produces no output. The default
+    threshold (depthai's 10 ms) needs frame-synced capture (PTP). If any view's
+    device is lost or any view's stream stalls, output stops for good while the
+    pipeline keeps running; an app that wants an error calls
+    ``pipeline.setStopOnDeviceLoss(True)``.
 
     Requires open3d, installed with ``pip install "depthai-nodes[box-measurement]"``.
     """
@@ -43,7 +67,9 @@ class BoxAssociator(BaseThreadedHostNode):
         self._assembler: BoxCloudAssembler | None = None
 
     def build(
-        self, views: Sequence[tuple[dai.Node.Output, dai.Node.Output]]
+        self,
+        views: Sequence[tuple[dai.Node.Output, dai.Node.Output]],
+        syncThreshold: timedelta | None = None,
     ) -> "BoxAssociator":
         """Set the views whose box detections are associated.
 
@@ -54,6 +80,13 @@ class BoxAssociator(BaseThreadedHostNode):
                 frame the detections were made on, at any resolution. Depth that
                 doesn't cover that field of view isn't detected, and boxes are
                 then labelled at the wrong points.
+            syncThreshold: The widest spread of host timestamps among the views of
+                one frame. ``None`` keeps depthai's default of 10 ms, which needs
+                frame-synced capture (PTP). Without PTP, use about half the frame
+                period. A larger value can group frames that were captured one
+                frame apart. Use a larger value only for static or slow scenes: a
+                moving box is at a different position in each view, and it can be
+                split into two boxes or measured too large.
 
         Returns:
             The configured node instance.
@@ -61,8 +94,11 @@ class BoxAssociator(BaseThreadedHostNode):
         Raises:
             ImportError: If open3d is not installed.
             RuntimeError: If the node is already built.
-            ValueError: If ``views`` is empty or holds more than 255 views. Views
-                that share an output are not checked.
+            TypeError: If ``syncThreshold`` is not ``None`` and not a
+                ``timedelta``.
+            ValueError: If ``views`` is empty or holds more than 255 views, or if
+                ``syncThreshold`` is zero or negative. Views that share an output
+                are not checked.
         """
         try:
             import open3d  # noqa: F401
@@ -77,12 +113,16 @@ class BoxAssociator(BaseThreadedHostNode):
             raise ValueError(
                 f"views must hold 1 to {MAX_VIEWS} views, got {len(views)}"
             )
+        _check_sync_threshold(syncThreshold)
 
         cloud = self.createSubnode(dai.node.PointCloud)
         cloud.initialConfig.setOrganized(True)
         cloud.sync.setRunOnHost(True)
         pairing = self.createSubnode(dai.node.Sync)
         pairing.setRunOnHost(True)
+        if syncThreshold is not None:
+            cloud.sync.setSyncThreshold(syncThreshold)
+            pairing.setSyncThreshold(syncThreshold)
         for view, (detections, depth) in enumerate(views):
             labeler = self.createSubnode(BoxLabeler).build(detections, depth, view)
             depth.link(cloud.getDepthInput(str(view)))

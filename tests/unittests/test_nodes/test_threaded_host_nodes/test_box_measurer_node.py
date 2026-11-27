@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Any, cast
 
 import depthai as dai
@@ -24,6 +25,7 @@ from tests.utils import (  # noqa: E402
     OutputMock,
     PipelineMock,
     PointCloudMock,
+    SyncMock,
 )
 from tests.utils.nodes.mocks.pipeline import DetectionParserMock  # noqa: E402
 
@@ -141,6 +143,16 @@ def test_build_threshold_reaches_every_parser(pipeline: PipelineMock):
     assert thresholds == pytest.approx([0.65, 0.65])
 
 
+def test_build_sync_threshold_reaches_both_syncs(pipeline: PipelineMock):
+    threshold = timedelta(milliseconds=37)
+
+    build(pipeline, [view(A), view(B)], syncThreshold=threshold)
+
+    cloud = find_node(pipeline, PointCloudMock)
+    pairing = find_node(pipeline, SyncMock)
+    assert cloud.sync.syncThreshold == pairing.syncThreshold == threshold
+
+
 def test_live_threshold_reaches_every_parser(pipeline: PipelineMock):
     measurer = build(pipeline, [view(A), view(B)])
 
@@ -179,17 +191,23 @@ def test_out_is_the_dimensioner_out(pipeline: PipelineMock):
 
 
 @pytest.mark.parametrize(
-    ("views", "kwargs", "error"),
+    ("views", "kwargs", "error", "match"),
     [
-        (None, {"confidenceThreshold": 1.1}, ValueError),
-        (None, {"confidenceThreshold": "0.5"}, TypeError),
-        (None, {"supportPlane": "floor"}, TypeError),
-        ([], {}, ValueError),
-        ([view(A) for _ in range(MAX_VIEWS + 1)], {}, ValueError),
+        (None, {"confidenceThreshold": 1.1}, ValueError, "confidenceThreshold"),
+        (None, {"confidenceThreshold": "0.5"}, TypeError, "confidenceThreshold"),
+        (None, {"supportPlane": "floor"}, TypeError, "supportPlane"),
+        (None, {"syncThreshold": timedelta(0)}, ValueError, "syncThreshold"),
+        ([], {}, ValueError, "views"),
+        ([view(A) for _ in range(MAX_VIEWS + 1)], {}, ValueError, "views"),
     ],
 )
 def test_invalid_build_arguments_are_rejected_before_the_model_is_fetched(
-    pipeline: PipelineMock, monkeypatch: pytest.MonkeyPatch, views, kwargs, error
+    pipeline: PipelineMock,
+    monkeypatch: pytest.MonkeyPatch,
+    views,
+    kwargs,
+    error,
+    match,
 ):
     def no_fetch(description):
         raise AssertionError("the model was fetched")
@@ -197,7 +215,7 @@ def test_invalid_build_arguments_are_rejected_before_the_model_is_fetched(
     monkeypatch.setattr(dai, "getModelFromZoo", no_fetch)
     measurer = create(pipeline)
 
-    with pytest.raises(error):
+    with pytest.raises(error, match=match):
         measurer.build(cast(Any, [view(A)] if views is None else views), **kwargs)
 
 

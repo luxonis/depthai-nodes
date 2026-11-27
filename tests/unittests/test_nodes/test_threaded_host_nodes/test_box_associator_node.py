@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Any, cast
 
 import depthai as dai
@@ -96,21 +97,40 @@ def test_the_label_cloud_is_organized_and_both_syncs_run_on_the_host_untuned(
     assert cloud.initialConfig.getOrganized()
     for sync in (cloud.sync, pairing_sync(pipeline)):
         assert sync.runOnHost()
-        assert not sync.syncThresholdSet
+        assert sync.syncThreshold is None
     assembler = find_node(pipeline, BoxCloudAssembler)
     assert assembler._linked_args == (pairing_sync(pipeline).out,)
     # The pipeline mock shadows ``out``, so read the node's own property.
     assert BoxAssociator.out.fget(associator) is assembler.out
 
 
-@pytest.mark.parametrize("count", [0, MAX_VIEWS + 1])
-def test_build_rejects_a_view_count_out_of_range_creating_nothing(
-    pipeline: PipelineMock, count: int
+def test_a_sync_threshold_reaches_both_syncs(pipeline: PipelineMock):
+    threshold = timedelta(milliseconds=37)
+
+    create(pipeline).build(cast(Any, views(2)), syncThreshold=threshold)
+
+    cloud = find_node(pipeline, PointCloudMock)
+    for sync in (cloud.sync, pairing_sync(pipeline)):
+        assert sync.syncThreshold == threshold
+
+
+@pytest.mark.parametrize(
+    ("count", "kwargs", "error", "match"),
+    [
+        (0, {}, ValueError, "views"),
+        (MAX_VIEWS + 1, {}, ValueError, "views"),
+        (2, {"syncThreshold": 0.05}, TypeError, "syncThreshold"),
+        (2, {"syncThreshold": timedelta(0)}, ValueError, "syncThreshold"),
+        (2, {"syncThreshold": timedelta(milliseconds=-1)}, ValueError, "syncThreshold"),
+    ],
+)
+def test_build_rejects_invalid_arguments_creating_nothing(
+    pipeline: PipelineMock, count: int, kwargs, error, match
 ):
     associator = create(pipeline)
 
-    with pytest.raises(ValueError, match="views"):
-        associator.build(cast(Any, views(count)))
+    with pytest.raises(error, match=match):
+        associator.build(cast(Any, views(count)), **kwargs)
 
     assert pipeline.getAllNodes() == [associator]
 

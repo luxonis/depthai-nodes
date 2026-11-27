@@ -1,13 +1,17 @@
 """Box measurement from views, composed of detection, association and dimensioning."""
 
 from collections.abc import Sequence
+from datetime import timedelta
 
 import depthai as dai
 
 from depthai_nodes.message.support_plane import SupportPlane
 from depthai_nodes.node.base_threaded_host_node import BaseThreadedHostNode
 from depthai_nodes.node.box_associator import BoxAssociator
-from depthai_nodes.node.box_associator.box_associator import MAX_VIEWS
+from depthai_nodes.node.box_associator.box_associator import (
+    MAX_VIEWS,
+    _check_sync_threshold,
+)
 from depthai_nodes.node.box_detector import BoxDetector
 from depthai_nodes.node.box_detector.box_detector import _check_threshold
 from depthai_nodes.node.box_dimensioner import BoxDimensioner
@@ -25,9 +29,10 @@ class BoxMeasurer(BaseThreadedHostNode):
 
     Points and the support plane are in shared coordinates. With several views, the
     pipeline's multi-device calibration defines them; with one, they are the
-    depth's own frame. With several views, the devices' capture must be
-    frame-synced (PTP). Views are grouped by host timestamp, and a frame whose views
-    don't arrive together produces no output.
+    depth's own frame. With several views, views are grouped by host timestamp, and
+    a frame whose views are not captured within the sync threshold produces no
+    output. The default threshold (depthai's 10 ms) needs frame-synced capture
+    (PTP).
 
     Measurement stops for good when any view's device is lost or any view's stream
     stalls, while the pipeline keeps running. Call
@@ -55,6 +60,7 @@ class BoxMeasurer(BaseThreadedHostNode):
         views: Sequence[tuple[dai.Node.Output, dai.Node.Output]],
         supportPlane: SupportPlane | None = None,
         confidenceThreshold: float = 0.5,
+        syncThreshold: timedelta | None = None,
     ) -> "BoxMeasurer":
         """Build one detector per view, the associator and the dimensioner.
 
@@ -69,6 +75,13 @@ class BoxMeasurer(BaseThreadedHostNode):
             supportPlane: Initial active support plane; ``None`` leaves boxes
                 ineligible until `setSupportPlane` is called.
             confidenceThreshold: Minimum detection confidence, between zero and one.
+            syncThreshold: The widest spread of host timestamps among the views of
+                one frame. ``None`` keeps depthai's default of 10 ms, which needs
+                frame-synced capture (PTP). Without PTP, use about half the frame
+                period. A larger value can group frames that were captured one
+                frame apart. Use a larger value only for static or slow scenes: a
+                moving box is at a different position in each view, and it can be
+                split into two boxes or measured too large.
 
         Returns:
             The configured node instance.
@@ -76,17 +89,20 @@ class BoxMeasurer(BaseThreadedHostNode):
         Raises:
             ImportError: If open3d is not installed.
             RuntimeError: If ``build`` was already called, even if that call failed.
-            TypeError: If ``supportPlane`` is not a ``SupportPlane`` or
-                ``confidenceThreshold`` is not a real number.
+            TypeError: If ``supportPlane`` is not a ``SupportPlane``,
+                ``confidenceThreshold`` is not a real number, or ``syncThreshold``
+                is not ``None`` and not a ``timedelta``.
             ValueError: If ``views`` is empty or holds more than 255 views, if
                 ``confidenceThreshold`` is not finite or not between zero and one,
-                or if a view's color stream's device is not an RVC4.
+                if ``syncThreshold`` is zero or negative, or if a view's color
+                stream's device is not an RVC4.
         """
         if self._built:
             raise RuntimeError("BoxMeasurer.build was already called")
         if supportPlane is not None:
             _check_instance("supportPlane", supportPlane, SupportPlane)
         threshold = _check_threshold(confidenceThreshold)
+        _check_sync_threshold(syncThreshold)
         if not 1 <= len(views) <= MAX_VIEWS:
             raise ValueError(
                 f"views must hold 1 to {MAX_VIEWS} views, got {len(views)}"
@@ -100,7 +116,8 @@ class BoxMeasurer(BaseThreadedHostNode):
             [
                 (detector.out, depth)
                 for detector, (_, depth) in zip(self._detectors, views)
-            ]
+            ],
+            syncThreshold,
         )
         self._dimensioner.build(self._associator.out, supportPlane)
         return self
