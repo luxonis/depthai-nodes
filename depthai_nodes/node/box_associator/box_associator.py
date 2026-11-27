@@ -54,7 +54,7 @@ class BoxAssociator(BaseThreadedHostNode):
 
         Args:
             views: One ``(detections, depth)`` pair per view. ``detections`` emits
-                ``BoxDetections``. ``depth`` emits depth ``ImgFrame``s aligned to
+                ``BoxDetections``. ``depth`` emits depth ``ImgFrame`` messages aligned to
                 the view's color stream: they cover the same field of view as the
                 frame the detections were made on, at any resolution. Depth that
                 doesn't cover that field of view isn't detected, and boxes are
