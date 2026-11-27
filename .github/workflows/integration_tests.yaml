@@ -42,7 +42,13 @@ jobs:
     - name: Install package
       run: pip install -e ".[dev]"
 
+    - name: Install frozen measurement dependencies
+      if: matrix.python-version != '3.14'
+      run: pip install -e ".[measure-anything]"
+
     - name: Run integration tests
+      env:
+        PYTEST_ADDOPTS: ${{ matrix.python-version == '3.14' && format('--ignore={0}/tests/measure_anything_reference --ignore={0}/tests/unittests/test_measure_anything_algorithm --ignore={0}/tests/unittests/test_measure_anything_nodes', github.workspace) || '' }}
       run: |
         cd tests/stability_tests
         export B2_APPLICATION_KEY=${{ secrets.B2_APPLICATION_KEY }}
