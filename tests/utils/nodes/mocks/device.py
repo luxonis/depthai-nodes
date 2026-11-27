@@ -3,7 +3,7 @@ import numpy as np
 
 
 class DeviceMock:
-    """A device with a settable ID, platform and EEPROM calibration.
+    """A device with a settable ID, platform and active calibration.
 
     Its calibration starts empty, without camera data or IMU extrinsics.
     """
@@ -25,7 +25,7 @@ class DeviceMock:
     def setPlatform(self, platform: dai.Platform):
         self._platform = platform
 
-    def readCalibration(self) -> dai.CalibrationHandler:
+    def getCalibration(self) -> dai.CalibrationHandler:
         return self._calibration
 
     def setCalibration(self, calibration: dai.CalibrationHandler):

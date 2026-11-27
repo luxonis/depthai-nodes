@@ -352,7 +352,7 @@ def _imu_to_shared_rotation(
             ``multi_device_calibration`` is set without that device.
     """
     device_id = device.getDeviceId()
-    calibration = device.readCalibration()
+    calibration = device.getCalibration()
     socket: dai.CameraBoardSocket | None = None
     camera_to_shared = np.eye(3, dtype=np.float32)
     if multi_device_calibration is not None:
