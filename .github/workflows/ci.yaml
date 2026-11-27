@@ -35,7 +35,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: "3.12"
 
     - name: Install pre-commit
       run: python -m pip install 'pre-commit<4.0.0'
@@ -52,7 +52,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.12'
 
     - name: Install documentation tooling
       run: python -m pip install 'pydoctor==25.10.1'
@@ -69,7 +69,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ['3.10', '3.12']
+        python-version: ['3.12', '3.10', '3.14']
 
     runs-on: ${{ matrix.os }}
 
@@ -90,9 +90,15 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libgomp1
 
     - name: Install package
-      run: pip install -e ".[dev,box-measurement,measure-anything]"
+      run: pip install -e ".[dev,box-measurement]"
+
+    - name: Install frozen measurement dependencies
+      if: matrix.python-version != '3.14'
+      run: pip install -e ".[measure-anything]"
 
     - name: Run tests
+      env:
+        PYTEST_ADDOPTS: ${{ matrix.python-version == '3.14' && '--ignore=tests/measure_anything_reference --ignore=tests/unittests/test_measure_anything_algorithm --ignore=tests/unittests/test_measure_anything_nodes' || '' }}
       run: pytest -m "not e2e" --cov=depthai_nodes --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
     - name: Upload results to Codecov
@@ -107,7 +113,7 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Upload coverage as artifact
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10'
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
       uses: actions/upload-artifact@v4
       with:
         name: coverage

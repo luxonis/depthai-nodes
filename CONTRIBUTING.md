@@ -4,6 +4,9 @@ This guide covers setting up a development environment, adding parsers, and vali
 
 ## Development setup
 
+Use Python 3.12 for development. The package requires Python 3.10 or newer,
+and CI tests Python 3.10, 3.12, and 3.14.
+
 Clone the repository and run these commands from its root, preferably in a virtual environment:
 
 ```bash
@@ -91,6 +94,8 @@ pytest tests/unittests
 Install the extra with `pip install -e ".[dev,box-measurement]"` to run all box measurement tests. Without open3d, the tests in modules that call `pytest.importorskip("open3d")` are skipped. The message, box detector, and missing-open3d import tests still run.
 
 For MeasureAnything tests, install `pip install -e ".[dev,measure-anything]"`.
+The frozen measurement dependencies do not support Python 3.14. CI runs these
+tests on Python 3.10 and 3.12, and the remaining unit tests also run on Python 3.14.
 
 ### Integration tests
 
