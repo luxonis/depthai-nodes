@@ -15,7 +15,7 @@ class BoxLabeler(dai.node.HostNode):
     background is black.
 
     Attributes:
-        out: Output stream of RGB888i label ``ImgFrame``s.
+        out: Output stream of RGB888i label ``ImgFrame`` messages.
         passthroughDetections: Output stream of the painted ``BoxDetections``, as a
             new message with the depth frame's timestamps and sequence number.
     """
