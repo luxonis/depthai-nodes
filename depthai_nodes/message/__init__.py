@@ -1,7 +1,7 @@
 """Native parser messages and custom messages for DepthAI v3.
 
 Parser creators return native DepthAI messages. The package requires DepthAI
-3.11 or newer. Use `depthai_nodes.message.creators` to construct messages from
+3.12.0. Use `depthai_nodes.message.creators` to construct messages from
 arrays and `depthai_nodes.message.utils` for copying and detection geometry.
 
 .. contents:: Contents
@@ -28,6 +28,10 @@ and value ranges for each payload:
 
 Custom messages
 ===============
+
+`AxialDepthFrameResult` associates native target-axial depth with correction
+provenance inside one Python runtime, including standalone OAK-4 apps.
+
 
 `Collection` stores items of one runtime type. Add items with ``append()``
 or ``extend()``. The first item establishes the accepted type; an initially
@@ -114,9 +118,37 @@ and `BoxDimensions` are frozen dataclasses that take keyword arguments and
 raise the same errors as the support plane value types.
 
 Boxes are measured against a support plane; see "Support plane" above.
+
+MeasureAnything measurement
+---------------------------
+
+``MeasureAnythingDetectorConfig`` holds the existing `SupportPlane` value for runtime
+updates through the detector's ``inputConfig``. An initial support plane can be
+passed to ``build``. Without one, scene groups are consumed without processing
+or output until a config supplies the plane. One queued update is applied before each scene,
+when available. Its state persists and its plane snapshot travels through measurement.
+Camera intrinsics, distortion, poses, and the reference-frame label come from
+native image and point-cloud transformation metadata.
+
+``MeasureAnythingDetections`` holds a tuple of eligible ``MeasureAnythingDetection`` objects. Each retains a
+read-only float32 ``xyz_mm`` array in source-point order. ``candidate_id`` is a
+zero-based proposal index local to the frame. ``decisions`` preserves all proposal
+eligibility decisions without retaining the source cloud. Decision and source-timing
+records are internal output details rather than public constructors. ``MeasureAnythingMeasurements``
+holds one ``MeasureAnythingMeasurement`` per detected object. Its ``MeasureAnythingMeasurement.Status``
+distinguishes no fit, a footprint with unknown height, and a measured cuboid.
+``MeasureAnythingCuboid`` carries the base center, length axis, length, width, and optional
+height. These messages preserve the frame's upward plane, complete algorithm ID,
+all available source timing, and ``MeasureAnythingDetections.Outcome``. The same outcome
+enum is available through ``MeasureAnythingMeasurements.Outcome``. Successful empty frames
+and failed frames are distinct.
+
+MeasureAnything messages retain nested Python values on one host. They have no XLink or
+RemoteConnection serialization.
 """
 
 from .auto_support_plane_result import AutoSupportPlaneResult
+from .axial_depth import AxialDepthFrameResult
 from .box_detections import BoxDetection, BoxDetections
 from .box_measurements import (
     BoxDimensions,
@@ -126,6 +158,14 @@ from .box_measurements import (
 )
 from .collection import Collection
 from .gathered_data import GatheredData
+from .measure_anything import (
+    MeasureAnythingCuboid,
+    MeasureAnythingDetection,
+    MeasureAnythingDetections,
+    MeasureAnythingDetectorConfig,
+    MeasureAnythingMeasurement,
+    MeasureAnythingMeasurements,
+)
 from .snap_data import SnapData
 from .support_plane import SupportPlane, SupportPlaneCandidate
 from .support_plane_calibration import (
@@ -136,6 +176,13 @@ from .support_plane_calibration import (
 )
 
 __all__ = [
+    "AxialDepthFrameResult",
+    "MeasureAnythingDetection",
+    "MeasureAnythingCuboid",
+    "MeasureAnythingDetectorConfig",
+    "MeasureAnythingDetections",
+    "MeasureAnythingMeasurement",
+    "MeasureAnythingMeasurements",
     "GatheredData",
     "SnapData",
     "Collection",

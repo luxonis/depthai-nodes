@@ -1,0 +1,6 @@
+# Preserve the exact bytes checked by the frozen MeasureAnything manifest on every OS.
+depthai_nodes/algorithms/** text eol=lf
+depthai_nodes/message/measure_anything*.py text eol=lf
+depthai_nodes/message/support_plane.py text eol=lf
+depthai_nodes/node/measure_anything_detector/** text eol=lf
+depthai_nodes/node/measure_anything_dimensioner/** text eol=lf

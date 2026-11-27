@@ -65,6 +65,14 @@ pydoctor depthai_nodes
 
 Review `apidocs/index.html`. CI runs the same build with warnings treated as errors.
 
+## MeasureAnything integration
+
+Node APIs, message conversion and packaging are maintained here. Algorithm
+development, evaluation and promotion are handled by the algorithm maintainers.
+Changes to bundled files must update matching hashes in the manifest. See the
+[implementation record](docs/measure-anything/implementation.md) for the selected
+algorithm and evaluation coverage.
+
 ## Testing
 
 Add or update tests for changed behavior. The repository has three test suites:
@@ -84,6 +92,10 @@ pytest tests/unittests
 ```
 
 Install the extra with `pip install -e ".[dev,box-measurement]"` to run all box measurement tests. Without open3d, the tests in modules that call `pytest.importorskip("open3d")` are skipped. The message, box detector, and missing-open3d import tests still run.
+
+For MeasureAnything tests, install `pip install -e ".[dev,measure-anything]"`.
+The frozen measurement dependencies do not support Python 3.14. CI runs these
+tests on Python 3.10 and 3.12, and the remaining unit tests also run on Python 3.14.
 
 ### Integration tests
 
