@@ -48,7 +48,7 @@ class CalibratorState(Enum):
 
 
 class SupportPlaneCalibrator(BaseThreadedHostNode):
-    """Find the support plane in shared coordinates, checked against gravity.
+    """Find the support plane in shared coordinates, checked against gravity, on RVC4.
 
     Send `depthai_nodes.message.SupportPlaneCalibrationControl` messages to
     ``inputControl``. Each attempt ends with one
@@ -150,7 +150,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                 the IMU device's calibration-origin camera, CAM_A on most
                 devices.
             imu: Output emitting ``dai.IMUData`` with ``ACCELEROMETER_RAW``
-                packets from one device's IMU; for a host source, the
+                packets from one RVC4 device's IMU; for a host source, the
                 pipeline's default device. Gravity is taken in shared
                 coordinates, so set any multi-device calibration before the
                 pipeline starts.
@@ -164,6 +164,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             ImportError: If open3d is not installed.
             RuntimeError: If the node is already built.
             TypeError: If ``config`` is not a ``PlaneCalibrationConfig``.
+            ValueError: If the IMU's device is not an RVC4.
         """
         try:
             import open3d  # noqa: F401
@@ -183,14 +184,17 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             raise TypeError(
                 "config must be PlaneCalibrationConfig, got " f"{type(config).__name__}"
             )
-        self._config = config
-        self._fitter = SupportPlaneFitter(config)
         source = imu.getParent()
         if source.runOnHost():
-            self._imu_device = self.getParentPipeline().getDefaultDevice()
+            device = self.getParentPipeline().getDefaultDevice()
         else:
             # A node that doesn't run on the host is a device node.
-            self._imu_device = cast(dai.DeviceNode, source).getDevice()
+            device = cast(dai.DeviceNode, source).getDevice()
+        if device.getPlatform() != dai.Platform.RVC4:
+            raise ValueError("SupportPlaneCalibrator currently requires an RVC4 device")
+        self._imu_device = device
+        self._config = config
+        self._fitter = SupportPlaneFitter(config)
         pointCloud.link(self._point_cloud_input)
         imu.link(self._imu_input)
         return self

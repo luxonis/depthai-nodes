@@ -32,6 +32,13 @@ class DeviceMock:
         self._calibration = calibration
 
 
+def rvc4_device(deviceId: str = "default") -> DeviceMock:
+    """An RVC4 device with an empty calibration."""
+    device = DeviceMock(deviceId)
+    device.setPlatform(dai.Platform.RVC4)
+    return device
+
+
 def camera_calibration(
     socket: dai.CameraBoardSocket = dai.CameraBoardSocket.CAM_A,
 ) -> dai.CalibrationHandler:
@@ -58,10 +65,10 @@ def imu_calibration(
 def imu_device(
     rotation: np.ndarray | None = None, deviceId: str = "1000"
 ) -> DeviceMock:
-    """A device whose IMU → CAM_A extrinsics rotate by ``rotation``.
+    """An RVC4 device whose IMU → CAM_A extrinsics rotate by ``rotation``.
 
     ``None`` means the identity.
     """
-    device = DeviceMock(deviceId)
+    device = rvc4_device(deviceId)
     device.setCalibration(imu_calibration(np.eye(3) if rotation is None else rotation))
     return device

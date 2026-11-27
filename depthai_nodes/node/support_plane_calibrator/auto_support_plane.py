@@ -126,6 +126,7 @@ class AutoSupportPlane(BaseThreadedHostNode):
             TypeError: If ``config`` is not an ``AutoSupportPlaneConfig``,
                 ``initialPlane`` is neither ``None`` nor a ``SupportPlane``,
                 or ``selectCandidate`` is neither ``None`` nor callable.
+            ValueError: If the IMU's device is not an RVC4.
         """
         if self._config is not None:
             raise RuntimeError(

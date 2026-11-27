@@ -135,7 +135,12 @@ class HarnessAutoSupportPlane(OnHarnessQueues, AutoSupportPlane):
 
 
 class HarnessPipeline(PipelineMock):
-    """Creates the support plane nodes on harness queues."""
+    """Creates the support plane nodes on harness queues, with an RVC4 default
+    device."""
+
+    def __init__(self):
+        super().__init__()
+        self.getDefaultDevice().setPlatform(dai.Platform.RVC4)
 
     HARNESS_TYPES = {
         SupportPlaneCalibrator: HarnessCalibrator,

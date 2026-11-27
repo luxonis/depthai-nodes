@@ -29,10 +29,10 @@ from tests.utils import (  # noqa: E402
     PipelineMock,
 )
 from tests.utils.nodes.mocks.device import (  # noqa: E402
-    DeviceMock,
     camera_calibration,
     imu_calibration,
     imu_device,
+    rvc4_device,
 )
 from tests.utils.nodes.mocks.queue import OutputQueueMock  # noqa: E402
 from tests.utils.scripted_open3d import ScriptedScene  # noqa: E402
@@ -74,11 +74,15 @@ class LatestInputMock(InputMock):
 
 
 class MockedCalibrator(SupportPlaneCalibrator):
-    """The calibrator on mock DepthAI queues, running a set number of loop passes."""
+    """The calibrator on mock DepthAI queues, running a set number of loop passes.
+
+    Its pipeline's default device is an RVC4.
+    """
 
     def __init__(self):
         self._passes = 0
         self._pipeline = PipelineMock()
+        self._pipeline.getDefaultDevice().setPlatform(dai.Platform.RVC4)
         super().__init__()
 
     def getParentPipeline(self):
@@ -761,6 +765,16 @@ def test_build_rejects_a_config_of_the_wrong_type():
         build(config={"max_plane_passes": 3})
 
 
+def test_an_imu_on_an_rvc2_device_is_rejected_with_an_rvc4_default():
+    device = imu_device()
+    device.setPlatform(dai.Platform.RVC2)
+    imu = cast(dai.Node.Output, OutputMock(device))
+    calibrator = MockedCalibrator()
+
+    with pytest.raises(ValueError, match="RVC4"):
+        calibrator.build(cast(dai.Node.Output, OutputMock()), imu)
+
+
 def test_build_cannot_run_twice():
     node = build()
     output = cast(dai.Node.Output, OutputMock())
@@ -1140,7 +1154,7 @@ def test_imu_on_a_host_source_uses_the_default_device_calibration():
 
 
 def test_device_without_imu_extrinsics_raises_naming_it():
-    device = DeviceMock("1234")
+    device = rvc4_device("1234")
     device.setCalibration(camera_calibration())
     calibrator = Harness(imus=Source(device))
 
@@ -1175,7 +1189,7 @@ def two_device_graph():
 
 def imu_on_device(device_id):
     """An IMU source on ``device_id``, turned 90° about x to that device's CAM_B."""
-    device = DeviceMock(device_id)
+    device = rvc4_device(device_id)
     device.setCalibration(
         imu_calibration(IMU_TURNED_ABOUT_X, dai.CameraBoardSocket.CAM_B)
     )
@@ -1194,7 +1208,7 @@ def test_single_device_gravity_is_in_its_calibration_origin_not_cam_a():
         CAMERA_TURNED_ABOUT_Y.tolist(),
         [1, 0, 0],
     )
-    device = DeviceMock()
+    device = rvc4_device()
     device.setCalibration(calibration)
 
     result, verification = level_floor(turned_imu_harness(Source(device)))
