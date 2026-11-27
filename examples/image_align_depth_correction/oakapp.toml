@@ -1,0 +1,20 @@
+identifier = "com.luxonis.depthai-nodes-axial-verification"
+app_version = "0.1.0"
+entrypoint = ["python3", "/app/main.py", "--execution", "oak4", "--report", "/tmp/axial-verification.json"]
+cwd = "/app"
+stop_grace_period = "10s"
+
+prepare_container = [
+    { type = "COPY", source = "./requirements.txt", target = "./requirements.txt" },
+    { type = "COPY", source = "./wheels", target = "./wheels" },
+    { type = "RUN", command = "python3 -m pip install --no-index --find-links /app/wheels -r /app/requirements.txt /app/wheels/depthai_nodes-*.whl --break-system-packages" },
+]
+
+[base_image]
+api_url = "https://registry-1.docker.io"
+service = "registry.docker.io"
+oauth_url = "https://auth.docker.io/token"
+auth_type = "repository"
+auth_name = "luxonis/oakapp-base"
+image_name = "luxonis/oakapp-base"
+image_tag = "1.4.0-py311"

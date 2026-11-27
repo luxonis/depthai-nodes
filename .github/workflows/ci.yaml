@@ -13,7 +13,9 @@ on:
       - requirements.txt
       - requirements-dev.txt
       - requirements-box-measurement.txt
+      - requirements-measure-anything.txt
       - .pre-commit-config.yaml
+      - .gitattributes
       - .github/workflows/ci.yaml
 
 permissions:
@@ -90,7 +92,13 @@ jobs:
     - name: Install package
       run: pip install -e ".[dev,box-measurement]"
 
+    - name: Install frozen measurement dependencies
+      if: matrix.python-version != '3.14'
+      run: pip install -e ".[measure-anything]"
+
     - name: Run tests
+      env:
+        PYTEST_ADDOPTS: ${{ matrix.python-version == '3.14' && '--ignore=tests/measure_anything_reference --ignore=tests/unittests/test_measure_anything_algorithm --ignore=tests/unittests/test_measure_anything_nodes' || '' }}
       run: pytest -m "not e2e" --cov=depthai_nodes --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
     - name: Upload results to Codecov

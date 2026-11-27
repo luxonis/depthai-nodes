@@ -1,0 +1,544 @@
+{
+  "schema_version": "measure-anything-evaluation-evidence/1",
+  "source_commit": "d5e35e17d75f91368889dc53d950792eed4096e6",
+  "image": null,
+  "build": {
+    "kind": "native-source-archive",
+    "artifact": {
+      "path": "experiments/oak4_visibility_10fps/frozen-native-build.tar.gz",
+      "sha256": "bad3b09ff518e15b05db814bdc8bb40d26818328f38a1dddf78d4fc9523d322c",
+      "pointer": ""
+    },
+    "runtime": {
+      "path": "experiments/oak4_visibility_10fps/frozen-candidate.json",
+      "sha256": "bbe360f342ad1a06a375c8aa635dc1d1348375b87e5dd77844617db579847703",
+      "pointer": "/runtime"
+    }
+  },
+  "settings_sha256": "66f029694119c77ddad557bd58257b8743e7f284441d94a317b08fffc5496f10",
+  "provenance": {
+    "source_commit": "d5e35e17d75f91368889dc53d950792eed4096e6",
+    "source_files_sha256": {
+      "algorithms/fast_baseline_oak4_visibility_01/__init__.py": "4d6cadbea34ac45254b212c3c99a4a4d105725da4c289eb7bf736a2cf1c140cd",
+      "algorithms/fast_baseline_oak4_visibility_01/geometry.py": "85435650f043539724444e7bb13a464a21e5a19ad0fecc23e5c78944d841e53c",
+      "algorithms/fast_baseline_oak4_visibility_01/numpy_ops.py": "487a257b5a781973a7778288eeb569ef9f87802ab5cbc95c5720852fe730bbf5",
+      "algorithms/fast_baseline_oak4_visibility_01/visibility.py": "5ac08deef7c0268a7450428f10f196cad770224ac388d84e5c22efe5a56ddbb3",
+      "requirements.txt": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
+      "reference/__init__.py": "34868df65684bae52a8e8ed576e1d90d1059ea36ed883b7f1d3cd7ec0980b7a3",
+      "reference/__main__.py": "b02197657defb0a080886e631d74e748e06909967aedd26e0c8e0e2ba1472072",
+      "reference/api.py": "9f0219be1374d1cbb57d79f498510be6602bc874236722a84c66db65b3864ba4",
+      "reference/components.py": "875633e6744e81e263d53045fe2cc8535ebe51fe4d3948d7d29e40dc7cf3db80",
+      "reference/demo.py": "636afdb0b1aa535ecf3bfa3e358b3970628b3c64889a6a085d0e4c1b255be86f",
+      "reference/identity.py": "54f235fc5d4f1df5b0d25e1d395e49b6e2e2d414969f564dc6d6aa64c23f3ed6",
+      "reference/journal.py": "de30346a5ed872ece1d94dc4cc9d4be26d56103191a044d104be13295affd45b",
+      "reference/scene.py": "7527d3f8aca5509179fec75c18ca8aa8396219774399885bd7add8dbd462f3e3",
+      "reference/workflow.py": "a238f453481780d35da0d392fe563b68fc505bf1d68014f29f03de1681b6eab6"
+    },
+    "scope": "Native source archive evaluated on Mac; identical computation and private port benchmarked on OAK. No container image was built for this evaluation.",
+    "runtime": {
+      "python": "3.12.13 (main, Jun 11 2026, 03:55:21) [Clang 22.1.3 ]",
+      "platform": "macOS-27.2.1-arm64-arm-64bit",
+      "thread_environment": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1"
+      }
+    }
+  },
+  "lineage_note": "Frozen v002 reference implementation; computation and settings unchanged since evaluation.",
+  "review": {
+    "provider": "Independent",
+    "source_commit": "d5e35e17d75f91368889dc53d950792eed4096e6",
+    "reviewed_files": [
+      "algorithms/fast_baseline_oak4_visibility_01/__init__.py",
+      "algorithms/fast_baseline_oak4_visibility_01/visibility.py",
+      "algorithms/fast_baseline_oak4_visibility_01/numpy_ops.py",
+      "algorithms/fast_baseline_oak4_visibility_01/geometry.py",
+      "experiments/oak4_visibility_10fps/app/nodes.py",
+      "experiments/oak4_visibility_10fps/admission.py"
+    ],
+    "findings": [],
+    "result": "No actionable correctness regressions found in the frozen algorithm or controller. Geometry and NumPy operations match the retained reference. Selected stride-one probes retain arithmetic order. Workers complete before returning. Admission preserves matching source identity.",
+    "verification": [
+      "Five visibility/admission tests passed.",
+      "Candidate payload recomputed from current source exactly matches frozen-candidate.json.",
+      "Algorithm/controller files match evaluated source commit.",
+      "Full validation rerun preserves all 99 proposals/decisions and all 19 measurements across 18 scenes."
+    ],
+    "limitations": [
+      "Independent agent review is not CodeRabbit approval.",
+      "No new device throughput or live-camera measurement was performed."
+    ],
+    "status": "completed"
+  },
+  "validation": {
+    "run": {
+      "schema_version": "measurement-run/1",
+      "id": "run-5fef9c146c9148c8aae4c1b5e251b82d",
+      "created_at": "2026-11-24T21:09:46.285522+00:00",
+      "created_by": "consumer:dev-token-dacce6ddd0df4aebac228fe0862b1d58",
+      "release_id": "release-f14a597a366c46c6bdba00fa25e45bcd",
+      "candidate": {
+        "weight_sha256s": [],
+        "candidate_id": "algorithm-5e4abc3a09b54148950317cdeac60ba2",
+        "code_sha256": "f2a20d3ed2067386b498019361c0491619838a2ce88049a9e22e01f5bf10a74b",
+        "build_sha256": "bad3b09ff518e15b05db814bdc8bb40d26818328f38a1dddf78d4fc9523d322c",
+        "dependencies_sha256": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
+        "configuration_sha256": "958a8f9760c2afe310178933f59e28c93054663af9cf90619cebc72865c7d0a6"
+      },
+      "split": "validation",
+      "input_mode": "supplied_plane",
+      "manifest_sha256": "baec14e249caa505bf16a86abdf4ea31e888f631eda0e955d641406ac53c5535",
+      "policy": {
+        "version": "measurement-evaluation/1",
+        "iou_gate": 0.5,
+        "matching": "maximum-cardinality-then-total-iou-stable/1",
+        "unmatched_predictions": "false_positive-no-ignored-regions",
+        "visibility": "all-retained-views-full-object/1",
+        "dimension_units": "mm",
+        "dimension_tolerance_mm": 5.0,
+        "plane_angle_tolerance_deg": 5.0,
+        "plane_offset_tolerance_mm": 15.0,
+        "plane_diagnostic_epsilon_mm": null,
+        "unconfigured_tolerances": "report-unconfigured-no-hidden-defaults",
+        "plane_normal_dot_epsilon": 1e-06
+      },
+      "policy_sha256": "46bb29178680f0c8c81b25d37917e2a7f1fe8409d1b85780bc2019158dc7e4fa",
+      "execution": {
+        "synthetic": false,
+        "runtime_basis": "not_reported",
+        "modalities": [
+          "rig_calibration",
+          "scene_cloud",
+          "source_images"
+        ]
+      },
+      "metric_version": "measurement-run-metrics/3",
+      "status": "sealed",
+      "expected_count": 18,
+      "accepted_count": 18,
+      "evaluation_id": "evaluation-c446358a3b3e434e8a60e9434fc76df1",
+      "test_request_id": null,
+      "authorization_id": null,
+      "reference_policy_sha256": "26abc2f98d574665a33d5c7abca94ba48837dd7962c3ec0bbc30c58b5114ca06"
+    },
+    "evaluation": {
+      "schema_version": "measurement-evaluation-view/1",
+      "id": "evaluation-c446358a3b3e434e8a60e9434fc76df1",
+      "run_id": "run-5fef9c146c9148c8aae4c1b5e251b82d",
+      "status": "completed",
+      "policy": {
+        "version": "measurement-evaluation/1",
+        "iou_gate": 0.5,
+        "matching": "maximum-cardinality-then-total-iou-stable/1",
+        "unmatched_predictions": "false_positive-no-ignored-regions",
+        "visibility": "all-retained-views-full-object/1",
+        "dimension_units": "mm",
+        "dimension_tolerance_mm": 5.0,
+        "plane_angle_tolerance_deg": 5.0,
+        "plane_offset_tolerance_mm": 15.0,
+        "plane_diagnostic_epsilon_mm": null,
+        "unconfigured_tolerances": "report-unconfigured-no-hidden-defaults",
+        "plane_normal_dot_epsilon": 1e-06
+      },
+      "metric_version": "measurement-run-metrics/3",
+      "distribution_statement": "within-collected-distribution evaluation",
+      "feedback": "available",
+      "metrics": {
+        "snapshot_count": 18,
+        "reference_count": 19,
+        "complete_match_count": 19,
+        "failed_snapshot_count": 0,
+        "tp": 19,
+        "fp": 0,
+        "fn": 0,
+        "measurement_success_count": 8,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "footprint_iou_mean": 0.9030068269643747,
+        "matched_3d_iou_mean": 0.8809379728036629,
+        "all_reference_3d_iou_mean": 0.8809379728036629,
+        "dimension_output_coverage": 1.0,
+        "reference_dimension_coverage": 1.0,
+        "measurement_success_rate": 0.42105263157894735,
+        "dimension_errors_mm": {
+          "length": {
+            "count": 19,
+            "bias": -3.7141983833344696,
+            "mae": 4.689736474346443,
+            "median_absolute": 4.75714532750186,
+            "p95_absolute": 12.4425072398376,
+            "mean_relative_absolute": 0.013878834055449086
+          },
+          "width": {
+            "count": 19,
+            "bias": -0.43363093457506013,
+            "mae": 6.248406234380762,
+            "median_absolute": 4.35291849352261,
+            "p95_absolute": 32.26668251461706,
+            "mean_relative_absolute": 0.04414320467897073
+          },
+          "height": {
+            "count": 19,
+            "bias": 0.36572919222817446,
+            "mae": 3.2104673578508707,
+            "median_absolute": 2.6106818916213,
+            "p95_absolute": 6.705272896659835,
+            "mean_relative_absolute": 0.026729192240312716
+          }
+        },
+        "plane": null,
+        "denominators": {
+          "all_reference_3d_iou_mean": 19,
+          "dimension_output_coverage": 19,
+          "f1": 38,
+          "footprint_iou_mean": 19,
+          "matched_3d_iou_mean": 19,
+          "measurement_success_rate": 19,
+          "precision": 19,
+          "recall": 19,
+          "reference_dimension_coverage": 19
+        },
+        "null_reasons": {},
+        "scenario_groups": {
+          "multi-object": {
+            "snapshot_count": 1,
+            "reference_count": 2,
+            "complete_match_count": 2,
+            "failed_snapshot_count": 0,
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "measurement_success_count": 1,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "footprint_iou_mean": 0.9132231000564325,
+            "matched_3d_iou_mean": 0.8877278138738589,
+            "all_reference_3d_iou_mean": 0.8877278138738589,
+            "dimension_output_coverage": 1.0,
+            "reference_dimension_coverage": 1.0,
+            "measurement_success_rate": 0.5,
+            "dimension_errors_mm": {
+              "length": {
+                "count": 2,
+                "bias": -3.89281918305635,
+                "mae": 3.89281918305635,
+                "median_absolute": 3.89281918305635,
+                "p95_absolute": 7.3351530598633,
+                "mean_relative_absolute": 0.011544825741115579
+              },
+              "width": {
+                "count": 2,
+                "bias": -0.878318751470475,
+                "mae": 0.878318751470475,
+                "median_absolute": 0.878318751470475,
+                "p95_absolute": 0.89933849997064,
+                "mean_relative_absolute": 0.0075645948281687515
+              },
+              "height": {
+                "count": 2,
+                "bias": 1.9995411006422399,
+                "mae": 3.9920709597985597,
+                "median_absolute": 3.9920709597985597,
+                "p95_absolute": 5.9916120604408,
+                "mean_relative_absolute": 0.02997264512978782
+              }
+            },
+            "plane": null,
+            "denominators": {
+              "all_reference_3d_iou_mean": 2,
+              "dimension_output_coverage": 2,
+              "f1": 4,
+              "footprint_iou_mean": 2,
+              "matched_3d_iou_mean": 2,
+              "measurement_success_rate": 2,
+              "precision": 2,
+              "recall": 2,
+              "reference_dimension_coverage": 2
+            },
+            "null_reasons": {}
+          }
+        }
+      },
+      "failure_code": null,
+      "suppressed_metrics": [],
+      "exposure_history": [
+        "audit-15ffb418691e439e990a53e33ccd1ba0",
+        "audit-03062cd194904597abc9c4958475b54d",
+        "audit-3bb1b0ae17cf412189308fc8aecbc73a",
+        "audit-f9efc1959ef64a1f821b5bfb52061fbe",
+        "audit-b601f6852e834b50a12ea994280d6950",
+        "audit-088737949d13411f8cd8a3872b80cf8b",
+        "audit-171edc2f73544f5487eaa36b1aa3f524",
+        "audit-028d6063aea246a5873b1cde06db244a",
+        "audit-2da06fe25055423d8b652aa5eae6b31b",
+        "audit-06ff38abc9214502baaba7af6a1d5990",
+        "audit-97912a4f0d774f4daaf6b780a9e7573f",
+        "audit-7507708d545e4d9fa33031164eee0653",
+        "audit-19d08ceee9ef4751988a1127d32aa712",
+        "audit-884618810fe04eb88e56ca36b9bbb72a",
+        "audit-e917b5e0f4434eab9c37d53c96c33196",
+        "audit-a6e858608b1e4fcbb40566c2886219dc",
+        "audit-63351f650086401b99e08d2d3004b4e8",
+        "audit-02446d3ffa0e41f99120cabf16e5efe8",
+        "audit-f2bef0296baa4caa97ae07da8175461a",
+        "audit-97ee51b5174f41b99dc7b4672b4714ce",
+        "audit-694037b9578745659651d2f6efc46a94",
+        "audit-14fcacc1d4444c88ac164c53524f0108",
+        "audit-d3419d9eadb743ceb95770263b8f78b5",
+        "audit-b0e4b0beea01449ab38727c332dc60d9",
+        "audit-ad92f7c57da746ac9f8809b1597caed5",
+        "audit-d9fd73364bb44170829306116b9334fa",
+        "audit-68351b92c8e44cc5a63eb9069597db38",
+        "audit-d97c44fcf11d43c3b7c5832072d4c25b",
+        "audit-2361529f1a7843e9956262a6e4f7c387",
+        "audit-eb242d11e2df41209d942caf67c6f13e",
+        "audit-ed90039ebaca4e3eaa671062d5db000c",
+        "audit-98a46ec344d540a6a23fa4c760485fe4",
+        "audit-f2bb244632ed4937b31d4f05994824c6",
+        "audit-92a89daaea124da6af5c8676d755cfc8",
+        "audit-5665c663bf974107a3f09e72f82d25af",
+        "audit-5c08b5f938ed410ba0e6a9e0361c487c",
+        "audit-8c23a7a18f5c4ac98802a0074524c352",
+        "audit-42053b8cf19749acb8b9b77db72994ab",
+        "audit-0e63af6d0b83409cb493f56b90aef7e5",
+        "audit-562eb06db65c4437bb3e84d95d6858ed",
+        "audit-107eeb9695b7439383009e1ea25a63a3",
+        "audit-6df89a8e9dfb49ec9a1cca4c961f2b2c",
+        "audit-591aeaaeaf1a4d538fe86a0c900035b7",
+        "audit-a7e973fbfc4849d1943c3e9ea66bd196",
+        "audit-06f946ee6b1441a1a8b0887ccaab99fb",
+        "audit-38af04a0ea4b46ee9cd1ba15d281f3e6",
+        "audit-29b80de95598418dac4eae2c11a34e78",
+        "audit-915e8600cd964434922baf8141e0b356",
+        "audit-83c1ae6386164222b4325547ca8753c1",
+        "audit-ba5f7a093f35438c8a6aec7c2fd98609",
+        "audit-3274c015763a49fa9906d89515911565",
+        "audit-c066eb5b65ae4e26992221651a4b33d7",
+        "audit-81ea78a3af774ade9ea4ebe9137cf5e5",
+        "audit-d3441efc70ec4e59bd934867c11c55ea",
+        "audit-b14f0af8470f4594a1975d4b418171d9",
+        "audit-9065c95512514c4686aab39e502a3d6c",
+        "audit-9555397ba9a0422eb2bc4e132459b878",
+        "audit-f4feab3143d9482fa23110175c242a41",
+        "audit-849e685cafe74c6a89480182120e596c",
+        "audit-e617b74bb2c743d4865e6ebbe3694488",
+        "audit-7cb97220551548b095adf26c97bd988d",
+        "audit-a3a9c9f5a3614771a52828aaa813f570",
+        "audit-893ad65793454338b20d86b1f3e999ad",
+        "audit-03ebbd6242d4453c9e7856310d5c99d8"
+      ],
+      "later_exposure_history": [],
+      "declared_lineage": {
+        "candidate_ids": [
+          "algorithm-c020cc6708bc4e48940f03731e43bbb1"
+        ],
+        "feedback_event_ids": []
+      },
+      "disclosure_event_id": "audit-ad07989f44c64938ac56e4c8b2910981"
+    }
+  },
+  "held_out_result": {
+    "test_request": {
+      "schema_version": "measurement-test-request/1",
+      "id": "test-request-058dab05ac1a49d7a838469670eb611d",
+      "created_at": "2026-11-25T08:51:20.446813+00:00",
+      "status": "approved",
+      "release_id": "release-f14a597a366c46c6bdba00fa25e45bcd",
+      "input_mode": "supplied_plane",
+      "feedback_timing": "after_batch_complete",
+      "feedback_released": false,
+      "run_ids": [
+        "run-5cb93153a4cc436baad5ecaea3d8670a"
+      ],
+      "authorization_id": "test-grant-6bc4742fc6e044a1a78149edb5418e1e"
+    },
+    "run": {
+      "schema_version": "measurement-run/1",
+      "id": "run-5cb93153a4cc436baad5ecaea3d8670a",
+      "created_at": "2026-11-25T08:52:52.433245+00:00",
+      "created_by": "consumer:dev-token-dacce6ddd0df4aebac228fe0862b1d58",
+      "release_id": "release-f14a597a366c46c6bdba00fa25e45bcd",
+      "candidate": {
+        "weight_sha256s": [],
+        "candidate_id": "algorithm-5e4abc3a09b54148950317cdeac60ba2",
+        "code_sha256": "f2a20d3ed2067386b498019361c0491619838a2ce88049a9e22e01f5bf10a74b",
+        "build_sha256": "bad3b09ff518e15b05db814bdc8bb40d26818328f38a1dddf78d4fc9523d322c",
+        "dependencies_sha256": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
+        "configuration_sha256": "958a8f9760c2afe310178933f59e28c93054663af9cf90619cebc72865c7d0a6"
+      },
+      "split": "test",
+      "input_mode": "supplied_plane",
+      "manifest_sha256": "5ba1bc50df7586e110f4da4225376691b41f0cf066c9add52ddd4c6bcfc46892",
+      "policy": {
+        "version": "measurement-evaluation/1",
+        "iou_gate": 0.5,
+        "matching": "maximum-cardinality-then-total-iou-stable/1",
+        "unmatched_predictions": "false_positive-no-ignored-regions",
+        "visibility": "all-retained-views-full-object/1",
+        "dimension_units": "mm",
+        "dimension_tolerance_mm": 5.0,
+        "plane_angle_tolerance_deg": 5.0,
+        "plane_offset_tolerance_mm": 15.0,
+        "plane_diagnostic_epsilon_mm": null,
+        "unconfigured_tolerances": "report-unconfigured-no-hidden-defaults",
+        "plane_normal_dot_epsilon": 1e-06
+      },
+      "policy_sha256": "46bb29178680f0c8c81b25d37917e2a7f1fe8409d1b85780bc2019158dc7e4fa",
+      "execution": {
+        "synthetic": false,
+        "runtime_basis": "not_reported",
+        "modalities": [
+          "rig_calibration",
+          "scene_cloud",
+          "source_images"
+        ]
+      },
+      "metric_version": "measurement-run-metrics/3",
+      "status": "sealed",
+      "expected_count": 17,
+      "accepted_count": 17,
+      "evaluation_id": "evaluation-6ce5ecda7afb46c8bb735b590bec0283",
+      "test_request_id": "test-request-058dab05ac1a49d7a838469670eb611d",
+      "authorization_id": "test-grant-6bc4742fc6e044a1a78149edb5418e1e",
+      "reference_policy_sha256": "26abc2f98d574665a33d5c7abca94ba48837dd7962c3ec0bbc30c58b5114ca06"
+    },
+    "evaluation": {
+      "schema_version": "measurement-evaluation-view/1",
+      "id": "evaluation-6ce5ecda7afb46c8bb735b590bec0283",
+      "run_id": "run-5cb93153a4cc436baad5ecaea3d8670a",
+      "status": "completed",
+      "policy": {
+        "version": "measurement-evaluation/1",
+        "iou_gate": 0.5,
+        "matching": "maximum-cardinality-then-total-iou-stable/1",
+        "unmatched_predictions": "false_positive-no-ignored-regions",
+        "visibility": "all-retained-views-full-object/1",
+        "dimension_units": "mm",
+        "dimension_tolerance_mm": 5.0,
+        "plane_angle_tolerance_deg": 5.0,
+        "plane_offset_tolerance_mm": 15.0,
+        "plane_diagnostic_epsilon_mm": null,
+        "unconfigured_tolerances": "report-unconfigured-no-hidden-defaults",
+        "plane_normal_dot_epsilon": 1e-06
+      },
+      "metric_version": "measurement-run-metrics/3",
+      "distribution_statement": "within-collected-distribution evaluation",
+      "feedback": "available",
+      "metrics": {
+        "snapshot_count": 17,
+        "reference_count": 17,
+        "complete_match_count": 17,
+        "failed_snapshot_count": 0,
+        "tp": 17,
+        "fp": 0,
+        "fn": 0,
+        "measurement_success_count": 8,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "footprint_iou_mean": 0.9212504927261803,
+        "matched_3d_iou_mean": 0.9004668274561473,
+        "all_reference_3d_iou_mean": 0.9004668274561473,
+        "dimension_output_coverage": 1.0,
+        "reference_dimension_coverage": 1.0,
+        "measurement_success_rate": 0.47058823529411764,
+        "dimension_errors_mm": {
+          "length": {
+            "count": 17,
+            "bias": -0.8834764174073105,
+            "mae": 4.414301767905942,
+            "median_absolute": null,
+            "p95_absolute": null,
+            "mean_relative_absolute": 0.014819509477199368
+          },
+          "width": {
+            "count": 17,
+            "bias": -1.5792332076423887,
+            "mae": 3.809994109376463,
+            "median_absolute": null,
+            "p95_absolute": null,
+            "mean_relative_absolute": 0.028766243643752697
+          },
+          "height": {
+            "count": 17,
+            "bias": -0.5238689531330228,
+            "mae": 2.3389752628108735,
+            "median_absolute": null,
+            "p95_absolute": null,
+            "mean_relative_absolute": 0.024727408006549514
+          }
+        },
+        "plane": null,
+        "denominators": {
+          "all_reference_3d_iou_mean": 17,
+          "dimension_output_coverage": 17,
+          "f1": 34,
+          "footprint_iou_mean": 17,
+          "matched_3d_iou_mean": 17,
+          "measurement_success_rate": 17,
+          "precision": 17,
+          "recall": 17,
+          "reference_dimension_coverage": 17
+        },
+        "null_reasons": {
+          "dimension_errors_mm.height.median_absolute": "Held-out feedback keeps exact dimensional order statistics private",
+          "dimension_errors_mm.height.p95_absolute": "Held-out feedback keeps exact dimensional order statistics private",
+          "dimension_errors_mm.length.median_absolute": "Held-out feedback keeps exact dimensional order statistics private",
+          "dimension_errors_mm.length.p95_absolute": "Held-out feedback keeps exact dimensional order statistics private",
+          "dimension_errors_mm.width.median_absolute": "Held-out feedback keeps exact dimensional order statistics private",
+          "dimension_errors_mm.width.p95_absolute": "Held-out feedback keeps exact dimensional order statistics private"
+        }
+      },
+      "failure_code": null,
+      "suppressed_metrics": [
+        "dimension_errors_mm.height.median_absolute",
+        "dimension_errors_mm.height.p95_absolute",
+        "dimension_errors_mm.length.median_absolute",
+        "dimension_errors_mm.length.p95_absolute",
+        "dimension_errors_mm.width.median_absolute",
+        "dimension_errors_mm.width.p95_absolute"
+      ],
+      "exposure_history": [
+        "audit-57043ba83de14cc9ad198047a83f4734",
+        "audit-0b945041c4fe47ce90541e556878e4e5",
+        "audit-3c4d068a2d094a3e953fd34007527cdf",
+        "audit-162c040036804a20b90178921e635178",
+        "audit-7c431f889a0846db9626ebf3239fd409",
+        "audit-3c554149488f480e8cd56c895ff4502a",
+        "audit-718d63e93f504a14ad0edfe1da4a2a2a",
+        "audit-9e80f5f34f6a404697c128dc02086bd1",
+        "audit-046eb34ecb914ae5b6ebcf5d737fe480",
+        "audit-6771321085f541ef911598d493fa5ffe",
+        "audit-ab5eaa06e91941148d1d945db20d6c7c",
+        "audit-e176972bd4b241d2bf9b2ac91df7f9fa",
+        "audit-648c0dae42424f0483609253b903f579",
+        "audit-490dc032496942518f9b74d6e4ee5e6b",
+        "audit-09a7d4298e4c4587a576ab93e52e5c37"
+      ],
+      "later_exposure_history": [],
+      "declared_lineage": {
+        "candidate_ids": [
+          "algorithm-c020cc6708bc4e48940f03731e43bbb1"
+        ],
+        "feedback_event_ids": []
+      },
+      "disclosure_event_id": "audit-7a9d78f65f5f4df29da0f51756b0b81e"
+    }
+  },
+  "public_export": {
+    "schema_version": "public-evidence-export/1",
+    "reference_evidence_sha256": "e23bcd5d41638487409b52dcce3ace3bb024c954c4cae6a65307f235fbc0a9d8",
+    "changes": [
+      "Removed nonpublic repository links and review administration metadata.",
+      "Translated schema, metric-version and artifact labels for public distribution.",
+      "Relabeled internal support-module paths under reference/ while retaining original file hashes.",
+      "Replaced internal tool descriptions and stage links with bundled computation and node references.",
+      "Recomputed public policy digests; reference policy digests remain alongside them.",
+      "Preserved candidates, scoring parameters, numerical outcomes, units, denominators and suppressed values."
+    ],
+    "reproducibility": "Full evaluation inputs are not distributed. Synthetic integration fixtures do not reproduce the complete benchmark."
+  }
+}

@@ -39,6 +39,8 @@ Install from PyPI:
 pip install depthai-nodes
 ```
 
+### Box measurement
+
 The box measurement and support plane nodes need open3d. Install it with the `box-measurement` extra:
 
 ```bash
@@ -53,7 +55,27 @@ sudo apt-get install libegl1 libgl1 libgomp1
 
 open3d 0.20 publishes Linux wheels only for glibc 2.35 or newer, such as Debian 12+ or Ubuntu 22.04+. On older systems, including Debian 11, Ubuntu 20.04 and JetPack 5, pip cannot find a matching open3d and the install fails.
 
-Or install from source:
+### MeasureAnything
+
+Install the dependencies for `MeasureAnythingDetector` and `MeasureAnythingDimensioner` with the `measure-anything` extra:
+
+```bash
+pip install "depthai-nodes[measure-anything]"
+```
+
+See the [interactive algorithm guide](depthai_nodes/algorithms/measure_anything/implementation/visualization.html)
+for processing steps, accuracy and performance, and the
+[implementation record](docs/measure-anything/implementation.md) for provenance
+and verification coverage.
+
+For RGB-aligned depth, use the shared
+[axial-depth correction](docs/axial-depth-correction.md) before PointCloud.
+The [deterministic pipeline example](examples/image_align_depth_correction)
+runs on the host and in an OAK-4 standalone app.
+
+### From source
+
+Install from source:
 
 ```bash
 git clone https://github.com/luxonis/depthai-nodes.git

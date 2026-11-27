@@ -1,0 +1,102 @@
+{
+  "schema_version": "measure-anything-algorithm-manifest/3",
+  "implementation": {
+    "name": "fast_baseline_oak4_visibility_01",
+    "package_path": "depthai_nodes/algorithms/measure_anything/implementation",
+    "configuration_path": "depthai_nodes/algorithms/measure_anything/implementation/scoped-settings.json",
+    "configuration_sha256": "66f029694119c77ddad557bd58257b8743e7f284441d94a317b08fffc5496f10",
+    "files_sha256": {
+      "depthai_nodes/algorithms/__init__.py": "c5235d0aeaf840d21066d88f4529091e36ea97295c8a81f6dd881687ad93bbb6",
+      "depthai_nodes/algorithms/measure_anything/__init__.py": "5aa9e7615fab1febcddb24fd6cd3d9d21cae8b49bcd62769b80aef48ecee1dd6",
+      "depthai_nodes/algorithms/measure_anything/implementation/__init__.py": "f5b46b349e65c786c81f287e5c042901c7cba570b3c33118c19dc106fa429870",
+      "depthai_nodes/algorithms/measure_anything/implementation/components.py": "ff22b1a92402e6cd1aa79a049fea88051381128bf1dac59ccac3322b1048cc91",
+      "depthai_nodes/algorithms/measure_anything/implementation/evaluation-evidence.json": "e340730a3045a515cc8efb6bdc70b6cfa8540c6e1d07e1ea8b59f13cce6207fe",
+      "depthai_nodes/algorithms/measure_anything/implementation/factory.py": "f7fd8fcf645bab3a734357ba652eff8d7314902dac4dca2607e8ac3713afb859",
+      "depthai_nodes/algorithms/measure_anything/implementation/geometry.py": "141e47371b4d07b2ae57582e93a6a7ca6335f05939e395c09f355589dcd4533f",
+      "depthai_nodes/algorithms/measure_anything/implementation/numpy_ops.py": "e5ce2721f806f7f3ad5533c3f8ff8a8644aa35b5934805c8f833baa366cb5df4",
+      "depthai_nodes/algorithms/measure_anything/implementation/reference-requirements.txt": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
+      "depthai_nodes/algorithms/measure_anything/implementation/scene.py": "c0255f54039e08a1fbe3099d879c4f287a96360544f7a1b1deff91cc0518a0ab",
+      "depthai_nodes/algorithms/measure_anything/implementation/scoped-settings.json": "66f029694119c77ddad557bd58257b8743e7f284441d94a317b08fffc5496f10",
+      "depthai_nodes/algorithms/measure_anything/implementation/visibility.py": "d042314beab94946a839e4ec6eb9ca41752f09f42a3ce8d285676d286297fdd3",
+      "depthai_nodes/algorithms/measure_anything/implementation/visualization.html": "d25983f1160f95e3ad770647f681f71543f86b460e885d5a03ed2219fc4df498",
+      "depthai_nodes/algorithms/measure_anything/manifest.py": "84da6fc763a8265d1c7aae15418977c80de9bf743d2d73628a5e4bd9ddf76547",
+      "depthai_nodes/message/measure_anything.py": "293bab0b45df214692f3c4dcc257c9e067b11a24031ef72e96dfdc12448a33c2",
+      "depthai_nodes/message/support_plane.py": "0eaeec70dda37d48b3160d1f1a14cffce766f23182289d1b569ffb444f1f44e3",
+      "depthai_nodes/node/measure_anything_detector/__init__.py": "4b47171911e6ffae1c0d8ff80128b603f54beadbc65cb3c893ba697db23d530a",
+      "depthai_nodes/node/measure_anything_detector/measure_anything_detector.py": "83b631adb35d51005c9a4321b0415f762d1bdb0aa510870e7b5000366f2631b4",
+      "depthai_nodes/node/measure_anything_detector/scene.py": "ea76f04265b9faa800d7bc184cedc0a131c69355a609c7576db3b07123430927",
+      "depthai_nodes/node/measure_anything_dimensioner/__init__.py": "f23c5d006aa7a0e8b0700c2736c6f0e3ee143fd6c56230a6d854bda01be7c371",
+      "depthai_nodes/node/measure_anything_dimensioner/measure_anything_dimensioner.py": "82ec652db75288b999d30fc07ff22a9251fdc803682bb3dd13d3528949176dc9"
+    },
+    "binary_distribution": "No custom native kernels, sources, build flags, or binaries; computation uses NumPy, SciPy, and OpenCV.",
+    "native_build_flags": [],
+    "tested_native_binaries": [],
+    "configuration_pointer": "/configuration"
+  },
+  "source": {
+    "commit": "d5e35e17d75f91368889dc53d950792eed4096e6",
+    "evidence_commit": "d5964eee714737750787066fc24bc29744536d45",
+    "algorithm": "fast_baseline_oak4_visibility_01",
+    "configuration_version": "v002",
+    "settings_path": "algorithms/fast_baseline_oak4_visibility_01/configurations/v002.json",
+    "settings_file_sha256": "66f029694119c77ddad557bd58257b8743e7f284441d94a317b08fffc5496f10",
+    "evidence_path": "depthai_nodes/algorithms/measure_anything/implementation/evaluation-evidence.json",
+    "source_to_port": {
+      "__init__.py": "factory.py",
+      "geometry.py": "geometry.py",
+      "visibility.py": "visibility.py",
+      "numpy_ops.py": "numpy_ops.py"
+    },
+    "publisher": "Luxonis"
+  },
+  "inputs": {
+    "modalities": [
+      "scene_cloud",
+      "source_images",
+      "rig_calibration"
+    ],
+    "input_mode": "supplied_plane",
+    "length_unit": "mm",
+    "plane_orientation": "upward"
+  },
+  "port_verification": {
+    "record_path": "docs/measure-anything/implementation.md",
+    "reference_artifact": "bad3b09ff518e15b05db814bdc8bb40d26818328f38a1dddf78d4fc9523d322c",
+    "comparison": {
+      "path": "docs/measure-anything/comparison.json",
+      "sha256": "e85afda64d817ae1d78c83a30cbfa71658b1834e8af2d497159781afce6947a7",
+      "url": "https://github.com/luxonis/depthai-nodes/blob/ce406ed9bb8d5e6fde14694100a4000830da533f/docs/measure-anything/comparison.json"
+    },
+    "adaptations": [
+      "Relocate computation imports; keep the private lazy entry point and neutral scene types.",
+      "Keep existing public nodes, message conversion, profile warnings, and ownership semantics.",
+      "No custom native kernel assets apply to this candidate.",
+      "Runtime packaging pins OpenCV-headless 4.10.0.84; reference evaluation and retained port comparisons used 4.12.0.88. Repository CI exercises the runtime, but full reference parity and algorithm accuracy/performance on this dependency override have not been established.",
+      "Publish explicitly derived evidence and visualization exports, retaining original checksums and numerical results.",
+      "Load the frozen configuration directly from the original scoped-settings.json configuration object instead of shipping a separately serialized configuration.json. Original settings bytes, canonical configuration hash, candidate identity, and factory input are unchanged.",
+      "Document internal computation contracts without changing executable logic or frozen settings."
+    ]
+  },
+  "visualization": {
+    "path": "depthai_nodes/algorithms/measure_anything/implementation/visualization.html",
+    "sha256": "d25983f1160f95e3ad770647f681f71543f86b460e885d5a03ed2219fc4df498",
+    "source_commit": "4b3853742c34a2d4548cfb599e05f37217dcec83",
+    "source_path": "algorithms/fast_baseline_oak4_visibility_01/visualization.html",
+    "source_sha256": "9dabd2783d4afdbc61217091fe341e8bb30c9cbc796cb5401125bf8c8f7c328e",
+    "adaptations": [
+      "Public documentation export removes nonpublic references, relabels support-module paths and uses bundled source links; scientific data is unchanged."
+    ],
+    "source_publisher": "Luxonis",
+    "reference_sha256": "c195176e3d77e4df433ea824bb219c7a91ef17412792635baf106ef6c6a2ae32"
+  },
+  "candidate": {
+    "id": "algorithm-5e4abc3a09b54148950317cdeac60ba2",
+    "weight_sha256s": [],
+    "code_sha256": "f2a20d3ed2067386b498019361c0491619838a2ce88049a9e22e01f5bf10a74b",
+    "build_sha256": "bad3b09ff518e15b05db814bdc8bb40d26818328f38a1dddf78d4fc9523d322c",
+    "dependencies_sha256": "42adaa0ac73e998f58ae7ea442277fb3ba43e6bc69cb74129cb587b58f1202b0",
+    "configuration_sha256": "958a8f9760c2afe310178933f59e28c93054663af9cf90619cebc72865c7d0a6",
+    "image_digest": null,
+    "build_kind": "native-source-archive"
+  }
+}

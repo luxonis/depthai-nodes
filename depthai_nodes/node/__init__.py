@@ -4,6 +4,10 @@ Create nodes with ``pipeline.create(...)`` and connect their input and output
 ports. The classes in this package integrate native DepthAI inference and
 parsers with Python postprocessing, image utilities, and custom message handling.
 
+`ImageAlignDepthCorrection` converts ImageAlign source axial millimeters into
+RGB target-camera axial depth before PointCloud, with explicit policy and
+associated provenance. See `depthai_nodes.utils.axial_depth`.
+
 .. contents:: Contents
    :depth: 2
 
@@ -281,6 +285,20 @@ Example:
     Each ``BoxMeasurements`` message read from ``measurements`` holds one
     result per box, with its box dimensions once measured.
 
+MeasureAnything measurement
+===========================
+
+`MeasureAnythingDetector` selects eligible object point clouds from calibrated
+scene inputs. `MeasureAnythingDimensioner` fits their dimensions against the
+plane carried by each detection batch. Install
+``depthai-nodes[measure-anything]`` for the frozen algorithm's dependencies.
+
+The node class docstrings describe wiring, input profiles, calibration,
+synchronization, support-plane updates, outputs and current limitations.
+The packaged ``algorithms/measure_anything/implementation/visualization.html``
+provides the interactive algorithm and evidence guide. Existing box nodes retain
+their separate APIs and behavior.
+
 Extending the package
 =====================
 
@@ -309,9 +327,12 @@ from .frame_cropper import FrameCropper
 from .gather_data import GatherData
 from .host_parsing_neural_network import HostParsingNeuralNetwork
 from .host_spatials_calc import HostSpatialsCalc
+from .image_align_depth_correction import ImageAlignDepthCorrection
 from .img_detections_filter import ImgDetectionsFilter
 from .img_frame_overlay import ImgFrameOverlay
 from .instance_to_semantic_mask import InstanceToSemanticMask
+from .measure_anything_detector import MeasureAnythingDetector
+from .measure_anything_dimensioner import MeasureAnythingDimensioner
 from .message_collector import MessageCollector
 from .parser_generator import ParserGenerator
 from .parsers.base_parser import BaseParser
@@ -347,6 +368,9 @@ from .support_plane_calibrator import (
 from .tiling import Tiling
 
 __all__ = [
+    "ImageAlignDepthCorrection",
+    "MeasureAnythingDetector",
+    "MeasureAnythingDimensioner",
     "ApplyColormap",
     "ApplyDepthColormap",
     "CoordinatesMapper",
