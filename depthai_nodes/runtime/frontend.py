@@ -8,7 +8,6 @@ from contextlib import contextmanager
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,7 @@ class _FrontendHandler(SimpleHTTPRequestHandler):
         # Different examples reuse the same localhost origin.
         del self.headers["If-Modified-Since"]
         path = Path(self.translate_path(self.path))
-        if not path.exists() and not Path(urlsplit(self.path).path).suffix:
+        if not path.exists() and not path.suffix:
             self.path = "/index.html"
         return super().send_head()
 

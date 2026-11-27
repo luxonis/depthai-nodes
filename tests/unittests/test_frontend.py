@@ -26,9 +26,10 @@ def test_serves_assets_and_browser_routes(frontend):
             assert response.read() == b"export const ready = true;"
         with urlopen(url + "/font.woff2", timeout=2) as response:
             assert response.headers.get_content_type() == "font/woff2"
-        with pytest.raises(HTTPError) as error:
-            urlopen(url + "/missing.js", timeout=2)
-        assert error.value.code == 404
+        for path in ("/missing.js", "/missing%2Ejs"):
+            with pytest.raises(HTTPError) as error:
+                urlopen(url + path, timeout=2)
+            assert error.value.code == 404
 
 
 def test_missing_build_explains_setup(tmp_path, monkeypatch):
