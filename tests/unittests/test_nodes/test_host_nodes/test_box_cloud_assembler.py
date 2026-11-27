@@ -227,24 +227,20 @@ def test_box_ids_are_never_reused():
     assert len({first, second, last[(0, 1)]}) == 3
 
 
-def test_a_label_without_a_matching_detection_is_dropped_with_a_warning(caplog):
-    sent = run([frame([{4: box(-300), 9: box(300, seed=1)}], detections=[[4, 8]])])
+def test_a_label_past_the_last_detection_is_dropped_with_a_warning(caplog):
+    sent = run([frame([{4: box(-300), 9: box(300, seed=1)}], detections=[[4]])])
 
     assert list(box_ids(sent[0])) == [(0, 4)]
     assert "view 0" in caplog.text
-    assert "label 9" in caplog.text
+    assert "index 1" in caplog.text
 
 
-def test_a_track_above_the_label_range_keeps_its_id_apart_from_its_label_twin():
-    points = box(0)
+def test_tracks_that_share_their_low_16_bits_stay_two_boxes():
+    sent = run([frame([{3: box(-300), 65_539: box(300, seed=1)}])])
 
-    sent = run([frame([{70_000: points}])] * 2 + [frame([{4464: points}])])
-
-    first, second, twin = (box_ids(clouds) for clouds in sent)
-    assert first == second
-    assert list(first) == [(0, 70_000)]
-    assert list(twin) == [(0, 4464)]
-    assert twin[(0, 4464)] != first[(0, 70_000)]
+    ids = box_ids(sent[0])
+    assert list(ids) == [(0, 3), (0, 65_539)]
+    assert ids[(0, 3)] != ids[(0, 65_539)]
 
 
 def test_touching_tracks_of_one_view_never_share_an_id():

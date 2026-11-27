@@ -11,11 +11,7 @@ import depthai as dai
 import numpy as np
 
 from depthai_nodes.message import BoxCloud, BoxClouds, BoxDetections, BoxViewDetection
-from depthai_nodes.node.box_associator.box_label import (
-    LABEL_MODULUS,
-    decode,
-    track_label,
-)
+from depthai_nodes.node.box_associator.box_label import INDEX_COUNT, decode
 from depthai_nodes.node.box_associator.host_messages import send_all, stamp_like
 from depthai_nodes.node.box_dimensioner.box_geometry import BoxGeometry
 
@@ -129,26 +125,25 @@ class BoxCloudAssembler(dai.node.HostNode):
     ) -> list[_BoxView]:
         """Split the cloud by label, pair each part with its detection, clean it."""
         points, colors = cloud.getPointsRGB()
-        views, labels = decode(colors)
+        views, indices = decode(colors)
         labelled = views >= 0
         if not labelled.any():
             return []
-        # One integer per (view, label), ordered like the pair: unique over a 1-D
+        # One integer per (view, index), ordered like the pair: unique over a 1-D
         # array is far cheaper than over rows.
-        codes = views[labelled] * LABEL_MODULUS + labels[labelled]
+        codes = views[labelled] * INDEX_COUNT + indices[labelled]
         order = np.argsort(codes, kind="stable")
         uniques, counts = np.unique(codes[order], return_counts=True)
         parts = np.split(points[labelled][order], np.cumsum(counts)[:-1])
         box_views = []
         for code, raw in zip(uniques.tolist(), parts, strict=True):
-            view, label = divmod(code, LABEL_MODULUS)
-            detection = self._detection(group, view, label)
+            view, index = divmod(code, INDEX_COUNT)
+            detection = self._detection(group, view, index)
             if detection is None:
                 logger.warning(
-                    "Dropping a box view: view %d has no matching detection for "
-                    "label %d",
+                    "Dropping a box view: view %d has no detection at index %d",
                     view,
-                    label,
+                    index,
                 )
                 continue
             valid = raw[np.any(raw != 0, axis=1)]
@@ -172,21 +167,21 @@ class BoxCloudAssembler(dai.node.HostNode):
 
     @staticmethod
     def _detection(
-        group: dai.MessageGroup, view: int, label: int
+        group: dai.MessageGroup, view: int, index: int
     ) -> BoxViewDetection | None:
-        """Return the view's first detection whose track ID matches the label."""
+        """Return the view's ``index``-th detection, or ``None`` past its last."""
         detections = group[detections_key(view)]
         if not isinstance(detections, BoxDetections):
             raise TypeError("Expected BoxDetections")
-        for item in detections.items:
-            if track_label(item.track_id) == label:
-                return BoxViewDetection(
-                    view=view,
-                    track_id=item.track_id,
-                    bounding_box=item.bounding_box,
-                    confidence=item.confidence,
-                )
-        return None
+        if index >= len(detections.items):
+            return None
+        item = detections.items[index]
+        return BoxViewDetection(
+            view=view,
+            track_id=item.track_id,
+            bounding_box=item.bounding_box,
+            confidence=item.confidence,
+        )
 
     @staticmethod
     def _associate(box_views: list[_BoxView]) -> list[list[_BoxView]]:

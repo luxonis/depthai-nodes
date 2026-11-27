@@ -193,12 +193,13 @@ def paint_view(
 
     Args:
         view: Index of the view, painted as view + 1 in blue.
-        boxes: Labelled points by track ID.
+        boxes: Labelled points by track ID, painted at their position in it as
+            the detection index.
         background: Unlabelled points of the view.
     """
     labels, points = [], []
-    for track_id, box_points in boxes.items():
-        label = np.array(encode(view, track_id), np.uint8)
+    for index, box_points in enumerate(boxes.values()):
+        label = np.array(encode(view, index), np.uint8)
         labels.append(np.tile(label, (len(box_points), 1)))
         points.append(box_points)
     if background is not None:

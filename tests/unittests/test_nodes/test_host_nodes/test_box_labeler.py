@@ -35,7 +35,7 @@ def label(detections: BoxDetections, depth: dai.ImgFrame, view: int) -> dai.ImgF
     return image
 
 
-def test_each_box_is_painted_with_its_track_bytes_and_view():
+def test_each_box_is_painted_with_its_index_and_view():
     mask = np.full((6, 8), 255, np.uint8)
     mask[1:3, 1:4] = 0
     mask[4:6, 5:8] = 1
@@ -45,8 +45,8 @@ def test_each_box_is_painted_with_its_track_bytes_and_view():
 
     pixels = image.getFrame()
     expected = np.zeros((6, 8, 3), np.uint8)
-    expected[1:3, 1:4] = (0x02, 0x01, 3)
-    expected[4:6, 5:8] = (0x70, 0x11, 3)
+    expected[1:3, 1:4] = (0, 0, 3)
+    expected[4:6, 5:8] = (1, 0, 3)
     np.testing.assert_array_equal(pixels, expected)
 
 
@@ -58,10 +58,11 @@ def test_a_mask_at_another_resolution_is_mapped_onto_the_depth_by_nearest_neighb
 
     assert image.getType() == dai.ImgFrame.Type.RGB888i
     assert (image.getWidth(), image.getHeight()) == DEPTH_SIZE
-    tracks = image.getFrame()[:, :, 0]
     expected_mask = np.repeat(np.repeat(mask, 3, axis=0), 2, axis=1)
-    expected = np.select([expected_mask == 0, expected_mask == 1], [5, 6], 0)
-    np.testing.assert_array_equal(tracks, expected)
+    expected = np.zeros((*expected_mask.shape, 3), np.uint8)
+    expected[expected_mask == 0] = (0, 0, 1)
+    expected[expected_mask == 1] = (1, 0, 1)
+    np.testing.assert_array_equal(image.getFrame(), expected)
 
 
 def stamp(message: dai.Buffer, seconds: int, sequence: int) -> None:

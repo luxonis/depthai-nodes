@@ -9,10 +9,10 @@ from depthai_nodes.node.box_associator.host_messages import send_all, stamp_like
 
 
 class BoxLabeler(dai.node.HostNode):
-    """Paint each box's track and view into an RGB888i image at the depth's size.
+    """Paint each box's index and view into an RGB888i image at the depth's size.
 
-    A box pixel is the ``box_label.encode`` colour of its view and track ID;
-    background is black.
+    A box pixel is the ``box_label.encode`` colour of its view and its index in the
+    ``BoxDetections`` items; background is black.
 
     Attributes:
         out: Output stream of RGB888i label ``ImgFrame`` messages.
@@ -78,8 +78,8 @@ class BoxLabeler(dai.node.HostNode):
     def _paint(self, detections: BoxDetections, width: int, height: int) -> np.ndarray:
         """Return the ``(height, width, 3)`` label pixels of the detections."""
         palette = np.zeros((256, 3), np.uint8)
-        for index, item in enumerate(detections.items):
-            palette[index] = encode(self._view, item.track_id)
+        for index in range(len(detections.items)):
+            palette[index] = encode(self._view, index)
         # The mask covers the whole frame, stretched to its own resolution.
         mask = detections.segmentation_mask
         rows = np.arange(height) * mask.shape[0] // height
