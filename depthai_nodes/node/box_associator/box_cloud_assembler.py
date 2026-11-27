@@ -277,7 +277,7 @@ class _Group:
 
 @dataclass
 class _Claim:
-    """A group's claim on existing ``box_id``s while IDs are handed out."""
+    """A group's claim on existing ``box_id`` values while IDs are handed out."""
 
     candidates: list[int]
     """The IDs its present keys map to, once per key."""
