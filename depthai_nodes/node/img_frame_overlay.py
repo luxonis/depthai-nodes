@@ -146,9 +146,7 @@ class ImgFrameOverlay(BaseHostNode):
             overlay_frame,
             self._img_frame_type,
         )
-        overlay.setTimestamp(frame1.getTimestamp())
-        overlay.setSequenceNum(frame1.getSequenceNum())
-        overlay.setTimestampDevice(frame1.getTimestampDevice())
+        overlay.setBufferMetadataFrom(frame1)
         transformation = frame1.getTransformation()
         if transformation is not None:
             overlay.setTransformation(transformation)

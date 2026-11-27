@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import depthai as dai
 import numpy as np
@@ -78,6 +78,7 @@ def test_collection_copy_native_messages(copy_collection, create_message, read_p
     message.setSequenceNum(7)
     message.setTimestamp(timedelta(seconds=1))
     message.setTimestampDevice(timedelta(seconds=2))
+    message.setTimestampSystem(datetime(2026, 1, 2))
     message.setTransformation(
         dai.ImgTransformation().setSourceSize(100, 100).setSize(100, 100)
     )
@@ -85,6 +86,7 @@ def test_collection_copy_native_messages(copy_collection, create_message, read_p
     collection.setSequenceNum(42)
     collection.setTimestamp(timedelta(seconds=3))
     collection.setTimestampDevice(timedelta(seconds=4))
+    collection.setTimestampSystem(datetime(2026, 1, 3))
 
     copied = copy_collection(collection)
 
@@ -100,6 +102,7 @@ def test_collection_copy_native_messages(copy_collection, create_message, read_p
         assert duplicate.getSequenceNum() == original.getSequenceNum()
         assert duplicate.getTimestamp() == original.getTimestamp()
         assert duplicate.getTimestampDevice() == original.getTimestampDevice()
+        assert duplicate.getTimestampSystem() == original.getTimestampSystem()
 
 
 def test_collection_copy_native_map_is_independent():

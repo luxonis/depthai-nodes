@@ -180,9 +180,7 @@ class DepthMerger(BaseHostNode):
         new_dets.detections = [
             self._detection_to_spatial(d, depth) for d in detections.detections
         ]
-        new_dets.setSequenceNum(detections.getSequenceNum())
-        new_dets.setTimestamp(detections.getTimestamp())
-        new_dets.setTimestampDevice(detections.getTimestampDevice())
+        new_dets.setBufferMetadataFrom(detections)
         transformation = detections.getTransformation()
         if transformation is not None:
             new_dets.setTransformation(transformation)

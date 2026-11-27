@@ -209,7 +209,7 @@ class BoxDetections(Collection[BoxDetection]):
         """Outline each box, labelled with its track ID and confidence.
 
         Returns:
-            Annotations with this message's timestamps and sequence number.
+            Annotations with this message's buffer metadata.
         """
         annotations = AnnotationHelper()
         for box in self.items:
@@ -224,6 +224,4 @@ class BoxDetections(Collection[BoxDetection]):
                 background_color=(0.0, 0.0, 0.0, 0.6),
                 size=28.0,
             )
-        message = annotations.build(self.getTimestamp(), self.getSequenceNum())
-        message.setTimestampDevice(self.getTimestampDevice())
-        return message
+        return annotations.build_from(self)

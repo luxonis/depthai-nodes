@@ -65,9 +65,7 @@ class BoxDetectionAssembler(dai.node.HostNode):
         ):
             raise TypeError("Expected dai.Tracklets and dai.ImgDetections")
         message = self._assemble(tracklets, detections)
-        message.setTimestamp(detections.getTimestamp())
-        message.setTimestampDevice(detections.getTimestampDevice())
-        message.setSequenceNum(detections.getSequenceNum())
+        message.setBufferMetadataFrom(detections)
         try:
             self.out.send(message)
         # DepthAI's stub declares QueueException through an undeclared nested

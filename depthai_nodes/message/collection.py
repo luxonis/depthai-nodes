@@ -111,7 +111,7 @@ class Collection(dai.Buffer, Generic[T]):
         self.items = [*self._items, *items]
 
     def copy(self) -> Collection:
-        """Copy items and preserve container timestamps and sequence number.
+        """Copy items and preserve container buffer metadata.
 
         Returns:
             A new ``Collection`` with items copied through ``copy_message``. This
@@ -125,7 +125,5 @@ class Collection(dai.Buffer, Generic[T]):
         for item in self.items:
             new_list.append(copy_message(item))
         new_collection = Collection(new_list)
-        new_collection.setSequenceNum(self.getSequenceNum())
-        new_collection.setTimestampDevice(self.getTimestampDevice())
-        new_collection.setTimestamp(self.getTimestamp())
+        new_collection.setBufferMetadataFrom(self)
         return new_collection

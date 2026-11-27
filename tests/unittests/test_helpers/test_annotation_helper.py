@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import depthai as dai
 
@@ -11,6 +11,23 @@ def test_empty_build():
     assert len(annots.annotations[0].points) == 0
     assert len(annots.annotations[0].circles) == 0
     assert len(annots.annotations[0].texts) == 0
+
+
+def test_build_from_preserves_source_metadata_and_transformation():
+    source = dai.ImgFrame()
+    source.setTimestamp(timedelta(seconds=2))
+    source.setTimestampDevice(timedelta(seconds=12))
+    source.setTimestampSystem(datetime(2026, 1, 2))
+    source.setSequenceNum(9)
+    source.setTransformation(dai.ImgTransformation(20, 10))
+
+    annotations = AnnotationHelper().build_from(source)
+
+    assert annotations.getTimestamp() == source.getTimestamp()
+    assert annotations.getTimestampDevice() == source.getTimestampDevice()
+    assert annotations.getTimestampSystem() == source.getTimestampSystem()
+    assert annotations.getSequenceNum() == source.getSequenceNum()
+    assert annotations.getTransformation().getSize() == (20, 10)
 
 
 def test_draw_line():

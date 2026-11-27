@@ -41,12 +41,15 @@ def _copy(msg: dai.Buffer) -> dai.Buffer | object:
     def _copy_metadata(msg: dai.Buffer) -> dai.Buffer:
         msg_type = type(msg)
         msg_copy = msg_type()
-        if hasattr(msg, "getSequenceNum"):
-            msg_copy.setSequenceNum(msg.getSequenceNum())
-        if hasattr(msg, "getTimestamp"):
-            msg_copy.setTimestamp(msg.getTimestamp())
-        if hasattr(msg, "getTimestampDevice"):
-            msg_copy.setTimestampDevice(msg.getTimestampDevice())
+        if isinstance(msg, dai.Buffer):
+            msg_copy.setBufferMetadataFrom(msg)
+        else:
+            if hasattr(msg, "getSequenceNum"):
+                msg_copy.setSequenceNum(msg.getSequenceNum())
+            if hasattr(msg, "getTimestamp"):
+                msg_copy.setTimestamp(msg.getTimestamp())
+            if hasattr(msg, "getTimestampDevice"):
+                msg_copy.setTimestampDevice(msg.getTimestampDevice())
         if hasattr(msg, "getTransformation"):
             transformation = msg.getTransformation()
             if transformation is not None:

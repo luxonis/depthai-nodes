@@ -325,10 +325,8 @@ class BoxDimensioner(BaseHostNode):
 
     @staticmethod
     def _stamp(message: dai.Buffer, source: dai.Buffer) -> None:
-        """Copy the source's timestamps and sequence number onto a message."""
-        message.setTimestamp(source.getTimestamp())
-        message.setTimestampDevice(source.getTimestampDevice())
-        message.setSequenceNum(source.getSequenceNum())
+        """Copy the source's buffer metadata onto a message."""
+        message.setBufferMetadataFrom(source)
 
     def _aggregate(self, track_id: int) -> BoxDimensions | None:
         """Return the per-dimension median of a track's samples, if any."""
