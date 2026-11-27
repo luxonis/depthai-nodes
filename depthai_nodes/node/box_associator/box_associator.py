@@ -29,9 +29,8 @@ class BoxAssociator(BaseThreadedHostNode):
     coordinates are the frame of the depth's extrinsics, which is the color camera
     for depth aligned to color.
 
-    With several devices, their capture must be frame-synced (PTP): views are
-    grouped by host timestamp within DepthAI's 10 ms default. A frame that lacks
-    any view's frame produces no output. If any view's device is lost or any
+    With several devices, their capture must be frame-synced (PTP). A frame that
+    lacks any view's frame produces no output. If any view's device is lost or any
     view's stream stalls, output stops for good while the pipeline keeps running;
     an app that wants an error calls ``pipeline.setStopOnDeviceLoss(True)``.
 
@@ -46,16 +45,15 @@ class BoxAssociator(BaseThreadedHostNode):
     def build(
         self, views: Sequence[tuple[dai.Node.Output, dai.Node.Output]]
     ) -> "BoxAssociator":
-        """Wire one labeler per view into the label cloud and the host stage.
+        """Set the views whose box detections are associated.
 
         Args:
             views: One ``(detections, depth)`` pair per view. ``detections`` emits
                 ``BoxDetections``. ``depth`` emits depth ``ImgFrame``s aligned to
                 the view's color stream: they cover the same field of view as the
-                frame the detections were made on, at any resolution, and masks
-                are stretched onto them by nearest neighbour. Depth that doesn't
-                cover that field of view isn't detected, and boxes are then
-                labelled at the wrong points.
+                frame the detections were made on, at any resolution. Depth that
+                doesn't cover that field of view isn't detected, and boxes are
+                then labelled at the wrong points.
 
         Returns:
             The configured node instance.

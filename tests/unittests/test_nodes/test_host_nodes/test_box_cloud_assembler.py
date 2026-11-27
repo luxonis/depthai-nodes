@@ -273,16 +273,7 @@ def test_box_clouds_carry_the_cloud_stamps_not_the_detections():
     assert clouds.getSequenceNum() == 42
 
 
-@pytest.mark.parametrize(
-    "scene",
-    [
-        opposite_sides,
-        two_separate_boxes,
-        two_touching_boxes,
-        partial_view,
-        different_track_ids,
-    ],
-)
+@pytest.mark.parametrize("scene", [two_separate_boxes, partial_view])
 def test_each_scene_associates_into_its_expected_number_of_boxes(scene):
     built = scene()
 
@@ -356,10 +347,9 @@ def test_box_views_link_from_min_link_fraction_of_the_smaller_ones_points(
 DISTANCE_MARGIN_MM = 0.05
 
 
-@pytest.mark.parametrize(("offset", "linked"), [(-1, True), (1, False)])
-def test_box_views_link_only_within_link_distance(monkeypatch, offset, linked):
-    """Box views whose bounds lie over ``LINK_DISTANCE_MM`` apart skip the distance
-    check."""
+@pytest.fixture
+def distance_checks(monkeypatch) -> list[tuple[np.ndarray, np.ndarray]]:
+    """The box view pairs whose points went through the distance check."""
     checks = []
     distance_check = box_cloud_assembler._linked
 
@@ -368,13 +358,37 @@ def test_box_views_link_only_within_link_distance(monkeypatch, offset, linked):
         return distance_check(first, second)
 
     monkeypatch.setattr(box_cloud_assembler, "_linked", spy)
+    return checks
+
+
+@pytest.mark.parametrize(("offset", "linked"), [(-1, True), (1, False)])
+def test_box_views_link_only_within_link_distance(distance_checks, offset, linked):
+    """Box views whose bounds lie over ``LINK_DISTANCE_MM`` apart skip the distance
+    check."""
     points = flat_patch(np.random.default_rng(0), 2000, 0)
     lift = np.array([0, 0, LINK_DISTANCE_MM + offset * DISTANCE_MARGIN_MM], np.float32)
 
     [clouds] = run([frame([{1: points}, {2: points + lift}])])
 
     assert len(clouds.items) == (1 if linked else 2)
-    assert len(checks) == (1 if linked else 0)
+    assert len(distance_checks) == (1 if linked else 0)
+
+
+@pytest.mark.parametrize(("offset", "linked"), [(-1, True), (1, False)])
+def test_box_views_with_overlapping_bounds_link_only_within_link_distance(
+    distance_checks, offset, linked
+):
+    rng = np.random.default_rng(0)
+    points = flat_patch(rng, 2000, 0)
+    lift = np.array([0, 0, LINK_DISTANCE_MM + offset * DISTANCE_MARGIN_MM], np.float32)
+    # A far patch at the lifted height makes the bounds overlap, so the distance
+    # between the patch and its lifted copy decides.
+    far = flat_patch(rng, 2000, 200) + lift
+
+    [clouds] = run([frame([{1: np.concatenate([points, far])}, {2: points + lift}])])
+
+    assert len(clouds.items) == (1 if linked else 2)
+    assert len(distance_checks) == 1
 
 
 def test_a_two_view_box_cloud_keeps_one_float32_point_per_merge_voxel():

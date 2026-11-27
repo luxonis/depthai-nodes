@@ -136,10 +136,7 @@ class BoxCloud:
     """
 
     points: np.ndarray
-    """An ``(N, 3)`` ``float32`` array in millimetres, in shared coordinates.
-
-    It holds the box's box views, merged, cleaned and voxel-thinned.
-    """
+    """An ``(N, 3)`` ``float32`` array in millimetres, in shared coordinates."""
 
     depth_coverage: float
     """The highest depth coverage among the box's box views, between 0 and 1."""

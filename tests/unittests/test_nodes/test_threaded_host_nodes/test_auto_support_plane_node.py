@@ -35,6 +35,8 @@ from depthai_nodes.node import (  # noqa: E402
 )
 from depthai_nodes.node.support_plane_calibrator.support_plane_calibrator import (  # noqa: E402
     IMU_MAX_AGE_SECONDS,
+    MIN_ON_PLANE_POINTS,
+    ON_PLANE_STRIDE,
 )
 from depthai_nodes.node.support_plane_calibrator.support_plane_fitter import (  # noqa: E402
     SupportPlaneFitter,
@@ -720,12 +722,17 @@ def test_one_check_is_in_flight_through_an_imu_stall(clock):
     assert node.no_result()
 
 
+# Valid points of the sparse cloud: one sampled point short of a measured on-plane
+# ratio.
+SPARSE_POINTS = ON_PLANE_STRIDE * (MIN_ON_PLANE_POINTS - 1)
+
+
 def sparse_depths():
     """Depths on the held floor, with too few points to measure an on-plane ratio."""
     width, height = LARGE_CLOUD_SIZE
-    depths = np.full((height, width), 1000.0)
-    depths[:81] = 0
-    return depths
+    depths = np.zeros(width * height)
+    depths[-SPARSE_POINTS:] = 1000.0
+    return depths.reshape(height, width)
 
 
 @pytest.mark.parametrize(
@@ -1000,7 +1007,7 @@ def assert_protocol(log, config, initial_plane):
 
 
 WALK_DEPTHS = [1000.0, 1300.0, OCCLUDED, 0.0]
-# Inlier counts that fit in the sparse cloud's 1900 points too.
+# Inlier counts that fit in the sparse cloud's `SPARSE_POINTS` too.
 WALK_SCENES = [
     ScriptedScene([]),
     scripted_floors((-1000.0, 1500)),

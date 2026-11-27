@@ -178,16 +178,13 @@ fixed at ``build``.
 ``ImportError``.
 
 Example:
-    With existing ``pointCloud`` and ``imu`` outputs and a point cloud of
-    ``width`` by ``height`` points, calibrate once and save the best support
-    plane::
+    With existing ``pointCloud`` and ``imu`` outputs, calibrate once and save
+    the best support plane::
 
         from depthai_nodes.message import SupportPlaneCalibrationControl
         from depthai_nodes.node import SupportPlaneCalibrator
 
-        calibrator = pipeline.create(SupportPlaneCalibrator).build(
-            pointCloud, imu, (width, height)
-        )
+        calibrator = pipeline.create(SupportPlaneCalibrator).build(pointCloud, imu)
         control = calibrator.inputControl.createInputQueue()
         results = calibrator.out.createOutputQueue()
         pipeline.start()

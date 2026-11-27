@@ -994,13 +994,18 @@ def test_on_plane_ratio_is_measured_from_a_minimum_sample_of_valid_points(
     valid_count, measured, with_invalid
 ):
     calibrator = Harness()
-    # Interleaved, an invalid point off the floor, in turn the origin, NaN and
-    # inf, comes before each floor point; it counts toward neither the sample
-    # size nor the ratio.
+    # Interleaved, an invalid point off the floor, in turn the origin, NaN, inf
+    # and -inf, comes before each floor point; it counts toward neither the
+    # sample size nor the ratio.
     points = grid_points(valid_count, 1, 1000.0)
     if with_invalid:
         invalid = np.resize(
-            [(0.0, 0.0, 0.0), (np.nan, 0.0, 1000.0), (40.0, 0.0, np.inf)],
+            [
+                (0.0, 0.0, 0.0),
+                (np.nan, 0.0, 1000.0),
+                (40.0, 0.0, np.inf),
+                (40.0, -np.inf, 1000.0),
+            ],
             (valid_count, 3),
         )
         points = np.insert(points, range(valid_count), invalid, axis=0)
@@ -1066,31 +1071,23 @@ def test_unorganized_cloud_with_its_floor_at_negative_z_is_fitted_and_measured()
     assert plane.offset_mm == pytest.approx(-1000, abs=1)
 
 
-@pytest.mark.parametrize(
-    ("point", "counts"),
-    [
-        ((0.0, 0.0, 0.0), False),
-        ((np.nan, 0.0, 1000.0), False),
-        ((40.0, -np.inf, 1000.0), False),
-        ((40.0, 0.0, -1000.0), True),
-        ((40.0, 0.0, 0.0), True),
-    ],
-    ids=["origin", "nan", "inf", "negative-z", "zero-z"],
-)
-def test_on_plane_ratio_counts_only_finite_points_other_than_the_origin(point, counts):
+def test_on_plane_ratio_counts_a_point_with_zero_z_that_is_not_the_origin():
     calibrator = Harness()
-    # Enough floor points to measure a ratio alone, after as many copies of the
-    # point, which lies off the floor; counted, they take half the sample.
+    # Enough floor points to measure a ratio alone, after as many copies of a
+    # point off the floor; counted, they take half the sample.
     floor_count = ON_PLANE_STRIDE * MIN_ON_PLANE_POINTS
     points = np.vstack(
-        [np.tile(point, (floor_count, 1)), grid_points(floor_count, 1, 1000.0)]
+        [
+            np.tile((40.0, 0.0, 0.0), (floor_count, 1)),
+            grid_points(floor_count, 1, 1000.0),
+        ]
     )
     calibrator.gravity()
     calibrator.verify(floor(-1000))
     calibrator.unorganized_cloud(points)
     calibrator.run()
 
-    assert calibrator.verification().on_plane_ratio == (0.5 if counts else 1.0)
+    assert calibrator.verification().on_plane_ratio == 0.5
 
 
 # The IMU's y axis is the camera's z axis: a 90° turn about x, IMU to camera.
