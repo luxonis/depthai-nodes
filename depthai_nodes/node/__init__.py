@@ -182,16 +182,13 @@ fixed at ``build``.
 ``ImportError``.
 
 Example:
-    With existing ``pointCloud`` and ``imu`` outputs and a point cloud of
-    ``width`` by ``height`` points, calibrate once and save the best support
-    plane::
+    With existing ``pointCloud`` and ``imu`` outputs, calibrate once and save
+    the best support plane::
 
         from depthai_nodes.message import SupportPlaneCalibrationControl
         from depthai_nodes.node import SupportPlaneCalibrator
 
-        calibrator = pipeline.create(SupportPlaneCalibrator).build(
-            pointCloud, imu, (width, height)
-        )
+        calibrator = pipeline.create(SupportPlaneCalibrator).build(pointCloud, imu)
         control = calibrator.inputControl.createInputQueue()
         results = calibrator.out.createOutputQueue()
         pipeline.start()
@@ -220,8 +217,8 @@ Drive ``SupportPlaneCalibrator`` directly instead when a person picks among
 the support plane candidates, or for any custom flow.
 
 Example:
-    With existing ``pointCloud`` and ``imu`` outputs and a point cloud of
-    ``width`` by ``height`` points, keep the support plane up to date::
+    With existing ``pointCloud`` and ``imu`` outputs, keep the support plane up
+    to date::
 
         from depthai_nodes.node import (
             AutoSupportPlane,
@@ -233,9 +230,7 @@ Example:
             mode=AutoSupportPlaneConfig.Mode.CONTINUOUS,
             calibration=PlaneCalibrationConfig(max_calibration_attempts=10),
         )
-        node = pipeline.create(AutoSupportPlane).build(
-            pointCloud, imu, (width, height), config
-        )
+        node = pipeline.create(AutoSupportPlane).build(pointCloud, imu, config)
         results = node.out.createOutputQueue()
         pipeline.start()
 
@@ -253,10 +248,13 @@ Box measurement
 
 * `BoxDetector`: detects, segments, and tracks boxes in a color stream and
   emits `depthai_nodes.message.BoxDetections`.
-* `BoxDimensioner`: measures box detections in an organized point cloud and
-  emits `depthai_nodes.message.BoxMeasurements`.
-* `BoxMeasurer`: wires ``BoxDetector`` into ``BoxDimensioner`` behind one
-  ``build``.
+* `BoxDimensioner`: measures `depthai_nodes.message.BoxClouds` from
+  ``BoxAssociator`` and emits `depthai_nodes.message.BoxMeasurements`.
+* `BoxMeasurer`: wires a ``BoxDetector`` per view into ``BoxAssociator`` and
+  ``BoxDimensioner`` behind one ``build``.
+* `BoxAssociator`: associates box detections from one or more views, each with
+  depth aligned to its color, into `depthai_nodes.message.BoxClouds` in shared
+  coordinates. It needs open3d.
 
 Boxes are measured against a support plane; see "Support plane" above. It
 comes from the ``plane`` of a support plane candidate in a
@@ -267,25 +265,25 @@ change while the pipeline runs.
 
 ``BoxDetector`` and ``BoxMeasurer`` run on RVC4 only and download the
 ``luxonis/box-instance-segmentation`` model from the Model Zoo at build.
-``BoxDimensioner`` and ``BoxMeasurer`` need open3d, installed with
+``BoxAssociator`` and ``BoxMeasurer`` need open3d, installed with
 ``pip install "depthai-nodes[box-measurement]"``; without it their ``build``
 raises ``ImportError``.
 
 Example:
-    With existing ``color`` and ``pointCloud`` outputs and a point cloud of
-    ``width`` by ``height`` points::
+    With existing ``color`` and ``depth`` outputs, the depth aligned to the
+    color::
 
         from depthai_nodes.message import SupportPlane
         from depthai_nodes.node import BoxMeasurer
 
         plane = SupportPlane.fromJsonFile("support_plane.json")
         measurer = pipeline.create(BoxMeasurer).build(
-            color, pointCloud, (width, height), supportPlane=plane
+            [(color, depth)], supportPlane=plane
         )
         measurements = measurer.out.createOutputQueue()
 
     Each ``BoxMeasurements`` message read from ``measurements`` holds one
-    result per box detection, with its box dimensions once measured.
+    result per box, with its box dimensions once measured.
 
 MeasureAnything measurement
 ===========================
@@ -318,6 +316,7 @@ from .apply_colormap import ApplyColormap
 from .apply_depth_colormap import ApplyDepthColormap
 from .base_host_node import BaseHostNode
 from .base_threaded_host_node import BaseThreadedHostNode
+from .box_associator import BoxAssociator
 from .box_detector import BoxDetector
 from .box_dimensioner import BoxDimensioner
 from .box_measurer import BoxMeasurer
@@ -417,6 +416,7 @@ __all__ = [
     "BoxDimensioner",
     "BoxDetector",
     "BoxMeasurer",
+    "BoxAssociator",
     "SupportPlaneCalibrator",
     "PlaneCalibrationConfig",
     "AutoSupportPlane",

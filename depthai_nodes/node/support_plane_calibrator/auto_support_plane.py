@@ -34,6 +34,11 @@ class AutoSupportPlane(BaseThreadedHostNode):
     refits after repeated failed checks, keeping the old plane meanwhile. Pass
     the plane held before a pipeline rebuild as ``initialPlane``.
 
+    Errors: the inner `SupportPlaneCalibrator` raises ``TypeError`` for a point
+    cloud message that is not ``dai.PointCloudData``, and ``RuntimeError`` when
+    the IMU's device has no IMU extrinsics or is missing from a set multi-device
+    calibration.
+
     Attributes:
         out: Output stream of `depthai_nodes.message.AutoSupportPlaneResult`,
             one per found, checked or rejected plane.
@@ -91,7 +96,6 @@ class AutoSupportPlane(BaseThreadedHostNode):
         self,
         pointCloud: dai.Node.Output,
         imu: dai.Node.Output,
-        pointCloudSize: tuple[int, int],
         config: AutoSupportPlaneConfig | None = None,
         initialPlane: SupportPlane | None = None,
         selectCandidate: CandidateSelector | None = None,
@@ -99,10 +103,12 @@ class AutoSupportPlane(BaseThreadedHostNode):
         """Build the inner calibrator on the point cloud and IMU.
 
         Args:
-            pointCloud: Output emitting organized ``dai.PointCloudData`` in
-                millimeters.
-            imu: Output emitting ``dai.IMUData`` with accelerometer packets.
-            pointCloudSize: Cloud ``(width, height)`` in points.
+            pointCloud: Output emitting ``dai.PointCloudData`` in millimeters,
+                in shared coordinates and in one frame with the boxes the plane
+                serves; see `SupportPlaneCalibrator.build`.
+            imu: Output emitting ``dai.IMUData`` with ``ACCELEROMETER_RAW``
+                packets from one device's IMU; set any multi-device calibration
+                before the pipeline starts. See `SupportPlaneCalibrator.build`.
             config: Mode and calibrator settings; ``None`` uses the defaults.
             initialPlane: Held at once, then verified on the first cloud with
                 fresh IMU; dropped for a search if rejected.
@@ -119,9 +125,8 @@ class AutoSupportPlane(BaseThreadedHostNode):
             RuntimeError: If the node is already built.
             TypeError: If ``config`` is not an ``AutoSupportPlaneConfig``,
                 ``initialPlane`` is neither ``None`` nor a ``SupportPlane``,
-                ``selectCandidate`` is neither ``None`` nor callable, or
-                ``pointCloudSize`` is not a pair of integers.
-            ValueError: If ``pointCloudSize`` does not have two positive values.
+                or ``selectCandidate`` is neither ``None`` nor callable.
+            ValueError: If the IMU's device is not an RVC4.
         """
         if self._config is not None:
             raise RuntimeError(
@@ -144,7 +149,7 @@ class AutoSupportPlane(BaseThreadedHostNode):
                 "initialPlane must be SupportPlane, got "
                 f"{type(initialPlane).__name__}"
             )
-        self._calibrator.build(pointCloud, imu, pointCloudSize, config.calibration)
+        self._calibrator.build(pointCloud, imu, config.calibration)
         self._control_output.link(self._calibrator.inputControl)
         self._calibrator.inputControl.setMaxSize(CONTROL_QUEUE_SIZE)
         self._calibrator.out.link(self._calibration_input)

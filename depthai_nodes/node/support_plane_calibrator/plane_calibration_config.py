@@ -53,11 +53,13 @@ class PlaneCalibrationConfig:
         max_gravity_angle_deg: Largest angle between a plane normal and the
             direction opposing gravity, from 0 up to but excluding 90.
         min_camera_height_mm: Smallest distance, in millimeters, from the
-            camera down to a plane that passes the level test, for a camera
-            mounted at a known height. Positive, or ``None`` for no bound.
-        max_camera_height_mm: Largest distance, in millimeters, from the camera
-            down to a plane that passes the level test. Positive and at least
-            ``min_camera_height_mm``, or ``None`` for no bound.
+            reference camera down to a plane that passes the level test, for a
+            reference camera mounted at a known height. Positive, or ``None``
+            for no bound.
+        max_camera_height_mm: Largest distance, in millimeters, from the
+            reference camera down to a plane that passes the level test.
+            Positive and at least ``min_camera_height_mm``, or ``None`` for no
+            bound.
         merge_distance_threshold_mm: Largest offset difference, in millimeters,
             at which two parallel candidates count as one plane. Must be
             positive.

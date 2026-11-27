@@ -15,6 +15,7 @@ class PipelineMock:
     def __init__(self):
         self._nodes = []
         self._defaultDevice = DeviceMock()
+        self._multi_device_calibration = None
 
     def __enter__(self):
         return self
@@ -25,13 +26,21 @@ class PipelineMock:
     def getDefaultDevice(self):
         return self._defaultDevice
 
+    def setMultiDeviceCalibration(self, graph: list[dai.MultiDeviceExtrinsics]):
+        self._multi_device_calibration = graph
+
+    def getMultiDeviceCalibration(self) -> list[dai.MultiDeviceExtrinsics] | None:
+        """Return the set graph, or ``None`` when unset, as ``dai.Pipeline`` does."""
+        return self._multi_device_calibration
+
     def getAllNodes(self):
         return list(self._nodes)
 
     def remove(self, node):
         self._nodes.remove(node)
 
-    def create(self, node_type: type[ThreadedHostNodeMock]):
+    def create(self, node_type: type[ThreadedHostNodeMock], device=None):
+        """Create a node, recording the ``device`` it was created with."""
         from depthai_nodes.node.parsers.base_parser import BaseParser
 
         if issubclass(node_type, BaseParser):
@@ -162,6 +171,7 @@ class PipelineMock:
             node = NodeMock(self)
 
         node.parentPipeline = self
+        node.device = device
         self._nodes.append(node)
         return node
 

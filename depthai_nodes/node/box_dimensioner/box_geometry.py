@@ -21,6 +21,8 @@ class BoxGeometry:
 
     MIN_POINTS = 50
     VOXEL_SIZE = 3.0
+    OUTLIER_NEIGHBORS = 10
+    OUTLIER_STD_RATIO = 0.2
     MAD_K = 3.0
     HEIGHT_PERCENTILE = 98.0
 
@@ -36,10 +38,11 @@ class BoxGeometry:
     MIN_TOP_PLANE_POINTS = 20
 
     def measure(self, points: np.ndarray, plane_eq: np.ndarray) -> BoxDimensions | None:
-        """Measure the box whose points lie above a support plane.
+        """Measure the box whose cleaned points lie above a support plane.
 
         Args:
-            points: ``(N, 3)`` box points in millimeters.
+            points: ``(N, 3)`` box points in millimeters, already passed through
+                ``clean``.
             plane_eq: Support plane ``(a, b, c, d)`` with ``ax + by + cz + d = 0``,
                 in millimeters. The normal need not be unit length or point up.
 
@@ -53,17 +56,13 @@ class BoxGeometry:
         if points.shape[0] < self.MIN_POINTS:
             return None
 
-        filtered = self._filter_points(points)
-        if filtered.shape[0] < self.MIN_POINTS:
-            return None
-
         plane_eq = self._normalized_plane(plane_eq)
 
-        height_mm = self._height(filtered, plane_eq)
+        height_mm = self._height(points, plane_eq)
         if height_mm is None:
             return None
 
-        length_width = self._length_width(filtered, plane_eq, height_mm)
+        length_width = self._length_width(points, plane_eq, height_mm)
         if length_width is None:
             return None
 
@@ -75,13 +74,15 @@ class BoxGeometry:
             width_mm=width_mm,
         )
 
-    # --- filtering -----------------------------------------------------------
+    # --- cleaning ------------------------------------------------------------
 
-    def _filter_points(self, points: np.ndarray) -> np.ndarray:
-        """Downsamples and filters the point cloud."""
+    def clean(self, points: np.ndarray) -> np.ndarray:
+        """Thin ``(N, 3)`` millimeter points to one per voxel and drop outliers."""
         pcl = self._point_cloud(points)
         pcl = pcl.voxel_down_sample(voxel_size=self.VOXEL_SIZE)
-        pcl, _ = pcl.remove_statistical_outlier(10, 0.2)
+        pcl, _ = pcl.remove_statistical_outlier(
+            self.OUTLIER_NEIGHBORS, self.OUTLIER_STD_RATIO
+        )
         return np.asarray(pcl.points)
 
     @staticmethod

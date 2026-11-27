@@ -3,10 +3,27 @@ import depthai as dai
 from .queue import OutputQueueMock
 
 
-class OutputMock:
-    """Output class to simulate the depthai output node."""
+class SourceNodeMock:
+    """Node producing an output: on a device if given one, else on the host."""
 
-    def __init__(self):
+    def __init__(self, device=None):
+        self._device = device
+
+    def runOnHost(self) -> bool:
+        return self._device is None
+
+    def getDevice(self):
+        return self._device
+
+
+class OutputMock:
+    """Output class to simulate the depthai output node.
+
+    Its parent runs on ``device``, or on the host when no device is given.
+    """
+
+    def __init__(self, device=None):
+        self._parent = SourceNodeMock(device)
         self._datatypes: list[tuple[dai.DatatypeEnum, bool]] = []
         self._queues: list[OutputQueueMock] = []
         self.links: list = []
@@ -34,6 +51,9 @@ class OutputMock:
 
     def link(self, node):
         self.links.append(node)
+
+    def getParent(self):
+        return self._parent
 
     def getParentPipeline(self):
         return None

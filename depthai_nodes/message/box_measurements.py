@@ -8,10 +8,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
-import depthai as dai
-
-from depthai_nodes.utils import AnnotationHelper
-
+from .box_clouds import BoxViewDetection, _check_detections
 from .collection import Collection
 
 
@@ -90,9 +87,9 @@ class BoxDimensions:
 class MeasurementStatus(str, Enum):
     """Whether a box was measured in a frame.
 
-    ``INELIGIBLE`` boxes could not be measured, for example because no support
-    plane is set or the box touches the frame border. ``FAILED`` boxes were
-    eligible but their geometry could not be measured. ``MEASURED`` boxes
+    ``INELIGIBLE`` boxes were not measured because no support plane is set.
+    ``FAILED`` boxes were not measured because none of the box's views has enough
+    depth coverage, or because its geometry could not be measured. ``MEASURED`` boxes
     produced a sample and have dimensions.
     """
 
@@ -103,28 +100,24 @@ class MeasurementStatus(str, Enum):
 
 @dataclass(frozen=True, kw_only=True)
 class BoxMeasurementResult:
-    """A tracked box's measurement outcome in one processed frame.
+    """A box's measurement outcome in one processed frame.
 
     Attributes:
-        track_id: Tracker ID of the box.
-        bounding_box: Normalized bounding box in the source frame.
-        confidence: Detection confidence.
-        track_status: Tracking status of the box in this frame, ``NEW`` or
-            ``TRACKED``. Lost tracks keep only their last-seen box, so they are
-            not emitted.
+        box_id: The box's identity, kept across views and over time.
+        detections: The 2D detection of each box view that took part in
+            association this frame, at least one. A view may appear more than
+            once.
         measurement_status: Outcome of measuring the box in this frame.
         dimensions: The box's aggregated dimensions, when it has any.
 
     Raises:
         TypeError: If a field has the wrong type.
-        ValueError: If ``confidence`` is not finite, or a measured box has no
+        ValueError: If ``detections`` is empty, or a measured box has no
             dimensions.
     """
 
-    track_id: int
-    bounding_box: dai.RotatedRect
-    confidence: float
-    track_status: dai.Tracklet.TrackingStatus
+    box_id: int
+    detections: tuple[BoxViewDetection, ...]
     measurement_status: MeasurementStatus
     dimensions: BoxDimensions | None = None
 
@@ -133,15 +126,11 @@ class BoxMeasurementResult:
 
         Raises:
             TypeError: If a field has the wrong type.
-            ValueError: If ``confidence`` is not finite, or a measured box has
-                no dimensions.
+            ValueError: If ``detections`` is empty, or a measured box has no
+                dimensions.
         """
-        object.__setattr__(self, "track_id", _check_int("track_id", self.track_id))
-        _check_instance("bounding_box", self.bounding_box, dai.RotatedRect)
-        object.__setattr__(
-            self, "confidence", _check_float("confidence", self.confidence)
-        )
-        _check_instance("track_status", self.track_status, dai.Tracklet.TrackingStatus)
+        object.__setattr__(self, "box_id", _check_int("box_id", self.box_id))
+        _check_detections(self.detections)
         _check_instance(
             "measurement_status", self.measurement_status, MeasurementStatus
         )
@@ -155,7 +144,7 @@ class BoxMeasurementResult:
 
 
 class BoxMeasurements(Collection[BoxMeasurementResult]):
-    """Measurement results of the boxes tracked in one frame.
+    """Measurement results of the boxes in one frame.
 
     Args:
         items: Measurement results.
@@ -163,48 +152,3 @@ class BoxMeasurements(Collection[BoxMeasurementResult]):
     Raises:
         TypeError: If ``items`` is not a list of one type.
     """
-
-    def getVisualizationMessage(self) -> dai.ImgAnnotations:
-        """Outline each box, labelled with its identity and any dimensions.
-
-        Returns:
-            Annotations with this message's timestamps and sequence number.
-        """
-        annotations = AnnotationHelper()
-        for box in self.items:
-            xmin, ymin, xmax, ymax = box.bounding_box.getOuterRect()
-            annotations.draw_rectangle(
-                (xmin, ymin), (xmax, ymax), fill_color=None, thickness=3.0
-            )
-            annotations.draw_text(
-                annotation_text(box),
-                (xmin, max(0.0, ymin - 0.01)),
-                color=(1.0, 1.0, 1.0, 1.0),
-                background_color=(0.0, 0.0, 0.0, 0.6),
-                size=28.0,
-            )
-        message = annotations.build(self.getTimestamp(), self.getSequenceNum())
-        message.setTimestampDevice(self.getTimestampDevice())
-        return message
-
-
-def annotation_text(box: BoxMeasurementResult) -> str:
-    """Return the annotation text of a measured box.
-
-    Args:
-        box: Measurement result to describe.
-
-    Returns:
-        Track ID and confidence, followed by the dimensions in centimeters and
-        the volume in cubic centimeters when the box has dimensions.
-    """
-    text = f"Box {box.track_id} ({box.confidence:.0%})"
-    dimensions = box.dimensions
-    if dimensions is not None:
-        text += (
-            f"\nH: {dimensions.height_mm / 10:.1f} cm"
-            f"\nL: {dimensions.length_mm / 10:.1f} cm"
-            f" W: {dimensions.width_mm / 10:.1f} cm"
-            f"\nV: {dimensions.volume_mm3 / 1000:.0f} cm³"
-        )
-    return text

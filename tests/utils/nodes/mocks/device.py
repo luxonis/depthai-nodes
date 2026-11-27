@@ -1,9 +1,20 @@
 import depthai as dai
+import numpy as np
 
 
 class DeviceMock:
-    def __init__(self):
+    """A device with a settable ID, platform and active calibration.
+
+    Its calibration starts empty, without camera data or IMU extrinsics.
+    """
+
+    def __init__(self, deviceId: str = "default"):
+        self._device_id = deviceId
         self._platform = dai.Platform.RVC2
+        self._calibration = dai.CalibrationHandler()
+
+    def getDeviceId(self):
+        return self._device_id
 
     def getPlatformAsString(self):
         return self._platform.name
@@ -13,3 +24,51 @@ class DeviceMock:
 
     def setPlatform(self, platform: dai.Platform):
         self._platform = platform
+
+    def getCalibration(self) -> dai.CalibrationHandler:
+        return self._calibration
+
+    def setCalibration(self, calibration: dai.CalibrationHandler):
+        self._calibration = calibration
+
+
+def rvc4_device(deviceId: str = "default") -> DeviceMock:
+    """An RVC4 device with an empty calibration."""
+    device = DeviceMock(deviceId)
+    device.setPlatform(dai.Platform.RVC4)
+    return device
+
+
+def camera_calibration(
+    socket: dai.CameraBoardSocket = dai.CameraBoardSocket.CAM_A,
+) -> dai.CalibrationHandler:
+    """A calibration with intrinsics for ``socket`` and no IMU extrinsics."""
+    calibration = dai.CalibrationHandler()
+    calibration.setCameraIntrinsics(socket, np.eye(3).tolist(), 640, 400)
+    return calibration
+
+
+def imu_calibration(
+    rotation: np.ndarray,
+    socket: dai.CameraBoardSocket = dai.CameraBoardSocket.CAM_A,
+) -> dai.CalibrationHandler:
+    """A calibration whose IMU → ``socket`` extrinsics rotate by ``rotation``.
+
+    DepthAI reads IMU extrinsics only for a camera it has data for, so the camera's
+    intrinsics are set first.
+    """
+    calibration = camera_calibration(socket)
+    calibration.setImuExtrinsics(socket, np.asarray(rotation).tolist(), [0, 0, 0])
+    return calibration
+
+
+def imu_device(
+    rotation: np.ndarray | None = None, deviceId: str = "1000"
+) -> DeviceMock:
+    """An RVC4 device whose IMU → CAM_A extrinsics rotate by ``rotation``.
+
+    ``None`` means the identity.
+    """
+    device = rvc4_device(deviceId)
+    device.setCalibration(imu_calibration(np.eye(3) if rotation is None else rotation))
+    return device

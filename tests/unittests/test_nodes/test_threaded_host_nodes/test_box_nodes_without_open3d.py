@@ -4,7 +4,11 @@ from typing import Any, cast
 import depthai as dai
 import pytest
 
-from depthai_nodes.node import AutoSupportPlane, BoxMeasurer, SupportPlaneCalibrator
+from depthai_nodes.node import (
+    AutoSupportPlane,
+    BoxAssociator,
+    SupportPlaneCalibrator,
+)
 from tests.utils import OutputMock, PipelineMock
 
 
@@ -19,20 +23,7 @@ def test_support_plane_calibrator_build_names_the_extra_without_open3d(monkeypat
     with pytest.raises(
         ImportError, match=r'pip install "depthai-nodes\[box-measurement\]"'
     ):
-        calibrator.build(output, output, (64, 48))
-
-
-def test_box_measurer_build_names_the_extra_without_open3d(monkeypatch):
-    monkeypatch.setitem(sys.modules, "open3d", None)
-    output = cast(dai.Node.Output, OutputMock())
-    pipeline = PipelineMock()
-    pipeline.getDefaultDevice().setPlatform(dai.Platform.RVC4)
-    measurer = cast(BoxMeasurer, pipeline.create(cast(Any, BoxMeasurer)))
-
-    with pytest.raises(
-        ImportError, match=r'pip install "depthai-nodes\[box-measurement\]"'
-    ):
-        measurer.build(output, output, (64, 48))
+        calibrator.build(output, output)
 
 
 def test_auto_support_plane_build_names_the_extra_without_open3d(monkeypatch):
@@ -43,4 +34,18 @@ def test_auto_support_plane_build_names_the_extra_without_open3d(monkeypatch):
     with pytest.raises(
         ImportError, match=r'pip install "depthai-nodes\[box-measurement\]"'
     ):
-        node.build(output, output, (64, 48))
+        node.build(output, output)
+
+
+def test_box_associator_build_names_the_extra_without_open3d(monkeypatch):
+    monkeypatch.setitem(sys.modules, "open3d", None)
+    output = cast(dai.Node.Output, OutputMock())
+    pipeline = PipelineMock()
+    associator = cast(BoxAssociator, pipeline.create(cast(Any, BoxAssociator)))
+
+    with pytest.raises(
+        ImportError, match=r'pip install "depthai-nodes\[box-measurement\]"'
+    ):
+        associator.build([(output, output)])
+
+    assert pipeline.getAllNodes() == [associator]

@@ -1,9 +1,7 @@
-import numbers
 import time
 from collections import deque
-from collections.abc import Sequence
 from enum import Enum
-from typing import Any
+from typing import cast
 
 import depthai as dai
 import numpy as np
@@ -23,33 +21,7 @@ from .plane_validation import (
     is_valid_horizontal_plane,
     orient_along_gravity,
 )
-from .support_plane_fitter import SupportPlaneFitter
-
-
-def _check_size(name: str, value: Any) -> tuple[int, int]:
-    """Return a ``(width, height)`` sequence of positive integers as a tuple.
-
-    Raises:
-        TypeError: If the value is not a sequence, is a ``str`` or ``bytes``, or
-            holds elements that are ``bool`` or not integers.
-        ValueError: If the value does not have exactly two positive elements.
-    """
-    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
-        raise TypeError(
-            f"{name} must be a (width, height) sequence, got {type(value).__name__}"
-        )
-    if len(value) != 2:
-        raise ValueError(f"{name} must be (width, height), got {len(value)} values")
-    for label, element in zip(("width", "height"), value):
-        if isinstance(element, bool) or not isinstance(element, numbers.Integral):
-            raise TypeError(
-                f"{name} {label} must be an integer, got {type(element).__name__}"
-            )
-    width, height = int(value[0]), int(value[1])
-    if width <= 0 or height <= 0:
-        raise ValueError(f"{name} must be positive, got ({width}, {height})")
-    return width, height
-
+from .support_plane_fitter import SupportPlaneFitter, _valid_points
 
 # Oldest IMU sample, by host arrival time, used for gravity. The IMU streams at
 # tens to hundreds of hertz, so an older sample means the stream has stalled.
@@ -59,9 +31,11 @@ IMU_MAX_AGE_SECONDS = 0.5
 # packet without an accelerometer report.
 MIN_GRAVITY_NORM = 1e-6
 
-# The on-plane ratio samples every this-many rows and columns of the organized
-# cloud, and is not measured under this many valid sampled points.
-ON_PLANE_STRIDE = 4
+# The on-plane ratio samples every this-many valid points of the flat point
+# array, from the first one.
+ON_PLANE_STRIDE = 16
+# The on-plane ratio is not measured under this many sampled points, about
+# 8000 valid points.
 MIN_ON_PLANE_POINTS = 500
 
 
@@ -74,7 +48,7 @@ class CalibratorState(Enum):
 
 
 class SupportPlaneCalibrator(BaseThreadedHostNode):
-    """Find the support plane in single point clouds, checked against gravity.
+    """Find the support plane in shared coordinates, checked against gravity, on RVC4.
 
     Send `depthai_nodes.message.SupportPlaneCalibrationControl` messages to
     ``inputControl``. Each attempt ends with one
@@ -97,10 +71,13 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
     for an IMU sample younger than ``IMU_MAX_AGE_SECONDS`` with a nonzero
     accelerometer vector.
 
-    Errors: a message on the point cloud input that is not
-    ``dai.PointCloudData`` raises ``TypeError``, and a cloud that is not the
-    organized size from `build` raises ``ValueError``. An exception escaping
-    ``run()`` aborts the process on depthai 3.12.
+    Errors: these raise from the running node.
+        - A message on the point cloud input that is not
+          ``dai.PointCloudData``: ``TypeError``.
+        - The IMU's device has no IMU extrinsics: ``RuntimeError`` naming the
+          device ID.
+        - A multi-device calibration is set without the IMU's device:
+          ``RuntimeError`` naming the device ID.
     """
 
     def __init__(self) -> None:
@@ -119,6 +96,9 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         self._config: PlaneCalibrationConfig | None = None
         self._fitter: SupportPlaneFitter | None = None
         self._verifications: deque[SupportPlane] = deque()
+        self._imu_device: dai.Device | None = None
+        # IMU axes to shared coordinates, set when the node starts running.
+        self._imu_rotation: np.ndarray | None = None
         self._latest_gravity: np.ndarray | None = None
         self._latest_gravity_arrival = 0.0
         self._last_fitted_cloud: dai.PointCloudData | None = None
@@ -156,16 +136,24 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         self,
         pointCloud: dai.Node.Output,
         imu: dai.Node.Output,
-        pointCloudSize: tuple[int, int],
         config: PlaneCalibrationConfig | None = None,
     ) -> "SupportPlaneCalibrator":
-        """Link the inputs and fix the cloud size and fitting settings.
+        """Link the inputs and fix the fitting settings.
 
         Args:
-            pointCloud: Output emitting organized ``dai.PointCloudData`` in
-                millimeters.
-            imu: Output emitting ``dai.IMUData`` with accelerometer packets.
-            pointCloudSize: Cloud ``(width, height)`` in points.
+            pointCloud: Output emitting ``dai.PointCloudData`` in millimeters
+                and in shared coordinates, organized or not. A point counts
+                when it is finite and not ``(0, 0, 0)``. It must share one frame
+                with the boxes the plane serves (same depth outputs, same
+                multi-device calibration); this is not checked. Without a
+                multi-device calibration, shared coordinates are the frame of
+                the IMU device's calibration-origin camera, CAM_A on most
+                devices.
+            imu: Output emitting ``dai.IMUData`` with ``ACCELEROMETER_RAW``
+                packets from one RVC4 device's IMU; for a host source, the
+                pipeline's default device. Gravity is taken in shared
+                coordinates, so set any multi-device calibration before the
+                pipeline starts.
             config: Plane-fitting and attempt settings; ``None`` uses the
                 defaults.
 
@@ -175,9 +163,8 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         Raises:
             ImportError: If open3d is not installed.
             RuntimeError: If the node is already built.
-            TypeError: If ``pointCloudSize`` is not a pair of integers or
-                ``config`` is not a ``PlaneCalibrationConfig``.
-            ValueError: If ``pointCloudSize`` does not have two positive values.
+            TypeError: If ``config`` is not a ``PlaneCalibrationConfig``.
+            ValueError: If the IMU's device is not an RVC4.
         """
         try:
             import open3d  # noqa: F401
@@ -191,21 +178,33 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                 "SupportPlaneCalibrator is already built; create a new node to "
                 "change its configuration"
             )
-        width, height = _check_size("pointCloudSize", pointCloudSize)
         if config is None:
             config = PlaneCalibrationConfig()
         if not isinstance(config, PlaneCalibrationConfig):
             raise TypeError(
                 "config must be PlaneCalibrationConfig, got " f"{type(config).__name__}"
             )
+        source = imu.getParent()
+        if source.runOnHost():
+            device = self.getParentPipeline().getDefaultDevice()
+        else:
+            # A node that doesn't run on the host is a device node.
+            device = cast(dai.DeviceNode, source).getDevice()
+        if device.getPlatform() != dai.Platform.RVC4:
+            raise ValueError("SupportPlaneCalibrator currently requires an RVC4 device")
+        self._imu_device = device
         self._config = config
-        self._fitter = SupportPlaneFitter((width, height), config)
+        self._fitter = SupportPlaneFitter(config)
         pointCloud.link(self._point_cloud_input)
         imu.link(self._imu_input)
         return self
 
     def run(self) -> None:
         """Apply controls, answer verifications and fit clouds until stopped."""
+        assert self._imu_device is not None
+        self._imu_rotation = _imu_to_shared_rotation(
+            self._imu_device, self.getParentPipeline().getMultiDeviceCalibration()
+        )
         try:
             while self.isRunning():
                 self._run_pass()
@@ -232,7 +231,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         message = self._point_cloud_input.tryGet()
         if message is None:
             return
-        cloud, points = self._check_cloud(message)
+        cloud, points = _cloud_points(message)
         self._answer_verifications(cloud, points, gravity)
         if self._state is CalibratorState.RUNNING:
             self._fit(cloud, points, gravity)
@@ -262,6 +261,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
 
     def _take_latest_gravity(self) -> None:
         """Keep the newest IMU gravity and drop it once it is too old."""
+        assert self._imu_rotation is not None, "run() sets the IMU rotation"
         now = time.monotonic()
         while True:
             imu = self._imu_input.tryGet()
@@ -271,7 +271,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                 continue
             gravity = imu_gravity(imu)
             if gravity is not None:
-                self._latest_gravity = gravity
+                self._latest_gravity = self._imu_rotation @ gravity
                 self._latest_gravity_arrival = now
         if (
             self._latest_gravity is not None
@@ -299,31 +299,6 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             result.setSequenceNum(cloud.getSequenceNum())
         self._out.send(result)
 
-    def _check_cloud(
-        self, message: dai.ADatatype
-    ) -> tuple[dai.PointCloudData, np.ndarray]:
-        """Return a point cloud message and its points, checking both.
-
-        Raises:
-            TypeError: If ``message`` is not ``dai.PointCloudData``.
-            ValueError: If the cloud is not the organized size from `build`.
-        """
-        if not isinstance(message, dai.PointCloudData):
-            raise TypeError(
-                "SupportPlaneCalibrator expects organized PointCloudData on its "
-                f"point cloud input, got {type(message).__name__}"
-            )
-        assert self._fitter is not None
-        width, height = self._fitter.cloud_size
-        points = np.asarray(message.getPoints())
-        expected = (width * height, 3)
-        if points.shape != expected:
-            raise ValueError(
-                f"Point cloud is not organized to {(width, height)}: "
-                f"got shape {points.shape}, expected {expected}"
-            )
-        return message, points
-
     def _answer_verifications(
         self, cloud: dai.PointCloudData, points: np.ndarray, gravity: np.ndarray
     ) -> None:
@@ -331,7 +306,7 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
         assert self._config is not None and self._fitter is not None
         if not self._verifications:
             return
-        sample = _sample_valid_points(points, self._fitter.cloud_size)
+        sample = _sample_valid_points(points)
         while self._verifications:
             plane = self._verifications.popleft()
             plane_eq = orient_along_gravity(
@@ -371,12 +346,66 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
             self._finish(CalibrationOutcome.FAILED, [])
 
 
-def _sample_valid_points(points: np.ndarray, size: tuple[int, int]) -> np.ndarray:
-    """Return every ``ON_PLANE_STRIDE``-th row and column's points with ``z > 0``."""
-    width, height = size
-    grid = points.reshape(height, width, 3)[::ON_PLANE_STRIDE, ::ON_PLANE_STRIDE]
-    sample = grid.reshape(-1, 3).astype(np.float64)
-    return sample[sample[:, 2] > 0]
+def _imu_to_shared_rotation(
+    device: dai.Device, multi_device_calibration: list[dai.MultiDeviceExtrinsics] | None
+) -> np.ndarray:
+    """Return the rotation taking ``device``'s IMU axes to shared coordinates.
+
+    Raises:
+        RuntimeError: If ``device`` has no IMU extrinsics, or
+            ``multi_device_calibration`` is set without that device.
+    """
+    device_id = device.getDeviceId()
+    calibration = device.getCalibration()
+    socket: dai.CameraBoardSocket | None = None
+    camera_to_shared = np.eye(3, dtype=np.float32)
+    if multi_device_calibration is not None:
+        handler = dai.beta.MultiDeviceCalibrationHandler(multi_device_calibration)
+        device_socket = handler.getDeviceSocket(device_id)
+        if device_socket is None:
+            raise RuntimeError(
+                f"Device {device_id} supplies the IMU but is not in the "
+                "pipeline's multi-device calibration"
+            )
+        socket = device_socket
+        to_origin = handler.getExtrinsicsToOrigin(device_id, socket)
+        # DepthAI returns extrinsics for every device that has a socket.
+        assert to_origin is not None
+        camera_to_shared = np.asarray(to_origin.getRotationMatrix(), dtype=np.float32)
+    try:
+        if socket is None:
+            # With one device, shared coordinates are its local calibration origin.
+            # DepthAI's stub types the (matrix, origin socket) result as a bare tuple.
+            _, origin = calibration.getExtrinsicsToOrigin(
+                calibration.getCameraWithLowestId()
+            )
+            socket = cast(dai.CameraBoardSocket, origin)
+        imu_to_camera = calibration.getImuToCameraExtrinsics(socket)
+    except RuntimeError as e:
+        raise RuntimeError(
+            f"The calibration of device {device_id} has no IMU extrinsics, so its "
+            "gravity cannot be put in shared coordinates"
+        ) from e
+    return camera_to_shared @ np.asarray(imu_to_camera, dtype=np.float32)[:3, :3]
+
+
+def _cloud_points(message: dai.ADatatype) -> tuple[dai.PointCloudData, np.ndarray]:
+    """Return a point cloud message and its points.
+
+    Raises:
+        TypeError: If ``message`` is not ``dai.PointCloudData``.
+    """
+    if not isinstance(message, dai.PointCloudData):
+        raise TypeError(
+            "SupportPlaneCalibrator expects PointCloudData on its "
+            f"point cloud input, got {type(message).__name__}"
+        )
+    return message, np.asarray(message.getPoints())
+
+
+def _sample_valid_points(points: np.ndarray) -> np.ndarray:
+    """Return every ``ON_PLANE_STRIDE``-th valid point, from the first one."""
+    return _valid_points(points)[::ON_PLANE_STRIDE].astype(np.float64)
 
 
 def _on_plane_ratio(

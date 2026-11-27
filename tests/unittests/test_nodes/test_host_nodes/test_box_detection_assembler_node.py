@@ -6,6 +6,8 @@ import pytest
 
 from depthai_nodes.message import BoxDetections
 from depthai_nodes.node.box_detector.box_detection_assembler import (
+    BORDER_MARGIN,
+    MAX_BBOX_AREA,
     BoxDetectionAssembler,
 )
 from tests.utils import OutputMock
@@ -58,6 +60,10 @@ def create_detections(
     return msg
 
 
+def background_mask() -> np.ndarray:
+    return np.full((MASK_SIZE[1], MASK_SIZE[0]), 255, dtype=np.uint8)
+
+
 def region(rows: slice, cols: slice) -> np.ndarray:
     expected = np.zeros((MASK_SIZE[1], MASK_SIZE[0]), dtype=bool)
     expected[rows, cols] = True
@@ -74,7 +80,7 @@ def assemble(tracklets: dai.Tracklets, detections: dai.ImgDetections):
 
 
 def test_tracked_box_becomes_a_box_detection_with_the_frame_metadata():
-    mask = np.full((MASK_SIZE[1], MASK_SIZE[0]), 255, dtype=np.uint8)
+    mask = background_mask()
     mask[3:17, 7:25] = 0
     message = assemble(
         create_tracklets([(7, TRACKED, (0.2, 0.2, 0.8, 0.8))]),
@@ -99,7 +105,7 @@ def test_tracked_box_becomes_a_box_detection_with_the_frame_metadata():
 
 
 def test_only_current_tracks_with_a_nonempty_segmentation_are_kept():
-    mask = np.full((MASK_SIZE[1], MASK_SIZE[0]), 255, dtype=np.uint8)
+    mask = background_mask()
     mask[2:7, 3:10] = 0
     mask[14:22, 19:29] = 1
     message = assemble(
@@ -131,6 +137,99 @@ def test_only_current_tracks_with_a_nonempty_segmentation_are_kept():
         message.getMask(index_b), region(slice(14, 22), slice(19, 29))
     )
     assert set(np.unique(message.segmentation_mask).tolist()) == {0, 1, 255}
+
+
+@pytest.mark.parametrize(("area_offset", "emitted"), [(-1e-3, True), (1e-3, False)])
+def test_detections_covering_more_than_the_max_area_are_dropped(area_offset, emitted):
+    width = 0.8
+    bounds = (0.1, 0.1, 0.1 + width, 0.1 + (MAX_BBOX_AREA + area_offset) / width)
+    mask = background_mask()
+    mask[3:17, 7:25] = 0
+    message = assemble(
+        create_tracklets([(7, TRACKED, bounds)]),
+        create_detections([(bounds, 0.8)], mask),
+    )
+
+    assert [item.track_id for item in message.items] == ([7] if emitted else [])
+
+
+def margin_pixels(size: int) -> int:
+    """Pixels on each side whose centre lies within BORDER_MARGIN of the edge."""
+    return int(BORDER_MARGIN * size + 0.5)
+
+
+def edge_probe(edge: str, inset: int) -> tuple[slice, slice]:
+    """Rows and columns of a block reaching to ``inset`` pixels from one edge."""
+    width, height = MASK_SIZE
+    rows, cols = slice(8, 16), slice(10, 22)
+    if edge == "left":
+        cols = slice(inset, cols.stop)
+    elif edge == "right":
+        cols = slice(cols.start, width - inset)
+    elif edge == "top":
+        rows = slice(inset, rows.stop)
+    else:
+        rows = slice(rows.start, height - inset)
+    return rows, cols
+
+
+@pytest.mark.parametrize("edge", ["left", "right", "top", "bottom"])
+@pytest.mark.parametrize(("extra_inset", "emitted"), [(-1, False), (0, True)])
+def test_truncated_detections_are_dropped_without_taking_a_mask_index(
+    edge, extra_inset, emitted
+):
+    size = MASK_SIZE[0] if edge in ("left", "right") else MASK_SIZE[1]
+    probe = edge_probe(edge, margin_pixels(size) + extra_inset)
+    inside = (slice(3, 6), slice(3, 6))
+    mask = background_mask()
+    mask[probe] = 0
+    mask[inside] = 1
+    message = assemble(
+        create_tracklets([(4, TRACKED, BOX_B), (5, TRACKED, BOX_A)]),
+        create_detections([(BOX_B, 0.9), (BOX_A, 0.8)], mask),
+    )
+
+    assert [item.track_id for item in message.items] == ([4, 5] if emitted else [5])
+    np.testing.assert_array_equal(
+        message.getMask(len(message.items) - 1), region(*inside)
+    )
+    if not emitted:
+        assert set(np.unique(message.segmentation_mask).tolist()) == {0, 255}
+
+
+def test_bounding_box_in_the_margin_with_its_mask_inside_is_emitted():
+    bounds = (0.0, 0.0, 0.6, 0.6)
+    mask = background_mask()
+    mask[3:12, 3:16] = 0
+    message = assemble(
+        create_tracklets([(7, TRACKED, bounds)]),
+        create_detections([(bounds, 0.8)], mask),
+    )
+
+    assert [item.track_id for item in message.items] == [7]
+
+
+def test_truncated_box_keeps_its_track_id_once_inside():
+    assembler = BoxDetectionAssembler().build(OutputMock(), OutputMock(), MASK_SIZE)
+    queue = assembler.out.createOutputQueue()
+    entering = background_mask()
+    entering[edge_probe("left", 0)] = 0
+    inside = background_mask()
+    inside[3:17, 7:25] = 0
+
+    for mask in (entering, inside):
+        assembler.process(
+            create_tracklets([(7, TRACKED, BOX_A)]),
+            create_detections([(BOX_A, 0.8)], mask),
+        )
+    truncated, entered = queue.get(), queue.get()
+
+    assert isinstance(truncated, BoxDetections)
+    assert isinstance(entered, BoxDetections)
+    assert truncated.items == []
+    (item,) = entered.items
+    assert item.track_id == 7
+    assert item.track_status == TRACKED
 
 
 def test_frame_without_a_mask_emits_empty_detections_of_the_mask_size():

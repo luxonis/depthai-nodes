@@ -7,6 +7,7 @@ from depthai_nodes.message import (
     BoxDimensions,
     BoxMeasurementResult,
     BoxMeasurements,
+    BoxViewDetection,
     MeasurementStatus,
 )
 
@@ -72,26 +73,49 @@ def create_box_detections(
     return BoxDetections(items or [], segmentation_mask)
 
 
+def create_box_view_detection(
+    view: int = 0,
+    track_id: int = 7,
+) -> BoxViewDetection:
+    """Create a box view detection with a 0.4 by 0.4 bounding box for tests.
+
+    Args:
+        view: View index.
+        track_id: Tracker ID in that view.
+
+    Returns:
+        ``BoxViewDetection``: Detection populated with the supplied values.
+    """
+    return BoxViewDetection(
+        view=view,
+        track_id=track_id,
+        bounding_box=create_rotated_rect(size=(0.4, 0.4)),
+        confidence=0.8,
+    )
+
+
 def create_box_measurement_result(
     measurement_status: MeasurementStatus = MeasurementStatus.MEASURED,
     dimensions: BoxDimensions | None = BOX_DIMENSIONS,
-    track_id: int = 7,
+    box_id: int = 7,
+    detections: tuple[BoxViewDetection, ...] | None = None,
 ) -> BoxMeasurementResult:
-    """Create a box measurement result with a 0.4 by 0.4 bounding box for tests.
+    """Create a box measurement result for tests.
 
     Args:
         measurement_status: Measurement status.
         dimensions: Aggregated dimensions, if any.
-        track_id: Tracker ID.
+        box_id: Box identity.
+        detections: Box view detections; defaults to one view-0 detection.
 
     Returns:
         ``BoxMeasurementResult``: Result populated with the supplied values.
     """
+    if detections is None:
+        detections = (create_box_view_detection(),)
     return BoxMeasurementResult(
-        track_id=track_id,
-        bounding_box=create_rotated_rect(size=(0.4, 0.4)),
-        confidence=0.8,
-        track_status=dai.Tracklet.TrackingStatus.TRACKED,
+        box_id=box_id,
+        detections=detections,
         measurement_status=measurement_status,
         dimensions=dimensions,
     )

@@ -15,6 +15,10 @@ class SyncMock(NodeMock):
     def __init__(self):
         super().__init__()
         self.inputs = AutoCreateDict()
+        self.syncThreshold = None
+
+    def setSyncThreshold(self, threshold):
+        self.syncThreshold = threshold
 
     def setRunOnHost(self, run_on_host: bool):
         self._run_on_host = run_on_host

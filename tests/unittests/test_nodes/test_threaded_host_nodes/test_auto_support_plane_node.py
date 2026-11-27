@@ -35,11 +35,14 @@ from depthai_nodes.node import (  # noqa: E402
 )
 from depthai_nodes.node.support_plane_calibrator.support_plane_calibrator import (  # noqa: E402
     IMU_MAX_AGE_SECONDS,
+    MIN_ON_PLANE_POINTS,
+    ON_PLANE_STRIDE,
 )
 from depthai_nodes.node.support_plane_calibrator.support_plane_fitter import (  # noqa: E402
     SupportPlaneFitter,
 )
 from tests.utils import OutputMock, PipelineMock  # noqa: E402
+from tests.utils.nodes.mocks.device import imu_device  # noqa: E402
 from tests.utils.nodes.mocks.queue import OutputQueueMock  # noqa: E402
 from tests.utils.scripted_open3d import ScriptedScene  # noqa: E402
 
@@ -132,7 +135,12 @@ class HarnessAutoSupportPlane(OnHarnessQueues, AutoSupportPlane):
 
 
 class HarnessPipeline(PipelineMock):
-    """Creates the support plane nodes on harness queues."""
+    """Creates the support plane nodes on harness queues, with an RVC4 default
+    device."""
+
+    def __init__(self):
+        super().__init__()
+        self.getDefaultDevice().setPlatform(dai.Platform.RVC4)
 
     HARNESS_TYPES = {
         SupportPlaneCalibrator: HarnessCalibrator,
@@ -153,10 +161,13 @@ class HarnessPipeline(PipelineMock):
 
 
 class Source(OutputMock):
-    """An upstream output; messages sent to it reach the input it is linked to."""
+    """An upstream output; messages sent to it reach the input it is linked to.
 
-    def __init__(self):
-        super().__init__()
+    It runs on ``device``, or on the host when no device is given.
+    """
+
+    def __init__(self, device=None):
+        super().__init__(device)
         self._target = None
 
     def link(self, node):
@@ -168,16 +179,20 @@ class Source(OutputMock):
 
 
 class Harness:
+    """A built `AutoSupportPlane`.
+
+    Its IMU source runs on device ``"1000"`` with identity IMU extrinsics.
+    """
+
     def __init__(self, config=None, size=CLOUD_SIZE, **build_kwargs):
         self.size = size
         self.clouds = Source()
-        self.imus = Source()
+        self.imus = Source(imu_device())
         self.pipeline = HarnessPipeline()
         self.node: HarnessAutoSupportPlane = self.pipeline.create(AutoSupportPlane)
         self.node.build(
             cast(dai.Node.Output, self.clouds),
             cast(dai.Node.Output, self.imus),
-            size,
             config,
             **build_kwargs,
         )
@@ -206,7 +221,8 @@ class Harness:
     def depth_cloud(self, depths):
         """Send an organized cloud with one ``z`` per point, rows by columns, in mm.
 
-        Points sit on a 40 mm grid in ``x`` and ``y``; ``z = 0`` is no depth.
+        Points sit on a 40 mm grid in ``x`` and ``y``; a point with ``z = 0`` has
+        no depth and is sent as ``(0, 0, 0)``, as a camera sends it.
 
         Returns:
             The sent cloud, carrying unique stamps.
@@ -214,6 +230,7 @@ class Harness:
         height, width = depths.shape
         x, y = np.meshgrid(np.arange(width) * 40.0, np.arange(height) * 40.0)
         points = np.column_stack([x.ravel(), y.ravel(), depths.ravel()])
+        points[depths.ravel() == 0] = 0
         message = dai.PointCloudData()
         message.setPoints(points.astype(np.float32))  # pyright: ignore[reportArgumentType]
         self._sequence_num += 1
@@ -402,7 +419,7 @@ def test_uncapped_search_sends_nothing_until_a_plane_is_found():
 
 def build_args():
     output = cast(dai.Node.Output, OutputMock())
-    return output, output, CLOUD_SIZE
+    return output, output
 
 
 def test_build_cannot_run_twice():
@@ -423,7 +440,7 @@ def test_build_gives_the_calibrator_the_calibration_config():
     ) as build:
         HarnessPipeline().create(AutoSupportPlane).build(*build_args(), config)
 
-    ((_, _, _, _, calibration), _) = build.call_args
+    ((_, _, _, calibration), _) = build.call_args
     assert calibration is config.calibration
 
 
@@ -548,7 +565,7 @@ def test_build_rejects_a_wrong_type(kwargs):
         node.build(*build_args(), **kwargs)
 
 
-# Big enough for the calibrator to measure an on-plane ratio (625 sampled points).
+# Big enough for the calibrator to measure an on-plane ratio.
 LARGE_CLOUD_SIZE = (100, 100)
 # Enough inliers to fit a plane in a large cloud.
 LARGE_INLIER_COUNT = 9000
@@ -710,12 +727,17 @@ def test_one_check_is_in_flight_through_an_imu_stall(clock):
     assert node.no_result()
 
 
+# Valid points of the sparse cloud: one sampled point short of a measured on-plane
+# ratio.
+SPARSE_POINTS = ON_PLANE_STRIDE * (MIN_ON_PLANE_POINTS - 1)
+
+
 def sparse_depths():
     """Depths on the held floor, with too few points to measure an on-plane ratio."""
     width, height = LARGE_CLOUD_SIZE
-    depths = np.full((height, width), 1000.0)
-    depths[:40] = 0
-    return depths
+    depths = np.zeros(width * height)
+    depths[-SPARSE_POINTS:] = 1000.0
+    return depths.reshape(height, width)
 
 
 @pytest.mark.parametrize(
@@ -990,12 +1012,12 @@ def assert_protocol(log, config, initial_plane):
 
 
 WALK_DEPTHS = [1000.0, 1300.0, OCCLUDED, 0.0]
-# Inlier counts that fit in the sparse cloud's 6000 points too.
+# Inlier counts that fit in the sparse cloud's `SPARSE_POINTS` too.
 WALK_SCENES = [
     ScriptedScene([]),
-    scripted_floors((-1000.0, 5000)),
-    scripted_floors((-1300.0, 5000)),
-    scripted_floors((-1000.0, 3000), (-1600.0, 2000)),
+    scripted_floors((-1000.0, 1500)),
+    scripted_floors((-1300.0, 1500)),
+    scripted_floors((-1000.0, 900), (-1600.0, 600)),
 ]
 WALK_CLOCK_STEPS = [0.0, 0.1, INTERVAL / 2, INTERVAL, IMU_MAX_AGE_SECONDS + 0.01]
 TIPPED_GRAVITY = {"y": -9.8 * np.sin(np.deg2rad(8)), "z": -9.8 * np.cos(np.deg2rad(8))}
@@ -1017,7 +1039,7 @@ def random_walk(clock, seed, steps=40):
             max_calibration_attempts=rng.choice([None, 1, 2]),
             min_on_plane_ratio=rng.choice([0.0, 0.5]),
             max_gravity_angle_deg=5,
-            min_inlier_count=rng.choice([1, 4000]),
+            min_inlier_count=rng.choice([1, 1200]),
             max_camera_height_mm=rng.choice([None, 1200.0]),
         ),
     )
