@@ -8,6 +8,7 @@ on:
       - 'depthai_nodes/**'
       - 'tests/stability_tests/**'
       - .github/workflows/stability_tests.yaml
+      - .github/workflows/integration_tests.yaml
 
 jobs:
   Integration-tests:
