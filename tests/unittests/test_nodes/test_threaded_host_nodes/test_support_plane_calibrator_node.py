@@ -1182,6 +1182,28 @@ def imu_on_device(device_id):
     return Source(device)
 
 
+def test_single_device_gravity_is_in_its_calibration_origin_not_cam_a():
+    # CAM_A has extrinsics to CAM_B, so CAM_B is the device's calibration origin.
+    calibration = imu_calibration(IMU_TURNED_ABOUT_X, dai.CameraBoardSocket.CAM_B)
+    calibration.setCameraIntrinsics(
+        dai.CameraBoardSocket.CAM_A, np.eye(3).tolist(), 640, 400
+    )
+    calibration.setCameraExtrinsics(
+        dai.CameraBoardSocket.CAM_A,
+        dai.CameraBoardSocket.CAM_B,
+        CAMERA_TURNED_ABOUT_Y.tolist(),
+        [1, 0, 0],
+    )
+    device = DeviceMock()
+    device.setCalibration(calibration)
+
+    result, verification = level_floor(turned_imu_harness(Source(device)))
+
+    assert result.outcome is CalibrationOutcome.SUCCEEDED
+    assert verification.accepted
+    assert verification.gravity_angle_deg == pytest.approx(0, abs=1e-3)
+
+
 @pytest.mark.parametrize("set_after_build", [False, True])
 def test_imu_on_the_non_reference_device_levels_the_floor_in_shared_coordinates(
     set_after_build,

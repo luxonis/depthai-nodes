@@ -145,7 +145,10 @@ class SupportPlaneCalibrator(BaseThreadedHostNode):
                 and in shared coordinates, organized or not. A point counts
                 when it is finite and not ``(0, 0, 0)``. It must share one frame
                 with the boxes the plane serves (same depth outputs, same
-                multi-device calibration); this is not checked.
+                multi-device calibration); this is not checked. Without a
+                multi-device calibration, shared coordinates are the frame of
+                the IMU device's calibration-origin camera, CAM_A on most
+                devices.
             imu: Output emitting ``dai.IMUData`` with ``ACCELEROMETER_RAW``
                 packets from one device's IMU; for a host source, the
                 pipeline's default device. Gravity is taken in shared
@@ -349,7 +352,8 @@ def _imu_to_shared_rotation(
             ``multi_device_calibration`` is set without that device.
     """
     device_id = device.getDeviceId()
-    socket = dai.CameraBoardSocket.CAM_A
+    calibration = device.readCalibration()
+    socket: dai.CameraBoardSocket | None = None
     camera_to_shared = np.eye(3, dtype=np.float32)
     if multi_device_calibration is not None:
         handler = dai.beta.MultiDeviceCalibrationHandler(multi_device_calibration)
@@ -365,7 +369,14 @@ def _imu_to_shared_rotation(
         assert to_origin is not None
         camera_to_shared = np.asarray(to_origin.getRotationMatrix(), dtype=np.float32)
     try:
-        imu_to_camera = device.readCalibration().getImuToCameraExtrinsics(socket)
+        if socket is None:
+            # With one device, shared coordinates are its local calibration origin.
+            # DepthAI's stub types the (matrix, origin socket) result as a bare tuple.
+            _, origin = calibration.getExtrinsicsToOrigin(
+                calibration.getCameraWithLowestId()
+            )
+            socket = cast(dai.CameraBoardSocket, origin)
+        imu_to_camera = calibration.getImuToCameraExtrinsics(socket)
     except RuntimeError as e:
         raise RuntimeError(
             f"The calibration of device {device_id} has no IMU extrinsics, so its "
