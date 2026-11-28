@@ -121,6 +121,25 @@ from depthai_nodes.runtime import onnx_qnn_session
 session = onnx_qnn_session("model.onnx")
 ```
 
+`serve_frontend` hosts a built custom frontend alongside a DepthAI pipeline.
+Build it first with `cd frontend && npm ci && npm run build`, then:
+
+```python
+from pathlib import Path
+
+import depthai as dai
+from depthai_nodes.runtime import serve_frontend
+
+with serve_frontend(Path(__file__).resolve().parent / "frontend" / "dist"):
+    visualizer = dai.RemoteConnection(serveFrontend=False)
+    # Initialize the device and run the application's pipeline here.
+```
+
+The context manager serves assets and browser routes at `http://localhost:8082`
+and stops on exit, including exceptions. Set `host` and `port` to customize the
+address, or `enabled=False` when another server handles hosting. It serves HTTP
+files only; the frontend connects to `RemoteConnection` separately for live data.
+
 ## 🤝 Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup, parser guidelines, and testing instructions. Feedback and bug reports are welcome in [GitHub issues](https://github.com/luxonis/depthai-nodes/issues).
