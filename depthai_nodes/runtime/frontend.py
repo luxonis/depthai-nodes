@@ -46,23 +46,19 @@ def serve_frontend(
     port: int = 8082,
     enabled: bool = True,
 ) -> Iterator[str | None]:
-    """Serve built frontend assets for the lifetime of an application.
+    """Serve a built frontend over HTTP for the duration of the context.
 
-    Use this context around device initialization and the pipeline's run loop, with
-    ``dai.RemoteConnection(serveFrontend=False)``. The server closes even if startup
-    or processing raises. No server is started when ``enabled`` is false.
-    The caller selects the directory, address and port; oakapp environment
-    variables do not change this helper's behavior.
+    Wrap device initialization and the pipeline's run loop with this context and
+    use ``dai.RemoteConnection(serveFrontend=False)`` for live data. The server
+    disables caching, falls back to ``index.html`` for missing extensionless paths,
+    and closes on exit, including exceptions.
 
     Args:
         directory: Directory containing the built ``index.html``. Construct it from
-            the application's ``__file__`` so it does not depend on the working
-            directory. Frontend compilation is an explicit setup step.
+            the application's ``__file__`` to avoid depending on the working directory.
         host: Address to bind. Defaults to loopback for local browser access.
-        port: HTTP port. Defaults to 8082, matching the viewer's peripheral URL
-            convention. This does not change RemoteConnection's WebSocket port.
-        enabled: Set false when another server, such as nginx or a frontend
-            development server, handles frontend hosting.
+        port: HTTP port, defaulting to 8082. Independent of the WebSocket port.
+        enabled: Set false to skip hosting when another server serves the frontend.
 
     Yields:
         The HTTP URL, or None when frontend hosting is disabled.
@@ -72,9 +68,7 @@ def serve_frontend(
         OSError: The server cannot bind to the requested address and port.
 
     Notes:
-        This serves static files over HTTP, without authentication or a WebSocket
-        proxy. For remote access to encoded video, use an HTTPS reverse proxy that
-        also forwards the DepthAI WebSocket connection. Localhost needs no TLS.
+        Serves static files only; provides no TLS, authentication, or WebSocket proxy.
     """
     if not enabled:
         yield None

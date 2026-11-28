@@ -121,7 +121,8 @@ from depthai_nodes.runtime import onnx_qnn_session
 session = onnx_qnn_session("model.onnx")
 ```
 
-To serve a custom frontend, run `cd frontend && npm ci && npm run build`, then:
+`serve_frontend` hosts a built custom frontend alongside a DepthAI pipeline.
+Build it first with `cd frontend && npm ci && npm run build`, then:
 
 ```python
 from pathlib import Path
@@ -134,13 +135,10 @@ with serve_frontend(Path(__file__).resolve().parent / "frontend" / "dist"):
     # Initialize the device and run the application's pipeline here.
 ```
 
-- Serves assets and browser routes at `http://localhost:8082`; closes on exit or
-  exception. Missing builds report the build command.
-- Set `enabled=False` when nginx or a development server handles hosting. The helper
-  does not inspect oakapp environment variables; callers choose when and where to serve.
-- A standalone app serving its own UI can pass `OAKAPP_STATIC_FRONTEND_PATH` as the
-  directory and `int(OAKAPP_STATIC_FRONTEND_PORT)` as the port, with a device-accessible
-  bind address. Apps using `oakapp-base` leave hosting to nginx.
+The context manager serves assets and browser routes at `http://localhost:8082`
+and stops on exit, including exceptions. Set `host` and `port` to customize the
+address, or `enabled=False` when another server handles hosting. It serves HTTP
+files only; the frontend connects to `RemoteConnection` separately for live data.
 
 ## 🤝 Contributing
 
