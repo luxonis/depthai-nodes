@@ -1,7 +1,6 @@
-"""Serve a built custom frontend alongside a peripheral DepthAI application."""
+"""Serve a built custom frontend alongside a DepthAI application."""
 
 import logging
-import os
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -51,8 +50,9 @@ def serve_frontend(
 
     Use this context around device initialization and the pipeline's run loop, with
     ``dai.RemoteConnection(serveFrontend=False)``. The server closes even if startup
-    or processing raises. No server is started when the oakapp runtime sets
-    ``OAKAPP_STATIC_FRONTEND_PORT`` or when ``enabled`` is false.
+    or processing raises. No server is started when ``enabled`` is false.
+    The caller selects the directory, address and port; oakapp environment
+    variables do not change this helper's behavior.
 
     Args:
         directory: Directory containing the built ``index.html``. Construct it from
@@ -61,10 +61,11 @@ def serve_frontend(
         host: Address to bind. Defaults to loopback for local browser access.
         port: HTTP port. Defaults to 8082, matching the viewer's peripheral URL
             convention. This does not change RemoteConnection's WebSocket port.
-        enabled: Set false when using a separate frontend development server.
+        enabled: Set false when another server, such as nginx or a frontend
+            development server, handles frontend hosting.
 
     Yields:
-        The HTTP URL, or None when frontend hosting is disabled or managed by oakapp.
+        The HTTP URL, or None when frontend hosting is disabled.
 
     Raises:
         FileNotFoundError: The directory has no built ``index.html``.
@@ -75,7 +76,7 @@ def serve_frontend(
         proxy. For remote access to encoded video, use an HTTPS reverse proxy that
         also forwards the DepthAI WebSocket connection. Localhost needs no TLS.
     """
-    if not enabled or os.environ.get("OAKAPP_STATIC_FRONTEND_PORT"):
+    if not enabled:
         yield None
         return
 

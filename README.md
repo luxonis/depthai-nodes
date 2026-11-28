@@ -121,7 +121,7 @@ from depthai_nodes.runtime import onnx_qnn_session
 session = onnx_qnn_session("model.onnx")
 ```
 
-For peripheral custom frontends, run `cd frontend && npm ci && npm run build`, then:
+To serve a custom frontend, run `cd frontend && npm ci && npm run build`, then:
 
 ```python
 from pathlib import Path
@@ -136,9 +136,11 @@ with serve_frontend(Path(__file__).resolve().parent / "frontend" / "dist"):
 
 - Serves assets and browser routes at `http://localhost:8082`; closes on exit or
   exception. Missing builds report the build command.
-- Use `enabled=False` for a separate development server. Hosting also skips when
-  `OAKAPP_STATIC_FRONTEND_PORT` is set; standalone apps keep `[static_frontend]` in
-  `oakapp.toml`.
+- Set `enabled=False` when nginx or a development server handles hosting. The helper
+  does not inspect oakapp environment variables; callers choose when and where to serve.
+- A standalone app serving its own UI can pass `OAKAPP_STATIC_FRONTEND_PATH` as the
+  directory and `int(OAKAPP_STATIC_FRONTEND_PORT)` as the port, with a device-accessible
+  bind address. Apps using `oakapp-base` leave hosting to nginx.
 
 ## 🤝 Contributing
 

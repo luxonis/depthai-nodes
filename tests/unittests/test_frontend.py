@@ -8,8 +8,7 @@ from depthai_nodes.runtime import serve_frontend
 
 
 @pytest.fixture
-def frontend(tmp_path, monkeypatch):
-    monkeypatch.delenv("OAKAPP_STATIC_FRONTEND_PORT", raising=False)
+def frontend(tmp_path):
     (tmp_path / "index.html").write_text("<html>custom frontend</html>")
     (tmp_path / "app.js").write_text("export const ready = true;")
     (tmp_path / "font.woff2").write_bytes(b"font")
@@ -32,28 +31,28 @@ def test_serves_assets_and_browser_routes(frontend):
             assert error.value.code == 404
 
 
-def test_missing_build_explains_setup(tmp_path, monkeypatch):
-    monkeypatch.delenv("OAKAPP_STATIC_FRONTEND_PORT", raising=False)
+def test_missing_build_explains_setup(tmp_path):
     with pytest.raises(FileNotFoundError, match="npm ci && npm run build"):
         with serve_frontend(tmp_path):
             pytest.fail("Unbuilt frontend was accepted")
 
 
-@pytest.mark.parametrize("standalone", [False, True])
-def test_disabled_server_needs_no_bundle_or_free_port(
-    tmp_path, monkeypatch, standalone
-):
-    if standalone:
-        monkeypatch.setenv("OAKAPP_STATIC_FRONTEND_PORT", "9000")
-    else:
-        monkeypatch.delenv("OAKAPP_STATIC_FRONTEND_PORT", raising=False)
+def test_disabled_server_needs_no_bundle_or_free_port(tmp_path):
     with socket.socket() as occupied:
         occupied.bind(("127.0.0.1", 0))
         occupied.listen()
         with serve_frontend(
-            tmp_path, port=occupied.getsockname()[1], enabled=standalone
+            tmp_path, port=occupied.getsockname()[1], enabled=False
         ) as url:
             assert url is None
+
+
+def test_oakapp_environment_does_not_disable_hosting(frontend, monkeypatch):
+    monkeypatch.setenv("OAKAPP_STATIC_FRONTEND_PORT", "9000")
+    with serve_frontend(frontend, port=0) as url:
+        assert url is not None
+        with urlopen(url, timeout=2) as response:
+            assert response.read() == b"<html>custom frontend</html>"
 
 
 def test_releases_port_after_application_failure(frontend):
